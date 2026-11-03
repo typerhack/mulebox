@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.2.1 - 2026-11-03 - patch
+- docs/interfaces.md: the API contract for the shared modules (ids, log, config, protocol,
+  ssh, redact, safepath), so they can be built in parallel.
+- `mulebox/common/` package with the base `MuleboxError`.
+
 ## 0.2.0 - 2026-11-03 - minor
 - M1.1 package skeleton: `pyproject.toml` (Python 3.12+, setuptools 84.2.1, version read
   from VERSION), `mulebox` CLI entry point with `--version` / `version`, pytest 9.2.0 as the
