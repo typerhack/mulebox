@@ -1,0 +1,40 @@
+# mulebox
+
+Send your AI coding agents' heavy work to the Linux machines on your network.
+
+Agents (Claude Code, Codex, and others) edit code on your laptop. Builds, type checks,
+linting and test suites are slow, hot and noisy, and several agents running them at once
+can freeze the laptop. mulebox gives every project and every agent **one waiting line**
+on one or more Linux build machines ("mules"), runs the jobs there, and streams the result
+back as if the command had run locally.
+
+Status: **early design, not usable yet** (version in [VERSION](VERSION)).
+
+## How it works
+
+```
+laptop (agents edit code)              build machine(s) on your LAN
+-------------------------              ----------------------------
+mulebox check  --SSH-->  coordinator: one queue, history, web dashboard
+mulebox queue  --SSH-->        |
+                               v
+                         worker(s): run jobs in isolated folders, with time limits,
+                         warm caches, and cleanup; optional GitHub Actions runners
+```
+
+- **One command for agents**: `mulebox check` in any project folder runs that project's
+  checks on a build machine and exits with the same pass/fail code.
+- **One queue for everything**: agent checks and GitHub Actions jobs share it, so the build
+  machine is never overloaded.
+- **Live views**: a terminal view on the laptop and a web dashboard on the LAN (phone
+  friendly) showing the queue, live logs and machine load.
+- **Grows with your hardware**: add a faster machine as another worker; retire an old one
+  by draining it. Agents and projects do not change.
+- **Per-project config**: a small `.mulebox.yml` in each repo says what "check" means.
+
+See [docs/design.md](docs/design.md) for the design and [docs/phases.md](docs/phases.md)
+for the roadmap.
+
+## License
+
+Not chosen yet (see roadmap). The project is private until it is.
