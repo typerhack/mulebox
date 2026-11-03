@@ -1,0 +1,30 @@
+# mulebox node config for a build machine: ~/.config/mulebox/node.toml
+#
+# install.sh writes this file once, from this template, if it does not exist yet; it
+# never overwrites it. It fills in the machine's short hostname as `name` and the home
+# folder in the roots. Unknown keys are errors. See docs/install.md.
+
+# Name of this node in the queue and the logs (letters, digits, '.', '_', '-').
+name = "@NAME@"
+
+# M1 runs both roles on one machine as two systemd user services.
+roles = ["coordinator", "worker"]
+
+# Jobs this node runs at the same time.
+slots = 1
+
+# What this node offers to jobs (`needs` in a project's .mulebox.yml), e.g. ["docker"].
+capabilities = []
+
+# mulebox only creates and deletes files inside these folders. Keep them separate and
+# outside system paths; they must not be your home folder itself.
+[roots]
+jobs = "@HOME@/.mulebox/jobs"
+cache = "@HOME@/.mulebox/cache"
+staging = "@HOME@/.mulebox/staging"
+runners = "@HOME@/.mulebox/runners"
+
+# Web dashboard (M2): "off", "local" (this machine only) or "lan" (needs lan_range).
+[dashboard]
+mode = "local"
+port = 8090
