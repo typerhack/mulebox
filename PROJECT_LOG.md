@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.6.4 - 2026-11-03 - patch
+- docs/phases.md: M3.1 and M3.2 done; M3.3 drill results (overlap, cancelled run, runner
+  crash passed; GitHub session conflict after a hard kill and the reboot drill still open).
+  Repository CI is now 16 s warm (was 47 s). M2 started on branch m2-dashboard.
+
 ## 0.6.3 - 2026-11-03 - patch
 - Faster repository CI: tests run in parallel (`pytest-xdist`, `-n auto`; 23 s -> 5 s on
   the laptop), the venv is kept in the runner tool cache and rebuilt only when
