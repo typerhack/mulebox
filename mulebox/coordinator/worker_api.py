@@ -1,7 +1,8 @@
 """Requests from workers: claim, heartbeat (lease worker), job_update, log_chunk, result.
 
 Every message about a job must carry the job's current `attempt_id`; a stale attempt gets
-`conflict`. A valid message renews the worker lease. Replies to job messages carry
+`conflict`. Runner reservations have no attempt: only `heartbeat` applies to them (it
+renews their worker lease); they end through `release` (runner_api.py). A valid message renews the worker lease. Replies to job messages carry
 `cancel: true` when the worker should stop (cancel requested, or the job already ended).
 """
 
@@ -13,6 +14,7 @@ from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
 from mulebox.coordinator.errors import BadRequest, Conflict
+from mulebox.coordinator.queue import RUNNER_KIND
 from mulebox.coordinator.views import status_body
 
 
@@ -34,15 +36,20 @@ def _status(req: Request, job: dict[str, Any], **extra: Any) -> Message:
     return req.reply(MessageType.STATUS_OK, status_body(job, cancel=cancel, **extra))
 
 
-def _current_job(conn: Any, req: Request) -> dict[str, Any]:
+def _current_job(conn: Any, req: Request, reservations: bool = False) -> dict[str, Any]:
     job = st.require_job(conn, v.job_id(req.body))
+    if job["kind"] == RUNNER_KIND:
+        if not reservations:
+            raise BadRequest(f"job {job['job_id']} is a runner reservation; use release")
+        return job
     leases.check_attempt(job, req.body.get("attempt_id"))
     return job
 
 
 def heartbeat(req: Request) -> Message:
     with req.store.write() as conn:
-        job = leases.renew_worker_in(conn, _current_job(conn, req), req.now)
+        job = _current_job(conn, req, reservations=True)
+        job = leases.renew_worker_in(conn, job, req.now)
     return _status(req, job)
 
 

@@ -10,7 +10,8 @@ each step ship new log text, poll the process, heartbeat every 3 s. The job is s
 120 s (the worker lease length). After it ends: flush the log, `job_update cleaning`,
 remove the workspace, `result`. Cleanup happens even while the coordinator is
 unreachable; the reports are delivered once it answers again. No new job is claimed while
-reports are pending.
+reports are pending. With a supervisor, each step also lets it watch this worker's
+runner reservations (runners/supervise.py; it runs every 10 s).
 """
 
 from __future__ import annotations
@@ -26,6 +27,7 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
+from mulebox.runners.supervise import Supervisor
 from mulebox.worker import jobspec, toolchains, workspace
 from mulebox.worker.executor import Executor, RunSpec, unit_name
 from mulebox.worker.job import ActiveJob, outcome_for
@@ -42,9 +44,11 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 
 class Agent:
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
-                 paths: NodePaths, clock: Callable[[], float] = time.time) -> None:
+                 paths: NodePaths, clock: Callable[[], float] = time.time,
+                 supervisor: Any = None) -> None:
         self.node, self.link, self.executor, self.paths = node, link, executor, paths
         self.clock = clock
+        self.supervisor = supervisor  # runners.supervise.Supervisor, or None
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
         self.retry_at = 0.0
@@ -86,6 +90,11 @@ class Agent:
             self._tend(job, now)
         for job in list(self.finishing):
             self._deliver(job, now)
+        if self.supervisor is not None and self._online(now):
+            try:
+                self.supervisor.tick(now, self._sender(now))
+            except LinkError:
+                pass
         if not self.finishing and len(self.active) < self.node.slots and self._online(now):
             self._claim(now)
 
@@ -249,7 +258,7 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
     """Recovery first, then the claim loop until `stop` is set."""
     paths = paths or NodePaths.from_config(node.roots)
     stop = stop or threading.Event()
-    agent = Agent(node, link, executor, paths)
+    agent = Agent(node, link, executor, paths, supervisor=Supervisor(node.name, paths.runners))
     agent.recover()
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)
     while not stop.is_set():

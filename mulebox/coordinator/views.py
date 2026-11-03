@@ -34,3 +34,11 @@ def status_body(job: dict[str, Any], position: int | None = None,
 def result_body(job: dict[str, Any]) -> dict[str, Any]:
     """The final `result` line of a watch stream: the job dict plus duration_s."""
     return {**job_dict(job), "duration_s": job["duration_s"]}
+
+
+RESERVATION_FIELDS = ("kind", "pinned_worker", "runner", "run_url")
+
+
+def reservation_dict(job: dict[str, Any], position: int | None = None) -> dict[str, Any]:
+    """A runner_jobs entry: the public job dict plus the reservation fields."""
+    return {**job_dict(job, position), **{name: job[name] for name in RESERVATION_FIELDS}}

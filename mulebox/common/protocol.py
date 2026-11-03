@@ -95,6 +95,10 @@ class MessageType(StrEnum):
     QUEUE_OK = "queue_ok"
     LOGS = "logs"
     WATCH = "watch"
+    RESERVE = "reserve"
+    ACQUIRE = "acquire"
+    RELEASE = "release"
+    RUNNER_JOBS = "runner_jobs"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -131,6 +135,17 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.
     MessageType.WATCH: frozenset({"job_id", "offset"}),
+    # runner hook -> coordinator: reserve a slot on `worker` for one GitHub Actions job;
+    # replied with submit_ok (docs/interfaces-m3.md, Wire messages).
+    MessageType.RESERVE: frozenset(
+        {"worker", "repository", "job", "run_id", "run_attempt", "runner"}
+    ),
+    # runner hook -> coordinator: take the slot if it is free; replied with status_ok.
+    MessageType.ACQUIRE: frozenset({"job_id"}),
+    # runner hook or worker -> coordinator: end a reservation with `outcome`.
+    MessageType.RELEASE: frozenset({"job_id", "outcome"}),
+    # worker -> coordinator: unfinished reservations pinned to `worker`; replied queue_ok.
+    MessageType.RUNNER_JOBS: frozenset({"worker"}),
 }
 
 # Body fields whose values are checked against an enum wherever they appear.

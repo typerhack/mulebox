@@ -19,9 +19,10 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.protocol import JobState, Outcome, ProtocolError, check_transition
+from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: reservations for GitHub runners (migrate.py)
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -57,21 +58,26 @@ CREATE TABLE IF NOT EXISTS jobs (
     created_at REAL NOT NULL,
     queued_at REAL,
     started_at REAL,
-    finished_at REAL
+    finished_at REAL,
+    kind TEXT NOT NULL DEFAULT 'job',
+    pinned_worker TEXT,
+    runner TEXT,
+    run_url TEXT
 );
 CREATE INDEX IF NOT EXISTS jobs_state ON jobs (state, queued_at, seq);
 CREATE TABLE IF NOT EXISTS workers (
     worker TEXT PRIMARY KEY,
     capabilities TEXT NOT NULL,
     free_slots INTEGER NOT NULL,
-    last_seen REAL NOT NULL
+    last_seen REAL NOT NULL,
+    slots INTEGER
 );
 """
 _JOB_COLUMNS = frozenset(
     "job_id idempotency_key project job argv fingerprint base_commit client branch setup "
     "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
-    "created_at queued_at started_at finished_at".split()
+    "created_at queued_at started_at finished_at kind pinned_worker runner run_url".split()
 )
 
 
@@ -93,14 +99,19 @@ class Store:
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA synchronous = NORMAL")
         self._conn = conn
-        with self.write() as tx:
-            for statement in _SCHEMA.split(";"):
-                if statement.strip():
-                    tx.execute(statement)
-            tx.execute(
-                "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)",
-                (str(SCHEMA_VERSION),),
-            )
+        try:
+            with self.write() as tx:
+                for statement in _SCHEMA.split(";"):
+                    if statement.strip():
+                        tx.execute(statement)
+                tx.execute(
+                    "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)",
+                    (str(SCHEMA_VERSION),),
+                )
+                migrate.upgrade(tx, SCHEMA_VERSION)
+        except BaseException:
+            self.close()
+            raise
         return self
 
     def close(self) -> None:
@@ -253,10 +264,22 @@ def finish(conn: sqlite3.Connection, job: dict[str, Any], outcome: Outcome, now:
 
 
 def upsert_worker(conn: sqlite3.Connection, worker: str, capabilities: list[str],
-                  free_slots: int, now: float) -> None:
+                  free_slots: int, now: float, slots: int | None = None) -> None:
+    """Record a worker seen at `now`; `slots` is its total slot count when known."""
     conn.execute(
-        "INSERT INTO workers (worker, capabilities, free_slots, last_seen) VALUES (?, ?, ?, ?) "
+        "INSERT INTO workers (worker, capabilities, free_slots, last_seen, slots) "
+        "VALUES (?, ?, ?, ?, ?) "
         "ON CONFLICT (worker) DO UPDATE SET capabilities = excluded.capabilities, "
-        "free_slots = excluded.free_slots, last_seen = excluded.last_seen",
-        (worker, json.dumps(sorted(capabilities)), free_slots, now),
+        "free_slots = excluded.free_slots, last_seen = excluded.last_seen, "
+        "slots = COALESCE(excluded.slots, workers.slots)",
+        (worker, json.dumps(sorted(capabilities)), free_slots, now, slots),
     )
+
+
+def get_worker(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
+    row = conn.execute("SELECT * FROM workers WHERE worker = ?", (worker,)).fetchone()
+    if row is None:
+        return None
+    data = dict(row)
+    data["capabilities"] = json.loads(data["capabilities"])
+    return data

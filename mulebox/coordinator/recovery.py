@@ -36,11 +36,13 @@ def recover(store: Store, now: float, staging: Staging | None = None) -> list[st
 
 
 def release_worker(store: Store, worker: str, now: float) -> list[str]:
-    """A worker restarted (it stopped all its units): interrupt the jobs it still held."""
+    """A worker restarted (it stopped all its units): interrupt the agent jobs it held."""
     interrupted: list[str] = []
     with store.write() as conn:
         marks = ", ".join("?" for _ in _ACTIVE)
-        for job in st.select_jobs(conn, f"state IN ({marks}) AND worker = ?",
+        # Only agent jobs: a runner reservation belongs to the runner service, which keeps
+        # its GitHub job running across a worker restart (supervision ends it).
+        for job in st.select_jobs(conn, f"state IN ({marks}) AND worker = ? AND kind = 'job'",
                                   (*_ACTIVE, worker)):
             st.finish(conn, job, Outcome.INTERRUPTED, now)
             interrupted.append(job["job_id"])

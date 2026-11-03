@@ -11,7 +11,7 @@ from typing import Any
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import leases, queue, worker_api
+from mulebox.coordinator import leases, queue, runner_api, worker_api
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -132,4 +132,8 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.JOB_UPDATE: worker_api.job_update,
     MessageType.LOG_CHUNK: worker_api.log_chunk,
     MessageType.RESULT: worker_api.result,
+    MessageType.RESERVE: runner_api.reserve,
+    MessageType.ACQUIRE: runner_api.acquire,
+    MessageType.RELEASE: runner_api.release,
+    MessageType.RUNNER_JOBS: runner_api.runner_jobs,
 }
