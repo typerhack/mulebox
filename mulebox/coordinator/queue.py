@@ -1,7 +1,12 @@
-"""The FIFO queue: atomic claims, queue positions and the queue listing.
+"""The FIFO queue: atomic claims, slot accounting, queue positions and the listing.
 
 A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
 claiming at once can never get the same job, and the cluster-wide slot limit holds.
+
+Agent jobs (`kind = 'job'`) and runner reservations (`kind = 'runner'`, reservations.py)
+share one line: slots count `starting|running|cleaning` rows of both kinds, `claim` only
+hands out agent jobs, and it never passes an older reservation pinned to the claiming
+worker.
 """
 
 import sqlite3
@@ -18,6 +23,8 @@ DEFAULT_FINISHED_LIMIT = 20
 
 _ACTIVE_SQL = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
 _QUEUE_ORDER = "queued_at, seq"
+JOB_KIND = "job"
+RUNNER_KIND = "runner"
 
 
 def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
@@ -32,10 +39,17 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
     now = time.time() if now is None else now
     have = set(capabilities)
     with store.write() as conn:
-        st.upsert_worker(conn, worker, list(capabilities), free_slots, now)
-        if free_slots < 1 or active_count(conn) >= cluster_slots:
+        held = active_on(conn, worker, JOB_KIND)
+        st.upsert_worker(conn, worker, list(capabilities), free_slots, now,
+                         slots=free_slots + held)
+        free = free_slots - active_on(conn, worker, RUNNER_KIND)
+        if free < 1 or active_count(conn) >= cluster_slots:
             return None
-        for job in st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), _QUEUE_ORDER):
+        blocker = oldest_reservation(conn, worker)
+        for job in st.select_jobs(conn, "state = ? AND kind = ?",
+                                  (JobState.QUEUED.value, JOB_KIND), _QUEUE_ORDER):
+            if blocker is not None and _key(blocker) < _key(job):
+                return None  # FIFO: the older reservation goes first
             if set(job["needs"]) <= have:
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
@@ -45,7 +59,29 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
 
 
 def active_count(conn: sqlite3.Connection) -> int:
+    """Rows of both kinds holding a slot anywhere in the cluster."""
     return conn.execute(f"SELECT COUNT(*) FROM jobs WHERE {_ACTIVE_SQL}").fetchone()[0]
+
+
+def active_on(conn: sqlite3.Connection, worker: str, kind: str | None = None) -> int:
+    """Rows holding a slot on `worker` (of `kind`, or of both kinds)."""
+    sql = f"SELECT COUNT(*) FROM jobs WHERE {_ACTIVE_SQL} AND worker = ?"
+    params: tuple = (worker,)
+    if kind is not None:
+        sql += " AND kind = ?"
+        params += (kind,)
+    return conn.execute(sql, params).fetchone()[0]
+
+
+def oldest_reservation(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
+    """The oldest queued reservation pinned to `worker`, or None."""
+    rows = st.select_jobs(conn, "state = ? AND kind = ? AND pinned_worker = ?",
+                          (JobState.QUEUED.value, RUNNER_KIND, worker), _QUEUE_ORDER, limit=1)
+    return rows[0] if rows else None
+
+
+def _key(job: dict[str, Any]) -> tuple[float, int]:
+    return (job["queued_at"], job["seq"])
 
 
 def position(conn: sqlite3.Connection, job: dict[str, Any]) -> int | None:

@@ -9,6 +9,8 @@ Clock: the coordinator's `time.time()`, passed in as `now` so tests control it.
   runs out the job finishes `interrupted`. It is never handed to another worker.
 - An `uploading` job older than 10 minutes finishes `interrupted`. Uploading jobs are not
   subject to the client lease: a client cannot heartbeat while it streams a large upload.
+- Runner reservations (`kind = 'runner'`) ignore the client lease; their worker lease is
+  renewed by the worker's supervision heartbeats and expires like any other.
 """
 
 import sqlite3
@@ -80,7 +82,7 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
             finished.append(job["job_id"])
         for job in st.select_jobs(
             conn, f"(state = ? OR {_ACTIVE_SQL}) AND cancel_requested = 0 "
-            "AND client_lease_until < ?", (JobState.QUEUED.value, *_ACTIVE, now),
+            "AND kind = 'job' AND client_lease_until < ?", (JobState.QUEUED.value, *_ACTIVE, now),
         ):
             if request_cancel(conn, job, now)["state"] == JobState.FINISHED:
                 finished.append(job["job_id"])

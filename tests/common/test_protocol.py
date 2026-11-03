@@ -43,6 +43,8 @@ SAMPLE_VALUES = {
     "code": "not_found",
     "message": "no such job",
     "jobs": [{"job_id": "job-01JC3X0000000000000000000", "state": "queued"}],
+    "repository": "example-org/example-app",
+    "run_id": "123456789", "run_attempt": "1", "runner": "build-1-example-app",
 }
 
 
@@ -79,7 +81,7 @@ def test_enum_values_match_contract():
     assert {t.value for t in MessageType} == {
         "submit", "submit_ok", "upload_done", "status", "status_ok", "cancel", "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "error",
-        "queue", "queue_ok", "logs", "watch"}
+        "queue", "queue_ok", "logs", "watch", "reserve", "acquire", "release", "runner_jobs"}
 
 
 def test_transition_table_is_exact():
