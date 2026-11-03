@@ -1,0 +1,14 @@
+# mulebox coordinator: queue sweeps (lease expiry, recovery). Installed by install.sh
+# into ~/.config/systemd/user/. %h is the user's home folder.
+[Unit]
+Description=mulebox coordinator (queue sweeps)
+
+[Service]
+Type=simple
+ExecStart=%h/.mulebox/bin/mulebox coordinator serve
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
