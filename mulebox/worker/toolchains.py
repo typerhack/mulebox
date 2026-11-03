@@ -1,0 +1,174 @@
+"""Pinned toolchains under `<cache>/toolchains/<name>/<version>`, prepended to a job's PATH.
+
+- node: the official `node-v<ver>-linux-<arch>.tar.xz` from nodejs.org, verified against
+  that release's `SHASUMS256.txt`, extracted safely (archive.py).
+- pnpm: `npm install -g --prefix <cache>/toolchains/pnpm/<ver> pnpm@<ver>`, run with an
+  installed node toolchain (the newest one).
+
+Installs go to a temporary folder next to the final one and are renamed into place, so a
+half-finished install is never picked up. Temporary folders are removed through safepath.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import os
+import platform
+import re
+import subprocess
+import urllib.request
+from collections.abc import Callable, Mapping
+from pathlib import Path
+
+from mulebox.common.errors import MuleboxError
+from mulebox.common.ids import new_ulid
+from mulebox.common.safepath import ensure_dir, remove_tree
+from mulebox.worker.archive import extract_tar
+from mulebox.worker.paths import NodePaths
+
+NODE_DIST = "https://nodejs.org/dist"
+KNOWN = ("node", "pnpm")
+HTTP_TIMEOUT_S = 60
+NPM_TIMEOUT_S = 900
+_VERSION_RE = re.compile(r"\d{1,4}\.\d{1,4}\.\d{1,4}")
+_ARCH = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}
+
+Fetch = Callable[[str, Path], None]  # download url into a new file
+Run = Callable[[list[str], Mapping[str, str]], subprocess.CompletedProcess]
+
+
+class ToolchainError(MuleboxError):
+    """A toolchain is missing, unknown, or could not be installed."""
+
+
+def http_fetch(url: str, dest: Path) -> None:
+    try:
+        with urllib.request.urlopen(url, timeout=HTTP_TIMEOUT_S) as resp, open(dest, "xb") as fh:
+            while block := resp.read(1 << 20):
+                fh.write(block)
+    except OSError as exc:
+        raise ToolchainError(f"download of {url} failed: {exc}") from exc
+
+
+def run_command(argv: list[str], env: Mapping[str, str]) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run(argv, env=dict(env), capture_output=True, text=True,
+                              timeout=NPM_TIMEOUT_S, stdin=subprocess.DEVNULL)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise ToolchainError(f"`{argv[0]}` failed: {exc}") from exc
+
+
+def _check(name: str, version: str) -> None:
+    if name not in KNOWN:
+        raise ToolchainError(f"unknown toolchain {name!r}; known: {', '.join(KNOWN)}")
+    if not isinstance(version, str) or not _VERSION_RE.fullmatch(version):
+        raise ToolchainError(f"{name} version must look like 22.22.3, got {version!r}")
+
+
+def toolchain_dir(paths: NodePaths, name: str, version: str) -> Path:
+    _check(name, version)
+    return paths.toolchains_dir() / name / version
+
+
+def path_for(paths: NodePaths, toolchain: Mapping[str, str]) -> list[Path]:
+    """`bin` folders for a project's toolchain map, in its order; error if one is missing."""
+    bins = []
+    for name, version in toolchain.items():
+        bin_dir = toolchain_dir(paths, name, version) / "bin"
+        if not bin_dir.is_dir():
+            raise ToolchainError(
+                f"toolchain {name} {version} is not installed on this worker; "
+                f"run `mulebox toolchain install {name} {version}` on it")
+        bins.append(bin_dir)
+    return bins
+
+
+def installed(paths: NodePaths) -> list[tuple[str, str]]:
+    found = []
+    for name in KNOWN:
+        base = paths.toolchains_dir() / name
+        if base.is_dir():
+            for entry in base.iterdir():
+                if _VERSION_RE.fullmatch(entry.name) and (entry / "bin").is_dir():
+                    found.append((name, entry.name))
+    return sorted(found, key=lambda item: (item[0], _version_key(item[1])))
+
+
+def _version_key(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split("."))
+
+
+def node_arch(machine: str | None = None) -> str:
+    machine = (machine or platform.machine()).lower()
+    if machine not in _ARCH:
+        raise ToolchainError(f"no node build for CPU architecture {machine!r}")
+    return _ARCH[machine]
+
+
+def _expected_sha(sums: str, filename: str) -> str:
+    for line in sums.splitlines():
+        parts = line.split()
+        if len(parts) == 2 and parts[1] == filename and re.fullmatch(r"[0-9a-f]{64}", parts[0]):
+            return parts[0]
+    raise ToolchainError(f"{filename} is not listed in SHASUMS256.txt")
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as fh:
+        while block := fh.read(1 << 20):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _install_node(paths: NodePaths, version: str, tmp: Path, fetch: Fetch, arch: str) -> Path:
+    stem = f"node-v{version}-linux-{arch}"
+    base = f"{NODE_DIST}/v{version}"
+    downloads = ensure_dir(tmp / "download", paths.roots)
+    sums_file, tarball = downloads / "SHASUMS256.txt", downloads / f"{stem}.tar.xz"
+    fetch(f"{base}/SHASUMS256.txt", sums_file)
+    expected = _expected_sha(sums_file.read_text(encoding="utf-8", errors="replace"),
+                             tarball.name)
+    fetch(f"{base}/{tarball.name}", tarball)
+    actual = _sha256(tarball)
+    if actual != expected:
+        raise ToolchainError(f"{tarball.name}: sha256 {actual} does not match SHASUMS256.txt")
+    return extract_tar(tarball, tmp / "tree", paths.roots, strip_prefix=stem)
+
+
+def _install_pnpm(paths: NodePaths, version: str, tmp: Path, run: Run) -> Path:
+    nodes = [v for n, v in installed(paths) if n == "node"]
+    if not nodes:
+        raise ToolchainError("pnpm needs a node toolchain; run "
+                             "`mulebox toolchain install node <version>` first")
+    node_bin = toolchain_dir(paths, "node", nodes[-1]) / "bin"
+    tree = ensure_dir(tmp / "tree", paths.roots)
+    env = {**os.environ, "PATH": os.pathsep.join([str(node_bin), os.environ.get("PATH", "")])}
+    argv = [str(node_bin / "npm"), "install", "-g", "--prefix", str(tree), f"pnpm@{version}"]
+    proc = run(argv, env)
+    if proc.returncode != 0:
+        raise ToolchainError(f"npm install pnpm@{version} failed: {(proc.stderr or '')[-500:]}")
+    if not (tree / "bin").is_dir():
+        raise ToolchainError(f"npm install pnpm@{version} did not create {tree / 'bin'}")
+    return tree
+
+
+def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fetch,
+            run: Run = run_command, arch: str | None = None) -> Path:
+    """Install a toolchain; return its folder. Already installed: return it unchanged."""
+    final = toolchain_dir(paths, name, version)
+    if (final / "bin").is_dir():
+        return final
+    parent = ensure_dir(final.parent, paths.roots)
+    tmp = ensure_dir(parent / f".tmp-{version}-{new_ulid()}", paths.roots)
+    try:
+        if name == "node":
+            tree = _install_node(paths, version, tmp, fetch, arch or node_arch())
+        else:
+            tree = _install_pnpm(paths, version, tmp, run)
+        if final.exists():  # a leftover without bin/ from an older, broken install
+            remove_tree(final, paths.roots)
+        os.rename(tree, final)
+    finally:
+        remove_tree(tmp, paths.roots)
+    return final
