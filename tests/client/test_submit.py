@@ -180,9 +180,9 @@ def test_reconnects_from_the_last_offset(make_repo):
 def test_gives_up_after_repeated_connection_loss(make_repo):
     remote = FakeRemote([[SSHUnavailable("down")]] * (submit.WATCH_RETRIES + 1))
     io_ = streams()
-    with pytest.raises(SSHUnavailable):
+    with pytest.raises(submit.WatchLost, match=f"mulebox logs {JOB}") as info:
         run_job(PROJECT, "check", make_repo(), remote, io_)
-    assert f"mulebox logs {JOB}" in io_.err.getvalue()
+    assert "keeps running" in str(info.value)  # never "was not run": it was submitted
 
 
 def test_partial_overlap_is_trimmed():

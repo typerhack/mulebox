@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.5.2 - 2026-11-03 - patch
+- Client lease 120 s -> 300 s, and the client keeps reconnecting the live view for up to
+  4 min (24 tries, 10 s apart): a real build machine on Wi-Fi dropped off for ~3 min, which
+  would have cancelled a healthy job.
+- After giving up on the live view, the client says the job keeps running and how to
+  read its result (`WatchLost`), instead of the wrong "the job was not run".
+- docs/phases.md: M1.6 done (real project passes, broken commit fails like locally); M1
+  complete.
+
 ## 0.5.1 - 2026-11-03 - patch
 - Fixes found by running M1.5 / M1.8 / M1.9 on a real build machine:
   - Ctrl-C took up to 2 minutes: closing an ssh pipe waited on a reader thread still

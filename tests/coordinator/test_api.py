@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 
 from mulebox.common.protocol import JobState, MessageType, Outcome
-from mulebox.coordinator import api
+from mulebox.coordinator import api, leases
 
 from .helpers import claimed, queued, request, submit, submit_body
 
@@ -75,7 +75,7 @@ def test_client_heartbeat(store, staging):
     job_id = submit(store, staging)
     reply = call(store, staging, "heartbeat", now=T0 + 50, job_id=job_id, lease="client")
     assert reply.type is MessageType.STATUS_OK
-    assert store.get_job(job_id)["client_lease_until"] == T0 + 50 + 120
+    assert store.get_job(job_id)["client_lease_until"] == T0 + 50 + leases.CLIENT_LEASE_S
     bad = call(store, staging, "heartbeat", job_id=job_id, lease="other")
     assert bad.body["code"] == "bad_request"
 

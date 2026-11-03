@@ -23,15 +23,20 @@ from mulebox.client import report
 from mulebox.client.remote import request
 from mulebox.client.snapshot import Snapshot, current_fingerprint, make_snapshot
 from mulebox.common.config import ProjectConfig
+from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.ssh import SSHUnavailable
 
 CANCEL_WAIT_S = 15.0
 CANCEL_POLL_S = 1.0
-WATCH_RETRIES = 3
-WATCH_RETRY_DELAY_S = 5.0
+WATCH_RETRIES = 24  # with the delay: keep trying for 4 min, inside the 300 s client lease
+WATCH_RETRY_DELAY_S = 10.0
 RUN_JOB_NAME = "run"  # job name sent for `mulebox run`
+
+
+class WatchLost(MuleboxError):
+    """The job was submitted, but the live view could not reconnect to the build machine."""
 
 
 class RemoteLike(Protocol):
@@ -138,15 +143,14 @@ class Watcher:
                     failures = 0
                     if self.handle(msg):
                         return msg.body
-            except SSHUnavailable:
+            except SSHUnavailable as exc:
                 failures += 1
                 if failures > WATCH_RETRIES:
-                    report.status(
-                        self.io.err,
-                        f"lost the connection; job {self.job_id} keeps its outcome on the "
-                        f"build machine. See it with `mulebox logs {self.job_id}`.",
-                    )
-                    raise
+                    raise WatchLost(
+                        f"lost the connection to the build machine ({exc}). Job "
+                        f"{self.job_id} keeps running there; see its result with "
+                        f"`mulebox logs {self.job_id}`."
+                    ) from exc
                 report.status(self.io.err, "connection lost, reconnecting")
                 self.io.sleep(WATCH_RETRY_DELAY_S)
 

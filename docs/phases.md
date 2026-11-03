@@ -14,7 +14,7 @@ How to use it:
 - [x] M0.1 Repo, README, design, roadmap, versioning and project-log rules
 - [x] M0.2 Design reviewed (core, dashboard, multiple machines)
 
-## M1: Core queue, one machine, terminal only
+## M1: Core queue, one machine, terminal only  (done 2026-11-03, 0.5.2)
 Goal: `mulebox check` from a project worktree runs the job on a build machine through the
 queue and returns the same result as running it locally.
 - [x] M1.1 Package skeleton: `pyproject.toml`, `mulebox` CLI entry point, pinned deps,
@@ -31,10 +31,11 @@ queue and returns the same result as running it locally.
       with limits, cleanup. Done when: run, timeout and cancel leave no processes behind.
       Done 2026-11-03 (0.5.1): on a real Ubuntu machine with the systemd executor, run,
       timeout (exit 124), cancel and Ctrl-C leave no units, processes or job folders.
-- [~] M1.6 Client: snapshot with secret excludes, upload, submit, wait, stream, exit code,
+- [x] M1.6 Client: snapshot with secret excludes, upload, submit, wait, stream, exit code,
       Ctrl-C cancel. Done when: a real project passes, and a broken commit fails with the
-      same error as locally. 0.5.0: end to end on one machine (pass, fail with the same
-      exit code, cancel, Ctrl-C in 1 s); a real project on a build machine is open.
+      same error as locally. Done 2026-11-03 (0.5.2): a real Next.js project's full gate
+      passed on a build machine (3 min 42 s); a type error failed with the same tsc
+      message and exit code 2 as locally.
 - [x] M1.7 `mulebox queue`, `logs`, `cancel`, and the live terminal view. (2026-11-03, 0.5.0)
 - [x] M1.8 Install script for a build machine (coordinator + worker, systemd user service).
       Note: Ubuntu does not ship `python3-venv` by default; the script must check for it

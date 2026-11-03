@@ -2,7 +2,7 @@
 
 Clock: the coordinator's `time.time()`, passed in as `now` so tests control it.
 
-- Client lease (120 s, renewed by `heartbeat lease=client` and the watch stream): when it
+- Client lease (300 s, renewed by `heartbeat lease=client` and the watch stream): when it
   runs out the job gets a cancel request; a `queued` job finishes `cancelled` at once,
   an active job is stopped by its worker (heartbeat replies `cancel: true`).
 - Worker lease (120 s per job, renewed by every message of the current attempt): when it
@@ -20,7 +20,7 @@ from mulebox.coordinator.errors import BadRequest, Conflict
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import ACTIVE_STATES, Store
 
-CLIENT_LEASE_S = 120.0
+CLIENT_LEASE_S = 300.0  # survives a few minutes of laptop Wi-Fi loss
 WORKER_LEASE_S = 120.0
 UPLOAD_TIMEOUT_S = 600.0
 

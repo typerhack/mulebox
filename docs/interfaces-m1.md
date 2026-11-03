@@ -14,7 +14,7 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 - **One node in M1.** Worker and coordinator run on the same machine as two systemd user
   services. The worker talks to the coordinator through `CoordinatorLink`; M1 ships the
   local link (direct calls) and the ssh link (for M5).
-- **Leases.** Client lease 120 s, renewed by heartbeats every 20 s on the `watch` stream.
+- **Leases.** Client lease 300 s (was 120 s until 0.5.2), renewed by heartbeats every 20 s on the `watch` stream.
   Worker lease 120 s per job, renewed every 20 s. Clock: coordinator `time.time()`.
 
 ## Filesystem layout on a build machine (inside NodeConfig roots)
@@ -186,7 +186,7 @@ Coordinator:
   `node.slots` as `cluster_slots` (one node in M1). `rpc`/`rpc-upload` exit 4 on an `error`
   reply (the reply line is still on stdout); bad node config exits 2.
 - Uploading jobs ignore the client lease (only the 10 min upload timeout applies); a
-  finished upload starts a fresh 120 s client lease.
+  finished upload starts a fresh client lease.
 - `job_update finished` is a bad_request: a job ends only through `result`. Log chunks are
   accepted in starting/running/cleaning only; an offset past the end is a conflict.
 - Worker replies carry `cancel`; a heartbeat with the current attempt on a finished job

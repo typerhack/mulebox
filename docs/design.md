@@ -67,7 +67,8 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 ## Leases and failure handling
 
 - Client lease: renewed by the waiting client every 20 s, measured on the coordinator's
-  clock; expires after 120 s (agent killed, laptop asleep, Wi-Fi gone) and cancels the job.
+  clock; expires after 300 s (agent killed, laptop asleep, Wi-Fi gone) and cancels the job.
+  Long enough to ride out a few minutes of Wi-Fi loss; the client keeps reconnecting.
 - Worker lease: renewed by the worker while it executes; separate from the client lease.
 - Idempotent submit (client-chosen key): a lost reply never creates a duplicate job.
 - Coordinator restart: reconcile stored jobs against systemd units and Docker resources

@@ -16,7 +16,7 @@ from pathlib import Path
 from mulebox.client import report, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
-from mulebox.client.submit import Streams, Watcher, run_job
+from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
 from mulebox.common.config import (
     ConfigError,
     ProjectConfig,
@@ -71,6 +71,8 @@ def _guarded(handler: Handler) -> Handler:
             return report.EXIT_CANCELLED
         except (ConfigError, SnapshotError, UsageError) as exc:
             return _fail(str(exc), report.EXIT_USAGE)
+        except WatchLost as exc:
+            return _fail(str(exc), report.EXIT_UNREACHABLE)
         except (SSHUnavailable, RemoteTimeout) as exc:
             return _fail(
                 f"build machine unreachable: {exc} The job was not run; "
