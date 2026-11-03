@@ -1,0 +1,35 @@
+"""How jobs appear on the wire: queue_ok job dicts, status_ok and result bodies."""
+
+from typing import Any
+
+from mulebox.common.protocol import JobState
+
+JOB_FIELDS = (
+    "job_id", "project", "job", "branch", "client", "state", "outcome", "exit_code",
+    "worker", "created_at", "started_at", "finished_at",
+)
+
+
+def job_dict(job: dict[str, Any], position: int | None = None) -> dict[str, Any]:
+    """The public job dict (queue_ok entries, result body). `position` only when queued."""
+    data = {name: job[name] for name in JOB_FIELDS}
+    data["position"] = position if job["state"] == JobState.QUEUED else None
+    return data
+
+
+def status_body(job: dict[str, Any], position: int | None = None,
+                **extra: Any) -> dict[str, Any]:
+    """status_ok body: job_id, state, plus outcome/exit_code when finished, position when queued."""
+    body: dict[str, Any] = {"job_id": job["job_id"], "state": job["state"]}
+    if job["state"] == JobState.FINISHED:
+        body["outcome"] = job["outcome"]
+        body["exit_code"] = job["exit_code"]
+    if job["state"] == JobState.QUEUED and position is not None:
+        body["position"] = position
+    body.update(extra)
+    return body
+
+
+def result_body(job: dict[str, Any]) -> dict[str, Any]:
+    """The final `result` line of a watch stream: the job dict plus duration_s."""
+    return {**job_dict(job), "duration_s": job["duration_s"]}
