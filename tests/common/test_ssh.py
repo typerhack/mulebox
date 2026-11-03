@@ -291,7 +291,10 @@ def test_stream_early_stop_reaps_process(fake_ssh, monkeypatch):
     assert next(stream) == b"tick\n"
     stream.close()
     assert procs[0].returncode is not None
-    assert procs[0].stdout.closed and procs[0].stderr.closed
+    # stdout is ours and always closed. stderr may stay open while its reader thread still
+    # waits on it (another process can hold the pipe); reap leaves it to that thread rather
+    # than block the caller (0.5.1). Seen on Linux, where the fake ssh's child outlives it.
+    assert procs[0].stdout.closed
 
 
 def test_ssh_killed_by_a_signal_counts_as_connection_lost():

@@ -90,7 +90,8 @@ def test_queue_listing(store, staging):
     assert [j["job_id"] for j in jobs] == [claim["job_id"], waiting, done]
     assert jobs[1]["position"] == 1 and jobs[0]["position"] is None
     expected = {"job_id", "project", "job", "branch", "client", "state", "outcome",
-                "exit_code", "worker", "position", "created_at", "started_at", "finished_at"}
+                "exit_code", "worker", "position", "created_at", "started_at", "finished_at",
+                "kind"}
     assert set(jobs[0]) == expected
     assert len(call(store, staging, "queue", limit=0).body["jobs"]) == 2
 

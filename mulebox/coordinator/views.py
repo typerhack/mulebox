@@ -6,7 +6,7 @@ from mulebox.common.protocol import JobState
 
 JOB_FIELDS = (
     "job_id", "project", "job", "branch", "client", "state", "outcome", "exit_code",
-    "worker", "created_at", "started_at", "finished_at",
+    "worker", "created_at", "started_at", "finished_at", "kind",
 )
 
 

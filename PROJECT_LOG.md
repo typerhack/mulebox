@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.6.2 - 2026-11-03 - patch
+- Fixes from the first CI run on a mulebox runner (Linux, Python 3.12.3, the minimum):
+  - `test_stream_early_stop_reaps_process` expected stderr closed; since 0.5.1 reap leaves
+    a pipe to its still-waiting reader (another process held it on Linux). Test corrected.
+  - GitHub does not tell hooks the job's result, so a released runner slot showed as
+    "passed". Queue entries now carry `kind`; `mulebox queue` shows runner slots as
+    `released` (the real result is on GitHub).
+
 ## 0.6.1 - 2026-11-03 - patch
 - Repository CI (`.github/workflows/ci.yml`): the test suite on a mulebox runner by default,
   switchable with the `CI_RUNS_ON` repository variable. First real use of M3.

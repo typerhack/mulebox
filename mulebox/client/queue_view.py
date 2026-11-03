@@ -44,6 +44,8 @@ def _cell(text: Any, limit: int | None) -> str:
 def job_row(job: dict[str, Any], now: float, full_ids: bool = False) -> list[str]:
     job_id = str(job.get("job_id", ""))
     state = job.get("outcome") if job.get("state") == "finished" else job.get("state")
+    if job.get("kind") == "runner" and state in ("passed", "failed"):
+        state = "released"  # a GitHub job's slot; its real result is on GitHub
     position = job.get("position") if job.get("state") in WAITING else None
     values = {
         "ID": job_id if full_ids else short_id(job_id),
