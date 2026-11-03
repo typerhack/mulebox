@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.6.3 - 2026-11-03 - patch
+- Faster repository CI: tests run in parallel (`pytest-xdist`, `-n auto`; 23 s -> 5 s on
+  the laptop), the venv is kept in the runner tool cache and rebuilt only when
+  `pyproject.toml` changes. A parametrized protocol test now collects in a fixed order
+  (it iterated a set, which xdist rejects).
+
 ## 0.6.2 - 2026-11-03 - patch
 - Fixes from the first CI run on a mulebox runner (Linux, Python 3.12.3, the minimum):
   - `test_stream_early_stop_reaps_process` expected stderr closed; since 0.5.1 reap leaves

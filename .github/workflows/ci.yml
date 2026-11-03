@@ -19,9 +19,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Python environment
+        # The venv lives in the runner's tool cache, so a self-hosted runner keeps it between
+        # runs; dependencies are reinstalled only when pyproject.toml changes.
         run: |
           python3 --version
-          python3 -m venv .venv
-          .venv/bin/python -m pip install --disable-pip-version-check -q -e '.[dev]'
+          venv="${RUNNER_TOOL_CACHE:-$RUNNER_TEMP}/mulebox-ci/venv"
+          stamp="$venv/.mulebox-deps"
+          want="$(sha256sum pyproject.toml | cut -d' ' -f1)"
+          if [ "$(cat "$stamp" 2>/dev/null)" != "$want" ]; then
+            python3 -m venv "$venv"
+            "$venv/bin/python" -m pip install --disable-pip-version-check -q -e '.[dev]'
+            echo "$want" > "$stamp"
+          else
+            "$venv/bin/python" -m pip install --disable-pip-version-check -q \
+              --no-deps --no-build-isolation -e .
+          fi
+          echo "VENV=$venv" >> "$GITHUB_ENV"
       - name: Tests (includes the file-size check)
-        run: .venv/bin/python -m pytest
+        run: '"$VENV/bin/python" -m pytest -n auto'
