@@ -1,0 +1,83 @@
+"""The FIFO queue: atomic claims, queue positions and the queue listing.
+
+A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
+claiming at once can never get the same job, and the cluster-wide slot limit holds.
+"""
+
+import sqlite3
+import time
+from typing import Any
+
+from mulebox.common.ids import new_id
+from mulebox.common.protocol import JobState
+from mulebox.coordinator import store as st
+from mulebox.coordinator.leases import WORKER_LEASE_S
+from mulebox.coordinator.store import ACTIVE_STATES, Store
+
+DEFAULT_FINISHED_LIMIT = 20
+
+_ACTIVE_SQL = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
+_QUEUE_ORDER = "queued_at, seq"
+
+
+def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
+          free_slots: int, cluster_slots: int = 1, *, now: float | None = None
+          ) -> dict[str, Any] | None:
+    """Give `worker` the oldest queued job whose needs it meets, or None.
+
+    None when the worker has no free slot, when `cluster_slots` jobs are already in
+    `starting|running|cleaning`, or when no queued job fits. The claimed job moves to
+    `starting` with a fresh attempt id and worker lease.
+    """
+    now = time.time() if now is None else now
+    have = set(capabilities)
+    with store.write() as conn:
+        st.upsert_worker(conn, worker, list(capabilities), free_slots, now)
+        if free_slots < 1 or active_count(conn) >= cluster_slots:
+            return None
+        for job in st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), _QUEUE_ORDER):
+            if set(job["needs"]) <= have:
+                return st.transition(
+                    conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
+                    worker_lease_until=now + WORKER_LEASE_S, started_at=now,
+                )
+    return None
+
+
+def active_count(conn: sqlite3.Connection) -> int:
+    return conn.execute(f"SELECT COUNT(*) FROM jobs WHERE {_ACTIVE_SQL}").fetchone()[0]
+
+
+def position(conn: sqlite3.Connection, job: dict[str, Any]) -> int | None:
+    """1-based place of a queued job in the line; None for any other state."""
+    if job["state"] != JobState.QUEUED:
+        return None
+    ahead = conn.execute(
+        "SELECT COUNT(*) FROM jobs WHERE state = ? AND (queued_at < ? OR "
+        "(queued_at = ? AND seq < ?))",
+        (JobState.QUEUED.value, job["queued_at"], job["queued_at"], job["seq"]),
+    ).fetchone()[0]
+    return ahead + 1
+
+
+def listing(conn: sqlite3.Connection, finished_limit: int = DEFAULT_FINISHED_LIMIT
+            ) -> list[tuple[dict[str, Any], int | None]]:
+    """(job, position) pairs: active jobs, then queued in order, uploading, recent finished."""
+    active = st.select_jobs(conn, _ACTIVE_SQL, (), "started_at, seq")
+    queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), _QUEUE_ORDER)
+    uploading = st.select_jobs(conn, "state = ?", (JobState.UPLOADING.value,), "seq")
+    finished = st.select_jobs(
+        conn, "state = ?", (JobState.FINISHED.value,), "finished_at DESC, seq DESC",
+        limit=finished_limit,
+    )
+    rows: list[tuple[dict[str, Any], int | None]] = [(job, None) for job in active]
+    rows += [(job, index + 1) for index, job in enumerate(queued)]
+    rows += [(job, None) for job in uploading + finished]
+    return rows
+
+
+def claim_body(job: dict[str, Any]) -> dict[str, Any]:
+    """claim_ok body (docs/interfaces-m1.md, Wire usage)."""
+    names = ("job_id", "attempt_id", "project", "job", "argv", "fingerprint", "base_commit",
+             "timeout_min", "setup", "toolchain", "needs")
+    return {name: job[name] for name in names}
