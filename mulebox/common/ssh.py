@@ -71,6 +71,23 @@ def ssh_base_argv(target: str, connect_timeout_s: int = 10) -> list[str]:
     ]
 
 
+def tunnel_argv(target: str, local_port: int, remote_port: int,
+                connect_timeout_s: int = 10) -> list[str]:
+    """ssh argv for a local port forward and nothing else (`mulebox dashboard open`).
+
+    Both ends bind to 127.0.0.1: `-L 127.0.0.1:<local>:127.0.0.1:<remote>`, `-N` (no
+    remote command), and `ExitOnForwardFailure` so a busy local port fails at once.
+    """
+    for name, port in (("local", local_port), ("remote", remote_port)):
+        if isinstance(port, bool) or not isinstance(port, int) or not 1 <= port <= 65535:
+            raise SSHError(f"{name} port must be 1..65535, got {port!r}")
+    base = ssh_base_argv(target, connect_timeout_s)
+    return [
+        *base[:-1], "-N", "-o", "ExitOnForwardFailure=yes",
+        "-L", f"127.0.0.1:{local_port}:127.0.0.1:{remote_port}", target,
+    ]
+
+
 def run_remote(
     target: str,
     argv: Sequence[str],

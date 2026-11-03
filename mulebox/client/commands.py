@@ -41,27 +41,27 @@ def register(sub: argparse._SubParsersAction) -> None:
     """Add this package's subcommands. Each sets func=handler(args) -> int."""
     check = sub.add_parser("check", help="run a job from .mulebox.yml on a build machine")
     check.add_argument("job", nargs="?", default="check", help="job name (default: check)")
-    check.set_defaults(func=_guarded(_check))
+    check.set_defaults(func=guarded(_check))
 
     run = sub.add_parser("run", help="run an ad-hoc command on a build machine")
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
-    run.set_defaults(func=_guarded(_run))
+    run.set_defaults(func=guarded(_run))
 
     queue = sub.add_parser("queue", help="list running, waiting and recent jobs")
     queue.add_argument("--watch", action="store_true", help="full-screen live view")
-    queue.set_defaults(func=_guarded(_queue))
+    queue.set_defaults(func=guarded(_queue))
 
     logs = sub.add_parser("logs", help="show a job's log")
     logs.add_argument("job_id")
     logs.add_argument("-f", "--follow", action="store_true", help="follow until it finishes")
-    logs.set_defaults(func=_guarded(_logs))
+    logs.set_defaults(func=guarded(_logs))
 
     cancel = sub.add_parser("cancel", help="cancel a job")
     cancel.add_argument("job_id")
-    cancel.set_defaults(func=_guarded(_cancel))
+    cancel.set_defaults(func=guarded(_cancel))
 
 
-def _guarded(handler: Handler) -> Handler:
+def guarded(handler: Handler) -> Handler:
     """Turn expected errors into one clear stderr line and the contract's exit code."""
 
     def run(args: argparse.Namespace) -> int:

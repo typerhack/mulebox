@@ -8,6 +8,9 @@ from __future__ import annotations
 from typing import Any, TextIO
 
 from mulebox.common.protocol import Outcome
+from mulebox.common.status import duration_of
+
+__all__ = ["duration_of"]  # re-exported: the shared status model owns it
 
 EXIT_USAGE = 2  # usage or config error
 EXIT_UNREACHABLE = 3  # build machine unreachable
@@ -39,17 +42,6 @@ def exit_code_for(result: dict[str, Any]) -> int:
     if outcome == Outcome.CANCELLED:
         return EXIT_CANCELLED
     return EXIT_INTERRUPTED  # interrupted, or an outcome this client does not know
-
-
-def duration_of(job: dict[str, Any]) -> float | None:
-    """`duration_s` if given, else finished_at - started_at."""
-    value = job.get("duration_s")
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return float(value)
-    start, end = job.get("started_at"), job.get("finished_at")
-    if isinstance(start, (int, float)) and isinstance(end, (int, float)):
-        return max(0.0, float(end) - float(start))
-    return None
 
 
 def format_duration(seconds: float | None) -> str:
