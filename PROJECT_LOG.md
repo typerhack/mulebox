@@ -8,6 +8,19 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.4.0 - 2026-11-03 - minor
+- M1.3 `mulebox/common/safepath.py` (+ `roots.py`, `mounts.py`): the only code that
+  deletes. Roots validated once (no `/`, home, system folders or overlaps; device and inode
+  recorded). Deletion and creation anchored on directory descriptors with `O_NOFOLLOW`;
+  the walk never follows symlinks, never leaves the root's mount (Linux mount ids from
+  `/proc/self/mountinfo` and fdinfo, macOS `st_dev` + `ismount`), refuses mount points.
+  Permission failures raise `RemovalDenied`; no escalation in this module.
+- Tests cover symlink swaps mid-check and mid-walk, simulated mounts, prefix lookalikes,
+  fd leaks; also run on Linux in a container.
+- Known gaps: a directory renamed out of the root by someone with write access mid-delete;
+  same-device mounts undetectable on macOS; real mounts only simulated in tests.
+- README: rerun the editable install after a VERSION bump.
+
 ## 0.3.0 - 2026-11-03 - minor
 - M1.2 shared modules in `mulebox/common/`, built in parallel to docs/interfaces.md:
   - `ids.py`: prefixed ULIDs (`job-...`), validation, timestamps.

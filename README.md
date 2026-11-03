@@ -47,6 +47,9 @@ python3 -m venv .venv
 .venv/bin/python tools/check_line_counts.py
 ```
 
+After a VERSION bump, rerun the `pip install -e` step: the installed metadata keeps the
+old version until then and the version test fails.
+
 Rules for contributors and agents: [AGENTS.md](AGENTS.md). Every change bumps
 [VERSION](VERSION) and adds an entry to [PROJECT_LOG.md](PROJECT_LOG.md).
 

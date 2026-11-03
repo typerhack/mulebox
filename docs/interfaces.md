@@ -118,3 +118,16 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
 - redact: also covers `ghu_`/`ghr_`, `ASIA` keys, `Authorization: Basic/Token`,
   `api_key=`, JSON `"password": "..."`; leans to over-redaction. StreamRedactor releases
   complete lines, holds back (longest secret - 1), holds PEM blocks up to 32 KiB.
+
+## Decisions made in M1.3 (0.4.0)
+- Split: `roots.py` (errors, `Roots`, `resolve_inside`), `mounts.py` (mount detection),
+  `safepath.py` (public API; re-exports everything). Import from `safepath`.
+- `RemovalDenied(UnsafePath)` for permission failures, so callers decide on escalation by
+  type. `PathOutsideRoots` only for paths outside every root; everything else `UnsafePath`.
+- Roots: overlapping/nested roots rejected; a root may not be or contain `/`, home or
+  system folders, nor sit in `/dev`, `/proc`, `/sys`. Device and inode recorded and
+  rechecked on every operation.
+- `remove_tree` resolves symlinks in the parent path, never the final entry; may add u+rwx
+  to read-only directories we own inside the tree (never the root or the target's parent).
+- `ensure_dir`: path spelled under `Roots.paths`, no `..`, no symlink below the root.
+- Linux: an unreadable mount table fails closed.
