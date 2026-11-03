@@ -22,11 +22,17 @@ from mulebox.common import ssh
 from mulebox.common.config import ClientConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
-from mulebox.common.protocol import Message, MessageType, ProtocolError, decode, encode
+from mulebox.common.protocol import (
+    MAX_LINE_BYTES,
+    Message,
+    MessageType,
+    ProtocolError,
+    decode,
+    encode,
+)
 
 HEARTBEAT_S = 20.0
 CALL_TIMEOUT_S = 120.0
-MAX_LINE_BYTES = 1024 * 1024  # the protocol line cap
 _READ_LIMIT = MAX_LINE_BYTES + 3  # one byte over the cap (plus CRLF) is enough to tell
 
 

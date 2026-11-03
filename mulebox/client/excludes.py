@@ -27,6 +27,8 @@ BUILTIN_EXCLUDES: tuple[str, ...] = (
     ".env.*",
     "secrets/",
     ".npmrc",
+    ".envrc",
+    ".netrc",
     "*.pem",
     "*.key",
     "id_rsa*",

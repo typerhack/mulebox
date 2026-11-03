@@ -8,6 +8,27 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.5.0 - 2026-11-03 - minor
+- M1.4 coordinator (`mulebox/coordinator/`): SQLite store (WAL, `BEGIN IMMEDIATE`),
+  atomic claim with cluster slots, idempotent submit, client and worker leases, restart
+  recovery, upload staging with hash check and size cap, logs, `rpc` / `rpc-upload` /
+  `rpc-download`, the watch stream, `coordinator serve`.
+- M1.5 worker (`mulebox/worker/`): claim loop, safe workspace extraction plus a local git
+  commit, systemd and subprocess executors, log tailing through the redactor, heartbeats
+  and cancel, recovery of orphan units and job folders, node/pnpm toolchain install.
+- M1.6 / M1.7 client (`mulebox/client/`): snapshot with built-in secret excludes, upload,
+  submit, live log, exit codes like a local run, Ctrl-C cancel, stale warning, `queue`
+  (with a live view), `logs`, `cancel`.
+- M1.8 install (`install/`, `tools/deploy.sh`, docs/install.md): build-machine install as
+  two systemd user services; never deletes, never uses sudo.
+- Integration: worker local link wired to the coordinator; one shared line cap
+  (`protocol.MAX_LINE_BYTES`); ssh helpers made public instead of reached into; worker
+  heartbeat 3 s so a cancel lands in seconds; finished status replies carry the duration;
+  `.envrc` and `.netrc` added to the secret excludes.
+- Verified end to end on one machine with a fake ssh: pass, fail (same exit code),
+  `mulebox cancel`, Ctrl-C (exit 130 in 1 s, no processes or folders left).
+- docs/interfaces-m1.md: decisions made during the build.
+
 ## 0.4.1 - 2026-11-03 - patch
 - docs/interfaces-m1.md: contract for the coordinator, worker, client and install script
   (M1.4 - M1.8), so they can be built in parallel. M1 simplifications recorded there (full

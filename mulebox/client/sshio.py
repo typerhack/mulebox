@@ -23,13 +23,13 @@ from mulebox.common import ssh
 
 def ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int) -> list[str]:
     """The exact command `common.ssh` runs (validated the same way)."""
-    return ssh._ssh_command(target, argv, connect_timeout_s)
+    return ssh.ssh_command(target, argv, connect_timeout_s)
 
 
 def check_exit(target: str, argv: Sequence[str], code: int, stderr: bytes) -> None:
     """Raise the `common.ssh` error for a non-zero exit (255: SSHUnavailable)."""
     if code != 0:
-        ssh._raise_for_exit(target, argv, code, stderr)
+        ssh.raise_for_exit(target, argv, code, stderr)
 
 
 def run_with_file(
@@ -47,7 +47,7 @@ def run_with_file(
                 command, stdin=stdin, capture_output=True, start_new_session=True
             )
         except OSError as exc:
-            raise ssh._cannot_start(exc) from exc
+            raise ssh.cannot_start(exc) from exc
     if proc.returncode == 255:
         check_exit(target, argv, 255, proc.stderr)
     return ssh.RemoteResult(proc.returncode, proc.stdout or b"", proc.stderr or b"")
@@ -68,10 +68,10 @@ class Duplex:
                 start_new_session=True,
             )
         except OSError as exc:
-            raise ssh._cannot_start(exc) from exc
+            raise ssh.cannot_start(exc) from exc
         self._lock = threading.Lock()
         self._stderr = bytearray()
-        self._drain = threading.Thread(target=ssh._drain, args=(self.proc.stderr, self._stderr))
+        self._drain = threading.Thread(target=ssh.drain_stream, args=(self.proc.stderr, self._stderr))
         self._drain.daemon = True
         self._drain.start()
 
@@ -117,4 +117,4 @@ class Duplex:
     def close(self) -> None:
         """Stop the process (if still running) and release every pipe; never raises."""
         self.close_stdin()
-        ssh._reap(self.proc, [self._drain])
+        ssh.reap(self.proc, [self._drain])

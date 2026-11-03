@@ -76,20 +76,16 @@ def _list(args: argparse.Namespace) -> int:
 def open_link(node: NodeConfig, paths: NodePaths) -> Any:
     """SSH link to a remote coordinator, or the local link to the store on this machine.
 
-    The local store and staging objects come from the coordinator package (M1.4); this is
-    the one place that builds them for the worker. Integrator: adjust the two constructor
-    calls below to the coordinator's final signatures.
+    The local store and staging come from `coordinator.node.open_local`.
     """
     from mulebox.worker.link import LocalLink, SSHLink
 
     if node.coordinator is not None:
         return SSHLink(node.coordinator, DEFAULT_REMOTE_BIN)
-    from mulebox.coordinator.staging import Staging
-    from mulebox.coordinator.store import Store
+    from mulebox.coordinator.node import open_local
 
-    store = Store(paths.staging / "state" / "mulebox.db")
-    store.open()
-    return LocalLink(store, Staging(paths.staging, paths.roots))
+    store, staging = open_local(node)
+    return LocalLink(store, staging, cluster_slots=node.slots)
 
 
 def _executor() -> Any:

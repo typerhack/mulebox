@@ -24,15 +24,19 @@ queue and returns the same result as running it locally.
 - [x] M1.2 `common/`: config, protocol (versioned JSON), ssh, ids, log, redact. (2026-11-03, 0.3.0)
 - [x] M1.3 `common/safepath.py`: roots, symlink and mount checks, descriptor-anchored delete. (2026-11-03, 0.4.0)
       Done when: tests cover escapes, mounts, races and relative paths.
-- [ ] M1.4 Coordinator: SQLite store, states, atomic claim, leases, idempotent submit,
+- [x] M1.4 Coordinator: SQLite store, states, atomic claim, leases, idempotent submit,
       restart reconciliation. Done when: concurrency, lease-expiry and restart tests pass.
-- [ ] M1.5 Worker: claim loop, workspace from snapshot + local clone, systemd-run executor
+      Done 2026-11-03 (0.5.0): threads and processes claim at once, no double claims.
+- [~] M1.5 Worker: claim loop, workspace from snapshot + local clone, systemd-run executor
       with limits, cleanup. Done when: run, timeout and cancel leave no processes behind.
-- [ ] M1.6 Client: snapshot with secret excludes, upload, submit, wait, stream, exit code,
+      0.5.0: passes with the subprocess executor (tests + local end-to-end run);
+      the systemd executor is still to be checked on a real Linux machine.
+- [~] M1.6 Client: snapshot with secret excludes, upload, submit, wait, stream, exit code,
       Ctrl-C cancel. Done when: a real project passes, and a broken commit fails with the
-      same error as locally.
-- [ ] M1.7 `mulebox queue`, `logs`, `cancel`, and the live terminal view.
-- [ ] M1.8 Install script for a build machine (coordinator + worker, systemd user service).
+      same error as locally. 0.5.0: end to end on one machine (pass, fail with the same
+      exit code, cancel, Ctrl-C in 1 s); a real project on a build machine is open.
+- [x] M1.7 `mulebox queue`, `logs`, `cancel`, and the live terminal view. (2026-11-03, 0.5.0)
+- [~] M1.8 Install script for a build machine (coordinator + worker, systemd user service).
       Note: Ubuntu does not ship `python3-venv` by default; the script must check for it
       and say how to install it. Run the test suite on the machine's Python (3.12 minimum).
 - [ ] M1.9 Failure drills: machine unreachable, network drop mid-job, daemon restart

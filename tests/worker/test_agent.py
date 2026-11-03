@@ -7,7 +7,7 @@ import pytest
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import MessageType
 from mulebox.worker import workspace
-from mulebox.worker.agent import Agent
+from mulebox.worker.agent import HEARTBEAT_S, Agent
 from mulebox.worker.executor import RunSpec, SubprocessExecutor, group_alive, unit_name
 
 from .fakes import claim_body
@@ -110,7 +110,7 @@ def test_timeout_leaves_no_processes(agent, fake_link, paths):
 def test_cancel_via_heartbeat_leaves_no_processes(agent, fake_link, clock, paths):
     job_id = submit(fake_link, "bash", "-c", LONG)
     pgid = _running_pgid(agent, fake_link)
-    clock.now += 19
+    clock.now += HEARTBEAT_S - 1
     agent.step()
     assert not fake_link.of_type(MessageType.HEARTBEAT)
     clock.now += 2
@@ -126,8 +126,8 @@ def test_cancel_via_heartbeat_leaves_no_processes(agent, fake_link, clock, paths
 def test_heartbeats_keep_the_job_running(agent, fake_link, clock):
     submit(fake_link, "bash", "-c", "echo child; sleep 300")
     _running_pgid(agent, fake_link)
-    for _ in range(10):  # 200 s of fake time, heartbeats answered
-        clock.now += 20
+    for _ in range(10):  # ten heartbeat intervals of fake time, heartbeats answered
+        clock.now += HEARTBEAT_S
         agent.step()
     assert len(fake_link.of_type(MessageType.HEARTBEAT)) == 10
     assert agent.active

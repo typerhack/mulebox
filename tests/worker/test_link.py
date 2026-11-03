@@ -17,7 +17,7 @@ def fake_api(monkeypatch):
     calls = []
     api = types.ModuleType("mulebox.coordinator.api")
 
-    def handle(store, staging, msg, now):
+    def handle(store, staging, msg, now, **_kw):
         calls.append((store, staging, msg, now))
         if msg.body.get("boom"):
             raise RuntimeError("database is locked")
@@ -47,8 +47,8 @@ def test_local_link_wraps_failures(fake_api):
 
 def test_local_link_fetch_snapshot(tmp_path):
     class Staging:
-        def download(self, job_id, dest):
-            dest.write_bytes(job_id.encode())
+        def copy_upload(self, job_id, out):
+            return out.write(job_id.encode())
 
     LocalLink(None, Staging()).fetch_snapshot("job-1", tmp_path / "s.tar.gz")
     assert (tmp_path / "s.tar.gz").read_bytes() == b"job-1"

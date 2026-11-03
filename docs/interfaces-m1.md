@@ -152,7 +152,7 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
 
 - `snapshot.py`: `make_snapshot(root: Path, extra_excludes) -> Snapshot(path, sha256,
   fingerprint, base_commit, branch, files)`: `git ls-files -co --exclude-standard -z`;
-  built-in excludes `.secret/`, `.env`, `.env.*`, `secrets/`, `.npmrc`, `*.pem`, `*.key`,
+  built-in excludes `.secret/`, `.env`, `.env.*`, `secrets/`, `.npmrc`, `.envrc`, `.netrc`, `*.pem`, `*.key`,
   `id_rsa*`, `id_ed25519*`, `.mulebox/`; symlinks stored as links (never followed); tar.gz
   to a temp file. `fingerprint`: sha256 over sorted (path, mode, sha256 of content or link
   target). `current_fingerprint(root, excludes)` for the stale check.
@@ -176,3 +176,44 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
 - `tools/deploy.sh <ssh-target>` (run on the laptop): builds a wheel, copies it and
   `install.sh` with `scp`, runs the install, prints `mulebox --version` from the machine.
 - `docs/install.md`: user steps.
+
+## Decisions made during the build (0.5.0)
+
+Coordinator:
+- Extra modules: `errors`, `validate`, `views`, `worker_api`, `uploads`, `watch`, `lineio`,
+  `context`, `node` (`open_local(node) -> (Store, Staging)`, used by the worker's local link).
+- `api.handle(store, staging, msg, now, *, cluster_slots=1)` never raises. `rpc` passes
+  `node.slots` as `cluster_slots` (one node in M1). `rpc`/`rpc-upload` exit 4 on an `error`
+  reply (the reply line is still on stdout); bad node config exits 2.
+- Uploading jobs ignore the client lease (only the 10 min upload timeout applies); a
+  finished upload starts a fresh 120 s client lease.
+- `job_update finished` is a bad_request: a job ends only through `result`. Log chunks are
+  accepted in starting/running/cleaning only; an offset past the end is a conflict.
+- Worker replies carry `cancel`; a heartbeat with the current attempt on a finished job
+  gets `cancel: true`. `status_ok` for finished jobs carries `duration_s`.
+- `watch` also re-sends `status_ok` when the queue position changes.
+
+Worker:
+- `systemd-run` without `--collect` (it would unload failed units and lose the exit code
+  and `Result=timeout`); failed units are read, then `reset-failed`.
+- `Executor.timed_out(handle)`; `NodePaths.from_config(node.roots)` names the roots.
+- Heartbeat every 3 s (not 20 s): it is also how fast a cancel is noticed. Lease stays 120 s.
+- Job script: `bash -c "set -e\n<setup>\n<shlex.join(argv)>"`.
+- Coordinator unreachable for 120 s: stop, clean, report `interrupted` once it answers.
+- `SSHLink.fetch_snapshot` holds the archive in memory (streaming is a later item).
+
+Client:
+- Symlinks that are absolute or leave the project are skipped (extraction would reject
+  them) and reported. Excludes ignore case. Archive members carry no owner names.
+- `mulebox run` also sends setup/toolchain/needs/timeout_min; its job name is `run`.
+- The watch stream reconnects up to 3 times, 5 s apart, then exits 3.
+- `RemoteTimeout` exits 3. The ssh processes run in their own session so Ctrl-C reaches
+  only mulebox, which then sends `cancel`.
+
+Shared: `protocol.MAX_LINE_BYTES` (1 MiB) is the one line cap; `common.ssh` exposes
+`ssh_command`, `raise_for_exit`, `cannot_start`, `drain_stream`, `reap` for the client's
+streaming upload and watch; `config_reader.NAME_RE` is the one name pattern.
+
+Install: deploy copies the wheel, `install.sh`, `node.toml.example` and `systemd/` to
+`~/.mulebox/tmp/`; services follow the roles in node.toml; a replaced venv is moved to
+`~/.mulebox/tmp/venv-old-*` (never deleted by the script).

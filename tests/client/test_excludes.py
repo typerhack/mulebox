@@ -21,6 +21,8 @@ SECRET = [
     ".ENV",
     "X.PEM",
     ".env/inside",
+    ".envrc",
+    "sub/.netrc",
 ]
 KEPT = [
     "src/app.py",
@@ -28,7 +30,6 @@ KEPT = [
     "environment.md",
     "secrets.md",
     "docs/secret.md",
-    ".envrc",
     "keys.json",
     "pem.txt",
     "src/key.py",

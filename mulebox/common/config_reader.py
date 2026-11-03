@@ -16,7 +16,7 @@ import yaml
 from mulebox.common.errors import MuleboxError
 
 REQUIRED: Any = object()
-_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
 class ConfigError(MuleboxError):
@@ -66,7 +66,7 @@ class Reader:
 
     def name(self, key: str) -> str:
         value = self.text(key)
-        if not _NAME_RE.fullmatch(value):
+        if not NAME_RE.fullmatch(value):
             self.fail(key, "may only contain letters, digits, '.', '_' and '-'")
         return value
 

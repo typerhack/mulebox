@@ -2,10 +2,8 @@
 
 from typing import BinaryIO, TextIO
 
-from mulebox.common.protocol import Message, MessageType, encode
+from mulebox.common.protocol import MAX_LINE_BYTES, Message, MessageType, encode
 from mulebox.coordinator.errors import TooLarge
-
-MAX_LINE_BYTES = 1 << 20  # 1 MiB per request line, newline included
 
 
 def read_line(stream: BinaryIO) -> bytes | None:

@@ -20,6 +20,7 @@ from typing import Any
 from mulebox.common.errors import MuleboxError
 
 PROTOCOL_VERSION = 1
+MAX_LINE_BYTES = 1 << 20  # 1 MiB per message line, newline included; readers enforce it
 
 
 class ProtocolError(MuleboxError):

@@ -12,7 +12,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 
-from mulebox.common.config_reader import _NAME_RE
+from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import is_valid_id
 from mulebox.common.safepath import Roots, UnsafePath
 
@@ -34,7 +34,7 @@ class NodePaths:
         return cls(roots=checked, **named)
 
     def project_dir(self, project: str) -> Path:
-        if not isinstance(project, str) or not _NAME_RE.fullmatch(project):
+        if not isinstance(project, str) or not NAME_RE.fullmatch(project):
             raise UnsafePath(f"project name {project!r} is not a safe folder name")
         return self.jobs / project
 

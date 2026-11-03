@@ -46,15 +46,17 @@ def remote_command(remote_bin: str) -> str:
 
 
 class LocalLink:
-    def __init__(self, store: Any, staging: Any) -> None:
+    def __init__(self, store: Any, staging: Any, cluster_slots: int = 1) -> None:
         self.store = store
         self.staging = staging
+        self.cluster_slots = cluster_slots
 
     def call(self, msg: Message) -> Message:
         from mulebox.coordinator import api  # lazy: see the module docstring
 
         try:
-            return api.handle(self.store, self.staging, msg, time.time())
+            return api.handle(self.store, self.staging, msg, time.time(),
+                              cluster_slots=self.cluster_slots)
         except MuleboxError as exc:
             raise LinkError(f"coordinator request {msg.type} failed: {exc}") from exc
         except Exception as exc:  # sqlite3 errors (locked, disk) and the like
@@ -62,7 +64,8 @@ class LocalLink:
 
     def fetch_snapshot(self, job_id: str, dest: Path) -> None:
         try:
-            self.staging.download(job_id, dest)
+            with open(dest, "xb") as out:
+                self.staging.copy_upload(job_id, out)
         except Exception as exc:
             raise LinkError(f"cannot read the snapshot of {job_id}: {exc}") from exc
 
@@ -100,6 +103,5 @@ class SSHLink:
 
 
 def protocol_line_cap() -> int:
-    """`MAX_LINE_BYTES` from protocol.py once it exists there; 1 MiB per the contract."""
-    return getattr(protocol, "MAX_LINE_BYTES", 1024 * 1024)
+    return protocol.MAX_LINE_BYTES
 

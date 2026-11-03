@@ -5,7 +5,7 @@ injected clock, a fake link and the subprocess executor. `serve()` runs recovery
 calls `step` once per second until asked to stop.
 
 Per job: fetch snapshot, prepare the workspace, `job_update running`, start the unit, then
-each step ship new log text, poll the process, heartbeat every 20 s. The job is stopped on
+each step ship new log text, poll the process, heartbeat every 3 s. The job is stopped on
 `cancel: true`, when the coordinator says the job is over, or when no reply came for
 120 s (the worker lease length). After it ends: flush the log, `job_update cleaning`,
 remove the workspace, `result`. Cleanup happens even while the coordinator is
@@ -35,7 +35,7 @@ from mulebox.worker.paths import NodePaths
 
 LOG = get_logger("worker.agent")
 POLL_S = 1.0
-HEARTBEAT_S = 20.0
+HEARTBEAT_S = 3.0  # also how fast a cancel is noticed; the lease is still 120 s
 LEASE_S = 120.0
 RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 

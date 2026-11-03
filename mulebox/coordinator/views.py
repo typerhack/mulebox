@@ -19,11 +19,12 @@ def job_dict(job: dict[str, Any], position: int | None = None) -> dict[str, Any]
 
 def status_body(job: dict[str, Any], position: int | None = None,
                 **extra: Any) -> dict[str, Any]:
-    """status_ok body: job_id, state, plus outcome/exit_code when finished, position when queued."""
+    """status_ok body: job_id, state, plus outcome/exit_code/duration_s when finished, position when queued."""
     body: dict[str, Any] = {"job_id": job["job_id"], "state": job["state"]}
     if job["state"] == JobState.FINISHED:
         body["outcome"] = job["outcome"]
         body["exit_code"] = job["exit_code"]
+        body["duration_s"] = job["duration_s"]
     if job["state"] == JobState.QUEUED and position is not None:
         body["position"] = position
     body.update(extra)

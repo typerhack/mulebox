@@ -86,7 +86,7 @@ def run_remote(
     and RemoteError on another non-zero exit unless check is False (then the result is
     returned with its exit code).
     """
-    command = _ssh_command(target, argv, connect_timeout_s)
+    command = ssh_command(target, argv, connect_timeout_s)
     io_kwargs: dict = {"input": stdin} if stdin is not None else {"stdin": subprocess.DEVNULL}
     try:
         proc = subprocess.run(command, capture_output=True, timeout=timeout_s, **io_kwargs)
@@ -96,10 +96,10 @@ def run_remote(
             "the local ssh process was killed"
         ) from exc
     except OSError as exc:
-        raise _cannot_start(exc) from exc
+        raise cannot_start(exc) from exc
     result = RemoteResult(proc.returncode, proc.stdout or b"", proc.stderr or b"")
     if result.exit_code == 255 or (check and result.exit_code != 0):
-        _raise_for_exit(target, argv, result.exit_code, result.stderr)
+        raise_for_exit(target, argv, result.exit_code, result.stderr)
     return result
 
 
@@ -116,7 +116,7 @@ def stream_remote(
     on a thread so a chatty remote never blocks. The process is always reaped, also when the
     consumer stops early (close the iterator, or let it be garbage collected).
     """
-    command = _ssh_command(target, argv, connect_timeout_s)
+    command = ssh_command(target, argv, connect_timeout_s)
     return _stream(command, target, list(argv), stdin)
 
 
@@ -131,9 +131,9 @@ def _stream(
             stderr=subprocess.PIPE,
         )
     except OSError as exc:
-        raise _cannot_start(exc) from exc
+        raise cannot_start(exc) from exc
     stderr_buf = bytearray()
-    threads = [_start_thread(_drain, proc.stderr, stderr_buf)]
+    threads = [_start_thread(drain_stream, proc.stderr, stderr_buf)]
     if stdin is not None:
         threads.append(_start_thread(_feed, proc.stdin, stdin))
     try:
@@ -142,12 +142,12 @@ def _stream(
             yield line
         proc.wait()
     finally:
-        _reap(proc, threads)
+        reap(proc, threads)
     if proc.returncode != 0:
-        _raise_for_exit(target, argv, proc.returncode, bytes(stderr_buf))
+        raise_for_exit(target, argv, proc.returncode, bytes(stderr_buf))
 
 
-def _ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int) -> list[str]:
+def ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int) -> list[str]:
     if isinstance(argv, (str, bytes)):
         raise SSHError("remote argv must be a sequence of strings, not a single string")
     argv = list(argv)
@@ -170,7 +170,7 @@ def _check_target(target: str) -> None:
         raise SSHError(f"ssh target {target!r} contains whitespace or control characters")
 
 
-def _raise_for_exit(target: str, argv: Sequence[str], code: int, stderr: bytes) -> None:
+def raise_for_exit(target: str, argv: Sequence[str], code: int, stderr: bytes) -> None:
     detail = _stderr_excerpt(stderr)
     suffix = f": {detail}" if detail else ""
     if code == 255:
@@ -192,7 +192,7 @@ def _stderr_excerpt(stderr: bytes) -> str:
     return text
 
 
-def _cannot_start(exc: OSError) -> SSHUnavailable:
+def cannot_start(exc: OSError) -> SSHUnavailable:
     return SSHUnavailable(f"cannot start ssh ({SSH_BINARY!r}): {exc}. Is OpenSSH installed?")
 
 
@@ -202,7 +202,7 @@ def _start_thread(target, *args) -> threading.Thread:
     return thread
 
 
-def _drain(stream: IO[bytes], keep: bytearray) -> None:
+def drain_stream(stream: IO[bytes], keep: bytearray) -> None:
     try:
         for chunk in iter(lambda: stream.read1(65536), b""):
             keep.extend(chunk)
@@ -224,7 +224,7 @@ def _feed(stream: IO[bytes], data: bytes) -> None:
             pass
 
 
-def _reap(proc: subprocess.Popen, threads: list[threading.Thread]) -> None:
+def reap(proc: subprocess.Popen, threads: list[threading.Thread]) -> None:
     if proc.poll() is None:
         proc.terminate()
         try:
