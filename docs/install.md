@@ -50,7 +50,7 @@ What the installer does (it never uses sudo and never deletes a folder):
 | Command | `~/.mulebox/bin/mulebox` (symlink into the venv) |
 | Node config | `~/.config/mulebox/node.toml`, written once from the template, then validated |
 | Roots | `~/.mulebox/{jobs,cache,staging,runners}`, mode 750 |
-| Services | `~/.config/systemd/user/mulebox-coordinator.service` and `mulebox-worker.service`, enabled and started |
+| Services | `~/.config/systemd/user/mulebox-coordinator.service` and `mulebox-worker.service`, enabled and started; `mulebox-runner@.service` copied only |
 | Linger | prints how to enable it if it is off |
 
 Set `MULEBOX_PYTHON=python3.12` (or another interpreter) before running the installer to
@@ -109,6 +109,38 @@ ssh build-1 '~/.mulebox/bin/mulebox --version'
 mulebox queue
 ```
 
+## GitHub runners
+
+A build machine can host self-hosted GitHub Actions runners, one user service each
+(`mulebox-runner@<name>.service`; the installer copies the template but enables nothing).
+Each GitHub job then waits for a mulebox build slot, so runner jobs and agent jobs share one
+queue. From the laptop, with `gh` logged in as a user with admin rights on the repository:
+
+```sh
+mulebox runner register --repo example-org/example-app            # labels: mulebox
+mulebox runner register --repo example-org/example-app --labels mulebox,gpu --name build-1-app
+mulebox runner unregister --repo example-org/example-app
+```
+
+`register` gets a short-lived registration token with `gh api`, then runs
+`mulebox runner add` on the coordinator over ssh with the token on stdin. On the build
+machine itself, pipe the token in (or paste it at the hidden prompt):
+
+```sh
+gh api -X POST repos/example-org/example-app/actions/runners/registration-token --jq .token \
+  | ~/.mulebox/bin/mulebox runner add --repo example-org/example-app
+~/.mulebox/bin/mulebox runner list
+~/.mulebox/bin/mulebox runner remove build-1-example-app    # removal token on stdin
+```
+
+`runner add` downloads the latest `actions/runner` release for linux-x64 or linux-arm64,
+checks its SHA-256 against the release notes, unpacks it into
+`~/.mulebox/runners/<name>/` (default name `<node>-<repo>`), registers it with
+`config.sh`, sets the job hooks in the runner's `.env` and starts the service. The token is
+never put on a command line or in a log. `roots.runners` must stay `~/.mulebox/runners`
+(the unit template runs runners from there). In workflows, use
+`runs-on: [self-hosted, mulebox]`.
+
 ## Upgrade
 
 Pull the new version on the laptop and deploy again:
@@ -131,6 +163,7 @@ machine:
 ```sh
 systemctl --user disable --now mulebox-worker mulebox-coordinator
 rm ~/.config/systemd/user/mulebox-worker.service ~/.config/systemd/user/mulebox-coordinator.service
+rm ~/.config/systemd/user/mulebox-runner@.service   # after removing every runner
 systemctl --user daemon-reload
 ```
 

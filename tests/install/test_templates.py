@@ -105,3 +105,26 @@ def test_unit_has_required_keys(name, command):
 
 def test_worker_starts_after_coordinator():
     assert read_unit("mulebox-worker.service")["Unit"]["After"] == "mulebox-coordinator.service"
+
+
+def test_runner_unit_template():
+    unit = read_unit("mulebox-runner@.service")
+    service = unit["Service"]
+    assert service["WorkingDirectory"] == "%h/.mulebox/runners/%i"
+    assert service["ExecStart"] == "%h/.mulebox/runners/%i/run.sh"
+    assert service["KillMode"] == "process"
+    assert service["KillSignal"] == "SIGTERM"
+    assert service["TimeoutStopSec"] == "5min"
+    assert service["Restart"] == "always"
+    assert service["RestartSec"] == "10"
+    assert unit["Install"]["WantedBy"] == "default.target"
+    text = (UNIT_DIR / "mulebox-runner@.service").read_text(encoding="utf-8")
+    assert "/home/" not in text and "User=" not in text
+
+
+def test_install_copies_but_does_not_enable_the_runner_template():
+    copied = call_install_function("printf '%s\\n' \"${UNITS[@]}\"").split()
+    assert "mulebox-runner@.service" in copied
+    script = 'ROLES=(coordinator worker); wanted_units'
+    assert call_install_function(script).split() == [
+        "mulebox-coordinator.service", "mulebox-worker.service"]
