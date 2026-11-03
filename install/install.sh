@@ -17,7 +17,9 @@ BIN="$MB_HOME/bin/mulebox"
 CONFIG_DIR="$HOME/.config/mulebox"
 NODE_TOML="$CONFIG_DIR/node.toml"
 UNIT_DIR="$HOME/.config/systemd/user"
-UNITS=(mulebox-coordinator.service mulebox-worker.service)
+# All units are copied; only the coordinator and worker are enabled here. The runner
+# template is enabled per runner by `mulebox runner add`.
+UNITS=(mulebox-coordinator.service mulebox-worker.service mulebox-runner@.service)
 PYTHON="${MULEBOX_PYTHON:-python3}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

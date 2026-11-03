@@ -1,0 +1,19 @@
+# mulebox GitHub Actions runner, one instance per runner: mulebox-runner@<name>.service.
+# Installed (not enabled) by install.sh into ~/.config/systemd/user/; `mulebox runner add`
+# enables and starts an instance. %h is the user's home folder, %i the runner name.
+[Unit]
+Description=mulebox GitHub Actions runner %i
+After=mulebox-worker.service
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.mulebox/runners/%i
+ExecStart=%h/.mulebox/runners/%i/run.sh
+KillMode=process
+KillSignal=SIGTERM
+TimeoutStopSec=5min
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

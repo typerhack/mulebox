@@ -11,15 +11,13 @@ half-finished install is never picked up. Temporary folders are removed through 
 
 from __future__ import annotations
 
-import hashlib
 import os
-import platform
 import re
 import subprocess
-import urllib.request
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
+from mulebox.common import download
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_ulid
 from mulebox.common.safepath import ensure_dir, remove_tree
@@ -28,10 +26,8 @@ from mulebox.worker.paths import NodePaths
 
 NODE_DIST = "https://nodejs.org/dist"
 KNOWN = ("node", "pnpm")
-HTTP_TIMEOUT_S = 60
 NPM_TIMEOUT_S = 900
 _VERSION_RE = re.compile(r"\d{1,4}\.\d{1,4}\.\d{1,4}")
-_ARCH = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}
 
 Fetch = Callable[[str, Path], None]  # download url into a new file
 Run = Callable[[list[str], Mapping[str, str]], subprocess.CompletedProcess]
@@ -43,11 +39,9 @@ class ToolchainError(MuleboxError):
 
 def http_fetch(url: str, dest: Path) -> None:
     try:
-        with urllib.request.urlopen(url, timeout=HTTP_TIMEOUT_S) as resp, open(dest, "xb") as fh:
-            while block := resp.read(1 << 20):
-                fh.write(block)
-    except OSError as exc:
-        raise ToolchainError(f"download of {url} failed: {exc}") from exc
+        download.fetch_file(url, dest)
+    except download.DownloadError as exc:
+        raise ToolchainError(str(exc)) from exc
 
 
 def run_command(argv: list[str], env: Mapping[str, str]) -> subprocess.CompletedProcess:
@@ -99,10 +93,10 @@ def _version_key(version: str) -> tuple[int, ...]:
 
 
 def node_arch(machine: str | None = None) -> str:
-    machine = (machine or platform.machine()).lower()
-    if machine not in _ARCH:
-        raise ToolchainError(f"no node build for CPU architecture {machine!r}")
-    return _ARCH[machine]
+    try:
+        return download.linux_arch(machine)
+    except download.DownloadError as exc:
+        raise ToolchainError(f"node: {exc}") from exc
 
 
 def _expected_sha(sums: str, filename: str) -> str:
@@ -111,14 +105,6 @@ def _expected_sha(sums: str, filename: str) -> str:
         if len(parts) == 2 and parts[1] == filename and re.fullmatch(r"[0-9a-f]{64}", parts[0]):
             return parts[0]
     raise ToolchainError(f"{filename} is not listed in SHASUMS256.txt")
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with open(path, "rb") as fh:
-        while block := fh.read(1 << 20):
-            digest.update(block)
-    return digest.hexdigest()
 
 
 def _install_node(paths: NodePaths, version: str, tmp: Path, fetch: Fetch, arch: str) -> Path:
@@ -130,7 +116,7 @@ def _install_node(paths: NodePaths, version: str, tmp: Path, fetch: Fetch, arch:
     expected = _expected_sha(sums_file.read_text(encoding="utf-8", errors="replace"),
                              tarball.name)
     fetch(f"{base}/{tarball.name}", tarball)
-    actual = _sha256(tarball)
+    actual = download.sha256_file(tarball)
     if actual != expected:
         raise ToolchainError(f"{tarball.name}: sha256 {actual} does not match SHASUMS256.txt")
     return extract_tar(tarball, tmp / "tree", paths.roots, strip_prefix=stem)
