@@ -8,7 +8,7 @@ Every message about a job must carry the job's current `attempt_id`; a stale att
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import leases, queue
+from mulebox.coordinator import leases, queue, recovery
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -20,6 +20,8 @@ def claim(req: Request) -> Message:
     worker = v.text(req.body, "worker")
     capabilities = v.strings(req.body, "capabilities")
     free_slots = v.integer(req.body, "free_slots", low=0)
+    if req.body.get("restarted") is True:  # first claim after a worker (re)start
+        recovery.release_worker(req.store, worker, req.now)
     job = queue.claim(req.store, worker, capabilities, free_slots, req.cluster_slots,
                       now=req.now)
     if job is None:

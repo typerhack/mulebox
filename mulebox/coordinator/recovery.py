@@ -35,6 +35,20 @@ def recover(store: Store, now: float, staging: Staging | None = None) -> list[st
     return interrupted
 
 
+def release_worker(store: Store, worker: str, now: float) -> list[str]:
+    """A worker restarted (it stopped all its units): interrupt the jobs it still held."""
+    interrupted: list[str] = []
+    with store.write() as conn:
+        marks = ", ".join("?" for _ in _ACTIVE)
+        for job in st.select_jobs(conn, f"state IN ({marks}) AND worker = ?",
+                                  (*_ACTIVE, worker)):
+            st.finish(conn, job, Outcome.INTERRUPTED, now)
+            interrupted.append(job["job_id"])
+    for job_id in interrupted:
+        _log.warning("job %s interrupted: worker %s restarted", job_id, worker)
+    return interrupted
+
+
 def cleanup_uploads(store: Store, staging: Staging) -> list[str]:
     """Remove uploads nobody needs any more; return the job ids they belonged to."""
     removed: list[str] = []

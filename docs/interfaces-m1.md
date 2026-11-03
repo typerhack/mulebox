@@ -217,3 +217,9 @@ streaming upload and watch; `config_reader.NAME_RE` is the one name pattern.
 Install: deploy copies the wheel, `install.sh`, `node.toml.example` and `systemd/` to
 `~/.mulebox/tmp/`; services follow the roles in node.toml; a replaced venv is moved to
 `~/.mulebox/tmp/venv-old-*` (never deleted by the script).
+
+## Changes in 0.5.1
+- `claim` body may carry `restarted: true` (first claim after a worker start): the
+  coordinator interrupts every active job held by that worker name before claiming.
+- `ssh.raise_for_exit`: a negative exit code (local ssh killed by a signal) raises
+  `SSHUnavailable`. `ssh.reap` leaves a pipe open while a reader thread is still on it.

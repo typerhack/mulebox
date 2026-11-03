@@ -178,6 +178,10 @@ def raise_for_exit(target: str, argv: Sequence[str], code: int, stderr: bytes) -
             f"cannot connect to {target} over ssh (exit 255){suffix}. "
             f"Check that `ssh {target}` works from this machine."
         )
+    if code < 0:  # the local ssh process itself was killed: the connection is gone
+        raise SSHUnavailable(
+            f"the ssh connection to {target} was lost (ssh stopped by signal {-code}){suffix}."
+        )
     raise RemoteError(
         f"remote command `{argv[0]}` on {target} failed with exit code {code}{suffix}",
         exit_code=code,
@@ -234,7 +238,12 @@ def reap(proc: subprocess.Popen, threads: list[threading.Thread]) -> None:
             proc.wait()
     for thread in threads:
         thread.join(timeout=THREAD_JOIN_S)
-    for pipe in (proc.stdout, proc.stderr):
+    # A pipe a reader thread is still blocked on cannot be closed without waiting for that
+    # read (the buffer lock), and the read can last as long as anything else holds the
+    # pipe's write end (for example an ssh control master). Leave such a pipe to the
+    # daemon thread and the garbage collector instead of blocking the caller.
+    readers_done = not any(thread.is_alive() for thread in threads)
+    for pipe in (proc.stdout, proc.stderr if readers_done else None):
         if pipe is not None:
             try:
                 pipe.close()

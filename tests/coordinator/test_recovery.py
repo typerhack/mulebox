@@ -33,3 +33,13 @@ def test_recover_removes_uploads_nobody_needs(store, staging):
     names = sorted(p.name for p in staging.uploads_dir.iterdir())
     assert names == sorted([f"{keep}.tar.gz", f".{uploading}.ffff.part"])
     assert stale["job_id"] not in " ".join(names)
+
+
+def test_release_worker_interrupts_only_that_workers_jobs(store, staging):
+    mine = claimed(store, staging, now=T0, worker="wrk-a")
+    other = claimed(store, staging, now=T0, worker="wrk-b")
+    waiting = queued(store, staging, now=T0)
+    assert recovery.release_worker(store, "wrk-a", T0 + 1) == [mine["job_id"]]
+    assert store.get_job(mine["job_id"])["outcome"] == Outcome.INTERRUPTED
+    assert store.get_job(other["job_id"])["state"] == JobState.STARTING
+    assert store.get_job(waiting)["state"] == JobState.QUEUED

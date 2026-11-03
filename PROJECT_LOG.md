@@ -8,6 +8,17 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.5.1 - 2026-11-03 - patch
+- Fixes found by running M1.5 / M1.8 / M1.9 on a real build machine:
+  - Ctrl-C took up to 2 minutes: closing an ssh pipe waited on a reader thread still
+    blocked on it. `ssh.reap` no longer closes a pipe a live thread is reading.
+  - A crashed worker's jobs stayed "running" until the 120 s worker lease ran out. The
+    first claim after a worker start now carries `restarted: true` and the coordinator
+    interrupts the jobs that worker still held (`recovery.release_worker`).
+  - An ssh process killed by a signal counts as a lost connection (`SSHUnavailable`), so
+    the watch stream reconnects instead of failing.
+- docs/phases.md: M1.5, M1.8 and M1.9 done.
+
 ## 0.5.0 - 2026-11-03 - minor
 - M1.4 coordinator (`mulebox/coordinator/`): SQLite store (WAL, `BEGIN IMMEDIATE`),
   atomic claim with cluster slots, idempotent submit, client and worker leases, restart

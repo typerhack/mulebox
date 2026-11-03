@@ -72,7 +72,8 @@ def test_passed_job(agent, fake_link, paths):
     assert kinds[-1] is MessageType.RESULT
     assert not (paths.jobs / "example-app" / job_id).exists()
     claim = fake_link.of_type(MessageType.CLAIM)[0].body
-    assert claim == {"worker": "build-1", "capabilities": ["node"], "free_slots": 1}
+    assert claim == {"worker": "build-1", "capabilities": ["node"], "free_slots": 1,
+                     "restarted": True}  # the first claim after a start
 
 
 def test_failed_job_keeps_exit_code(agent, fake_link):

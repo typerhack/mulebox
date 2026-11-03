@@ -81,3 +81,11 @@ def test_log_gap_is_conflict(store, staging):
     reply = call(store, staging, "log_chunk", offset=5, data="x", job_id=claim["job_id"],
                  attempt_id=claim["attempt_id"])
     assert reply.body["code"] == "conflict"
+
+
+def test_first_claim_after_restart_interrupts_the_old_jobs(store, staging):
+    old = claimed(store, staging, worker="wrk-a")
+    reply = call(store, staging, "claim", worker="wrk-a", capabilities=[], free_slots=1,
+                 restarted=True)
+    assert reply.type is MessageType.CLAIM_NONE
+    assert store.get_job(old["job_id"])["outcome"] == "interrupted"

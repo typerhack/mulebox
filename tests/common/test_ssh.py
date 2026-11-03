@@ -292,3 +292,8 @@ def test_stream_early_stop_reaps_process(fake_ssh, monkeypatch):
     stream.close()
     assert procs[0].returncode is not None
     assert procs[0].stdout.closed and procs[0].stderr.closed
+
+
+def test_ssh_killed_by_a_signal_counts_as_connection_lost():
+    with pytest.raises(SSHUnavailable, match="signal 9"):
+        ssh.raise_for_exit("build-1", ["mulebox", "rpc"], -9, b"")

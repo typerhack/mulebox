@@ -48,6 +48,7 @@ class Agent:
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
         self.retry_at = 0.0
+        self.fresh = True  # tell the coordinator on the first claim that we (re)started
         self.last_reply = 0.0  # agent clock of the last answer from the coordinator
 
     # -- coordinator calls -------------------------------------------------------------
@@ -91,11 +92,14 @@ class Agent:
     def _claim(self, now: float) -> None:
         msg = request(MessageType.CLAIM, worker=self.node.name,
                       capabilities=list(self.node.capabilities),
-                      free_slots=self.node.slots - len(self.active))
+                      free_slots=self.node.slots - len(self.active),
+                      restarted=self.fresh)
         try:
             reply = self._call(msg, now)
         except LinkError:
             return
+        if reply.type is not MessageType.ERROR:
+            self.fresh = False  # the coordinator has released our old jobs
         if reply.type is MessageType.CLAIM_OK:
             self._start(reply.body, now)
 
