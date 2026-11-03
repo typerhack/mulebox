@@ -1,0 +1,27 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    # A mulebox runner by default (it waits for a build slot in the mulebox queue).
+    # Set the repository variable CI_RUNS_ON to e.g. ["ubuntu-24.04"] to use GitHub's.
+    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox"]') }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python environment
+        run: |
+          python3 --version
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check -q -e '.[dev]'
+      - name: Tests (includes the file-size check)
+        run: .venv/bin/python -m pytest

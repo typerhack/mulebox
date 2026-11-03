@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.6.1 - 2026-11-03 - patch
+- Repository CI (`.github/workflows/ci.yml`): the test suite on a mulebox runner by default,
+  switchable with the `CI_RUNS_ON` repository variable. First real use of M3.
+
 ## 0.6.0 - 2026-11-03 - minor
 - M3 GitHub runners, built in parallel on two branches:
   - Slot reservations: runner job-started/completed hooks reserve a slot pinned to the
