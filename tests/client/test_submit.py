@@ -1,0 +1,192 @@
+import io
+
+import pytest
+
+from mulebox.client import submit
+from mulebox.client.submit import Streams, run_job
+from mulebox.common.config import ProjectConfig
+from mulebox.common.protocol import Message, MessageType
+from mulebox.common.ssh import SSHUnavailable
+
+JOB = "job-01JC3X0000000000000000ABCD"
+PROJECT = ProjectConfig(
+    project="example-app",
+    jobs={"check": "pnpm check", "test": "pnpm test"},
+    needs=("node",),
+    toolchain={"node": "22.22.3"},
+    setup="pnpm install --frozen-lockfile",
+    timeout_min=20,
+    exclude=("reports/",),
+)
+
+
+def msg(kind, **body):
+    return Message(MessageType(kind), "req-x", body)
+
+
+def log(offset, data):
+    return msg("log_chunk", job_id=JOB, offset=offset, data=data)
+
+
+def result(outcome="passed", code=0):
+    return msg("result", job_id=JOB, outcome=outcome, exit_code=code, duration_s=65)
+
+
+class FakeRemote:
+    def __init__(self, streams, submit_state="uploading", status_states=("finished",)):
+        self.streams = list(streams)  # one list of messages (or exceptions) per watch
+        self.submit_state = submit_state
+        self.status_states = list(status_states)
+        self.calls, self.uploads, self.watches = [], [], []
+
+    def call(self, m):
+        self.calls.append(m)
+        if m.type is MessageType.SUBMIT:
+            return msg("submit_ok", job_id=JOB, state=self.submit_state)
+        state = self.status_states.pop(0) if self.status_states else "finished"
+        return msg("status_ok", job_id=JOB, state=state, outcome="cancelled", exit_code=None)
+
+    def upload(self, job_id, path, sha256):
+        self.uploads.append((job_id, path.exists(), sha256))
+        return msg("status_ok", job_id=job_id, state="queued")
+
+    def watch(self, job_id, offset=0, lease=True):
+        self.watches.append((job_id, offset, lease))
+        for item in self.streams.pop(0):
+            if isinstance(item, BaseException):
+                raise item
+            yield item
+
+
+def streams():
+    return Streams(out=io.StringIO(), err=io.StringIO(), sleep=lambda s: None)
+
+
+def test_passed_job_prints_log_on_stdout_and_status_on_stderr(make_repo):
+    repo = make_repo()
+    remote = FakeRemote([[
+        msg("status_ok", job_id=JOB, state="queued", position=2),
+        msg("status_ok", job_id=JOB, state="running", worker="build-1"),
+        log(0, "hello\n"),
+        log(6, "world\n"),
+        result(),
+    ]])
+    io_ = streams()
+    assert run_job(PROJECT, "check", repo, remote, io_) == 0
+    assert io_.out.getvalue() == "hello\nworld\n"
+    err = io_.err.getvalue().splitlines()
+    assert all(line.startswith("mulebox: ") for line in err)
+    assert f"mulebox: job {JOB} (example-app check) submitted" in err
+    assert "mulebox: queued, position 2" in err
+    assert "mulebox: running on build-1" in err
+    assert f"mulebox: job {JOB} passed in 1m 05s" in err
+    assert not any("stale" in line for line in err)
+    assert remote.uploads[0][0] == JOB and remote.uploads[0][1]
+    assert remote.watches == [(JOB, 0, True)]
+
+
+def test_submit_body_for_a_named_job(make_repo):
+    remote = FakeRemote([[result()]])
+    run_job(PROJECT, "test", make_repo(), remote, streams())
+    body = remote.calls[0].body
+    assert body["argv"] == ["bash", "-c", "pnpm test"]
+    assert body["job"] == "test" and body["project"] == "example-app"
+    assert body["setup"] == "pnpm install --frozen-lockfile"
+    assert body["toolchain"] == {"node": "22.22.3"} and body["needs"] == ["node"]
+    assert body["timeout_min"] == 20 and body["branch"] == "main"
+    assert body["idempotency_key"].startswith("sub-")
+    assert len(body["fingerprint"]) == 64 and len(body["base_commit"]) == 40
+
+
+def test_run_sends_argv_as_is(make_repo):
+    remote = FakeRemote([[result()]])
+    run_job(PROJECT, ["pnpm", "exec", "vitest", "run", "a b.test.ts"], make_repo(), remote,
+            streams())
+    body = remote.calls[0].body
+    assert body["argv"] == ["pnpm", "exec", "vitest", "run", "a b.test.ts"]
+    assert body["job"] == "run"
+
+
+@pytest.mark.parametrize(
+    "outcome, code, expected",
+    [("passed", 0, 0), ("failed", 2, 2), ("failed", None, 1), ("failed", 0, 1),
+     ("timed_out", None, 124), ("cancelled", None, 130), ("interrupted", None, 75)],
+)
+def test_exit_codes(make_repo, outcome, code, expected):
+    remote = FakeRemote([[result(outcome, code)]])
+    assert run_job(PROJECT, "check", make_repo(), remote, streams()) == expected
+
+
+def test_repeat_submit_skips_the_upload(make_repo):
+    remote = FakeRemote([[result()]], submit_state="queued")
+    run_job(PROJECT, "check", make_repo(), remote, streams())
+    assert remote.uploads == []
+
+
+def test_snapshot_file_is_removed(make_repo):
+    remote = FakeRemote([[result()]])
+    seen = []
+    real = remote.upload
+    remote.upload = lambda j, p, s: (seen.append(p), real(j, p, s))[1]
+    run_job(PROJECT, "check", make_repo(), remote, streams())
+    assert seen and not seen[0].exists()
+
+
+def test_stale_warning_when_files_change_during_the_job(make_repo):
+    repo = make_repo(tracked={"a.txt": "one"})
+
+    def change():
+        (repo / "a.txt").write_text("two")
+        yield result()
+
+    remote = FakeRemote([change()])
+    io_ = streams()
+    assert run_job(PROJECT, "check", repo, remote, io_) == 0
+    assert "stale" in io_.err.getvalue()
+
+
+def test_ctrl_c_cancels_and_returns_130(make_repo):
+    remote = FakeRemote([[log(0, "partial\n"), KeyboardInterrupt()]],
+                        status_states=["running", "running", "finished"])
+    io_ = streams()
+    assert run_job(PROJECT, "check", make_repo(), remote, io_) == 130
+    kinds = [c.type for c in remote.calls]
+    assert kinds == [MessageType.SUBMIT, MessageType.CANCEL, MessageType.STATUS,
+                     MessageType.STATUS]
+    err = io_.err.getvalue()
+    assert f"cancelling job {JOB}" in err and "cancelled" in err
+
+
+def test_ctrl_c_gives_up_waiting_after_the_deadline(make_repo, monkeypatch):
+    monkeypatch.setattr(submit, "CANCEL_WAIT_S", 0.0)
+    remote = FakeRemote([[KeyboardInterrupt()]], status_states=["running"] * 5)
+    io_ = streams()
+    assert run_job(PROJECT, "check", make_repo(), remote, io_) == 130
+    assert "did not confirm" in io_.err.getvalue()
+
+
+def test_reconnects_from_the_last_offset(make_repo):
+    remote = FakeRemote([
+        [log(0, "one\n"), SSHUnavailable("dropped")],
+        [log(0, "one\n"), log(4, "two\n"), result()],  # a replay overlaps
+    ])
+    io_ = streams()
+    assert run_job(PROJECT, "check", make_repo(), remote, io_) == 0
+    assert io_.out.getvalue() == "one\ntwo\n"
+    assert remote.watches == [(JOB, 0, True), (JOB, 4, True)]
+    assert "reconnecting" in io_.err.getvalue()
+
+
+def test_gives_up_after_repeated_connection_loss(make_repo):
+    remote = FakeRemote([[SSHUnavailable("down")]] * (submit.WATCH_RETRIES + 1))
+    io_ = streams()
+    with pytest.raises(SSHUnavailable):
+        run_job(PROJECT, "check", make_repo(), remote, io_)
+    assert f"mulebox logs {JOB}" in io_.err.getvalue()
+
+
+def test_partial_overlap_is_trimmed():
+    watcher = submit.Watcher(None, streams())
+    watcher.handle(log(0, "abc"))
+    watcher.handle(log(1, "bcdef"))
+    assert watcher.io.out.getvalue() == "abcdef" and watcher.offset == 6
