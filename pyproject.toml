@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools==84.2.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mulebox"
+dynamic = ["version"]
+description = "Send AI coding agents' builds and tests to Linux machines on your network, through one queue"
+readme = "README.md"
+requires-python = ">=3.12"
+# Runtime dependencies are added (and pinned) by the module that first needs them.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.2.0",
+]
+
+[project.scripts]
+mulebox = "mulebox.cli:main"
+
+[tool.setuptools.dynamic]
+version = { file = "VERSION" }
+
+[tool.setuptools.packages.find]
+include = ["mulebox*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

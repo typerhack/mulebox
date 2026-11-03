@@ -35,6 +35,21 @@ mulebox queue  --SSH-->        |
 See [docs/design.md](docs/design.md) for the design and [docs/phases.md](docs/phases.md)
 for the roadmap.
 
+## Development
+
+Requires Python 3.12 or newer.
+
+```sh
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[dev]'
+.venv/bin/mulebox --version
+.venv/bin/python -m pytest              # includes the file-size check
+.venv/bin/python tools/check_line_counts.py
+```
+
+Rules for contributors and agents: [AGENTS.md](AGENTS.md). Every change bumps
+[VERSION](VERSION) and adds an entry to [PROJECT_LOG.md](PROJECT_LOG.md).
+
 ## License
 
 Not chosen yet (see roadmap). The project is private until it is.

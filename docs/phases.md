@@ -17,8 +17,10 @@ How to use it:
 ## M1: Core queue, one machine, terminal only
 Goal: `mulebox check` from a project worktree runs the job on a build machine through the
 queue and returns the same result as running it locally.
-- [ ] M1.1 Package skeleton: `pyproject.toml`, `mulebox` CLI entry point, pinned deps,
+- [x] M1.1 Package skeleton: `pyproject.toml`, `mulebox` CLI entry point, pinned deps,
       test runner, line-count check (fails on files over 500 lines, warns over 300).
+      Done 2026-11-03 (0.2.0): 7 tests pass on Python 3.13. Not yet run on 3.12, the
+      minimum; covered when M1.8 installs on a Linux build machine.
 - [ ] M1.2 `common/`: config, protocol (versioned JSON), ssh, ids, log, redact.
 - [ ] M1.3 `common/safepath.py`: roots, symlink and mount checks, descriptor-anchored delete.
       Done when: tests cover escapes, mounts, races and relative paths.
@@ -31,6 +33,8 @@ queue and returns the same result as running it locally.
       same error as locally.
 - [ ] M1.7 `mulebox queue`, `logs`, `cancel`, and the live terminal view.
 - [ ] M1.8 Install script for a build machine (coordinator + worker, systemd user service).
+      Note: Ubuntu does not ship `python3-venv` by default; the script must check for it
+      and say how to install it. Run the test suite on the machine's Python (3.12 minimum).
 - [ ] M1.9 Failure drills: machine unreachable, network drop mid-job, daemon restart
       mid-job, two clients at once.
 

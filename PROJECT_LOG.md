@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.2.0 - 2026-11-03 - minor
+- M1.1 package skeleton: `pyproject.toml` (Python 3.12+, setuptools 84.2.1, version read
+  from VERSION), `mulebox` CLI entry point with `--version` / `version`, pytest 9.2.0 as the
+  pinned dev dependency, tests for the CLI and version source.
+- File-size rule enforced in code: `tools/check_line_counts.py` warns above 300 lines and
+  fails at 500; the test suite runs it on the whole repository.
+- README: development section (venv, install, tests).
+
 ## 0.1.0 - 2026-11-03 - minor
 - Project created from the design work in a private setup repo: README, design, roadmap
   (docs/phases.md), versioning and project-log rules, agent rules.
