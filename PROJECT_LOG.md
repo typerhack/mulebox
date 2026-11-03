@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.5.3 - 2026-11-03 - patch
+- docs/interfaces-m3.md: contract for GitHub runners (slot reservations through runner
+  hooks, supervision, runner install from the laptop), so M3 can be built in parallel.
+- `mulebox/runners/` package stubs wired into the CLI.
+
 ## 0.5.2 - 2026-11-03 - patch
 - Client lease 120 s -> 300 s, and the client keeps reconnecting the live view for up to
   4 min (24 tries, 10 s apart): a real build machine on Wi-Fi dropped off for ~3 min, which

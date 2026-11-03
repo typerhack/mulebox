@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 from mulebox.client import commands as client_commands
 from mulebox.coordinator import commands as coordinator_commands
+from mulebox.runners import commands as runner_commands
 from mulebox.version import get_version
 from mulebox.worker import commands as worker_commands
 
@@ -23,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"mulebox {get_version()}")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("version", help="print the mulebox version")
-    for package in (client_commands, coordinator_commands, worker_commands):
+    for package in (client_commands, coordinator_commands, worker_commands, runner_commands):
         package.register(sub)
     return parser
 
