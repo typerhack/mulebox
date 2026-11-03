@@ -56,7 +56,7 @@ def test_bad_argv(argv):
 
 def test_env(tmp_path):
     env = build_env("job-1", [tmp_path / "a" / "bin", tmp_path / "b" / "bin"], "/usr/bin")
-    assert env == {"MULEBOX": "1", "MULEBOX_JOB_ID": "job-1",
+    assert env == {"MULEBOX": "1", "MULEBOX_JOB_ID": "job-1", "MULEBOX_JOB_SLUG": "job_1",
                    "PATH": f"{tmp_path}/a/bin:{tmp_path}/b/bin:/usr/bin"}
     assert "HOME" not in env
 
@@ -66,3 +66,21 @@ def test_timeout_seconds():
     for bad in (0, -1, True, "20", 10_000):
         with pytest.raises(JobSpecError):
             timeout_seconds(bad)
+
+
+def test_project_env_expands_mulebox_and_earlier_values():
+    env = build_env("job-01ABC", [], "/usr/bin",
+                    {"DB": "app_ci_${MULEBOX_JOB_SLUG}", "URL": "mongodb://localhost/${DB}"})
+    assert env["DB"] == "app_ci_job_01abc"
+    assert env["URL"] == "mongodb://localhost/app_ci_job_01abc"
+    assert env["MULEBOX_JOB_ID"] == "job-01ABC"
+
+
+def test_project_env_is_not_a_shell():
+    env = build_env("job-1", [], "/usr/bin", {"X": "$(touch pwned) `id` $HOME"})
+    assert env["X"] == "$(touch pwned) `id` $HOME"  # only ${NAME} is replaced
+
+
+def test_project_env_unknown_reference_fails():
+    with pytest.raises(JobSpecError, match="NOPE"):
+        build_env("job-1", [], "/usr/bin", {"X": "${NOPE}"})

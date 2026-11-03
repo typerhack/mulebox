@@ -72,6 +72,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "client": socket.gethostname() or "client",
         "setup": project.setup,
         "toolchain": dict(project.toolchain),
+        "env": dict(project.env),
         "needs": list(project.needs),
         "timeout_min": project.timeout_min,
     }

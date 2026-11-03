@@ -53,7 +53,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 2
+        assert store.schema_version() == st.SCHEMA_VERSION == 3
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url"} <= columns(conn, "jobs")
             assert "slots" in columns(conn, "workers")
@@ -71,13 +71,13 @@ def test_version_one_store_is_migrated(old_db, staging):
 def test_migration_runs_once(old_db):
     Store(old_db).open().close()
     with Store(old_db).open() as store:  # a second open must not add the columns again
-        assert store.schema_version() == 2
+        assert store.schema_version() == st.SCHEMA_VERSION
 
 
 def test_new_store_needs_no_migration(store):
     with store.read() as conn:
         assert "kind" in columns(conn, "jobs") and "slots" in columns(conn, "workers")
-    assert store.schema_version() == 2
+    assert store.schema_version() == st.SCHEMA_VERSION
 
 
 def test_newer_store_is_refused(staging):

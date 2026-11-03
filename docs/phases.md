@@ -56,7 +56,7 @@ queue and returns the same result as running it locally.
 
 ## M3: GitHub Actions runners
 - [~] M3.1 Runner install per repository on a worker, as a service, with labels
-- [ ] M3.2 Start/complete hooks with pinned slot reservation, timeout, supervision
+- [~] M3.2 Start/complete hooks with pinned slot reservation, timeout, supervision
 - [ ] M3.3 Example workflow snippet; drills for cancelled runs, crashes and reboots
 
 ## M4: Docker Compose projects

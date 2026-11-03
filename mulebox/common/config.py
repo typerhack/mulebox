@@ -32,6 +32,7 @@ Choices where docs/interfaces.md is silent:
 
 from __future__ import annotations
 
+import re
 import ipaddress
 import os
 from dataclasses import dataclass, field
@@ -74,6 +75,7 @@ class ProjectConfig:
     compose: tuple[str, ...] = ()
     timeout_min: int = DEFAULT_TIMEOUT_MIN
     exclude: tuple[str, ...] = ()
+    env: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -126,9 +128,25 @@ def load_project_config(path: Path) -> ProjectConfig:
         jobs=_jobs(reader),
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
         exclude=reader.strings("exclude"),
+        env=_env(reader),
     )
     reader.finish()
     return config
+
+
+_ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_ENV_RESERVED = ("PATH", "HOME", "USER", "SHELL")
+
+
+def _env(reader: Reader) -> dict[str, str]:
+    """`env:` values for the job: throwaway CI values; names checked, no overriding PATH/HOME."""
+    env = reader.string_map("env")
+    for key in env:
+        if not _ENV_NAME.fullmatch(key):
+            reader.fail(f"env.{key}", "must be a shell variable name (letters, digits, _)")
+        if key in _ENV_RESERVED or key.startswith("MULEBOX"):
+            reader.fail(f"env.{key}", "is set by mulebox or the build machine; choose another name")
+    return env
 
 
 def client_config_path() -> Path:

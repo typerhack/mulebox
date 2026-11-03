@@ -25,7 +25,8 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
 - `ProjectConfig` (from `.mulebox.yml`): `project: str`, `needs: tuple[str, ...]`,
   `toolchain: dict[str, str]`, `setup: str | None`, `services: tuple[str, ...]`,
   `compose: tuple[str, ...]`, `jobs: dict[str, str]` (must contain `check`),
-  `timeout_min: int` (default 30, 1..240), `exclude: tuple[str, ...]`.
+  `timeout_min: int` (default 30, 1..240), `exclude: tuple[str, ...]`,
+  `env: dict[str, str]` (0.6.0; see interfaces-m3.md).
 - `find_project_config(start: Path) -> Path` walks up to the filesystem root; ConfigError if none.
 - `load_project_config(path: Path) -> ProjectConfig`
 - `ClientConfig` (from `$MULEBOX_CONFIG` or `~/.config/mulebox/client.toml`):

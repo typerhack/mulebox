@@ -109,3 +109,34 @@ clear error otherwise.
   line that copies it.
 - Both: `mulebox/runners/__init__.py` exists already; each adds its own
   `commands_*.py`; `mulebox/runners/commands.py` (integrator) registers both.
+
+## Decisions made during the build (0.6.0)
+
+Slots:
+- Schema 2 adds `workers.slots` (a worker's total slots, recorded on `claim` as
+  `free_slots` plus its active agent jobs); `acquire` uses it, `cluster_slots` until a
+  worker has claimed once. `claim` subtracts a worker's active reservations from
+  `free_slots`.
+- A worker restart (`restarted: true`) interrupts agent jobs only: a runner is its own
+  service and keeps running; supervision handles it.
+- `runner_jobs` returns queued reservations too, so a runner that dies while its hook waits
+  is released after 60 s instead of blocking the queue. Heartbeats go to granted ones only.
+- The started hook writes the reservation file right after `reserve` and, when it gives
+  up, releases the reservation as cancelled.
+- `GITHUB_JOB_STATUS` unset -> `passed` (GitHub may not set it for hooks; the GitHub run is
+  the authority for the job's real result).
+- `mulebox cancel` on a running reservation only marks it; mulebox cannot stop a GitHub job.
+
+Runner management:
+- The registration/removal token reaches `config.sh` through `ACTIONS_RUNNER_INPUT_TOKEN`
+  (environment), never argv; output is redacted with the token.
+- `runner remove` also takes `--repo`; default runner name `<node>-<repo>` (max 64 chars).
+- `roots.runners` must be `~/.mulebox/runners` (the unit template uses that path).
+- Runner tarballs are cached in `<cache>/actions-runner/` and re-verified on every use.
+- Each runner folder has `.mulebox-runner.json` (repo, labels, version).
+- Shared download code moved to `mulebox/common/download.py` (also used by toolchains).
+
+Also in 0.6.0: `.mulebox.yml` `env:` (schema 3 stores it as `jobs.env`). The worker sets
+`MULEBOX_JOB_SLUG` (job id, lowercase, `_`) and replaces `${NAME}` in env values with a
+mulebox variable or an earlier env entry; no shell is involved. `PATH`, `HOME`, `USER`,
+`SHELL` and `MULEBOX*` names are refused.

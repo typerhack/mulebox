@@ -217,3 +217,16 @@ def test_find_none_raises(tmp_path, monkeypatch):
     with pytest.raises(ConfigError) as info:
         find_project_config(tmp_path)
     assert str(tmp_path.resolve()) in str(info.value)
+
+
+ENV_BASE = "project: example-app\njobs:\n  check: make check\n"
+
+
+def test_env_values(tmp_path):
+    cfg = load_project_config(write(tmp_path, ENV_BASE + 'env:\n  CI: "1"\n  DB: app_${MULEBOX_JOB_SLUG}\n'))
+    assert cfg.env == {"CI": "1", "DB": "app_${MULEBOX_JOB_SLUG}"}
+
+
+@pytest.mark.parametrize("key", ["PATH", "HOME", "MULEBOX_JOB_ID", "1BAD", "A-B"])
+def test_env_rejects_reserved_or_bad_names(tmp_path, key):
+    assert f"env.{key}" in str(error_for(tmp_path, ENV_BASE + f'env:\n  {key}: "x"\n'))

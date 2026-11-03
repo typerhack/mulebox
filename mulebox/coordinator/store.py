@@ -22,11 +22,11 @@ from mulebox.common.protocol import JobState, Outcome, ProtocolError, check_tran
 from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
-SCHEMA_VERSION = 2  # 2: reservations for GitHub runners (migrate.py)
+SCHEMA_VERSION = 3  # 2: reservations for GitHub runners; 3: job env (migrate.py)
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
-_JSON_COLUMNS = frozenset({"argv", "toolchain", "needs", "capabilities"})
+_JSON_COLUMNS = frozenset({"argv", "toolchain", "needs", "capabilities", "env"})
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS jobs (
@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     branch TEXT,
     setup TEXT,
     toolchain TEXT NOT NULL DEFAULT '{}',
+    env TEXT NOT NULL DEFAULT '{}',
     needs TEXT NOT NULL DEFAULT '[]',
     timeout_min INTEGER NOT NULL,
     state TEXT NOT NULL,
@@ -77,7 +78,7 @@ _JOB_COLUMNS = frozenset(
     "job_id idempotency_key project job argv fingerprint base_commit client branch setup "
     "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
-    "created_at queued_at started_at finished_at kind pinned_worker runner run_url".split()
+    "created_at queued_at started_at finished_at kind pinned_worker runner run_url env".split()
 )
 
 

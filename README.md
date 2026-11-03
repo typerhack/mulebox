@@ -35,6 +35,12 @@ mulebox queue  --SSH-->        |
 See [docs/design.md](docs/design.md) for the design and [docs/phases.md](docs/phases.md)
 for the roadmap.
 
+## For coding agents
+
+[docs/agents.md](docs/agents.md) is written for AI coding agents: everyday use, setting a
+project up (`.mulebox.yml`, the agent rule), and moving GitHub Actions to mulebox runners.
+Point an agent at it: "read mulebox's docs/agents.md and set this project up".
+
 ## Development
 
 Requires Python 3.12 or newer.

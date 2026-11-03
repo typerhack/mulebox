@@ -8,6 +8,22 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.6.0 - 2026-11-03 - minor
+- M3 GitHub runners, built in parallel on two branches:
+  - Slot reservations: runner job-started/completed hooks reserve a slot pinned to the
+    worker in the same FIFO queue as agent jobs (`reserve`, `acquire`, `release`,
+    `runner_jobs`); the worker supervises runners and releases a crashed runner's slot
+    after 60 s. Store schema 2 with an in-place migration.
+  - Runner management: `mulebox runner register|unregister --repo owner/name` on the
+    laptop (token from `gh`, sent on stdin), `mulebox runner add|list|remove` on the build
+    machine (latest actions/runner release, checksum verified, `mulebox-runner@` user
+    unit). The token never appears in argv or logs.
+- `.mulebox.yml` `env:` for throwaway CI values; `${MULEBOX_JOB_ID}` / `${MULEBOX_JOB_SLUG}`
+  and earlier entries expand, no shell. Store schema 3.
+- docs/agents.md: a guide for coding agents (everyday use, setting a project up, moving
+  GitHub Actions to mulebox runners); linked from the README.
+- Shared download/verify code in `mulebox/common/download.py`.
+
 ## 0.5.3 - 2026-11-03 - patch
 - docs/interfaces-m3.md: contract for GitHub runners (slot reservations through runner
   hooks, supervision, runner install from the laptop), so M3 can be built in parallel.

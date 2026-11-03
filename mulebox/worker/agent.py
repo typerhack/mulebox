@@ -146,7 +146,7 @@ class Agent:
             name=unit_name(job.job_id),
             argv=jobspec.build_argv(claim.get("setup"), claim["argv"]),
             cwd=src,
-            env=jobspec.build_env(job.job_id, bins),
+            env=jobspec.build_env(job.job_id, bins, project_env=claim.get("env")),
             log_path=log_path,
             timeout_s=jobspec.timeout_seconds(claim["timeout_min"]),
         )
