@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.4.1 - 2026-11-03 - patch
+- docs/interfaces-m1.md: contract for the coordinator, worker, client and install script
+  (M1.4 - M1.8), so they can be built in parallel. M1 simplifications recorded there (full
+  snapshot instead of a build-machine clone, `rpc` opens SQLite directly).
+- Protocol: message types `queue`, `queue_ok`, `logs`, `watch`.
+- Package stubs `client/`, `coordinator/`, `worker/` with `commands.register`; the CLI
+  dispatches to each subcommand's handler.
+
 ## 0.4.0 - 2026-11-03 - minor
 - M1.3 `mulebox/common/safepath.py` (+ `roots.py`, `mounts.py`): the only code that
   deletes. Roots validated once (no `/`, home, system folders or overlaps; device and inode

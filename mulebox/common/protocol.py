@@ -90,6 +90,10 @@ class MessageType(StrEnum):
     LOG_CHUNK = "log_chunk"
     RESULT = "result"
     ERROR = "error"
+    QUEUE = "queue"
+    QUEUE_OK = "queue_ok"
+    LOGS = "logs"
+    WATCH = "watch"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -119,6 +123,13 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.RESULT: frozenset({"job_id", "outcome", "exit_code", "duration_s"}),
     # any side: a request failed. `code` is a short machine-readable word.
     MessageType.ERROR: frozenset({"code", "message"}),
+    # client -> coordinator: list running, waiting and recent jobs.
+    MessageType.QUEUE: frozenset(),
+    MessageType.QUEUE_OK: frozenset({"jobs"}),
+    # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
+    MessageType.LOGS: frozenset({"job_id", "offset"}),
+    # client -> coordinator: stream log_chunk / status_ok until a final result.
+    MessageType.WATCH: frozenset({"job_id", "offset"}),
 }
 
 # Body fields whose values are checked against an enum wherever they appear.

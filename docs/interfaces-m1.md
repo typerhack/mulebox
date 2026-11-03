@@ -1,0 +1,178 @@
+# Interfaces for M1.4 - M1.8 (coordinator, worker, client, install)
+
+Contract for the parallel build of the rest of M1. Shared modules: [interfaces.md](interfaces.md).
+Design: [design.md](design.md). Changes to this file go through the integrator.
+
+## Decisions for M1 (simplifications, revisit later)
+
+- **Full snapshot, no PC-side clone.** The client sends a tar.gz of the worktree (tracked +
+  untracked, not ignored, minus excludes). The worker extracts it; no git remote access is
+  needed on build machines. Delta uploads against a cached base are a parking-lot item.
+- **No coordinator socket daemon for requests.** `mulebox rpc` opens the SQLite store
+  directly (WAL mode, `busy_timeout`, `BEGIN IMMEDIATE` for writes). The coordinator
+  service (`mulebox coordinator serve`) only runs periodic sweeps (lease expiry, recovery).
+- **One node in M1.** Worker and coordinator run on the same machine as two systemd user
+  services. The worker talks to the coordinator through `CoordinatorLink`; M1 ships the
+  local link (direct calls) and the ssh link (for M5).
+- **Leases.** Client lease 120 s, renewed by heartbeats every 20 s on the `watch` stream.
+  Worker lease 120 s per job, renewed every 20 s. Clock: coordinator `time.time()`.
+
+## Filesystem layout on a build machine (inside NodeConfig roots)
+
+| Path | Owner | Content |
+| --- | --- | --- |
+| `<staging>/state/mulebox.db` | coordinator | SQLite store |
+| `<staging>/uploads/<job_id>.tar.gz` | coordinator | snapshot; removed when the job finishes |
+| `<staging>/logs/<job_id>.log` | coordinator | redacted job log (kept, M2 adds retention) |
+| `<jobs>/<project>/<job_id>/src/` | worker | extracted workspace |
+| `<jobs>/<project>/<job_id>/out.log` | worker | raw unit output (worker redacts before sending) |
+| `<cache>/toolchains/<name>/<version>/bin` | worker | pinned toolchains, prepended to PATH |
+
+All creation through `safepath.ensure_dir`, all deletion through `safepath.remove_tree`.
+
+## CLI (registered by each package; `mulebox/cli.py` only dispatches)
+
+Each package has `<pkg>/commands.py` with `register(sub: argparse._SubParsersAction) -> None`.
+Every subcommand sets `func=handler`, where `handler(args) -> int` returns the exit code.
+
+| Command | Package | Notes |
+| --- | --- | --- |
+| `mulebox check [job]` | client | default job `check`; exit code = job exit code |
+| `mulebox run -- <cmd...>` | client | ad-hoc argv |
+| `mulebox queue [--watch]` | client | table; `--watch` = live view (M1.7) |
+| `mulebox logs <job_id> [-f]` | client | `-f` follows via watch without lease |
+| `mulebox cancel <job_id>` | client | |
+| `mulebox rpc` | coordinator | one request line on stdin; replies on stdout |
+| `mulebox rpc-upload <job_id> <sha256>` | coordinator | tar.gz bytes on stdin |
+| `mulebox rpc-download <job_id>` | coordinator | tar.gz bytes on stdout (ssh link) |
+| `mulebox coordinator serve` | coordinator | sweep loop; recovery first |
+| `mulebox worker serve` | worker | claim loop; recovery first |
+| `mulebox toolchain install <name> <version>` | worker | node, pnpm |
+| `mulebox toolchain list` | worker | |
+
+Exit codes for client failures (not job failures): 2 usage/config error, 3 build machine
+unreachable (`SSHUnavailable`), 4 protocol/remote error, 130 cancelled by Ctrl-C.
+A finished job maps: passed -> its exit code (0), failed -> its exit code (1 if unknown),
+timed_out -> 124, cancelled -> 130, interrupted -> 75.
+
+## Wire usage (protocol.py; replies reuse `request_id`)
+
+`status_ok` is the generic reply carrying `job_id, state` (+ `outcome`, `exit_code`,
+`position` when queued, `cancel: bool` for worker heartbeats). Errors reply `error` with
+codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
+
+| Request | Body (required + used extras) | Reply |
+| --- | --- | --- |
+| submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch` | submit_ok (job_id, state); repeat key returns the same job |
+| rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
+| status | job_id | status_ok |
+| cancel | job_id | status_ok |
+| heartbeat | job_id, lease (`client`/`worker`), + `attempt_id` for worker | status_ok (+ `cancel`) |
+| queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts) |
+| logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
+| watch | job_id, offset, + `lease: bool` | stream: log_chunk / status_ok lines, final `result` |
+| claim | worker, capabilities, free_slots | claim_ok or claim_none |
+| job_update | job_id, state, + attempt_id | status_ok |
+| log_chunk (worker) | job_id, offset, data, + attempt_id | status_ok |
+| result (worker) | job_id, outcome, exit_code, duration_s, + attempt_id | status_ok |
+
+`claim_ok` body: job_id, attempt_id, project, argv, fingerprint, base_commit, timeout_min,
+setup, toolchain, needs, job. Job dicts in queue_ok: job_id, project, job, branch, client,
+state, outcome, exit_code, worker, position, created_at, started_at, finished_at (epoch s).
+
+Watch stream: after the `watch` request line the client keeps stdin open and writes a
+`heartbeat` line (lease `client`) every 20 s; each renews the client lease if
+`lease: true`. The server polls every 0.5 s and writes `log_chunk` for new log bytes and
+`status_ok` on state changes; it ends with `result` (job dict fields) and exits 0.
+Line cap for any request: 1 MiB (`MAX_LINE_BYTES`). Upload cap: 1 GiB.
+
+Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. A
+`remote_bin` starting with `~/` is sent without the `~/` (ssh starts in the home folder;
+`shlex.join` would quote `~`).
+
+## Coordinator (`mulebox/coordinator/`)
+
+- `store.py`: `Store(path: Path)`; `open()` creates schema (tables `jobs`, `workers`,
+  `meta(schema_version)`); WAL; all writes in `BEGIN IMMEDIATE`. Job rows hold every field
+  above plus `idempotency_key UNIQUE`, `attempt_id`, `client_lease_until`,
+  `worker_lease_until`, `cancel_requested`, `log_size`, `queued_at`.
+  `check_transition` guards every state change.
+- `queue.py`: `claim(store, worker, capabilities, free_slots, cluster_slots=1) -> dict | None`
+  atomic: oldest `queued` job whose `needs` are a subset of capabilities, only if fewer than
+  `cluster_slots` jobs are `starting|running|cleaning`. Sets `starting`, worker, attempt_id,
+  worker lease. `position(job_id)`.
+- `leases.py`: `renew_client`, `renew_worker`, `expire(store, now)`: expired client lease
+  -> cancel request (queued/uploading jobs finish `cancelled` at once); expired worker lease
+  -> `finished/interrupted`. Uploading jobs older than 10 min -> `finished/interrupted`.
+- `recovery.py`: on coordinator start, jobs in `starting|running|cleaning` whose worker
+  lease expired -> `interrupted`. Never replays a job.
+- `staging.py`: upload write (temp name in uploads dir, stream, hash, size cap, verify,
+  atomic rename), download, remove; log append at offset (idempotent: a chunk whose offset
+  is below `log_size` is skipped for the overlap), read from offset.
+- `api.py`: `handle(store, staging, msg: Message, now: float) -> Message` for every
+  non-streaming request; pure dispatch, no stdin/stdout.
+- `rpc.py`: the `rpc`, `rpc-upload`, `rpc-download` entry points (stdin/stdout, line cap,
+  the watch stream loop with a stdin heartbeat reader thread).
+- `daemon.py`: `serve(node)`: recovery, then every 5 s `leases.expire`; SIGTERM exits.
+- Node config: `load_node_config()`; roots via `Roots.from_config(node.roots)`.
+
+## Worker (`mulebox/worker/`)
+
+- `link.py`: `CoordinatorLink` protocol with `call(msg) -> Message` and
+  `fetch_snapshot(job_id, dest: Path) -> None`. `LocalLink(store, staging)` calls
+  `coordinator.api.handle` (the only worker -> coordinator import); `SSHLink(target,
+  remote_bin)` uses `common.ssh`.
+- `workspace.py`: `prepare(roots, project, job_id, snapshot: Path) -> Path` extracts with
+  `tarfile` `filter="data"` into `<jobs>/<project>/<job_id>/src`, then `git init -q`, `git
+  add -A`, one commit (author `mulebox`), so git-based tools work. `cleanup(...)` removes
+  the job folder through safepath.
+- `executor.py`: `Executor` protocol: `start(spec) -> handle`, `poll(handle) -> int | None`
+  (exit code when done), `stop(handle)`, `list_orphans() -> list[str]`, `kill(name)`.
+  `RunSpec(name, argv, cwd, env, log_path, timeout_s)`.
+  - `SystemdExecutor`: `systemd-run --user --unit=mulebox-job-<job_id> --collect
+    --property=RuntimeMaxSec=<s> --property=KillMode=control-group
+    --property=TimeoutStopSec=10s --property=CPUWeight=50 --property=IOWeight=50
+    --property=StandardOutput=append:<log> --property=StandardError=append:<log>
+    --working-directory=<cwd> --setenv=K=V ... -- <argv>`; state via `systemctl --user
+    show`; timeout recognised by `Result=timeout`.
+  - `SubprocessExecutor`: same contract with a process group (tests and macOS dev).
+- `toolchains.py`: `path_for(roots, toolchain: dict) -> list[Path]` (missing -> clear error
+  naming `mulebox toolchain install`), `install(roots, name, version)`: node from
+  nodejs.org tarball verified against `SHASUMS256.txt`; pnpm via that node's npm into
+  `<cache>/toolchains/pnpm/<version>`.
+- `agent.py`: `serve(node, link, executor)`: recovery (stop orphan `mulebox-job-*` units,
+  remove leftover job folders), then loop: claim when a slot is free (poll 1 s), fetch
+  snapshot, prepare, `job_update starting->running`, run `bash -c "set -e; <setup>"` then the
+  job argv as one script, tail `out.log` through `StreamRedactor` into `log_chunk`s (max
+  64 KiB each), heartbeat every 20 s (stop the job on `cancel: true`; stop it if the
+  coordinator is unreachable for 120 s), then `cleaning`, cleanup, `result`.
+  Env: `MULEBOX=1`, `MULEBOX_JOB_ID`, PATH with toolchains first, HOME unchanged.
+
+## Client (`mulebox/client/`)
+
+- `snapshot.py`: `make_snapshot(root: Path, extra_excludes) -> Snapshot(path, sha256,
+  fingerprint, base_commit, branch, files)`: `git ls-files -co --exclude-standard -z`;
+  built-in excludes `.secret/`, `.env`, `.env.*`, `secrets/`, `.npmrc`, `*.pem`, `*.key`,
+  `id_rsa*`, `id_ed25519*`, `.mulebox/`; symlinks stored as links (never followed); tar.gz
+  to a temp file. `fingerprint`: sha256 over sorted (path, mode, sha256 of content or link
+  target). `current_fingerprint(root, excludes)` for the stale check.
+- `remote.py`: `Remote(client_config)`: `call(msg)`, `upload(job_id, path, sha256)`,
+  `watch(job_id, offset, lease) -> Iterator[Message]` (writes heartbeats from a thread).
+- `submit.py`: `run_job(project_cfg, job_name | argv, root) -> int`: snapshot, submit
+  (idempotency key `sub-...`), upload, watch, print log to stdout, status lines to stderr
+  (queue position, elapsed), Ctrl-C sends cancel and returns 130, stale warning at the end.
+- `tui.py`: `mulebox queue --watch` live view: ANSI full-screen refresh every 2 s, `q` or
+  Ctrl-C quits; plain table when stdout is not a TTY.
+- `commands.py`: check, run, queue, logs, cancel.
+
+## Install (`install/`, M1.8)
+
+- `install/install.sh` (run on the build machine): checks Linux, systemd, Python >= 3.12
+  and `python3 -m venv` (prints `sudo apt-get install python3-venv` if missing); creates
+  `~/.mulebox/venv`, installs the given wheel, links `~/.mulebox/bin/mulebox`; writes
+  `~/.config/mulebox/node.toml` from a template if missing (roots under `~/.mulebox/`);
+  creates the roots; installs `mulebox-coordinator.service` and `mulebox-worker.service`
+  user units; checks `loginctl show-user` Linger and prints how to enable it; never deletes.
+- `tools/deploy.sh <ssh-target>` (run on the laptop): builds a wheel, copies it and
+  `install.sh` with `scp`, runs the install, prints `mulebox --version` from the machine.
+- `docs/install.md`: user steps.
