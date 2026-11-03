@@ -94,3 +94,27 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   crossing devices. A symlink target is removed as a link only. Missing path: no-op.
 - `ensure_dir(path: Path, roots: Roots) -> Path`: create inside a root, mode 0o750.
 - Linux mount detection via `/proc/self/mountinfo`; on macOS fall back to `st_dev` checks.
+
+## Decisions made in M1.2 (0.3.0)
+- ids: no monotonic ordering inside one millisecond (no module state); prefix is
+  lowercase letters/digits; bad input raises `ValueError`. Extra: `new_ulid()`.
+- log: configures only the `mulebox` logger (no propagation to root); each call replaces
+  the previous handler.
+- config: generic reading and `ConfigError(path, field, problem)` live in
+  `config_reader.py` (re-exported from `config.py`). Toolchain versions must be quoted
+  strings. `lan` mode needs `lan_range`. Explicit path beats `$MULEBOX_CONFIG`. Extra:
+  `client_config_path()`, `node_config_path()`. Duplicate YAML keys are not detected.
+- protocol: envelope is exactly `v, type, request_id, body`; extra body fields pass
+  through; `state`/`outcome` values are validated anywhere; `v` is checked before `type`.
+  No self-transitions. Body fields beyond the contract: submit_ok `job_id, state`;
+  upload_done `job_id, fingerprint`; status/cancel `job_id`; status_ok `job_id, state`;
+  claim_ok `job_id, attempt_id, project, argv, fingerprint, base_commit, timeout_min`;
+  claim_none none; job_update `job_id, state`; error `code, message`. `decode` has no size
+  limit: readers must cap line length. Replies reuse the request's `request_id`.
+- ssh: base `SSHError`; `RemoteTimeout` for local timeouts; `run_remote(..., check=True)`
+  (False returns the result instead of raising); the command is
+  `ssh_base_argv(...) + ["--", shlex.join(argv)]`. `RemoteError.stderr` is raw: redact
+  before showing or storing.
+- redact: also covers `ghu_`/`ghr_`, `ASIA` keys, `Authorization: Basic/Token`,
+  `api_key=`, JSON `"password": "..."`; leans to over-redaction. StreamRedactor releases
+  complete lines, holds back (longest secret - 1), holds PEM blocks up to 32 KiB.

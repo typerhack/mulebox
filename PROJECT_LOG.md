@@ -8,6 +8,23 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.3.0 - 2026-11-03 - minor
+- M1.2 shared modules in `mulebox/common/`, built in parallel to docs/interfaces.md:
+  - `ids.py`: prefixed ULIDs (`job-...`), validation, timestamps.
+  - `log.py`: idempotent setup of the `mulebox` logger, text or JSON lines.
+  - `config.py` + `config_reader.py`: `.mulebox.yml`, `client.toml`, `node.toml`, strict
+    validation (unknown keys, ranges, CIDR, ssh targets); errors name file and field.
+  - `protocol.py`: versioned JSON-line messages, required body fields per type, job state
+    machine (no self-transitions; finished is terminal).
+  - `ssh.py`: argv-only subprocess, `--` before the `shlex.join` remote command, exit 255
+    as `SSHUnavailable`, `RemoteError` / `RemoteTimeout`, streaming without deadlocks.
+  - `redact.py`: known secrets and token patterns blanked; `StreamRedactor` catches secrets
+    split across chunks.
+- PyYAML 6.0.3 pinned as the first runtime dependency.
+- docs/interfaces.md: additions found while building (see "Decisions made in M1.2").
+- Known gaps: duplicate YAML keys are not detected; `decode` has no line-size cap (the
+  reader must cap it); `RemoteError.stderr` is raw and must be redacted by callers.
+
 ## 0.2.1 - 2026-11-03 - patch
 - docs/interfaces.md: the API contract for the shared modules (ids, log, config, protocol,
   ssh, redact, safepath), so they can be built in parallel.

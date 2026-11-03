@@ -21,7 +21,7 @@ queue and returns the same result as running it locally.
       test runner, line-count check (fails on files over 500 lines, warns over 300).
       Done 2026-11-03 (0.2.0): 7 tests pass on Python 3.13. Not yet run on 3.12, the
       minimum; covered when M1.8 installs on a Linux build machine.
-- [ ] M1.2 `common/`: config, protocol (versioned JSON), ssh, ids, log, redact.
+- [x] M1.2 `common/`: config, protocol (versioned JSON), ssh, ids, log, redact. (2026-11-03, 0.3.0)
 - [ ] M1.3 `common/safepath.py`: roots, symlink and mount checks, descriptor-anchored delete.
       Done when: tests cover escapes, mounts, races and relative paths.
 - [ ] M1.4 Coordinator: SQLite store, states, atomic claim, leases, idempotent submit,
