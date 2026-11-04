@@ -57,7 +57,7 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 
 Exit codes for client failures (not job failures): 2 usage/config error, 3 build machine
 unreachable (`SSHUnavailable`), 4 protocol/remote error, 130 cancelled by Ctrl-C.
-A finished job maps: passed -> its exit code (0), failed -> its exit code (1 if unknown),
+A finished job maps: passed -> its exit code (0), failed -> its exit code, or 5 if it could not start (no command ran),
 timed_out -> 124, cancelled -> 130, interrupted -> 75.
 
 ## Wire usage (protocol.py; replies reuse `request_id`)

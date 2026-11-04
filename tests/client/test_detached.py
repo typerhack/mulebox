@@ -12,7 +12,9 @@ import time
 from coordinator.helpers import queued, request, submit_body
 
 from mulebox import cli
+from mulebox.client import report
 from mulebox.common.protocol import Message, MessageType
+from mulebox.common.status import NOT_STARTED_NOTE
 from mulebox.coordinator import api, leases, store as st
 
 JOB_RE = r"job-[0-9A-Z]{26}"
@@ -210,3 +212,15 @@ def test_the_flag_is_stored_and_echoed(local):
         assert st.require_job(conn, reply.body["job_id"])["detached"] is True
     reply = api.handle(local.store, local.staging, request("submit", **submit_body()), time.time())
     assert reply.body["detached"] is False
+
+
+def test_a_job_that_could_not_start_has_its_own_exit_code(local, in_project, capsys):
+    job_id, _ = detach(capsys)
+    log = (f"{NOT_STARTED_NOTE} needs node 18.0.0\n",)
+    FakeWorker(local.store, local.staging, log=log, exit_code=None).run_next()
+    assert cli.main(["wait", job_id]) == report.EXIT_NOT_STARTED
+    captured = capsys.readouterr()
+    assert f"job {job_id} failed (could not start)" in captured.err
+    assert "failed stage: start" in captured.err
+    assert cli.main(["events", "--job", job_id, "--json"]) == report.EXIT_NOT_STARTED
+    assert '"exit_code": 5' in capsys.readouterr().out

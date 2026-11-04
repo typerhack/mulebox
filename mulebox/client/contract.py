@@ -47,6 +47,8 @@ EXIT_CODES = (
      "tell the user; if a job id was printed, get its result with mulebox wait later"),
     (report.EXIT_REMOTE, "the build machine refused the request",
      "read the message and tell the user"),
+    (report.EXIT_NOT_STARTED, "the job could not start, so no project code ran",
+     "not a failed check: read the reason in the log; mulebox doctor checks most causes"),
     (report.EXIT_INTERRUPTED, "interrupted on the build machine", "run it again once"),
     (report.EXIT_TIMED_OUT, "the job hit timeout_min",
      "look for a hang; raise timeout_min only if the work needs it"),

@@ -32,7 +32,8 @@ yourself.
 
 - **The project has jobs:** run them with the commands the contract lists, instead of the
   project's own build and test commands. Read the job's output as if it ran here; the exit
-  code is the job's, or one of the codes the contract explains.
+  code is the job's, or one of the codes the contract explains. One of those means the job
+  never started: that is not a failed check, so do not go looking for a bug in the code.
 - **It says the project is not set up:** do not set it up unless the user asked. If they
   did, follow section 2 of mulebox's `docs/agents.md`.
 - **`mulebox` is not found, or a command exits 3:** stop and tell the user. Never fall back

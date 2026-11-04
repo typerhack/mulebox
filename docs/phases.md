@@ -174,6 +174,9 @@ Marked `[~]` until checked on a real machine.
       job usually runs, from its past passed runs, and none of the time in line; design.md
       says so. Tested 2026-11-04 (0.30.0) with the fake coordinator and the real store.
       Open: seen in a real queue. A job at position 1 behind a long job gets no suggestion.
+- [~] M8.8 A job that could not start exits 5, not 1, so it does not read as a failed check.
+      Tested 2026-11-04 (0.32.0) with unit tests and the real coordinator code. Open: seen in
+      a real job a worker refused.
 - [~] M8.7 Skill versioning: the skill ships in the package (`skills/mulebox/SKILL.md` links
       to it), `mulebox skill install|update|status` over every Claude config folder, the skill
       states its contract schema, `mulebox doctor` reports it, a test ties the two. Tested

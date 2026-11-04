@@ -131,7 +131,7 @@ def test_run_sends_argv_as_is(make_repo):
 
 @pytest.mark.parametrize(
     "outcome, code, expected",
-    [("passed", 0, 0), ("failed", 2, 2), ("failed", None, 1), ("failed", 0, 1),
+    [("passed", 0, 0), ("failed", 2, 2), ("failed", None, 5), ("failed", 0, 1),
      ("timed_out", None, 124), ("cancelled", None, 130), ("interrupted", None, 75)],
 )
 def test_exit_codes(make_repo, outcome, code, expected):

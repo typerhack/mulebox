@@ -1,7 +1,8 @@
 """CLI subcommands of the client package (docs/interfaces-m1.md, CLI).
 
 Exit codes for client failures: 2 usage/config error, 3 build machine unreachable,
-4 protocol/remote error, 130 Ctrl-C. Job failures return the job's own exit code.
+4 protocol/remote error, 5 job could not start, 130 Ctrl-C. Job failures return the job's
+own exit code.
 A build machine that cannot be reached is reported as such; mulebox never runs the job
 anywhere else instead.
 """

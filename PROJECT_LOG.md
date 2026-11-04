@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.32.0 - 2026-11-04 - minor
+- A job that could not start exits 5, not 1, and its outcome line says so: it ran no project
+  code, so it must not read as a failed check (M8.8). `check`, `wait`, `events` and the
+  summary all go through `report.exit_code_for`. The contract, docs/agents.md and the skill
+  say what 5 means.
+
 ## 0.31.0 - 2026-11-04 - minor
 - The skill ships inside the package; `skills/mulebox/SKILL.md` is a link to it (M8.7).
   `mulebox skill install`, `update` and `status` handle every Claude config folder:

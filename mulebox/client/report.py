@@ -15,6 +15,7 @@ __all__ = ["duration_of"]  # re-exported: the shared status model owns it
 EXIT_USAGE = 2  # usage or config error
 EXIT_UNREACHABLE = 3  # build machine unreachable
 EXIT_REMOTE = 4  # protocol or remote error
+EXIT_NOT_STARTED = 5  # the job never ran: the machine could not set it up
 EXIT_CANCELLED = 130
 EXIT_TIMED_OUT = 124
 EXIT_INTERRUPTED = 75
@@ -38,6 +39,8 @@ def exit_code_for(result: dict[str, Any]) -> int:
     if outcome == Outcome.PASSED:
         return code if valid else 0
     if outcome == Outcome.FAILED:
+        if code is None:  # no command ran, so no code of the project's own to pass on
+            return EXIT_NOT_STARTED
         return code if valid and code != 0 else 1
     if outcome == Outcome.TIMED_OUT:
         return EXIT_TIMED_OUT
@@ -70,7 +73,9 @@ def outcome_line(job_id: str, result: dict[str, Any]) -> str:
     outcome = result.get("outcome", "unknown")
     took = format_duration(duration_of(result))
     code = result.get("exit_code")
-    detail = f" (exit {code})" if outcome == Outcome.FAILED and code is not None else ""
+    detail = ""
+    if outcome == Outcome.FAILED:
+        detail = " (could not start)" if code is None else f" (exit {code})"
     if outcome == Outcome.TIMED_OUT:
         detail = " (job timeout reached)"
     return f"job {job_id} {outcome}{detail} in {took}"

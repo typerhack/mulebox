@@ -72,6 +72,7 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree) | fix the config |
 | 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
+| 5 | the job could not start (toolchain missing, compose file refused), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
 | 124 | the job hit `timeout_min` | look for a hang; raise `timeout_min` only if the work really takes that long |
 | 130 | cancelled | - |
@@ -98,8 +99,8 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
 ```
 
   Ignore events and keys you do not know; `stage` and `check_in` events are planned.
-  `exit_code` is the code the command exits with (124 for a timeout, 130 cancelled, 75
-  interrupted). `mulebox status <job-id>` answers once and exits 0 whatever the job did.
+  `exit_code` is the code the command exits with (5 could not start, 124 for a timeout,
+  130 cancelled, 75 interrupted). `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
   `.secret/`, `secrets/`, `*.pem`, `*.key`, ssh keys). If a job needs a value from such a

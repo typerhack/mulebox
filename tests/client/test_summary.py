@@ -82,7 +82,8 @@ def test_render_uses_the_stage_the_result_gives():
 
 def test_render_knows_a_job_that_never_started():
     line = f"{NOT_STARTED_NOTE} toolchain node 22.22.3 is not installed"
-    assert "failed stage: start" in summary.render(JOB, {"outcome": "failed"}, [line])
+    text = summary.render(JOB, {"outcome": "failed"}, [line])
+    assert "failed stage: start" in text and "outcome: failed, exit code 5" in text
 
 
 def test_the_exit_code_shown_is_what_the_command_returns():
