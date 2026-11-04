@@ -23,10 +23,23 @@ function facts(job) {
   ]));
 }
 
-function follow(pre, stateSlot, onEnd) {
+// The note beside the log says what the stream is doing until output arrives: a blank box
+// must never mean "connected and empty" and "could not connect" at once. A browser allows
+// about six open connections per site over plain HTTP, so with several tabs open the
+// stream can wait in line; the full log link is a plain request and still works.
+function follow(pre, stateSlot, note, onEnd) {
   const url = new URL(`/api/jobs/${encodeURIComponent(pre.dataset.job)}/log`, location.origin);
   url.searchParams.set("tail", String(TAIL));
   const source = new EventSource(url);
+  note.textContent = "connecting to the live log";
+  source.onopen = () => {
+    if (pre.dataset.started === undefined) note.textContent = "connected, no output yet";
+  };
+  source.onerror = () => {
+    note.textContent = source.readyState === EventSource.CLOSED
+      ? "live log closed; reload the page, or open the full log"
+      : "live log not connected, retrying; the full log link works meanwhile";
+  };
   source.addEventListener("state", (event) => {
     stateSlot.replaceChildren(badge(JSON.parse(event.data).state));
   });
@@ -34,6 +47,7 @@ function follow(pre, stateSlot, onEnd) {
     const { offset, data } = JSON.parse(event.data);
     if (pre.dataset.started === undefined) {
       pre.dataset.started = "1";
+      note.textContent = "";
       if (offset > 0) pre.append(`[earlier output not shown, see the full log]\n`);
     }
     const stuck = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 24;
@@ -45,6 +59,7 @@ function follow(pre, stateSlot, onEnd) {
   });
   source.addEventListener("end", (event) => {
     source.close();
+    if (pre.dataset.started === undefined) note.textContent = "the job wrote no output";
     onEnd(JSON.parse(event.data));
   });
   return source;
@@ -64,6 +79,7 @@ export function jobView(box, jobId) {
     const link = el("a", { href: `/api/jobs/${encodeURIComponent(jobId)}/log.txt`,
                            text: "Full log as text" });
     const run = safeUrl(job.run_url);
+    const note = el("span", { class: "muted", role: "status" });
     const parts = [
       back(),
       job.kind === "runner"
@@ -72,11 +88,11 @@ export function jobView(box, jobId) {
         : null,
       run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
       info,
-      el("div", { class: "log-head" }, el("span", { text: "log" }), link),
+      el("div", { class: "log-head" }, el("span", { text: "log" }), note, link),
       pre,
     ].filter(Boolean);
     fill(box, `Job ${job.project ?? "-"} / ${job.job ?? "-"}`, stateSlot, ...parts);
-    source = follow(pre, stateSlot, (final) => {
+    source = follow(pre, stateSlot, note, (final) => {
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));
       info.replaceChildren(facts(final));
     });

@@ -74,6 +74,16 @@ queue and returns the same result as running it locally.
       fits without scrolling at 1440x900 and 1280x800 in headless Chrome. Deployed on a real
       machine: a compose job at full load moved the graph and meters live in Edge, with no
       console errors. Open: a real phone.
+- [~] M2.8 Jobs box redesign: tabs (Queue, Failed, Passed, Recent, with live counts,
+      remembered per browser) and the queue by machine: a lane per machine with what it
+      runs and what waits for it, waiting jobs in exactly one place (a lane only when that
+      machine is the one place the job can run, else one shared list, else stuck with the
+      coordinator's reason). The Machines box stays in the top row and gains a small CPU
+      and memory meter per machine, real only for the dashboard's own machine until M5.3
+      (the rest read "no live data"). Built 2026-11-04 (0.26.0): in headless Chrome with
+      one, three (one offline) and no machines, stuck and pinned jobs, at 1440x900,
+      1280x800 and 390 px in both themes, the page fits and nothing scrolls sideways.
+      Open: the real Edge review, deployment, and a real phone.
 
 ## M3: GitHub Actions runners
 - [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)

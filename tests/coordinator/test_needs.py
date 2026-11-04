@@ -57,6 +57,13 @@ def test_an_idempotent_resubmit_returns_the_job_even_if_the_worker_changed(store
     assert again.body["job_id"] == first.body["job_id"]
 
 
+def test_capable_workers_are_those_covering_the_needs_online_or_not():
+    fleet = [worker("a", ["node"]), worker("b", ["node", "docker"], seen=0.0), worker("c")]
+    assert [w["worker"] for w in needs.capable(fleet, ["docker"])] == ["b"]
+    assert [w["worker"] for w in needs.capable(fleet, [])] == ["a", "b", "c"]
+    assert needs.capable(fleet, ["gpu"]) == []
+
+
 def test_online_capable_worker_is_no_reason_to_wait():
     assert needs.waiting_for([worker(capabilities=["docker"])], ["docker"], NOW) is None
 

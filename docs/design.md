@@ -256,12 +256,18 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - A separate read-only process beside the coordinator: aiohttp, plain HTML and JS, canvas
   graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
   log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
-- Shows: running and waiting jobs (project, branch, source), live log, history, every
-  machine with whether it is online and its free slots, and CPU per core, memory, disk and
-  Docker containers for the machine the dashboard runs on.
+- Shows: every machine with whether it is online, its free slots, capabilities, what it
+  runs and a small CPU and memory reading (only where measured: today the dashboard's own
+  machine, the rest say so until workers report, M5.3); the queue by machine (one lane per
+  machine with what runs and what waits for it; jobs several machines could take in one
+  shared list, jobs no machine fits marked stuck), failed, passed and recent jobs behind
+  tabs, live log, history, and CPU per core, memory, disk and Docker containers for the
+  machine the dashboard runs on.
 - Layout: a live monitor in boxes that fills the window, machine load first and the jobs
-  list below, one theme over the whole page, and a light or dark switch that is remembered
+  box below, one theme over the whole page, and a light or dark switch that is remembered
   per browser. Before a choice it follows the system; the sign-in page always does.
+- Honest about the queue: a waiting job is not assigned until a worker claims it, so the
+  lanes only ever say where a job can go, never where it will.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by

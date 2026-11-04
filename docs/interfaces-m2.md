@@ -15,7 +15,40 @@ Input is a public job dict; every function tolerates missing or malformed fields
   is on GitHub. `interrupted` and `cancelled` reservations keep their outcome.
 - Elapsed: waiting time when queued, running time when active, run time when finished.
 - `fingerprint(jobs)`: what changes when a view must redraw. Elapsed time is left out, so a
-  ticking clock never causes an event.
+  ticking clock never causes an event. Where a waiting job may go (below) is in, so a
+  capable machine going offline redraws the queue.
+
+## Where a waiting job may go (`coordinator/views.py` `placement`)
+
+The dashboard's queue rows add, on waiting agent jobs only: `needs`, `can_run_on` (the
+workers whose capabilities cover them, online or not: the same test `queue.claim` makes)
+and `waiting_for` (needs.py, when a queued job cannot start now). None of it is an
+assignment: the queue is one line, and the first capable worker with a free slot takes the
+job. A running job has its `worker`; a runner reservation its `pinned_worker`.
+
+## Jobs box (`static/jobs.js`, `static/lanes.js`)
+
+Tabs, each with a live count, remembered per browser, each showing one thing: `Queue`
+(default, what is happening now), `Failed` (failed, timed out or interrupted) and `Passed`
+among the finished jobs the queue keeps, and `Recent` (all of those, so also released
+runner slots and cancelled jobs, which are neither a pass nor a failure). Ticking times are
+keyed by job id, whatever order a tab puts them in. A viewer's first `queue` snapshot is
+built when it connects, never taken from the last published event, whose elapsed times
+would be stale.
+
+`Queue` is the queue by machine: one lane per worker with its name and state, a block per
+running job, and the jobs waiting for it. Slots, capabilities and readings are shown once,
+in the Machines box, not here. Waiting jobs keep their real positions and appear in
+exactly one place:
+
+- a machine's lane, when it is the one place the job can run (a pinned runner
+  reservation, or the only capable worker, even if that worker is offline);
+- the `next free machine` list, when several machines could take it (named when not all
+  of them can);
+- the `no machine fits` lane, first and in the alarm colour, when no worker covers its
+  needs. A job with a `waiting_for` reason shows it, wherever it sits, marked `stuck`.
+
+With no placement fields (an older server) every waiting job goes to the shared list.
 
 `status_ok` of a `status` request has `steps`, one row per stage, and `common/status.py` reads
 them: `current_stage`, `step_duration_s`, `failed_step` ([interfaces-m4.md](interfaces-m4.md),
@@ -39,11 +72,19 @@ stage (`steps.failed_stage`), and `job_event` puts it in the `finished` event.
   own ssh connection, never a shared `ControlMaster` one: ssh would otherwise hand the
   forward to the master and exit, and Ctrl-C could not close it.
 
-## Machines panel (`dashboard/machines.py`, `static/machines.js`)
+## Machines box (`dashboard/machines.py`, `static/machines.js`)
+
+The panel feeds the Machines box, the lanes above and `/api/machines`.
 
 - A row per worker in the coordinator's `workers` table: `name`, `state`, `slots`,
-  `free_slots`, `capabilities`, `last_seen`, `jobs`. Plus `total`, `online` and `free_slots`
-  for the cluster.
+  `free_slots`, `capabilities`, `last_seen`, `jobs`, `cpu_pct`, `mem_pct`. Plus `total`,
+  `online` and `free_slots` for the cluster.
+- **Readings.** `cpu_pct` (average over the cores) and `mem_pct` are null until something
+  measures the machine. Today only the machine the dashboard runs on is measured (the
+  hub's own sampler, put on the row named after `node.toml`'s `name`); every other row
+  reads `no live data` in the box, never a guess. Workers reporting their own load is
+  M5.3, and the page needs no change for it: it shows a small meter wherever a reading is
+  present. A `machines` event is published when a reading moves a whole percent.
 - `state`: `offline` when not seen for 15 s, else `busy` with nothing free, else `available`.
 - **Seen.** Claims stop while a worker has no free slot, so a job's heartbeats, every 3 s,
   also refresh `last_seen`. The worker lease cannot do this job: at 120 s it would keep a
@@ -123,7 +164,7 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 | `GET /healthz` | `{ok, version, lan, sign_in}`; `lan` is true on the LAN listener, `sign_in` when it needs a password |
 | `GET`, `POST /login` | sign-in page and form; LAN listener only, else 404 |
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
-| `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent` |
+| `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for` |
 | `GET /api/machines` | machines panel snapshot (above) |
 | `GET /api/history?limit=&before=&project=` | `{jobs, next_before}`, newest first; `limit` 1..200, default 50; page with `before = next_before` |
 | `GET /api/jobs/{id}` | job detail with redacted `command` and `log_size`; 404 if unknown |

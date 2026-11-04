@@ -55,6 +55,36 @@ def test_summary_counts_the_cluster_and_keeps_each_job_on_its_machine():
     assert [len(row["jobs"]) for row in panel["machines"]] == [1, 0, 1]
 
 
+def test_rows_carry_no_readings_until_something_measures_them():
+    row = machines.machine(worker(), [], NOW)
+    assert row["cpu_pct"] is None and row["mem_pct"] is None
+
+
+def test_readings_come_from_a_metrics_sample_or_stay_null():
+    sample = {"cpu": [10.0, 30.0], "memory": {"total": 200, "available": 50, "used": 150}}
+    assert machines.readings(sample) == {"cpu_pct": 20.0, "mem_pct": 75.0}
+    assert machines.readings({"cpu": None, "memory": None}) == {"cpu_pct": None, "mem_pct": None}
+    assert machines.readings(None) == {"cpu_pct": None, "mem_pct": None}
+
+
+def test_only_the_named_machine_gets_the_dashboard_hosts_readings():
+    panel = machines.snapshot([worker("a"), worker("b")], [], NOW)
+    machines.with_readings(panel, "b", {"cpu": [50.0], "memory": {"total": 10, "used": 1}})
+    rows = {row["name"]: row for row in panel["machines"]}
+    assert rows["b"]["cpu_pct"] == 50.0 and rows["b"]["mem_pct"] == 10.0
+    assert rows["a"]["cpu_pct"] is None and rows["a"]["mem_pct"] is None
+    machines.with_readings(panel, "nobody", {"cpu": [1.0], "memory": None})  # changes nothing
+    assert rows["a"]["cpu_pct"] is None
+
+
+def test_fingerprint_sees_a_reading_move_a_whole_percent_only():
+    def panel(cpu):
+        out = machines.snapshot([worker()], [], NOW)
+        return machines.with_readings(out, "wrk-a", {"cpu": [cpu], "memory": None})
+    assert machines.fingerprint(panel(10.2)) == machines.fingerprint(panel(10.4))
+    assert machines.fingerprint(panel(10.2)) != machines.fingerprint(panel(11.0))
+
+
 def test_fingerprint_ignores_time_passing_but_sees_a_state_change():
     first = machines.snapshot([worker()], [], NOW)
     assert machines.fingerprint(first) == machines.fingerprint(
@@ -98,6 +128,36 @@ def test_hub_publishes_only_on_change_including_going_quiet(hub, run_job):
         assert await hub.machines_step() is True
     asyncio.run(go())
     assert hub.current_machines()["machines"][0]["state"] == OFFLINE
+
+
+def test_hub_fills_the_local_machines_readings_and_nothing_else(hub, store, run_job):
+    """The dashboard's own sampler (FakeSampler: cores at 10 and 20, memory 40 of 100) is
+    the only source today; the hub puts it on the row named after this machine."""
+    run_job()  # wrk-a
+    with store.write() as conn:
+        workers.upsert(conn, "wrk-b", [], 1, NOW, slots=1)
+    hub.local_name = "wrk-a"
+
+    async def go():
+        await hub.metrics_step()
+        assert await hub.machines_step() is True
+        assert await hub.machines_step() is False  # same readings, no event
+    asyncio.run(go())
+    rows = {row["name"]: row for row in hub.current_machines()["machines"]}
+    assert rows["wrk-a"]["cpu_pct"] == 15.0 and rows["wrk-a"]["mem_pct"] == 40.0
+    assert rows["wrk-b"]["cpu_pct"] is None and rows["wrk-b"]["mem_pct"] is None
+
+
+def test_machines_route_serves_the_hubs_panel_with_readings(call, hub, run_job):
+    run_job()
+    hub.local_name = "wrk-a"
+
+    async def go(client):
+        await hub.metrics_step()
+        await hub.machines_step()
+        return await (await client.get("/api/machines")).json()
+    body = call(go)
+    assert body["machines"][0]["cpu_pct"] == 15.0
 
 
 def test_route_and_event_stream_snapshot(call, run_job):

@@ -41,6 +41,13 @@ export class LineChart {
     this.draw();
   }
 
+  // After a theme switch: forget the cached colours and draw again with the new ones.
+  redraw() {
+    this.tokens = null;
+    this.ramp = null;
+    this.draw();
+  }
+
   fillRamp(ctx, height) {
     const key = `${height}:${this.token("--lo")}${this.token("--hi")}`;
     if (this.ramp?.key !== key) {

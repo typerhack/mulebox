@@ -3,7 +3,9 @@
 - queue: polls the store every QUEUE_S and publishes a `queue` event only when the
   status-model fingerprint changes (elapsed times tick in the browser).
 - machines: reads the workers every MACHINES_S and publishes a `machines` event only when
-  the panel changes, which includes a machine going quiet.
+  the panel changes, which includes a machine going quiet and, for the machine this
+  dashboard runs on (`local_name`), its CPU and memory readings moving a whole percent.
+  Other machines carry no readings until workers report them (M5.3).
 - metrics: CPU, memory and own overhead every METRICS_S; Docker every DOCKER_S; disk
   every DISK_S. Each `metrics` event carries the newest value of every part; the last
   HISTORY samples are kept for the graphs of a viewer that just connected.
@@ -40,8 +42,9 @@ class Hub:
     def __init__(self, data: DashboardData, bus: EventBus, roots: dict[str, str], *,
                  sampler: Sampler | None = None,
                  docker_count: Callable[[], Awaitable[int | None]] | None = None,
-                 clock: Callable[[], float] = time.time) -> None:
+                 clock: Callable[[], float] = time.time, local_name: str | None = None) -> None:
         self.data, self.bus, self.roots, self.clock = data, bus, roots, clock
+        self.local_name = local_name
         self.sampler = sampler or Sampler()
         socket = docker.socket_path()
         self.docker_count = docker_count or (lambda: docker.running_containers(socket))
@@ -56,7 +59,7 @@ class Hub:
 
     async def queue_step(self) -> bool:
         """Publish a `queue` event if the queue changed; True when one was published."""
-        jobs = await asyncio.to_thread(self.data.queue_jobs)
+        jobs = await asyncio.to_thread(self.data.queue_jobs, self.clock())
         mark = fingerprint(jobs)
         if mark == self._queue_print:
             return False
@@ -67,6 +70,7 @@ class Hub:
     async def machines_step(self) -> bool:
         """Publish a `machines` event if the panel changed; True when one was published."""
         panel = await asyncio.to_thread(self.data.machines, self.clock())
+        machines.with_readings(panel, self.local_name, self.history[-1] if self.history else None)
         mark = machines.fingerprint(panel)
         if mark == self._machines_print:
             return False

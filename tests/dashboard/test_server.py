@@ -70,6 +70,27 @@ def test_health_and_queue(call, run_job):
     assert queue["running"][0]["job_id"] == job_id
 
 
+def test_a_new_viewer_gets_elapsed_times_of_now_not_of_the_last_event(data, hub, run_job, tmp_path):
+    """The last published queue event is minutes old once nothing changes; a viewer that
+    connects then must not tick on from its stale elapsed times."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from mulebox.dashboard.server import build_app
+    run_job()
+    asyncio.run(hub.queue_step())  # published at NOW
+
+    async def go():
+        app = build_app(data, hub, clock=lambda: NOW + 600, start_hub=False, static_dir=tmp_path)
+        async with TestClient(TestServer(app)) as client:
+            reply = await client.get("/api/events")
+            text = (await reply.content.read(4096)).decode()
+            reply.close()
+            return text
+    queue = next(d for e, d in sse(asyncio.run(go())) if e == "queue")
+    assert queue["running"][0]["elapsed_s"] == 600.0
+    assert hub.current_queue()["running"][0]["elapsed_s"] == 0.0
+
+
 def test_job_and_history_errors(call):
     async def go(client):
         return [(await client.get(url)).status for url in (
@@ -146,8 +167,8 @@ def test_the_shipped_page_works_under_the_policy():
     assert "style=" not in page and "onclick" not in page.lower()
     assert not re.search(r"<script(?![^>]*\bsrc=)", page)  # no inline script
     assert "http://" not in page and "https://" not in page  # no CDN
-    for name in ("app.js", "style.css", "charts.js", "jobs.js", "jobdetail.js", "machine.js",
-                 "format.js"):
+    for name in ("app.js", "style.css", "charts.js", "jobs.js", "lanes.js", "jobdetail.js",
+                 "machine.js", "machines.js", "format.js"):
         assert (STATIC_DIR / name).is_file()
     # Filter lists block some names outright, and one blocked module blanks the page.
     assert not (STATIC_DIR / "logview.js").exists()

@@ -95,7 +95,8 @@ def run(node, port: int, lan=None) -> int:
     try:
         data = DashboardData(store, staging)
         access, tls = lan if lan else (None, None)
-        app = build_app(data, Hub(data, EventBus(), node.roots), lan=access)
+        hub = Hub(data, EventBus(), node.roots, local_name=node.name)
+        app = build_app(data, hub, lan=access)
         listeners = [Listener(BIND_HOST, port)]
         _log.info("dashboard on http://%s:%d", BIND_HOST, port)
         if access is not None:

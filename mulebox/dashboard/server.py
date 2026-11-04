@@ -115,7 +115,9 @@ async def _queue(request: web.Request) -> web.Response:
 
 async def _machines(request: web.Request) -> web.Response:
     app = request.app
-    body = await asyncio.to_thread(app[keys.DATA].machines, app[keys.CLOCK]())
+    body = app[keys.HUB].current_machines()  # carries the local machine's readings
+    if body is None:
+        body = await asyncio.to_thread(app[keys.DATA].machines, app[keys.CLOCK]())
     return web.json_response(body)
 
 

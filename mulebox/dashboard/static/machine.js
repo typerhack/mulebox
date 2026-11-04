@@ -58,6 +58,13 @@ export class Machine {
     this.render();
   }
 
+  // A theme switch: the graphs take their colours from the stylesheet, so draw them again now.
+  redraw() {
+    this.cpu.chart.redraw();
+    this.memory.chart.redraw();
+    this.render();
+  }
+
   render() {
     const last = this.samples.at(-1);
     if (!last || document.hidden) return;

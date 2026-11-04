@@ -15,6 +15,7 @@ const machine = new Machine({ cpu: document.getElementById("cpu"),
 
 let snapshot = null;
 let snapshotAt = 0;
+let machines = null;
 let route = "";
 let closeView = null;
 
@@ -23,8 +24,11 @@ function setConn(state, text) {
   conn.textContent = text;
 }
 
+const age = () => (performance.now() - snapshotAt) / 1000;
+
 function showQueue() {
-  queueView(work, snapshot);
+  queueView(work, snapshot, machines);
+  if (snapshot) tick(work, snapshot, age());  // never show the snapshot's older times
 }
 
 function navigate() {
@@ -59,7 +63,7 @@ function applyTheme(theme, remember) {
   document.documentElement.dataset.theme = theme;
   themeButton.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} theme`);
   if (remember) { try { localStorage.setItem("mulebox-theme", theme); } catch { /* private mode */ } }
-  machine.render();  // the graphs read their colours from the stylesheet
+  machine.redraw();  // the graphs read their colours from the stylesheet
 }
 applyTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark", false);
 themeButton.addEventListener("click", () => {
@@ -83,8 +87,17 @@ stream.addEventListener("queue", (event) => {
   snapshotAt = performance.now();
   if (route === "") showQueue();
 });
+// Readings move every couple of seconds; the lanes only care who is there and whether
+// it is online, so they are not redrawn for a reading alone.
+let laneKey = "";
 stream.addEventListener("machines", (event) => {
-  renderMachines(document.getElementById("machines"), JSON.parse(event.data));
+  machines = JSON.parse(event.data);
+  renderMachines(document.getElementById("machines"), machines);
+  const key = JSON.stringify(machines.machines.map((m) => [m.name, m.state]));
+  if (key !== laneKey) {
+    laneKey = key;
+    if (route === "") showQueue();
+  }
 });
 stream.addEventListener("metrics", (event) => machine.add(JSON.parse(event.data)));
 stream.addEventListener("metrics_history", (event) => {

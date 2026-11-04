@@ -10,6 +10,7 @@ Calls are blocking (SQLite); the server runs them in a thread.
 from __future__ import annotations
 
 import shlex
+import time
 from typing import Any
 
 from mulebox.common.protocol import JobState
@@ -20,7 +21,7 @@ from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.validate import check_job_id
-from mulebox.coordinator.views import reservation_dict
+from mulebox.coordinator.views import placement, reservation_dict
 from mulebox.dashboard import machines
 
 QUEUE_FINISHED = 20
@@ -34,13 +35,17 @@ class DashboardData:
         self.store, self.staging = store, staging
         self._redactor = Redactor()
 
-    def queue_jobs(self, finished_limit: int = QUEUE_FINISHED) -> list[dict[str, Any]]:
+    def queue_jobs(self, now: float | None = None,
+                   finished_limit: int = QUEUE_FINISHED) -> list[dict[str, Any]]:
+        """The queue rows, each waiting agent job with where it may go (views.placement)."""
+        now = time.time() if now is None else now
         with self.store.read() as conn:
             rows = queue.listing(conn, finished_limit)
-        return [reservation_dict(job, pos) for job, pos in rows]
+            fleet = workers.listing(conn)
+        return [{**reservation_dict(job, pos), **placement(fleet, job, now)} for job, pos in rows]
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:
-        return snapshot(self.queue_jobs(), now)
+        return snapshot(self.queue_jobs(now), now)
 
     def machines(self, now: float) -> dict[str, Any]:
         with self.store.read() as conn:

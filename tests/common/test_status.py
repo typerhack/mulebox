@@ -51,3 +51,11 @@ def test_fingerprint_ignores_the_passing_of_time():
     first = job("running", started_at=1.0)
     assert status.fingerprint([first]) == status.fingerprint([dict(first)])
     assert status.fingerprint([first]) != status.fingerprint([job("cleaning", started_at=1.0)])
+
+
+def test_fingerprint_sees_where_a_waiting_job_may_go_change():
+    waiting = job("queued", position=1, can_run_on=["build-1"])
+    assert status.fingerprint([waiting]) != status.fingerprint([{**waiting, "can_run_on": []}])
+    assert status.fingerprint([waiting]) != status.fingerprint(
+        [{**waiting, "waiting_for": "no build machine for this job is online"}])
+    assert status.fingerprint([waiting]) == status.fingerprint([{**waiting, "elapsed_s": 5.0}])
