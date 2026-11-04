@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.20.0 - 2026-11-04 - minor
+- Jobs from `.mulebox.yml` run with `bash -e`. A multi-line job used to report only its last
+  line, so failed migrations followed by a passing line counted as passed. A job relying
+  on a line being allowed to fail now needs `|| true` on it.
+
 ## 0.19.0 - 2026-11-04 - minor
 - `needs: [playwright]`: jobs share one browser folder in the cache root, so a browser is
   fetched once per machine. A worker offers the capability once a person has installed the

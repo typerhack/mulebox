@@ -1,4 +1,5 @@
 import io
+import subprocess
 from dataclasses import replace
 
 import pytest
@@ -8,6 +9,7 @@ from mulebox.client.submit import Streams, run_job
 from mulebox.common.config import ProjectConfig
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.ssh import SSHUnavailable
+from mulebox.worker.jobspec import build_argv
 
 JOB = "job-01JC3X0000000000000000ABCD"
 PROJECT = ProjectConfig(
@@ -97,11 +99,19 @@ def test_submit_body_of_a_compose_project(make_repo):
         "CI": "1", "MULEBOX_COMPOSE_FILES": "docker-compose.yml:docker-compose.ci.yml"}
 
 
+def test_a_failing_line_of_a_multi_line_job_fails_it(tmp_path):
+    project = replace(PROJECT, jobs={"check": "false\necho passed anyway\n"})
+    _, argv = submit.job_request(project, "check")
+    done = subprocess.run(list(build_argv(None, argv)), cwd=tmp_path, capture_output=True,
+                          text=True)
+    assert done.returncode == 1 and "passed anyway" not in done.stdout
+
+
 def test_submit_body_for_a_named_job(make_repo):
     remote = FakeRemote([[result()]])
     run_job(PROJECT, "test", make_repo(), remote, streams())
     body = remote.calls[0].body
-    assert body["argv"] == ["bash", "-c", "pnpm test"]
+    assert body["argv"] == ["bash", "-e", "-c", "pnpm test"]
     assert body["job"] == "test" and body["project"] == "example-app"
     assert body["setup"] == "pnpm install --frozen-lockfile"
     assert body["toolchain"] == {"node": "22.22.3"} and body["needs"] == ["node"]

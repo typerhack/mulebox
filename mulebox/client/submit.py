@@ -55,9 +55,10 @@ class Streams:
 
 
 def job_request(project: ProjectConfig, target: str | Sequence[str]) -> tuple[str, list[str]]:
-    """(job name, argv): a job from .mulebox.yml runs as `bash -c <script>`."""
+    """(job name, argv): a job from .mulebox.yml runs as `bash -e -c <script>`, so the first
+    failing line of a multi-line job fails it, as in a GitHub Actions `run:` step."""
     if isinstance(target, str):
-        return target, ["bash", "-c", project.jobs[target]]
+        return target, ["bash", "-e", "-c", project.jobs[target]]
     return RUN_JOB_NAME, list(target)
 
 

@@ -109,6 +109,8 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      `engines`, the CI workflow). If the build machine lacks one, the job fails with a
      message naming `mulebox toolchain install <name> <version>`; ask the user to run it.
    - `setup` runs before every job in the same shell; keep it to dependency install.
+   - A job may span several lines (`check: |`). The first line that fails ends it, as in a
+     GitHub Actions `run:` step.
    - If the project runs containers for its checks, use `compose:` (section 2a). Never run
      `docker compose up` in a job: nothing would remove the containers afterwards.
 3. **Verify it.** Run `mulebox check`. It must pass on a clean main branch, with the same

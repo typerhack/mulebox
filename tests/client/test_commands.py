@@ -27,7 +27,7 @@ def test_check_passes_end_to_end(fake, in_repo, capsys):
         names = set(tar.getnames())
     assert names == {".mulebox.yml", "src/a.py"}
     submit = fake.requests()[0]
-    assert submit["type"] == "submit" and submit["body"]["argv"] == ["bash", "-c", "echo ok"]
+    assert submit["type"] == "submit" and submit["body"]["argv"] == ["bash", "-e", "-c", "echo ok"]
 
 
 def test_failed_job_returns_its_exit_code(fake, in_repo, capsys):

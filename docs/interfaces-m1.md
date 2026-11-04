@@ -207,6 +207,8 @@ Client:
 - Symlinks that are absolute or leave the project are skipped (extraction would reject
   them) and reported. Excludes ignore case. Archive members carry no owner names.
 - `mulebox run` also sends setup/toolchain/needs/timeout_min; its job name is `run`.
+- A named job is sent as `["bash", "-e", "-c", "<cmd>"]` since 0.20.0: before, only the last
+  line of a multi-line job decided its exit code.
 - The watch stream reconnects up to 3 times, 5 s apart, then exits 3.
 - `RemoteTimeout` exits 3. The ssh processes run in their own session so Ctrl-C reaches
   only mulebox, which then sends `cancel`.
