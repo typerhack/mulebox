@@ -121,6 +121,14 @@ def test_what_stays_is_reported_so_the_agent_retries(daemon, docker):
         docker_cleanup.teardown(docker, job_id)
 
 
+def test_an_image_alone_does_not_hold_the_job(daemon, docker):
+    job_id = new_id("job")
+    add_job(daemon, job_id)
+    daemon.fail_remove["images"] = 99
+    docker_cleanup.teardown(docker, job_id)
+    assert daemon.left() == [f"images-{job_id}"]
+
+
 def test_teardown_refuses_a_bad_id_before_any_call(daemon, docker):
     with pytest.raises(compose.ComposeError):
         docker_cleanup.teardown(docker, "job-*")

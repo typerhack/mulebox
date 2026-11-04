@@ -37,14 +37,13 @@ Choices where docs/interfaces.md is silent:
 
 from __future__ import annotations
 
-import re
 import ipaddress
 import os
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from mulebox.common import compose
+from mulebox.common import compose, config_project
 from mulebox.common.config_reader import ConfigError, Reader, load_toml, load_yaml
 
 __all__ = [
@@ -139,52 +138,20 @@ def load_project_config(path: Path) -> ProjectConfig:
     if "services" in reader.data:
         reader.fail("services", "is not supported: nothing would start them. Use compose: to "
                     "run containers for the job, or env: to reach a service by address")
-    compose_files = _compose(reader, path.parent)
+    files = config_project.compose_files(reader, path.parent, PROJECT_FILE)
     config = ProjectConfig(
         project=reader.name("project"),
         needs=reader.strings("needs"),
         toolchain=reader.string_map("toolchain"),
         setup=reader.text("setup", None),
-        compose=compose_files,
+        compose=files,
         jobs=_jobs(reader),
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
         exclude=reader.strings("exclude"),
-        env=_env(reader, compose_files),
+        env=config_project.env_values(reader, files),
     )
     reader.finish()
     return config
-
-
-def _compose(reader: Reader, project_dir: Path) -> tuple[str, ...]:
-    """`compose:` files: safe names, no repeats, and present in the project."""
-    files = reader.strings("compose")
-    for index, name in enumerate(files):
-        where = f"compose[{index}]"
-        problem = compose.file_problem(name)
-        if problem:
-            reader.fail(where, problem)
-        if name in files[:index]:
-            reader.fail(where, f"lists {name} twice")
-        if not (project_dir / name).is_file():
-            reader.fail(where, f"file {name} not found next to {PROJECT_FILE}")
-    return files
-
-
-_ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-_ENV_RESERVED = ("PATH", "HOME", "USER", "SHELL")
-
-
-def _env(reader: Reader, compose_files: tuple[str, ...]) -> dict[str, str]:
-    """`env:` values for the job: throwaway CI values; names checked, no overriding PATH/HOME."""
-    env = reader.string_map("env")
-    for key in env:
-        if not _ENV_NAME.fullmatch(key):
-            reader.fail(f"env.{key}", "must be a shell variable name (letters, digits, _)")
-        if key in _ENV_RESERVED or key.startswith("MULEBOX"):
-            reader.fail(f"env.{key}", "is set by mulebox or the build machine; choose another name")
-        if compose_files and key in compose.RESERVED_ENV:
-            reader.fail(f"env.{key}", "is set by mulebox for a compose: project; remove it")
-    return env
 
 
 def client_config_path() -> Path:

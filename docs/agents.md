@@ -80,7 +80,7 @@ project: example-app            # letters, digits, '.', '_', '-'
 toolchain:                      # exact versions, quoted
   node: "22.22.3"
   pnpm: "11.22.0"
-needs: []                       # worker capabilities, e.g. [docker]
+needs: []                       # worker capabilities, e.g. [playwright]
 env:                            # throwaway CI values only, never real secrets
   CI: "1"
   NEXT_TELEMETRY_DISABLED: "1"
@@ -109,7 +109,8 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      `engines`, the CI workflow). If the build machine lacks one, the job fails with a
      message naming `mulebox toolchain install <name> <version>`; ask the user to run it.
    - `setup` runs before every job in the same shell; keep it to dependency install.
-   - Container ports must bind to `127.0.0.1`.
+   - If the project runs containers for its checks, use `compose:` (section 2a). Never run
+     `docker compose up` in a job: nothing would remove the containers afterwards.
 3. **Verify it.** Run `mulebox check`. It must pass on a clean main branch, with the same
    result as the project's CI. Then prove a broken change fails the same way it would
    locally: add an obvious type error, run `mulebox check typecheck` (or `check`), confirm
@@ -133,6 +134,52 @@ and tell the user instead of running the command locally. See mulebox's docs/age
 5. **Commit** `.mulebox.yml` and the rule on a branch and open a pull request if that is
    the project's workflow. Report to the user: the jobs you defined, the check time, and
    anything you could not set up.
+
+## 2a. Projects that need containers (`compose:`)
+
+```yaml
+project: example-app
+compose: [docker-compose.yml, docker-compose.ci.yml]   # merged in this order; needs docker
+env:
+  APP_URL: http://127.0.0.1:${MULEBOX_PORT_API_8000}   # service api, container port 8000
+setup: docker compose exec -T api composer install
+jobs:
+  check: docker compose exec -T api php artisan test --parallel
+  migrate: docker compose exec -T api php artisan migrate --seed --force
+timeout_min: 30
+```
+
+mulebox starts the containers (`docker compose up --detach --wait`) before `setup`, inside
+the job. Every job gets its own containers, networks and volumes. All of them are removed
+when the job ends, however it ends; pulled images and build layers stay as cache.
+
+- **`docker compose exec -T <service> ...`** works as it is, from any folder. Use `-T`: a job
+  has no terminal. Do not add `-f` or `-p`, and do not run `up` or `down`.
+- **Ports always move.** Each published port is bound to `127.0.0.1` on a port chosen for the
+  job, whatever the compose file says, and the log names it. Use the variable
+  `MULEBOX_PORT_<SERVICE>_<PORT>` in `env:` or in commands, never a number from the compose
+  file. Letters are uppercased and other characters become `_`; UDP ports end in `_UDP`.
+  Between containers nothing changes: use the service name and the container port.
+- **`env:` reaches compose**, for `${VAR}` in compose files, as it reaches commands. A service
+  only sees what its `environment:` passes on, as always. `UID` and `GID` are set, so
+  `user: "${UID}:${GID}"` works.
+- **`.env*` files are never uploaded**, so `env_file: .env.ci` fails on the build machine. Move
+  those throwaway values into `env:` and `environment:`.
+- **Root-owned files** in the checkout are fine: mulebox cleans them up.
+- **`up --wait` needs every service to stay up** and, if it has a healthcheck, become healthy.
+  A service that exits on purpose should be a `depends_on` with
+  `condition: service_completed_successfully`, or moved into a job command. A healthcheck
+  that depends on `setup` having run cannot pass, because setup comes after.
+- When a job fails, its log ends with the state and last lines of its containers.
+
+These are refused with the reason, because they reach past the job: `network_mode: host`,
+`pid: host`, `ipc: host`, `privileged: true`, `external` networks or volumes, volumes on a
+host device, the Docker socket, and writable bind mounts outside the checkout. `container_name`
+is dropped, with a note in the log; use the service name. Put CI-only changes in a separate
+compose file rather than changing how the project runs locally.
+
+If mulebox says no build machine offers `docker`, tell the user: a person has to add it
+to the build machine's `capabilities`.
 
 ## 3. Moving GitHub Actions to mulebox runners
 
@@ -158,7 +205,8 @@ jobs:
 3. **Linux differences to check:**
    - The build machine is Linux, not macOS: Docker is Docker Engine, not Docker Desktop.
      Containers that write into the checkout leave root-owned files. Run them with the
-     runner's user id (`user: "${UID}:${GID}"`) or clean them up in a final step.
+     runner's user id (`user: "${UID}:${GID}"`) or clean them up in a final step: `compose:`
+     cleanup covers mulebox jobs, not GitHub runner jobs.
    - Steps that install system packages with `sudo` will fail: the runner has no sudo.
      Ask the user to install such packages on the build machine once.
    - Use per-run database names, as in section 2.

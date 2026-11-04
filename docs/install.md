@@ -75,7 +75,10 @@ sudo loginctl enable-linger alice
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
   absolute, and not a system folder or your home folder itself.
 - `slots`, `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
-  in `capabilities` of some worker, or its jobs are refused with that message.
+  in `capabilities` of some worker, or its jobs are refused with that message. Add `docker`
+  on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to
+  run `compose:` projects, then restart the worker. mulebox fetches one small helper image
+  the first time, and never removes images.
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).

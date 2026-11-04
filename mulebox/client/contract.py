@@ -47,6 +47,14 @@ GIT = (
     "ignore, so uncommitted changes are included and nothing needs committing first",
     "a stale warning means files changed while the job ran: run it again",
 )
+COMPOSE = (
+    "mulebox starts the compose files' containers before setup and removes them, with their "
+    "networks and volumes, after every job; never run docker compose up or down yourself",
+    "use docker compose exec -T <service> ... in setup and jobs; -T is required, and no -f "
+    "or -p: the project is already selected",
+    "published ports move: read MULEBOX_PORT_<SERVICE>_<PORT> or use it in env:, never a "
+    "port number from a compose file; the address is 127.0.0.1",
+)
 RULES = (
     "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
     "do not ssh into the build machine to change, install or delete things",
@@ -74,6 +82,7 @@ def build(config: ProjectConfig | None, version: str) -> Contract:
         "commands": dict(COMMANDS),
         "through_mulebox": list(THROUGH_MULEBOX), "keep_local": list(KEEP_LOCAL),
         "git": list(GIT), "never_uploaded": [*BUILTIN_EXCLUDES, *exclude],
+        "compose": list(COMPOSE) if config and config.compose else [],
         "exit_codes": [{"code": code, "meaning": meaning, "action": action}
                        for code, meaning, action in EXIT_CODES],
         "rules": list(RULES),
@@ -95,6 +104,10 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
     for name, command in project["jobs"].items():
         run = "mulebox check" if name == FULL_GATE else f"mulebox check {name}"
         lines.append(f"- {run}: {command}")
+    if project["needs"]:
+        lines += ["", f"Needs a build machine with: {', '.join(project['needs'])}"]
+    if project["compose"]:
+        lines += ["", f"Compose files: {', '.join(project['compose'])}"]
     return lines
 
 
@@ -105,7 +118,9 @@ def render(contract: Contract) -> str:
     lines += [f"- {name.replace('_', ' ')}: {text}" for name, text in contract["commands"].items()]
     lines += ["", f"Through mulebox: {', '.join(contract['through_mulebox'])}",
               f"Keep local: {', '.join(contract['keep_local'])}", "", "Git:",
-              *_bullets(contract["git"]), "", "Never uploaded:",
+              *_bullets(contract["git"]),
+              *(["", "Containers:", *_bullets(contract["compose"])] if contract["compose"] else []),
+              "", "Never uploaded:",
               ", ".join(contract["never_uploaded"]), "",
               "Exit codes (otherwise the job's own code):"]
     lines += [f"- {e['code']}: {e['meaning']}. {e['action']}." for e in contract["exit_codes"]]

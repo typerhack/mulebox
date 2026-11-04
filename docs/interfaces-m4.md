@@ -49,3 +49,27 @@ type bind. It runs `chown -hR <uid>:<gid>` and `chmod -R u+rwX` on the mount, no
 `..`, not the root, no symlink in any component (opened one by one with `O_NOFOLLOW`), no
 mount at, below or above it inside the root. The root passed is the jobs root alone, and a
 comma in the path is refused because it would end the `--mount` value.
+
+## Compose jobs
+
+- `.mulebox.yml`: `compose: [a.yml, b.yml]`, files next to it, in Compose's merge order.
+  Implies `docker` in `needs` (`ProjectConfig.all_needs`). `env:` may not set `COMPOSE_FILE`,
+  `COMPOSE_PROJECT_NAME` or `COMPOSE_PATH_SEPARATOR` in such a project.
+- Wire: the client adds `MULEBOX_COMPOSE_FILES` (the names joined by `:`) to the job's `env`.
+  The worker removes it and checks each name again (`compose.split_files`). No new column
+  and no schema change, so an older coordinator keeps working against the same store.
+- `worker/compose_job.py`: `prepare(docker, pool, job_id, worker, files, src, project_env,
+  build_env) -> ComposeJob(extra_env, script, notes)`. Runs `docker compose config --format
+  json` twice in `src` (see its docstring), writes `<job folder>/compose.mulebox.yml` (JSON,
+  which is YAML) and sets `src` to mode 0755.
+- Job env added: `COMPOSE_PROJECT_NAME`, `COMPOSE_FILE`, `UID`, `GID` (so `user: "${UID}:${GID}"`
+  works), and one `MULEBOX_PORT_<SERVICE>_<PORT>` per published port, with `_UDP` for UDP.
+  Non-alphanumerics in a service name become `_`. `env:` values may use `${MULEBOX_PORT_...}`.
+- Script: fetch the helper image if missing (so cleanup cannot fail on it later), set an EXIT
+  trap that prints `docker compose ps --all` and `logs --tail=50` when the script fails,
+  `docker compose up --detach --wait`, then `setup`, then the job.
+- `worker/compose_file.py`: `published_ports(model)`, `rewrite(model, project, labels,
+  assigned, checkout) -> (model, notes)`; raises `ComposeError` for what it refuses.
+- `worker/ports.py`: `PortPool(free, pick)`: `take(job_id, names)`, `release(job_id)`. Range
+  20000-29999, random start, proven free by a bind on 127.0.0.1, held until the job is clean.
+- A compose problem found before the unit starts fails the job with the reason in its log.

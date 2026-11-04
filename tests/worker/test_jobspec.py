@@ -43,6 +43,16 @@ def test_job_exit_code_is_kept(tmp_path):
     assert subprocess.run(list(build_argv(None, ["bash", "-c", "exit 7"])), cwd=tmp_path).returncode == 7
 
 
+def test_lines_from_the_worker_run_before_setup():
+    assert build_script("setup", ["job"], ("first",)) == "set -e\nfirst\nsetup\njob\n"
+
+
+def test_extra_cannot_be_changed_by_project_env():
+    env = build_env("job-1", [], base_path="/bin", extra={"COMPOSE_FILE": "/mine"},
+                    project_env={"COMPOSE_FILE": "/theirs", "URL": "x:${COMPOSE_FILE}"})
+    assert env["COMPOSE_FILE"] == "/mine" and env["URL"] == "x:/theirs"
+
+
 def test_script_layout():
     assert build_script("pnpm install", ["pnpm", "check"]) == "set -e\npnpm install\npnpm check\n"
     assert build_script("  ", ["a b"]) == "set -e\n'a b'\n"

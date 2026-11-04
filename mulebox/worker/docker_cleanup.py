@@ -13,7 +13,8 @@ removing, the listing runs again, and teardown only returns when it comes back e
 compose killed mid-`up` can still leave the daemon finishing a container. Resources that
 depend on each other go in order (containers, then what they use), and a failure is
 logged and retried on the next pass; if something is still there at the end, DockerError
-is raised and the agent tries again.
+is raised and the agent tries again. An image alone does not hold a job back: it is a
+leftover tag, and another job can be using it if the compose file names its own tag.
 """
 
 from __future__ import annotations
@@ -41,7 +42,7 @@ KINDS = (
     Kind("containers", ("ps", "--all", "--quiet", "--no-trunc"), ("rm", "--force", "--volumes")),
     Kind("networks", ("network", "ls", "--quiet", "--no-trunc"), ("network", "rm")),
     Kind("volumes", ("volume", "ls", "--quiet"), ("volume", "rm")),
-    Kind("images", ("image", "ls", "--quiet", "--no-trunc"), ("image", "rm")),
+    Kind("images", ("image", "ls", "--quiet", "--no-trunc"), ("image", "rm", "--force")),
 )
 # What can be listed with the job's label as text. Images cannot, and an image alone is
 # never all that is left of a job: its folder is still there, and that is enumerated too.
@@ -73,9 +74,12 @@ def teardown(docker: Docker, job_id: str) -> None:
             except DockerError as exc:
                 LOG.warning("removing %s of %s: %s", kind.name, job_id, exc)
     left = _found(docker, job_id)
-    if left:
-        names = ", ".join(f"{len(ids)} {kind.name}" for kind, ids in left)
+    held = [(kind, ids) for kind, ids in left if kind.name != "images"]
+    if held:
+        names = ", ".join(f"{len(ids)} {kind.name}" for kind, ids in held)
         raise DockerError(f"could not remove {names} of {job_id}")
+    if left:
+        LOG.warning("left the image built for %s in place: it is still in use", job_id)
 
 
 def labelled_jobs(docker: Docker, worker: str) -> list[str]:

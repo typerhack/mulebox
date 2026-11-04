@@ -57,8 +57,9 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    checkout `jobs/<project>/<job-id>/` from its own clone of the project (a worktree's
    `.git` points at the laptop and is useless remotely). Inputs never change during a job.
 4. **Run**: as a transient systemd unit with a runtime limit, `KillMode=control-group`,
-   CPU and IO weights. Docker work uses a unique Compose project name and job labels.
-5. **Clean**: stop the unit, tear down labelled containers and volumes, remove the job
+   CPU and IO weights. A `compose:` project starts first, in that unit, under a Compose
+   project name and labels unique to the job (see Docker Compose projects).
+5. **Clean**: stop the unit, remove the job's labelled Docker resources, remove the job
    folder through the path-safety module. The slot is free only after cleanup succeeded.
 6. **Report**: job id, content fingerprint, base commit, command, toolchain versions, exit
    code, duration, log. If local files changed since submission, the client marks the
@@ -71,8 +72,9 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
   Long enough to ride out a few minutes of Wi-Fi loss; the client keeps reconnecting.
 - Worker lease: renewed by the worker while it executes; separate from the client lease.
 - Idempotent submit (client-chosen key): a lost reply never creates a duplicate job.
-- Coordinator restart: reconcile stored jobs against systemd units and Docker resources
-  before admitting new work; interrupted jobs are marked, never replayed automatically.
+- Restart: the coordinator reconciles stored jobs; the worker, before it claims anything,
+  stops orphan units and removes leftover job folders and Docker resources found by label.
+  Interrupted jobs are marked, never replayed automatically.
 - Coordinator down: no new submissions or assignments; running jobs continue until their
   worker lease expires, then stop and clean. A job is never reassigned just because its
   worker vanished.
@@ -136,6 +138,28 @@ exclude: [reports/]      # added to the built-in secret excludes
 Toolchains are pinned per project with explicit paths; workers keep package caches,
 container images and browsers warm between jobs.
 
+## Docker Compose projects
+
+`compose:` must run the project's real files, written for a throwaway CI runner, on a
+machine that also does other work. So the worker does not run them as they are:
+
+- **One file per job.** `docker compose config` merges the project's files, every published
+  port is moved, and the result is written beside the checkout. The job sees only that
+  file, through `COMPOSE_FILE` and `COMPOSE_PROJECT_NAME`, so plain
+  `docker compose exec -T api ...` works from any folder and reaches only this job.
+- **Ports always move**, even when the wanted one is free: to 127.0.0.1, on a port from a
+  private range, named by `MULEBOX_PORT_<SERVICE>_<PORT>`. Keeping a free port would pass on a
+  quiet day and fail on a busy one. Project code must read the variable.
+- **Containers start first**, before `setup`, inside the job's unit, with `up --wait`. Setup
+  can then use them, as CI does, and the timeout, cancel and log redaction need no special
+  case. The cost: `setup` cannot produce something an image build needs.
+- **Teardown is the worker's**, after the unit ends and outside `timeout_min`, by label, on
+  every outcome. Containers are not in the unit's control group, so nothing else stops
+  them. Pulled images stay; build layers stay in Docker's build cache.
+- **Refused, not repaired:** what would reach past the job (see `worker/compose_file.py`).
+  That guards against a CI file's assumptions, not against a hostile project: a job can run
+  any command, and Docker access is root-equivalent.
+
 ## Client commands
 
 ```text
@@ -198,7 +222,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   deletes with directory-descriptor-anchored operations (no check-then-delete race).
 - No secrets leave the laptop (excludes above); CI values in configs are throwaway.
 - Test databases are per job; jobs must not use existing databases on the machine.
-- Container ports bind to 127.0.0.1.
+- Container ports of `compose:` projects bind to 127.0.0.1, whatever the compose file says.
 - Docker access is root-equivalent: running jobs as the machine's normal user is fine for
   a single trusted owner; a dedicated user is optional hygiene, not isolation.
 - Docker cleanup removes only what a listing filtered on one job's exact labels returned.
@@ -217,8 +241,9 @@ mulebox/
   client/       snapshot.py  submit.py  tui.py  commands.py
   coordinator/  store.py  queue.py  leases.py  recovery.py  api.py  staging.py
   dashboard/    server.py  streams.py  hub.py  events.py  metrics.py  data.py  static/
-  worker/       agent.py  workspace.py  executor.py  cleaner.py  docker_cleanup.py
-                reclaim.py  toolchains.py
+  worker/       agent.py  workspace.py  executor.py  cleaner.py  docker.py
+                docker_cleanup.py  reclaim.py  compose_file.py  compose_job.py  ports.py
+                toolchains.py
                 runner_hooks.py
   cli.py        single entry point: `mulebox <command>`
 tests/          mirrors the package layout

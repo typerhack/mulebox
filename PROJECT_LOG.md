@@ -8,6 +8,20 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.18.0 - 2026-11-04 - minor
+- `compose:` works. mulebox merges the project's files with `docker compose config`, rewrites
+  the result (`worker/compose_file.py`) and gives the job only that file, through
+  `COMPOSE_FILE` and `COMPOSE_PROJECT_NAME`, so `docker compose exec -T` needs no flags.
+  Containers start before `setup`, inside the job, so the timeout, cancel and redaction apply.
+- Every published port moves to 127.0.0.1 on a port mulebox picks (`worker/ports.py`), named
+  by `MULEBOX_PORT_<SERVICE>_<PORT>`, so jobs clash neither with each other nor with what
+  else runs on the machine. `container_name` is dropped; networks and volumes are renamed.
+- Refused, with the reason: host network, PID or IPC namespace, `privileged`, external
+  networks and volumes, volumes on a host device, the Docker socket, writable binds outside
+  the checkout.
+- A failed job's log ends with the state and last lines of its containers.
+- `mulebox contract` has a `compose` key. `config.py` split: `common/config_project.py`.
+
 ## 0.17.0 - 2026-11-04 - minor
 - Docker cleanup: `worker/docker.py` is the one place that runs the docker CLI and refuses
   `prune` and `system` outright; `worker/docker_cleanup.py` removes only what a listing

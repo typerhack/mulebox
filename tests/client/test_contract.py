@@ -40,6 +40,17 @@ def test_services_is_gone_and_compose_shows_what_it_implies():
     assert project["needs"] == ["node", "docker"]
 
 
+def test_compose_rules_show_only_for_a_compose_project():
+    plain = contract.build(CONFIG, "1")
+    assert plain["compose"] == [] and "Containers:" not in contract.render(plain)
+    config = ProjectConfig(project="example-app", jobs={"check": "x"},
+                           compose=("docker-compose.yml",))
+    terms = contract.build(config, "1")
+    text = contract.render(terms)
+    assert "Containers:" in text and "exec -T" in text and "MULEBOX_PORT_" in text
+    assert "Compose files: docker-compose.yml" in text and "with: docker" in text
+
+
 def test_project_env_is_never_shown():
     terms = contract.build(CONFIG, "1.2.3")
     assert "must-not-appear" not in json.dumps(terms)
