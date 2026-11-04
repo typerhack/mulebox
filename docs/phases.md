@@ -236,6 +236,9 @@ coordinator code; none of this has run on a build machine yet.
 - [~] M10.2 A later `env:` reference fails on the client with exit 2, before upload, in `check`,
       `run`, `contract` and `doctor`; `doctor` warns about names only `job_env` could set.
       Open: seen on a real project's file.
+- [~] M10.4 The failure summary is the last thing printed, after container logs and the stale
+      warning. Tested with the fake remote and a log holding container logs. Open: a real failed
+      compose job.
 - [x] M10.3 The contract's database rule is about shared databases: a job's own compose service
       needs no `${MULEBOX_JOB_SLUG}`. (2026-11-04, 0.36.4)
 

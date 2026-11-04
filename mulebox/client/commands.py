@@ -182,8 +182,8 @@ def _logs(args: argparse.Namespace) -> int:
         return _log_summary(remote, args.job_id)
     if args.follow:
         result = watcher.attach()
-        watcher.finish(result)
         note_expired_log(watcher)
+        watcher.finish(result)
         return report.exit_code_for(result)
     _read_log(remote, args.job_id, 0, watcher.write_log)
     note_expired_log(watcher)

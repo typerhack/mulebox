@@ -65,8 +65,9 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 - The job's output arrives on stdout as if it ran locally; mulebox's own status lines go to
   stderr and start with `mulebox:`.
 - A failed job ends with a short summary on stderr: the failed stage if known, the exit
-  code, and its last lines without progress output and container logs. Read that first;
-  open the full log only if it is not enough.
+  code, and its last lines without progress output and container logs. It is the last thing
+  printed, after the container logs, so the end of the output is where the error is. Read that
+  first; open the full log only if it is not enough.
 - The exit code is the job's exit code. mulebox's own codes:
 
 | Code | Meaning | What to do |

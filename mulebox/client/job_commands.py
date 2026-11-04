@@ -59,9 +59,9 @@ def _wait(args: argparse.Namespace) -> int:
         report.status(sys.stderr, f"stopped waiting; job {args.job_id} keeps running "
                       f"(`mulebox cancel {args.job_id}` stops it)")
         return report.EXIT_CANCELLED
-    watcher.finish(result)
     note_expired_log(watcher)
     _warn_if_stale(result, io)
+    watcher.finish(result)
     return report.exit_code_for(result)
 
 

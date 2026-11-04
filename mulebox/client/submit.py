@@ -141,8 +141,8 @@ def run_job(
         return watcher.cancel()
     finally:
         snap.discard()
-    watcher.finish(result)
     stale_check(root, project, snap.fingerprint, io)
+    watcher.finish(result)
     return report.exit_code_for(result)
 
 
@@ -254,7 +254,8 @@ class Watcher:
         self.io.out.flush()
 
     def finish(self, result: dict[str, Any]) -> None:
-        """The last lines after a job's log: its outcome, then what went wrong."""
+        """The last lines of all, after the log and its container logs: the outcome, then what
+        went wrong. Everything else a command has to say comes first, so the error stays last."""
         report.status(self.io.err, report.outcome_line(self.job_id, result))
         if summary.wanted(result):
             lines = summary.relevant_lines(self.tail)

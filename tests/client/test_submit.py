@@ -8,6 +8,7 @@ from mulebox.client import submit
 from mulebox.client.submit import Streams, run_job
 from mulebox.common.config import ProjectConfig
 from mulebox.common.protocol import Message, MessageType
+from mulebox.common.status import CONTAINER_LOGS_NOTE
 from mulebox.common.ssh import SSHUnavailable
 from mulebox.worker.jobspec import build_argv
 
@@ -219,3 +220,18 @@ def test_submit_body_keeps_the_env_order_of_the_file(make_repo):
     project = replace(PROJECT, env={"Z_HOST": "db", "A_URL": "${Z_HOST}"})
     run_job(project, "check", make_repo(), remote, streams())
     assert remote.calls[0].body["env_order"] == ["Z_HOST", "A_URL"]
+
+
+def test_the_failure_summary_is_the_last_thing_printed_after_the_container_logs(
+        make_repo, monkeypatch):
+    monkeypatch.setattr(submit, "current_fingerprint", lambda *_: "changed")
+    text = (f"src/a.ts(1,1): error TS2322: the real error\n{CONTAINER_LOGS_NOTE}\n"
+            + "db  | a line of a container\n" * 3)
+    remote = FakeRemote([[log(0, text), result("failed", 2)]])
+    io_ = streams()
+    assert run_job(PROJECT, "check", make_repo(), remote, io_) == 2
+    assert io_.out.getvalue().endswith("db  | a line of a container\n")
+    err = io_.err.getvalue().splitlines()
+    assert any("stale" in line for line in err)
+    assert err[-1].endswith("the real error")
+    assert not any("a line of a container" in line for line in err)

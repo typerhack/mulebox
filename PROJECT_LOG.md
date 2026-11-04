@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.5 - 2026-11-04 - patch
+- Checked that the failure summary follows the container logs: it does, on stderr once the log
+  has ended. Only the stale and expired-log lines could still come after it, so they now come
+  first and the summary is the last thing printed by `check`, `wait` and `logs -f`.
+
 ## 0.36.4 - 2026-11-04 - patch
 - The contract's database rule said every name needs `${MULEBOX_JOB_SLUG}`. That is for a
   database a job shares. A database in a compose service of the job is that job's alone, so a
