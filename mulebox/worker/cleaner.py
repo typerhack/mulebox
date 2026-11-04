@@ -1,7 +1,8 @@
 """Cleaning up after a job: its Docker resources, then its folder, in that order.
 
 The order matters: a running container can still write into the folder, and a bind mount
-holds it open. `clean` is safe to call again, so the agent retries it until it succeeds.
+holds it open. Package caches a container wrote to are given back in between; a failure there
+is logged and does not hold up the job, because the cache is still there for the next one. `clean` is safe to call again, so the agent retries it until it succeeds.
 `recover` does the same for what a crash left, found from the job folders on disk and from
 the labels in Docker; one job that cannot be cleaned does not stop the others or the
 worker, which logs it and tries again on its next start.
@@ -14,7 +15,7 @@ from pathlib import Path
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import RemovalDenied
-from mulebox.worker import docker_cleanup, reclaim, workspace
+from mulebox.worker import caches, docker_cleanup, reclaim, workspace
 from mulebox.worker.docker import Docker, DockerMissing
 from mulebox.worker.paths import NodePaths
 
@@ -29,7 +30,14 @@ class Cleaner:
         """Remove the job's Docker resources and its folder; MuleboxError means try again."""
         if uses_docker and self.docker is not None:
             docker_cleanup.teardown(self.docker, job_id)
+            self._give_back_caches(project, job_id)
         self._remove_folder(project, job_id)
+
+    def _give_back_caches(self, project: str, job_id: str) -> None:
+        try:
+            caches.give_back(self.docker, self.paths, project, job_id, self.worker)
+        except (MuleboxError, OSError) as exc:
+            LOG.warning("could not give back the package caches of %s: %s", project, exc)
 
     def _remove_folder(self, project: str, job_id: str) -> None:
         try:

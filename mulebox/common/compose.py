@@ -21,6 +21,7 @@ import re
 
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import is_valid_id
+from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
 
 DOCKER_CAPABILITY = "docker"
 COMPOSE_CAPABILITY = "compose-v1"
@@ -38,10 +39,10 @@ class ComposeError(MuleboxError):
 
 
 def worker_capabilities(configured: tuple[str, ...]) -> list[str]:
-    """What a worker tells the coordinator: `capabilities` from its node.toml, and the one it
+    """What a worker tells the coordinator: `capabilities` from its node.toml, and what it
     reports by itself."""
     implied = (COMPOSE_CAPABILITY,) if DOCKER_CAPABILITY in configured else ()
-    return list(dict.fromkeys((*configured, *implied)))
+    return list(dict.fromkeys((*configured, *implied, *PACKAGE_CACHES)))
 
 
 def file_problem(name: str) -> str | None:

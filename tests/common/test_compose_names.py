@@ -5,6 +5,7 @@ import re
 import pytest
 
 from mulebox.common import compose
+from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
 from mulebox.common.ids import new_id
 
 BAD_IDS = ["", "job", "job-", "job-short", "*", "job-*", "../job", "att-" + "0" * 26,
@@ -44,10 +45,12 @@ def test_a_tampered_file_list_is_refused(value):
 
 
 def test_a_worker_reports_compose_by_itself_only_with_docker():
-    assert compose.worker_capabilities(("docker", "node")) == ["docker", "node", "compose-v1"]
-    assert compose.worker_capabilities(("node",)) == ["node"]
-    assert compose.worker_capabilities(()) == []
+    assert compose.worker_capabilities(("docker", "node")) == [
+        "docker", "node", "compose-v1", *PACKAGE_CACHES]
+    assert compose.worker_capabilities(("node",)) == ["node", *PACKAGE_CACHES]
+    assert compose.worker_capabilities(()) == [*PACKAGE_CACHES]
 
 
 def test_saying_it_twice_changes_nothing():
-    assert compose.worker_capabilities(("docker", "compose-v1")) == ["docker", "compose-v1"]
+    assert compose.worker_capabilities(("docker", "compose-v1")) == [
+        "docker", "compose-v1", *PACKAGE_CACHES]

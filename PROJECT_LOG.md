@@ -8,6 +8,16 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.26.0 - 2026-11-04 - minor
+- Package caches: `needs: [cache-pnpm]` or `[cache-composer]` keeps a project's downloads on the
+  build machine between jobs, in `<cache>/packages/<project>/<tool>`. A real job downloaded the
+  same 905 packages twice and never reached its check. Opt-in and per project, so a job can
+  only affect later jobs of its own project; each log names the cache it used.
+- A compose file may mount the job's own cache writable; that is the one such path outside
+  the checkout, and an external volume stays refused. After a compose job the worker gives
+  what root wrote in the cache back to its own user.
+- `mulebox cache list` and `mulebox cache clear <project>` on a build machine.
+
 ## 0.25.2 - 2026-11-04 - patch
 - License: MIT, chosen by the user (M6.1). `LICENSE`, the README and the package metadata.
 

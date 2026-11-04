@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import copy
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -139,11 +139,12 @@ def _rewrite_section(model: Model, section: str, labels: Mapping[str, str]) -> N
 
 
 def rewrite(model: Model, job_id: str, labels: Mapping[str, str],
-            assigned: Mapping[str, int], checkout: Path) -> tuple[Model, list[str]]:
+            assigned: Mapping[str, int], checkout: Path,
+            shared: Sequence[Path] = ()) -> tuple[Model, list[str]]:
     """The model a job runs, plus notes for its log. ComposeError for what is refused."""
     result, notes = copy.deepcopy(model), []
     result["name"] = compose.project_name(job_id)
-    compose_policy.check(result, checkout)
+    compose_policy.check(result, checkout, shared)
     _own_images(_services(result), job_id, notes)
     for name, spec in _services(result).items():
         _rewrite_service(name, spec, labels, assigned, checkout, notes)

@@ -3,6 +3,8 @@
     mulebox worker serve
     mulebox toolchain install <name> <version>
     mulebox toolchain list
+    mulebox cache list
+    mulebox cache clear <project>
 """
 
 from __future__ import annotations
@@ -39,6 +41,16 @@ def register(sub: argparse._SubParsersAction) -> None:
     listing.add_argument("--config", help="node config file")
     listing.set_defaults(func=_list)
 
+    cache = sub.add_parser("cache", help="list or clear package caches on this build machine")
+    cache_sub = cache.add_subparsers(dest="cache_command", metavar="<action>", required=True)
+    shown = cache_sub.add_parser("list", help="every project's package caches and their size")
+    shown.add_argument("--config", help="node config file")
+    shown.set_defaults(func=_cache_list)
+    clear = cache_sub.add_parser("clear", help="remove a project's package caches")
+    clear.add_argument("project")
+    clear.add_argument("--config", help="node config file")
+    clear.set_defaults(func=_cache_clear)
+
 
 def _load(args: argparse.Namespace) -> tuple[NodeConfig, NodePaths]:
     node = load_node_config(getattr(args, "config", None))
@@ -71,6 +83,30 @@ def _list(args: argparse.Namespace) -> int:
         return _fail(exc)
     for name, version in toolchains.installed(paths):
         print(f"{name}\t{version}")
+    return 0
+
+
+def _cache_list(args: argparse.Namespace) -> int:
+    from mulebox.worker import caches
+
+    try:
+        _, paths = _load(args)
+    except MuleboxError as exc:
+        return _fail(exc)
+    for project, tool, size in caches.listing(paths):
+        print(f"{project}\t{tool}\t{size / 1e6:.1f} MB")
+    return 0
+
+
+def _cache_clear(args: argparse.Namespace) -> int:
+    from mulebox.worker import caches
+
+    try:
+        _, paths = _load(args)
+        caches.clear(paths, args.project, Docker())
+    except MuleboxError as exc:
+        return _fail(exc)
+    print(f"cleared the package caches of {args.project}")
     return 0
 
 

@@ -34,9 +34,7 @@ class NodePaths:
         return cls(roots=checked, **named)
 
     def project_dir(self, project: str) -> Path:
-        if not isinstance(project, str) or not NAME_RE.fullmatch(project):
-            raise UnsafePath(f"project name {project!r} is not a safe folder name")
-        return self.jobs / project
+        return self.jobs / _project_name(project)
 
     def job_dir(self, project: str, job_id: str) -> Path:
         if not is_valid_id(job_id, "job"):
@@ -48,3 +46,15 @@ class NodePaths:
 
     def toolchains_dir(self) -> Path:
         return self.cache / "toolchains"
+
+    def packages_dir(self, project: str) -> Path:
+        return self.cache / "packages" / _project_name(project)
+
+    def package_cache(self, project: str, tool: str) -> Path:
+        return self.packages_dir(project) / tool
+
+
+def _project_name(project: str) -> str:
+    if not isinstance(project, str) or not NAME_RE.fullmatch(project):
+        raise UnsafePath(f"project name {project!r} is not a safe folder name")
+    return project

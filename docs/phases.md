@@ -145,6 +145,14 @@ Order agreed with the user on 2026-11-04.
       dropped: it would hold nothing beyond `.mulebox.yml` and that history, so it would
       only be a second copy. Done 2026-11-04 (0.13.0): run against a real coordinator.
 
+## M9: Faster and clearer jobs
+Worked out from the first real jobs on a slow connection (2026-11-04). Everything here is
+tested with fakes and a local Docker daemon. Open on all of it: a real job on a build machine.
+- [~] M9.1 Package caches: `needs: [cache-pnpm]`, `[cache-composer]`, one folder per project,
+      mounted by the project's own compose file, external volumes still refused. Built
+      2026-11-04 (0.26.0). Open: a real pnpm and a real Composer project on a build machine,
+      with a second job showing the packages as reused.
+
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)

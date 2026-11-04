@@ -27,6 +27,7 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 | `<jobs>/<project>/<job_id>/src/` | worker | extracted workspace |
 | `<jobs>/<project>/<job_id>/out.log` | worker | raw unit output (worker redacts before sending) |
 | `<cache>/toolchains/<name>/<version>/bin` | worker | pinned toolchains, prepended to PATH |
+| `<cache>/packages/<project>/<tool>` | jobs that ask | package caches (interfaces-m4.md) |
 
 All creation through `safepath.ensure_dir`, all deletion through `safepath.remove_tree`.
 

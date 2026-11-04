@@ -6,6 +6,7 @@ from dataclasses import replace
 import pytest
 
 from mulebox.common.ids import new_id
+from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
 from mulebox.common.protocol import MessageType
 from mulebox.worker import workspace
 from mulebox.worker.agent import HEARTBEAT_S, Agent
@@ -78,7 +79,7 @@ def test_passed_job(agent, fake_link, paths):
     assert kinds[-1] is MessageType.RESULT
     assert not (paths.jobs / "example-app" / job_id).exists()
     claim = fake_link.of_type(MessageType.CLAIM)[0].body
-    assert claim == {"worker": "build-1", "capabilities": ["node"], "free_slots": 1,
+    assert claim == {"worker": "build-1", "capabilities": ["node", *PACKAGE_CACHES], "free_slots": 1,
                      "restarted": True}  # the first claim after a start
 
 
@@ -242,7 +243,7 @@ def test_recovery_removes_orphans_and_leftovers(agent, executor, paths, snapshot
 def test_the_claim_reports_the_compose_capability_itself(node, fake_link, executor, paths, clock):
     worker = Agent(replace(node, capabilities=("docker",)), fake_link, executor, paths, clock=clock)
     worker.step()
-    assert fake_link.of_type(MessageType.CLAIM)[0].body["capabilities"] == ["docker", "compose-v1"]
+    assert fake_link.of_type(MessageType.CLAIM)[0].body["capabilities"][:2] == ["docker", "compose-v1"]
 
 
 def test_job_env_of_the_node_reaches_the_job(node, fake_link, executor, paths, clock):

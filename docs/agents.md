@@ -192,8 +192,9 @@ These are refused with the reason, because they reach past the job:
   volumes not on the local driver or on a host device;
 - anything under `/run` or `/var/run`, any Unix socket, or a folder holding a known runtime's socket (Docker, containerd, CRI-O,
   podman, k3s, BuildKit), in any bind or file secret, read-only or not; writable bind
-  mounts outside the checkout, and any bind outside it whose source does not exist on the
-  build machine (mulebox never creates one there).
+  mounts outside the checkout, except this job's package caches (section 2a-1), and any bind
+  outside it whose source does not exist on the build machine (mulebox never creates one
+  there).
 
 This stops a CI file's assumptions from reaching past the job. It does not contain a hostile
 project: a job can run any command and Docker access is root-equivalent, so a build machine
@@ -212,6 +213,87 @@ compose file rather than changing how the project runs locally.
 If mulebox says no build machine offers `docker`, tell the user: a person has to add it
 to the build machine's `capabilities`. If it says the machine's mulebox is too old, it has to
 be upgraded. `compose-v1` in `needs` comes with `compose:`; nobody sets it.
+
+## 2a-1. Package caches
+
+Installs are slow on a slow network, and a job starts from nothing. Ask for a cache in `needs`
+and downloads stay on the build machine between jobs of this project. It is off unless the
+project asks.
+
+```yaml
+needs: [cache-pnpm, cache-composer]
+```
+
+| `needs` | Folder on the build machine | Set for commands on the machine |
+| --- | --- | --- |
+| `cache-pnpm` | `<cache>/packages/<project>/pnpm` | `pnpm_config_store_dir`, `npm_config_store_dir`, `MULEBOX_CACHE_PNPM` |
+| `cache-composer` | `<cache>/packages/<project>/composer` | `COMPOSER_CACHE_DIR`, `MULEBOX_CACHE_COMPOSER` |
+
+Commands on the machine need nothing more. **A container sees a cache only if the compose
+file mounts it**, and that mount is yours to write. `MULEBOX_CACHE_<TOOL>` is the folder, and
+it is the one writable path outside the checkout that compose may mount. Put this in a
+CI-only compose file:
+
+```yaml
+# docker-compose.ci.yml, listed last in `compose:`
+services:
+  api:
+    user: "${UID}:${GID}"
+    environment:
+      COMPOSER_CACHE_DIR: /cache/composer
+    volumes:
+      - ${MULEBOX_CACHE_COMPOSER}:/cache/composer
+  web:
+    user: "${UID}:${GID}"
+    environment:
+      pnpm_config_store_dir: ${MULEBOX_CACHE_PNPM}
+    volumes:
+      - ${MULEBOX_CACHE_PNPM}:${MULEBOX_CACHE_PNPM}
+```
+
+- **Replacing an external cache volume.** mulebox refuses `external: true`, and a cache does
+  not change that, because every project on the machine would share such a volume. Add the
+  `cache-*` need, and in a CI-only compose file mount the cache on the same container path:
+
+  ```yaml
+  # docker-compose.yml, unchanged: composer_cache:/root/.composer/cache, external: true
+  # docker-compose.ci.yml
+  services:
+    api:
+      volumes:
+        - ${MULEBOX_CACHE_COMPOSER}:/root/.composer/cache
+  ```
+
+  With `compose: [docker-compose.yml, docker-compose.ci.yml]` the later mount replaces the
+  volume on that path, and Compose drops the volume once no service uses it, so the check
+  passes and the project's main file stays as it is. Every service that used the volume
+  needs this. If mulebox still says the volume is external, one of them was missed.
+- **pnpm: use the same path in the container and on the machine**, as above, if `setup` runs
+  on the machine and a job runs in a container, or the other way round. pnpm records its
+  store's path in `node_modules`. When the path differs, it throws `node_modules` away and
+  installs again. For the same reason, use one toolchain version for both.
+- **Who writes.** Run the service as root or as `"${UID}:${GID}"`. Any other user cannot write
+  to the folder and the install fails with a permission error. After a compose job
+  mulebox hands what root wrote back to the machine's user.
+- A pnpm install across mounts copies packages instead of linking them. That is slower than
+  a link and far faster than a download.
+- A service that uses one of these variables fails at the start if the project does not ask
+  for that cache: the variable is empty. For running the same file on a laptop, give it a
+  default, as in `${MULEBOX_CACHE_PNPM:-/tmp/example-app-pnpm}`.
+
+**What sharing means.** Every job of this project on this machine, on any branch, reads and
+writes the same folder, and the job's log says so. A job can therefore leave something behind
+that a later job of this project gets: a change on a branch can reach the next run of main. pnpm
+checks each package against the hash in the lockfile; Composer checks a download only where
+the lockfile has a hash, and many entries have none. Another project has its own folder, and
+compose refuses a mount of it. A project's name comes from its `.mulebox.yml`, so two
+projects with the same `project:` share a cache. As everywhere on a build machine, this is
+for projects its owner trusts, not a defence against a hostile one: a job with Docker
+access can reach any folder.
+
+If a cache looks wrong, a person clears it on the build machine, with no job of that project
+running: `mulebox cache clear <project>`. `mulebox cache list` shows the sizes. Caches are
+never cleaned by themselves. Do this only when the user asks: do not ssh in yourself.
 
 ## 2b. Browser tests (Playwright)
 

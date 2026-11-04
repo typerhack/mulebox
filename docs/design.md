@@ -176,6 +176,31 @@ the cache root, shared by all jobs, so a version is fetched once. The job asks f
 browser itself, which keeps it matched to the project's lockfile, and mulebox has no list
 of browser versions to maintain. mulebox never deletes from that folder.
 
+## Package caches
+
+A job starts from nothing, so on a slow network the install is most of its time, and a
+project's `external` cache volume cannot be used because it would cross jobs and projects. A
+project can ask for a cache with `needs: [cache-pnpm]` or `cache-composer`: one folder per
+project and tool, `<cache>/packages/<project>/<tool>`.
+
+- **Opt-in**, because sharing changes what a job can affect, and only a project's owner can
+  weigh that for it.
+- **Per project, not per machine.** Sharing across projects would save more disk and more
+  downloads, but a folder that every project reads is where a mistake in one reaches the
+  rest. The price is a copy of a package per project.
+- **`needs`, not a new field.** A worker reports the names by itself, so an older worker
+  cannot claim such a job and silently run it without a cache, and no client or wire change
+  is needed.
+- **The project mounts it.** mulebox does not add mounts to services: only the project knows
+  which service installs and where. The policy lets a writable bind through only if it
+  resolves into a folder of this job's caches; external volumes stay refused.
+- **The job's log names each cache it used**, and `mulebox cache clear` on the machine is the
+  way out. Nothing evicts: there is no safe guess at what is stale, and mulebox never deletes
+  what it was not asked to.
+- `packages/` holds downloads only. A later install step run by mulebox, keyed on lockfile,
+  toolchain and image, would keep its results in a folder of its own beside it, read
+  downloads from here, and leave this layout as it is.
+
 ## Client commands
 
 ```text
@@ -248,6 +273,9 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Docker cleanup removes only what a listing filtered on one job's exact labels returned.
   `prune` and `system` cannot be run through mulebox at all. Containers, networks and
   volumes of the job go; images stay as cache.
+- A package cache is written by one job and read by the next, so it is a channel between
+  jobs of one project, on purpose and only if the project asks. It is not one between
+  projects: each has its own folder, and compose may mount only its own (see Package caches).
 - Root-owned files never need sudo: a throwaway container with no network, a read-only root
   file system and only the capabilities `chown` needs takes one job folder, proven by the
   path-safety module to be inside the jobs root, and gives it back. Deleting stays in

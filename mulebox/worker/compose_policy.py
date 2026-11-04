@@ -5,6 +5,7 @@ The model comes from `docker compose config`, so every value is resolved and `ex
 this refuses what opens a door out of that: the host's namespaces and those of containers
 outside the project, devices, extra kernel powers, inherited mounts, the Docker API, host
 paths that Compose would create or write, and build features that do the same for a build.
+The job's own package caches (caches.py) are the one writable host path outside its checkout.
 
 Refused, not repaired: the project's owner decides what to do, and the message says why.
 This guards against a CI file written for a throwaway runner, not against a hostile project:
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import os
 import stat
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -98,29 +100,29 @@ def inside(path: str, checkout: Path) -> bool:
     return is_within(Path(os.path.realpath(path)), checkout)
 
 
-def _bind_problem(volume: Model, checkout: Path) -> str | None:
+def _bind_problem(volume: Model, checkout: Path, shared: Sequence[Path]) -> str | None:
     path = volume.get("source") or ""
     problem = _outside_problem(path)
     if problem:
         return problem
-    if inside(path, checkout):
+    if inside(path, checkout) or any(inside(path, folder) for folder in shared):
         return None
     if not os.path.exists(path):
         return (f"bind-mounts {path}, outside the checkout, and it does not exist on the "
                 "build machine. mulebox does not create folders there")
     if not volume.get("read_only"):
         return (f"bind-mounts {path} writable, outside the checkout. Use a path in the "
-                "project, a named volume, or mount it read-only")
+                "project, a named volume, a package cache, or mount it read-only")
     if (volume.get("bind") or {}).get("selinux"):
         return f"relabels {path}, outside the checkout"
     return None
 
 
-def _volume_problem(volume: Model, checkout: Path) -> str | None:
+def _volume_problem(volume: Model, checkout: Path, shared: Sequence[Path]) -> str | None:
     kind = volume.get("type")
     if kind not in _VOLUME_TYPES:
         return f"uses a {kind} volume, which would reach past the job"
-    return _bind_problem(volume, checkout) if kind == "bind" else None
+    return _bind_problem(volume, checkout, shared) if kind == "bind" else None
 
 
 def _inherited_problem(entry: str, services: Model) -> str | None:
@@ -181,7 +183,8 @@ def _hook_problem(spec: Model) -> str | None:
     return None
 
 
-def _service_problem(spec: Model, services: Model, checkout: Path) -> str | None:
+def _service_problem(spec: Model, services: Model, checkout: Path,
+                     shared: Sequence[Path]) -> str | None:
     for key, reason in _REFUSED_KEYS.items():
         if spec.get(key):
             return f"{reason}, which would reach past the job"
@@ -190,7 +193,7 @@ def _service_problem(spec: Model, services: Model, checkout: Path) -> str | None
         if problem:
             return problem
     for volume in spec.get("volumes") or []:
-        problem = _volume_problem(volume, checkout)
+        problem = _volume_problem(volume, checkout, shared)
         if problem:
             return problem
     for entry in spec.get("volumes_from") or []:
@@ -230,11 +233,12 @@ def _file_problem(section: str, key: str, spec: Model, checkout: Path) -> str | 
     return f"{section} {key} {problem}" if problem else None
 
 
-def check(model: Model, checkout: Path) -> None:
-    """ComposeError naming the first thing in `model` that reaches past the job."""
+def check(model: Model, checkout: Path, shared: Sequence[Path] = ()) -> None:
+    """ComposeError naming the first thing in `model` that reaches past the job. `shared`:
+    the package cache folders of this job, each proven by safepath (caches.py)."""
     services = model.get("services") or {}
     for name, spec in services.items():
-        problem = _service_problem(spec, services, checkout)
+        problem = _service_problem(spec, services, checkout, shared)
         if problem:
             raise ComposeError(f"service {name} {problem}")
     for section in ("networks", "volumes"):

@@ -82,6 +82,24 @@ comma in the path is refused because it would end the `--mount` value.
   20000-29999, random start, proven free by a bind on 127.0.0.1, held until the job is clean.
 - A compose problem found before the unit starts fails the job with the reason in its log.
 
+## Package caches
+
+`common/package_cache.py` holds the names `cache-pnpm` and `cache-composer`; a worker reports
+them by itself (`compose.worker_capabilities`). `worker/caches.py`: `for_job(paths, project,
+needs) -> JobCaches(env, folders, notes)` makes `<cache>/packages/<project>/<tool>` through
+safepath and proves it with `confirm_dir`, so a folder a job swapped for a symlink fails the
+next job instead of being followed. `env` holds `MULEBOX_CACHE_<TOOL>` and the tool's own
+settings, through `extra` of `build_env`, so `env:` cannot override them. `folders` goes to
+`compose_policy.check(model, checkout, shared)`, which lets a writable bind through only if its
+source resolves into one of them; `external` volumes are not touched by this.
+`caches.give_back` runs in `Cleaner.clean` after teardown of a compose job, and so after a
+crash too, with `reclaim.reclaim_cache`: the helper, on `<cache>/packages/<project>`, with the
+cache root as the root. A failure there is logged, not retried. `caches.clear` and
+`caches.listing` are `mulebox cache clear <project>` and `mulebox cache list`.
+
+Reserved for an install step run by mulebox: a folder beside `packages/`, such as
+`<cache>/installs/<project>/<key>`, with the key made from lockfile, toolchain and image.
+
 ## Browser tests
 
 `worker/runspec.py`: `build(machine, job_id, claim, src, log_path, bins) -> (RunSpec, notes)`
