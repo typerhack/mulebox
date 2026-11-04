@@ -10,7 +10,7 @@ import sys
 from collections.abc import Sequence
 
 from mulebox.client import commands as client_commands
-from mulebox.client import doctor_commands, feedback_commands, job_commands
+from mulebox.client import doctor_commands, feedback_commands, job_commands, skill_commands
 from mulebox.coordinator import commands as coordinator_commands
 from mulebox.dashboard import commands as dashboard_commands
 from mulebox.runners import commands as runner_commands
@@ -26,8 +26,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"mulebox {get_version()}")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("version", help="print the mulebox version")
-    for package in (client_commands, job_commands, doctor_commands, feedback_commands,
-                    coordinator_commands, worker_commands, runner_commands, dashboard_commands):
+    for package in (client_commands, job_commands, doctor_commands, skill_commands,
+                    feedback_commands, coordinator_commands, worker_commands, runner_commands,
+                    dashboard_commands):
         package.register(sub)
     return parser
 

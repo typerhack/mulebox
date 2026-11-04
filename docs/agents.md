@@ -24,6 +24,11 @@ never uploaded, the exit codes and the rules. It needs no network and is generat
 `.mulebox.yml`, so it is always current; if it disagrees with this file, trust it. Outside
 a project set up for mulebox it says so, and section 2 is your next step.
 
+If you came here through the mulebox skill: it says which contract schema it was written
+for, and the contract's first line gives the current one. If the contract's is higher, tell
+the user the skill is behind and that `mulebox skill update` fixes it. Never update the
+skill yourself. `mulebox skill status` and `mulebox doctor` show the same.
+
 Before a project's first job, and after changing `toolchain` or `needs`:
 
     mulebox doctor            # add --json for stable keys

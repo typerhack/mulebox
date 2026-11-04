@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
 from mulebox.common.config import ProjectConfig
 
 OK, WARN, FAIL = "ok", "warn", "fail"
@@ -96,6 +97,25 @@ def inventory(workers: list[Worker]) -> list[Finding]:
     return [Finding(OK, "machine", f"{w.get('worker')} ({'online' if w.get('online') else 'offline'})"
                     f": {', '.join(w.get('capabilities') or ()) or 'no capabilities'}")
             for w in workers]
+
+
+def skills(copies: list[Copy], schema: int) -> list[Finding]:
+    """The agent skill in each Claude config folder; no folders, nothing to say."""
+    if copies and all(copy.state == MISSING for copy in copies):
+        return [Finding(OK, "skill", "not installed; `mulebox skill install` adds it")]
+    out = []
+    for copy in copies:
+        if copy.state in (BEHIND, DIFFERS):
+            written = f"schema {copy.schema}" if copy.schema else "no schema"
+            out.append(Finding(WARN, "skill", f"the copy in {copy.folder} is out of date (written "
+                               f"for {written}, current {schema}): tell the user that "
+                               "`mulebox skill update` fixes it; do not update it yourself"))
+        elif copy.state == AHEAD:
+            out.append(Finding(WARN, "skill", f"the copy in {copy.folder} is newer than this "
+                               "mulebox; upgrade mulebox"))
+        elif copy.state != MISSING:
+            out.append(Finding(OK, "skill", f"{copy.state} in {copy.folder}"))
+    return out
 
 
 def worst(findings: list[Finding]) -> str:

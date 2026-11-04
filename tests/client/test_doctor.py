@@ -2,8 +2,11 @@
 
 import json
 
+import pytest
+
 from mulebox import cli
-from mulebox.client import doctor
+from mulebox.client import doctor, skill_install
+from mulebox.client.skill_install import Copy
 from mulebox.common.config import ProjectConfig
 from mulebox.version import get_version
 
@@ -12,6 +15,16 @@ PROJECT = ProjectConfig(project="example-app", jobs={"check": "x"}, needs=("dock
 GOOD = {"worker": "build-1", "online": True, "capabilities": ["docker", "node"],
         "toolchains": {"node": ["20.18.1", "22.22.3"]}, "version": "1.0.0"}
 YML = 'project: example-app\ntoolchain:\n  node: "22.22.3"\njobs:\n  check: x\n'
+
+
+@pytest.fixture(autouse=True)
+def home(tmp_path, monkeypatch):
+    """Doctor reads the Claude config folders; never the real ones."""
+    folder = tmp_path / "home"
+    folder.mkdir()
+    monkeypatch.setenv("HOME", str(folder))
+    monkeypatch.delenv(skill_install.ENV_FOLDER, raising=False)
+    return folder
 
 
 def worker(**changes):
@@ -70,6 +83,31 @@ def test_versions_warn_about_a_worker_behind_its_coordinator():
     assert [f.level for f in found] == ["ok", "warn"]
 
 
+def test_a_skill_behind_is_a_warning_that_sends_the_agent_to_the_user():
+    found = doctor.skills([Copy("/c", skill_install.BEHIND, 1)], 3)
+    assert found[0].level == "warn" and "tell the user" in found[0].text
+    assert "schema 1, current 3" in found[0].text
+
+
+def test_a_skill_from_before_the_stamp_reads_well():
+    assert "written for no schema" in doctor.skills([Copy("/c", skill_install.BEHIND)], 3)[0].text
+
+
+def test_a_current_skill_is_fine_and_a_missing_one_is_said_once():
+    assert doctor.skills([Copy("/c", skill_install.CURRENT, 3)], 3)[0].level == "ok"
+    missing = [Copy("/a", skill_install.MISSING), Copy("/b", skill_install.MISSING)]
+    assert [f.level for f in doctor.skills(missing, 3)] == ["ok"]
+
+
+def test_a_folder_without_the_skill_beside_one_with_it_is_not_reported():
+    copies = [Copy("/a", skill_install.CURRENT, 3), Copy("/b", skill_install.MISSING)]
+    assert len(doctor.skills(copies, 3)) == 1
+
+
+def test_no_config_folder_means_nothing_to_say_about_a_skill():
+    assert doctor.skills([], 3) == []
+
+
 def run(capsys, *argv):
     code = cli.main(["doctor", *argv])
     return code, capsys.readouterr()
@@ -85,6 +123,18 @@ def test_cli_all_good(fake, make_repo, monkeypatch, capsys):
     code, out = run(capsys)
     assert code == 0 and "ok    config" in out.out and "ok    machine" in out.out
     assert [r["type"] for r in fake.requests()] == ["machines"]  # no job, no upload
+
+
+def test_cli_reports_a_skill_behind_but_does_not_touch_it(fake, make_repo, monkeypatch, capsys,
+                                                          home):
+    in_project(make_repo, monkeypatch)
+    path = skill_install.skill_path(home / ".claude")
+    path.parent.mkdir(parents=True)
+    path.write_text("# an older skill\n")
+    fake.scenario(machine_version=get_version(), workers=[worker(version=get_version())])
+    code, out = run(capsys)
+    assert code == 0 and "warn  skill" in out.out and "mulebox skill update" in out.out
+    assert path.read_text() == "# an older skill\n"
 
 
 def test_cli_missing_toolchain_exits_1_with_alternatives(fake, make_repo, monkeypatch, capsys):

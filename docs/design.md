@@ -92,8 +92,11 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 It is generated from `.mulebox.yml` and from the tables the code itself uses, so there is
 no file to keep in step, and it needs no network, so its rules are readable when the build
 machine is down. Text by default; `--json` has stable keys and a `schema` number, raised
-only when a key is removed or changes meaning. Exit 0 outside a project; a broken
-`.mulebox.yml` exits 2 rather than hiding the mistake.
+when a key is removed or changes meaning, and when the skill has to teach something new.
+Exit 0 outside a project; a broken `.mulebox.yml` exits 2 rather than hiding the mistake.
+
+The skill ships in the package and says which schema it was written for, so an agent can
+tell the user that its copy is behind; `mulebox skill update` is for that person to run.
 
 ## Agent feedback
 
@@ -183,7 +186,7 @@ of browser versions to maintain. mulebox never deletes from that folder.
 ## Client commands
 
 ```text
-mulebox doctor               check the project and the machine; uploads nothing
+mulebox doctor               check the project, the machine and the skill; uploads nothing
 mulebox check [job]          run a job from .mulebox.yml (default: check)
 mulebox check --detach       the same, left running; prints the job id
 mulebox events --job <id>    a job's state changes as lines, no log; --json for tools

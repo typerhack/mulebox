@@ -174,6 +174,11 @@ Marked `[~]` until checked on a real machine.
       job usually runs, from its past passed runs, and none of the time in line; design.md
       says so. Tested 2026-11-04 (0.30.0) with the fake coordinator and the real store.
       Open: seen in a real queue. A job at position 1 behind a long job gets no suggestion.
+- [~] M8.7 Skill versioning: the skill ships in the package (`skills/mulebox/SKILL.md` links
+      to it), `mulebox skill install|update|status` over every Claude config folder, the skill
+      states its contract schema, `mulebox doctor` reports it, a test ties the two. Tested
+      2026-11-04 (0.31.0) with temporary folders only; the wheel holds SKILL.md. Open: the
+      user installs it, and an agent notices a behind skill in a real session (see M7.2).
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

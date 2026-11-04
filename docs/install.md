@@ -234,13 +234,21 @@ Nothing but the SSH connection is exposed: the page is reached only through the 
 
 ### Skill for coding agents
 
-`skills/mulebox/` in this repository is a skill that teaches a coding agent to work through
-mulebox in any project. It is short on purpose: it sends the agent to `mulebox contract`.
-For Claude Code, install it for all your projects by copying the folder:
+The package ships a skill that teaches a coding agent to work through mulebox in any project.
+It is short on purpose: it sends the agent to `mulebox contract`. For Claude Code, install it
+for all your projects:
 
 ```sh
-cp -R skills/mulebox ~/.claude/skills/
+mulebox skill install    # into every Claude config folder that exists here
+mulebox skill status     # how each copy stands against this mulebox; changes nothing
+mulebox skill update     # replace out-of-date copies, after upgrading mulebox
 ```
+
+These cover `~/.claude`, `~/.claude-work` and the folder `CLAUDE_CONFIG_DIR` names, those that
+exist; `--config-dir <folder>` names one instead, and may repeat. `update` replaces hand edits
+in a copy, and leaves alone a skill folder that is a link. The skill says which contract schema
+it was written for; when `mulebox contract` shows a higher one, the agent tells you, and
+`mulebox doctor` reports it too. Agents never update it themselves.
 
 Agents without skills can read [agents.md](agents.md) instead.
 

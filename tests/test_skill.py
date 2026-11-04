@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 
 from mulebox.cli import build_parser
-from mulebox.client import contract
+from mulebox.client import contract, skill_install
 
 SKILL = Path(__file__).resolve().parents[1] / "skills" / "mulebox" / "SKILL.md"
 MAX_DESCRIPTION = 1024
@@ -26,6 +26,28 @@ def test_frontmatter_is_what_a_skill_loader_needs():
     assert "mulebox.yml" in meta["description"]  # what makes it trigger in a project
 
 
+def test_the_schema_it_was_written_for_is_the_contract_schema():
+    """Raising contract.SCHEMA means revisiting the skill, and stating the new number in it."""
+    assert skill_install.schema_of(SKILL.read_text(encoding="utf-8")) == contract.SCHEMA
+
+
+def test_the_repository_path_and_the_packaged_skill_are_one_file():
+    assert SKILL.is_symlink()
+    assert SKILL.read_text(encoding="utf-8") == skill_install.packaged_text()
+
+
+def test_it_tells_the_agent_to_report_a_stale_skill_and_not_to_update_it():
+    body = parts()[1]
+    assert "mulebox skill update" in body
+    assert "Never update this skill\nyourself" in body
+
+
+def test_it_teaches_detached_jobs_and_following_them():
+    body = parts()[1]
+    assert "mulebox check --detach" in body and "mulebox events --job" in body
+    assert "Monitor tool" in body
+
+
 def test_it_sends_agents_to_the_contract():
     assert "mulebox contract" in parts()[1]
 
@@ -43,6 +65,7 @@ def test_every_mulebox_command_it_names_exists():
     known = set(build_parser()._subparsers._group_actions[0].choices)
     named = set(re.findall(r"`mulebox ([a-z]+)", body)) | set(
         re.findall(r"^ {4}mulebox ([a-z]+)", body, re.M))
+    assert {"doctor", "events", "status", "wait", "skill"} <= named
     assert named and named <= known
 
 

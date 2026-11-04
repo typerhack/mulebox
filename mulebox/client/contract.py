@@ -3,7 +3,9 @@
 Generated, not written: the facts come from `.mulebox.yml` and from the tables the code
 itself uses, so there is no second copy to drift. It reads no network, so it still
 answers when the build machine is down, which is when an agent most needs its rules.
-`schema` changes only when a key is removed or changes meaning; adding keys is safe.
+`schema` rises when a key is removed or changes meaning, and when the skill has to teach
+something new, because that is how an installed skill finds out it is behind: SKILL.md says
+which schema it was written for (tests/test_skill.py ties the two). Adding keys alone is safe.
 """
 
 from __future__ import annotations
@@ -14,7 +16,9 @@ from mulebox.client import report
 from mulebox.client.excludes import BUILTIN_EXCLUDES
 from mulebox.common.config import ProjectConfig
 
-SCHEMA = 2  # 2: `project.services` removed; `project.needs` includes what compose implies
+# 2: `project.services` removed; `project.needs` includes what compose implies
+# 3: the skill teaches detached jobs and events, and says the schema it was written for
+SCHEMA = 3
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -33,6 +37,7 @@ COMMANDS = {
     "why_it_failed": "mulebox logs <job-id> --summary",
     "cancel": "mulebox cancel <job-id>",
     "report_a_problem": "mulebox feedback draft <job-id> --summary <text>",
+    "skill_status": "mulebox skill status",
 }
 THROUGH_MULEBOX = ("builds", "type checks", "lint", "tests")
 KEEP_LOCAL = ("git", "search", "reading files", "diffs")
@@ -71,13 +76,17 @@ EVENTS = (
     "after finished, read mulebox logs <job-id> --summary if the job failed",
 )
 RULES = (
+    "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
+    "if this contract's schema is higher than the one your mulebox skill says it was written "
+    "for, tell the user the skill is behind and that mulebox skill update fixes it; never "
+    "update the skill yourself",
     "a detached job keeps running without you, within timeout_min: cancel it with mulebox "
     "cancel if you no longer want it, nobody else will",
     "run mulebox doctor before a project's first job, and after changing toolchain or needs: "
-    "it finds what a job would fail on, before anything is uploaded",
+    "it finds what a job would fail on, before anything is uploaded; it exits 1 if a job "
+    "would not run, and warnings alone exit 0",
     "a failed job ends with a short summary on stderr: read it first, and the full log only "
     "if it is not enough",
-    "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
     "do not ssh into the build machine to change, install or delete things",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",
     "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",
@@ -138,7 +147,7 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
 
 def render(contract: Contract) -> str:
     """The contract as plain text; `--json` gives the same facts with stable keys."""
-    lines = [f"mulebox {contract['mulebox_version']} contract", "",
+    lines = [f"mulebox {contract['mulebox_version']} contract, schema {contract['schema']}", "",
              *_project_text(contract["project"]), "", "Commands:"]
     lines += [f"- {name.replace('_', ' ')}: {text}" for name, text in contract["commands"].items()]
     lines += ["", "Events:", *_bullets(contract["events"]),

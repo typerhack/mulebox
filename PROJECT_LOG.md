@@ -8,6 +8,17 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.31.0 - 2026-11-04 - minor
+- The skill ships inside the package; `skills/mulebox/SKILL.md` is a link to it (M8.7).
+  `mulebox skill install`, `update` and `status` handle every Claude config folder:
+  `~/.claude`, `~/.claude-work` and `CLAUDE_CONFIG_DIR`. `cp -R skills/mulebox` no longer works.
+- SKILL.md states the contract schema it was written for and the contract prints the current
+  one (now 3, also raised when the skill must teach something new), so an agent can tell the
+  user its skill is behind. It never updates itself. `mulebox doctor` reports it, and a test
+  ties the two numbers.
+- The contract's first rule is again the one against running heavy work locally; a test holds
+  it there.
+
 ## 0.30.0 - 2026-11-04 - minor
 - While queued, `check` suggests `--detach` once, at position 2 or later or for a job that
   usually takes 5 minutes or more (M8.6).

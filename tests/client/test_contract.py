@@ -25,6 +25,10 @@ def run(capsys, *argv):
     return code, capsys.readouterr()
 
 
+def test_the_text_prints_the_schema_an_agent_compares_with_its_skill():
+    assert f"schema {contract.SCHEMA}" in contract.render(contract.build(None, "1")).splitlines()[0]
+
+
 def test_project_facts_come_from_the_config():
     terms = contract.build(CONFIG, "1.2.3")
     assert terms["schema"] == contract.SCHEMA and terms["mulebox_version"] == "1.2.3"
@@ -76,7 +80,7 @@ def test_exit_codes_match_the_table_in_the_agent_docs():
 
 
 def test_the_rule_that_matters_most_is_there():
-    assert any("never run heavy commands locally" in r for r in contract.RULES)
+    assert "never run heavy commands locally" in contract.RULES[0]
 
 
 def test_cli_inside_a_project_with_no_client_config(tmp_path, monkeypatch, capsys):
