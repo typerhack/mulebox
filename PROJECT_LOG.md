@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.7.1 - 2026-11-04 - patch
+- docs/phases.md: parking lot ideas from the user: agent contract, installable skill, agent
+  feedback through GitHub issues, project registration. No behaviour change.
+
 ## 0.7.0 - 2026-11-04 - minor
 - Web dashboard (M2.1-M2.3, `local` part of M2.4): `mulebox dashboard open` on the laptop,
   service `mulebox-dashboard` on the coordinator machine. Queue, live log, history, CPU per

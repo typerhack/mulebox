@@ -89,6 +89,15 @@ queue and returns the same result as running it locally.
 - [ ] M6.5 1.0.0 release (only when the user declares it)
 
 ## Parking lot
+- Agent contract: a manifest an agent can read to learn how this project builds, tests and
+  uses git through mulebox, instead of inferring it from docs
+- Installable mulebox skill: installed once system-wide, so any project can say "use the
+  mulebox skill" instead of pointing at docs/agents.md. The skill is built here; installing
+  it is the user's step, in another session
+- Agent feedback: agents file GitHub issues about what mulebox could not handle, with
+  enough logs and screenshots to reproduce (redacted first, no secrets or private data)
+- Project registration: each project registers with mulebox and stays registered, to avoid
+  copy-pasted setup and to manage projects later
 - MCP wrapper over the client commands
 - More than one slot per worker, or job weights, once measurements justify it
 - macOS or Windows workers
