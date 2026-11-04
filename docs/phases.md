@@ -121,7 +121,7 @@ queue and returns the same result as running it locally.
 - [ ] M5.3 Workers report CPU and memory; the dashboard shows them per machine
 
 ## M6: Open-source readiness
-- [ ] M6.1 Choose a license (user decision)
+- [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)
 - [ ] M6.2 User docs: install, configure a project, agent rules snippet, troubleshooting
 - [ ] M6.3 Repository CI for mulebox itself; release process (tag on MAJOR releases)
 - [ ] M6.4 Security review; scan history for personal data before going public

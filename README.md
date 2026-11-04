@@ -63,4 +63,4 @@ Rules for contributors and agents: [AGENTS.md](AGENTS.md). Every change bumps
 
 ## License
 
-Not chosen yet (see roadmap). The project is private until it is.
+[MIT](LICENSE).

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.25.2 - 2026-11-04 - patch
+- License: MIT, chosen by the user (M6.1). `LICENSE`, the README and the package metadata.
+
 ## 0.25.1 - 2026-11-04 - patch
 - Docs: M2.7 status after a real compose job under full load on a build machine.
 
