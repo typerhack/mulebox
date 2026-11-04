@@ -1,7 +1,7 @@
 // One job's detail and live log. Log text is appended as text nodes, never parsed as HTML.
 // Reconnects resume by byte offset (the event id); the stream ends with an `end` event.
 
-import { badge, clock, duration, el, fill, getJson, safeUrl } from "./format.js";
+import { badge, clock, duration, el, fill, getJson, safeUrl, unattendedMark } from "./format.js";
 
 const TAIL = 256 * 1024;
 const KEEP_CHARS = 1024 * 1024;  // cap the page, not the job: the full log has its own link
@@ -14,13 +14,23 @@ function facts(job) {
     ["Created", clock(job.created_at)], ["Started", clock(job.started_at)],
     ["Finished", clock(job.finished_at)],
     ["Run time", job.duration_s === null ? null : duration(job.duration_s)],
-    ["Commit", job.base_commit?.slice(0, 12)], ["Timeout", job.timeout_min && `${job.timeout_min} min`],
+    ["Commit", job.base_commit?.slice(0, 12)], ["Check-in every", job.timeout_min && `${job.timeout_min} min`],
+    ["Stopped", job.stop_text],
     ["Toolchain", typeof job.toolchain === "string" ? job.toolchain : null],
     ["Command", job.command], ["Job id", job.job_id],
   ].filter(([, value]) => value !== null && value !== undefined && value !== "");
   return el("dl", { class: "facts" }, ...rows.flatMap(([name, value]) => [
     el("dt", { text: name }), el("dd", { text: String(value) }),
   ]));
+}
+
+// Nobody is watching: what happens, and the two ways out. The page shows no buttons for them.
+function aloneNote(job) {
+  if (!job.unattended) return null;
+  return el("div", { class: "alone-note", "data-alone": job.job_id }, unattendedMark(job),
+    el("p", { text: `It stops by itself: ${job.unattended.reason}.` }),
+    el("p", {}, "Take it back: ", el("code", { text: `mulebox wait ${job.job_id}` })),
+    el("p", {}, "Or end it: ", el("code", { text: `mulebox cancel ${job.job_id}` })));
 }
 
 // The note beside the log says what the stream is doing until output arrives: a blank box
@@ -87,6 +97,7 @@ export function jobView(box, jobId) {
                     "GitHub runner. The job's result and log are on GitHub." })
         : null,
       run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
+      aloneNote(job),
       info,
       el("div", { class: "log-head" }, el("span", { text: "log" }), note, link),
       pre,
@@ -95,6 +106,7 @@ export function jobView(box, jobId) {
     source = follow(pre, stateSlot, note, (final) => {
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));
       info.replaceChildren(facts(final));
+      box.querySelector("[data-alone]")?.remove();
     });
   }).catch((error) => {
     if (!closed) {

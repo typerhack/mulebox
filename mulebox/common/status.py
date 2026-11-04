@@ -209,12 +209,13 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     return tuple(
         (j.get("job_id"), j.get("state"), j.get("outcome"), j.get("position"),
          j.get("worker"), j.get("started_at"), j.get("finished_at"),
-         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), _left_mark(j))
+         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j))
         for j in jobs
     )
 
 
-def _left_mark(job: dict[str, Any]) -> tuple[Any, int] | None:
+def left_mark(job: dict[str, Any]) -> tuple[Any, int] | None:
+    """An unattended job's reason and whole minutes left, for a view's fingerprint."""
     view = job.get("unattended")
     if not isinstance(view, dict):
         return None

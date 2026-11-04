@@ -261,6 +261,9 @@ it: a real machine.
       total as `[limits]`, queued jobs included, `stopped: unattended`, exit 76, schema 8 with
       an upgrade test. Built 2026-11-04 (0.37.0). Open: a job really stopped on a machine,
       with its containers gone, and the 124 path with a worker still on an older version.
+- [~] M11.5 Warnings to the user: warning icon, `unattended` and time left on the job, its machine
+      and the Queue tab in the dashboard. Built 2026-11-04 (0.38.0): seen in headless Chrome on
+      a seeded local store. Open: a real job on a real machine, in a real browser, and a phone.
 - [~] M11.4 Warnings to the agent: `unattended` event, `status`, `wait`, stderr of any command from
       the project. Built 2026-11-04 (0.37.0). Open: seen by an agent in a real session.
 

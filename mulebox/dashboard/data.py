@@ -15,8 +15,8 @@ from typing import Any
 
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
-from mulebox.common.status import snapshot
-from mulebox.coordinator import api, queue, workers
+from mulebox.common.status import STOP_TEXT, shown_state, snapshot
+from mulebox.coordinator import api, attendance, queue, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -42,22 +42,32 @@ class DashboardData:
         with self.store.read() as conn:
             rows = queue.listing(conn, finished_limit)
             fleet = workers.listing(conn)
-        return [{**reservation_dict(job, pos), **placement(fleet, job, now)} for job, pos in rows]
+            limits = attendance.read_limits(conn)
+        return [{**reservation_dict(job, pos), **placement(fleet, job, now),
+                 **attendance.fields(job, now, limits)} for job, pos in rows]
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:
         return snapshot(self.queue_jobs(now), now)
 
     def machines(self, now: float) -> dict[str, Any]:
         with self.store.read() as conn:
-            return machines.snapshot(workers.listing(conn), queue.active_jobs(conn), now)
+            limits = attendance.read_limits(conn)
+            active = [{**job, **attendance.fields(job, now, limits)}
+                      for job in queue.active_jobs(conn)]
+            return machines.snapshot(workers.listing(conn), active, now)
 
-    def job(self, job_id: str) -> dict[str, Any] | None:
+    def job(self, job_id: str, now: float | None = None) -> dict[str, Any] | None:
         """The detail view of one job, or None when the id is malformed or unknown."""
         raw = self._raw(job_id)
         if raw is None:
             return None
         job, place = raw
-        detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS}}
+        with self.store.read() as conn:
+            limits = attendance.read_limits(conn)
+        detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS},
+                  **attendance.fields(job, time.time() if now is None else now, limits)}
+        detail["shown_state"] = shown_state(detail)
+        detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))
         detail["command"] = self._redactor.redact(shlex.join(job["argv"])) if job["argv"] else ""
         detail["log_size"] = self.staging.log_size(job["job_id"])
         return detail
@@ -77,6 +87,7 @@ class DashboardData:
             jobs = st.select_jobs(conn, where, tuple(params), "finished_at DESC, seq DESC",
                                   limit=limit)
         rows = [{**reservation_dict(job), "duration_s": job["duration_s"]} for job in jobs]
+        rows = [{**row, "shown_state": shown_state(row)} for row in rows]
         more = len(rows) == limit
         return {"jobs": rows, "next_before": rows[-1]["finished_at"] if more else None}
 

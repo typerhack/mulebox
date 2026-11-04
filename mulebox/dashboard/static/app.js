@@ -3,7 +3,7 @@
 
 import { getJson } from "./format.js";
 import { jobView } from "./jobdetail.js";
-import { historyView, queueView, tick } from "./jobs.js";
+import { historyView, queueView, tick, tickLeft } from "./jobs.js";
 import { Machine } from "./machine.js";
 import { renderMachines } from "./machines.js";
 
@@ -28,7 +28,10 @@ const age = () => (performance.now() - snapshotAt) / 1000;
 
 function showQueue() {
   queueView(work, snapshot, machines);
-  if (snapshot) tick(work, snapshot, age());  // never show the snapshot's older times
+  if (snapshot) {  // never show the snapshot's older times
+    tick(work, snapshot, age());
+    tickLeft(document, snapshot, age());
+  }
 }
 
 function navigate() {
@@ -106,9 +109,9 @@ stream.addEventListener("metrics_history", (event) => {
 
 window.addEventListener("hashchange", navigate);
 setInterval(() => {
-  if (route === "" && snapshot && !document.hidden) {
-    tick(work, snapshot, (performance.now() - snapshotAt) / 1000);
-  }
+  if (!snapshot || document.hidden) return;
+  if (route === "") tick(work, snapshot, age());
+  tickLeft(document, snapshot, age());
 }, 1000);
 navigate();
 getJson("/healthz").then((health) => {

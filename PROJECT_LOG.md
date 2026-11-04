@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.38.0 - 2026-11-04 - minor
+- The dashboard warns the user: a warning triangle, the word `unattended` and the time left on the
+  job, on its machine in both places, and a count on the Queue tab. A job's page says what happens
+  and gives the commands to take it back or end it. The time left counts down in the browser.
+- A stopped job reads `stopped: unattended` in the queue, its page and history, with the reason
+  on its page, and stays out of the Failed tab. History rows now carry `shown_state`.
+- The job page's `Timeout` is now `Check-in every`.
+
 ## 0.37.0 - 2026-11-04 - minor
 - `timeout_min` is a check-in now, not a hard limit: every `timeout_min` a running job reports its
   time, stage, last output and machine readings, as a `check_in` event and a warning in `check`

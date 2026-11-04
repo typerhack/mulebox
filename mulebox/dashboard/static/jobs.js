@@ -6,7 +6,7 @@
 // results that are one or the other (a released runner slot and a cancelled job are
 // neither, and only Recent and History list them); Recent is the last few finished jobs.
 
-import { badge, clock, duration, el, fill, getJson, jobLink } from "./format.js";
+import { badge, clock, duration, el, fill, getJson, jobLink, timeLeft, warningIcon } from "./format.js";
 import { lanesView } from "./lanes.js";
 
 const FAILED = new Set(["failed", "timed_out", "interrupted"]);
@@ -77,6 +77,11 @@ function tabs(snapshot, box, machines) {
                                   "aria-controls": "jobs-panel",
                                   tabindex: tab.id === current ? "0" : "-1" }, tab.label);
     if (count !== null) button.append(el("span", { class: "count", text: String(count) }));
+    const alone = tab.id === "queue" && snapshot ? tab.pick(snapshot).filter((j) => j.unattended).length : 0;
+    if (alone) {
+      button.append(el("span", { class: "count warned", title: `${alone} unattended` }, warningIcon(),
+                       el("span", { text: `${alone} unattended` })));
+    }
     button.addEventListener("click", () => { choose(tab.id); queueView(box, snapshot, machines); });
     return button;
   });
@@ -121,6 +126,20 @@ export function tick(root, snapshot, sinceSnapshot) {
   root.querySelectorAll("[data-elapsed]").forEach((cell) => {
     const value = base.get(cell.dataset.elapsed);
     if (typeof value === "number") cell.textContent = duration(value + sinceSnapshot);
+  });
+}
+
+// Time left on unattended jobs, wherever one is shown. Somebody watching again ends the mark
+// (the machines box and a job's page redraw less often than the queue).
+export function tickLeft(root, snapshot, sinceSnapshot) {
+  const base = new Map();
+  for (const job of [...(snapshot?.running ?? []), ...(snapshot?.queued ?? [])]) {
+    base.set(job.job_id, job.unattended?.left_s ?? null);
+  }
+  root.querySelectorAll("[data-left]").forEach((cell) => {
+    const value = base.get(cell.dataset.left);
+    if (value === null) cell.closest("[data-alone]")?.remove();
+    else if (typeof value === "number") cell.textContent = timeLeft(Math.max(0, value - sinceSnapshot));
   });
 }
 

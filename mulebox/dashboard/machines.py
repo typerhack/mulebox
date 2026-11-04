@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from mulebox.common.status import left_mark
 from mulebox.coordinator.workers import OFFLINE_AFTER_S, is_online
 
 __all__ = ["AVAILABLE", "BUSY", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "machine",
@@ -17,6 +18,12 @@ __all__ = ["AVAILABLE", "BUSY", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "ma
 AVAILABLE, BUSY, OFFLINE = "available", "busy", "offline"
 JOB_FIELDS = ("job_id", "project", "job", "kind")
 READINGS = ("cpu_pct", "mem_pct")
+
+
+def _job(job: dict[str, Any]) -> dict[str, Any]:
+    """A job on a machine's row; `unattended` only when nobody is watching it."""
+    view = job.get("unattended")
+    return {**{field: job[field] for field in JOB_FIELDS}, **({"unattended": view} if view else {})}
 
 
 def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
@@ -30,7 +37,7 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> d
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
             "cpu_pct": None, "mem_pct": None,
-            "jobs": [{field: job[field] for field in JOB_FIELDS} for job in jobs]}
+            "jobs": [_job(job) for job in jobs]}
 
 
 def readings(sample: dict[str, Any] | None) -> dict[str, float | None]:
@@ -65,9 +72,10 @@ def snapshot(workers: list[dict[str, Any]], active: list[dict[str, Any]],
 
 def fingerprint(panel: dict[str, Any]) -> tuple:
     """What changes the panel. `last_seen` is left out: it moves every second. Readings
-    count to the whole percent, so a live meter moves without a flood of events."""
+    count to the whole percent, so a live meter moves without a flood of events, and
+    an unattended job's time left to the whole minute: browsers tick it."""
     whole = (lambda v: None if v is None else round(v))
     return tuple((row["name"], row["state"], row["slots"], row["free_slots"],
-                  tuple(row["capabilities"]), tuple(j["job_id"] for j in row["jobs"]),
+                  tuple(row["capabilities"]), tuple((j["job_id"], left_mark(j)) for j in row["jobs"]),
                   *(whole(row.get(key)) for key in READINGS))
                  for row in panel["machines"])

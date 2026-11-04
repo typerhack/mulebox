@@ -135,12 +135,20 @@ button.icon:hover { color: var(--ink); }
 .badge[data-tone="bad"]::before { background: var(--bad); border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .badge[data-tone="warn"]::before { background: var(--warn); border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
 
+/* Unattended: the warning triangle, the word and the time left, in every view that shows the job. */
+.warning { flex: none; width: 13px; height: 13px; fill: currentColor; }
+.alone { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; color: var(--warn); }
+.alone-note { margin: 0 0 8px; padding: 5px 8px; border: 1px solid var(--warn); }
+.alone-note p { margin: 2px 0 0; color: var(--ink-soft); }
+.alone-note code { color: var(--ink); overflow-wrap: anywhere; }
+
 /* Jobs: tabs on top (kept in view while the body scrolls), then lanes or a table. */
 .tabs { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; gap: 0 14px; margin: -2px 0 8px; background: var(--bg); border-bottom: 1px solid var(--line); }
 .tabs [role="tab"] { border: none; border-radius: 0; min-height: 0; padding: 3px 0 5px; color: var(--ink-soft); }
 .tabs [role="tab"]:hover { color: var(--ink); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--ink); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); }
 .tabs .count { color: var(--ink-muted); font-weight: 400; margin-left: 6px; }
+.tabs .count.warned { display: inline-flex; align-items: center; gap: 4px; color: var(--warn); }
 .panel { display: flex; flex-direction: column; }
 
 /* Lanes: one row per machine, its name and state, a block per running job, and the jobs
@@ -168,7 +176,7 @@ button.icon:hover { color: var(--ink); }
 .wait .pos { color: var(--accent); font-weight: 700; min-width: 3ch; }
 .wait .branch { margin-left: 8px; }
 .wait .num { text-align: right; }
-.wait .reason, .wait .muted { grid-column: 2 / -1; margin: 0 0 1px; }
+.wait .reason, .wait .muted, .wait .alone { grid-column: 2 / -1; margin: 0 0 1px; }
 .wait .reason { display: flex; gap: 8px; align-items: baseline; color: var(--ink-soft); }
 .wait .reason .badge { flex: none; color: var(--bad); }
 .lane[data-state="stuck"] .lane-machine strong { color: var(--bad); }

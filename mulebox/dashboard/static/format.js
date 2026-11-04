@@ -77,6 +77,7 @@ export function meter(attrs = {}) {
 
 const TONES = {
   passed: "good", failed: "bad", timed_out: "warn", interrupted: "warn",
+  "stopped: unattended": "warn",
   running: "active", starting: "active", cleaning: "active",
   available: "good", busy: "active", offline: "bad", stuck: "bad",
 };
@@ -86,6 +87,41 @@ export function badge(state) {
   const text = String(state ?? "unknown");
   return el("span", { class: "badge", "data-tone": TONES[text] ?? "plain",
                       text: text.replaceAll("_", " ") });
+}
+
+// The warning triangle, drawn here because `el` cannot make SVG. Decoration: the word beside
+// it carries the meaning.
+export function warningIcon() {
+  const ns = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(ns, "svg");
+  icon.setAttribute("viewBox", "0 0 16 16");
+  icon.setAttribute("aria-hidden", "true");
+  icon.classList.add("warning");
+  const shape = document.createElementNS(ns, "path");
+  shape.setAttribute("fill-rule", "evenodd");
+  shape.setAttribute("d", "M8 1 15.5 15H.5ZM7 6v5h2V6Zm0 6v2h2v-2Z");
+  icon.append(shape);
+  return icon;
+}
+
+export const timeLeft = (seconds) => `${duration(seconds)} left`;
+
+// The job among `jobs` that stops first, and how many nobody is watching.
+export function soonest(jobs) {
+  const alone = jobs.filter((job) => job.unattended);
+  alone.sort((a, b) => a.unattended.left_s - b.unattended.left_s);
+  return { job: alone[0] ?? null, count: alone.length };
+}
+
+// Warning icon, the word and the time left. `data-left` is the job id, so tick.js can count it
+// down, and drop the whole mark once somebody watches the job again.
+export function unattendedMark(job, count = 1) {
+  if (!job?.unattended) return null;
+  const word = count > 1 ? `${count} unattended` : "unattended";
+  return el("span", { class: "alone", "data-alone": job.job_id,
+                      title: `Nobody is watching this job. It stops: ${job.unattended.reason}.` },
+    warningIcon(), el("span", { text: word }),
+    el("span", { class: "num", "data-left": job.job_id, text: timeLeft(job.unattended.left_s) }));
 }
 
 export async function getJson(url) {

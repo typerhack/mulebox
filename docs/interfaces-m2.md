@@ -72,6 +72,18 @@ stage (`steps.failed_stage`), and `job_event` puts it in the `finished` event.
   own ssh connection, never a shared `ControlMaster` one: ssh would otherwise hand the
   forward to the master and exit, and Ctrl-C could not close it.
 
+## Unattended jobs
+
+Queue rows, machine rows' `jobs` and a job's detail carry `unattended` (`attendance.fields`:
+`since`, `stop_reason`, `reason`, `stop_at`, `left_s`) only while nobody watches the job. Every
+view marks it the same way (`unattendedMark`): a warning triangle, the word `unattended` and the
+time left. The Queue tab adds a count, a machine says how many it has and which stops first, and
+a job's page says what happens and the commands to take it back or end it. The server sends
+`left_s` when the whole minutes change (both fingerprints); browsers count down between
+(`tickLeft`), and drop the mark when a queue event shows somebody watching again. A stopped job
+reads `stopped: unattended` (`shown_state`, also in history), with its reason as `stop_text`
+on the job's page, and stays out of the Failed tab: it did not fail.
+
 ## Machines box (`dashboard/machines.py`, `static/machines.js`)
 
 The panel feeds the Machines box, the lanes above and `/api/machines`.
