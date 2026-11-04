@@ -117,7 +117,9 @@ RULES = (
     "the coordinator and the workers must be upgraded together: if mulebox doctor reports "
     "different versions, tell the user",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",
-    "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",
+    "a database a job shares with anything else must have ${MULEBOX_JOB_SLUG} in its name, and "
+    "never use an existing database; a database in a compose service of the job itself is that "
+    "job's alone, so its name is free",
     "waiting in the queue is normal; do not cancel and resubmit to speed it up; if the wait "
     "may be long, run the job detached",
     "do not cancel other people's jobs",

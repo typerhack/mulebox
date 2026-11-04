@@ -171,8 +171,11 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
 ```
 
    Rules for the values:
-   - **Databases are per job.** Every database name, prefix or schema must include
-     `${MULEBOX_JOB_SLUG}` (the job id in lowercase with `_`, safe in database names).
+   - **Databases are per job.** A database a job shares with anything else, such as one
+     already running on the build machine or reached by address, needs `${MULEBOX_JOB_SLUG}`
+     (the job id in lowercase with `_`, safe in database names) in every name, prefix or schema.
+     A database in a compose service of the job itself is that job's alone and gone afterwards,
+     so its name is free, and a project's fixed name works.
      Env values may use `${MULEBOX_JOB_ID}`, `${MULEBOX_JOB_SLUG}` and earlier `env:`
      entries, in the order the file lists them; nothing else is expanded and no shell runs. An
      entry that uses a later one is a config error, caught before any upload (exit 2, also from

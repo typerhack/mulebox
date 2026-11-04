@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.4 - 2026-11-04 - patch
+- The contract's database rule said every name needs `${MULEBOX_JOB_SLUG}`. That is for a
+  database a job shares. A database in a compose service of the job is that job's alone, so a
+  project's fixed name works; agents.md says the same.
+
 ## 0.36.3 - 2026-11-04 - patch
 - An `env:` entry using a later one is a config error on the client: exit 2 before any upload,
   from `check`, `run`, `contract` and `doctor`. It used to reach the worker, where the job
