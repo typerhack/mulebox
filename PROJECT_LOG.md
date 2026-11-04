@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.6 - 2026-11-04 - patch
+- Tests for how a stop ends moved to their own file, as the attendance tests had passed 300 lines.
+
 ## 0.40.5 - 2026-11-04 - patch
 - The roadmap lists the real-machine checks still missing: the 124 path with an older worker, an
   upgrade or reboot with an open detached job, and exit 5 on an older worker with `ports:`.
