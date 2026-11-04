@@ -84,9 +84,9 @@ RULES = (
     "update the skill yourself",
     "a detached job keeps running without you, within timeout_min: cancel it with mulebox "
     "cancel if you no longer want it, nobody else will",
-    "run mulebox doctor before a project's first job, and after changing toolchain or needs: "
-    "it finds what a job would fail on, before anything is uploaded; it exits 1 if a job "
-    "would not run, and warnings alone exit 0",
+    "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
+    "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
+    "1 if a job would not run, and warnings alone exit 0",
     "a failed job ends with a short summary on stderr: read it first, and the full log only "
     "if it is not enough",
     "do not ssh into the build machine to change, install or delete things",

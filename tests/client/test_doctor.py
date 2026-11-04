@@ -189,3 +189,16 @@ def test_cli_another_coordinator_error_is_not_mistaken_for_an_old_one(fake, make
     fake.scenario(error="internal")
     code, out = run(capsys)
     assert code == 4 and "scripted failure" in out.err
+
+
+def test_a_compose_file_a_worker_would_refuse_fails_before_any_upload(fake, in_project, capsys):
+    (in_project / "docker-compose.yml").write_text(
+        "services:\n  db:\n    image: mysql\n    volumes: [data:/var/lib/mysql]\n"
+        "volumes:\n  data:\n    external: true\n")
+    (in_project / ".mulebox.yml").write_text(
+        "project: example-app\ncompose: [docker-compose.yml]\njobs:\n  check: x\n")
+    fake.scenario(machine_version=get_version(), workers=[worker(
+        capabilities=["docker", "compose-v1"], version=get_version())])
+    assert cli.main(["doctor"]) == 1
+    assert "volumes data is external" in capsys.readouterr().out
+    assert [r["type"] for r in fake.requests()] == ["machines"]

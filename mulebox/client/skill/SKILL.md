@@ -20,7 +20,8 @@ needs no network. Follow it. It is the source of truth; this skill does not repe
 
 Use `mulebox contract --json` if you want to read it with a tool.
 
-Before a project's first job, or after changing its toolchain or `needs`, run `mulebox doctor`.
+Before a project's first job, or after changing its toolchain, `needs` or compose files, run
+`mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
 This skill was written for contract schema 3. `mulebox contract` prints the current schema on

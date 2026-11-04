@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.33.0 - 2026-11-04 - minor
+- `mulebox doctor` checks a project's compose files before any upload, with the worker's own
+  policy (M8.9): an external volume, a host network or a writable mount outside the checkout
+  fails at once, rather than after the job has waited through the queue.
+  `compose_policy.check` takes no checkout for this: this machine's paths say nothing about
+  the build machine's, so only what the files show counts. `client/compose_check.py` gives it
+  the model `docker compose config` would print, as far as the files show it.
+
 ## 0.32.0 - 2026-11-04 - minor
 - A job that could not start exits 5, not 1, and its outcome line says so: it ran no project
   code, so it must not read as a failed check (M8.8). `check`, `wait`, `events` and the

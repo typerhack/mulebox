@@ -7,6 +7,8 @@ outside the project, devices, extra kernel powers, inherited mounts, the Docker 
 paths that Compose would create or write, and build features that do the same for a build.
 
 Refused, not repaired: the project's owner decides what to do, and the message says why.
+With no checkout, as `mulebox doctor` calls it on a client, only what the model itself shows
+counts: this machine's paths say nothing about the build machine's.
 This guards against a CI file written for a throwaway runner, not against a hostile project:
 a job can run any command, and Docker access is root-equivalent (docs/design.md, Safety).
 """
@@ -87,6 +89,12 @@ def _holds_socket(source: Path) -> bool:
     return any(is_within(spot, source) for spot in spots)
 
 
+def _names_socket(source: Path) -> bool:
+    """`_holds_socket` for a path as written, which nothing here can look up."""
+    return (any(is_within(source, Path(run)) for run in _RUN_FOLDERS)
+            or any(is_within(Path(spot), source) for spot in _RUNTIME_SOCKETS))
+
+
 def _outside_problem(path: str) -> str | None:
     """Reading this host path from a job: what is wrong with it, or None."""
     if _holds_socket(Path(os.path.realpath(path))):
@@ -98,7 +106,28 @@ def inside(path: str, checkout: Path) -> bool:
     return is_within(Path(os.path.realpath(path)), checkout)
 
 
-def _bind_problem(volume: Model, checkout: Path) -> str | None:
+def _writable_problem(path: str) -> str:
+    return (f"bind-mounts {path} writable, outside the checkout. Use a path in the "
+            "project, a named volume, or mount it read-only")
+
+
+def _written_bind_problem(volume: Model) -> str | None:
+    """A bind as written: paths relative to the checkout, or absolute, or `..`, or `~`."""
+    path = volume.get("source") or ""
+    first = path.split("/", 1)[0]
+    if first != ".." and not first.startswith("~") and not path.startswith("/"):
+        return None
+    if path.startswith("/") and _names_socket(Path(path)):
+        return f"mounts a container runtime or other Unix socket through {path}"
+    if not volume.get("read_only"):
+        return _writable_problem(path)
+    return f"relabels {path}, outside the checkout" if (volume.get("bind") or {}).get(
+        "selinux") else None
+
+
+def _bind_problem(volume: Model, checkout: Path | None) -> str | None:
+    if checkout is None:
+        return _written_bind_problem(volume)
     path = volume.get("source") or ""
     problem = _outside_problem(path)
     if problem:
@@ -109,14 +138,13 @@ def _bind_problem(volume: Model, checkout: Path) -> str | None:
         return (f"bind-mounts {path}, outside the checkout, and it does not exist on the "
                 "build machine. mulebox does not create folders there")
     if not volume.get("read_only"):
-        return (f"bind-mounts {path} writable, outside the checkout. Use a path in the "
-                "project, a named volume, or mount it read-only")
+        return _writable_problem(path)
     if (volume.get("bind") or {}).get("selinux"):
         return f"relabels {path}, outside the checkout"
     return None
 
 
-def _volume_problem(volume: Model, checkout: Path) -> str | None:
+def _volume_problem(volume: Model, checkout: Path | None) -> str | None:
     kind = volume.get("type")
     if kind not in _VOLUME_TYPES:
         return f"uses a {kind} volume, which would reach past the job"
@@ -181,7 +209,7 @@ def _hook_problem(spec: Model) -> str | None:
     return None
 
 
-def _service_problem(spec: Model, services: Model, checkout: Path) -> str | None:
+def _service_problem(spec: Model, services: Model, checkout: Path | None) -> str | None:
     for key, reason in _REFUSED_KEYS.items():
         if spec.get(key):
             return f"{reason}, which would reach past the job"
@@ -218,11 +246,11 @@ def _section_problem(section: str, key: str, spec: Model) -> str | None:
     return None
 
 
-def _file_problem(section: str, key: str, spec: Model, checkout: Path) -> str | None:
+def _file_problem(section: str, key: str, spec: Model, checkout: Path | None) -> str | None:
     if spec.get("external"):
         return f"{section} {key} is external, which a job cannot have"
     path = spec.get("file")
-    if not path:
+    if not path or checkout is None:
         return None
     problem = _outside_problem(path)
     if not problem and not inside(path, checkout) and not os.path.exists(path):
@@ -230,7 +258,7 @@ def _file_problem(section: str, key: str, spec: Model, checkout: Path) -> str | 
     return f"{section} {key} {problem}" if problem else None
 
 
-def check(model: Model, checkout: Path) -> None:
+def check(model: Model, checkout: Path | None) -> None:
     """ComposeError naming the first thing in `model` that reaches past the job."""
     services = model.get("services") or {}
     for name, spec in services.items():

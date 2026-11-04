@@ -174,6 +174,12 @@ Marked `[~]` until checked on a real machine.
       job usually runs, from its past passed runs, and none of the time in line; design.md
       says so. Tested 2026-11-04 (0.30.0) with the fake coordinator and the real store.
       Open: seen in a real queue. A job at position 1 behind a long job gets no suggestion.
+- [~] M8.9 `mulebox doctor` runs the worker's compose policy on the project's files before any
+      upload, so an external volume fails at once rather than after the queue. Tested
+      2026-11-04 (0.33.0) with unit tests and the fake coordinator, and the steps it copies
+      from `docker compose config` (profiles, unused resources, relative paths) were read off
+      a local Docker client. Open: a real project's compose files. It does not read `include`
+      or `extends` files, or values with variables.
 - [~] M8.8 A job that could not start exits 5, not 1, so it does not read as a failed check.
       Tested 2026-11-04 (0.32.0) with unit tests and the real coordinator code. Open: seen in
       a real job a worker refused.

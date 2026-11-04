@@ -1,7 +1,7 @@
 """CLI `mulebox doctor`: is this project ready to run, before anything is uploaded?
 
-Read-only: it reads `.mulebox.yml` and the installed agent skills, and asks the coordinator
-what its machines offer. It creates no job. Exit codes: 0 fine or only warnings, 1 a job
+Read-only: it reads `.mulebox.yml`, the project's compose files and the installed agent
+skills, and asks the coordinator what its machines offer. It creates no job. Exit codes: 0 fine or only warnings, 1 a job
 would not run, 2 no usable `.mulebox.yml` or client config, 3 build machine unreachable.
 """
 
@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-from mulebox.client import doctor, report, skill_install
+from mulebox.client import compose_check, doctor, report, skill_install
 from mulebox.client.commands import guarded
 from mulebox.client.contract import SCHEMA
 from mulebox.client.doctor import FAIL, OK, Facts, Finding
@@ -74,10 +74,16 @@ def _about_skill() -> list[Finding]:
     return doctor.skills(skill_install.inspect_all(folders, skill_install.packaged_text()), SCHEMA)
 
 
+def _about_compose(project: ProjectConfig | None) -> list[Finding]:
+    if project is None:
+        return []
+    return compose_check.findings(project.compose, find_project_config(Path.cwd()).parent)
+
+
 def examine() -> tuple[list[Finding], int]:
     """(findings, the exit code they call for)."""
     project, about_config = _project()
-    findings = [about_config, *_about_skill()]
+    findings = [about_config, *_about_compose(project), *_about_skill()]
     code = report.EXIT_USAGE if project is None else 0
     try:
         facts = machine_facts(Remote(load_client_config()))

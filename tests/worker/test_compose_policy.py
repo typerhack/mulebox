@@ -237,3 +237,39 @@ def test_a_secret_cannot_be_a_socket(unix_socket):
 def test_an_ordinary_read_only_folder_is_fine(tmp_path):
     volume = {"type": "bind", "source": str(tmp_path), "target": "/s", "read_only": True}
     compose_policy.check(model(volumes=[volume]), CHECKOUT)
+
+
+@pytest.mark.parametrize("volume", [
+    {"type": "bind", "source": "/etc/data", "target": "/d"},
+    {"type": "bind", "source": "../sibling", "target": "/d"},
+    {"type": "bind", "source": "~/data", "target": "/d"},
+    {"type": "bind", "source": "/var/run/docker.sock", "target": "/s", "read_only": True},
+    {"type": "bind", "source": "/run/x", "target": "/s", "read_only": True},
+    {"type": "bind", "source": "/opt", "target": "/o", "read_only": True,
+     "bind": {"selinux": "z"}},
+])
+def test_without_a_checkout_what_a_bind_shows_is_refused(volume):
+    with pytest.raises(ComposeError):
+        compose_policy.check(model(volumes=[volume]), None)
+
+
+@pytest.mark.parametrize("volume", [
+    {"type": "bind", "source": "src", "target": "/d"},
+    {"type": "bind", "source": "/opt/data", "target": "/d", "read_only": True},
+    {"type": "volume", "source": "data", "target": "/d"},
+])
+def test_without_a_checkout_nothing_on_this_machine_is_asked(volume, monkeypatch):
+    def no_lookups(*_args):
+        raise AssertionError("looked at this machine")
+
+    monkeypatch.setattr(compose_policy.os, "stat", no_lookups)
+    monkeypatch.setattr(compose_policy.os.path, "exists", no_lookups)
+    monkeypatch.setattr(compose_policy.os.path, "realpath", no_lookups)
+    compose_policy.check(model(volumes=[volume]), None)
+
+
+def test_without_a_checkout_a_secret_file_is_for_the_worker_to_judge():
+    data = {"services": {}, "secrets": {"key": {"file": "/nowhere/key"}}}
+    compose_policy.check(data, None)
+    with pytest.raises(ComposeError):
+        compose_policy.check({"services": {}, "secrets": {"key": {"external": True}}}, None)
