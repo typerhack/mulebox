@@ -74,7 +74,8 @@ comma in the path is refused because it would end the `--mount` value.
   Non-alphanumerics in a service name become `_`. `env:` values may use `${MULEBOX_PORT_...}`.
 - Script: fetch the helper image if missing (so cleanup cannot fail on it later), set an EXIT
   trap that prints `docker compose ps --all` and `logs --tail=50` when the script fails,
-  `docker compose up --detach --wait`, then `setup`, then the job.
+  `docker compose up --no-start` (pulls, builds, creates), `docker compose up --detach --wait`,
+  then `setup`, then the job.
 - `worker/compose_file.py`: `published_ports(model)`, `rewrite(model, project, labels,
   assigned, checkout) -> (model, notes)`; `compose_policy.check(model, checkout)` raises
   `ComposeError` for what is refused.
@@ -107,6 +108,41 @@ cache root as the root. A failure there is logged, not retried. `caches.clear` a
 
 Reserved for an install step run by mulebox: a folder beside `packages/`, such as
 `<cache>/installs/<project>/<key>`, with the key made from lockfile, toolchain and image.
+
+## Job steps
+
+One row per stage of a job, in the coordinator's store (`job_steps`, schema version 4, a table
+added by `migrate.py` with no change to `jobs`). `seq` orders them. Raw logs stay files.
+
+| Column | Meaning |
+| --- | --- |
+| `job_id`, `seq` | primary key; `seq` counts from 0 within a job |
+| `stage` | `status.STAGES`: `prepare`, `environment`, `images`, `services`, `setup`, `command`, `cleanup` |
+| `started_at`, `finished_at` | epoch seconds on the worker; `finished_at` empty while it runs, and for good if the job ended without its worker |
+| `exit_code` | 0 for a stage followed by another; the job's code for its last; empty if stopped |
+| `bytes_downloaded` | where known |
+| `failing_line` | last line the stage printed, redacted, at most 500 characters, for `failed` or `timed_out` only |
+
+- `prepare`: snapshot and workspace. `environment`: what mulebox provides, today toolchains,
+  caches and the compose file; an install step run by mulebox belongs here too, separate from
+  `setup` and the commands. `images`: `up --no-start`. `services`: `up --wait`.
+- `command` is one row for a job, also when the job has several lines: they are one shell
+  command, and splitting shell text at line breaks is not safe. A later version can add rows,
+  since nothing assumes a stage appears once.
+- `worker/steps.py`: `StepTracker`. The script prints `::mulebox-step:<marker>:<time>:<stage>`
+  (`mulebox_step`, jobspec.py), a random marker per job, and the tailer removes those lines
+  after redaction, before anything is stored. Keep `${` and `$$` out of the script: systemd
+  expands them in a unit's command line.
+- Wire: `steps` (worker to coordinator), body `job_id`, `attempt_id`, `steps` (at most 64 whole
+  rows, replaced by `seq`), answered like `job_update`. It goes after the log, and before
+  `result`. A report is not worth a retry after an `error` reply, so an older coordinator
+  does no harm: the job runs, without rows. The protocol version stays 1.
+- Read: `status_ok` of a `status` request has `steps`, the rows in order (empty for a job
+  that has none). Inside the coordinator: `coordinator/steps.py`, `for_job(conn, job_id)`,
+  which the dashboard can use with its read-only store. Pure helpers in `common/status.py`:
+  `current_stage(job, steps)`, `step_duration_s(step, now)`, `failed_step(steps)`.
+- `timeout_min` still ends the job, whatever the stage. The rows are enough to turn that into
+  a warning later: they say how long each stage took on this project.
 
 ## Browser tests
 

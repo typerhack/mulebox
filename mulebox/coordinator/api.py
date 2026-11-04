@@ -11,7 +11,8 @@ from typing import Any
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import leases, needs, projects, queue, runner_api, workers, worker_api
+from mulebox.coordinator import leases, needs, projects, queue, runner_api, steps, workers
+from mulebox.coordinator import worker_api
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -77,7 +78,8 @@ def status(req: Request) -> Message:
         job = st.require_job(conn, v.job_id(req.body))
         place = queue.position(conn, job)
         reason = waiting_for(conn, job, req.now)
-    return req.reply(MessageType.STATUS_OK, status_body(job, place, reason))
+        rows = steps.for_job(conn, job["job_id"])
+    return req.reply(MessageType.STATUS_OK, status_body(job, place, reason, steps=rows))
 
 
 def cancel(req: Request) -> Message:
@@ -144,6 +146,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.CLAIM: worker_api.claim,
     MessageType.JOB_UPDATE: worker_api.job_update,
     MessageType.LOG_CHUNK: worker_api.log_chunk,
+    MessageType.STEPS: worker_api.report_steps,
     MessageType.RESULT: worker_api.result,
     MessageType.RESERVE: runner_api.reserve,
     MessageType.ACQUIRE: runner_api.acquire,

@@ -8,7 +8,7 @@ Per job: fetch snapshot, prepare the workspace, `job_update running`, start the 
 each step ship new log text, poll the process, heartbeat every 3 s. The job is stopped on
 `cancel: true`, when the coordinator says the job is over, or when no reply came for
 120 s (the worker lease length). After it ends: flush the log, `job_update cleaning`,
-remove what the job left (cleaner.py), `result`. Cleanup runs beside the loop (background.py),
+remove what the job left (cleaner.py), `result`. Stages go out with the log. Cleanup runs beside the loop (background.py),
 so heartbeats, cancels and supervision go on while Docker is slow, and the job keeps its
 lease. It happens even while the coordinator is unreachable; the reports are delivered once
 it answers again. No new job is claimed while reports are pending. With a supervisor, each
@@ -29,12 +29,13 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
+from mulebox.common.status import CLEANUP, ENVIRONMENT, PREPARE
 from mulebox.runners.supervise import Supervisor
 from mulebox.worker import background, runspec, toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
-from mulebox.worker.job import ActiveJob, outcome_for
+from mulebox.worker.job import ActiveJob, ended_badly, outcome_for
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.worker.logtail import LogTailer
 from mulebox.worker.paths import NodePaths
@@ -122,12 +123,13 @@ class Agent:
     def _start(self, claim: dict[str, Any], now: float) -> None:
         job_id, attempt_id = claim["job_id"], claim["attempt_id"]
         project = claim["project"]
-        safe = _safe(self.paths, project, job_id)
+        safe = self.paths.is_safe_job(project, job_id)
         log_path = self.paths.job_dir(project, job_id) / "out.log" if safe else None
         tailer = LogTailer(log_path, job_id, attempt_id, request)
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}))
         self.active[job_id] = job
+        job.steps.begin(PREPARE, now)
         LOG.info("claimed %s (%s, attempt %s)", job_id, project, attempt_id)
         try:
             spec = self._prepare(job, claim, log_path)
@@ -149,8 +151,10 @@ class Agent:
         self.link.fetch_snapshot(job.job_id, snapshot)
         src = workspace.prepare(self.paths, job.project, job.job_id, snapshot)
         remove_tree(snapshot, self.paths.roots)
+        job.steps.begin(ENVIRONMENT, self.clock())
         bins = toolchains.path_for(self.paths, claim.get("toolchain") or {})
-        spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins)
+        spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins,
+                                    job.steps.marker)
         for note in notes:
             job.tailer.note(f"mulebox: {note}\n")
         return spec
@@ -202,6 +206,8 @@ class Agent:
         job.outcome, job.exit_code = outcome, exit_code
         job.duration_s = max(0.0, now - job.started_at)
         job.tailer.finish()
+        job.steps.close(exit_code, now, ended_badly(outcome))
+        job.steps.begin(CLEANUP, now)
         self.active.pop(job.job_id, None)
         self.finishing.append(job)
         LOG.info("job %s ended: %s (exit %s)", job.job_id, outcome, exit_code)
@@ -213,7 +219,7 @@ class Agent:
         self._deliver(job, now)
 
     def _clean(self, job: ActiveJob) -> None:
-        if _safe(self.paths, job.project, job.job_id):
+        if self.paths.is_safe_job(job.project, job.job_id):
             self.cleaner.clean(job.project, job.job_id, job.uses_docker)
 
     def _cleanup(self, job: ActiveJob) -> None:
@@ -227,6 +233,7 @@ class Agent:
             LOG.error("cleanup of %s failed (retrying): %s", job.job_id, task.error)
             return
         job.cleaned = True
+        job.steps.finish_cleanup(self.clock())
         self.ports.release(job.job_id)
 
     def _keep_lease(self, job: ActiveJob, now: float) -> None:
@@ -252,6 +259,7 @@ class Agent:
             return
         try:
             self._send_cleaning(job, now)
+            job.tailer.send(self._sender(now))
             self._call(request(
                 MessageType.RESULT, job_id=job.job_id, outcome=job.outcome.value,
                 exit_code=job.exit_code, duration_s=round(job.duration_s, 3),
@@ -271,14 +279,6 @@ class Agent:
             if job.cleanup is not None:
                 job.cleanup.wait(max(0.0, deadline - time.monotonic()))
             self._deliver(job, now)
-
-
-def _safe(paths: NodePaths, project: str, job_id: str) -> bool:
-    try:
-        paths.job_dir(project, job_id)
-    except MuleboxError:
-        return False
-    return True
 
 
 def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,

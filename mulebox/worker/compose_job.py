@@ -7,7 +7,9 @@ compose file or `env:` value may use `${MULEBOX_PORT_...}`. The result is rewrit
 `COMPOSE_FILE`, with `COMPOSE_PROJECT_NAME`. So `docker compose exec -T api ...` in a job
 command needs no flags, from any folder, and cannot reach another project.
 
-Starting the containers is the first thing the job's script does, not a step of the worker.
+Starting the containers is the first thing the job's script does, not a step of the worker,
+in two parts, so that time spent on images can be told from time spent on services: `up
+--no-start` pulls, builds and creates, on any Compose v2, and `up --wait` starts them.
 It therefore runs inside the job's unit: `timeout_min` covers it, a cancel stops it, and
 its output goes into the job's log and through redaction like any other output. If the
 job fails, the end of the containers' logs goes there too, since they are gone a moment
@@ -28,12 +30,14 @@ from typing import Any
 
 from mulebox.common import compose
 from mulebox.common.compose import ComposeError
+from mulebox.common.status import IMAGES, SERVICES
 from mulebox.worker import compose_file
 from mulebox.worker.compose_file import Port
 from mulebox.worker.docker import Docker, DockerError
 from mulebox.worker.jobspec import port_references
 from mulebox.worker.ports import PortPool
 from mulebox.worker.reclaim import HELPER_IMAGE
+from mulebox.worker.steps import END, SHELL_NAME
 
 GENERATED_FILE = "compose.mulebox.yml"  # beside src/, so it is not in the project's checkout
 LOG_LINES = 50
@@ -65,10 +69,12 @@ def script_lines() -> tuple[str, ...]:
     """Lines at the start of the job's script; `set -e` is already on."""
     helper = shlex.quote(HELPER_IMAGE)
     return (
+        f"{SHELL_NAME} {IMAGES}",
         f"docker image inspect {helper} >/dev/null 2>&1 || docker pull --quiet {helper}",
         "mulebox_containers() {",
         '  code=$?; trap - EXIT',
         '  if [ "$code" -ne 0 ]; then',
+        f"    {SHELL_NAME} {END}",
         "    echo 'mulebox: the job failed; the state and last log lines of its containers:'",
         "    docker compose ps --all || true",
         f"    docker compose logs --no-color --tail={LOG_LINES} || true",
@@ -76,6 +82,8 @@ def script_lines() -> tuple[str, ...]:
         '  exit "$code"',
         "}",
         "trap mulebox_containers EXIT",
+        "docker compose up --no-start",
+        f"{SHELL_NAME} {SERVICES}",
         "docker compose up --detach --wait",
     )
 

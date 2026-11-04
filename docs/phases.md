@@ -157,6 +157,9 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
       real install in a container over the slow connection.
 - [~] M9.3 Services get 65536 open files unless they set their own. Built 2026-11-04 (0.28.0).
       Open: the real `mongo` test run that died with WiredTiger error 24.
+- [~] M9.4 Job steps: `job_steps` table with a migration, reported by the worker, read through
+      `status` and `common/status.py`. No view yet. Built 2026-11-04 (0.29.0): a compose job
+      on a local Docker daemon. Open: a job on a build machine under systemd.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

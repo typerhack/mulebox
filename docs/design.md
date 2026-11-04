@@ -179,6 +179,17 @@ the cache root, shared by all jobs, so a version is fetched once. The job asks f
 browser itself, which keeps it matched to the project's lockfile, and mulebox has no list
 of browser versions to maintain. mulebox never deletes from that folder.
 
+## Job stages
+
+A job's log says what happened, but not what took the time, and the first real jobs needed
+that answer: 18 minutes on images, then two installs. The worker records one row per stage in
+the coordinator's store; a log stays a file. The stages of the script are marked in its own
+output, which keeps them in order with what they printed, needs no trap a project could
+replace, and adds no process. `environment` is a stage of its own for what mulebox provides,
+apart from a project's `setup` and commands: the direction is that a job declares what it
+needs and mulebox prepares it. A report never holds up a job, and its rows are not a
+source of truth for how a job ended. That stays `outcome` on the job.
+
 ## Package caches
 
 A job starts from nothing, so on a slow network the install is most of its time, and a

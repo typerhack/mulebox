@@ -150,6 +150,8 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
   coordinator is unreachable for 120 s), then `cleaning`, cleanup, `result`.
   Env: `MULEBOX=1`, `MULEBOX_JOB_ID`, PATH with toolchains first, HOME unchanged.
 
+Stage rows: `steps`, see [interfaces-m4.md](interfaces-m4.md), Job steps.
+
 ## Client (`mulebox/client/`)
 
 - `snapshot.py`: `make_snapshot(root: Path, extra_excludes) -> Snapshot(path, sha256,

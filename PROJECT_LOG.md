@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.29.0 - 2026-11-04 - minor
+- Job steps: a new table in the coordinator's store, schema version 4, holds one row per stage
+  of a job: start, end, exit code, bytes downloaded, failing line. The worker reports them in
+  a new `steps` message; `status` replies list them. The time of a slow job could not be
+  placed before. `environment` is a stage of its own, for what mulebox provides.
+- A compose job runs `up --no-start` before `up --detach --wait`, so images and services are
+  separate stages.
+
 ## 0.28.0 - 2026-11-04 - minor
 - A compose service with no `ulimits.nofile` of its own gets 65536 open files. A real `mongo`
   service died mid-test with "Too many open files": containers started at a soft limit of 1024.

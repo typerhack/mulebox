@@ -136,7 +136,8 @@ def test_containers_start_before_setup_and_the_job(agent, fake_link, stand_in):
     run_until(agent, finished(fake_link))
     calls = [line.split(" | ")[0] for line in stand_in.read_text().splitlines()]
     work = [c for c in calls if c.startswith("compose")]
-    assert work == ["compose up --detach --wait", "compose exec -T api composer install",
+    assert work == ["compose up --no-start", "compose up --detach --wait",
+                    "compose exec -T api composer install",
                     "compose exec -T api php artisan test"]
 
 

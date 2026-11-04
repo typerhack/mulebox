@@ -5,23 +5,31 @@ incremental decoder so a character split across reads stays intact). The text go
 `StreamRedactor` before it leaves the worker. Offsets are byte offsets of the redacted
 UTF-8 stream; each chunk holds at most 64 KiB and is never cut inside a character.
 
+Redacted text then goes through the job's StepTracker line by line, which takes out the stage
+marks. So the stored log and the steps only ever see redacted text.
+
 Chunks are queued and sent in order. A transport failure keeps the queue for the next
 attempt (the coordinator skips overlap by offset, so a resend is harmless); an `error`
-reply drops the queue, since the coordinator will not take this job's log any more.
+reply drops the queue, since the coordinator will not take this job's log any more. Stage
+rows go the same way, after the log, so a failing line never arrives ahead of its log.
 """
 
 from __future__ import annotations
 
 import codecs
+import re
 from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 
 from mulebox.common.redact import StreamRedactor
 from mulebox.common.protocol import Message, MessageType
+from mulebox.worker.steps import StepTracker
 
 MAX_CHUNK_BYTES = 64 * 1024
 READ_BYTES = 256 * 1024
+MAX_PARTIAL_CHARS = 16 * 1024  # a line longer than this goes on without being looked at
+_LINE = re.compile(r"[^\r\n]*(?:\r\n|\r|\n)|[^\r\n]+")
 
 Send = Callable[[Message], Message]  # raises LinkError on transport failure
 MakeRequest = Callable[..., Message]
@@ -43,12 +51,15 @@ def split_utf8(data: bytes, limit: int = MAX_CHUNK_BYTES) -> list[bytes]:
 
 class LogTailer:
     def __init__(self, path: Path | None, job_id: str, attempt_id: str, make_request: MakeRequest,
-                 redactor: StreamRedactor | None = None) -> None:
+                 redactor: StreamRedactor | None = None,
+                 steps: StepTracker | None = None) -> None:
         self.path = path
         self.job_id = job_id
         self.attempt_id = attempt_id
         self._request = make_request
         self._redactor = redactor or StreamRedactor()
+        self.steps = steps or StepTracker()
+        self._partial = ""  # redacted text of a line not finished yet
         self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         self._read_pos = 0
         self._offset = 0  # redacted bytes queued so far
@@ -68,19 +79,29 @@ class LogTailer:
                 fh.seek(self._read_pos)
                 while chunk := fh.read(READ_BYTES):
                     self._read_pos += len(chunk)
-                    self._queue_text(self._redactor.feed(self._decoder.decode(chunk)))
+                    self._take(self._redactor.feed(self._decoder.decode(chunk)))
         except FileNotFoundError:
             pass
 
     def note(self, text: str) -> None:
         """Add a worker message (e.g. why the job could not start) to the stream."""
-        self._queue_text(self._redactor.feed(text))
+        self._take(self._redactor.feed(text))
 
     def finish(self) -> None:
         """Read the rest and release everything the redactor still holds."""
         self.read_new()
-        self._queue_text(self._redactor.feed(self._decoder.decode(b"", final=True)))
-        self._queue_text(self._redactor.flush())
+        self._take(self._redactor.feed(self._decoder.decode(b"", final=True)))
+        self._take(self._redactor.flush())
+        self._take("", final=True)
+
+    def _take(self, text: str, final: bool = False) -> None:
+        """Whole lines of redacted text go on; the rest of a line waits for its end."""
+        buffer = self._partial + text
+        end = max(buffer.rfind("\n"), buffer.rfind("\r")) + 1
+        if final or len(buffer) - end > MAX_PARTIAL_CHARS:
+            end = len(buffer)
+        self._partial = buffer[end:]
+        self._queue_text("".join(self.steps.line(line) for line in _LINE.findall(buffer[:end])))
 
     def _queue_text(self, text: str) -> None:
         if not text or self.dropped:
@@ -90,7 +111,15 @@ class LogTailer:
             self._offset += len(piece)
 
     def send(self, send: Send) -> None:
-        """Send queued chunks in order; LinkError propagates and keeps the queue."""
+        """Send queued chunks in order, then stage rows; LinkError propagates and keeps both."""
+        self._send_log(send)
+        rows = self.steps.pending()
+        if rows:
+            send(self._request(MessageType.STEPS, job_id=self.job_id, steps=rows,
+                               attempt_id=self.attempt_id))
+            self.steps.sent()  # also on an error reply: they are a report, never worth a retry
+
+    def _send_log(self, send: Send) -> None:
         while self._queue:
             offset, piece = self._queue[0]
             reply = send(self._request(

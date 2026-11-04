@@ -54,7 +54,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 3
+        assert store.schema_version() == st.SCHEMA_VERSION == 4
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url"} <= columns(conn, "jobs")
             assert "slots" in columns(conn, "workers")
@@ -88,3 +88,17 @@ def test_newer_store_is_refused(staging):
     conn.close()
     with pytest.raises(SchemaTooNew, match="upgrade mulebox"):
         Store(staging.db_path).open()
+
+
+def test_version_three_store_gets_the_steps_table_and_keeps_its_jobs(old_db, staging):
+    with Store(old_db).open() as store:
+        job = store.get_job("job-01JC3X0000000000000000000")
+        with store.write() as conn:
+            conn.execute("DROP TABLE job_steps")
+            conn.execute("UPDATE meta SET value = '3' WHERE key = 'schema_version'")
+    with Store(old_db).open() as store:
+        assert store.schema_version() == 4
+        assert store.get_job(job["job_id"])["project"] == "example-app"
+        with store.read() as conn:
+            assert {"stage", "started_at", "finished_at", "exit_code", "bytes_downloaded",
+                    "failing_line"} <= columns(conn, "job_steps")

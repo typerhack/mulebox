@@ -63,6 +63,10 @@ a project set up for mulebox it says so, and section 2 is your next step.
   `queued, position 1; waiting: no build machine for this job is online` is different:
   nothing will start until a person fixes it, so tell the user.
 
+A job goes through stages: `prepare`, `environment`, `images`, `services`, `setup`, `command`,
+`cleanup`. A `status` reply lists them, with when each started and ended, its exit code and
+the last line of a failed one. The first four need no action from a project.
+
 ## 2. Setting up a project (`.mulebox.yml`)
 
 Do this once per repository, on a branch, following the project's own rules for commits
@@ -182,6 +186,8 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
   `condition: service_completed_successfully`, or moved into a job command. A healthcheck
   that depends on `setup` having run cannot pass, because setup comes after.
 - When a job fails, its log ends with the state and last lines of its containers.
+- Images are pulled and built by `docker compose up --no-start`, then `up --detach --wait`
+  starts them, so a job's stages can tell the two apart.
 
 These are refused with the reason, because they reach past the job:
 
