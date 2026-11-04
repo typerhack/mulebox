@@ -56,7 +56,7 @@ def submit(req: Request) -> Message:
         "setup": v.text(body, "setup", None),
         "toolchain": v.string_map(body, "toolchain"),
         "env": v.string_map(body, "env"),
-        "needs": v.strings(body, "needs"),
+        "needs": needs.required(v.strings(body, "needs"), v.string_map(body, "env")),
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
     }
     with req.store.write() as conn:

@@ -28,6 +28,15 @@ HOW_TO_UPGRADE = ("the build machine runs a mulebox too old for `compose:` proje
                   "it (docs/install.md, Upgrade)")
 
 
+def required(needs: list[str], env: dict[str, str]) -> list[str]:
+    """What a job really needs. The client adds this for a clear message, but an older client
+    does not, and an older worker would claim its job and ignore the compose files."""
+    if compose.COMPOSE_FILES_KEY not in env:
+        return needs
+    return list(dict.fromkeys(
+        (*needs, compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY)))
+
+
 def _missing(worker: Worker, needs: list[str]) -> list[str]:
     return sorted(set(needs) - set(worker["capabilities"]))
 

@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.3 - 2026-11-04 - patch
+- The coordinator adds `docker` and `compose-v1` to any job carrying compose files. Only the
+  client did, so an older client's job could still reach an older worker.
+
 ## 0.24.2 - 2026-11-04 - patch
 - A bind or file secret that is a Unix socket is refused by its file type, and a folder holding
   a known runtime's socket by a list: Docker, containerd, CRI-O, podman, k3s, BuildKit. Only

@@ -150,3 +150,39 @@ def test_a_mixed_fleet_waits_for_the_current_worker():
 
 def test_an_older_queued_job_says_upgrade_while_it_waits():
     assert "upgrade" in needs.waiting_for([worker(capabilities=["docker"])], COMPOSE_NEEDS, NOW)
+
+
+OLD_CLIENT = {"needs": ["docker"], "env": {"MULEBOX_COMPOSE_FILES": "docker-compose.yml"}}
+
+
+def test_the_coordinator_adds_what_an_older_client_left_out():
+    assert needs.required(["docker"], OLD_CLIENT["env"]) == ["docker", "compose-v1"]
+    assert needs.required([], OLD_CLIENT["env"]) == ["docker", "compose-v1"]
+    assert needs.required(["node", "compose-v1", "docker"], OLD_CLIENT["env"]) == [
+        "node", "compose-v1", "docker"]
+
+
+def test_a_job_without_compose_needs_only_what_it_says():
+    assert needs.required(["docker"], {"CI": "1"}) == ["docker"]
+
+
+def test_an_older_client_cannot_reach_an_older_worker(store, staging):
+    seen(store, capabilities=["docker"])
+    reply = api.handle(store, staging, request("submit", **submit_body(**OLD_CLIENT)), NOW)
+    assert reply.type is MessageType.ERROR and reply.body["code"] == "no_worker"
+    assert "upgrade" in reply.body["message"]
+
+
+def test_an_older_client_gets_a_current_worker(store, staging):
+    seen(store, capabilities=["docker", "compose-v1"])
+    reply = api.handle(store, staging, request("submit", **submit_body(**OLD_CLIENT)), NOW)
+    assert reply.type is MessageType.SUBMIT_OK
+    with store.read() as conn:
+        stored = conn.execute("SELECT needs FROM jobs").fetchone()[0]
+    assert "compose-v1" in stored
+
+
+def test_with_no_worker_seen_a_stored_job_still_needs_it(store, staging):
+    api.handle(store, staging, request("submit", **submit_body(**OLD_CLIENT)), NOW)
+    with store.read() as conn:
+        assert "compose-v1" in conn.execute("SELECT needs FROM jobs").fetchone()[0]
