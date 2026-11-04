@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.27.0 - 2026-11-04 - minor
+- `job_env` of a build machine reaches every compose service. It only reached the `docker
+  compose` process, so a machine's fix for a slow network missed installs in containers. What a
+  service sets itself wins, and a project's `env:` value is the one that goes in.
+
 ## 0.26.0 - 2026-11-04 - minor
 - Package caches: `needs: [cache-pnpm]` or `[cache-composer]` keeps a project's downloads on the
   build machine between jobs, in `<cache>/packages/<project>/<tool>`. A real job downloaded the

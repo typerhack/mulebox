@@ -80,6 +80,10 @@ comma in the path is refused because it would end the `--mount` value.
   `ComposeError` for what is refused.
 - `worker/ports.py`: `PortPool(free, pick)`: `take(job_id, names)`, `release(job_id)`. Range
   20000-29999, random start, proven free by a bind on 127.0.0.1, held until the job is clean.
+- `job_env` names go to `prepare` as `machine_names`. Each service's `environment` gets those
+  names with the value the job has for them, so `env:` of the project counts, and `$` doubled
+  for Compose's second reading. A service's own value wins. Before 0.27.0 `job_env` reached
+  only the `docker compose` process: `${VAR}` in a compose file, no container.
 - A compose problem found before the unit starts fails the job with the reason in its log.
 
 ## Package caches

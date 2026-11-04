@@ -91,7 +91,10 @@ sudo loginctl enable-linger alice
 - `[job_env]`: environment for every job on this machine, for what the machine needs and a
   project should not have to know, such as a setting for a slow network. A project's `env:`
   overrides a value and can add to it with `${NAME}`. Names follow the rules of `env:`. It
-  reaches mulebox jobs, not GitHub runner jobs. Not for secrets: it ends up in job processes.
+  reaches commands of mulebox jobs and every service of a `compose:` project, where what a
+  service sets itself wins. It replaces an `ENV` of the same name in an image, since mulebox
+  cannot see that one. It does not reach a `RUN` line of an image build or GitHub runner
+  jobs. Not for secrets: it ends up in job processes and in the job's compose file.
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).

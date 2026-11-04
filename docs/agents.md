@@ -167,6 +167,10 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
 - **`env:` reaches compose**, for `${VAR}` in compose files, as it reaches commands. A service
   only sees what its `environment:` passes on, as always. `UID` and `GID` are set, so
   `user: "${UID}:${GID}"` works.
+- **The build machine's `job_env` reaches services** (settings such as `NODE_OPTIONS` for a
+  slow network), and your commands. A value in a service's `environment:` or `env_file:`
+  wins; a value in `.mulebox.yml` `env:` replaces it for the whole job, and may add to it
+  with `${NODE_OPTIONS}`. It does not reach a `RUN` line of an image build.
 - **`.env*` files are never uploaded**, so `env_file: .env.ci` fails on the build machine. Move
   those throwaway values into `env:` and `environment:`.
 - **Root-owned files** in the checkout are fine: mulebox cleans them up.

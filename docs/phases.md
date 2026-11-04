@@ -152,6 +152,9 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
       mounted by the project's own compose file, external volumes still refused. Built
       2026-11-04 (0.26.0). Open: a real pnpm and a real Composer project on a build machine,
       with a second job showing the packages as reused.
+- [~] M9.2 `job_env` reaches compose services. Before, it reached only the `docker compose`
+      process; a real container showed no `NODE_OPTIONS`. Built 2026-11-04 (0.27.0). Open: a
+      real install in a container over the slow connection.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

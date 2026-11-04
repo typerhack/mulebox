@@ -14,7 +14,11 @@ collide with anything else on the machine, and writes nothing itself:
 - an image the project builds gets a tag only this job has, also where the compose file
   names one, and `build.tags` go. Two jobs would otherwise share `example-app:ci`, one could
   run the other's build, and removing it could take a tag that is not the job's to remove.
-  A service that uses any of those names without building it follows the new tag.
+  A service that uses any of those names without building it follows the new tag;
+- `job_env` of the machine goes into each service's environment, because a machine's fix for
+  a slow network is needed where the install runs, and that is often a container. The job's
+  process environment only reaches Compose's `${VAR}`, not containers. What a service sets
+  itself, directly or through `env_file:`, wins.
 
 What would reach past the job is refused first, by compose_policy.py. A read-only bind of a
 path outside the checkout gets `create_host_path: false` as well: Compose would otherwise
@@ -95,6 +99,13 @@ def _never_create_outside(spec: Model, checkout: Path) -> None:
             volume["bind"] = {**(volume.get("bind") or {}), "create_host_path": False}
 
 
+def _add_machine_env(spec: Model, machine_env: Mapping[str, str]) -> None:
+    """`$` is doubled: Compose reads the generated file and interpolates it again."""
+    if machine_env:
+        escaped = {name: value.replace("$", "$$") for name, value in machine_env.items()}
+        spec["environment"] = {**escaped, **(spec.get("environment") or {})}
+
+
 def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
                      assigned: Mapping[str, int], checkout: Path, notes: list[str]) -> None:
     spec["labels"] = {**(spec.get("labels") or {}), **labels}
@@ -140,7 +151,8 @@ def _rewrite_section(model: Model, section: str, labels: Mapping[str, str]) -> N
 
 def rewrite(model: Model, job_id: str, labels: Mapping[str, str],
             assigned: Mapping[str, int], checkout: Path,
-            shared: Sequence[Path] = ()) -> tuple[Model, list[str]]:
+            shared: Sequence[Path] = (),
+            machine_env: Mapping[str, str] | None = None) -> tuple[Model, list[str]]:
     """The model a job runs, plus notes for its log. ComposeError for what is refused."""
     result, notes = copy.deepcopy(model), []
     result["name"] = compose.project_name(job_id)
@@ -148,6 +160,7 @@ def rewrite(model: Model, job_id: str, labels: Mapping[str, str],
     _own_images(_services(result), job_id, notes)
     for name, spec in _services(result).items():
         _rewrite_service(name, spec, labels, assigned, checkout, notes)
+        _add_machine_env(spec, machine_env or {})
     for section in ("networks", "volumes"):
         _rewrite_section(result, section, labels)
     return result, notes

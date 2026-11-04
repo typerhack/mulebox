@@ -71,7 +71,8 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
         if machine.docker is None:
             raise ExecutorError("this worker has no Docker to run a compose: project")
         ready = compose_job.prepare(machine.docker, machine.ports, job_id, machine.name, files,
-                                    src, values, environment, cached.folders)
+                                    src, values, environment, cached.folders,
+                                    tuple(machine.job_env))
         first, extra, notes = ready.script, ready.extra_env, ready.notes
     spec = RunSpec(name=unit_name(job_id),
                    argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first),

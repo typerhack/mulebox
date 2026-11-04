@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 import os
 import shlex
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -88,9 +88,10 @@ def _port_notes(ports: Sequence[Port], assigned: Mapping[str, int]) -> list[str]
 
 def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str, src: Path,
             project_env: Mapping[str, str], build_env: EnvBuilder,
-            shared: Sequence[Path] = ()) -> ComposeJob:
+            shared: Sequence[Path] = (), machine_names: Collection[str] = ()) -> ComposeJob:
     """Write the job's compose file; `build_env(extra)` makes the job's environment. `shared`:
-    the job's package cache folders, which its services may mount."""
+    the job's package cache folders, which its services may mount. `machine_names`: the names
+    in the machine's `job_env`, which go to services with the value this job has for them."""
     project = compose.project_name(job_id)
     names = compose.split_files(files)
     generated = src.parent / GENERATED_FILE
@@ -104,10 +105,13 @@ def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str
         ports = compose_file.published_ports(first)
         assigned = pool.take(job_id, {port.variable: port.protocol for port in ports})
         port_env = {name: str(port) for name, port in assigned.items()}
-        final = _config(docker, build_env({**fixed, **port_env}), src)
+        env = build_env({**fixed, **port_env})
+        final = _config(docker, env, src)
+        machine_env = {name: env[name] for name in machine_names}
         labels = {compose.LABEL_JOB: job_id, compose.LABEL_WORKER: worker}
         checkout = Path(os.path.realpath(src))
-        model, notes = compose_file.rewrite(final, job_id, labels, assigned, checkout, shared)
+        model, notes = compose_file.rewrite(final, job_id, labels, assigned, checkout, shared,
+                                            machine_env)
     except DockerError as exc:
         raise ComposeError(f"the compose files cannot be used: {exc}") from exc
     generated.write_text(json.dumps(model, indent=1), encoding="utf-8")
