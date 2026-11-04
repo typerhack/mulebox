@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.6.5 - 2026-11-04 - patch
+- M3.3 done. A runner recovers from a hard kill by itself (GitHub drops the old session
+  after ~3 min). Reboot drill passed with an agent job running and a CI job waiting; sudden
+  power loss was not tested. Recovery times are in docs/interfaces-m3.md.
+
 ## 0.6.4 - 2026-11-03 - patch
 - docs/phases.md: M3.1 and M3.2 done; M3.3 drill results (overlap, cancelled run, runner
   crash passed; GitHub session conflict after a hard kill and the reboot drill still open).
