@@ -91,7 +91,7 @@ def test_events_start_with_a_snapshot_then_replay_by_id(call, hub):
         return fresh.headers["Content-Type"], chunk.decode(), again.decode()
     kind, snapshot, replay = call(go)
     assert kind == "text/event-stream"
-    assert [event for event, _ in sse(snapshot)] == ["queue", "metrics_history"]
+    assert [event for event, _ in sse(snapshot)] == ["queue", "machines", "metrics_history"]
     assert sse(replay) == [("metrics", {"t": NOW})]
 
 

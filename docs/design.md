@@ -121,8 +121,9 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - A separate read-only process beside the coordinator: aiohttp, plain HTML and JS, canvas
   graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
   log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
-- Shows: running and waiting jobs (project, branch, source), live log, history, CPU per
-  core, memory, disk, Docker containers.
+- Shows: running and waiting jobs (project, branch, source), live log, history, every
+  machine with whether it is online and its free slots, and CPU per core, memory, disk and
+  Docker containers for the machine the dashboard runs on.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by

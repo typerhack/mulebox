@@ -271,25 +271,3 @@ def finish(conn: sqlite3.Connection, job: dict[str, Any], outcome: Outcome, now:
         conn, job, JobState.FINISHED, outcome=outcome, finished_at=now,
         client_lease_until=None, worker_lease_until=None, **fields,
     )
-
-
-def upsert_worker(conn: sqlite3.Connection, worker: str, capabilities: list[str],
-                  free_slots: int, now: float, slots: int | None = None) -> None:
-    """Record a worker seen at `now`; `slots` is its total slot count when known."""
-    conn.execute(
-        "INSERT INTO workers (worker, capabilities, free_slots, last_seen, slots) "
-        "VALUES (?, ?, ?, ?, ?) "
-        "ON CONFLICT (worker) DO UPDATE SET capabilities = excluded.capabilities, "
-        "free_slots = excluded.free_slots, last_seen = excluded.last_seen, "
-        "slots = COALESCE(excluded.slots, workers.slots)",
-        (worker, json.dumps(sorted(capabilities)), free_slots, now, slots),
-    )
-
-
-def get_worker(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
-    row = conn.execute("SELECT * FROM workers WHERE worker = ?", (worker,)).fetchone()
-    if row is None:
-        return None
-    data = dict(row)
-    data["capabilities"] = json.loads(data["capabilities"])
-    return data

@@ -15,12 +15,13 @@ from typing import Any
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import snapshot
-from mulebox.coordinator import api, queue
+from mulebox.coordinator import api, queue, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.validate import check_job_id
 from mulebox.coordinator.views import reservation_dict
+from mulebox.dashboard import machines
 
 QUEUE_FINISHED = 20
 HISTORY_DEFAULT = 50
@@ -40,6 +41,10 @@ class DashboardData:
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:
         return snapshot(self.queue_jobs(), now)
+
+    def machines(self, now: float) -> dict[str, Any]:
+        with self.store.read() as conn:
+            return machines.snapshot(workers.listing(conn), queue.active_jobs(conn), now)
 
     def job(self, job_id: str) -> dict[str, Any] | None:
         """The detail view of one job, or None when the id is malformed or unknown."""

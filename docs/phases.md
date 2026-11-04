@@ -62,9 +62,11 @@ queue and returns the same result as running it locally.
       and by the app's own check; the tunnel still works. Open: used from a real phone, and
       a reboot and a Wi-Fi drop with `lan` on.
 - [ ] M2.5 Optional cancel button with its own protection
-- [ ] M2.6 Machines panel: every worker, online or offline, free slots. Built on the
-      coordinator's `workers` table (`last_seen`, `slots`, `free_slots`, capabilities).
-      Next after M2.4 (user, 2026-11-04). Live CPU and memory per machine is M5.3.
+- [x] M2.6 Machines panel: every worker, online or offline, free slots. Live CPU and memory
+      per machine is M5.3. Done 2026-11-04 (0.10.0): in real Chrome on a real machine, a job
+      showed busy with nothing free for its whole run; a frozen worker showed offline in 14 s
+      and came back in 2 s, and its job still passed. Only one real worker so far; more
+      than one is covered by tests.
 
 ## M3: GitHub Actions runners
 - [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)

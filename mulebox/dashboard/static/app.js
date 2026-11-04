@@ -4,6 +4,7 @@ import { getJson } from "./format.js";
 import { jobView } from "./jobdetail.js";
 import { historyView, queueView, tick } from "./jobs.js";
 import { Machine } from "./machine.js";
+import { renderMachines } from "./machines.js";
 
 const work = document.getElementById("work");
 const conn = document.getElementById("conn");
@@ -59,6 +60,9 @@ stream.addEventListener("queue", (event) => {
   snapshot = JSON.parse(event.data);
   snapshotAt = performance.now();
   if (route === "") showQueue();
+});
+stream.addEventListener("machines", (event) => {
+  renderMachines(document.getElementById("machines"), JSON.parse(event.data));
 });
 stream.addEventListener("metrics", (event) => machine.add(JSON.parse(event.data)));
 stream.addEventListener("metrics_history", (event) => {

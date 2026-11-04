@@ -14,7 +14,7 @@ from typing import Any
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Outcome
-from mulebox.coordinator import queue
+from mulebox.coordinator import queue, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -67,7 +67,7 @@ def ahead(conn: sqlite3.Connection, job: dict[str, Any]) -> int:
     """Queued rows older than `job` that its worker could run (agent jobs whose needs the
     worker meets, and reservations pinned to it)."""
     worker = job["pinned_worker"]
-    known = st.get_worker(conn, worker)
+    known = workers.get(conn, worker)
     have = set(known["capabilities"]) if known else set()
     older = st.select_jobs(
         conn, "state = ? AND (queued_at < ? OR (queued_at = ? AND seq < ?))",
@@ -83,7 +83,7 @@ def ahead(conn: sqlite3.Connection, job: dict[str, Any]) -> int:
 def worker_slots(conn: sqlite3.Connection, worker: str, cluster_slots: int) -> int:
     """The worker's total slots as last reported by its claims; `cluster_slots` until the
     worker has claimed once (one node: both are the node's `slots`)."""
-    known = st.get_worker(conn, worker)
+    known = workers.get(conn, worker)
     if known is None or known["slots"] is None:
         return cluster_slots
     return known["slots"]

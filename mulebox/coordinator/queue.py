@@ -16,6 +16,7 @@ from typing import Any
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
 from mulebox.coordinator import store as st
+from mulebox.coordinator import workers
 from mulebox.coordinator.leases import WORKER_LEASE_S
 from mulebox.coordinator.store import ACTIVE_STATES, Store
 
@@ -40,8 +41,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
     have = set(capabilities)
     with store.write() as conn:
         held = active_on(conn, worker, JOB_KIND)
-        st.upsert_worker(conn, worker, list(capabilities), free_slots, now,
-                         slots=free_slots + held)
+        workers.upsert(conn, worker, list(capabilities), free_slots, now,
+                       slots=free_slots + held)
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
         if free < 1 or active_count(conn) >= cluster_slots:
             return None
@@ -61,6 +62,11 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
 def active_count(conn: sqlite3.Connection) -> int:
     """Rows of both kinds holding a slot anywhere in the cluster."""
     return conn.execute(f"SELECT COUNT(*) FROM jobs WHERE {_ACTIVE_SQL}").fetchone()[0]
+
+
+def active_jobs(conn: sqlite3.Connection) -> list[dict[str, Any]]:
+    """Every row holding a slot, of both kinds."""
+    return st.select_jobs(conn, _ACTIVE_SQL)
 
 
 def active_on(conn: sqlite3.Connection, worker: str, kind: str | None = None) -> int:

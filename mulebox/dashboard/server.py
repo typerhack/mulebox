@@ -74,6 +74,7 @@ def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = tim
     app.router.add_get("/", _index(static_dir))
     app.router.add_get("/healthz", _health)
     app.router.add_get("/api/queue", _queue)
+    app.router.add_get("/api/machines", _machines)
     app.router.add_get("/api/history", _history)
     app.router.add_get("/api/metrics", _metrics)
     app.router.add_get("/api/jobs/{job_id}", _job)
@@ -108,6 +109,12 @@ async def _health(request: web.Request) -> web.Response:
 async def _queue(request: web.Request) -> web.Response:
     app = request.app
     body = await asyncio.to_thread(app[keys.DATA].queue_snapshot, app[keys.CLOCK]())
+    return web.json_response(body)
+
+
+async def _machines(request: web.Request) -> web.Response:
+    app = request.app
+    body = await asyncio.to_thread(app[keys.DATA].machines, app[keys.CLOCK]())
     return web.json_response(body)
 
 

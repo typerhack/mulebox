@@ -51,6 +51,7 @@ export function el(tag, attrs = {}, ...children) {
 const TONES = {
   passed: "good", failed: "bad", timed_out: "warn", interrupted: "warn",
   running: "active", starting: "active", cleaning: "active",
+  available: "good", busy: "active", offline: "bad",
 };
 
 // State as words plus a shape: colour never carries the meaning alone.

@@ -2,6 +2,8 @@
 
 - queue: polls the store every QUEUE_S and publishes a `queue` event only when the
   status-model fingerprint changes (elapsed times tick in the browser).
+- machines: reads the workers every MACHINES_S and publishes a `machines` event only when
+  the panel changes, which includes a machine going quiet.
 - metrics: CPU, memory and own overhead every METRICS_S; Docker every DOCKER_S; disk
   every DISK_S. Each `metrics` event carries the newest value of every part; the last
   HISTORY samples are kept for the graphs of a viewer that just connected.
@@ -20,13 +22,14 @@ from typing import Any
 
 from mulebox.common.log import get_logger
 from mulebox.common.status import fingerprint, snapshot
-from mulebox.dashboard import docker
+from mulebox.dashboard import docker, machines
 from mulebox.dashboard.data import DashboardData
 from mulebox.dashboard.events import EventBus
 from mulebox.dashboard.metrics import Sampler, disk_usage
 
 _log = get_logger(__name__)
 QUEUE_S = 1.0
+MACHINES_S = 2.0
 METRICS_S = 2.0
 DOCKER_S = 5.0
 DISK_S = 30.0
@@ -46,6 +49,7 @@ class Hub:
         self.disk: list[dict[str, Any]] = []
         self.docker: int | None = None
         self._queue_print: tuple | None = None
+        self._machines_print: tuple | None = None
         self._tasks: list[asyncio.Task] = []
 
     # One step of each loop; the loops below only repeat them (tests call them directly).
@@ -58,6 +62,16 @@ class Hub:
             return False
         self._queue_print = mark
         self.bus.publish("queue", snapshot(jobs, self.clock()))
+        return True
+
+    async def machines_step(self) -> bool:
+        """Publish a `machines` event if the panel changed; True when one was published."""
+        panel = await asyncio.to_thread(self.data.machines, self.clock())
+        mark = machines.fingerprint(panel)
+        if mark == self._machines_print:
+            return False
+        self._machines_print = mark
+        self.bus.publish("machines", panel)
         return True
 
     async def metrics_step(self) -> dict[str, Any]:
@@ -78,11 +92,16 @@ class Hub:
         event = self.bus.latest.get("queue")
         return event.data if event else None
 
+    def current_machines(self) -> dict[str, Any] | None:
+        event = self.bus.latest.get("machines")
+        return event.data if event else None
+
     # Lifecycle
 
     def start(self) -> None:
         self._tasks = [
             asyncio.create_task(self._every(QUEUE_S, self.queue_step), name="queue"),
+            asyncio.create_task(self._every(MACHINES_S, self.machines_step), name="machines"),
             asyncio.create_task(self._every(DISK_S, self.disk_step), name="disk"),
             asyncio.create_task(self._every(DOCKER_S, self.docker_step), name="docker"),
             asyncio.create_task(self._every(METRICS_S, self.metrics_step), name="metrics"),

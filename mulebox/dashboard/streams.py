@@ -1,7 +1,7 @@
 """Streaming endpoints: `/api/events` (queue + metrics) and a job's live log over SSE.
 
 `/api/events`: replays what a reconnecting viewer missed (`Last-Event-ID`), or sends a
-snapshot (`queue`, `metrics_history`) when that is not possible, then every bus event.
+snapshot (`queue`, `machines`, `metrics_history`) when that is not possible, then every bus event.
 A viewer that is too slow is dropped by the bus and its stream ends here.
 
 `/api/jobs/{id}/log`: `log` events whose id is the byte offset after the chunk, so a
@@ -44,12 +44,11 @@ async def events(request: web.Request) -> web.StreamResponse:
     try:
         response = await _open(request)
         if replay is None:
-            queue = hub.current_queue()
-            if queue is None:
-                data = request.app[keys.DATA]
-                now = request.app[keys.CLOCK]()
-                queue = await asyncio.to_thread(data.queue_snapshot, now)
+            data, now = request.app[keys.DATA], request.app[keys.CLOCK]()
+            queue = hub.current_queue() or await asyncio.to_thread(data.queue_snapshot, now)
+            panel = hub.current_machines() or await asyncio.to_thread(data.machines, now)
             await response.write(frame("queue", queue, bus.last_id))
+            await response.write(frame("machines", panel, bus.last_id))
             await response.write(frame("metrics_history", {"history": list(hub.history)},
                                        bus.last_id))
         else:

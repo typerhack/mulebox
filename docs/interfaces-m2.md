@@ -33,6 +33,21 @@ Input is a public job dict; every function tolerates missing or malformed fields
   own ssh connection, never a shared `ControlMaster` one: ssh would otherwise hand the
   forward to the master and exit, and Ctrl-C could not close it.
 
+## Machines panel (`dashboard/machines.py`, `static/machines.js`)
+
+- A row per worker in the coordinator's `workers` table: `name`, `state`, `slots`,
+  `free_slots`, `capabilities`, `last_seen`, `jobs`. Plus `total`, `online` and `free_slots`
+  for the cluster.
+- `state`: `offline` when not seen for 15 s, else `busy` with nothing free, else `available`.
+- **Seen.** Claims stop while a worker has no free slot, so a job's heartbeats, every 3 s,
+  also refresh `last_seen`. The worker lease cannot do this job: at 120 s it would keep a
+  dead machine online for two minutes.
+- **Free slots** are counted from the jobs holding a slot. The stored `free_slots` is what
+  the worker last said in a claim, which is stale while it is busy. An offline machine
+  offers none. They are job slots, not spare CPU; per-machine load is M5.3.
+- A worker that is gone for good stays listed as offline until removing workers exists
+  (M5.2).
+
 ## `lan` mode
 
 Setup steps: [install.md](install.md). Modules: `lan_commands.py` (CLI, checks before
@@ -100,11 +115,12 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 | `GET`, `POST /login` | sign-in page and form; LAN listener only, else 404 |
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent` |
+| `GET /api/machines` | machines panel snapshot (above) |
 | `GET /api/history?limit=&before=&project=` | `{jobs, next_before}`, newest first; `limit` 1..200, default 50; page with `before = next_before` |
 | `GET /api/jobs/{id}` | job detail with redacted `command` and `log_size`; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |
-| `GET /api/events` | queue and metrics, SSE (below) |
+| `GET /api/events` | queue, machines and metrics, SSE (below) |
 | `GET /api/metrics` | `{history, drops}`: the kept samples and viewers dropped so far |
 
 Bad numbers in `limit` or `before` give 400. An unusable offset or event id is ignored.
@@ -113,7 +129,7 @@ Bad numbers in `limit` or `before` give 400. An unusable offset or event id is i
 
 `/api/events`: one stream for the whole page.
 
-- Events: `queue` (a snapshot, sent only when the fingerprint changes), `metrics` (every
+- Events: `queue` and `machines` (snapshots, sent only when they change), `metrics` (every
   2 s) and `metrics_history` (`{history}`, only in a snapshot).
 - Ids are `<epoch>-<seq>`; the epoch is random per server process. A reconnect with
   `Last-Event-ID` gets what it missed from the last 256 events. If the id is from another

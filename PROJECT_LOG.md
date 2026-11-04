@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.10.0 - 2026-11-04 - minor
+- Dashboard machines panel (M2.6): every worker, online or offline, free slots and what it
+  is running. New `GET /api/machines` and `machines` event.
+- Job heartbeats now refresh a worker's `last_seen`. Claims stop while a worker is full, so
+  a busy machine would otherwise have shown as offline for its whole job.
+- Free slots are counted from active jobs, because the stored value is stale during a job.
+- `coordinator/workers.py`: worker storage moved out of store.py, which neared 300 lines.
+
 ## 0.9.0 - 2026-11-04 - minor
 - `lan` mode is now plain HTTP by default; HTTPS is the new optional `lan_tls = true`. User's
   decision: on a trusted home network, a browser warning on every visit is worse than no

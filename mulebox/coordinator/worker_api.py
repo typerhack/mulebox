@@ -9,7 +9,7 @@ renews their worker lease); they end through `release` (runner_api.py). A valid 
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import leases, queue, recovery
+from mulebox.coordinator import leases, queue, recovery, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -50,6 +50,7 @@ def heartbeat(req: Request) -> Message:
     with req.store.write() as conn:
         job = _current_job(conn, req, reservations=True)
         job = leases.renew_worker_in(conn, job, req.now)
+        workers.touch(conn, job["worker"], req.now)
     return _status(req, job)
 
 

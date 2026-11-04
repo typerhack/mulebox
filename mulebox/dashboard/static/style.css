@@ -136,3 +136,9 @@ button[hidden] { display: none; }
 .login form { display: grid; gap: 8px; }
 .login input, .login button { font-size: 16px; padding: 8px; }
 .login-error { color: var(--bad); }
+
+#machines h2 { margin-top: 0; }
+.machine-card { border-top: 1px solid var(--border); padding: 8px 0; }
+.machine-card p { margin: 2px 0; overflow-wrap: anywhere; }
+.machine-head { display: flex; justify-content: space-between; gap: 12px; }
+.machine-jobs { margin: 4px 0 0; padding-left: 18px; }

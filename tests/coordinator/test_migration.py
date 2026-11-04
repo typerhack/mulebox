@@ -6,6 +6,7 @@ import pytest
 
 from mulebox.common.protocol import JobState
 from mulebox.coordinator import store as st
+from mulebox.coordinator import workers
 from mulebox.coordinator.migrate import SchemaTooNew
 from mulebox.coordinator.store import Store
 
@@ -60,7 +61,7 @@ def test_version_one_store_is_migrated(old_db, staging):
             indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master "
                                                   "WHERE type = 'index'")}
             assert "jobs_kind" in indexes
-            assert st.get_worker(conn, "build-1")["slots"] is None
+            assert workers.get(conn, "build-1")["slots"] is None
         old = store.get_job("job-01JC3X0000000000000000000")
         assert old["kind"] == "job" and old["state"] == JobState.QUEUED
         assert old["pinned_worker"] is None and old["argv"] == ["pnpm", "check"]
