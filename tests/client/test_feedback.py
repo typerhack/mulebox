@@ -144,3 +144,16 @@ def test_gh_missing_is_reported_not_raised(cli, monkeypatch, capsys):
     path = folder / "draft.md"
     path.write_text(CLEAN)
     assert main(["feedback", "post", str(path)]) == 2
+
+
+def test_a_title_keeps_its_semicolons():
+    text = feedback.draft("env order is wrong; keys come sorted; see the job", "1", SCRUB)
+    assert text.splitlines()[0] == "# env order is wrong; keys come sorted; see the job"
+
+
+def test_a_long_title_is_cut_at_a_word_and_the_summary_stays_whole():
+    summary = "word; " * 40
+    text = feedback.draft(summary, "1", SCRUB)
+    title = feedback.title_of(text)
+    assert len(title) <= feedback.TITLE_CHARS and title.endswith("word")
+    assert summary.strip() in text

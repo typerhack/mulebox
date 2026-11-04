@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.6 - 2026-11-04 - patch
+- `mulebox feedback draft`: the report of a title cut at the first `;` could not be reproduced;
+  a test now pins that a title keeps its punctuation. What the code did cut was a long first
+  line at exactly 100 characters, in the middle of a word. It now cuts at a word, and the
+  summary below the title stays whole.
+
 ## 0.36.5 - 2026-11-04 - patch
 - Checked that the failure summary follows the container logs: it does, on stderr once the log
   has ended. Only the stale and expired-log lines could still come after it, so they now come

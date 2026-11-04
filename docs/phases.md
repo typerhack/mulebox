@@ -239,6 +239,9 @@ coordinator code; none of this has run on a build machine yet.
 - [~] M10.4 The failure summary is the last thing printed, after container logs and the stale
       warning. Tested with the fake remote and a log holding container logs. Open: a real failed
       compose job.
+- [x] M10.5 `mulebox feedback draft` keeps a title's punctuation and cuts a long one at a word.
+      A cut at `;` could not be reproduced: the old code cut only at 100 characters, wherever
+      that fell. (2026-11-04, 0.36.6)
 - [x] M10.3 The contract's database rule is about shared databases: a job's own compose service
       needs no `${MULEBOX_JOB_SLUG}`. (2026-11-04, 0.36.4)
 

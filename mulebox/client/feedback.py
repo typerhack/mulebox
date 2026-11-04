@@ -22,6 +22,7 @@ from mulebox.common.anonymize import Anonymizer
 from mulebox.common.config import ClientConfig, ProjectConfig
 from mulebox.common.errors import MuleboxError
 
+TITLE_CHARS = 100
 LOG_LINES = 40
 LOG_CHARS = 4000
 NAME_FIELDS = ("project", "branch", "client", "worker")
@@ -68,9 +69,17 @@ def tail(log: str) -> str:
     return "\n".join(log.splitlines()[-LOG_LINES:])[-LOG_CHARS:]
 
 
+def title_from(summary: str) -> str:
+    """The first line, whatever punctuation it holds, cut only if too long and then at a word."""
+    line = summary.strip().splitlines()[0]
+    if len(line) <= TITLE_CHARS:
+        return line
+    return line[:TITLE_CHARS].rsplit(" ", 1)[0].rstrip(" ,;:") or line[:TITLE_CHARS]
+
+
 def draft(summary: str, version: str, anonymizer: Anonymizer,
           job: dict[str, Any] | None = None, log: str | None = None) -> str:
-    title = summary.strip().splitlines()[0][:100]
+    title = title_from(summary)
     lines = [f"# {title}", "", "## What happened", "", summary.strip(), "", "## Environment", "",
              f"- mulebox {version}",
              f"- laptop: {platform.system()}, Python {platform.python_version()}"]
