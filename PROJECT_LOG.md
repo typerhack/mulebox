@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.4 - 2026-11-04 - patch
+- A finished job is always a `finished` event, even if the message also carries a `check_in` or
+  `unattended` notice. No coordinator sends such a result today; `events` no longer depends on that.
+
 ## 0.40.3 - 2026-11-04 - patch
 - A `mulebox cancel` after an unattended stop was asked for, but before the worker acted on it,
   now reads `cancelled` (exit 130), not `stopped: unattended`. From `cleaning` on the stop stands.

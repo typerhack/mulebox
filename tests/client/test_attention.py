@@ -5,6 +5,8 @@ import json
 import threading
 import time
 
+import pytest
+
 from mulebox import cli
 from mulebox.client import attention, events, queue_view, report
 from mulebox.client.submit import Streams, Watcher
@@ -98,6 +100,18 @@ def test_events_lines_for_notices_stay_one_each_and_state_is_not_repeated():
         stream.handle(msg)
     kinds = [json.loads(line)["event"] for line in out.getvalue().splitlines()]
     assert kinds == ["started", "check_in"]
+
+
+@pytest.mark.parametrize("notice", [{"check_in": CHECK_IN}, {"unattended": VIEW}])
+def test_a_final_result_is_always_a_finished_event(notice):
+    out = io.StringIO()
+    stream = events.EventStream(None, Streams(out=out, err=io.StringIO()), events.as_json)
+    stream.job_id = JOB
+    assert stream.handle(status_msg(**notice)) is False
+    final = Message(MessageType.RESULT, "r", {**STOPPED, "state": "finished", **notice})
+    assert stream.handle(final) is True
+    lines = [json.loads(line) for line in out.getvalue().splitlines()]
+    assert lines[-1]["event"] == "finished" and lines[-1]["exit_code"] == 76
 
 
 def test_the_queue_shows_the_mark_a_line_and_a_top_line():

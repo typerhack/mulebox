@@ -112,7 +112,7 @@ def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
     """
     state = FINISHED if "outcome" in job and job.get("state") is None else job.get("state")
     event = {"v": EVENT_VERSION, "job_id": job.get("job_id"), "state": state}
-    for name in NOTICES:
+    for name in NOTICES if state != FINISHED else ():  # the end is always `finished`
         if isinstance(job.get(name), dict):
             return {**job[name], **event, "event": name}
     if state == FINISHED:
