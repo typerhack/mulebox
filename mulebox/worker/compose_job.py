@@ -100,7 +100,7 @@ def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str
     try:
         first = _config(docker, build_env({**fixed, **unknown}), src)
         ports = compose_file.published_ports(first)
-        assigned = pool.take(job_id, [port.variable for port in ports])
+        assigned = pool.take(job_id, {port.variable: port.protocol for port in ports})
         port_env = {name: str(port) for name, port in assigned.items()}
         final = _config(docker, build_env({**fixed, **port_env}), src)
         labels = {compose.LABEL_JOB: job_id, compose.LABEL_WORKER: worker}

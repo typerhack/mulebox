@@ -44,7 +44,7 @@ def job(tmp_path):
 def prepare(daemon, job, env=None, files="docker-compose.yml:docker-compose.ci.yml", pool=None):
     job_id, src = job
     env = env or {}
-    pool = pool or PortPool(free=lambda port: True, pick=lambda low, high: 24000)
+    pool = pool or PortPool(free=lambda port, protocol: True, pick=lambda low, high: 24000)
 
     def build(extra):
         return jobspec.build_env(job_id, [], base_path="/bin", project_env=env, extra=extra)
@@ -147,7 +147,7 @@ def test_a_bad_job_id_is_refused(daemon, tmp_path):
 
 
 def test_two_jobs_get_different_ports(daemon, tmp_path):
-    pool = PortPool(free=lambda port: True, pick=lambda low, high: 24000)
+    pool = PortPool(free=lambda port, protocol: True, pick=lambda low, high: 24000)
     envs = []
     for name in ("one", "two"):
         src = tmp_path / name / "src"
@@ -166,28 +166,28 @@ def test_script_starts_containers_and_waits_for_them():
 
 
 def test_pool_skips_ports_in_use():
-    pool = PortPool(free=lambda port: port != 24000, pick=lambda low, high: 24000)
-    assert pool.take("job-a", ["A"]) == {"A": 24001}
+    pool = PortPool(free=lambda port, protocol: port != 24000, pick=lambda low, high: 24000)
+    assert pool.take("job-a", {"A": "tcp"}) == {"A": 24001}
 
 
 def test_pool_hands_out_distinct_ports_within_the_range():
-    pool = PortPool(pick=lambda low, high: high, free=lambda port: True)
-    got = pool.take("job-a", ["A", "B", "C"])
+    pool = PortPool(pick=lambda low, high: high, free=lambda port, protocol: True)
+    got = pool.take("job-a", dict.fromkeys("ABC", "tcp"))
     assert len(set(got.values())) == 3
     assert all(ports.LOW <= port <= ports.HIGH for port in got.values())
 
 
 def test_pool_holds_a_port_until_released():
-    pool = PortPool(free=lambda port: True, pick=lambda low, high: 24000)
-    first = pool.take("job-a", ["A"])["A"]
-    assert pool.take("job-b", ["A"])["A"] != first
+    pool = PortPool(free=lambda port, protocol: True, pick=lambda low, high: 24000)
+    first = pool.take("job-a", {"A": "tcp"})["A"]
+    assert pool.take("job-b", {"A": "tcp"})["A"] != first
     pool.release("job-a")
-    assert pool.take("job-c", ["A"])["A"] == first
+    assert pool.take("job-c", {"A": "tcp"})["A"] == first
 
 
 def test_pool_gives_up_with_a_message():
     with pytest.raises(ComposeError, match="no free port"):
-        PortPool(free=lambda port: False).take("job-a", ["A"])
+        PortPool(free=lambda port, protocol: False).take("job-a", {"A": "tcp"})
 
 
 def test_is_free_sees_a_real_listener():
@@ -197,3 +197,53 @@ def test_is_free_sees_a_real_listener():
         server.bind(("127.0.0.1", 0))
         server.listen()
         assert not ports.is_free(server.getsockname()[1])
+
+
+def test_is_free_sees_a_real_udp_service_a_tcp_probe_would_miss():
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as service:
+        service.bind(("127.0.0.1", 0))
+        port = service.getsockname()[1]
+        assert not ports.is_free(port, "udp")
+        assert ports.is_free(port, "tcp")
+
+
+def test_is_free_sees_tcp_only_for_tcp():
+    import socket
+
+    with socket.socket() as server:
+        server.bind(("127.0.0.1", 0))
+        server.listen()
+        assert ports.is_free(server.getsockname()[1], "udp")
+
+
+def test_a_protocol_mulebox_cannot_check_is_refused():
+    with pytest.raises(ComposeError, match="sctp"):
+        ports.is_free(24000, "sctp")
+
+
+def test_the_pool_asks_about_each_ports_own_protocol():
+    asked = []
+
+    def free(port, protocol):
+        asked.append(protocol)
+        return True
+
+    PortPool(free=free).take("job-a", {"A": "tcp", "B": "udp"})
+    assert asked == ["tcp", "udp"]
+
+
+def test_a_udp_port_of_a_job_is_probed_as_udp(tmp_path):
+    published = [{"mode": "ingress", "target": 53, "published": "53", "protocol": "udp"}]
+    daemon = FakeDocker()
+    daemon.responses[("compose", "config")] = ok(json.dumps(
+        {"name": "x", "services": {"dns": {"image": "x", "ports": published}}}))
+    asked = []
+
+    def free(port, protocol):
+        asked.append(protocol)
+        return True
+
+    job = prepare(daemon, (new_id("job"), tmp_path), pool=PortPool(free=free))
+    assert asked == ["udp"] and "MULEBOX_PORT_DNS_53_UDP" in job.extra_env

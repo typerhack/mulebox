@@ -148,7 +148,7 @@ machine that also does other work. So the worker does not run them as they are:
   file, through `COMPOSE_FILE` and `COMPOSE_PROJECT_NAME`, so plain
   `docker compose exec -T api ...` works from any folder and reaches only this job.
 - **Ports always move**, even when the wanted one is free: to 127.0.0.1, on a port from a
-  private range, named by `MULEBOX_PORT_<SERVICE>_<PORT>`. Keeping a free port would pass on a
+  private range checked for its own protocol (tcp or udp; `sctp` is refused), named by `MULEBOX_PORT_<SERVICE>_<PORT>`. Keeping a free port would pass on a
   quiet day and fail on a busy one. Project code must read the variable.
 - **Containers start first**, before `setup`, inside the job's unit, with `up --wait`. Setup
   can then use them, as CI does, and the timeout, cancel and log redaction need no special

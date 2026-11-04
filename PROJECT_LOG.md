@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.22.1 - 2026-11-04 - patch
+- Port allocation probes the protocol a port is published on. It always tried TCP, so a UDP
+  service on the chosen port was missed and the job failed with "address already in use".
+
 ## 0.22.0 - 2026-11-04 - minor
 - A `compose:` job needs `compose-v1`, which a worker reports by itself. A worker from before
   compose offering `docker` used to claim such a job, ignore the compose file list and run
