@@ -26,7 +26,9 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   `toolchain: dict[str, str]`, `setup: str | None`, `services: tuple[str, ...]`,
   `compose: tuple[str, ...]`, `jobs: dict[str, str]` (must contain `check`),
   `timeout_min: int` (default 30, 1..240), `exclude: tuple[str, ...]`,
-  `env: dict[str, str]` (0.6.0; see interfaces-m3.md).
+  `env: dict[str, str]` (0.6.0; see interfaces-m3.md), `job_options: dict[str, JobOptions]`
+  (config_jobs.py: `setup`, `compose`; `for_job(project, name)` gives the project as that job
+  sees it, and only the client reads it: a job's settings are what its `submit` carries).
 - `find_project_config(start: Path) -> Path` walks up to the filesystem root; ConfigError if none.
 - `load_project_config(path: Path) -> ProjectConfig`
 - `ClientConfig` (from `$MULEBOX_CONFIG` or `~/.config/mulebox/client.toml`):

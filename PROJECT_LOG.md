@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.39.0 - 2026-11-04 - minor
+- A job in `.mulebox.yml` may be a mapping with `run`, its own `setup` (or `setup: false`) and
+  `compose: false`, so a quick job skips containers it does not use. A plain command keeps the
+  top-level defaults, and `mulebox run` always does. `env:` entries that need a compose port are
+  left out for a job without containers, and `check` says which. Client only: `setup` and the
+  compose list already went with every job.
+- Contract schema 6 with `project.job_settings`.
+- `submit.py` split: what a job is on the wire is in `client/job_body.py`.
+
 ## 0.38.0 - 2026-11-04 - minor
 - The dashboard warns the user: a warning triangle, the word `unattended` and the time left on the
   job, on its machine in both places, and a count on the Queue tab. A job's page says what happens

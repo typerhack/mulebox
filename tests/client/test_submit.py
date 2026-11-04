@@ -6,6 +6,7 @@ import pytest
 
 from mulebox.client import submit
 from mulebox.client.submit import Streams, run_job
+from mulebox.common.config_jobs import NO_SETUP, JobOptions
 from mulebox.common.config import ProjectConfig
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.status import CONTAINER_LOGS_NOTE
@@ -98,6 +99,27 @@ def test_submit_body_of_a_compose_project(make_repo):
     assert body["needs"] == ["node", "docker", "compose-v1"]
     assert body["env"] == {
         "CI": "1", "MULEBOX_COMPOSE_FILES": "docker-compose.yml:docker-compose.ci.yml"}
+
+
+def test_a_job_without_containers_sends_no_compose_and_says_what_it_left_out(make_repo):
+    project = replace(PROJECT, compose=("docker-compose.yml",), setup="pnpm install",
+                      env={"URL": "http://127.0.0.1:${MULEBOX_PORT_API_8000}", "CI": "1"},
+                      job_options={"test": JobOptions(setup=NO_SETUP, compose=False)})
+    remote = FakeRemote([[result()]])
+    io = streams()
+    run_job(project, "test", make_repo(), remote, io)
+    body = remote.calls[0].body
+    assert body["env"] == {"CI": "1"} and body["env_order"] == ["CI"]
+    assert body["setup"] is None and "docker" not in body["needs"]
+    assert "URL" in io.err.getvalue()
+
+
+def test_mulebox_run_keeps_the_top_level_values(make_repo):
+    project = replace(PROJECT, setup="pnpm install",
+                      job_options={"run": JobOptions(setup=NO_SETUP)})
+    remote = FakeRemote([[result()]])
+    run_job(project, ["ls"], make_repo(), remote, streams())
+    assert remote.calls[0].body["setup"] == "pnpm install"
 
 
 def test_a_failing_line_of_a_multi_line_job_fails_it(tmp_path):

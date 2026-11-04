@@ -19,7 +19,7 @@ A name the file does not define may still come from the machine, so that stays a
 from __future__ import annotations
 
 import re
-from collections.abc import Iterator, Mapping
+from collections.abc import Callable, Iterator, Mapping
 
 _NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _MACHINE = ("PATH", "HOME", "USER", "SHELL")
@@ -54,6 +54,20 @@ def _references(env: Mapping[str, str]) -> Iterator[tuple[int, str, str]]:
     for place, (key, value) in enumerate(env.items()):
         for name in REFERENCE.findall(value):
             yield place, key, name
+
+
+def without(env: Mapping[str, str], gone: Callable[[str], bool]) -> tuple[dict[str, str], list[str]]:
+    """(`env` without the entries that use a name `gone` says will not exist, also through an
+    earlier entry, the entries left out)."""
+    kept: dict[str, str] = {}
+    dropped: list[str] = []
+    for key, value in env.items():
+        used = REFERENCE.findall(value)
+        if any(gone(name) or name in dropped for name in used):
+            dropped.append(key)
+        else:
+            kept[key] = value
+    return kept, dropped
 
 
 def later_reference(env: Mapping[str, str]) -> tuple[str, str] | None:

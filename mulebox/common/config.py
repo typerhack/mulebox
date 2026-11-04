@@ -47,7 +47,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from mulebox.common import compose, config_project
+from mulebox.common import compose, config_jobs, config_project
 from mulebox.common.config_reader import ConfigError, Reader, load_toml, load_yaml
 
 __all__ = [
@@ -89,6 +89,7 @@ class ProjectConfig:
     timeout_min: int = DEFAULT_TIMEOUT_MIN
     exclude: tuple[str, ...] = ()
     env: dict[str, str] = field(default_factory=dict)
+    job_options: dict[str, config_jobs.JobOptions] = field(default_factory=dict)
 
     @property
     def all_needs(self) -> tuple[str, ...]:
@@ -135,13 +136,6 @@ def find_project_config(start: Path) -> Path:
                           f"no {PROJECT_FILE} here or in any parent directory")
 
 
-def _jobs(reader: Reader) -> dict[str, str]:
-    jobs = reader.string_map("jobs", required=True)
-    if "check" not in jobs:
-        reader.fail("jobs", "must define a 'check' job")
-    return jobs
-
-
 def load_project_config(path: Path) -> ProjectConfig:
     """Load and validate a ``.mulebox.yml``."""
     path = Path(path)
@@ -150,13 +144,15 @@ def load_project_config(path: Path) -> ProjectConfig:
         reader.fail("services", "is not supported: nothing would start them. Use compose: to "
                     "run containers for the job, or env: to reach a service by address")
     files = config_project.compose_files(reader, path.parent, PROJECT_FILE)
+    jobs, options = config_jobs.read_jobs(reader)
     config = ProjectConfig(
         project=reader.name("project"),
         needs=reader.strings("needs"),
         toolchain=reader.string_map("toolchain"),
         setup=reader.text("setup", None),
         compose=files,
-        jobs=_jobs(reader),
+        jobs=jobs,
+        job_options=options,
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
         exclude=reader.strings("exclude"),
         env=config_project.env_values(reader, files),

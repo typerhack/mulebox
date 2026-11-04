@@ -2,6 +2,7 @@
 
 import json
 import re
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from mulebox.cli import build_parser, main
 from mulebox.client import contract
 from mulebox.client.excludes import BUILTIN_EXCLUDES
 from mulebox.common.config import ProjectConfig
+from mulebox.common.config_jobs import JobOptions
 from mulebox.version import get_version
 
 AGENTS_DOC = Path(__file__).resolve().parents[2] / "docs" / "agents.md"
@@ -135,3 +137,12 @@ def test_the_database_rule_is_about_shared_databases():
 
 def test_git_says_a_job_has_no_history():
     assert any("no git history" in line for line in contract.GIT)
+
+
+def test_job_settings_are_in_the_contract(tmp_path):
+    project = replace(CONFIG, compose=("docker-compose.yml",), setup="pnpm install",
+                      job_options={"lint": JobOptions(setup="", compose=False)},
+                      jobs={**CONFIG.jobs, "lint": "pnpm lint"})
+    terms = contract.build(project, "1")
+    assert terms["project"]["job_settings"] == {"lint": {"setup": None, "compose": False}}
+    assert "mulebox check lint: pnpm lint (setup: none, no containers)" in contract.render(terms)

@@ -267,6 +267,11 @@ it: a real machine.
 - [~] M11.4 Warnings to the agent: `unattended` event, `status`, `wait`, stderr of any command from
       the project. Built 2026-11-04 (0.37.0). Open: seen by an agent in a real session.
 
+## M12: Per-job settings
+- [~] M12.1 A job in `.mulebox.yml` may be a mapping with `run`, `setup` and `compose: false`; plain
+      commands keep the top-level defaults. Built 2026-11-04 (0.39.0), client only, no worker or
+      store change. Open: a real project with a job that runs without its containers.
+
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)

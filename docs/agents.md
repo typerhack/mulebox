@@ -238,6 +238,21 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      <version>`. Switch to a listed version only if it matches the project; otherwise ask
      the user to run the install.
    - `setup` runs before every job in the same shell; keep it to dependency install.
+   - **A job can differ from the defaults.** Instead of a command, give it a mapping; a job
+     left as a plain command keeps the top-level `setup` and `compose:`.
+
+     ```yaml
+     jobs:
+       check: pnpm check
+       lint:
+         run: pnpm lint
+         setup: pnpm install --frozen-lockfile --ignore-scripts  # or false for no setup
+         compose: false                  # no containers for this job
+     ```
+
+     With `compose: false` the job needs no Docker on its machine. `env:` entries built on
+     `MULEBOX_PORT_...`, directly or through an earlier entry, are left out for that job, and
+     `check` says which. `mulebox run` always uses the top-level values.
    - A job may span several lines (`check: |`). The first line that fails ends it, as in a
      GitHub Actions `run:` step.
    - If the project runs containers for its checks, use `compose:` (section 2a). Never run

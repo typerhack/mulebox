@@ -15,13 +15,15 @@ from typing import Any
 from mulebox.client import report
 from mulebox.client.excludes import BUILTIN_EXCLUDES
 from mulebox.common.config import DEFAULT_LOG_DAYS, ProjectConfig
+from mulebox.common.config_jobs import for_job
 from mulebox.common.status import STAGES
 
 # 2: `project.services` removed; `project.needs` includes what compose implies
 # 3: the skill teaches detached jobs and events, and says the schema it was written for
 # 4: the skill teaches package caches, stages, `usual` and log retention
 # 5: timeout_min is a check-in; the skill teaches check-ins, unattended jobs and exit 76
-SCHEMA = 5
+# 6: a job may have settings; `project.job_settings`
+SCHEMA = 6
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -158,8 +160,18 @@ RULES = (
 )
 
 
+def _settings(config: ProjectConfig) -> dict[str, dict[str, Any]]:
+    """What a job does differently from the top-level defaults, per job that has any."""
+    out: dict[str, dict[str, Any]] = {}
+    for name in config.job_options:
+        job, _ = for_job(config, name)
+        out[name] = {"setup": job.setup, "compose": bool(job.compose)}
+    return out
+
+
 def _project(config: ProjectConfig) -> dict[str, Any]:
     return {"name": config.project, "jobs": dict(config.jobs), "full_gate": FULL_GATE,
+            "job_settings": _settings(config),
             "setup": config.setup, "toolchain": dict(config.toolchain),
             "needs": list(config.all_needs), "compose": list(config.compose),
             "timeout_min": config.timeout_min}
@@ -187,6 +199,15 @@ def _bullets(items: list[str]) -> list[str]:
     return [f"- {item}" for item in items]
 
 
+def _setting_text(project: dict[str, Any], name: str) -> str:
+    settings = project["job_settings"].get(name)
+    if settings is None:
+        return ""
+    setup = settings["setup"] or "none"
+    containers = "" if settings["compose"] or not project["compose"] else ", no containers"
+    return f" (setup: {setup}{containers})"
+
+
 def _project_text(project: dict[str, Any] | None) -> list[str]:
     if project is None:
         return ["No .mulebox.yml here: this project is not set up for mulebox yet.",
@@ -197,7 +218,7 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
     lines += ["", "Jobs:"]
     for name, command in project["jobs"].items():
         run = "mulebox check" if name == FULL_GATE else f"mulebox check {name}"
-        lines.append(f"- {run}: {command}")
+        lines.append(f"- {run}: {command}{_setting_text(project, name)}")
     if project["needs"]:
         lines += ["", f"Needs a build machine with: {', '.join(project['needs'])}"]
     if project["compose"]:
