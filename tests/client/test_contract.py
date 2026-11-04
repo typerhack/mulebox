@@ -31,6 +31,15 @@ def test_project_facts_come_from_the_config():
     assert terms["project"]["setup"] == "pnpm install"
 
 
+def test_services_is_gone_and_compose_shows_what_it_implies():
+    config = ProjectConfig(project="example-app", jobs={"check": "x"}, needs=("node",),
+                           compose=("docker-compose.yml",))
+    project = contract.build(config, "1")["project"]
+    assert "services" not in project
+    assert project["compose"] == ["docker-compose.yml"]
+    assert project["needs"] == ["node", "docker"]
+
+
 def test_project_env_is_never_shown():
     terms = contract.build(CONFIG, "1.2.3")
     assert "must-not-appear" not in json.dumps(terms)

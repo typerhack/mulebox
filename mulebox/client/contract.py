@@ -14,7 +14,7 @@ from mulebox.client import report
 from mulebox.client.excludes import BUILTIN_EXCLUDES
 from mulebox.common.config import ProjectConfig
 
-SCHEMA = 1
+SCHEMA = 2  # 2: `project.services` removed; `project.needs` includes what compose implies
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -61,8 +61,8 @@ RULES = (
 def _project(config: ProjectConfig) -> dict[str, Any]:
     return {"name": config.project, "jobs": dict(config.jobs), "full_gate": FULL_GATE,
             "setup": config.setup, "toolchain": dict(config.toolchain),
-            "needs": list(config.needs), "services": list(config.services),
-            "compose": list(config.compose), "timeout_min": config.timeout_min}
+            "needs": list(config.all_needs), "compose": list(config.compose),
+            "timeout_min": config.timeout_min}
 
 
 def build(config: ProjectConfig | None, version: str) -> Contract:

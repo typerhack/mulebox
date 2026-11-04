@@ -1,4 +1,5 @@
 import io
+from dataclasses import replace
 
 import pytest
 
@@ -83,6 +84,17 @@ def test_passed_job_prints_log_on_stdout_and_status_on_stderr(make_repo):
     assert not any("stale" in line for line in err)
     assert remote.uploads[0][0] == JOB and remote.uploads[0][1]
     assert remote.watches == [(JOB, 0, True)]
+
+
+def test_submit_body_of_a_compose_project(make_repo):
+    project = replace(PROJECT, compose=("docker-compose.yml", "docker-compose.ci.yml"),
+                      env={"CI": "1"})
+    remote = FakeRemote([[result()]])
+    run_job(project, "test", make_repo(), remote, streams())
+    body = remote.calls[0].body
+    assert body["needs"] == ["node", "docker"]
+    assert body["env"] == {
+        "CI": "1", "MULEBOX_COMPOSE_FILES": "docker-compose.yml:docker-compose.ci.yml"}
 
 
 def test_submit_body_for_a_named_job(make_repo):

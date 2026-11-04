@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.15.0 - 2026-11-04 - minor
+- `services:` in `.mulebox.yml` is now a config error that says to use `compose:` or `env:`.
+  It was parsed and printed by `mulebox contract`, but nothing ever started a service.
+  Removed from the contract, whose `schema` goes to 2, and from the design doc's example.
+- `compose:` files are checked on the laptop: safe relative names, no repeats, present in
+  the project. A `compose:` project needs a worker with `docker`, and may not set
+  `COMPOSE_FILE` or `COMPOSE_PROJECT_NAME` in `env:`. Running it comes in a later change.
+- `common/compose.py`: the names and filters every Docker step is derived from.
+
 ## 0.14.1 - 2026-11-04 - patch
 - Docs: README, docs/install.md and the node.toml template now say the LAN password is
   optional. No behaviour change.

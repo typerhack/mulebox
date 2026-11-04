@@ -125,7 +125,7 @@ toolchain:
   node: 22.22.3
   pnpm: 11.22.0
 setup: pnpm install --frozen-lockfile
-services: [mongodb]      # or compose: [docker-compose.yml, docker-compose.ci.yml]
+compose: [docker-compose.yml, docker-compose.ci.yml]  # containers for the job; implies docker
 jobs:
   check: pnpm check
   test: pnpm exec vitest run

@@ -19,7 +19,6 @@ toolchain:
   node: 22.22.3
   pnpm: 11.22.0
 setup: pnpm install --frozen-lockfile
-services: [mongodb]
 compose: [docker-compose.yml]
 jobs:
   check: pnpm check
@@ -46,13 +45,13 @@ def error_for(tmp_path, text):
 
 
 def test_full_project_config(tmp_path):
+    (tmp_path / "docker-compose.yml").write_text("services: {}\n", encoding="utf-8")
     config = load_project_config(write(tmp_path, FULL))
     assert config == ProjectConfig(
         project="example-app",
         needs=("node", "docker"),
         toolchain={"node": "22.22.3", "pnpm": "11.22.0"},
         setup="pnpm install --frozen-lockfile",
-        services=("mongodb",),
         compose=("docker-compose.yml",),
         jobs={"check": "pnpm check", "test": "pnpm exec vitest run"},
         timeout_min=20,
@@ -62,7 +61,7 @@ def test_full_project_config(tmp_path):
 
 def test_minimal_project_config_defaults(tmp_path):
     config = load_project_config(write(tmp_path, MINIMAL))
-    assert config.needs == () and config.services == () and config.compose == ()
+    assert config.needs == () and config.compose == ()
     assert config.toolchain == {} and config.exclude == ()
     assert config.setup is None
     assert config.timeout_min == 30
@@ -100,7 +99,6 @@ def test_unknown_top_level_key(tmp_path):
         ("needs: node\n", "needs"),
         ("needs: [node, 3]\n", "needs[1]"),
         ("exclude: ['']\n", "exclude[0]"),
-        ("services: {a: b}\n", "services"),
         ("compose: [1]\n", "compose[0]"),
         ("setup: [a, b]\n", "setup"),
         ("setup: '  '\n", "setup"),

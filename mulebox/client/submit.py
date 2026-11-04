@@ -22,6 +22,7 @@ from typing import Any, Protocol, TextIO
 from mulebox.client import report
 from mulebox.client.remote import request
 from mulebox.client.snapshot import Snapshot, current_fingerprint, make_snapshot
+from mulebox.common import compose
 from mulebox.common.config import ProjectConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
@@ -60,6 +61,14 @@ def job_request(project: ProjectConfig, target: str | Sequence[str]) -> tuple[st
     return RUN_JOB_NAME, list(target)
 
 
+def job_env(project: ProjectConfig) -> dict[str, str]:
+    """The project's `env:` values, plus the compose file list (common/compose.py)."""
+    env = dict(project.env)
+    if project.compose:
+        env[compose.COMPOSE_FILES_KEY] = compose.join_files(project.compose)
+    return env
+
+
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot) -> dict:
     return {
         "project": project.project,
@@ -72,8 +81,8 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "client": socket.gethostname() or "client",
         "setup": project.setup,
         "toolchain": dict(project.toolchain),
-        "env": dict(project.env),
-        "needs": list(project.needs),
+        "env": job_env(project),
+        "needs": list(project.all_needs),
         "timeout_min": project.timeout_min,
     }
 
