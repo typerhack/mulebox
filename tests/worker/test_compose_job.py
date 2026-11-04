@@ -300,3 +300,32 @@ def test_a_dollar_in_job_env_survives_composes_second_reading(daemon, tmp_path):
 def test_no_environment_key_without_job_env(daemon, tmp_path):
     env = service_env(daemon, tmp_path, None, machine={})
     assert env["db"] is None
+
+
+# Open files
+
+
+def limits_of(daemon, tmp_path, ulimits):
+    src = tmp_path / "src"
+    src.mkdir()
+    spec = {"image": "mongo:8.2.12"} if ulimits is None else {"image": "x", "ulimits": ulimits}
+    daemon.responses[("compose", "config")] = ok(json.dumps(
+        {"name": "x", "services": {"db": spec}}))
+    compose_job.prepare(Docker(daemon), PortPool(), new_id("job"), "build-1", "a.yml", src, {},
+                        lambda extra: dict(extra))
+    written = json.loads((tmp_path / compose_job.GENERATED_FILE).read_text())
+    return written["services"]["db"]["ulimits"]
+
+
+def test_a_service_without_a_limit_gets_a_higher_one(daemon, tmp_path):
+    assert limits_of(daemon, tmp_path, None) == {"nofile": {"soft": 65536, "hard": 65536}}
+
+
+@pytest.mark.parametrize("own", [{"soft": 1024, "hard": 2048}, 512])
+def test_a_projects_own_limit_always_wins(daemon, tmp_path, own):
+    assert limits_of(daemon, tmp_path, {"nofile": own}) == {"nofile": own}
+
+
+def test_other_limits_of_a_service_stay(daemon, tmp_path):
+    limits = limits_of(daemon, tmp_path, {"nproc": 100})
+    assert limits == {"nproc": 100, "nofile": {"soft": 65536, "hard": 65536}}

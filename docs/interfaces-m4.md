@@ -84,6 +84,10 @@ comma in the path is refused because it would end the `--mount` value.
   names with the value the job has for them, so `env:` of the project counts, and `$` doubled
   for Compose's second reading. A service's own value wins. Before 0.27.0 `job_env` reached
   only the `docker compose` process: `${VAR}` in a compose file, no container.
+- `compose_file.rewrite` gives a service with no `ulimits.nofile` a limit of `OPEN_FILES`
+  (65536), soft and hard. Other `ulimits` stay, and a service's own `nofile` is left as it is.
+  The hard limit is kept at that value, not raised to what a daemon allows, because a daemon
+  that may not raise limits, such as a rootless one, would refuse to start the container.
 - A compose problem found before the unit starts fails the job with the reason in its log.
 
 ## Package caches

@@ -171,6 +171,9 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
   slow network), and your commands. A value in a service's `environment:` or `env_file:`
   wins; a value in `.mulebox.yml` `env:` replaces it for the whole job, and may add to it
   with `${NODE_OPTIONS}`. It does not reach a `RUN` line of an image build.
+- **Open files.** A service with no `ulimits.nofile` of its own gets 65536, soft and hard:
+  containers can start at 1024, and a database under test then dies with "Too many open
+  files". A value in the compose file always wins, so set one if a service needs more.
 - **`.env*` files are never uploaded**, so `env_file: .env.ci` fails on the build machine. Move
   those throwaway values into `env:` and `environment:`.
 - **Root-owned files** in the checkout are fine: mulebox cleans them up.

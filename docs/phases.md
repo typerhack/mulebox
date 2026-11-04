@@ -155,6 +155,8 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
 - [~] M9.2 `job_env` reaches compose services. Before, it reached only the `docker compose`
       process; a real container showed no `NODE_OPTIONS`. Built 2026-11-04 (0.27.0). Open: a
       real install in a container over the slow connection.
+- [~] M9.3 Services get 65536 open files unless they set their own. Built 2026-11-04 (0.28.0).
+      Open: the real `mongo` test run that died with WiredTiger error 24.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

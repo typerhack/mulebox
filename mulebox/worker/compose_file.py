@@ -18,7 +18,11 @@ collide with anything else on the machine, and writes nothing itself:
 - `job_env` of the machine goes into each service's environment, because a machine's fix for
   a slow network is needed where the install runs, and that is often a container. The job's
   process environment only reaches Compose's `${VAR}`, not containers. What a service sets
-  itself, directly or through `env_file:`, wins.
+  itself, directly or through `env_file:`, wins;
+- a service with no `ulimits.nofile` of its own gets a higher limit on open files. Containers
+  can start with a soft limit of 1024, and a database under test then dies mid-run with "Too
+  many open files". The hard limit is set too, and low enough that a daemon without the
+  power to raise limits can still start the container.
 
 What would reach past the job is refused first, by compose_policy.py. A read-only bind of a
 path outside the checkout gets `create_host_path: false` as well: Compose would otherwise
@@ -41,6 +45,7 @@ from mulebox.worker import compose_policy
 Model = dict[str, Any]
 LOOPBACK = "127.0.0.1"
 PORT_PREFIX = "MULEBOX_PORT_"
+OPEN_FILES = 65536
 _NOT_A_NAME = re.compile(r"[^A-Za-z0-9]")
 
 
@@ -106,6 +111,12 @@ def _add_machine_env(spec: Model, machine_env: Mapping[str, str]) -> None:
         spec["environment"] = {**escaped, **(spec.get("environment") or {})}
 
 
+def _raise_open_files(spec: Model) -> None:
+    limits = spec.get("ulimits") or {}
+    if "nofile" not in limits:
+        spec["ulimits"] = {**limits, "nofile": {"soft": OPEN_FILES, "hard": OPEN_FILES}}
+
+
 def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
                      assigned: Mapping[str, int], checkout: Path, notes: list[str]) -> None:
     spec["labels"] = {**(spec.get("labels") or {}), **labels}
@@ -113,6 +124,7 @@ def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
         spec["build"]["labels"] = {**(spec["build"].get("labels") or {}), **labels}
     _rewrite_ports(spec, assigned, name)
     _never_create_outside(spec, checkout)
+    _raise_open_files(spec)
     fixed = spec.pop("container_name", None)
     if fixed:
         notes.append(f"container_name {fixed} of service {name} was dropped, so jobs cannot "

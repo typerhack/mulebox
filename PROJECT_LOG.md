@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.28.0 - 2026-11-04 - minor
+- A compose service with no `ulimits.nofile` of its own gets 65536 open files. A real `mongo`
+  service died mid-test with "Too many open files": containers started at a soft limit of 1024.
+
 ## 0.27.0 - 2026-11-04 - minor
 - `job_env` of a build machine reaches every compose service. It only reached the `docker
   compose` process, so a machine's fix for a slow network missed installs in containers. What a
