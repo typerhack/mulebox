@@ -1,3 +1,4 @@
+import asyncio
 import json
 import re
 
@@ -84,7 +85,9 @@ def test_events_start_with_a_snapshot_then_replay_by_id(call, hub):
 
     async def go(client):
         fresh = await client.get("/api/events")
-        chunk = await fresh.content.read(4096)
+        chunk = b""
+        while chunk.count(b"event:") < 3:  # the stream may arrive in more than one read
+            chunk += await asyncio.wait_for(fresh.content.read(4096), 5)
         fresh.close()
         resumed = await client.get("/api/events", headers={"Last-Event-ID": first.id})
         again = await resumed.content.read(4096)

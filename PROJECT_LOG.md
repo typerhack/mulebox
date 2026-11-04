@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.7 - 2026-11-04 - patch
+- Test only: the dashboard snapshot test read an event stream once and sometimes saw two of
+  its three events. It now reads until all three arrive.
+
 ## 0.24.6 - 2026-11-04 - patch
 - Nothing under `/run` or `/var/run` may be bind-mounted from outside the checkout. A list of
   socket paths missed a rootless BuildKit socket in a user's run folder; sockets there have
