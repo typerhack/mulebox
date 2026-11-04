@@ -8,6 +8,61 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.35.0 - 2026-11-04 - minor
+- Merge of the agent tools (0.25.4 to 0.34.0, below) and the worker branch. The worker branch
+  used 0.26.0 to 0.32.0 as well; its changes are logged here, under the one number they ship
+  with, oldest last. Those commits keep their old numbers in git history.
+- Schema: one sequence. 3 -> 4 worker toolchains and version, 4 -> 5 `jobs.detached`, 5 -> 6
+  `job_steps`, with the `jobs_project` index. A test takes every old schema to the final one.
+  A store left at schema 4 by a build of the worker branch alone lacks the worker columns: start
+  that one afresh, this version cannot tell it from the agent tools' schema 4.
+- `coordinator/history.py` is gone: `coordinator/usual.py` is the one source of what a job
+  usually takes, so the queue estimate now reads the last 20 passed runs (was 10) with stage
+  rows (jobs from before stages do not count). The estimate's rule stays in it: same command,
+  at least 3 runs. `usual` in a `status` reply now keeps commands apart as well.
+- The failed stage is real: `failed_step` reaches `status`, the `result` line and `finished`
+  events as `stage`, for a job that ended badly. The failure summary and `events` show it. A job
+  that could not start shows the stage it stopped in where its worker sent rows, else `start`.
+- `mulebox status` lists a job's stages beside what is usual, without a percentage.
+- `compose_policy.check(model, checkout: Path | None, shared=())`. With no checkout a cache
+  folder counts as written, and `..` is worked out from the text, so `mulebox doctor` cannot be
+  told less than the worker by a path that walks out of a cache or to a socket.
+- The expired-log line uses the real default (`DEFAULT_LOG_DAYS`), and a test removes a log with
+  the real retention code before reading it through the client.
+- The contract (schema 4), the skill and docs/agents.md teach package caches, `job_env` in
+  services, open files, stages and `usual`, pull summaries, log retention, and that the
+  coordinator and workers are upgraded together.
+- Old logs are removed: nothing did before. `[retention]` in node.toml has `log_days` (30) and
+  `step_days` (365). The coordinator service sweeps at its start and hourly, through safepath,
+  only in the logs folder and only for files named after a finished job.
+- Test only: what the rewrite adds to services moved to a test file of its own.
+- Image pull progress is collapsed in what is stored and streamed: a real log had over 27,000
+  lines of it. Outcome lines and errors stay, and a line says how much has been downloaded.
+  The amount is a lower bound and also goes on the stage's row. Compose prints no total
+  without a terminal, so there is no percentage.
+- `status` replies give `usual`: the median length of a project's job and of each stage over
+  its last passed runs, or nothing without history. No percentage: a length from the past
+  does not say how far a running job has come.
+- Job steps: a new table in the coordinator's store, schema version 4, holds one row per stage
+  of a job: start, end, exit code, bytes downloaded, failing line. The worker reports them in
+  a new `steps` message; `status` replies list them. The time of a slow job could not be
+  placed before. `environment` is a stage of its own, for what mulebox provides.
+- A compose job runs `up --no-start` before `up --detach --wait`, so images and services are
+  separate stages.
+- A compose service with no `ulimits.nofile` of its own gets 65536 open files. A real `mongo`
+  service died mid-test with "Too many open files": containers started at a soft limit of 1024.
+- `job_env` of a build machine reaches every compose service. It only reached the `docker
+  compose` process, so a machine's fix for a slow network missed installs in containers. What a
+  service sets itself wins, and a project's `env:` value is the one that goes in.
+- Package caches: `needs: [cache-pnpm]` or `[cache-composer]` keeps a project's downloads on the
+  build machine between jobs, in `<cache>/packages/<project>/<tool>`. A real job downloaded the
+  same 905 packages twice and never reached its check. Opt-in and per project, so a job can
+  only affect later jobs of its own project; each log names the cache it used.
+- A compose file may mount the job's own cache writable; that is the one such path outside
+  the checkout, and an external volume stays refused. After a compose job the worker gives
+  what root wrote in the cache back to its own user.
+- `mulebox cache list` and `mulebox cache clear <project>` on a build machine.
+
 ## 0.34.0 - 2026-11-04 - minor
 - `mulebox logs`, `logs --summary` and `wait` say when a job's log has expired, rather than
   printing nothing (M8.10). The job's row keeps `log_size` after the file is gone, which tells

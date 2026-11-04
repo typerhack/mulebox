@@ -58,10 +58,11 @@ def status_facts(job: dict[str, Any]) -> dict[str, Any]:
     return {name: job[name] for name in STATUS_FIELDS}
 
 
-def result_body(job: dict[str, Any]) -> dict[str, Any]:
-    """The final `result` line of a watch stream: the job dict plus duration_s, and the
-    fingerprint, so `mulebox wait` can tell whether the result is stale."""
-    return {**job_dict(job), "duration_s": job["duration_s"], "fingerprint": job["fingerprint"]}
+def result_body(job: dict[str, Any], **extra: Any) -> dict[str, Any]:
+    """The final `result` line of a watch stream: the job dict plus duration_s, the
+    fingerprint, so `mulebox wait` can tell whether the result is stale, and `extra`."""
+    return {**job_dict(job), "duration_s": job["duration_s"], "fingerprint": job["fingerprint"],
+            **extra}
 
 
 RESERVATION_FIELDS = ("kind", "pinned_worker", "runner", "run_url")

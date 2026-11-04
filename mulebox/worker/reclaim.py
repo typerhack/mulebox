@@ -13,12 +13,18 @@ privileges, and only the capabilities `chown` and `chmod` use on files of anothe
 symlink inside the folder is changed as a link (`-h`), and could only lead into this
 disposable container anyway, since nothing else of the machine is mounted.
 
+A project's package caches get the same treatment after a compose job (caches.py), with the
+cache root as the root passed: the mount is that project's folder under `packages/`, proven
+the same way. A job can have left anything in it, which is no worse here than in a job
+folder, for the same reasons.
+
 The image is pinned by digest because it runs as root over job files.
 """
 
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from mulebox.common import compose
 from mulebox.common.safepath import Roots, UnsafePath, confirm_dir
@@ -54,8 +60,18 @@ def helper_args(source: str, job_id: str, worker: str, uid: int, gid: int) -> tu
     )
 
 
-def reclaim(docker: Docker, paths: NodePaths, project: str, job_id: str, worker: str) -> None:
-    """Make the worker's user own everything in this job's folder."""
-    source = confirm_dir(paths.job_dir(project, job_id), Roots((paths.jobs,)))
+def _run(docker: Docker, source: Path, job_id: str, worker: str) -> None:
     docker.run(*helper_args(str(source), job_id, worker, os.getuid(), os.getgid()),
                timeout_s=TIMEOUT_S)
+
+
+def reclaim(docker: Docker, paths: NodePaths, project: str, job_id: str, worker: str) -> None:
+    """Make the worker's user own everything in this job's folder."""
+    _run(docker, confirm_dir(paths.job_dir(project, job_id), Roots((paths.jobs,))), job_id, worker)
+
+
+def reclaim_cache(docker: Docker, paths: NodePaths, project: str, job_id: str,
+                  worker: str) -> None:
+    """Make the worker's user own everything in this project's package caches."""
+    source = confirm_dir(paths.packages_dir(project), Roots((paths.cache,)))
+    _run(docker, source, job_id, worker)

@@ -98,10 +98,11 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 ```json
 {"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
 {"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
-{"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "state": "finished", "v": 1}
+{"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "v": 1}
 ```
 
-  Ignore events and keys you do not know; `stage` and `check_in` events are planned.
+  Ignore events and keys you do not know; an event per stage and `check_in` events are planned.
+  In `finished`, `stage` is where a job that ended badly failed, null when that is not known.
   `exit_code` is the code the command exits with (5 could not start, 124 for a timeout,
   130 cancelled, 75 interrupted). `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
@@ -114,12 +115,28 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   result belongs to the snapshot, not to your current files. Run it again.
 - Jobs wait in one queue shared by every project and by GitHub Actions. Waiting is normal;
   do not cancel and resubmit to "speed it up". While queued, `check` prints its position and,
-  once a job has at least 3 passed runs, an estimate of how long it runs once started (the
-  median of its last 10). There is no estimate of the time in line. At position 2 or later,
+  once a job has at least 3 passed runs with stage rows, an estimate of how long it runs once
+  started (the median of its last 20 with the same command). There is no estimate of the time in line. At position 2 or later,
   or for a job that usually takes 5 minutes or more, it suggests `--detach` for next time. A
   line such as
   `queued, position 1; waiting: no build machine for this job is online` is different:
   nothing will start until a person fixes it, so tell the user.
+
+A job goes through stages: `prepare`, `environment`, `images`, `services`, `setup`, `command`,
+`cleanup`. `mulebox status <job-id>` shows them; with `--json`, `steps` has when each started
+and ended, its exit code and the last line of a failed one. The first four need no action
+from a project. `usual` is what passed runs of this job with this command took, whole and per
+stage, or nothing if there is no history yet. Say "usually about 4 min" if that helps. It is
+not progress, so never turn it into a percentage. Once a job has ended badly, the reply, the
+failure summary and the `finished` event name the failed stage.
+
+Image pull progress is summarised, so a quiet log during a pull is normal (section 2a).
+
+A build machine keeps a job's log for 30 days unless its owner chose otherwise. After that
+`mulebox logs <id>` says the log has expired, and the job's result and stages remain.
+
+The coordinator and the workers must be upgraded together: stage rows, toolchain reports and
+detached jobs need both. If `mulebox doctor` reports different versions, tell the user.
 
 ## 2. Setting up a project (`.mulebox.yml`)
 
@@ -228,6 +245,13 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
 - **`env:` reaches compose**, for `${VAR}` in compose files, as it reaches commands. A service
   only sees what its `environment:` passes on, as always. `UID` and `GID` are set, so
   `user: "${UID}:${GID}"` works.
+- **The build machine's `job_env` reaches services** (settings such as `NODE_OPTIONS` for a
+  slow network), and your commands. A value in a service's `environment:` or `env_file:`
+  wins; a value in `.mulebox.yml` `env:` replaces it for the whole job, and may add to it
+  with `${NODE_OPTIONS}`. It does not reach a `RUN` line of an image build.
+- **Open files.** A service with no `ulimits.nofile` of its own gets 65536, soft and hard:
+  containers can start at 1024, and a database under test then dies with "Too many open
+  files". A value in the compose file always wins, so set one if a service needs more.
 - **`.env*` files are not uploaded**, apart from tracked templates, so `env_file: .env.ci`
   fails on the build machine. Move those throwaway values into `env:` and `environment:`.
 - **Root-owned files** in the checkout are fine: mulebox cleans them up.
@@ -236,6 +260,10 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
   `condition: service_completed_successfully`, or moved into a job command. A healthcheck
   that depends on `setup` having run cannot pass, because setup comes after.
 - When a job fails, its log ends with the state and last lines of its containers.
+- Images are pulled and built by `docker compose up --no-start`, then `up --detach --wait`
+  starts them, so a job's stages can tell the two apart. Layer-by-layer pull progress is left
+  out of the log. It shows `Image ... Pulled` and `mulebox: at least 640 MB of image layers
+  downloaded`, every 100 MB. No news for a while during a pull is normal on a slow network.
 
 These are refused with the reason, because they reach past the job:
 
@@ -253,8 +281,9 @@ These are refused with the reason, because they reach past the job:
   volumes not on the local driver or on a host device;
 - anything under `/run` or `/var/run`, any Unix socket, or a folder holding a known runtime's socket (Docker, containerd, CRI-O,
   podman, k3s, BuildKit), in any bind or file secret, read-only or not; writable bind
-  mounts outside the checkout, and any bind outside it whose source does not exist on the
-  build machine (mulebox never creates one there).
+  mounts outside the checkout, except this job's package caches (section 2a-1), and any bind
+  outside it whose source does not exist on the build machine (mulebox never creates one
+  there).
 
 This stops a CI file's assumptions from reaching past the job. It does not contain a hostile
 project: a job can run any command and Docker access is root-equivalent, so a build machine
@@ -273,6 +302,88 @@ compose file rather than changing how the project runs locally.
 If mulebox says no build machine offers `docker`, tell the user: a person has to add it
 to the build machine's `capabilities`. If it says the machine's mulebox is too old, it has to
 be upgraded. `compose-v1` in `needs` comes with `compose:`; nobody sets it.
+
+## 2a-1. Package caches
+
+Installs are slow on a slow network, and a job starts from nothing. Ask for a cache in `needs`
+and downloads stay on the build machine between jobs of this project. It is off unless the
+project asks.
+
+```yaml
+needs: [cache-pnpm, cache-composer]
+```
+
+| `needs` | Folder on the build machine | Set for commands on the machine |
+| --- | --- | --- |
+| `cache-pnpm` | `<cache>/packages/<project>/pnpm` | `pnpm_config_store_dir`, `npm_config_store_dir`, `MULEBOX_CACHE_PNPM` |
+| `cache-composer` | `<cache>/packages/<project>/composer` | `COMPOSER_CACHE_DIR`, `MULEBOX_CACHE_COMPOSER` |
+
+Commands on the machine need nothing more. **A container sees a cache only if the compose
+file mounts it**, and that mount is yours to write. `MULEBOX_CACHE_<TOOL>` is the folder, and
+it is the one writable path outside the checkout that compose may mount. Put this in a
+CI-only compose file:
+
+```yaml
+# docker-compose.ci.yml, listed last in `compose:`
+services:
+  api:
+    user: "${UID}:${GID}"
+    environment:
+      COMPOSER_CACHE_DIR: /cache/composer
+    volumes:
+      - ${MULEBOX_CACHE_COMPOSER}:/cache/composer
+  web:
+    user: "${UID}:${GID}"
+    environment:
+      pnpm_config_store_dir: ${MULEBOX_CACHE_PNPM}
+    volumes:
+      - ${MULEBOX_CACHE_PNPM}:${MULEBOX_CACHE_PNPM}
+```
+
+- **Replacing an external cache volume.** mulebox refuses `external: true`, and a cache does
+  not change that, because every project on the machine would share such a volume. Add the
+  `cache-*` need, and in a CI-only compose file mount the cache on the same container path:
+
+  ```yaml
+  # docker-compose.yml, unchanged: composer_cache:/root/.composer/cache, external: true
+  # docker-compose.ci.yml
+  services:
+    api:
+      volumes:
+        - ${MULEBOX_CACHE_COMPOSER}:/root/.composer/cache
+  ```
+
+  With `compose: [docker-compose.yml, docker-compose.ci.yml]` the later mount replaces the
+  volume on that path, and Compose drops the volume once no service uses it, so the check
+  passes and the project's main file stays as it is. Every service that used the volume
+  needs this. If mulebox still says the volume is external, one of them was missed.
+- **pnpm: use the same path in the container and on the machine**, as above, if `setup` runs
+  on the machine and a job runs in a container, or the other way round. pnpm records its
+  store's path in `node_modules`. When the path differs, it throws `node_modules` away and
+  installs again. For the same reason, use one toolchain version for both.
+- **Who writes.** Run the service as root or as `"${UID}:${GID}"`. Any other user cannot write
+  to the folder and the install fails with a permission error. After a compose job
+  mulebox hands what root wrote back to the machine's user.
+- A pnpm install across mounts copies packages instead of linking them. That is slower than
+  a link and far faster than a download.
+- A service that uses one of these variables fails at the start if the project does not ask
+  for that cache: the variable is empty. For running the same file on a laptop, give it a
+  default, as in `${MULEBOX_CACHE_PNPM:-/tmp/example-app-pnpm}`.
+
+**What sharing means.** Every branch of a project on a machine shares its cache: every job of
+this project on this machine, on any branch, reads and
+writes the same folder, and the job's log says so. A job can therefore leave something behind
+that a later job of this project gets: a change on a branch can reach the next run of main. pnpm
+checks each package against the hash in the lockfile; Composer checks a download only where
+the lockfile has a hash, and many entries have none. Another project has its own folder, and
+compose refuses a mount of it. A project's name comes from its `.mulebox.yml`, so two
+projects with the same `project:` share a cache. As everywhere on a build machine, this is
+for projects its owner trusts, not a defence against a hostile one: a job with Docker
+access can reach any folder.
+
+If a cache looks wrong, a person clears it on the build machine, with no job of that project
+running: `mulebox cache clear <project>`. `mulebox cache list` shows the sizes. Caches are
+never cleaned by themselves. Do this only when the user asks: do not ssh in yourself.
 
 ## 2b. Browser tests (Playwright)
 

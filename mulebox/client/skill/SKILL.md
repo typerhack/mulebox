@@ -24,7 +24,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 3. `mulebox contract` prints the current schema on
+This skill was written for contract schema 4. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
@@ -61,6 +61,30 @@ When it has ended, `mulebox logs <job-id> --summary` says why it failed, and `mu
 logs expire on the build machine; `mulebox logs` says so when one has, and `mulebox status
 <job-id>` still has the result.
 Cancel a detached job you no longer want: nothing else will.
+
+A job goes through stages, and `mulebox status <job-id>` shows `steps` and `usual`: what each
+stage took and what passed runs usually take. `usual` is a length from the past, not progress,
+so never turn it into a percentage. Image pull progress is summarised, so a quiet log during a
+pull is normal. Logs expire after 30 days by default; the job and its stages remain.
+
+## Package caches and services
+
+`needs: [cache-pnpm, cache-composer]` turns the caches on. Commands on the machine use them by
+themselves. A container sees a cache only if the compose file mounts `${MULEBOX_CACHE_PNPM}` or
+`${MULEBOX_CACHE_COMPOSER}`.
+
+- To replace an external cache volume, mount the cache on the same container path in a CI-only
+  compose file. The refusal of external volumes stands.
+- Mount the pnpm store at the same path as on the machine, or pnpm may recreate `node_modules`
+  and install again.
+- A service with a cache runs as root or `${UID}:${GID}`.
+- Every branch of a project on a machine shares its cache. Clearing it is a person's job on the
+  build machine: ask, and do not ssh in.
+- The build machine's `job_env` reaches services, and the service's own value wins.
+- Services get 65536 open files unless they set `ulimits.nofile`.
+
+The coordinator and the workers must be upgraded together. If `mulebox doctor` reports
+different versions, tell the user.
 
 ## When something goes wrong
 

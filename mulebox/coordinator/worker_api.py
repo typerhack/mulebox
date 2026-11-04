@@ -1,4 +1,4 @@
-"""Requests from workers: claim, heartbeat (lease worker), job_update, log_chunk, result.
+"""Requests from workers: claim, heartbeat (lease worker), job_update, log_chunk, steps, result.
 
 Every message about a job must carry the job's current `attempt_id`; a stale attempt gets
 `conflict`. Runner reservations have no attempt: only `heartbeat` applies to them (it
@@ -9,7 +9,7 @@ renews their worker lease); they end through `release` (runner_api.py). A valid 
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import leases, queue, recovery, workers
+from mulebox.coordinator import leases, queue, recovery, steps, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -79,6 +79,14 @@ def log_chunk(req: Request) -> Message:
         st.update_job(conn, job["job_id"], log_size=size)
         job = leases.renew_worker_in(conn, st.require_job(conn, job["job_id"]), req.now)
     return _status(req, job, log_size=size)
+
+
+def report_steps(req: Request) -> Message:
+    rows = steps.rows_from(req.body)
+    with req.store.write() as conn:
+        job = _current_job(conn, req)
+        steps.save(conn, job["job_id"], rows)
+    return _status(req, job)
 
 
 def result(req: Request) -> Message:

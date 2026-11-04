@@ -5,8 +5,8 @@ import sqlite3
 import pytest
 
 from mulebox.common.protocol import JobState
+from mulebox.coordinator import migrate, workers
 from mulebox.coordinator import store as st
-from mulebox.coordinator import workers
 from mulebox.coordinator.migrate import SchemaTooNew
 from mulebox.coordinator.store import Store
 
@@ -54,7 +54,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION
+        assert store.schema_version() == st.SCHEMA_VERSION == 6
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url", "detached"} <= columns(
                 conn, "jobs")
@@ -91,3 +91,72 @@ def test_newer_store_is_refused(staging):
     conn.close()
     with pytest.raises(SchemaTooNew, match="upgrade mulebox"):
         Store(staging.db_path).open()
+
+
+def shape(conn):
+    """Every table's columns and every index, however the store got them."""
+    tables = [row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table' "
+                                             "AND name NOT LIKE 'sqlite_%'")]
+    indexes = {row[0] for row in conn.execute("SELECT name FROM sqlite_master WHERE type = 'index' "
+                                              "AND name NOT LIKE 'sqlite_%'")}
+    return {table: columns(conn, table) for table in tables}, indexes
+
+
+def store_at(path, version):
+    """A database as a mulebox of that schema left it, with its job and worker."""
+    conn = sqlite3.connect(path)
+    conn.executescript(V1_SCHEMA)
+    for step in range(1, version):
+        for statement in migrate._STEPS[step]:
+            conn.execute(statement)
+    conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (str(version),))
+    conn.commit()
+    conn.close()
+
+
+def test_one_sequence_with_no_gap():
+    assert sorted(migrate._STEPS) == list(range(1, st.SCHEMA_VERSION))
+
+
+@pytest.mark.parametrize("version", range(1, st.SCHEMA_VERSION + 1))
+def test_every_old_schema_reaches_what_a_new_store_has(version, staging, tmp_path):
+    with Store(tmp_path / "new.db").open() as store, store.read() as conn:
+        fresh = shape(conn)
+    store_at(staging.db_path, version)
+    with Store(staging.db_path).open() as store:
+        assert store.schema_version() == st.SCHEMA_VERSION
+        with store.read() as conn:
+            assert shape(conn) == fresh
+        assert store.get_job("job-01JC3X0000000000000000000")["project"] == "example-app"
+
+
+def test_the_schema_main_was_at_upgrades_with_its_jobs_and_workers(staging):
+    """Schema 3 as mulebox 0.25.3 wrote it: before worker reports, detached jobs and steps."""
+    store_at(staging.db_path, 3)
+    conn = sqlite3.connect(staging.db_path)
+    before = columns(conn, "jobs") | columns(conn, "workers")
+    conn.close()
+    assert not {"detached", "toolchains", "version"} & before
+    with Store(staging.db_path).open() as store:
+        with store.read() as conn:
+            assert "detached" in columns(conn, "jobs")
+            assert {"toolchains", "version"} <= columns(conn, "workers")
+            assert {"stage", "started_at", "finished_at", "exit_code", "bytes_downloaded",
+                    "failing_line"} <= columns(conn, "job_steps")
+            assert "jobs_project" in shape(conn)[1]
+            assert workers.get(conn, "build-1")["version"] is None
+        assert store.get_job("job-01JC3X0000000000000000000")["detached"] is False
+
+
+def test_a_store_without_steps_gets_the_table_and_keeps_its_jobs(old_db, staging):
+    with Store(old_db).open() as store:
+        job = store.get_job("job-01JC3X0000000000000000000")
+        with store.write() as conn:
+            conn.execute("DROP TABLE job_steps")
+            conn.execute("UPDATE meta SET value = '5' WHERE key = 'schema_version'")
+    with Store(old_db).open() as store:
+        assert store.schema_version() == 6
+        assert store.get_job(job["job_id"])["project"] == "example-app"
+        with store.read() as conn:
+            assert {"stage", "started_at", "finished_at", "exit_code", "bytes_downloaded",
+                    "failing_line"} <= columns(conn, "job_steps")

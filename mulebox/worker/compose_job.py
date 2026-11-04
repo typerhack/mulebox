@@ -7,7 +7,9 @@ compose file or `env:` value may use `${MULEBOX_PORT_...}`. The result is rewrit
 `COMPOSE_FILE`, with `COMPOSE_PROJECT_NAME`. So `docker compose exec -T api ...` in a job
 command needs no flags, from any folder, and cannot reach another project.
 
-Starting the containers is the first thing the job's script does, not a step of the worker.
+Starting the containers is the first thing the job's script does, not a step of the worker,
+in two parts, so that time spent on images can be told from time spent on services: `up
+--no-start` pulls, builds and creates, on any Compose v2, and `up --wait` starts them.
 It therefore runs inside the job's unit: `timeout_min` covers it, a cancel stops it, and
 its output goes into the job's log and through redaction like any other output. If the
 job fails, the end of the containers' logs goes there too, since they are gone a moment
@@ -21,20 +23,21 @@ from __future__ import annotations
 import json
 import os
 import shlex
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from mulebox.common import compose
 from mulebox.common.compose import ComposeError
-from mulebox.common.status import CONTAINER_LOGS_NOTE
+from mulebox.common.status import CONTAINER_LOGS_NOTE, IMAGES, SERVICES
 from mulebox.worker import compose_file
 from mulebox.worker.compose_file import Port
 from mulebox.worker.docker import Docker, DockerError
 from mulebox.worker.jobspec import port_references
 from mulebox.worker.ports import PortPool
 from mulebox.worker.reclaim import HELPER_IMAGE
+from mulebox.worker.steps import END, SHELL_NAME
 
 GENERATED_FILE = "compose.mulebox.yml"  # beside src/, so it is not in the project's checkout
 LOG_LINES = 50
@@ -66,10 +69,12 @@ def script_lines() -> tuple[str, ...]:
     """Lines at the start of the job's script; `set -e` is already on."""
     helper = shlex.quote(HELPER_IMAGE)
     return (
+        f"{SHELL_NAME} {IMAGES}",
         f"docker image inspect {helper} >/dev/null 2>&1 || docker pull --quiet {helper}",
         "mulebox_containers() {",
         '  code=$?; trap - EXIT',
         '  if [ "$code" -ne 0 ]; then',
+        f"    {SHELL_NAME} {END}",
         f"    echo {shlex.quote(CONTAINER_LOGS_NOTE)}",
         "    docker compose ps --all || true",
         f"    docker compose logs --no-color --tail={LOG_LINES} || true",
@@ -77,6 +82,8 @@ def script_lines() -> tuple[str, ...]:
         '  exit "$code"',
         "}",
         "trap mulebox_containers EXIT",
+        "docker compose up --no-start",
+        f"{SHELL_NAME} {SERVICES}",
         "docker compose up --detach --wait",
     )
 
@@ -88,8 +95,11 @@ def _port_notes(ports: Sequence[Port], assigned: Mapping[str, int]) -> list[str]
 
 
 def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str, src: Path,
-            project_env: Mapping[str, str], build_env: EnvBuilder) -> ComposeJob:
-    """Write the job's compose file; `build_env(extra)` makes the job's environment."""
+            project_env: Mapping[str, str], build_env: EnvBuilder,
+            shared: Sequence[Path] = (), machine_names: Collection[str] = ()) -> ComposeJob:
+    """Write the job's compose file; `build_env(extra)` makes the job's environment. `shared`:
+    the job's package cache folders, which its services may mount. `machine_names`: the names
+    in the machine's `job_env`, which go to services with the value this job has for them."""
     project = compose.project_name(job_id)
     names = compose.split_files(files)
     generated = src.parent / GENERATED_FILE
@@ -103,10 +113,13 @@ def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str
         ports = compose_file.published_ports(first)
         assigned = pool.take(job_id, {port.variable: port.protocol for port in ports})
         port_env = {name: str(port) for name, port in assigned.items()}
-        final = _config(docker, build_env({**fixed, **port_env}), src)
+        env = build_env({**fixed, **port_env})
+        final = _config(docker, env, src)
+        machine_env = {name: env[name] for name in machine_names}
         labels = {compose.LABEL_JOB: job_id, compose.LABEL_WORKER: worker}
         checkout = Path(os.path.realpath(src))
-        model, notes = compose_file.rewrite(final, job_id, labels, assigned, checkout)
+        model, notes = compose_file.rewrite(final, job_id, labels, assigned, checkout, shared,
+                                            machine_env)
     except DockerError as exc:
         raise ComposeError(f"the compose files cannot be used: {exc}") from exc
     generated.write_text(json.dumps(model, indent=1), encoding="utf-8")

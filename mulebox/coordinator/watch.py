@@ -17,7 +17,7 @@ from typing import BinaryIO
 
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, history, leases, queue
+from mulebox.coordinator import api, leases, queue, steps, usual
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.errors import CoordinatorError, NotFound
@@ -87,6 +87,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
             job = st.require_job(conn, job_id)
             place = queue.position(conn, job)
             reason = waiting_for(conn, job, clock())
+            failed = steps.failed_stage(conn, job)
         while with_log:
             body = api.log_chunk_body(staging, job, offset)
             if body["next_offset"] == offset:
@@ -95,10 +96,10 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
             offset = body["next_offset"]
         if (job["state"], place, reason) != last:
             with store.read() as conn:
-                estimate = history.estimate(conn, job)
-            send(MessageType.STATUS_OK, status_body(job, place, reason, **estimate))
+                estimate = usual.estimate(job, usual.for_job(conn, job))
+            send(MessageType.STATUS_OK, status_body(job, place, reason, **estimate, **failed))
             last = (job["state"], place, reason)
         if job["state"] == JobState.FINISHED:
-            send(MessageType.RESULT, result_body(job))
+            send(MessageType.RESULT, result_body(job, **failed))
             return 0
         sleep(poll_s)

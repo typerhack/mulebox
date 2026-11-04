@@ -74,13 +74,112 @@ comma in the path is refused because it would end the `--mount` value.
   Non-alphanumerics in a service name become `_`. `env:` values may use `${MULEBOX_PORT_...}`.
 - Script: fetch the helper image if missing (so cleanup cannot fail on it later), set an EXIT
   trap that prints `docker compose ps --all` and `logs --tail=50` when the script fails,
-  `docker compose up --detach --wait`, then `setup`, then the job.
+  `docker compose up --no-start` (pulls, builds, creates), `docker compose up --detach --wait`,
+  then `setup`, then the job.
 - `worker/compose_file.py`: `published_ports(model)`, `rewrite(model, project, labels,
   assigned, checkout) -> (model, notes)`; `compose_policy.check(model, checkout)` raises
   `ComposeError` for what is refused.
 - `worker/ports.py`: `PortPool(free, pick)`: `take(job_id, names)`, `release(job_id)`. Range
   20000-29999, random start, proven free by a bind on 127.0.0.1, held until the job is clean.
+- `job_env` names go to `prepare` as `machine_names`. Each service's `environment` gets those
+  names with the value the job has for them, so `env:` of the project counts, and `$` doubled
+  for Compose's second reading. A service's own value wins. Before 0.27.0 `job_env` reached
+  only the `docker compose` process: `${VAR}` in a compose file, no container.
+- `compose_file.rewrite` gives a service with no `ulimits.nofile` a limit of `OPEN_FILES`
+  (65536), soft and hard. Other `ulimits` stay, and a service's own `nofile` is left as it is.
+  The hard limit is kept at that value, not raised to what a daemon allows, because a daemon
+  that may not raise limits, such as a rootless one, would refuse to start the container.
 - A compose problem found before the unit starts fails the job with the reason in its log.
+
+## Package caches
+
+`common/package_cache.py` holds the names `cache-pnpm` and `cache-composer`; a worker reports
+them by itself (`compose.worker_capabilities`). `worker/caches.py`: `for_job(paths, project,
+needs) -> JobCaches(env, folders, notes)` makes `<cache>/packages/<project>/<tool>` through
+safepath and proves it with `confirm_dir`, so a folder a job swapped for a symlink fails the
+next job instead of being followed. `env` holds `MULEBOX_CACHE_<TOOL>` and the tool's own
+settings, through `extra` of `build_env`, so `env:` cannot override them. `folders` goes to
+`compose_policy.check(model, checkout, shared)`, which lets a writable bind through only if its
+source resolves into one of them; `external` volumes are not touched by this.
+`caches.give_back` runs in `Cleaner.clean` after teardown of a compose job, and so after a
+crash too, with `reclaim.reclaim_cache`: the helper, on `<cache>/packages/<project>`, with the
+cache root as the root. A failure there is logged, not retried. `caches.clear` and
+`caches.listing` are `mulebox cache clear <project>` and `mulebox cache list`.
+
+Reserved for an install step run by mulebox: a folder beside `packages/`, such as
+`<cache>/installs/<project>/<key>`, with the key made from lockfile, toolchain and image.
+
+## Job steps
+
+One row per stage of a job, in the coordinator's store (`job_steps`, schema version 6, a table
+added by `migrate.py` with no change to `jobs`). `seq` orders them. Raw logs stay files.
+
+| Column | Meaning |
+| --- | --- |
+| `job_id`, `seq` | primary key; `seq` counts from 0 within a job |
+| `stage` | `status.STAGES`: `prepare`, `environment`, `images`, `services`, `setup`, `command`, `cleanup` |
+| `started_at`, `finished_at` | epoch seconds on the worker; `finished_at` empty while it runs, and for good if the job ended without its worker |
+| `exit_code` | 0 for a stage followed by another; the job's code for its last; empty if stopped |
+| `bytes_downloaded` | image layers, at least this much (see Image pulls in a log); empty if none were seen |
+| `failing_line` | last line the stage printed, redacted, at most 500 characters, for `failed` or `timed_out` only |
+
+- `prepare`: snapshot and workspace. `environment`: what mulebox provides, today toolchains,
+  caches and the compose file; an install step run by mulebox belongs here too, separate from
+  `setup` and the commands. `images`: `up --no-start`. `services`: `up --wait`.
+- `command` is one row for a job, also when the job has several lines: they are one shell
+  command, and splitting shell text at line breaks is not safe. A later version can add rows,
+  since nothing assumes a stage appears once.
+- `worker/steps.py`: `StepTracker`. The script prints `::mulebox-step:<marker>:<time>:<stage>`
+  (`mulebox_step`, jobspec.py), a random marker per job, and the tailer removes those lines
+  after redaction, before anything is stored. Keep `${` and `$$` out of the script: systemd
+  expands them in a unit's command line.
+- Wire: `steps` (worker to coordinator), body `job_id`, `attempt_id`, `steps` (at most 64 whole
+  rows, replaced by `seq`), answered like `job_update`. It goes after the log, and before
+  `result`. A report is not worth a retry after an `error` reply, so an older coordinator
+  does no harm: the job runs, without rows. The protocol version stays 1.
+- Read: `status_ok` of a `status` request has `steps`, the rows in order (empty for a job
+  that has none). Inside the coordinator: `coordinator/steps.py`, `for_job(conn, job_id)`,
+  which the dashboard can use with its read-only store. Pure helpers in `common/status.py`:
+  `current_stage(job, steps)`, `step_duration_s(step, now)`, `failed_step(steps)`.
+- `coordinator/usual.py`: `usual(conn, project, job, argv=None)` gives `{"runs", "job_s",
+  "stages": {stage: seconds}}`, or None without history: medians over the last 20 passed runs
+  that have rows. `for_job(conn, job)` limits that to the job's command. A `status` reply has it
+  as `usual` (null without history). `estimate(job, typical)` is the same figure for a queued
+  job with at least 3 such runs: `estimate_s` and `estimate_runs`, in `status` and the watch
+  stream. It gives lengths, not progress: a client may say "usually about 4 min", and must not
+  turn it into a percentage.
+- `failed_step(steps)` reaches clients as `stage` (`coordinator/steps.py`, `failed_stage`), for
+  outcomes `failed`, `timed_out` and `interrupted` only: a cancelled job has a non-zero exit
+  code in its last stage and did not fail there. A job that left no such row has no `stage`.
+- `timeout_min` still ends the job, whatever the stage. The rows are enough to turn that into
+  a warning later: they say how long each stage took on this project.
+
+## Image pulls in a log
+
+`worker/pullnoise.py`. After redaction, before storing and streaming, per-layer progress is
+dropped: `Pulling fs layer`, `Waiting`, `Downloading`, `Verifying Checksum`, `Download complete`,
+`Extracting`, `Pull complete`, `Already exists` on a line that starts with a 12-digit layer
+id, and BuildKit's `#N sha256:... a / b` and `#N extracting sha256:...` lines without `done`.
+Lines about images, networks and containers stay, as does anything else, errors and retries
+included. In their place: `mulebox: at least 640 MB of image layers downloaded`, every 100 MB
+and after each run of layer lines. The raw `out.log` keeps all of it until the folder goes.
+
+What Compose prints without a terminal, seen on 5.6: `<layer> Downloading 2.097MB`, the amount
+so far with no total, and the last piece of a layer is not printed. So bytes are a lower bound,
+and no percentage exists. Compose 2 printed `12.3MB/45.6MB`, and that total is used where
+present. `--progress json` on 5.6 has `current` and `total` per layer, but only for layers that
+have started, so a whole-pull percentage would still be a guess, and the flag would need a
+version check. Not used.
+
+## Retention
+
+`coordinator/retention.py`: `sweep(store, staging, now, log_days, step_days) -> (logs, rows)`,
+run by the coordinator service at the start and every hour. `Staging.log_job_ids()` lists
+regular files directly in `<staging>/logs`, named `<valid job id>.log`, so a symlink, a folder or
+a foreign file is never a candidate. A log goes when its job is `finished` and `finished_at`
+is older than `log_days`, through `Staging.remove_log` and so safepath. A log of an unknown or
+active job stays. `job_steps` rows go after `step_days`. Rows in `jobs` are never removed.
+`mulebox logs` of a job whose log has gone prints nothing; the job still shows in history.
 
 ## Browser tests
 

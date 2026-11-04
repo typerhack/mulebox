@@ -17,6 +17,12 @@ Input is a public job dict; every function tolerates missing or malformed fields
 - `fingerprint(jobs)`: what changes when a view must redraw. Elapsed time is left out, so a
   ticking clock never causes an event.
 
+`status_ok` of a `status` request has `steps`, one row per stage, and `common/status.py` reads
+them: `current_stage`, `step_duration_s`, `failed_step` ([interfaces-m4.md](interfaces-m4.md),
+Job steps). `mulebox status` shows them; no dashboard view does yet. A `status` reply, a
+watch stream's last `status_ok` and its `result` have `stage` when a job ended badly in a known
+stage (`steps.failed_stage`), and `job_event` puts it in the `finished` event.
+
 ## Processes and access
 
 - `mulebox dashboard serve` runs on the coordinator machine as the user service

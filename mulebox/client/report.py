@@ -7,8 +7,9 @@ from __future__ import annotations
 
 from typing import Any, TextIO
 
+from mulebox.common.config import DEFAULT_LOG_DAYS
 from mulebox.common.protocol import Outcome
-from mulebox.common.status import duration_of, number
+from mulebox.common.status import current_stage, duration_of, number, step_duration_s
 
 __all__ = ["duration_of"]  # re-exported: the shared status model owns it
 
@@ -89,8 +90,8 @@ def log_expired(body: dict[str, Any]) -> bool:
 
 
 def expired_line(job_id: str) -> str:
-    return (f"the log of job {job_id} has expired: build machines remove old logs (after 30 "
-            f"days by default). `mulebox status {job_id}` still has the result")
+    return (f"the log of job {job_id} has expired: build machines remove old logs (after "
+            f"{DEFAULT_LOG_DAYS} days by default). `mulebox status {job_id}` still has the result")
 
 
 def state_line(body: dict[str, Any]) -> str | None:
@@ -127,6 +128,27 @@ def long_wait(body: dict[str, Any]) -> bool:
         return False
     place, estimate = number(body.get("position")), number(body.get("estimate_s"))
     return (place or 0) >= LONG_QUEUE_POSITION or (estimate or 0) >= LONG_JOB_S
+
+
+def stage_lines(body: dict[str, Any], now: float) -> list[str]:
+    """A job's stages for `mulebox status`, each beside its usual length. What is usual is only
+    what past runs took, not how far along this one is, so nothing here is a percentage."""
+    rows = [row for row in body.get("steps") or [] if isinstance(row, dict)]
+    typical = body.get("usual") if isinstance(body.get("usual"), dict) else {}
+    stages = typical.get("stages") if isinstance(typical.get("stages"), dict) else {}
+    running = current_stage(body, rows)
+    lines = []
+    for row in rows:
+        is_open = running is not None and row is rows[-1]
+        took = format_duration(step_duration_s(row, now if is_open else None))
+        usual = number(stages.get(row.get("stage")))
+        line = f"  {row.get('stage')}: {took}{' so far' if is_open else ''}"
+        lines.append(f"{line} (usual {format_duration(usual)})" if usual is not None else line)
+    seconds = number(typical.get("job_s"))
+    if seconds is not None:
+        lines.append(f"  usual for this job: {format_duration(seconds)} "
+                     f"({typical.get('runs')} past runs)")
+    return lines
 
 
 def short_id(job_id: str, length: int = 8) -> str:

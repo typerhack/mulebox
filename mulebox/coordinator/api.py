@@ -12,12 +12,13 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (
-    history,
     leases,
     needs,
     projects,
     queue,
     runner_api,
+    steps,
+    usual,
     worker_api,
     workers,
 )
@@ -91,9 +92,13 @@ def status(req: Request) -> Message:
         job = st.require_job(conn, v.job_id(req.body))
         place = queue.position(conn, job)
         reason = waiting_for(conn, job, req.now)
-        estimate = history.estimate(conn, job)
-    return req.reply(MessageType.STATUS_OK, {**status_body(job, place, reason, **estimate),
-                                             **status_facts(job)})
+        rows = steps.for_job(conn, job["job_id"])
+        typical = usual.for_job(conn, job)
+        failed = steps.failed_stage(conn, job)
+    return req.reply(MessageType.STATUS_OK, {
+        **status_body(job, place, reason, steps=rows, usual=typical,
+                      **usual.estimate(job, typical), **failed),
+        **status_facts(job)})
 
 
 def cancel(req: Request) -> Message:
@@ -167,6 +172,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.CLAIM: worker_api.claim,
     MessageType.JOB_UPDATE: worker_api.job_update,
     MessageType.LOG_CHUNK: worker_api.log_chunk,
+    MessageType.STEPS: worker_api.report_steps,
     MessageType.RESULT: worker_api.result,
     MessageType.RESERVE: runner_api.reserve,
     MessageType.ACQUIRE: runner_api.acquire,

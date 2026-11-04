@@ -157,6 +157,9 @@ machine that also does other work. So the worker does not run them as they are:
 - **Ports always move**, even when the wanted one is free: to 127.0.0.1, on a port from a
   private range checked for its own protocol (tcp or udp; `sctp` is refused), named by `MULEBOX_PORT_<SERVICE>_<PORT>`. Keeping a free port would pass on a
   quiet day and fail on a busy one. Project code must read the variable.
+- **The machine's `job_env` goes into services.** What a machine needs (a timeout for a slow
+  network, say) is needed where installs run, and that is often a container. It is added to
+  the generated file; a service's own value wins, so it cannot change what a project set.
 - **Containers start first**, before `setup`, inside the job's unit, with `up --wait`. Setup
   can then use them, as CI does, and the timeout, cancel and log redaction need no special
   case. The cost: `setup` cannot produce something an image build needs.
@@ -183,6 +186,47 @@ the cache root, shared by all jobs, so a version is fetched once. The job asks f
 browser itself, which keeps it matched to the project's lockfile, and mulebox has no list
 of browser versions to maintain. mulebox never deletes from that folder.
 
+## Job stages
+
+A job's log says what happened, but not what took the time, and the first real jobs needed
+that answer: 18 minutes on images, then two installs. The worker records one row per stage in
+the coordinator's store; a log stays a file. The stages of the script are marked in its own
+output, which keeps them in order with what they printed, needs no trap a project could
+replace, and adds no process. `environment` is a stage of its own for what mulebox provides,
+apart from a project's `setup` and commands: the direction is that a job declares what it
+needs and mulebox prepares it. A report never holds up a job, and its rows are not a
+source of truth for how a job ended. That stays `outcome` on the job.
+
+The rows also give what is usual for a project and job: the median of its last passed runs,
+per stage and as a whole. mulebox says what past runs took and leaves it there. A percentage
+would be a guess presented as a measurement, since a cold cache or a new image changes
+what a stage takes.
+
+## Package caches
+
+A job starts from nothing, so on a slow network the install is most of its time, and a
+project's `external` cache volume cannot be used because it would cross jobs and projects. A
+project can ask for a cache with `needs: [cache-pnpm]` or `cache-composer`: one folder per
+project and tool, `<cache>/packages/<project>/<tool>`.
+
+- **Opt-in**, because sharing changes what a job can affect, and only a project's owner can
+  weigh that for it.
+- **Per project, not per machine.** Sharing across projects would save more disk and more
+  downloads, but a folder that every project reads is where a mistake in one reaches the
+  rest. The price is a copy of a package per project.
+- **`needs`, not a new field.** A worker reports the names by itself, so an older worker
+  cannot claim such a job and silently run it without a cache, and no client or wire change
+  is needed.
+- **The project mounts it.** mulebox does not add mounts to services: only the project knows
+  which service installs and where. The policy lets a writable bind through only if it
+  resolves into a folder of this job's caches; external volumes stay refused.
+- **The job's log names each cache it used**, and `mulebox cache clear` on the machine is the
+  way out. Nothing evicts: there is no safe guess at what is stale, and mulebox never deletes
+  what it was not asked to.
+- `packages/` holds downloads only. A later install step run by mulebox, keyed on lockfile,
+  toolchain and image, would keep its results in a folder of its own beside it, read
+  downloads from here, and leave this layout as it is.
+
 ## Client commands
 
 ```text
@@ -199,8 +243,8 @@ mulebox cancel <id>          cancel a job
 ```
 
 While waiting, `check` shows its queue position and, once a job has passed at least 3 times,
-how long it usually runs, labelled as an estimate (the median of its last 10 passed runs with
-the same command). That is not the time in line: nothing here knows how long the jobs ahead
+how long it usually runs, labelled as an estimate (the median of its last 20 passed runs with
+the same command, from the same stage rows as `usual`). That is not the time in line: nothing here knows how long the jobs ahead
 will take. At position 2 or later, or for a job that usually takes 5 minutes or more, it
 suggests `--detach`. While running, the live log. Ctrl-C cancels.
 
@@ -263,6 +307,11 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Docker cleanup removes only what a listing filtered on one job's exact labels returned.
   `prune` and `system` cannot be run through mulebox at all. Containers, networks and
   volumes of the job go; images stay as cache.
+- A package cache is written by one job and read by the next, so it is a channel between
+  jobs of one project, on purpose and only if the project asks. It is not one between
+  projects: each has its own folder, and compose may mount only its own (see Package caches).
+- Log retention removes a finished job's log file through the path-safety module, from the
+  logs folder only, and only for a name it found in the job table.
 - Root-owned files never need sudo: a throwaway container with no network, a read-only root
   file system and only the capabilities `chown` needs takes one job folder, proven by the
   path-safety module to be inside the jobs root, and gives it back. Deleting stays in

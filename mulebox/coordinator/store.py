@@ -22,8 +22,9 @@ from mulebox.common.protocol import JobState, Outcome, ProtocolError, check_tran
 from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
-# 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached (migrate.py)
-SCHEMA_VERSION = 5
+# 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps
+# (migrate.py)
+SCHEMA_VERSION = 6
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -77,7 +78,7 @@ CREATE TABLE IF NOT EXISTS workers (
     toolchains TEXT,
     version TEXT
 );
-"""
+""" + migrate.JOB_STEPS
 _JOB_COLUMNS = frozenset(
     "job_id idempotency_key project job argv fingerprint base_commit client branch setup "
     "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "

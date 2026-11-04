@@ -23,10 +23,11 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 | --- | --- | --- |
 | `<staging>/state/mulebox.db` | coordinator | SQLite store |
 | `<staging>/uploads/<job_id>.tar.gz` | coordinator | snapshot; removed when the job finishes |
-| `<staging>/logs/<job_id>.log` | coordinator | redacted job log (kept, M2 adds retention) |
+| `<staging>/logs/<job_id>.log` | coordinator | redacted job log, removed after `log_days` (interfaces-m4.md) |
 | `<jobs>/<project>/<job_id>/src/` | worker | extracted workspace |
 | `<jobs>/<project>/<job_id>/out.log` | worker | raw unit output (worker redacts before sending) |
 | `<cache>/toolchains/<name>/<version>/bin` | worker | pinned toolchains, prepended to PATH |
+| `<cache>/packages/<project>/<tool>` | jobs that ask | package caches (interfaces-m4.md) |
 
 All creation through `safepath.ensure_dir`, all deletion through `safepath.remove_tree`.
 
@@ -64,7 +65,7 @@ timed_out -> 124, cancelled -> 130, interrupted -> 75.
 
 `status_ok` is the generic reply carrying `job_id, state` (+ `outcome`, `exit_code`,
 `position` when queued, `worker` when active, `estimate_s` and `estimate_runs` when queued
-with enough history (coordinator/history.py), `cancel: bool` for worker heartbeats). Errors reply `error` with
+with enough history (coordinator/usual.py), `stage` when a job ended badly in a known stage, `cancel: bool` for worker heartbeats). Errors reply `error` with
 codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 
 | Request | Body (required + used extras) | Reply |
@@ -157,6 +158,8 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
   64 KiB each), heartbeat every 20 s (stop the job on `cancel: true`; stop it if the
   coordinator is unreachable for 120 s), then `cleaning`, cleanup, `result`.
   Env: `MULEBOX=1`, `MULEBOX_JOB_ID`, PATH with toolchains first, HOME unchanged.
+
+Stage rows: `steps`, see [interfaces-m4.md](interfaces-m4.md), Job steps.
 
 ## Client (`mulebox/client/`)
 

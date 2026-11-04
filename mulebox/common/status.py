@@ -13,6 +13,8 @@ tolerant of missing or malformed fields, because the client reads them off the w
 - Elapsed: waiting time for queued jobs, running time for active ones and the run time
   (`duration_s`, else finished_at - started_at) for finished ones.
 - Event: what a state change means to a follower (`job_event`, `mulebox events`).
+- Steps: the rows of `steps` in a `status_ok` reply, one per stage of a job. An open row has
+  no `finished_at`; only a job still active is really in that stage.
 """
 
 from __future__ import annotations
@@ -25,10 +27,15 @@ FINISHED = "finished"
 SECTIONS = ("running", "queued", "recent")
 RUNNER_KIND = "runner"
 RELEASED = "released"
+ENDED_BADLY = ("failed", "timed_out", "interrupted")  # outcomes that have a failure to explain
 EVENT_VERSION = 1  # of `job_event` lines; raised only when a key changes meaning
 # Lines the worker writes into a job's log; the client's failure summary looks for them.
 CONTAINER_LOGS_NOTE = "mulebox: the job failed; the state and last log lines of its containers:"
 NOT_STARTED_NOTE = "mulebox: the job could not start:"
+PREPARE, ENVIRONMENT, IMAGES, SERVICES = "prepare", "environment", "images", "services"
+SETUP, COMMAND, CLEANUP = "setup", "command", "cleanup"
+STAGES = (PREPARE, ENVIRONMENT, IMAGES, SERVICES, SETUP, COMMAND, CLEANUP)
+MAX_FAILING_LINE = 500
 
 
 def number(value: Any) -> float | None:
@@ -84,7 +91,8 @@ def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
     event = {"v": EVENT_VERSION, "job_id": job.get("job_id"), "state": state}
     if state == FINISHED:
         return {**event, "event": "finished", "outcome": job.get("outcome"),
-                "exit_code": job.get("exit_code"), "duration_s": job.get("duration_s")}
+                "exit_code": job.get("exit_code"), "duration_s": job.get("duration_s"),
+                "stage": job.get("stage")}
     if state in ACTIVE:
         return {**event, "state": "running", "event": "started", "machine": job.get("worker")}
     if state in WAITING:
@@ -139,6 +147,29 @@ def snapshot(jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
     for name, group in sections(jobs):
         out[name] = [row(job, now) for job in group]
     return out
+
+
+def step_duration_s(step: dict[str, Any], now: float | None = None) -> float | None:
+    """Seconds of a finished stage, or so far with `now`; None when unknown."""
+    start = number(step.get("started_at"))
+    end = number(step.get("finished_at"))
+    end = end if end is not None else now
+    return max(0.0, end - start) if start is not None and end is not None else None
+
+
+def current_stage(job: dict[str, Any], steps: list[dict[str, Any]]) -> str | None:
+    """The stage an active job is in, or None."""
+    if job.get("state") not in ACTIVE or not steps or steps[-1].get("finished_at") is not None:
+        return None
+    return steps[-1].get("stage")
+
+
+def failed_step(steps: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The stage a job failed in: the first with a failing line or a non-zero exit code."""
+    for step in steps:
+        if step.get("failing_line") or step.get("exit_code") not in (None, 0):
+            return step
+    return None
 
 
 def fingerprint(jobs: list[dict[str, Any]]) -> tuple:

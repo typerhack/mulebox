@@ -10,22 +10,22 @@ A job whose `needs` no worker offers would wait in the queue forever and say not
 
 Being busy is not a reason: a capable online worker is simply the queue working.
 
-A worker reports `compose-v1` by itself (common/compose.py), so nobody can add it to a
-config: a machine offering docker without it is running an older mulebox.
+A worker reports `compose-v1` and the package caches by itself (common/compose.py), so nobody
+can add them to a config: a machine without them is running an older mulebox.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import compose
+from mulebox.common import compose, package_cache
 from mulebox.coordinator.workers import is_online
 
 Worker = dict[str, Any]
 HOW_TO_ADD = ("add it to `capabilities` in ~/.config/mulebox/node.toml on a build machine and "
               "restart its worker, or remove it from the project")
-HOW_TO_UPGRADE = ("the build machine runs a mulebox too old for `compose:` projects; upgrade "
-                  "it (docs/install.md, Upgrade)")
+HOW_TO_UPGRADE = ("the build machine runs a mulebox too old for this project's `compose:` or "
+                  "package caches; upgrade it (docs/install.md, Upgrade)")
 
 
 def required(needs: list[str], env: dict[str, str]) -> list[str]:
@@ -51,9 +51,15 @@ def _nobody_offers(needs: list[str], workers: list[Worker]) -> str:
 
 
 def _what_to_do(workers: list[Worker], needs: list[str]) -> str:
-    too_old = any(compose.COMPOSE_CAPABILITY in _missing(w, needs)
-                  and compose.DOCKER_CAPABILITY in w["capabilities"] for w in workers)
-    return HOW_TO_UPGRADE if too_old else HOW_TO_ADD
+    return HOW_TO_UPGRADE if any(_too_old(w, needs) for w in workers) else HOW_TO_ADD
+
+
+def _too_old(worker: Worker, needs: list[str]) -> bool:
+    """It lacks something every current worker reports by itself."""
+    missing = _missing(worker, needs)
+    return bool(set(missing) & set(package_cache.CAPABILITIES)) or (
+        compose.COMPOSE_CAPABILITY in missing
+        and compose.DOCKER_CAPABILITY in worker["capabilities"])
 
 
 def refusal(workers: list[Worker], needs: list[str]) -> str | None:

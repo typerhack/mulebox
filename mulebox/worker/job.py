@@ -7,6 +7,7 @@ from typing import Any
 
 from mulebox.common.protocol import Outcome
 from mulebox.worker.logtail import LogTailer
+from mulebox.worker.steps import StepTracker
 
 
 @dataclass
@@ -26,6 +27,15 @@ class ActiveJob:
     cleaned: bool = False
     cleaning_sent: bool = False
     result_sent: bool = False
+
+    @property
+    def steps(self) -> StepTracker:
+        return self.tailer.steps
+
+
+def ended_badly(outcome: Outcome) -> bool:
+    """A stage that ended this way has a failing line; a cancelled one does not."""
+    return outcome in (Outcome.FAILED, Outcome.TIMED_OUT)
 
 
 def outcome_for(exit_code: int, timed_out: bool) -> Outcome:

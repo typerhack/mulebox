@@ -28,9 +28,10 @@ def message(kind, **body):
 class FakeWorker:
     """What `worker/agent.py` tells the coordinator about one job."""
 
-    def __init__(self, store, staging, log=("line one\n", "boom\n"), exit_code=3, pause=0.0):
+    def __init__(self, store, staging, log=("line one\n", "boom\n"), exit_code=3, pause=0.0,
+                 steps=()):
         self.store, self.staging = store, staging
-        self.log, self.exit_code, self.pause = log, exit_code, pause
+        self.log, self.exit_code, self.pause, self.steps = log, exit_code, pause, list(steps)
 
     def send(self, kind, **body):
         return api.handle(self.store, self.staging, message(kind, **body), time.time(),
@@ -51,6 +52,8 @@ class FakeWorker:
             offset += len(text.encode())
         self.send(MessageType.JOB_UPDATE, state="cleaning", **job)
         time.sleep(self.pause)
+        if self.steps:
+            self.send(MessageType.STEPS, steps=self.steps, **job)
         outcome = "passed" if self.exit_code == 0 else "failed"
         self.send(MessageType.RESULT, outcome=outcome, exit_code=self.exit_code, duration_s=1.5,
                   **job)

@@ -90,6 +90,7 @@ class MessageType(StrEnum):
     JOB_UPDATE = "job_update"
     LOG_CHUNK = "log_chunk"
     RESULT = "result"
+    STEPS = "steps"
     ERROR = "error"
     QUEUE = "queue"
     QUEUE_OK = "queue_ok"
@@ -130,6 +131,8 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.JOB_UPDATE: frozenset({"job_id", "state"}),
     MessageType.LOG_CHUNK: frozenset({"job_id", "offset", "data"}),
     MessageType.RESULT: frozenset({"job_id", "outcome", "exit_code", "duration_s"}),
+    # worker -> coordinator: rows of the job's stages (docs/interfaces-m4.md, Job steps).
+    MessageType.STEPS: frozenset({"job_id", "steps"}),
     # any side: a request failed. `code` is a short machine-readable word.
     MessageType.ERROR: frozenset({"code", "message"}),
     # client -> coordinator: list running, waiting and recent jobs.

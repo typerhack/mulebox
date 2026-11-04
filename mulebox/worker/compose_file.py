@@ -14,7 +14,15 @@ collide with anything else on the machine, and writes nothing itself:
 - an image the project builds gets a tag only this job has, also where the compose file
   names one, and `build.tags` go. Two jobs would otherwise share `example-app:ci`, one could
   run the other's build, and removing it could take a tag that is not the job's to remove.
-  A service that uses any of those names without building it follows the new tag.
+  A service that uses any of those names without building it follows the new tag;
+- `job_env` of the machine goes into each service's environment, because a machine's fix for
+  a slow network is needed where the install runs, and that is often a container. The job's
+  process environment only reaches Compose's `${VAR}`, not containers. What a service sets
+  itself, directly or through `env_file:`, wins;
+- a service with no `ulimits.nofile` of its own gets a higher limit on open files. Containers
+  can start with a soft limit of 1024, and a database under test then dies mid-run with "Too
+  many open files". The hard limit is set too, and low enough that a daemon without the
+  power to raise limits can still start the container.
 
 What would reach past the job is refused first, by compose_policy.py. A read-only bind of a
 path outside the checkout gets `create_host_path: false` as well: Compose would otherwise
@@ -25,7 +33,7 @@ from __future__ import annotations
 
 import copy
 import re
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -37,6 +45,7 @@ from mulebox.worker import compose_policy
 Model = dict[str, Any]
 LOOPBACK = "127.0.0.1"
 PORT_PREFIX = "MULEBOX_PORT_"
+OPEN_FILES = 65536
 _NOT_A_NAME = re.compile(r"[^A-Za-z0-9]")
 
 
@@ -95,6 +104,19 @@ def _never_create_outside(spec: Model, checkout: Path) -> None:
             volume["bind"] = {**(volume.get("bind") or {}), "create_host_path": False}
 
 
+def _add_machine_env(spec: Model, machine_env: Mapping[str, str]) -> None:
+    """`$` is doubled: Compose reads the generated file and interpolates it again."""
+    if machine_env:
+        escaped = {name: value.replace("$", "$$") for name, value in machine_env.items()}
+        spec["environment"] = {**escaped, **(spec.get("environment") or {})}
+
+
+def _raise_open_files(spec: Model) -> None:
+    limits = spec.get("ulimits") or {}
+    if "nofile" not in limits:
+        spec["ulimits"] = {**limits, "nofile": {"soft": OPEN_FILES, "hard": OPEN_FILES}}
+
+
 def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
                      assigned: Mapping[str, int], checkout: Path, notes: list[str]) -> None:
     spec["labels"] = {**(spec.get("labels") or {}), **labels}
@@ -102,6 +124,7 @@ def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
         spec["build"]["labels"] = {**(spec["build"].get("labels") or {}), **labels}
     _rewrite_ports(spec, assigned, name)
     _never_create_outside(spec, checkout)
+    _raise_open_files(spec)
     fixed = spec.pop("container_name", None)
     if fixed:
         notes.append(f"container_name {fixed} of service {name} was dropped, so jobs cannot "
@@ -139,14 +162,17 @@ def _rewrite_section(model: Model, section: str, labels: Mapping[str, str]) -> N
 
 
 def rewrite(model: Model, job_id: str, labels: Mapping[str, str],
-            assigned: Mapping[str, int], checkout: Path) -> tuple[Model, list[str]]:
+            assigned: Mapping[str, int], checkout: Path,
+            shared: Sequence[Path] = (),
+            machine_env: Mapping[str, str] | None = None) -> tuple[Model, list[str]]:
     """The model a job runs, plus notes for its log. ComposeError for what is refused."""
     result, notes = copy.deepcopy(model), []
     result["name"] = compose.project_name(job_id)
-    compose_policy.check(result, checkout)
+    compose_policy.check(result, checkout, shared)
     _own_images(_services(result), job_id, notes)
     for name, spec in _services(result).items():
         _rewrite_service(name, spec, labels, assigned, checkout, notes)
+        _add_machine_env(spec, machine_env or {})
     for section in ("networks", "volumes"):
         _rewrite_section(result, section, labels)
     return result, notes

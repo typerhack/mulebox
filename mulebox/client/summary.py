@@ -9,8 +9,9 @@ and `render` makes the summary. What is left out:
   terminal would have overwritten (`\\r`);
 - runs of a line that differs only in its numbers, kept once with a count.
 
-The stage comes from the result when the coordinator knows it (`stage`). Until then the only
-stage a log can show is a job that never started.
+The stage comes from the result: the coordinator works it out from the job's stage rows
+(`common/status.py`, `failed_step`). Without one, from an older worker or a job that left no
+rows, the only stage a log can show is a job that never started.
 """
 
 from __future__ import annotations
@@ -19,14 +20,12 @@ import re
 from typing import Any
 
 from mulebox.client import report
-from mulebox.common.protocol import Outcome
-from mulebox.common.status import CONTAINER_LOGS_NOTE, NOT_STARTED_NOTE
+from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, NOT_STARTED_NOTE
 
 TAIL_BYTES = 256 * 1024  # room for the container logs (50 lines per service) and what precedes
 MAX_LINES = 20
 MAX_WIDTH = 300
 SIMILAR_RUN = 3  # shorter runs of similar lines stay: they may be different test failures
-SUMMARIZED = frozenset({Outcome.FAILED, Outcome.TIMED_OUT, Outcome.INTERRUPTED})
 STAGE_START = "start"
 
 _ANSI = re.compile(r"\x1b(\[[0-9;?]*[ -/]*[@-~]|\][^\x07\x1b]*(\x07|\x1b\\)|[@-Z\\^_])")
@@ -104,7 +103,7 @@ def relevant_lines(tail: LogTail, limit: int = MAX_LINES) -> list[str]:
 
 def wanted(result: dict[str, Any]) -> bool:
     """Passed and cancelled jobs have nothing to summarize."""
-    return result.get("outcome") in SUMMARIZED
+    return result.get("outcome") in ENDED_BADLY
 
 
 def _stage(result: dict[str, Any], lines: list[str]) -> str | None:

@@ -3,11 +3,14 @@
 The job runs as one bash script:
 
     set -e
+    mulebox_step() ...
+    mulebox_step setup
     <setup line from .mulebox.yml, if any>
+    mulebox_step command
     <job argv, quoted with shlex.join>
 
-A `compose:` job has its own lines before setup (compose_job.py), so setup can use the
-containers. The setup line is a shell command by design (it comes from the project's
+`mulebox_step` says which stage starts (steps.py). A `compose:` job has its own lines before
+setup (compose_job.py), so setup can use the containers. The setup line is a shell command by design (it comes from the project's
 config). The job argv is never re-split: for named jobs the client already sends
 `["bash", "-c", "<cmd>"]`, and for `mulebox run -- ...` each argument is quoted, so it
 reaches the program unchanged.
@@ -22,27 +25,34 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from mulebox.common.errors import MuleboxError
+from mulebox.common.status import COMMAND, SETUP
+from mulebox.worker import steps
 
 
 class JobSpecError(MuleboxError):
     """The claimed job's command or settings are unusable."""
 
 
-def build_script(setup: str | None, argv: Sequence[str], first: Sequence[str] = ()) -> str:
+def build_script(setup: str | None, argv: Sequence[str], first: Sequence[str] = (),
+                 marker: str | None = None) -> str:
+    """`marker` turns on the stage marks; without one the script is the plain lines."""
     if isinstance(argv, str) or not argv or not all(isinstance(a, str) for a in argv):
         raise JobSpecError("job argv must be a non-empty list of strings")
     if any("\0" in a for a in argv) or (setup and "\0" in setup):
         raise JobSpecError("job command must not contain NUL characters")
-    lines = ["set -e", *first]
+    def mark(stage: str) -> list[str]:
+        return [f"{steps.SHELL_NAME} {stage}"] if marker else []
+
+    lines = ["set -e", *([steps.shell_function(marker)] if marker else []), *first]
     if setup and setup.strip():
-        lines.append(setup)
-    lines.append(shlex.join(argv))
+        lines += [*mark(SETUP), setup]
+    lines += [*mark(COMMAND), shlex.join(argv)]
     return "\n".join(lines) + "\n"
 
 
-def build_argv(setup: str | None, argv: Sequence[str],
-               first: Sequence[str] = ()) -> tuple[str, ...]:
-    return ("bash", "-c", build_script(setup, argv, first))
+def build_argv(setup: str | None, argv: Sequence[str], first: Sequence[str] = (),
+               marker: str | None = None) -> tuple[str, ...]:
+    return ("bash", "-c", build_script(setup, argv, first, marker))
 
 
 _REF = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")

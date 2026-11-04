@@ -84,10 +84,21 @@ sudo loginctl enable-linger alice
   mulebox toolchain). Browsers themselves are fetched by jobs into
   `<cache>/playwright`, once per version, and are kept. They are large: on a slow network,
   the first job with a new Playwright version takes minutes.
+- Package caches need no setting: a project asks for one with `cache-pnpm` or `cache-composer`
+  in `needs`, and they live in `<cache>/packages/<project>/`. Nothing removes them by itself.
+  `mulebox cache list` shows their size, and `mulebox cache clear <project>` removes them,
+  with no job of that project running. What sharing means: [agents.md](agents.md), 2a-1.
 - `[job_env]`: environment for every job on this machine, for what the machine needs and a
   project should not have to know, such as a setting for a slow network. A project's `env:`
   overrides a value and can add to it with `${NAME}`. Names follow the rules of `env:`. It
-  reaches mulebox jobs, not GitHub runner jobs. Not for secrets: it ends up in job processes.
+  reaches commands of mulebox jobs and every service of a `compose:` project, where what a
+  service sets itself wins. It replaces an `ENV` of the same name in an image, since mulebox
+  cannot see that one. It does not reach a `RUN` line of an image build or GitHub runner
+  jobs. Not for secrets: it ends up in job processes and in the job's compose file.
+- `[retention]`: `log_days` (default 30) is how long a job's log is kept after the job ended,
+  and `step_days` (default 365, at least `log_days`) how long its stage rows are. The coordinator
+  service removes what is older, once an hour and when it starts, from
+  `<staging>/logs/` and nowhere else. A finished job's row stays for good.
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).
@@ -171,6 +182,8 @@ git pull && tools/deploy.sh build-1
 The installer reinstalls the wheel into the existing venv, updates the unit files and
 restarts the services. A running job is interrupted by the restart (state `interrupted`,
 never replayed); upgrade when the queue is empty (`mulebox queue`). `node.toml` is kept.
+Upgrade the coordinator and every worker together: a worker's stage rows and toolchain
+reports, and detached jobs, need both to be new. `mulebox doctor` shows the versions.
 When the Python minor version changed, the old venv is moved to
 `~/.mulebox/tmp/venv-old-<date>.<pid>` and a new one is built.
 

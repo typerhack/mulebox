@@ -86,5 +86,6 @@ def _status(args: argparse.Namespace) -> int:
     if args.json:
         print(json.dumps(status.row(body, time.time()), indent=2, sort_keys=True))
     else:
-        print(_status_line(args.job_id, body))
+        print("\n".join([_status_line(args.job_id, body),
+                         *report.stage_lines(body, time.time())]))
     return 0

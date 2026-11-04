@@ -152,9 +152,9 @@ Marked `[~]` until checked on a real machine.
 - [~] M8.1 A missing toolchain error lists the versions the machine has. Tested 2026-11-04
       (0.25.4) by unit tests only. Open: seen in a real job.
 - [~] M8.2 Short failure summary at the end of a failed job, and `mulebox logs <id> --summary`.
-      Tested 2026-11-04 (0.26.0) with unit tests and the fake coordinator. The stage shows
-      only when a job never started, or when a result carries `stage`. Open: read on a real
-      failed compose job's log.
+      Tested 2026-11-04 (0.26.0) with unit tests and the fake coordinator. The failed stage
+      comes from the job's stage rows since 0.35.0, tested with the real coordinator code.
+      Open: read on a real failed compose job's log.
 - [~] M8.3 `mulebox doctor`, read-only: validates `.mulebox.yml`, reports toolchains and
       capabilities per machine, warns on a version difference. Workers report toolchains and
       version with every claim (schema 4). Tested 2026-11-04 (0.27.0) with the fake
@@ -176,8 +176,8 @@ Marked `[~]` until checked on a real machine.
       Open: seen in a real queue. A job at position 1 behind a long job gets no suggestion.
 - [~] M8.10 `mulebox logs`, `logs --summary` and `wait` say when a job's log has expired, so
       an empty answer is not read as an empty log. Tested 2026-11-04 (0.34.0) with the real
-      coordinator code and the log file removed by hand, standing in for log retention.
-      Open: a log that retention really removed.
+      coordinator code; since 0.35.0 a test removes the log with the real retention code.
+      Open: seen on a real machine.
 - [~] M8.9 `mulebox doctor` runs the worker's compose policy on the project's files before any
       upload, so an external volume fails at once rather than after the queue. Tested
       2026-11-04 (0.33.0) with unit tests and the fake coordinator, and the steps it copies
@@ -192,6 +192,31 @@ Marked `[~]` until checked on a real machine.
       states its contract schema, `mulebox doctor` reports it, a test ties the two. Tested
       2026-11-04 (0.31.0) with temporary folders only; the wheel holds SKILL.md. Open: the
       user installs it, and an agent notices a behind skill in a real session (see M7.2).
+
+## M9: Faster and clearer jobs
+Worked out from the first real jobs on a slow connection (2026-11-04). Everything here is
+tested with fakes and a local Docker daemon. Open on all of it: a real job on a build machine.
+- [~] M9.1 Package caches: `needs: [cache-pnpm]`, `[cache-composer]`, one folder per project,
+      mounted by the project's own compose file, external volumes still refused. Built
+      2026-11-04 (0.35.0). Open: a real pnpm and a real Composer project on a build machine,
+      with a second job showing the packages as reused.
+- [~] M9.2 `job_env` reaches compose services. Before, it reached only the `docker compose`
+      process; a real container showed no `NODE_OPTIONS`. Built 2026-11-04 (0.35.0). Open: a
+      real install in a container over the slow connection.
+- [~] M9.3 Services get 65536 open files unless they set their own. Built 2026-11-04 (0.35.0).
+      Open: the real `mongo` test run that died with WiredTiger error 24.
+- [~] M9.4 Job steps: `job_steps` table with a migration, reported by the worker, read through
+      `status` and `common/status.py`, shown by `mulebox status`. The failed stage reaches the
+      summary and `events`. No dashboard view yet. Built 2026-11-04 (0.35.0): a compose job
+      on a local Docker daemon. Open: a job on a build machine under systemd.
+- [~] M9.5 Usual duration of a project's job and of each stage, in `status` replies. The one
+      source now: the queue estimate of M8.6 reads it too. Built 2026-11-04 (0.35.0), with tests. Open: seeing it on real history.
+- [~] M9.6 Image pull progress collapsed in stored and streamed logs, after redaction, with
+      bytes on the stage. Built 2026-11-04 (0.35.0): samples from a real Compose 5.6 pull, and
+      a pull through the worker on a local Docker daemon. Open: a large pull on a slow link.
+- [~] M9.7 Log cleanup: logs go after `log_days` (30), stage rows after `step_days` (365), through
+      safepath, from the logs folder only. Built 2026-11-04 (0.35.0), with tests in temporary
+      roots. Open: a service running over a real history.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

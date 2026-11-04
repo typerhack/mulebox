@@ -9,8 +9,9 @@ dropped here.
 
 An event line is one JSON object with `v`, `event`, `job_id` and `state`. `event` is `queued`
 (`position`, `waiting_for` when set), `started` (`machine`) or `finished` (`outcome`,
-`exit_code`, `duration_s`). `exit_code` is the code the command exits with. Readers must
-ignore events and keys they do not know: `stage` and `check_in` events are planned.
+`exit_code`, `duration_s`, and `stage`: where a job that ended badly failed, null when that is
+not known). `exit_code` is the code the command exits with. Readers must ignore events and keys
+they do not know: events for each `stage` and `check_in` events are planned.
 """
 
 from __future__ import annotations
@@ -50,7 +51,9 @@ def as_text(event: Event) -> str:
     if kind == "started":
         machine = event.get("machine")
         return f"started on {machine}" if machine else "started"
-    return f"finished: {event.get('outcome')}, exit code {event.get('exit_code')}"
+    stage = event.get("stage")
+    where = f", failed stage {stage}" if stage else ""
+    return f"finished: {event.get('outcome')}, exit code {event.get('exit_code')}{where}"
 
 
 class EventStream(Watcher):

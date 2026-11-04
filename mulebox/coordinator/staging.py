@@ -5,7 +5,8 @@ Layout (docs/interfaces-m1.md): `<staging>/state/mulebox.db`, `<staging>/uploads
 `safepath.ensure_dir`, files are removed with `safepath.remove_tree`, and files are opened
 relative to their folder's descriptor without following symlinks.
 
-Logs arrive already redacted (the worker redacts); this module stores bytes as given.
+Logs arrive already redacted (the worker redacts); this module stores bytes as given. Old
+logs are removed by retention.py, through `remove_log`.
 """
 
 import hashlib
@@ -171,6 +172,19 @@ class Staging:
             os.close(fd)
         return _whole_utf8(data)
 
+    def log_job_ids(self) -> list[str]:
+        """Job ids with a log: regular files directly in the logs folder, named for a valid id."""
+        found = []
+        with os.scandir(self.logs_dir) as entries:
+            for entry in entries:
+                name = entry.name.removesuffix(".log")
+                if name != entry.name and entry.is_file(follow_symlinks=False) and _is_id(name):
+                    found.append(name)
+        return sorted(found)
+
+    def remove_log(self, job_id: str) -> None:
+        remove_tree(self.log_path(job_id), self.roots)
+
     def log_size(self, job_id: str) -> int:
         try:
             return os.stat(self.log_path(job_id), follow_symlinks=False).st_size
@@ -185,6 +199,14 @@ class Staging:
             yield fd
         finally:
             os.close(fd)
+
+
+def _is_id(name: str) -> bool:
+    try:
+        check_job_id(name)
+    except BadRequest:
+        return False
+    return True
 
 
 def _copy_hashed(stream: BinaryIO, fd: int, max_bytes: int) -> tuple[int, str]:

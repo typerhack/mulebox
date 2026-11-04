@@ -14,11 +14,13 @@ from typing import Any
 
 from mulebox.client import report
 from mulebox.client.excludes import BUILTIN_EXCLUDES
-from mulebox.common.config import ProjectConfig
+from mulebox.common.config import DEFAULT_LOG_DAYS, ProjectConfig
+from mulebox.common.status import STAGES
 
 # 2: `project.services` removed; `project.needs` includes what compose implies
 # 3: the skill teaches detached jobs and events, and says the schema it was written for
-SCHEMA = 3
+# 4: the skill teaches package caches, stages, `usual` and log retention
+SCHEMA = 4
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -67,6 +69,25 @@ COMPOSE = (
     "or -p: the project is already selected",
     "published ports move: read MULEBOX_PORT_<SERVICE>_<PORT> or use it in env:, never a "
     "port number from a compose file; the address is 127.0.0.1",
+    "the build machine's job_env reaches services; a value the service sets itself wins",
+    "services get 65536 open files unless they set ulimits.nofile",
+)
+CACHES = (
+    "needs: [cache-pnpm, cache-composer] turns package caches on; a container sees a cache only "
+    "if the compose file mounts ${MULEBOX_CACHE_PNPM} or ${MULEBOX_CACHE_COMPOSER}",
+    "to replace an external cache volume, mount the cache on the same container path in a "
+    "CI-only compose file; external volumes stay refused",
+    "mount the pnpm store at the same path as on the machine, or pnpm may recreate node_modules "
+    "and install again",
+    "a service with a cache runs as root or ${UID}:${GID}",
+    "every branch of a project on a machine shares its cache; clearing it is a person's job on "
+    "the build machine: ask, and do not ssh in",
+)
+JOB_STAGES = (
+    f"a job goes through stages: {', '.join(STAGES)}; mulebox status shows steps and usual",
+    "usual is what past passed runs took, not progress: never turn it into a percentage",
+    "image pull progress is summarised, so a quiet log during a pull is normal",
+    f"logs expire after {DEFAULT_LOG_DAYS} days by default; the job and its stages remain",
 )
 EVENTS = (
     "mulebox events prints one JSON line per state change and no log; it exits when the job "
@@ -75,6 +96,7 @@ EVENTS = (
     "queued has position, waiting_for and estimate_s (how long this job usually runs, from "
     "its past runs; null when unknown; an estimate, not a promise, and not the time in line); "
     "started has machine; finished has outcome, exit_code and duration_s",
+    "finished also has stage, where a job that ended badly failed (null when not known)",
     "after finished, read mulebox logs <job-id> --summary if the job failed",
 )
 RULES = (
@@ -92,6 +114,8 @@ RULES = (
     "old logs expire on the build machine: mulebox logs says so, and mulebox status still has "
     "the result",
     "do not ssh into the build machine to change, install or delete things",
+    "the coordinator and the workers must be upgraded together: if mulebox doctor reports "
+    "different versions, tell the user",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",
     "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",
     "waiting in the queue is normal; do not cancel and resubmit to speed it up; if the wait "
@@ -121,6 +145,7 @@ def build(config: ProjectConfig | None, version: str) -> Contract:
         "events": list(EVENTS),
         "git": list(GIT), "never_uploaded": [*BUILTIN_EXCLUDES, *exclude],
         "compose": list(COMPOSE) if config and config.compose else [],
+        "caches": list(CACHES), "stages": list(JOB_STAGES),
         "exit_codes": [{"code": code, "meaning": meaning, "action": action}
                        for code, meaning, action in EXIT_CODES],
         "rules": list(RULES),
@@ -159,6 +184,8 @@ def render(contract: Contract) -> str:
               f"Keep local: {', '.join(contract['keep_local'])}", "", "Git:",
               *_bullets(contract["git"]),
               *(["", "Containers:", *_bullets(contract["compose"])] if contract["compose"] else []),
+              "", "Package caches:", *_bullets(contract["caches"]),
+              "", "Stages:", *_bullets(contract["stages"]),
               "", "Never uploaded:",
               ", ".join(contract["never_uploaded"]), "",
               "Exit codes (otherwise the job's own code):"]
