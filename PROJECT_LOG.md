@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.25.1 - 2026-11-04 - patch
+- Docs: M2.7 status after a real compose job under full load on a build machine.
+
 ## 0.25.0 - 2026-11-04 - minor
 - Dashboard redesigned as a live monitor: boxes that fill the window, per-core meters, CPU
   and memory history, disk meters, machines with slot squares, and one jobs list. The page
