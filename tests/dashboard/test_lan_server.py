@@ -37,12 +37,13 @@ def lan(request, data, hub, tls_dir, tmp_path):
     for name in ("index.html", "login.html", "style.css"):
         shutil.copy(STATIC_DIR / name, static / name)
 
-    def run(fn, range_="127.0.0.0/8"):
+    def run(fn, range_="127.0.0.0/8", open_lan=False):
         async def main():
             clock = lambda: NOW  # noqa: E731
             port = unused_port()
             access = LanAccess(ipaddress.ip_network(range_), frozenset({HOST}), (HOST, port),
-                               password.load(tls_dir), Sessions(clock), LoginLimiter(clock))
+                               None if open_lan else password.load(tls_dir), Sessions(clock),
+                               LoginLimiter(clock))
             app = build_app(data, hub, clock=clock, start_hub=False, static_dir=static, lan=access)
             server = TestServer(app, scheme=scheme, port=port)
             await server.start_server(
@@ -169,6 +170,29 @@ def test_signed_in_visitor_skips_the_login_page(lan):
         reply = await http.get(f"{url}/login", allow_redirects=False)
         return reply.status
     assert lan(go) == 303
+
+
+def test_without_a_password_the_page_opens_directly_and_sign_in_is_gone(lan):
+    async def go(http, url):
+        statuses = [(await http.get(url + p, allow_redirects=False)).status
+                    for p in ("/", "/api/queue", "/api/machines", "/static/style.css")]
+        login = await http.get(f"{url}/login", allow_redirects=False)
+        health = await (await http.get(f"{url}/healthz")).json()
+        posted = await http.post(f"{url}/login", data={"password": "x"})
+        return statuses, login.status, health, posted.status
+    statuses, login, health, posted = lan(go, open_lan=True)
+    assert set(statuses) == {200} and login == 303 and posted == 404
+    assert health["lan"] is True and health["sign_in"] is False
+
+
+def test_without_a_password_the_range_and_host_rules_still_hold(lan):
+    async def go(http, url):
+        return (await http.get(f"{url}/api/queue")).status
+    assert lan(go, range_="10.0.0.0/8", open_lan=True) == 403
+
+    async def wrong_host(http, url):
+        return (await http.get(f"{url}/", headers={"Host": "evil.example"})).status
+    assert lan(wrong_host, open_lan=True) == 421
 
 
 def test_tunnel_listener_has_no_sign_in_and_stays_open(call):

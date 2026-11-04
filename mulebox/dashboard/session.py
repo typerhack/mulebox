@@ -82,7 +82,7 @@ class LanAccess:
     network: ipaddress.IPv4Network
     hosts: frozenset[str]
     listen: tuple[str, int]  # the LAN listener's address and port
-    password_hash: str
+    password_hash: str | None  # None: `lan_password = false`, no sign-in on this listener
     sessions: Sessions
     limiter: LoginLimiter
     # One hash at a time: scrypt takes memory and CPU from jobs on the build machine.

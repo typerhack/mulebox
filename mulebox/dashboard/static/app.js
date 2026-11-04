@@ -77,6 +77,6 @@ navigate();
 getJson("/healthz").then((health) => {
   document.getElementById("version").textContent = health.version;
   const signout = document.getElementById("signout");
-  signout.hidden = !health.lan;
+  signout.hidden = !health.sign_in;
   signout.addEventListener("click", signOut);
 }).catch(() => {});

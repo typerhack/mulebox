@@ -145,7 +145,7 @@ def test_node_minimal_defaults(tmp_path):
         roles=("coordinator", "worker"),
         roots={k: f"/home/alice/.mulebox/{k}" for k in ("jobs", "cache", "staging", "runners")},
         dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
-                   "lan_port": 8443, "lan_tls": False},
+                   "lan_port": 8443, "lan_tls": False, "lan_password": True},
     )
     assert config.slots == 1 and config.capabilities == () and config.coordinator is None
 
@@ -156,14 +156,15 @@ def test_node_full(tmp_path):
         'capabilities = ["docker", "arch:x86_64"]\ncoordinator = "build-1"\n'
     )
     dash = ('[dashboard]\nmode = "lan"\nport = 8091\nlan_range = "192.168.1.0/24"\n'
-            'lan_address = "192.168.1.50"\nlan_port = 9443\nlan_tls = true\n')
+            'lan_address = "192.168.1.50"\nlan_port = 9443\nlan_tls = true\n'
+            'lan_password = false\n')
     config = load_node(tmp_path, top + ROOTS + dash)
     assert config.roles == ("worker",) and config.slots == 4
     assert config.capabilities == ("docker", "arch:x86_64")
     assert config.coordinator == "build-1"
     assert config.dashboard == {"mode": "lan", "port": 8091, "lan_range": "192.168.1.0/24",
                                 "lan_address": "192.168.1.50", "lan_port": 9443,
-                                "lan_tls": True}
+                                "lan_tls": True, "lan_password": False}
 
 
 def test_node_default_path_under_home(isolated_home, monkeypatch, tmp_path):
@@ -256,6 +257,7 @@ def test_node_unknown_root_key(tmp_path):
         ('lan_address = "192.168.1.5"', "dashboard.lan_range"),
         ("port = 8443", "dashboard.lan_port"),
         ('lan_tls = "yes"', "dashboard.lan_tls"),
+        ('lan_password = "no"', "dashboard.lan_password"),
         ("port = 0", "dashboard.port"),
         ("port = 65536", "dashboard.port"),
         ('port = "8090"', "dashboard.port"),

@@ -102,6 +102,8 @@ def run(node, port: int, lan=None) -> int:
             address, lan_port = access.listen
             listeners.append(Listener(address, lan_port, tls))
             _log.info("dashboard on %s://%s:%d", "https" if tls else "http", address, lan_port)
+            if access.password_hash is None:
+                _log.warning("no password on the LAN address: lan_password = false")
         serve(app, listeners)
     except OSError as exc:  # Wi-Fi not up yet, port busy: the unit retries
         _log.error("cannot listen: %s", exc)

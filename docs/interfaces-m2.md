@@ -65,6 +65,9 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 - **Order on the LAN listener.** Host must be `lan_address` (421), the peer must be in
   `lan_range` (403), then a session is needed. Only `/login` and `/static/style.css` are
   open without one. Pages redirect to `/login`; `/healthz` and `/api/` get 401.
+- **`lan_password = false`** turns sign-in off: `/login` redirects to `/`, posts to it get
+  404, and no password file is needed. The Host and range rules still apply. It defaults
+  to true, and the service logs a warning when it is off.
 - **Password.** scrypt hash in `dashboard/password` beside `node.toml`, mode 600. Read at
   start, so a new one needs a restart. Never an argument: `mulebox dashboard password`
   prompts, or reads one line from stdin when that is not a terminal.
@@ -111,7 +114,7 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 
 | Route | Reply |
 | --- | --- |
-| `GET /healthz` | `{ok, version, lan}`; `lan` is true on the LAN listener |
+| `GET /healthz` | `{ok, version, lan, sign_in}`; `lan` is true on the LAN listener, `sign_in` when it needs a password |
 | `GET`, `POST /login` | sign-in page and form; LAN listener only, else 404 |
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent` |

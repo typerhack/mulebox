@@ -151,6 +151,11 @@ def test_prepare_says_which_step_is_missing(tmp_path):
     assert context is None and access.listen == (ADDRESS, 8443)
 
 
+def test_prepare_without_a_password_needs_no_password_file(tmp_path):
+    access, _ = lan_commands.prepare({**DASH, "lan_password": False}, tmp_path / "node.toml")
+    assert access.password_hash is None
+
+
 def test_prepare_with_tls_needs_the_certificate(tmp_path):
     config, dash = tmp_path / "node.toml", {**DASH, "lan_tls": True}
     password.save(lan_dir(config), "correct horse")

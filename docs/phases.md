@@ -59,8 +59,9 @@ queue and returns the same result as running it locally.
       optional since 0.9.0, user's choice). `local` done 2026-11-04 (0.7.0). `lan` built
       2026-11-04 (0.8.0, plain HTTP 0.9.0): on a real machine, sign-in, live events, session
       end and sign-out work in real Chrome; outside addresses are stopped by the firewall
-      and by the app's own check; the tunnel still works. Open: used from a real phone, and
-      a reboot and a Wi-Fi drop with `lan` on.
+      and by the app's own check; the tunnel still works. The password is optional since
+      0.14.0, off on the author's machine. Open: used from a real phone, and a reboot and a
+      Wi-Fi drop with `lan` on.
 - [ ] M2.5 Optional cancel button with its own protection
 - [x] M2.6 Machines panel: every worker, online or offline, free slots. Live CPU and memory
       per machine is M5.3. Done 2026-11-04 (0.10.0): in real Chrome on a real machine, a job

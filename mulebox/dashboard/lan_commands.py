@@ -95,7 +95,7 @@ def prepare(dashboard: dict, config_path: Path | None
             ) -> tuple[LanAccess, ssl.SSLContext | None]:
     """All `lan` mode needs before it serves. Raises LanNotReady naming the missing step."""
     directory = lan_dir(config_path)
-    stored = password.load(directory)
+    stored = password.load(directory) if dashboard.get("lan_password", True) else None
     address, tls = dashboard["lan_address"], dashboard.get("lan_tls", False)
     if tls:
         cert.check(directory, address)

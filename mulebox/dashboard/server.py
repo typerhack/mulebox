@@ -103,7 +103,8 @@ def _index(static_dir: Path) -> Handler:
 
 
 async def _health(request: web.Request) -> web.Response:
-    return web.json_response({"ok": True, "version": get_version(), "lan": login.on_lan(request)})
+    return web.json_response({"ok": True, "version": get_version(), "lan": login.on_lan(request),
+                              "sign_in": login.sign_in_needed(request)})
 
 
 async def _queue(request: web.Request) -> web.Response:

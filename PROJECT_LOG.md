@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.14.0 - 2026-11-04 - minor
+- `lan_password = false` turns off the dashboard's LAN sign-in, keeping the code and the
+  range and Host rules. Requested by the user; the default stays true. `/healthz` also
+  returns `sign_in`, which decides whether the page shows the sign-out button.
+
 ## 0.13.0 - 2026-11-04 - minor
 - `mulebox projects` (M7.4): every project the coordinator has seen, worked out from its
   jobs. New `projects` message, additive, so the protocol version stays 1; an older

@@ -33,3 +33,4 @@ port = 8090
 # lan_address = "192.168.1.50"
 # lan_port = 8443
 # lan_tls = false
+# lan_password = true

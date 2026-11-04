@@ -44,7 +44,8 @@ async def lan_guard(request: web.Request, handler: Handler) -> web.StreamRespons
     access = request.app[keys.LAN]
     if not access.allows(request.remote):
         return web.Response(status=403, text="not allowed from this address\n")
-    if request.path in PUBLIC_PATHS or access.sessions.valid(request.cookies.get(COOKIE)):
+    if (access.password_hash is None or request.path in PUBLIC_PATHS
+            or access.sessions.valid(request.cookies.get(COOKIE))):
         return await handler(request)
     if request.path == "/healthz" or request.path.startswith("/api/"):
         return web.Response(status=401, text="sign in first\n")
@@ -57,9 +58,13 @@ def add_routes(app: web.Application, static_dir: Path) -> None:
     app.router.add_post("/logout", _logout)
 
 
+def sign_in_needed(request: web.Request) -> bool:
+    return on_lan(request) and request.app[keys.LAN].password_hash is not None
+
+
 def _lan(request: web.Request) -> LanAccess:
-    """The LAN state; these pages do not exist on the plain listener."""
-    if not on_lan(request):
+    """The LAN state; these pages do not exist on the tunnel listener or without a password."""
+    if not sign_in_needed(request):
         raise web.HTTPNotFound(text="no sign-in here\n")
     return request.app[keys.LAN]
 
@@ -80,6 +85,8 @@ def _render(static_dir: Path, message: str = "", status: int = 200) -> web.Respo
 
 def _page(static_dir: Path) -> Handler:
     async def page(request: web.Request) -> web.StreamResponse:
+        if on_lan(request) and not sign_in_needed(request):
+            raise web.HTTPSeeOther("/")
         if _lan(request).sessions.valid(request.cookies.get(COOKIE)):
             raise web.HTTPSeeOther("/")
         return _render(static_dir)

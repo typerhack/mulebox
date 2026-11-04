@@ -272,5 +272,10 @@ is limited to this one address and cannot vouch for any other site. It lasts 825
 replace it with `mulebox dashboard cert --force`, then trust the new one on each device.
 Trusting it on a phone has not been tried yet.
 
+**Optional: no password.** On a network where you trust everyone, set `lan_password = false`
+and restart; `mulebox dashboard password` is then not needed. The page opens directly for
+any device in `lan_range`, and it still shows your job logs, so leave the password on
+anywhere else. Set it back to `true` to bring sign-in back.
+
 Changing the password: run `mulebox dashboard password`, then restart the service, which
 signs everyone out. A session lasts 24 hours.
