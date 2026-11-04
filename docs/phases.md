@@ -48,16 +48,21 @@ queue and returns the same result as running it locally.
       cancelled by lease expiry; two clients -> run one after the other.
 
 ## M2: Web dashboard
-- [ ] M2.1 Shared status/event model (also used by the terminal view)
+- [~] M2.1 (agent on branch m2-dashboard, 2026-11-03) Shared status/event model (also used by the terminal view)
 - [ ] M2.2 aiohttp server: queue, live log over SSE, history
 - [ ] M2.3 Resource graphs (CPU per core, memory, disk, Docker); measure overhead
 - [ ] M2.4 Access modes `local` (SSH tunnel) and `lan` (password, HTTPS, firewall range)
 - [ ] M2.5 Optional cancel button with its own protection
 
 ## M3: GitHub Actions runners
-- [~] M3.1 Runner install per repository on a worker, as a service, with labels
-- [~] M3.2 Start/complete hooks with pinned slot reservation, timeout, supervision
-- [ ] M3.3 Example workflow snippet; drills for cancelled runs, crashes and reboots
+- [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)
+- [x] M3.2 Start/complete hooks with pinned slot reservation, timeout, supervision (2026-11-03)
+- [~] M3.3 Example workflow snippet; drills for cancelled runs, crashes and reboots
+      Passed 2026-11-03: overlap (CI waits behind an agent job), cancelled run (slot freed
+      in ~20 s), runner killed mid-job (supervision freed the slot after 60 s, unit
+      restarted). Open: after the hard kill GitHub kept the old runner session ("A session
+      for this runner already exists"); check the runner comes back online by itself and
+      document it; reboot drill not run yet.
 
 ## M4: Docker Compose projects
 - [ ] M4.1 `compose:` services in `.mulebox.yml`; unique project names and labels per job

@@ -50,6 +50,7 @@ python3 -m venv .venv
 .venv/bin/python -m pip install -e '.[dev]'
 .venv/bin/mulebox --version
 .venv/bin/python -m pytest              # includes the file-size check
+.venv/bin/python -m pytest -n auto      # same, in parallel (about 5x faster)
 .venv/bin/python tools/check_line_counts.py
 ```
 

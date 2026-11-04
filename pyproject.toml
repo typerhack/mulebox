@@ -17,6 +17,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest==9.2.0",
+    "pytest-xdist==3.8.0",
+    "setuptools==84.2.1",
 ]
 
 [project.scripts]

@@ -153,7 +153,7 @@ def test_round_trip_every_type(mtype):
     assert decode(encode(msg).decode("utf-8")) == msg
 
 
-@pytest.mark.parametrize("mtype,name", [(t, n) for t in MessageType for n in REQUIRED_FIELDS[t]])
+@pytest.mark.parametrize("mtype,name", [(t, n) for t in MessageType for n in sorted(REQUIRED_FIELDS[t])])
 def test_decode_rejects_each_missing_required_field(mtype, name):
     body = full_body(mtype)
     del body[name]
