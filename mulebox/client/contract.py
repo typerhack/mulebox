@@ -19,6 +19,7 @@ FULL_GATE = "check"
 Contract = dict[str, Any]
 
 COMMANDS = {
+    "before_the_first_job": "mulebox doctor",
     "full_gate": "mulebox check",
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
@@ -57,6 +58,8 @@ COMPOSE = (
     "port number from a compose file; the address is 127.0.0.1",
 )
 RULES = (
+    "run mulebox doctor before a project's first job, and after changing toolchain or needs: "
+    "it finds what a job would fail on, before anything is uploaded",
     "a failed job ends with a short summary on stderr: read it first, and the full log only "
     "if it is not enough",
     "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",

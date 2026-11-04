@@ -155,6 +155,10 @@ Marked `[~]` until checked on a real machine.
       Tested 2026-11-04 (0.26.0) with unit tests and the fake coordinator. The stage shows
       only when a job never started, or when a result carries `stage`. Open: read on a real
       failed compose job's log.
+- [~] M8.3 `mulebox doctor`, read-only: validates `.mulebox.yml`, reports toolchains and
+      capabilities per machine, warns on a version difference. Workers report toolchains and
+      version with every claim (schema 4). Tested 2026-11-04 (0.27.0) with the fake
+      coordinator and the real coordinator code. Open: run against a real, upgraded machine.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

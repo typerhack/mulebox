@@ -8,7 +8,9 @@ and the ssh argv is saved as `$FAKE_DIR/argv.json`.
 Scenario keys: `down` (exit 255 like a failed ssh connection), `submit_state`, `log`
 (list of strings), `outcome`, `exit_code`, `delay_s` (between watch messages),
 `drop_watch_once` (first watch exits 255 after the first log chunk), `error` (reply
-`error` with this code to every request), `jobs` (for queue), `status_state`.
+`error` with this code to every request), `jobs` (for queue), `status_state`, `workers` and
+`machine_version` (for machines and `mulebox version`), `unknown_requests` (types answered
+the way a coordinator older than them does).
 """
 
 import hashlib
@@ -60,6 +62,9 @@ def main():
             return 1
         send("status_ok", "upload", job_id=command[2], state="queued", position=1)
         return 0
+    if command[1] == "version":
+        print(scenario.get("machine_version", "0.0.0"))
+        return 0
     line = sys.stdin.buffer.readline()
     record(line)
     msg = json.loads(line)
@@ -67,11 +72,17 @@ def main():
     if scenario.get("error"):
         send("error", rid, code=scenario["error"], message="scripted failure")
         return 1
+    if kind in scenario.get("unknown_requests", []):
+        send("error", "unknown", code="bad_request", message=f"unknown message type {kind!r}")
+        return 4
     if kind == "submit":
         send("submit_ok", rid, job_id="job-01JC3X0000000000000000ABCD",
              state=scenario.get("submit_state", "uploading"))
     elif kind == "watch":
         return watch(scenario, rid, body)
+    elif kind == "machines":
+        send("machines_ok", rid, version=scenario.get("machine_version", "0.0.0"),
+             workers=scenario.get("workers", []))
     elif kind == "queue":
         send("queue_ok", rid, jobs=scenario.get("jobs", []))
     elif kind == "logs":

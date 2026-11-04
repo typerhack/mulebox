@@ -29,7 +29,8 @@ RUNNER_KIND = "runner"
 
 
 def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
-          free_slots: int, cluster_slots: int = 1, *, now: float | None = None
+          free_slots: int, cluster_slots: int = 1, *, now: float | None = None,
+          toolchains: dict[str, list[str]] | None = None, version: str | None = None
           ) -> dict[str, Any] | None:
     """Give `worker` the oldest queued job whose needs it meets, or None.
 
@@ -42,7 +43,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
     with store.write() as conn:
         held = active_on(conn, worker, JOB_KIND)
         workers.upsert(conn, worker, list(capabilities), free_slots, now,
-                       slots=free_slots + held)
+                       slots=free_slots + held, toolchains=toolchains, version=version)
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
         if free < 1 or active_count(conn) >= cluster_slots:
             return None

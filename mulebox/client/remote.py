@@ -72,6 +72,14 @@ class Remote:
         )
         return self._reply(argv, msg, result)
 
+    def version(self) -> str:
+        """`mulebox version` on the machine: the one question every mulebox can answer."""
+        argv = [self.program, "version"]
+        result = ssh.run_remote(self.target, argv, timeout_s=CALL_TIMEOUT_S,
+                                connect_timeout_s=self.connect_timeout_s, check=False)
+        sshio.check_exit(self.target, argv, result.exit_code, result.stderr)
+        return result.stdout.decode("utf-8", errors="replace").strip()
+
     def upload(self, job_id: str, path: Path, sha256: str) -> Message:
         argv = [self.program, "rpc-upload", job_id, sha256]
         result = sshio.run_with_file(

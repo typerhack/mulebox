@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.27.0 - 2026-11-04 - minor
+- `mulebox doctor`: before any upload, validates `.mulebox.yml`, says whether a machine offers
+  the project's toolchain versions and capabilities, and warns when client and machine
+  versions differ (M8.3). A missing toolchain showed only after submission.
+- Workers report their toolchains and version with every claim (`worker/advert.py`, one call
+  in `worker/agent.py`), kept in `workers` (schema 4); a new `machines` request reads them.
+  A coordinator too old for it still gives its version through `mulebox version`.
+
 ## 0.26.0 - 2026-11-04 - minor
 - A failed job ends with a short summary on stderr: stage if known, exit code, and its last
   lines without progress output and container logs (M8.2). `mulebox logs <id> --summary`

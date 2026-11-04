@@ -30,7 +30,7 @@ from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker import background, runspec, toolchains, workspace
+from mulebox.worker import advert, background, runspec, toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -106,10 +106,8 @@ class Agent:
             self._claim(now)
 
     def _claim(self, now: float) -> None:
-        msg = request(MessageType.CLAIM, worker=self.node.name,
-                      capabilities=compose.worker_capabilities(self.node.capabilities),
-                      free_slots=self.node.slots - len(self.active),
-                      restarted=self.fresh)
+        msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths),
+                      free_slots=self.node.slots - len(self.active), restarted=self.fresh)
         try:
             reply = self._call(msg, now)
         except LinkError:

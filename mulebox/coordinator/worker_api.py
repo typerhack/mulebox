@@ -25,7 +25,8 @@ def claim(req: Request) -> Message:
     if req.body.get("restarted") is True:  # first claim after a worker (re)start
         recovery.release_worker(req.store, worker, req.now)
     job = queue.claim(req.store, worker, capabilities, free_slots, req.cluster_slots,
-                      now=req.now)
+                      now=req.now, toolchains=v.versions_by_name(req.body, "toolchains"),
+                      version=v.text(req.body, "version", None))
     if job is None:
         return req.reply(MessageType.CLAIM_NONE, {})
     return req.reply(MessageType.CLAIM_OK, queue.claim_body(job))

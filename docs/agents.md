@@ -24,6 +24,16 @@ never uploaded, the exit codes and the rules. It needs no network and is generat
 `.mulebox.yml`, so it is always current; if it disagrees with this file, trust it. Outside
 a project set up for mulebox it says so, and section 2 is your next step.
 
+Before a project's first job, and after changing `toolchain` or `needs`:
+
+    mulebox doctor            # add --json for stable keys
+
+It uploads nothing and creates no job. It validates `.mulebox.yml`, says whether a machine
+offers the project's toolchain versions and capabilities (and which versions it has
+instead), and warns when the client and the machine run different versions of mulebox. It
+exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a usable
+`.mulebox.yml` or client config, and 3 when the machine is unreachable.
+
 ## 1. Everyday use (project already set up)
 
 | You want to | Run |
@@ -32,6 +42,7 @@ a project set up for mulebox it says so, and section 2 is your next step.
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | see how this project works with mulebox | `mulebox contract` |
+| check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
 | list every project that has run on this build machine | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
@@ -121,7 +132,7 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      GitHub Actions `run:` step.
    - If the project runs containers for its checks, use `compose:` (section 2a). Never run
      `docker compose up` in a job: nothing would remove the containers afterwards.
-3. **Verify it.** Run `mulebox check`. It must pass on a clean main branch, with the same
+3. **Verify it.** Run `mulebox doctor`, then `mulebox check`. It must pass on a clean main branch, with the same
    result as the project's CI. Then prove a broken change fails the same way it would
    locally: add an obvious type error, run `mulebox check typecheck` (or `check`), confirm
    it fails with that error and a non-zero exit code, and **revert the change**.

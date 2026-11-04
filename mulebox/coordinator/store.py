@@ -22,7 +22,8 @@ from mulebox.common.protocol import JobState, Outcome, ProtocolError, check_tran
 from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
-SCHEMA_VERSION = 3  # 2: reservations for GitHub runners; 3: job env (migrate.py)
+# 2: reservations for GitHub runners; 3: job env; 4: worker reports (migrate.py)
+SCHEMA_VERSION = 4
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -71,7 +72,9 @@ CREATE TABLE IF NOT EXISTS workers (
     capabilities TEXT NOT NULL,
     free_slots INTEGER NOT NULL,
     last_seen REAL NOT NULL,
-    slots INTEGER
+    slots INTEGER,
+    toolchains TEXT,
+    version TEXT
 );
 """
 _JOB_COLUMNS = frozenset(

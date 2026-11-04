@@ -52,6 +52,20 @@ def string_map(body: dict[str, Any], name: str) -> dict[str, str]:
     return value
 
 
+def versions_by_name(body: dict[str, Any], name: str) -> dict[str, list[str]] | None:
+    """A mapping of names to lists of version strings; None when absent."""
+    value = body.get(name)
+    if value is None:
+        return None
+    ok = isinstance(value, dict) and all(
+        isinstance(k, str) and k and isinstance(v, list)
+        and all(isinstance(item, str) and item for item in v) for k, v in value.items()
+    )
+    if not ok:
+        raise BadRequest(f"field '{name}' must map names to lists of versions")
+    return value
+
+
 def integer(body: dict[str, Any], name: str, default: Any = _MISSING,
             low: int | None = None, high: int | None = None) -> Any:
     """An int within [low, high] (bool is rejected); `default` when absent or null."""

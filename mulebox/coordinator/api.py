@@ -19,6 +19,7 @@ from mulebox.coordinator.errors import BadRequest, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.views import job_dict, status_body, waiting_for
+from mulebox.version import get_version
 
 _log = get_logger(__name__)
 DEFAULT_TIMEOUT_MIN = 30
@@ -114,6 +115,12 @@ def project_list(req: Request) -> Message:
     return req.reply(MessageType.PROJECTS_OK, {"projects": rows})
 
 
+def machine_list(req: Request) -> Message:
+    with req.store.read() as conn:
+        rows = [workers.report(worker, req.now) for worker in workers.listing(conn)]
+    return req.reply(MessageType.MACHINES_OK, {"version": get_version(), "workers": rows})
+
+
 def logs(req: Request) -> Message:
     offset = v.integer(req.body, "offset", low=0)
     with req.store.read() as conn:
@@ -141,6 +148,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.HEARTBEAT: heartbeat,
     MessageType.QUEUE: queue_list,
     MessageType.PROJECTS: project_list,
+    MessageType.MACHINES: machine_list,
     MessageType.LOGS: logs,
     MessageType.CLAIM: worker_api.claim,
     MessageType.JOB_UPDATE: worker_api.job_update,

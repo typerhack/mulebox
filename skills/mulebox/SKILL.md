@@ -20,6 +20,9 @@ needs no network. Follow it. It is the source of truth; this skill does not repe
 
 Use `mulebox contract --json` if you want to read it with a tool.
 
+Before a project's first job, or after changing its toolchain or `needs`, run `mulebox doctor`.
+It uploads nothing, and finds what a job would fail on.
+
 ## What to do with it
 
 - **The project has jobs:** run them with the commands the contract lists, instead of the

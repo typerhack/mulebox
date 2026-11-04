@@ -42,6 +42,7 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 | `mulebox queue [--watch]` | client | table; `--watch` = live view (M1.7) |
 | `mulebox logs <job_id> [-f] [--summary]` | client | `-f` follows via watch without lease; `--summary` reads the log's tail only (client/summary.py) |
 | `mulebox cancel <job_id>` | client | |
+| `mulebox doctor [--json]` | client | read-only; `machines` request, or `mulebox version` over ssh from a coordinator too old for it. Exit 0 ok or warnings, 1 a job would not run, 2 config, 3 unreachable |
 | `mulebox rpc` | coordinator | one request line on stdin; replies on stdout |
 | `mulebox rpc-upload <job_id> <sha256>` | coordinator | tar.gz bytes on stdin |
 | `mulebox rpc-download <job_id>` | coordinator | tar.gz bytes on stdout (ssh link) |
@@ -72,7 +73,8 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | projects | - | projects_ok (projects: `project`, `jobs`, `last_run`, `kind`, `state`, `outcome` of the newest job, newest first) |
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
 | watch | job_id, offset, + `lease: bool` | stream: log_chunk / status_ok lines, final `result` |
-| claim | worker, capabilities, free_slots | claim_ok or claim_none |
+| claim | worker, capabilities, free_slots, + `toolchains` (name to versions), `version` | claim_ok or claim_none |
+| machines | - | machines_ok (`version` of the coordinator; `workers`: worker, online, capabilities, toolchains or null, version or null, slots) |
 | job_update | job_id, state, + attempt_id | status_ok |
 | log_chunk (worker) | job_id, offset, data, + attempt_id | status_ok |
 | result (worker) | job_id, outcome, exit_code, duration_s, + attempt_id | status_ok |

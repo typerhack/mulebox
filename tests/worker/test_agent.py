@@ -11,6 +11,8 @@ from mulebox.worker import workspace
 from mulebox.worker.agent import HEARTBEAT_S, Agent
 from mulebox.worker.executor import RunSpec, SubprocessExecutor, group_alive, unit_name
 
+from mulebox.version import get_version
+
 from .fakes import claim_body
 
 
@@ -79,6 +81,7 @@ def test_passed_job(agent, fake_link, paths):
     assert not (paths.jobs / "example-app" / job_id).exists()
     claim = fake_link.of_type(MessageType.CLAIM)[0].body
     assert claim == {"worker": "build-1", "capabilities": ["node"], "free_slots": 1,
+                     "toolchains": {}, "version": get_version(),
                      "restarted": True}  # the first claim after a start
 
 

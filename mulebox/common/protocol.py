@@ -95,6 +95,8 @@ class MessageType(StrEnum):
     QUEUE_OK = "queue_ok"
     PROJECTS = "projects"
     PROJECTS_OK = "projects_ok"
+    MACHINES = "machines"
+    MACHINES_OK = "machines_ok"
     LOGS = "logs"
     WATCH = "watch"
     RESERVE = "reserve"
@@ -135,6 +137,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.QUEUE_OK: frozenset({"jobs"}),
     MessageType.PROJECTS: frozenset(),
     MessageType.PROJECTS_OK: frozenset({"projects"}),
+    # client -> coordinator: what the machines offer, for `mulebox doctor`.
+    MessageType.MACHINES: frozenset(),
+    MessageType.MACHINES_OK: frozenset({"version", "workers"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

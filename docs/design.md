@@ -180,6 +180,7 @@ of browser versions to maintain. mulebox never deletes from that folder.
 ## Client commands
 
 ```text
+mulebox doctor               check the project and the machine; uploads nothing
 mulebox check [job]          run a job from .mulebox.yml (default: check)
 mulebox run -- <cmd...>      run an ad-hoc command (for example one test file)
 mulebox queue [--watch]      list running/waiting/recent jobs; full-screen live view

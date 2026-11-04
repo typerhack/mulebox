@@ -7,6 +7,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 1 -> 2 (reservations for GitHub runners, docs/interfaces-m3.md): `jobs.kind` (default
   'job'), `jobs.pinned_worker`, `jobs.runner`, `jobs.run_url`, `workers.slots`.
 - 2 -> 3: `jobs.env` (the project's `env:` values, JSON, default '{}').
+- 3 -> 4: `workers.toolchains` (JSON, name to versions) and `workers.version`; NULL until a
+  worker reports them.
 """
 
 import sqlite3
@@ -22,6 +24,8 @@ _STEPS: dict[int, tuple[str, ...]] = {
         "ALTER TABLE workers ADD COLUMN slots INTEGER",
     ),
     2: ("ALTER TABLE jobs ADD COLUMN env TEXT NOT NULL DEFAULT '{}'",),
+    3: ("ALTER TABLE workers ADD COLUMN toolchains TEXT",
+        "ALTER TABLE workers ADD COLUMN version TEXT"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

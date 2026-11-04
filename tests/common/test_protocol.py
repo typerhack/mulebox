@@ -22,6 +22,8 @@ S = JobState
 SAMPLE_VALUES = {
     "project": "example-app",
     "projects": [],
+    "version": "1.2.3",
+    "workers": [],
     "job": "check",
     "argv": ["pnpm", "check"],
     "idempotency_key": "sub-01JC3X0000000000000000000",
@@ -82,7 +84,8 @@ def test_enum_values_match_contract():
     assert {t.value for t in MessageType} == {
         "submit", "submit_ok", "upload_done", "status", "status_ok", "cancel", "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "error",
-        "queue", "queue_ok", "projects", "projects_ok", "logs", "watch", "reserve", "acquire", "release", "runner_jobs"}
+        "queue", "queue_ok", "projects", "projects_ok", "machines", "machines_ok", "logs", "watch",
+        "reserve", "acquire", "release", "runner_jobs"}
 
 
 def test_transition_table_is_exact():
