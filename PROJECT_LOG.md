@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.1 - 2026-11-04 - patch
+- A build machine gets `~/.local/bin/mulebox`, so the command has the same name there as on
+  the laptop. A real file of that name is left alone.
+- The theme button has a third setting: it steps through system, light and dark and shows
+  the current one. System was the default but could not be chosen again once set.
+
 ## 0.40.0 - 2026-11-04 - minor
 - `ports: [vite]` on a job gives it `MULEBOX_PORT_VITE`, a free port for a process of the job
   itself, such as a dev server a browser test starts, from the pool compose ports use and held

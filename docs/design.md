@@ -301,8 +301,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   tabs, live log, history, and CPU per core, memory, disk and Docker containers for the
   machine the dashboard runs on.
 - Layout: a live monitor in boxes that fills the window, machine load first and the jobs
-  box below, one theme over the whole page, and a light or dark switch that is remembered
-  per browser. Before a choice it follows the system; the sign-in page always does.
+  box below, one theme over the whole page, and a system, light or dark switch remembered
+  per browser. System is the default; the sign-in page always follows the system.
 - Honest about the queue: a waiting job is not assigned until a worker claims it, so the
   lanes only ever say where a job can go, never where it will.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,

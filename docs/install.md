@@ -47,7 +47,7 @@ What the installer does (it never uses sudo and never deletes a folder):
 | --- | --- |
 | Checks | Linux, `systemctl --user`, Python >= 3.12, a working `python3 -m venv` |
 | venv | `~/.mulebox/venv`, rebuilt only when the Python minor version changed |
-| Command | `~/.mulebox/bin/mulebox` (symlink into the venv) |
+| Command | `~/.mulebox/bin/mulebox` (symlink into the venv), and `~/.local/bin/mulebox` so plain `mulebox` works in a login shell; a real file of that name is left alone |
 | Node config | `~/.config/mulebox/node.toml`, written once from the template, then validated |
 | Roots | `~/.mulebox/{jobs,cache,staging,runners}`, mode 750 |
 | Services | `~/.config/systemd/user/mulebox-coordinator.service` and `mulebox-worker.service`, enabled and started; `mulebox-runner@.service` copied only |
