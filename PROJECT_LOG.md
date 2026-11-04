@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.4 - 2026-11-04 - patch
+- A service using a name from `build.tags` follows the job's private tag, as one using `image:`
+  did. It kept the shared name, so it ran a stale image or pulled an unrelated one.
+
 ## 0.24.3 - 2026-11-04 - patch
 - The coordinator adds `docker` and `compose-v1` to any job carrying compose files. Only the
   client did, so an older client's job could still reach an older worker.

@@ -89,3 +89,37 @@ def test_two_jobs_with_one_compose_file_do_not_share_a_tag():
 def test_an_image_that_is_only_pulled_keeps_its_tag():
     result, _ = run(model(image="redis:7-alpine"))
     assert result["services"]["api"]["image"] == "redis:7-alpine"
+
+
+def test_a_service_using_an_extra_build_tag_follows_the_build():
+    data = model(**built(image="example-app:ci"))
+    data["services"]["api"]["build"]["tags"] = ["example-app:worker"]
+    data["services"]["worker"] = {"image": "example-app:worker"}
+    result, notes = run(data)
+    assert result["services"]["worker"]["image"] == result["services"]["api"]["image"]
+    assert any("example-app:worker" in note for note in notes)
+
+
+def test_a_build_with_only_tags_is_followed_too():
+    data = model(**built())
+    del data["services"]["api"]["image"]
+    data["services"]["api"]["build"]["tags"] = ["example-app:ci", "registry.example/app:1"]
+    data["services"]["worker"] = {"image": "registry.example/app:1"}
+    result, _ = run(data)
+    assert result["services"]["worker"]["image"] == result["services"]["api"]["image"]
+
+
+def test_two_builds_sharing_a_tag_share_the_jobs_tag():
+    data = model(**built(image="example-app:one"))
+    data["services"]["api"]["build"]["tags"] = ["example-app:shared"]
+    data["services"]["other"] = built(image="example-app:shared")
+    result, _ = run(data)
+    assert result["services"]["other"]["image"] == result["services"]["api"]["image"]
+
+
+def test_a_tag_nobody_built_stays_as_it_is():
+    data = model(**built(image="example-app:ci"))
+    data["services"]["api"]["build"]["tags"] = ["example-app:worker"]
+    data["services"]["db"] = {"image": "example-app:other"}
+    result, _ = run(data)
+    assert result["services"]["db"]["image"] == "example-app:other"

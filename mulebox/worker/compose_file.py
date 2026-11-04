@@ -14,7 +14,7 @@ collide with anything else on the machine, and writes nothing itself:
 - an image the project builds gets a tag only this job has, also where the compose file
   names one, and `build.tags` go. Two jobs would otherwise share `example-app:ci`, one could
   run the other's build, and removing it could take a tag that is not the job's to remove.
-  A service that uses such an image without building it follows the new tag.
+  A service that uses any of those names without building it follows the new tag.
 
 What would reach past the job is refused first, by compose_policy.py. A read-only bind of a
 path outside the checkout gets `create_host_path: false` as well: Compose would otherwise
@@ -117,13 +117,13 @@ def _own_images(services: dict[str, Model], job_id: str, notes: list[str]) -> No
     for index, (name, spec) in enumerate(services.items(), 1):
         if not spec.get("build"):
             continue
-        wanted = spec.get("image")
-        tag = owned.get(_plain(wanted or "")) or compose.image_name(job_id, index, name)
+        given = [*filter(None, [spec.get("image")]), *(spec["build"].pop("tags", None) or [])]
+        known = (owned[_plain(image)] for image in given if _plain(image) in owned)
+        tag = next(known, None) or compose.image_name(job_id, index, name)
         spec["image"] = tag
-        spec["build"].pop("tags", None)
-        if wanted:
-            owned[_plain(wanted)] = tag
-            notes.append(f"the image {wanted} of service {name} is built as {tag}, so jobs "
+        for image in given:
+            owned.setdefault(_plain(image), tag)
+            notes.append(f"the image {image} of service {name} is built as {tag}, so jobs "
                          "cannot share it; use the service name, not the tag")
     for spec in services.values():
         if not spec.get("build") and _plain(spec.get("image") or "") in owned:
