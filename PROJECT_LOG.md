@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.2 - 2026-11-04 - patch
+- A stop that was due or asked for keeps its reason when the worker is lost around it: exit 76, not
+  `interrupted` with 75. The sweep looks at stops before worker leases for that. A worker that
+  comes back already stopped the job and cleaned up on its next heartbeat; there is now a test.
+
 ## 0.40.1 - 2026-11-04 - patch
 - A build machine gets `~/.local/bin/mulebox`, so the command has the same name there as on
   the laptop. A real file of that name is left alone.

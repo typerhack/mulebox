@@ -279,3 +279,19 @@ def test_output_moves_the_time_of_the_last_output(agent, fake_link, clock):
     fake_link.cancel = True
     clock.now += HEARTBEAT_S + 1
     agent.step()
+
+
+def test_a_worker_back_after_the_coordinator_finished_its_job_leaves_nothing(
+        agent, fake_link, clock, paths):
+    """What the coordinator answers then: the job is over, and it refuses further reports."""
+    job_id = submit(fake_link, "bash", "-c", LONG)
+    pgid = _running_pgid(agent, fake_link)
+    project = agent.active[job_id].project
+    fake_link.heartbeat_state, fake_link.cancel = "finished", True
+    fake_link.refuse |= {MessageType.LOG_CHUNK, MessageType.STEPS, MessageType.JOB_UPDATE,
+                         MessageType.RESULT}
+    clock.now += HEARTBEAT_S + 1
+    run_until(agent, lambda: not agent.active and not agent.finishing)
+    assert not group_alive(pgid)
+    assert not paths.job_dir(project, job_id).exists()
+    assert not agent.ports._held

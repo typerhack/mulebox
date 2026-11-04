@@ -10,7 +10,11 @@ Clock: the coordinator's `time.time()`, passed in as `now` so tests control it.
   of attendance.py, which `stop` applies. Everything else still applies to it: the worker lease,
   the 10 minute upload timeout and `cancel`.
 - Worker lease (120 s per job, renewed by every message of the current attempt): when it
-  runs out the job finishes `interrupted`. It is never handed to another worker.
+  runs out the job finishes `interrupted`, or `cancelled` with its reason if an unattended stop
+  was due or asked for: the stop decided the job's end, the lost worker only means nobody
+  answered. It is never handed to another worker. A worker that comes back hears the job is
+  over from its next heartbeat, stops it and cleans up; its result is refused. One that never
+  answers stops the job itself after a lease without replies, and a restart clears the rest.
 - An `uploading` job older than 10 minutes finishes `interrupted`. Uploading jobs are not
   subject to the client lease: a client cannot heartbeat while it streams a large upload.
 - Runner reservations (`kind = 'runner'`) ignore the client lease; their worker lease is
@@ -77,9 +81,11 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
     """
     finished: list[str] = []
     with store.write() as conn:
+        finished += _stop_unattended(conn, now)  # first: a stop that is due keeps its reason
         for job in st.select_jobs(conn, f"{_ACTIVE_SQL} AND worker_lease_until < ?",
                                   (*_ACTIVE, now)):
-            st.finish(conn, job, Outcome.INTERRUPTED, now)
+            lost = Outcome.CANCELLED if job["stop_reason"] else Outcome.INTERRUPTED
+            st.finish(conn, job, lost, now)
             finished.append(job["job_id"])
         for job in st.select_jobs(conn, "state = ? AND created_at < ?",
                                   (JobState.UPLOADING.value, now - UPLOAD_TIMEOUT_S)):
@@ -92,7 +98,6 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
         ):
             if request_cancel(conn, job, now)["state"] == JobState.FINISHED:
                 finished.append(job["job_id"])
-        finished += _stop_unattended(conn, now)
     if staging is not None:
         for job_id in finished:
             staging.remove_upload(job_id)

@@ -5,8 +5,9 @@ import json
 
 import pytest
 
+from mulebox.client import report
 from mulebox.common.protocol import Message, MessageType
-from mulebox.common.status import STOP_IDLE, STOP_LIMIT, STOP_QUEUED
+from mulebox.common.status import STOP_IDLE, STOP_LIMIT, STOP_QUEUED, shown_state
 from mulebox.coordinator import api, attendance, daemon, leases
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import Limits
@@ -114,6 +115,50 @@ def test_the_worker_cancel_comes_back_as_a_stop(store, staging):
     reply = call(store, staging, "result", now, outcome="cancelled", exit_code=None,
                  duration_s=5.0, **job)
     assert reply.body["outcome"] == "cancelled" and reply.body["stop_reason"] == STOP_LIMIT
+
+
+def stopped_view(store, job):
+    row = job_of(store, job)
+    return row["outcome"], row["stop_reason"], report.exit_code_for(row), shown_state(row)
+
+
+STOPPED_IDLE = ("cancelled", STOP_IDLE, 76, "stopped: unattended")
+
+
+def test_a_stop_the_worker_never_answered_keeps_its_reason(store, staging):
+    job = running(store, staging)
+    beat(store, staging, job, GONE, idle_s=0.0, output_idle_s=0.0)
+    sweep(store, staging, GONE + 901)
+    assert job_of(store, job)["cancel_requested"] is True
+    assert leases.expire(store, GONE + 901 + leases.WORKER_LEASE_S + 1, staging) == [job["job_id"]]
+    assert stopped_view(store, job) == STOPPED_IDLE
+
+
+def test_a_stop_due_as_the_worker_lease_runs_out_keeps_its_reason(store, staging):
+    job = running(store, staging)
+    beat(store, staging, job, GONE, idle_s=0.0, output_idle_s=0.0)
+    with store.write() as conn:
+        conn.execute("UPDATE jobs SET worker_lease_until = ?", (GONE + 900.0,))
+    assert leases.expire(store, GONE + 901, staging) == [job["job_id"]]
+    assert stopped_view(store, job) == STOPPED_IDLE
+
+
+def test_a_lost_worker_with_no_stop_is_still_interrupted(store, staging):
+    job = running(store, staging)
+    assert leases.expire(store, T0 + leases.WORKER_LEASE_S + 1, staging) == [job["job_id"]]
+    assert job_of(store, job)["outcome"] == "interrupted"
+
+
+def test_a_worker_back_after_a_stop_is_told_to_end_and_cannot_change_the_result(store, staging):
+    job = running(store, staging)
+    beat(store, staging, job, GONE, idle_s=0.0, output_idle_s=0.0)
+    sweep(store, staging, GONE + 901)
+    leases.expire(store, GONE + 1100, staging)
+    assert beat(store, staging, job, GONE + 1200).body["cancel"] is True
+    reply = call(store, staging, "result", GONE + 1201, outcome="interrupted", exit_code=None,
+                 duration_s=1.0, **job)
+    assert reply.type is MessageType.ERROR
+    assert stopped_view(store, job) == STOPPED_IDLE
 
 
 def test_a_job_that_beat_its_stop_keeps_its_result(store, staging):
