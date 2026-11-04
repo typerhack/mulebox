@@ -48,6 +48,13 @@ def test_output_without_a_line_break_before_a_mark_stays():
     assert tracker.line("progress" + mark(tracker, 1, "setup")) == "progress\n"
 
 
+def test_a_mark_inside_a_line_is_plain_output_and_loses_nothing():
+    tracker = StepTracker()
+    line = f"seen {mark(tracker, 1, 'setup').strip()} and more\n"
+    assert tracker.line(line) == line
+    assert tracker.pending() == []
+
+
 def test_a_mark_from_another_job_is_plain_output():
     tracker, other = StepTracker(), StepTracker()
     line = mark(other, 1, "setup")

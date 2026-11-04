@@ -100,3 +100,9 @@ def test_project_env_is_not_a_shell():
 def test_project_env_unknown_reference_fails():
     with pytest.raises(JobSpecError, match="NOPE"):
         build_env("job-1", [], "/usr/bin", {"X": "${NOPE}"})
+
+
+def test_job_env_cannot_move_a_path_the_worker_set():
+    env = build_env("job-1", [], base_path="/bin", extra={"COMPOSER_CACHE_DIR": "/cache/mine"},
+                    machine_env={"COMPOSER_CACHE_DIR": "/elsewhere"})
+    assert env["COMPOSER_CACHE_DIR"] == "/cache/mine"

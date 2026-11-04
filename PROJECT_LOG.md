@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.1 - 2026-11-04 - patch
+- A stage mark counts only at the end of a line: a job printing its own mark mid-line could
+  record a false stage and lose the rest of that line (found by review).
+- A test pins that `job_env` cannot move a path the worker sets, such as a cache.
+
 ## 0.36.0 - 2026-11-04 - minor
 - Merged the jobs box redesign, built on its own branch as 0.26.0:
 - Jobs box redesigned (M2.8): tabs Queue, Failed, Passed and Recent, each with a live

@@ -45,7 +45,7 @@ class StepTracker:
     def __init__(self, marker: str = "") -> None:
         self.marker = marker or new_marker()
         self._mark = re.compile(
-            re.escape(f"{_PREFIX}{self.marker}:") + r"(\d+(?:[.,]\d+)?):([a-z]+)[\r\n]*")
+            re.escape(f"{_PREFIX}{self.marker}:") + r"(\d+(?:[.,]\d+)?):([a-z]+)[\r\n]*\Z")
         self._rows: list[dict[str, Any]] = []
         self._changed: set[int] = set()
         self._last_line: str | None = None
