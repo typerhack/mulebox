@@ -12,6 +12,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 4 -> 5: `jobs.detached` (default 0): the job does not depend on its client (leases.py).
 - 5 -> 6: the `job_steps` table (steps.py). Only adds a table. The same statement is in
   store._SCHEMA, which runs first, so it says IF NOT EXISTS.
+- 6 -> 7: `jobs.env_order` (JSON list, default '[]'): the order of `env:` in the file, which a
+  JSON object sorted on the wire and in the store loses.
 """
 
 import sqlite3
@@ -44,6 +46,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
         "ALTER TABLE workers ADD COLUMN version TEXT"),
     4: ("ALTER TABLE jobs ADD COLUMN detached INTEGER NOT NULL DEFAULT 0",),
     5: (JOB_STEPS,),
+    6: ("ALTER TABLE jobs ADD COLUMN env_order TEXT NOT NULL DEFAULT '[]'",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

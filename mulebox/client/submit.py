@@ -93,6 +93,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "setup": project.setup,
         "toolchain": dict(project.toolchain),
         "env": job_env(project),
+        "env_order": list(project.env),  # JSON objects are sorted on the wire
         "needs": list(project.all_needs),
         "timeout_min": project.timeout_min,
         **({"detached": True} if detach else {}),

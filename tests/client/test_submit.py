@@ -212,3 +212,10 @@ def test_partial_overlap_is_trimmed():
     watcher.handle(log(0, "abc"))
     watcher.handle(log(1, "bcdef"))
     assert watcher.io.out.getvalue() == "abcdef" and watcher.offset == 6
+
+
+def test_submit_body_keeps_the_env_order_of_the_file(make_repo):
+    remote = FakeRemote([[result()]])
+    project = replace(PROJECT, env={"Z_HOST": "db", "A_URL": "${Z_HOST}"})
+    run_job(project, "check", make_repo(), remote, streams())
+    assert remote.calls[0].body["env_order"] == ["Z_HOST", "A_URL"]

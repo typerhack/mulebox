@@ -53,7 +53,7 @@ def _check_names(values: Mapping[str, str], for_compose: bool) -> None:
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,
           bins: Sequence[Path], marker: str = "") -> tuple[RunSpec, tuple[str, ...]]:
     """(the run spec, notes for the job's log). `marker`: of the job's StepTracker."""
-    values = dict(claim.get("env") or {})
+    values = jobspec.in_file_order(claim.get("env") or {}, claim.get("env_order") or ())
     files = values.pop(compose.COMPOSE_FILES_KEY, None)
     _check_names(values, files is not None)
     needs = claim.get("needs") or ()

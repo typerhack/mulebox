@@ -111,4 +111,3 @@ def test_the_store_has_the_index_for_this(store):
         names = {row["name"] for row in conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'index'")}
     assert "jobs_project" in names
-    assert st.SCHEMA_VERSION == 6

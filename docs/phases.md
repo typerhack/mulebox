@@ -228,6 +228,12 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
       safepath, from the logs folder only. Built 2026-11-04 (0.35.0), with tests in temporary
       roots. Open: a service running over a real history.
 
+## M10: Reports from real projects
+Fixes from the first real project reports (2026-11-04). Tested with unit tests and the real
+coordinator code; none of this has run on a build machine yet.
+- [~] M10.1 `env:` entries are read in file order: the order travels beside the sorted JSON
+      (`env_order`, schema 7). Open: a real project with one entry using an earlier one.
+
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)

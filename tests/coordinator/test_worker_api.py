@@ -11,7 +11,8 @@ def test_claim_ok_body(store, staging):
     reply = call(store, staging, "claim", worker="wrk-a", capabilities=["node"], free_slots=1)
     assert reply.type is MessageType.CLAIM_OK
     assert set(reply.body) == {"job_id", "attempt_id", "project", "job", "argv", "fingerprint",
-                               "base_commit", "timeout_min", "setup", "toolchain", "needs", "env"}
+                               "base_commit", "timeout_min", "setup", "toolchain", "needs", "env",
+                               "env_order"}
     assert reply.body["setup"] == "pnpm install" and reply.body["argv"] == ["pnpm", "check"]
 
 

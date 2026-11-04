@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.2 - 2026-11-04 - patch
+- `env:` entries are read in file order, as the docs say. They were not: JSON objects are
+  sorted on the wire and in the store, so an entry using an earlier one failed whenever the
+  names sorted the other way. The client now sends the order as `env_order`, stored beside
+  `env` (schema 7) and given to the worker with the claim. An older client sends none and
+  gets the sorted order it always had.
+
 ## 0.36.1 - 2026-11-04 - patch
 - A stage mark counts only at the end of a line: a job printing its own mark mid-line could
   record a false stage and lose the rest of that line (found by review).

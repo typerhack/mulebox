@@ -147,7 +147,9 @@ Runner management:
 - Each runner folder has `.mulebox-runner.json` (repo, labels, version).
 - Shared download code moved to `mulebox/common/download.py` (also used by toolchains).
 
-Also in 0.6.0: `.mulebox.yml` `env:` (schema 3 stores it as `jobs.env`). The worker sets
+Also in 0.6.0: `.mulebox.yml` `env:` (schema 3 stores it as `jobs.env`; since schema 7 the
+order of the file travels beside it as `env_order`, because JSON objects are sorted on the wire
+and in the store: `submit`, `claim_ok`, `jobspec.in_file_order`). The worker sets
 `MULEBOX_JOB_SLUG` (job id, lowercase, `_`) and replaces `${NAME}` in env values with a
 mulebox variable or an earlier env entry; no shell is involved. `PATH`, `HOME`, `USER`,
 `SHELL` and `MULEBOX*` names are refused.

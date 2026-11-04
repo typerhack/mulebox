@@ -64,6 +64,14 @@ def job_slug(job_id: str) -> str:
     return job_id.lower().replace("-", "_")
 
 
+def in_file_order(env: Mapping[str, str], order: Sequence[str] = ()) -> dict[str, str]:
+    """`env` as `.mulebox.yml` lists it. JSON objects are sorted on the wire and in the store,
+    so the client sends the order beside them; without it (an older client) the order is
+    whatever came, sorted, and anything `order` does not name goes last."""
+    first = {name: env[name] for name in order if name in env}
+    return {**first, **env}
+
+
 def port_references(project_env: Mapping[str, str]) -> list[str]:
     """The `${MULEBOX_PORT_...}` names `env:` values use; known only once ports are chosen."""
     found = (name for value in project_env.values() for name in _REF.findall(value))

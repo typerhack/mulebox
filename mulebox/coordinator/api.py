@@ -67,6 +67,7 @@ def submit(req: Request) -> Message:
         "setup": v.text(body, "setup", None),
         "toolchain": v.string_map(body, "toolchain"),
         "env": v.string_map(body, "env"),
+        "env_order": v.strings(body, "env_order"),
         "needs": needs.required(v.strings(body, "needs"), v.string_map(body, "env")),
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
         "detached": v.flag(body, "detached"),

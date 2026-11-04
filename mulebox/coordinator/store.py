@@ -22,13 +22,13 @@ from mulebox.common.protocol import JobState, Outcome, ProtocolError, check_tran
 from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
-# 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps
-# (migrate.py)
-SCHEMA_VERSION = 6
+# 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
+# 7: env order (migrate.py)
+SCHEMA_VERSION = 7
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
-_JSON_COLUMNS = frozenset({"argv", "toolchain", "needs", "capabilities", "env"})
+_JSON_COLUMNS = frozenset({"argv", "toolchain", "needs", "capabilities", "env", "env_order"})
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS jobs (
@@ -66,7 +66,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     pinned_worker TEXT,
     runner TEXT,
     run_url TEXT,
-    detached INTEGER NOT NULL DEFAULT 0
+    detached INTEGER NOT NULL DEFAULT 0,
+    env_order TEXT NOT NULL DEFAULT '[]'
 );
 CREATE INDEX IF NOT EXISTS jobs_state ON jobs (state, queued_at, seq);
 CREATE TABLE IF NOT EXISTS workers (
@@ -84,7 +85,7 @@ _JOB_COLUMNS = frozenset(
     "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
     "created_at queued_at started_at finished_at kind pinned_worker runner run_url env "
-    "detached".split()
+    "detached env_order".split()
 )
 
 

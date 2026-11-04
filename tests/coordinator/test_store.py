@@ -7,7 +7,7 @@ from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import Conflict, NotFound
 from mulebox.coordinator.store import Store
 
-from .helpers import submit
+from .helpers import claimed, submit
 
 
 def test_open_creates_schema_with_wal(store):
@@ -91,3 +91,9 @@ def test_require_job_not_found(store):
     with store.read() as conn:
         with pytest.raises(NotFound):
             st.require_job(conn, "job-01JC3X0000000000000000000Z")
+
+
+def test_env_order_survives_the_sorted_store(store, staging):
+    claim = claimed(store, staging, env={"A": "${Z}", "Z": "1"}, env_order=["Z", "A"])
+    assert claim["env_order"] == ["Z", "A"]
+    assert list(claim["env"]) == ["A", "Z"]

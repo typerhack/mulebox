@@ -122,5 +122,5 @@ def listing(conn: sqlite3.Connection, finished_limit: int = DEFAULT_FINISHED_LIM
 def claim_body(job: dict[str, Any]) -> dict[str, Any]:
     """claim_ok body (docs/interfaces-m1.md, Wire usage)."""
     names = ("job_id", "attempt_id", "project", "job", "argv", "fingerprint", "base_commit",
-             "timeout_min", "setup", "toolchain", "needs", "env")
+             "timeout_min", "setup", "toolchain", "needs", "env", "env_order")
     return {name: job[name] for name in names}

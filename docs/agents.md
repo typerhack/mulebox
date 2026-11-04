@@ -174,7 +174,7 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
    - **Databases are per job.** Every database name, prefix or schema must include
      `${MULEBOX_JOB_SLUG}` (the job id in lowercase with `_`, safe in database names).
      Env values may use `${MULEBOX_JOB_ID}`, `${MULEBOX_JOB_SLUG}` and earlier `env:`
-     entries; nothing else is expanded and no shell runs. Never point a job at a database
+     entries, in the order the file lists them; nothing else is expanded and no shell runs. Never point a job at a database
      that already exists on the build machine.
    - Values are strings: quote numbers (`CI: "1"`). `PATH`, `HOME`, `USER`, `SHELL` and
      `MULEBOX*` cannot be set.

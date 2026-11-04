@@ -11,6 +11,7 @@ from mulebox.worker.jobspec import (
     build_argv,
     build_env,
     build_script,
+    in_file_order,
     port_references,
     timeout_seconds,
 )
@@ -106,3 +107,21 @@ def test_job_env_cannot_move_a_path_the_worker_set():
     env = build_env("job-1", [], base_path="/bin", extra={"COMPOSER_CACHE_DIR": "/cache/mine"},
                     machine_env={"COMPOSER_CACHE_DIR": "/elsewhere"})
     assert env["COMPOSER_CACHE_DIR"] == "/cache/mine"
+
+
+def test_file_order_comes_back_from_sorted_json():
+    arrived = {"A_URL": "${Z_HOST}:1", "Z_HOST": "db"}  # sorted, as JSON brings it
+    assert list(in_file_order(arrived, ["Z_HOST", "A_URL"])) == ["Z_HOST", "A_URL"]
+    env = build_env("job-1", [], base_path="/bin",
+                    project_env=in_file_order(arrived, ["Z_HOST", "A_URL"]))
+    assert env["A_URL"] == "db:1"
+
+
+def test_a_later_name_stays_unknown_without_the_order():
+    with pytest.raises(JobSpecError, match="earlier env entry"):
+        build_env("job-1", [], base_path="/bin",
+                  project_env=in_file_order({"A_URL": "${Z_HOST}", "Z_HOST": "db"}))
+
+
+def test_names_the_order_lacks_go_last():
+    assert list(in_file_order({"A": "1", "B": "2", "C": "3"}, ["C", "GONE"])) == ["C", "A", "B"]
