@@ -11,7 +11,7 @@ from typing import Any
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import leases, queue, runner_api, worker_api
+from mulebox.coordinator import leases, projects, queue, runner_api, worker_api
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -102,6 +102,12 @@ def queue_list(req: Request) -> Message:
     return req.reply(MessageType.QUEUE_OK, {"jobs": [job_dict(job, pos) for job, pos in rows]})
 
 
+def project_list(req: Request) -> Message:
+    with req.store.read() as conn:
+        rows = projects.listing(conn)
+    return req.reply(MessageType.PROJECTS_OK, {"projects": rows})
+
+
 def logs(req: Request) -> Message:
     offset = v.integer(req.body, "offset", low=0)
     with req.store.read() as conn:
@@ -128,6 +134,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.CANCEL: cancel,
     MessageType.HEARTBEAT: heartbeat,
     MessageType.QUEUE: queue_list,
+    MessageType.PROJECTS: project_list,
     MessageType.LOGS: logs,
     MessageType.CLAIM: worker_api.claim,
     MessageType.JOB_UPDATE: worker_api.job_update,

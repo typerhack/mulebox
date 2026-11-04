@@ -23,6 +23,7 @@ COMMANDS = {
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
     "queue": "mulebox queue",
+    "all_projects": "mulebox projects",
     "read_log": "mulebox logs <job-id>",
     "cancel": "mulebox cancel <job-id>",
     "report_a_problem": "mulebox feedback draft <job-id> --summary <text>",

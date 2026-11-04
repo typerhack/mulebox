@@ -14,7 +14,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from mulebox.client import contract, report, tui
+from mulebox.client import contract, queue_view, report, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -53,6 +53,10 @@ def register(sub: argparse._SubParsersAction) -> None:
     queue = sub.add_parser("queue", help="list running, waiting and recent jobs")
     queue.add_argument("--watch", action="store_true", help="full-screen live view")
     queue.set_defaults(func=guarded(_queue))
+
+    known = sub.add_parser("projects", help="list every project that has run here")
+    known.add_argument("--json", action="store_true", help="stable keys for tools")
+    known.set_defaults(func=guarded(_projects))
 
     logs = sub.add_parser("logs", help="show a job's log")
     logs.add_argument("job_id")
@@ -149,6 +153,17 @@ def _queue(args: argparse.Namespace) -> int:
     if args.watch:
         return tui.watch(fetch, remote.target)
     tui.show_once(fetch, sys.stdout)
+    return 0
+
+
+def _projects(args: argparse.Namespace) -> int:
+    rows = _remote().call(request(MessageType.PROJECTS)).body.get("projects")
+    if not isinstance(rows, list):
+        raise CoordinatorError("the projects reply has no project list")
+    if args.json:
+        sys.stdout.write(json.dumps(rows, indent=2) + "\n")
+    else:
+        sys.stdout.write("\n".join(queue_view.render_projects(rows)) + "\n")
     return 0
 
 

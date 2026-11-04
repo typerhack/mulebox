@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.13.0 - 2026-11-04 - minor
+- `mulebox projects` (M7.4): every project the coordinator has seen, worked out from its
+  jobs. New `projects` message, additive, so the protocol version stays 1; an older
+  coordinator refuses it with an error.
+- No project registry: it would only be a second copy of `.mulebox.yml` and the job history.
+
 ## 0.12.0 - 2026-11-04 - minor
 - `mulebox feedback draft` and `post` (M7.3): agents report what mulebox could not handle as
   GitHub issues. Drafting is local; `post` needs `feedback_repo` and refuses a file the

@@ -69,6 +69,7 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | cancel | job_id | status_ok |
 | heartbeat | job_id, lease (`client`/`worker`), + `attempt_id` for worker | status_ok (+ `cancel`) |
 | queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts) |
+| projects | - | projects_ok (projects: `project`, `jobs`, `last_run`, `kind`, `state`, `outcome` of the newest job, newest first) |
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
 | watch | job_id, offset, + `lease: bool` | stream: log_chunk / status_ok lines, final `result` |
 | claim | worker, capabilities, free_slots | claim_ok or claim_none |

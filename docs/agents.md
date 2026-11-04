@@ -33,6 +33,7 @@ a project set up for mulebox it says so, and section 2 is your next step.
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | see how this project works with mulebox | `mulebox contract` |
 | see the queue | `mulebox queue` |
+| list every project that has run on this build machine | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>` |
 | stop a job | `mulebox cancel <job-id>` (Ctrl-C on a running `check` also cancels) |

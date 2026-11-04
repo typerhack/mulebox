@@ -108,6 +108,14 @@ may be private, so:
   it has no name for, so `--log` is a choice, and reading the draft is a real step.
 - **No screenshots.** They cannot be scrubbed, and `gh issue create` cannot attach them.
 
+## Projects
+
+There is no project registry. What a project needs lives in its `.mulebox.yml`, and which
+projects exist is already in the job history, so a registry would be a second copy of both.
+`mulebox projects` lists what the coordinator has seen, worked out from its jobs. The cost:
+a project appears only after its first job, and nothing can be stored about one. Add a
+table only when real adoption shows something that belongs in neither place.
+
 ## Project config: `.mulebox.yml`
 
 ```yaml

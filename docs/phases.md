@@ -112,10 +112,13 @@ Order agreed with the user on 2026-11-04.
       branch, identity, address, password or machine name in its draft; `post` sent the
       reviewed file to a stand-in `gh` and refused a tampered one. Screenshots dropped: they
       cannot be scrubbed. Open: the user sets `feedback_repo`, and one real issue is posted.
+- [x] M7.4 Projects: `mulebox projects`, worked out from the job history. A registry was
+      dropped: it would hold nothing beyond `.mulebox.yml` and that history, so it would
+      only be a second copy. Done 2026-11-04 (0.13.0): run against a real coordinator.
 
 ## Parking lot
-- Project registration: each project registers with mulebox and stays registered, to avoid
-  copy-pasted setup and to manage projects later
+- Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
+  nor in the job history (reasoning: docs/design.md, Projects)
 - MCP wrapper over the client commands
 - More than one slot per worker, or job weights, once measurements justify it
 - macOS or Windows workers

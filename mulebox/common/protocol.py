@@ -93,6 +93,8 @@ class MessageType(StrEnum):
     ERROR = "error"
     QUEUE = "queue"
     QUEUE_OK = "queue_ok"
+    PROJECTS = "projects"
+    PROJECTS_OK = "projects_ok"
     LOGS = "logs"
     WATCH = "watch"
     RESERVE = "reserve"
@@ -131,6 +133,8 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: list running, waiting and recent jobs.
     MessageType.QUEUE: frozenset(),
     MessageType.QUEUE_OK: frozenset({"jobs"}),
+    MessageType.PROJECTS: frozenset(),
+    MessageType.PROJECTS_OK: frozenset({"projects"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

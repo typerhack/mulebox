@@ -1,7 +1,13 @@
 import io
 
 from mulebox.client import tui
-from mulebox.client.queue_view import COLUMNS, job_row, render_screen, render_table
+from mulebox.client.queue_view import (
+    COLUMNS,
+    job_row,
+    render_projects,
+    render_screen,
+    render_table,
+)
 
 NOW = 10_000.0
 
@@ -135,3 +141,18 @@ def test_terminal_is_restored_on_error(monkeypatch):
         pass
     assert saved == [["state"]]
     assert out.getvalue().startswith(tui.ENTER) and out.getvalue().endswith(tui.LEAVE)
+
+
+def test_projects_table_uses_the_shared_state_and_stays_aligned():
+    rows = [{"project": "example-app", "jobs": 12, "last_run": 1000.0, "kind": "job",
+             "state": "finished", "outcome": "failed"},
+            {"project": "ci", "jobs": 3, "last_run": 900.0, "kind": "runner",
+             "state": "finished", "outcome": "passed"}]
+    lines = render_projects(rows)
+    assert lines[0].split()[:2] == ["PROJECT", "JOBS"]
+    assert "failed" in lines[1] and "released" in lines[2]
+    assert lines[0].index("JOBS") == lines[1].index("12")
+
+
+def test_projects_table_when_empty():
+    assert "No projects" in render_projects([])[0]
