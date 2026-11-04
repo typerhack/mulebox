@@ -5,8 +5,9 @@ incremental decoder so a character split across reads stays intact). The text go
 `StreamRedactor` before it leaves the worker. Offsets are byte offsets of the redacted
 UTF-8 stream; each chunk holds at most 64 KiB and is never cut inside a character.
 
-Redacted text then goes through the job's StepTracker line by line, which takes out the stage
-marks. So the stored log and the steps only ever see redacted text.
+Redacted text then goes on line by line: PullNoise (pullnoise.py) collapses image progress,
+and the job's StepTracker takes out the stage marks. So the stored log and the steps only ever
+see redacted text. The raw file keeps everything until the job's folder goes.
 
 Chunks are queued and sent in order. A transport failure keeps the queue for the next
 attempt (the coordinator skips overlap by offset, so a resend is harmless); an `error`
@@ -24,6 +25,7 @@ from pathlib import Path
 
 from mulebox.common.redact import StreamRedactor
 from mulebox.common.protocol import Message, MessageType
+from mulebox.worker.pullnoise import PullNoise
 from mulebox.worker.steps import StepTracker
 
 MAX_CHUNK_BYTES = 64 * 1024
@@ -59,6 +61,7 @@ class LogTailer:
         self._request = make_request
         self._redactor = redactor or StreamRedactor()
         self.steps = steps or StepTracker()
+        self._noise = PullNoise()
         self._partial = ""  # redacted text of a line not finished yet
         self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         self._read_pos = 0
@@ -93,6 +96,7 @@ class LogTailer:
         self._take(self._redactor.feed(self._decoder.decode(b"", final=True)))
         self._take(self._redactor.flush())
         self._take("", final=True)
+        self._queue_text("".join(self._noise.flush()))
 
     def _take(self, text: str, final: bool = False) -> None:
         """Whole lines of redacted text go on; the rest of a line waits for its end."""
@@ -101,7 +105,12 @@ class LogTailer:
         if final or len(buffer) - end > MAX_PARTIAL_CHARS:
             end = len(buffer)
         self._partial = buffer[end:]
-        self._queue_text("".join(self.steps.line(line) for line in _LINE.findall(buffer[:end])))
+        self._queue_text("".join(self._kept(line) for line in _LINE.findall(buffer[:end])))
+
+    def _kept(self, line: str) -> str:
+        pieces = self._noise.line(line)
+        self.steps.add_bytes(self._noise.take_new_bytes())
+        return "".join(self.steps.line(piece) for piece in pieces)
 
     def _queue_text(self, text: str) -> None:
         if not text or self.dropped:

@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.31.0 - 2026-11-04 - minor
+- Image pull progress is collapsed in what is stored and streamed: a real log had over 27,000
+  lines of it. Outcome lines and errors stay, and a line says how much has been downloaded.
+  The amount is a lower bound and also goes on the stage's row. Compose prints no total
+  without a terminal, so there is no percentage.
+
 ## 0.30.0 - 2026-11-04 - minor
 - `status` replies give `usual`: the median length of a project's job and of each stage over
   its last passed runs, or nothing without history. No percentage: a length from the past

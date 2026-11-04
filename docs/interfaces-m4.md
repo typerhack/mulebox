@@ -120,7 +120,7 @@ added by `migrate.py` with no change to `jobs`). `seq` orders them. Raw logs sta
 | `stage` | `status.STAGES`: `prepare`, `environment`, `images`, `services`, `setup`, `command`, `cleanup` |
 | `started_at`, `finished_at` | epoch seconds on the worker; `finished_at` empty while it runs, and for good if the job ended without its worker |
 | `exit_code` | 0 for a stage followed by another; the job's code for its last; empty if stopped |
-| `bytes_downloaded` | where known |
+| `bytes_downloaded` | image layers, at least this much (see Image pulls in a log); empty if none were seen |
 | `failing_line` | last line the stage printed, redacted, at most 500 characters, for `failed` or `timed_out` only |
 
 - `prepare`: snapshot and workspace. `environment`: what mulebox provides, today toolchains,
@@ -147,6 +147,23 @@ added by `migrate.py` with no change to `jobs`). `seq` orders them. Raw logs sta
   progress: a client may say "usually about 4 min", and must not turn it into a percentage.
 - `timeout_min` still ends the job, whatever the stage. The rows are enough to turn that into
   a warning later: they say how long each stage took on this project.
+
+## Image pulls in a log
+
+`worker/pullnoise.py`. After redaction, before storing and streaming, per-layer progress is
+dropped: `Pulling fs layer`, `Waiting`, `Downloading`, `Verifying Checksum`, `Download complete`,
+`Extracting`, `Pull complete`, `Already exists` on a line that starts with a 12-digit layer
+id, and BuildKit's `#N sha256:... a / b` and `#N extracting sha256:...` lines without `done`.
+Lines about images, networks and containers stay, as does anything else, errors and retries
+included. In their place: `mulebox: at least 640 MB of image layers downloaded`, every 100 MB
+and after each run of layer lines. The raw `out.log` keeps all of it until the folder goes.
+
+What Compose prints without a terminal, seen on 5.6: `<layer> Downloading 2.097MB`, the amount
+so far with no total, and the last piece of a layer is not printed. So bytes are a lower bound,
+and no percentage exists. Compose 2 printed `12.3MB/45.6MB`, and that total is used where
+present. `--progress json` on 5.6 has `current` and `total` per layer, but only for layers that
+have started, so a whole-pull percentage would still be a guess, and the flag would need a
+version check. Not used.
 
 ## Browser tests
 

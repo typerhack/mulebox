@@ -95,6 +95,13 @@ class StepTracker:
         if stripped and self._ended_at is None:
             self._last_line = stripped[:MAX_FAILING_LINE]
 
+    def add_bytes(self, count: int) -> None:
+        """Downloaded while the open stage ran."""
+        row = self._open
+        if count and row is not None:
+            row["bytes_downloaded"] = (row["bytes_downloaded"] or 0) + count
+            self._changed.add(row["seq"])
+
     def finish_cleanup(self, at: float) -> None:
         if self._open is not None and self._open["stage"] == CLEANUP:
             self.close(0, at, failed=False)

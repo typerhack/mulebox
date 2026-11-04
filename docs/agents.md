@@ -189,7 +189,9 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
   that depends on `setup` having run cannot pass, because setup comes after.
 - When a job fails, its log ends with the state and last lines of its containers.
 - Images are pulled and built by `docker compose up --no-start`, then `up --detach --wait`
-  starts them, so a job's stages can tell the two apart.
+  starts them, so a job's stages can tell the two apart. Layer-by-layer pull progress is left
+  out of the log. It shows `Image ... Pulled` and `mulebox: at least 640 MB of image layers
+  downloaded`, every 100 MB. No news for a while during a pull is normal on a slow network.
 
 These are refused with the reason, because they reach past the job:
 
