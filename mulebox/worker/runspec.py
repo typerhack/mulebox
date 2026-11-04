@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from mulebox.common import compose, env_rules
+from mulebox.common import compose, config_jobs, env_rules
 from mulebox.common.safepath import ensure_dir
 from mulebox.worker import caches, compose_job, jobspec, steps
 from mulebox.worker.docker import Docker
@@ -51,6 +51,18 @@ def _check_names(values: Mapping[str, str], for_compose: bool) -> None:
             raise jobspec.JobSpecError(f"env {name} {problem}")
 
 
+def _host_ports(machine: Machine, job_id: str, names: str | None) -> dict[str, str]:
+    """Free ports for processes of the job itself; held for it until it is cleaned up. The
+    worker checks the names again: it cannot know which client sent the job."""
+    wanted = config_jobs.split_ports(names or "")
+    for name in wanted:
+        problem = config_jobs.port_problem(name)
+        if problem:
+            raise jobspec.JobSpecError(f"port {name} {problem}")
+    taken = machine.ports.take(job_id, {config_jobs.port_variable(n): "tcp" for n in wanted})
+    return {name: str(port) for name, port in taken.items()}
+
+
 def _runtime_limit(claim: dict[str, Any]) -> float | None:
     """No limit when the coordinator runs the job's time limits; an older one does not, so
     `timeout_min` stays a hard limit there and no job can run forever."""
@@ -64,10 +76,12 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     """(the run spec, notes for the job's log). `marker`: of the job's StepTracker."""
     values = jobspec.in_file_order(claim.get("env") or {}, claim.get("env_order") or ())
     files = values.pop(compose.COMPOSE_FILES_KEY, None)
+    names = values.pop(config_jobs.HOST_PORTS_KEY, None)
     _check_names(values, files is not None)
     needs = claim.get("needs") or ()
     cached = caches.for_job(machine.paths, claim["project"], needs)
-    base = {**_capability_env(machine, needs), **cached.env}
+    own = _host_ports(machine, job_id, names)
+    base = {**_capability_env(machine, needs), **cached.env, **own}
 
     def environment(extra: dict[str, str]) -> dict[str, str]:
         return jobspec.build_env(job_id, bins, project_env=values, extra={**base, **extra},
@@ -88,4 +102,5 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
                                            marker or steps.new_marker()),
                    cwd=src, env=environment(extra), log_path=log_path,
                    timeout_s=_runtime_limit(claim))
-    return spec, (*cached.notes, *notes)
+    ports = (f"port {port} is ${name}" for name, port in own.items())
+    return spec, (*cached.notes, *ports, *notes)

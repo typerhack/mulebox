@@ -90,6 +90,7 @@ class ProjectConfig:
     exclude: tuple[str, ...] = ()
     env: dict[str, str] = field(default_factory=dict)
     job_options: dict[str, config_jobs.JobOptions] = field(default_factory=dict)
+    host_ports: tuple[str, ...] = ()  # of the one job `for_job` gave this for
 
     @property
     def all_needs(self) -> tuple[str, ...]:

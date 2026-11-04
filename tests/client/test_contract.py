@@ -141,8 +141,10 @@ def test_git_says_a_job_has_no_history():
 
 def test_job_settings_are_in_the_contract(tmp_path):
     project = replace(CONFIG, compose=("docker-compose.yml",), setup="pnpm install",
-                      job_options={"lint": JobOptions(setup="", compose=False)},
+                      job_options={"lint": JobOptions(setup="", compose=False, ports=("vite",))},
                       jobs={**CONFIG.jobs, "lint": "pnpm lint"})
     terms = contract.build(project, "1")
-    assert terms["project"]["job_settings"] == {"lint": {"setup": None, "compose": False}}
-    assert "mulebox check lint: pnpm lint (setup: none, no containers)" in contract.render(terms)
+    assert terms["project"]["job_settings"] == {
+        "lint": {"setup": None, "compose": False, "ports": ["MULEBOX_PORT_VITE"]}}
+    assert ("mulebox check lint: pnpm lint (setup: none, no containers, port $MULEBOX_PORT_VITE)"
+            in contract.render(terms))

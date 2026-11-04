@@ -271,6 +271,9 @@ it: a real machine.
 - [~] M12.1 A job in `.mulebox.yml` may be a mapping with `run`, `setup` and `compose: false`; plain
       commands keep the top-level defaults. Built 2026-11-04 (0.39.0), client only, no worker or
       store change. Open: a real project with a job that runs without its containers.
+- [~] M12.2 `ports:` on a job: a free port for a process of the job, `MULEBOX_PORT_<NAME>`, from the
+      pool compose ports use. Built 2026-11-04 (0.40.0). Open: a real dev server and browser
+      test on a real machine.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

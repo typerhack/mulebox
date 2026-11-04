@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.0 - 2026-11-04 - minor
+- `ports: [vite]` on a job gives it `MULEBOX_PORT_VITE`, a free port for a process of the job
+  itself, such as a dev server a browser test starts, from the pool compose ports use and held
+  until the job is cleaned up. The names travel in `env` like the compose list, so the store and
+  the protocol stay as they are; a worker older than this refuses the job at the start, exit 5.
+- `env:` entries built on another job's port are left out for a job that does not have it.
+- Contract schema 7: `job_settings` has `ports`.
+
 ## 0.39.0 - 2026-11-04 - minor
 - A job in `.mulebox.yml` may be a mapping with `run`, its own `setup` (or `setup: false`) and
   `compose: false`, so a quick job skips containers it does not use. A plain command keeps the

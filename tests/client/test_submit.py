@@ -6,8 +6,8 @@ import pytest
 
 from mulebox.client import submit
 from mulebox.client.submit import Streams, run_job
-from mulebox.common.config_jobs import NO_SETUP, JobOptions
 from mulebox.common.config import ProjectConfig
+from mulebox.common.config_jobs import NO_SETUP, JobOptions
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.status import CONTAINER_LOGS_NOTE
 from mulebox.common.ssh import SSHUnavailable
@@ -114,9 +114,22 @@ def test_a_job_without_containers_sends_no_compose_and_says_what_it_left_out(mak
     assert "URL" in io.err.getvalue()
 
 
+def test_a_job_with_a_port_sends_its_name_and_others_lose_what_needs_it(make_repo):
+    project = replace(PROJECT, env={"URL": "http://127.0.0.1:${MULEBOX_PORT_VITE}", "CI": "1"},
+                      job_options={"test": JobOptions(ports=("vite",))})
+    remote = FakeRemote([[result()], [result()]])
+    repo = make_repo()
+    run_job(project, "test", repo, remote, streams())
+    run_job(project, "check", repo, remote, streams())
+    first, other = (call.body for call in remote.calls if call.type is MessageType.SUBMIT)
+    assert first["env"]["MULEBOX_HOST_PORTS"] == "vite" and "URL" in first["env"]
+    assert first["env_order"] == ["URL", "CI"]
+    assert other["env"] == {"CI": "1"}
+
+
 def test_mulebox_run_keeps_the_top_level_values(make_repo):
     project = replace(PROJECT, setup="pnpm install",
-                      job_options={"run": JobOptions(setup=NO_SETUP)})
+                      job_options={"run": JobOptions(setup=NO_SETUP)})  # a job that is called run
     remote = FakeRemote([[result()]])
     run_job(project, ["ls"], make_repo(), remote, streams())
     assert remote.calls[0].body["setup"] == "pnpm install"

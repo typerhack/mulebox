@@ -3,7 +3,7 @@
 import pytest
 
 from mulebox.common.config import ConfigError, load_project_config
-from mulebox.common.config_jobs import for_job
+from mulebox.common.config_jobs import for_job, port_variable
 
 HEAD = """project: example-app
 needs: [node]
@@ -28,6 +28,7 @@ def test_plain_commands_mean_what_they_always_did(tmp_path):
     assert project.jobs == {"check": "pnpm check", "lint": "pnpm lint"}
     assert project.job_options == {}
     assert for_job(project, "lint") == (project, [])
+    assert for_job(project, None) == (project, [])
 
 
 def test_a_job_can_have_no_containers_and_its_own_setup(tmp_path):
@@ -51,7 +52,29 @@ def test_setup_false_means_none_and_leaving_it_out_keeps_the_default(tmp_path):
 
 def test_a_name_that_is_no_job_is_the_project_as_it_is(tmp_path):
     project = load(tmp_path, "  check: pnpm check\n")
-    assert for_job(project, "run")[0] is project
+    assert for_job(project, "run")[0] == project
+
+
+def test_a_port_is_the_jobs_own(tmp_path):
+    head = 'project: example-app\nenv:\n  URL: "http://127.0.0.1:${MULEBOX_PORT_VITE}"\n'
+    project = load(tmp_path, "  check: pnpm check\n  e2e:\n    run: x\n    ports: [vite, my-api]\n",
+                   head)
+    job, dropped = for_job(project, "e2e")
+    assert job.host_ports == ("vite", "my-api") and not dropped
+    assert port_variable("my-api") == "MULEBOX_PORT_MY_API"
+    assert for_job(project, "check")[1] == ["URL"]
+    assert for_job(project, None)[1] == ["URL"]
+
+
+@pytest.mark.parametrize("name", ["api_8000", "API-8000", "x_53_udp", "2fast", "a b", "a,b"])
+def test_a_name_that_could_be_a_service_port_or_break_the_list_is_refused(tmp_path, name):
+    with pytest.raises(ConfigError, match="ports"):
+        load(tmp_path, f'  check:\n    run: x\n    ports: ["{name}"]\n')
+
+
+def test_the_same_port_twice_is_refused(tmp_path):
+    with pytest.raises(ConfigError, match="twice"):
+        load(tmp_path, "  check:\n    run: x\n    ports: [a-b, a_b]\n")
 
 
 @pytest.mark.parametrize("jobs, field", [

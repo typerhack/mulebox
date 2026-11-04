@@ -24,7 +24,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 6. `mulebox contract` prints the current schema on
+This skill was written for contract schema 7. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
@@ -102,8 +102,9 @@ themselves. A container sees a cache only if the compose file mounts `${MULEBOX_
 - Services get 65536 open files unless they set `ulimits.nofile`.
 
 A job in `.mulebox.yml` can be a mapping with `run`, its own `setup` (or `setup: false`) and
-`compose: false`, so a quick job skips containers it does not use. `mulebox contract` shows these
-as job settings.
+`compose: false`, so a quick job skips containers it does not use, and `ports: [vite]`, which gives
+it a free port in `MULEBOX_PORT_VITE` for a process of its own, such as a dev server: never a
+fixed number. `mulebox contract` shows these as job settings.
 
 The coordinator and the workers must be upgraded together. If `mulebox doctor` reports
 different versions, tell the user.

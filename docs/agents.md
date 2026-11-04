@@ -248,11 +248,22 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
          run: pnpm lint
          setup: pnpm install --frozen-lockfile --ignore-scripts  # or false for no setup
          compose: false                  # no containers for this job
+       e2e:
+         run: pnpm exec vite --port "$MULEBOX_PORT_VITE" & pnpm exec playwright test
+         ports: [vite]
      ```
+
+     `ports: [vite]` on a job gives it `MULEBOX_PORT_VITE`, a free port for a process of the job
+     itself, such as a dev server a browser test starts. Bind to `127.0.0.1` with that port;
+     never a fixed number, another job may hold it. Use it in the job's commands or in `env:`. A
+     name may not end in a number, and the port is the job's until it is cleaned up. Another
+     job has no such variable, so `env:` entries built on it are left out there.
 
      With `compose: false` the job needs no Docker on its machine. `env:` entries built on
      `MULEBOX_PORT_...`, directly or through an earlier entry, are left out for that job, and
      `check` says which. `mulebox run` always uses the top-level values.
+     `ports:` needs a build machine on 0.40 or later: an older worker refuses the job at
+     the start, with exit 5.
    - A job may span several lines (`check: |`). The first line that fails ends it, as in a
      GitHub Actions `run:` step.
    - If the project runs containers for its checks, use `compose:` (section 2a). Never run

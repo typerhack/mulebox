@@ -77,11 +77,10 @@ def run_job(
     With `detach`, return 0 once the job is queued, with its id on stdout."""
     io = streams or Streams()
     job, argv = job_request(project, target)
-    if isinstance(target, str):
-        project, dropped = for_job(project, target)
-        if dropped:
-            report.status(io.err, f"without containers this job has no {', '.join(dropped)} from "
-                          "env:, which use their ports")
+    project, dropped = for_job(project, target if isinstance(target, str) else None)
+    if dropped:
+        report.status(io.err, f"this job has no {', '.join(dropped)} from env:: they use a port "
+                      "it does not have")
     try:
         snap = make_snapshot(root, project.exclude)
     except KeyboardInterrupt:

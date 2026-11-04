@@ -6,7 +6,7 @@ from mulebox.common import compose
 from mulebox.common.ids import new_id
 from mulebox.worker import jobspec, runspec
 from mulebox.worker.executor import ExecutorError
-from mulebox.worker.ports import PortPool
+from mulebox.worker.ports import HIGH, LOW, PortPool
 
 from .fakes import claim_body
 
@@ -93,3 +93,22 @@ def test_no_runtime_limit_when_the_coordinator_runs_the_limits():
 
 def test_an_older_coordinator_keeps_the_hard_limit():
     assert runspec._runtime_limit({"timeout_min": 2}) == 120.0
+
+
+def test_a_jobs_own_port_is_free_held_and_in_its_env(machine, tmp_path):
+    job_id = new_id("job")
+    claim = {**claim_body(["true"]), "env": {
+        "MULEBOX_HOST_PORTS": "vite,my-api", "URL": "http://127.0.0.1:${MULEBOX_PORT_VITE}"}}
+    spec, notes = runspec.build(machine, job_id, claim, tmp_path, tmp_path / "out.log", [])
+    port = int(spec.env["MULEBOX_PORT_VITE"])
+    assert spec.env["URL"] == f"http://127.0.0.1:{port}" and "MULEBOX_HOST_PORTS" not in spec.env
+    assert LOW <= port <= HIGH and spec.env["MULEBOX_PORT_MY_API"] != str(port)
+    assert f"port {port} is $MULEBOX_PORT_VITE" in notes
+    assert port in machine.ports._held[job_id]
+    machine.ports.release(job_id)
+    assert job_id not in machine.ports._held
+
+
+def test_a_port_name_the_client_should_have_refused_is_refused_here(machine, tmp_path):
+    with pytest.raises(jobspec.JobSpecError, match="port api_8000"):
+        build(machine, tmp_path, env={"MULEBOX_HOST_PORTS": "api_8000"})

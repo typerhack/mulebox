@@ -15,7 +15,7 @@ from typing import Any
 from mulebox.client import report
 from mulebox.client.excludes import BUILTIN_EXCLUDES
 from mulebox.common.config import DEFAULT_LOG_DAYS, ProjectConfig
-from mulebox.common.config_jobs import for_job
+from mulebox.common.config_jobs import for_job, port_variable
 from mulebox.common.status import STAGES
 
 # 2: `project.services` removed; `project.needs` includes what compose implies
@@ -23,7 +23,8 @@ from mulebox.common.status import STAGES
 # 4: the skill teaches package caches, stages, `usual` and log retention
 # 5: timeout_min is a check-in; the skill teaches check-ins, unattended jobs and exit 76
 # 6: a job may have settings; `project.job_settings`
-SCHEMA = 6
+# 7: `job_settings` has `ports`
+SCHEMA = 7
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -165,7 +166,8 @@ def _settings(config: ProjectConfig) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for name in config.job_options:
         job, _ = for_job(config, name)
-        out[name] = {"setup": job.setup, "compose": bool(job.compose)}
+        out[name] = {"setup": job.setup, "compose": bool(job.compose),
+                     "ports": [port_variable(port) for port in job.host_ports]}
     return out
 
 
@@ -205,7 +207,8 @@ def _setting_text(project: dict[str, Any], name: str) -> str:
         return ""
     setup = settings["setup"] or "none"
     containers = "" if settings["compose"] or not project["compose"] else ", no containers"
-    return f" (setup: {setup}{containers})"
+    ports = "".join(f", port ${variable}" for variable in settings["ports"])
+    return f" (setup: {setup}{containers}{ports})"
 
 
 def _project_text(project: dict[str, Any] | None) -> list[str]:
