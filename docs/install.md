@@ -191,6 +191,18 @@ and `~/.config/mulebox/` yourself once you no longer need them. Disable lingerin
 enabled it only for mulebox: `sudo loginctl disable-linger alice`. On the laptop, remove
 `~/.config/mulebox/client.toml` and uninstall the client package.
 
+## Checking Docker on a machine
+
+`tools/drill_compose.py` starts a small `compose:` project on a real Docker daemon, checks
+that what mulebox generates ends up labelled, private to the job and reachable by service
+name, and removes it with the worker's teardown. It pulls nothing but needs `redis:7-alpine`,
+or `--image` with `redis-cli` in it, and removes only what carries the labels of a job id it
+made up. Run it from the laptop:
+
+```sh
+ssh build-1 '~/.mulebox/venv/bin/python - --real-docker' < tools/drill_compose.py
+```
+
 ## Troubleshooting
 
 | Problem | What to do |

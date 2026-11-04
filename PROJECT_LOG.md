@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.23.1 - 2026-11-04 - patch
+- `tools/drill_compose.py`: a drill against a real Docker daemon, since the tests use a fake one
+  and cannot show that generated files make resources teardown can find.
+- M4 done, with what passed on a real machine and what was not run, in docs/phases.md.
+
 ## 0.23.0 - 2026-11-04 - minor
 - `[job_env]` in node.toml: environment for every job on a machine, for what the machine
   needs and no project should have to know. Below a project's `env:`. Node's 250 ms limit per
