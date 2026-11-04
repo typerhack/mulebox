@@ -45,6 +45,11 @@ def run_until(agent, done, limit=20.0):
         time.sleep(0.05)
 
 
+def cleaned(agent, link):
+    """Cleanup runs beside the loop: step until it is through. Nothing is claimed meanwhile."""
+    run_until(agent, lambda: all(job.cleaned for job in agent.finishing))
+
+
 def result_of(link):
     results = link.of_type(MessageType.RESULT)
     assert len(results) == 1
@@ -119,6 +124,7 @@ def test_cancel_via_heartbeat_leaves_no_processes(agent, fake_link, clock, paths
     agent.step()
     beat = fake_link.of_type(MessageType.HEARTBEAT)[0].body
     assert beat["lease"] == "worker" and beat["job_id"] == job_id and beat["attempt_id"]
+    run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     assert result_of(fake_link)["outcome"] == "cancelled"
     assert not group_alive(pgid)
     assert not (paths.jobs / "example-app" / job_id).exists()
@@ -146,6 +152,7 @@ def test_coordinator_unreachable_stops_cleans_and_reports_later(agent, fake_link
     assert agent.active  # 100 s without a reply: keep running
     clock.now += 21
     agent.step()
+    cleaned(agent, fake_link)
     assert not agent.active and not group_alive(pgid)
     assert not (paths.jobs / "example-app" / job_id).exists()
     assert not fake_link.of_type(MessageType.RESULT)
@@ -174,7 +181,7 @@ def test_coordinator_says_job_is_over(agent, fake_link, clock):
     pgid = _running_pgid(agent, fake_link)
     fake_link.heartbeat_state = "finished"
     clock.now += 20
-    agent.step()
+    run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     assert result_of(fake_link)["outcome"] == "interrupted"
     assert not group_alive(pgid)
 
@@ -190,14 +197,14 @@ def test_missing_toolchain_fails_with_a_clear_log(agent, fake_link, paths):
 def test_refused_running_update_cancels_without_starting(agent, fake_link, executor):
     fake_link.refuse.add(MessageType.JOB_UPDATE)
     submit(fake_link, "bash", "-c", "touch /should/not/run")
-    agent.step()
+    run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     assert result_of(fake_link)["outcome"] == "cancelled"
     assert executor.running == {}
 
 
 def test_unsafe_project_name_fails(agent, fake_link):
     submit(fake_link, "true", project="../escape")
-    agent.step()
+    run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     assert result_of(fake_link)["outcome"] == "failed"
 
 
@@ -211,6 +218,7 @@ def test_unreachable_during_snapshot_fetch(agent, fake_link, paths):
 
     fake_link.fetch_snapshot = fetch
     agent.step()
+    cleaned(agent, fake_link)
     assert not (paths.jobs / "example-app" / job_id).exists()
     fake_link.down = False
     agent.step(agent.clock() + 10)

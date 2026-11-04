@@ -22,6 +22,7 @@ class ActiveJob:
     outcome: Outcome | None = None  # set when the job ended
     exit_code: int | None = None
     duration_s: float = 0.0
+    cleanup: Any = None  # the background.Task in progress
     cleaned: bool = False
     cleaning_sent: bool = False
     result_sent: bool = False

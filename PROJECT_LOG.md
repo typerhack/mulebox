@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.21.3 - 2026-11-04 - patch
+- Cleanup runs beside the worker's loop. It ran inside it, so a stuck Docker daemon could stop
+  heartbeats past another job's lease, and cancels and runner supervision with them. The
+  cleaning job heartbeats too, and the worker waits for cleanups when it stops. `compose
+  config`, which still runs in the loop, gets a timeout that stays inside a lease.
+
 ## 0.21.2 - 2026-11-04 - patch
 - A built image gets a tag only its job has, whatever `image:` and `build.tags` say; services
   using that image follow. Cleanup removes that tag by name, without force, not the image

@@ -33,6 +33,9 @@ queue without a word, for as long as its client lived.
   containers) and lists again, up to 3 passes; `DockerError` if anything stays. Images are
   listed by `repository:tag`, and only tags from `compose.image_name` go, with a plain
   `image rm`: no ids and no force. Another tag on the same image keeps it.
+- Cleanup runs in a thread (`worker/background.py`). The loop keeps heartbeats, cancels and
+  supervision going, and heartbeats the cleaning job too. On stop the worker waits up to
+  60 s for it; what is left then is found by label on the next start.
 - `docker_cleanup.labelled_jobs(docker, worker)`: job ids on containers, networks and volumes
   carrying `mulebox.job` and this worker's label.
 - `worker/cleaner.py`: `Cleaner.clean(project, job_id, uses_docker)` tears down, then removes

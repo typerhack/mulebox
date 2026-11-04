@@ -8,10 +8,11 @@ Per job: fetch snapshot, prepare the workspace, `job_update running`, start the 
 each step ship new log text, poll the process, heartbeat every 3 s. The job is stopped on
 `cancel: true`, when the coordinator says the job is over, or when no reply came for
 120 s (the worker lease length). After it ends: flush the log, `job_update cleaning`,
-remove what the job left (cleaner.py), `result`. Cleanup happens even while the coordinator
-is unreachable; the reports are delivered once it answers again. No new job is claimed while
-reports are pending. With a supervisor, each step also lets it watch this worker's
-runner reservations (runners/supervise.py; it runs every 10 s).
+remove what the job left (cleaner.py), `result`. Cleanup runs beside the loop (background.py),
+so heartbeats, cancels and supervision go on while Docker is slow, and the job keeps its
+lease. It happens even while the coordinator is unreachable; the reports are delivered once
+it answers again. No new job is claimed while reports are pending. With a supervisor, each
+step also lets it watch this worker's runner reservations (runners/supervise.py; every 10 s).
 """
 
 from __future__ import annotations
@@ -29,7 +30,7 @@ from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker import runspec, toolchains, workspace
+from mulebox.worker import background, runspec, toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -44,6 +45,7 @@ POLL_S = 1.0
 HEARTBEAT_S = 3.0  # also how fast a cancel is noticed; the lease is still 120 s
 LEASE_S = 120.0
 RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
+SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
 class Agent:
@@ -81,7 +83,6 @@ class Agent:
     def _sender(self, now: float) -> Callable[[Message], Message]:
         return lambda msg: self._call(msg, now)
 
-    # -- recovery ----------------------------------------------------------------------
     def recover(self) -> None:
         """Stop orphan `mulebox-job-*` units, then clean what jobs left behind."""
         for name in self.executor.list_orphans():
@@ -90,7 +91,6 @@ class Agent:
         for what in self.cleaner.recover():
             LOG.warning("cleaned up leftover job %s", what)
 
-    # -- one iteration -----------------------------------------------------------------
     def step(self, now: float | None = None) -> None:
         now = self.clock() if now is None else now
         for job in list(self.active.values()):
@@ -174,13 +174,18 @@ class Agent:
                       silent, job.job_id)
             self._end(job, Outcome.INTERRUPTED, None, now)
 
-    def _heartbeat(self, job: ActiveJob, now: float) -> None:
+    def _ping(self, job: ActiveJob, now: float) -> Message | None:
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
                       attempt_id=job.attempt_id)
         try:
-            reply = self._call(msg, now)
+            return self._call(msg, now)
         except LinkError:
+            return None
+
+    def _heartbeat(self, job: ActiveJob, now: float) -> None:
+        reply = self._ping(job, now)
+        if reply is None:
             return
         if reply.body.get("cancel"):
             LOG.info("cancel requested for %s", job.job_id)
@@ -205,17 +210,29 @@ class Agent:
                 self._send_cleaning(job, now)
             except LinkError:
                 pass
-        self._cleanup(job)
         self._deliver(job, now)
 
+    def _clean(self, job: ActiveJob) -> None:
+        if _safe(self.paths, job.project, job.job_id):
+            self.cleaner.clean(job.project, job.job_id, job.uses_docker)
+
     def _cleanup(self, job: ActiveJob) -> None:
-        try:
-            if _safe(self.paths, job.project, job.job_id):
-                self.cleaner.clean(job.project, job.job_id, job.uses_docker)
-            job.cleaned = True
-            self.ports.release(job.job_id)
-        except MuleboxError as exc:
-            LOG.error("cleanup of %s failed (retrying): %s", job.job_id, exc)
+        """Start the job's cleanup, or take its outcome; a failed one starts again next step."""
+        if job.cleanup is None:
+            job.cleanup = background.start_thread(lambda: self._clean(job))
+        if not job.cleanup.done:
+            return
+        task, job.cleanup = job.cleanup, None
+        if task.error is not None:
+            LOG.error("cleanup of %s failed (retrying): %s", job.job_id, task.error)
+            return
+        job.cleaned = True
+        self.ports.release(job.job_id)
+
+    def _keep_lease(self, job: ActiveJob, now: float) -> None:
+        """The job counts for its slot until the result; a slow cleanup must not lose it."""
+        if now - job.last_heartbeat >= HEARTBEAT_S and self._online(now):
+            self._ping(job, now)
 
     def _send_cleaning(self, job: ActiveJob, now: float) -> None:
         if job.cleaning_sent:
@@ -229,6 +246,7 @@ class Agent:
         if not job.cleaned:
             self._cleanup(job)
             if not job.cleaned:
+                self._keep_lease(job, now)
                 return
         if not self._online(now):
             return
@@ -248,6 +266,11 @@ class Agent:
         now = self.clock() if now is None else now
         for job in list(self.active.values()):
             self._end(job, Outcome.INTERRUPTED, None, now)
+        deadline = time.monotonic() + SHUTDOWN_WAIT_S
+        for job in list(self.finishing):
+            if job.cleanup is not None:
+                job.cleanup.wait(max(0.0, deadline - time.monotonic()))
+            self._deliver(job, now)
 
 
 def _safe(paths: NodePaths, project: str, job_id: str) -> bool:

@@ -37,6 +37,7 @@ from mulebox.worker.reclaim import HELPER_IMAGE
 
 GENERATED_FILE = "compose.mulebox.yml"  # beside src/, so it is not in the project's checkout
 LOG_LINES = 50
+CONFIG_TIMEOUT_S = 30.0  # this runs in the worker's loop: twice this stays inside a lease
 
 EnvBuilder = Callable[[Mapping[str, str]], dict[str, str]]
 
@@ -49,8 +50,8 @@ class ComposeJob:
 
 
 def _config(docker: Docker, env: Mapping[str, str], src: Path) -> dict[str, Any]:
-    text = docker.run("compose", "config", "--format", "json",
-                      env={**os.environ, **env}, cwd=src)
+    text = docker.run("compose", "config", "--format", "json", env={**os.environ, **env},
+                      cwd=src, timeout_s=CONFIG_TIMEOUT_S)
     try:
         model = json.loads(text)
     except ValueError as exc:
