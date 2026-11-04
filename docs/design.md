@@ -201,6 +201,13 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Container ports bind to 127.0.0.1.
 - Docker access is root-equivalent: running jobs as the machine's normal user is fine for
   a single trusted owner; a dedicated user is optional hygiene, not isolation.
+- Docker cleanup removes only what a listing filtered on one job's exact labels returned.
+  `prune` and `system` cannot be run through mulebox at all. Containers, networks and
+  volumes of the job go; images stay as cache.
+- Root-owned files never need sudo: a throwaway container with no network, a read-only root
+  file system and only the capabilities `chown` needs takes one job folder, proven by the
+  path-safety module to be inside the jobs root, and gives it back. Deleting stays in
+  the path-safety module.
 
 ## Code layout
 
@@ -210,7 +217,8 @@ mulebox/
   client/       snapshot.py  submit.py  tui.py  commands.py
   coordinator/  store.py  queue.py  leases.py  recovery.py  api.py  staging.py
   dashboard/    server.py  streams.py  hub.py  events.py  metrics.py  data.py  static/
-  worker/       agent.py  workspace.py  executor.py  docker_cleanup.py  toolchains.py
+  worker/       agent.py  workspace.py  executor.py  cleaner.py  docker_cleanup.py
+                reclaim.py  toolchains.py
                 runner_hooks.py
   cli.py        single entry point: `mulebox <command>`
 tests/          mirrors the package layout

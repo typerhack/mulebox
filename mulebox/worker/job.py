@@ -18,6 +18,7 @@ class ActiveJob:
     started_at: float  # agent clock
     last_heartbeat: float
     handle: Any = None  # executor handle once the process runs
+    uses_docker: bool = False  # a `compose:` job: its Docker resources are torn down
     outcome: Outcome | None = None  # set when the job ended
     exit_code: int | None = None
     duration_s: float = 0.0

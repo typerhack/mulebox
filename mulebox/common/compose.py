@@ -70,6 +70,11 @@ def job_filter(job_id: str) -> str:
     return f"label={LABEL_JOB}={_checked(job_id)}"
 
 
+def worker_filter(worker: str) -> str:
+    """`docker ... --filter` value for what this worker labelled."""
+    return f"label={LABEL_WORKER}={worker}"
+
+
 def project_filter(job_id: str) -> str:
     """`docker ... --filter` value for what Compose labelled with this job's project."""
     return f"label={LABEL_COMPOSE_PROJECT}={project_name(job_id)}"

@@ -16,6 +16,7 @@ from typing import Any
 from mulebox.common.config import DEFAULT_REMOTE_BIN, NodeConfig, load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
+from mulebox.worker.docker import Docker
 from mulebox.worker.paths import NodePaths
 
 
@@ -112,5 +113,5 @@ def _serve(args: argparse.Namespace) -> int:
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    serve(node, link, _executor(), paths=paths, stop=stop)
+    serve(node, link, _executor(), paths=paths, stop=stop, docker=Docker())
     return 0

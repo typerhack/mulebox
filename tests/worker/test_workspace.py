@@ -58,6 +58,5 @@ def test_cleanup_and_leftovers(paths, snapshot):
     (paths.jobs / "example-app" / "notes").mkdir()  # not a job folder: left alone
     workspace.cleanup(paths, "example-app", first)
     assert not (paths.jobs / "example-app" / first).exists()
-    removed = workspace.remove_leftovers(paths)
-    assert removed == [paths.jobs / "other" / second]
+    assert workspace.leftover_job_dirs(paths) == [paths.jobs / "other" / second]
     assert (paths.jobs / "example-app" / "notes").is_dir()

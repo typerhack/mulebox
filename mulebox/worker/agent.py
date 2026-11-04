@@ -8,8 +8,8 @@ Per job: fetch snapshot, prepare the workspace, `job_update running`, start the 
 each step ship new log text, poll the process, heartbeat every 3 s. The job is stopped on
 `cancel: true`, when the coordinator says the job is over, or when no reply came for
 120 s (the worker lease length). After it ends: flush the log, `job_update cleaning`,
-remove the workspace, `result`. Cleanup happens even while the coordinator is
-unreachable; the reports are delivered once it answers again. No new job is claimed while
+remove what the job left (cleaner.py), `result`. Cleanup happens even while the coordinator
+is unreachable; the reports are delivered once it answers again. No new job is claimed while
 reports are pending. With a supervisor, each step also lets it watch this worker's
 runner reservations (runners/supervise.py; it runs every 10 s).
 """
@@ -22,6 +22,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from mulebox.common import compose
 from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
@@ -29,6 +30,8 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.runners.supervise import Supervisor
 from mulebox.worker import jobspec, toolchains, workspace
+from mulebox.worker.cleaner import Cleaner
+from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec, unit_name
 from mulebox.worker.job import ActiveJob, outcome_for
 from mulebox.worker.link import CoordinatorLink, LinkError, request
@@ -45,10 +48,11 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 class Agent:
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
-                 supervisor: Any = None) -> None:
+                 supervisor: Any = None, docker: Docker | None = None) -> None:
         self.node, self.link, self.executor, self.paths = node, link, executor, paths
         self.clock = clock
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
+        self.cleaner = Cleaner(paths, node.name, docker)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
         self.retry_at = 0.0
@@ -76,12 +80,12 @@ class Agent:
 
     # -- recovery ----------------------------------------------------------------------
     def recover(self) -> None:
-        """Stop orphan `mulebox-job-*` units and remove leftover job folders."""
+        """Stop orphan `mulebox-job-*` units, then clean what jobs left behind."""
         for name in self.executor.list_orphans():
             LOG.warning("stopping orphan unit %s", name)
             self.executor.kill(name)
-        for path in workspace.remove_leftovers(self.paths):
-            LOG.warning("removed leftover job folder %s", path)
+        for what in self.cleaner.recover():
+            LOG.warning("cleaned up leftover job %s", what)
 
     # -- one iteration -----------------------------------------------------------------
     def step(self, now: float | None = None) -> None:
@@ -118,7 +122,8 @@ class Agent:
         safe = _safe(self.paths, project, job_id)
         log_path = self.paths.job_dir(project, job_id) / "out.log" if safe else None
         tailer = LogTailer(log_path, job_id, attempt_id, request)
-        job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now)
+        job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
+                        uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}))
         self.active[job_id] = job
         LOG.info("claimed %s (%s, attempt %s)", job_id, project, attempt_id)
         try:
@@ -207,7 +212,7 @@ class Agent:
     def _cleanup(self, job: ActiveJob) -> None:
         try:
             if _safe(self.paths, job.project, job.job_id):
-                workspace.cleanup(self.paths, job.project, job.job_id)
+                self.cleaner.clean(job.project, job.job_id, job.uses_docker)
             job.cleaned = True
         except MuleboxError as exc:
             LOG.error("cleanup of %s failed (retrying): %s", job.job_id, exc)
@@ -254,11 +259,13 @@ def _safe(paths: NodePaths, project: str, job_id: str) -> bool:
 
 
 def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
-          paths: NodePaths | None = None, stop: threading.Event | None = None) -> None:
+          paths: NodePaths | None = None, stop: threading.Event | None = None,
+          docker: Docker | None = None) -> None:
     """Recovery first, then the claim loop until `stop` is set."""
     paths = paths or NodePaths.from_config(node.roots)
     stop = stop or threading.Event()
-    agent = Agent(node, link, executor, paths, supervisor=Supervisor(node.name, paths.runners))
+    agent = Agent(node, link, executor, paths, docker=docker,
+                  supervisor=Supervisor(node.name, paths.runners))
     agent.recover()
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)
     while not stop.is_set():

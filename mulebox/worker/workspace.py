@@ -82,12 +82,3 @@ def leftover_job_dirs(paths: NodePaths) -> list[Path]:
                 continue
             found.append(entry)
     return found
-
-
-def remove_leftovers(paths: NodePaths) -> list[Path]:
-    """Remove every leftover job folder; return what was removed."""
-    removed = []
-    for entry in leftover_job_dirs(paths):
-        remove_tree(entry, paths.roots)
-        removed.append(entry)
-    return removed

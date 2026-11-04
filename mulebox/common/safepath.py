@@ -28,8 +28,8 @@ from mulebox.common.roots import (
 )
 
 __all__ = [
-    "DIR_MODE", "PathOutsideRoots", "RemovalDenied", "Roots", "UnsafePath", "ensure_dir",
-    "remove_tree", "resolve_inside",
+    "DIR_MODE", "PathOutsideRoots", "RemovalDenied", "Roots", "UnsafePath", "confirm_dir",
+    "ensure_dir", "remove_tree", "resolve_inside",
 ]
 
 DIR_MODE = 0o750
@@ -250,12 +250,8 @@ def _remove_entry(parent_fd: int, name: str, target: Path, ident: mounts.Identit
     _delete(parent_fd, name, target, is_dir=True, fix=False)
 
 
-def ensure_dir(path: Path, roots: Roots) -> Path:
-    """Create path (and missing parents) strictly inside a root, mode 0o750.
-
-    The path must be spelled under a root as given in roots.paths, and no component below
-    the root may be a symlink (not even one pointing back inside).
-    """
+def _spelled_under_root(path: Path, roots: Roots) -> tuple[Path, int, Path]:
+    """(path, index of its root, the root); no '..', never the root itself."""
     path = require_absolute(path)
     if ".." in path.parts:
         raise UnsafePath(f"{path} contains '..'")
@@ -266,6 +262,35 @@ def ensure_dir(path: Path, roots: Roots) -> Path:
         raise PathOutsideRoots(f"{path} is not under a configured root (use Roots.paths)")
     if path == root:
         raise UnsafePath(f"{path} is the root {root} itself")
+    return path, index, root
+
+
+def confirm_dir(path: Path, roots: Roots) -> Path:
+    """Prove path is a real directory strictly inside a root, and return it.
+
+    For handing a path to something that cannot use descriptors, such as a bind mount: it
+    must be spelled under a root, no component below the root may be a symlink, and no mount
+    may be in or above it. The caller must make sure nothing can change it afterwards.
+    """
+    path, index, root = _spelled_under_root(path, roots)
+    _refuse_mounts(path, root)
+    try:
+        opened = _open_chain(root, roots._ids[index], path.relative_to(root).parts, False)
+    except OSError as exc:
+        raise os_error(f"could not open {path}", exc) from exc
+    if opened is None:
+        raise UnsafePath(f"{path} does not exist")
+    os.close(opened[0])
+    return path
+
+
+def ensure_dir(path: Path, roots: Roots) -> Path:
+    """Create path (and missing parents) strictly inside a root, mode 0o750.
+
+    The path must be spelled under a root as given in roots.paths, and no component below
+    the root may be a symlink (not even one pointing back inside).
+    """
+    path, index, root = _spelled_under_root(path, roots)
     try:
         opened = _open_chain(root, roots._ids[index], path.relative_to(root).parts, True)
     except OSError as exc:

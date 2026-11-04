@@ -8,6 +8,17 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.17.0 - 2026-11-04 - minor
+- Docker cleanup: `worker/docker.py` is the one place that runs the docker CLI and refuses
+  `prune` and `system` outright; `worker/docker_cleanup.py` removes only what a listing
+  filtered on one job's exact labels returned, and repeats until that listing is empty.
+- `worker/reclaim.py`: root-owned files in a job folder are given back to the worker's user
+  by a locked-down throwaway container, then deleted through safepath. No sudo. It mounts
+  only a folder `safepath.confirm_dir` proved to be inside the jobs root.
+- `worker/cleaner.py`: Docker first, folder second, on every outcome, and recovery after a
+  crash from both the job folders and the labels. A folder that cannot be removed no longer
+  stops the worker from starting.
+
 ## 0.16.0 - 2026-11-04 - minor
 - A job whose `needs` no worker offers no longer waits forever without a word: it is refused
   at submit with what to change, and a queued job that cannot start says why in
