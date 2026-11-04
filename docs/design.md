@@ -295,6 +295,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - A package cache is written by one job and read by the next, so it is a channel between
   jobs of one project, on purpose and only if the project asks. It is not one between
   projects: each has its own folder, and compose may mount only its own (see Package caches).
+- Log retention removes a finished job's log file through the path-safety module, from the
+  logs folder only, and only for a name it found in the job table.
 - Root-owned files never need sudo: a throwaway container with no network, a read-only root
   file system and only the capabilities `chown` needs takes one job folder, proven by the
   path-safety module to be inside the jobs root, and gives it back. Deleting stays in

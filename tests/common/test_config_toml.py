@@ -146,6 +146,7 @@ def test_node_minimal_defaults(tmp_path):
         roots={k: f"/home/alice/.mulebox/{k}" for k in ("jobs", "cache", "staging", "runners")},
         dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
                    "lan_port": 8443, "lan_tls": False, "lan_password": True},
+        retention={"log_days": 30, "step_days": 365},
     )
     assert config.slots == 1 and config.capabilities == () and config.coordinator is None
 

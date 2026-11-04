@@ -95,6 +95,10 @@ sudo loginctl enable-linger alice
   service sets itself wins. It replaces an `ENV` of the same name in an image, since mulebox
   cannot see that one. It does not reach a `RUN` line of an image build or GitHub runner
   jobs. Not for secrets: it ends up in job processes and in the job's compose file.
+- `[retention]`: `log_days` (default 30) is how long a job's log is kept after the job ended,
+  and `step_days` (default 365, at least `log_days`) how long its stage rows are. The coordinator
+  service removes what is older, once an hour and when it starts, from
+  `<staging>/logs/` and nowhere else. A finished job's row stays for good.
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).

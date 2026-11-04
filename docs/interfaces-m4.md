@@ -165,6 +165,16 @@ present. `--progress json` on 5.6 has `current` and `total` per layer, but only 
 have started, so a whole-pull percentage would still be a guess, and the flag would need a
 version check. Not used.
 
+## Retention
+
+`coordinator/retention.py`: `sweep(store, staging, now, log_days, step_days) -> (logs, rows)`,
+run by the coordinator service at the start and every hour. `Staging.log_job_ids()` lists
+regular files directly in `<staging>/logs`, named `<valid job id>.log`, so a symlink, a folder or
+a foreign file is never a candidate. A log goes when its job is `finished` and `finished_at`
+is older than `log_days`, through `Staging.remove_log` and so safepath. A log of an unknown or
+active job stays. `job_steps` rows go after `step_days`. Rows in `jobs` are never removed.
+`mulebox logs` of a job whose log has gone prints nothing; the job still shows in history.
+
 ## Browser tests
 
 `worker/runspec.py`: `build(machine, job_id, claim, src, log_path, bins) -> (RunSpec, notes)`

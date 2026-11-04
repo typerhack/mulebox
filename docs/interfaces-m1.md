@@ -23,7 +23,7 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 | --- | --- | --- |
 | `<staging>/state/mulebox.db` | coordinator | SQLite store |
 | `<staging>/uploads/<job_id>.tar.gz` | coordinator | snapshot; removed when the job finishes |
-| `<staging>/logs/<job_id>.log` | coordinator | redacted job log (kept, M2 adds retention) |
+| `<staging>/logs/<job_id>.log` | coordinator | redacted job log, removed after `log_days` (interfaces-m4.md) |
 | `<jobs>/<project>/<job_id>/src/` | worker | extracted workspace |
 | `<jobs>/<project>/<job_id>/out.log` | worker | raw unit output (worker redacts before sending) |
 | `<cache>/toolchains/<name>/<version>/bin` | worker | pinned toolchains, prepended to PATH |

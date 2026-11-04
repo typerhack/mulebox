@@ -69,6 +69,9 @@ the last line of a failed one. The first four need no action from a project. It 
 `usual`, what passed runs of this job took, whole and per stage, or nothing if there is
 no history yet. Say "usually about 4 min" if that helps. It is no progress measure.
 
+A build machine keeps a job's log for 30 days unless its owner chose otherwise. After that
+`mulebox logs <id>` prints nothing, and the job's result and stages remain.
+
 ## 2. Setting up a project (`.mulebox.yml`)
 
 Do this once per repository, on a branch, following the project's own rules for commits

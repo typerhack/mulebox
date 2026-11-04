@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.32.0 - 2026-11-04 - minor
+- Old logs are removed: nothing did before. `[retention]` in node.toml has `log_days` (30) and
+  `step_days` (365). The coordinator service sweeps at its start and hourly, through safepath,
+  only in the logs folder and only for files named after a finished job.
+- Test only: what the rewrite adds to services moved to a test file of its own.
+
 ## 0.31.0 - 2026-11-04 - minor
 - Image pull progress is collapsed in what is stored and streamed: a real log had over 27,000
   lines of it. Outcome lines and errors stay, and a line says how much has been downloaded.

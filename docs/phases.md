@@ -165,6 +165,9 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
 - [~] M9.6 Image pull progress collapsed in stored and streamed logs, after redaction, with
       bytes on the stage. Built 2026-11-04 (0.31.0): samples from a real Compose 5.6 pull, and
       a pull through the worker on a local Docker daemon. Open: a large pull on a slow link.
+- [~] M9.7 Log cleanup: logs go after `log_days` (30), stage rows after `step_days` (365), through
+      safepath, from the logs folder only. Built 2026-11-04 (0.32.0), with tests in temporary
+      roots. Open: a service running over a real history.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

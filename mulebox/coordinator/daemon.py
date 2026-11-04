@@ -1,4 +1,5 @@
-"""`mulebox coordinator serve`: recovery first, then a lease sweep every 5 s.
+"""`mulebox coordinator serve`: recovery first, then a lease sweep every 5 s, and retention
+(old logs, retention.py) at the start and once an hour.
 
 Requests do not go through this process (each `mulebox rpc` opens the store itself); the
 service only applies time-based rules. SIGTERM and SIGINT end the loop cleanly.
@@ -11,24 +12,32 @@ from collections.abc import Callable
 
 from mulebox.common.config import NodeConfig
 from mulebox.common.log import get_logger
-from mulebox.coordinator import leases, recovery
+from mulebox.coordinator import leases, recovery, retention
 from mulebox.coordinator.node import open_local
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 
 _log = get_logger(__name__)
 SWEEP_S = 5.0
+RETENTION_S = 3600.0
+LOG_DAYS, STEP_DAYS = 30, 365
 
 
 def run(store: Store, staging: Staging, stop: threading.Event, *,
-        clock: Callable[[], float] = time.time, interval: float = SWEEP_S) -> int:
+        clock: Callable[[], float] = time.time, interval: float = SWEEP_S,
+        log_days: int = LOG_DAYS, step_days: int = STEP_DAYS) -> int:
     """Recovery, then sweep until `stop` is set; return the number of sweeps done."""
     interrupted = recovery.recover(store, clock(), staging)
     _log.info("recovery done: %d job(s) interrupted", len(interrupted))
     sweeps = 0
+    next_retention = 0.0
     while not stop.is_set():
+        now = clock()
+        if now >= next_retention:
+            next_retention = now + RETENTION_S
+            _keep_tidy(store, staging, now, log_days, step_days)
         try:
-            finished = leases.expire(store, clock(), staging)
+            finished = leases.expire(store, now, staging)
             if finished:
                 _log.info("lease sweep finished %d job(s): %s", len(finished), ", ".join(finished))
         except Exception:  # noqa: BLE001 - one failed sweep must not stop the service
@@ -36,6 +45,15 @@ def run(store: Store, staging: Staging, stop: threading.Event, *,
         sweeps += 1
         stop.wait(interval)
     return sweeps
+
+
+def _keep_tidy(store: Store, staging: Staging, now: float, log_days: int, step_days: int) -> None:
+    try:
+        logs, rows = retention.sweep(store, staging, now, log_days, step_days)
+        if logs or rows:
+            _log.info("retention removed %d log(s) and %d stage row(s)", logs, rows)
+    except Exception:  # noqa: BLE001 - tidying up must never stop the service
+        _log.exception("retention failed")
 
 
 def serve(node: NodeConfig, stop: threading.Event | None = None) -> int:
@@ -48,7 +66,7 @@ def serve(node: NodeConfig, stop: threading.Event | None = None) -> int:
     store, staging = open_local(node)
     try:
         _log.info("coordinator %s serving (store %s)", node.name, store.path)
-        run(store, staging, stop)
+        run(store, staging, stop, **node.retention)
     finally:
         store.close()
         for sig, handler in previous.items():
