@@ -14,7 +14,7 @@ import time
 from typing import Any
 
 from mulebox.client import events, report
-from mulebox.client.commands import connect, guarded, project_here
+from mulebox.client.commands import connect, guarded, note_expired_log, project_here
 from mulebox.client.remote import request
 from mulebox.client.submit import Streams, Watcher, stale_check
 from mulebox.common import status
@@ -60,6 +60,7 @@ def _wait(args: argparse.Namespace) -> int:
                       f"(`mulebox cancel {args.job_id}` stops it)")
         return report.EXIT_CANCELLED
     watcher.finish(result)
+    note_expired_log(watcher)
     _warn_if_stale(result, io)
     return report.exit_code_for(result)
 

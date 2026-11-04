@@ -81,6 +81,18 @@ def outcome_line(job_id: str, result: dict[str, Any]) -> str:
     return f"job {job_id} {outcome}{detail} in {took}"
 
 
+def log_expired(body: dict[str, Any]) -> bool:
+    """Did this job write a log? Asked once reading it gave nothing: the coordinator keeps a
+    job's row after it has removed its log, so the size says there was one."""
+    size = number(body.get("log_size"))
+    return size is not None and size > 0
+
+
+def expired_line(job_id: str) -> str:
+    return (f"the log of job {job_id} has expired: build machines remove old logs (after 30 "
+            f"days by default). `mulebox status {job_id}` still has the result")
+
+
 def state_line(body: dict[str, Any]) -> str | None:
     """Status line for a state change seen on the watch stream (None: nothing to say)."""
     state = body.get("state")

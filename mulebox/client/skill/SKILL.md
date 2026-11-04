@@ -57,7 +57,9 @@ code. In Claude Code, the Monitor tool can follow this command, so each line rea
 it happens and you can do other work meanwhile. `mulebox status <job-id>` is a one-time look.
 
 When it has ended, `mulebox logs <job-id> --summary` says why it failed, and `mulebox wait
-<job-id>` gives what an attached `mulebox check` would have: the log and the exit code.
+<job-id>` gives what an attached `mulebox check` would have: the log and the exit code. Old
+logs expire on the build machine; `mulebox logs` says so when one has, and `mulebox status
+<job-id>` still has the result.
 Cancel a detached job you no longer want: nothing else will.
 
 ## When something goes wrong

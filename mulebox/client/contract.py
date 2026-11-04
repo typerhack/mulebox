@@ -89,6 +89,8 @@ RULES = (
     "1 if a job would not run, and warnings alone exit 0",
     "a failed job ends with a short summary on stderr: read it first, and the full log only "
     "if it is not enough",
+    "old logs expire on the build machine: mulebox logs says so, and mulebox status still has "
+    "the result",
     "do not ssh into the build machine to change, install or delete things",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",
     "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",

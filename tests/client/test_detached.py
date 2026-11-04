@@ -224,3 +224,35 @@ def test_a_job_that_could_not_start_has_its_own_exit_code(local, in_project, cap
     assert "failed stage: start" in captured.err
     assert cli.main(["events", "--job", job_id, "--json"]) == report.EXIT_NOT_STARTED
     assert '"exit_code": 5' in capsys.readouterr().out
+
+
+def expire_log(local, job_id):
+    """What log retention does: the file goes, the job's row stays."""
+    local.staging.log_path(job_id).unlink()
+
+
+def test_an_expired_log_is_called_that(local, in_project, capsys):
+    job_id, _ = detach(capsys)
+    FakeWorker(local.store, local.staging).run_next()
+    expire_log(local, job_id)
+    assert cli.main(["logs", job_id]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "" and f"the log of job {job_id} has expired" in captured.err
+    assert cli.main(["logs", job_id, "--summary"]) == 0
+    captured = capsys.readouterr()
+    assert "has expired" in captured.err and "exit code 3" in captured.out
+
+
+def test_wait_keeps_the_exit_code_of_a_job_whose_log_expired(local, in_project, capsys):
+    job_id, _ = detach(capsys)
+    FakeWorker(local.store, local.staging).run_next()
+    expire_log(local, job_id)
+    assert cli.main(["wait", job_id]) == 3
+    assert "has expired" in capsys.readouterr().err
+
+
+def test_a_job_that_wrote_no_log_has_nothing_expired(local, in_project, capsys):
+    job_id, _ = detach(capsys)
+    FakeWorker(local.store, local.staging, log=(), exit_code=0).run_next()
+    assert cli.main(["logs", job_id]) == 0
+    assert "expired" not in capsys.readouterr().err

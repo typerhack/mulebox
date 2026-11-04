@@ -38,7 +38,8 @@ offers the project's toolchain versions and capabilities (and which versions it 
 instead), runs the worker's compose policy on the project's compose files, and warns when
 the client and the machine run different versions of mulebox. The compose check needs no
 Docker and sees only what the files show: not values with variables, and not files named by
-`include` or `extends`, so a clean result does not promise the worker will agree. It exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a usable
+`include` or `extends`, so a clean result does not promise the worker will agree. It exits 0
+when a job can run, also with warnings, 1 when it would not, 2 without a usable
 `.mulebox.yml` or client config, and 3 when the machine is unreachable.
 
 ## 1. Everyday use (project already set up)
@@ -57,7 +58,7 @@ Docker and sees only what the files show: not values with variables, and not fil
 | see the queue | `mulebox queue` |
 | list every project that has run on this build machine | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
-| read a job's log again | `mulebox logs <job-id>` |
+| read a job's log again | `mulebox logs <job-id>`; old logs expire on the build machine, and it says so when one has (`mulebox status <job-id>` still has the result) |
 | see why a job failed, without its whole log | `mulebox logs <job-id> --summary` |
 | stop a job | `mulebox cancel <job-id>` (Ctrl-C on a running `check` also cancels) |
 

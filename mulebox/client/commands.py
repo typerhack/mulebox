@@ -183,9 +183,24 @@ def _logs(args: argparse.Namespace) -> int:
     if args.follow:
         result = watcher.attach()
         watcher.finish(result)
+        note_expired_log(watcher)
         return report.exit_code_for(result)
     _read_log(remote, args.job_id, 0, watcher.write_log)
+    note_expired_log(watcher)
     return 0
+
+
+def note_expired_log(watcher: Watcher) -> None:
+    """A log that printed nothing may be gone rather than empty. Only a remark: losing the
+    connection here must not cost `wait` the job's exit code."""
+    if watcher.offset:
+        return
+    try:
+        body = watcher.remote.call(request(MessageType.STATUS, job_id=watcher.job_id)).body
+    except (MuleboxError, OSError):
+        return
+    if report.log_expired(body):
+        report.status(watcher.io.err, report.expired_line(watcher.job_id))
 
 
 def _read_log(remote: Remote, job_id: str, offset: int, sink: Callable[[dict], None]) -> None:
@@ -211,6 +226,8 @@ def _log_summary(remote: Remote, job_id: str) -> int:
         start = max(0, size - summary.TAIL_BYTES) if isinstance(size, int) else 0
         tail.cut = start > 0
         _read_log(remote, job_id, start, lambda chunk: tail.feed(chunk.get("data") or ""))
+        if not tail.text and report.log_expired(body):
+            report.status(sys.stderr, report.expired_line(job_id))
         print("\n".join(summary.render(job_id, body, summary.relevant_lines(tail))))
     return 0
 

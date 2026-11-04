@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.34.0 - 2026-11-04 - minor
+- `mulebox logs`, `logs --summary` and `wait` say when a job's log has expired, rather than
+  printing nothing (M8.10). The job's row keeps `log_size` after the file is gone, which tells
+  an expired log from an empty one. The exit code does not change: the job's result is intact.
+
 ## 0.33.0 - 2026-11-04 - minor
 - `mulebox doctor` checks a project's compose files before any upload, with the worker's own
   policy (M8.9): an external volume, a host network or a writable mount outside the checkout

@@ -43,7 +43,7 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 | `mulebox events --job <job_id> [--json]` | client | state changes from watch with `log: false`, through `status.job_event`; exit code = job exit code. Format: client/events.py |
 | `mulebox status <job_id> [--json]` | client | one `status` request; exit 0 whatever the job did |
 | `mulebox queue [--watch]` | client | table; `--watch` = live view (M1.7) |
-| `mulebox logs <job_id> [-f] [--summary]` | client | `-f` follows via watch without lease; `--summary` reads the log's tail only (client/summary.py) |
+| `mulebox logs <job_id> [-f] [--summary]` | client | `-f` follows via watch without lease; `--summary` reads the log's tail only (client/summary.py). A log that gives nothing for a job whose `log_size` is above 0 has expired: stderr says so, also in `wait`, and the exit code stays what it was |
 | `mulebox cancel <job_id>` | client | |
 | `mulebox skill install\|update\|status [--config-dir <dir>...]` | client | copies of the packaged skill in Claude config folders (client/skill_install.py); `status --json` for tools |
 | `mulebox doctor [--json]` | client | read-only; `machines` request, or `mulebox version` over ssh from a coordinator too old for it. Compose files go through the worker's policy on what they show themselves. Exit 0 ok or warnings, 1 a job would not run, 2 config, 3 unreachable |
