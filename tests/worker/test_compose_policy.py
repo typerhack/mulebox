@@ -168,3 +168,19 @@ def test_a_secret_cannot_be_the_docker_socket(section):
 
 def test_a_refusal_names_the_service():
     assert refused(model(privileged=True)).startswith("service api ")
+
+
+GPU = [{"driver": "nvidia", "count": "all", "capabilities": ["gpu"]}]
+
+
+@pytest.mark.parametrize("kind", ["limits", "reservations"])
+@pytest.mark.parametrize("key,value", [("devices", GPU),
+                                       ("generic_resources", [{"discrete_resource_spec": {}}])])
+def test_host_hardware_through_deploy_is_refused(kind, key, value):
+    data = model(deploy={"resources": {kind: {key: value}}})
+    assert f"{kind}.{key}" in refused(data)
+
+
+def test_ordinary_deploy_limits_are_fine():
+    compose_policy.check(model(deploy={"replicas": 1, "resources": {
+        "limits": {"cpus": "1", "memory": "512M"}, "reservations": {"memory": "128M"}}}), CHECKOUT)

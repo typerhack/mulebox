@@ -181,7 +181,8 @@ These are refused with the reason, because they reach past the job:
 - the host's namespaces (`network_mode`, `pid`, `ipc`, `uts`, `userns_mode`, `cgroup` set to
   `host`) and those of containers outside the project (`container:...`). `service:...` of the
   same project is fine;
-- `privileged`, privileged hooks, `devices`, `device_cgroup_rules`, `gpus`, `cgroup_parent`,
+- `privileged`, privileged hooks, `devices` (also under `deploy.resources`), `device_cgroup_rules`,
+  `gpus`, `cgroup_parent`,
   `runtime`, `provider`, `use_api_socket`, `external_links`;
 - `cap_add` beyond Docker's defaults and `SYS_NICE`, `SYS_PTRACE`, `IPC_LOCK`; `security_opt`
   other than `no-new-privileges`;

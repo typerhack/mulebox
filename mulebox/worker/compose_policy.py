@@ -52,6 +52,7 @@ _BUILD_REFUSED = {
     "ssh": "forwards an SSH agent",
     "cache_to": "writes its cache outside the job (cache_to:)",
 }
+_DEPLOY_REFUSED = ("devices", "generic_resources")
 _SOCKETS = ("/run/docker.sock", "/var/run/docker.sock")
 _NETWORK_DRIVERS = (None, "bridge", "default")
 _VOLUME_DRIVERS = (None, "local")
@@ -143,6 +144,15 @@ def _build_problem(build: Any) -> str | None:
     return None
 
 
+def _deploy_problem(spec: Model) -> str | None:
+    resources = (spec.get("deploy") or {}).get("resources") or {}
+    for kind in ("limits", "reservations"):
+        for key in _DEPLOY_REFUSED:
+            if (resources.get(kind) or {}).get(key):
+                return f"asks for host hardware in deploy ({kind}.{key}), which would reach past the job"
+    return None
+
+
 def _hook_problem(spec: Model) -> str | None:
     for key in _HOOKS:
         if any(hook.get("privileged") for hook in spec.get(key) or []):
@@ -169,6 +179,7 @@ def _service_problem(spec: Model, services: Model, checkout: Path) -> str | None
     return (_capability_problem(spec.get("cap_add") or [])
             or _security_problem(spec.get("security_opt") or [])
             or _build_problem(spec.get("build"))
+            or _deploy_problem(spec)
             or _hook_problem(spec))
 
 

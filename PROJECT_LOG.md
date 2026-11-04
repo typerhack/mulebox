@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.1 - 2026-11-04 - patch
+- Devices asked for through `deploy.resources` are refused, as `devices:` and `gpus:` already were.
+
 ## 0.24.0 - 2026-11-04 - minor
 - Environment names that change how a job starts are refused, on the client and on the worker
   (`common/env_rules.py`): `BASH_ENV` and its like for every job, `COMPOSE_*` and `DOCKER_*` for
