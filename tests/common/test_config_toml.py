@@ -145,7 +145,7 @@ def test_node_minimal_defaults(tmp_path):
         roles=("coordinator", "worker"),
         roots={k: f"/home/alice/.mulebox/{k}" for k in ("jobs", "cache", "staging", "runners")},
         dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
-                   "lan_port": 8443, "lan_tls": False, "lan_password": True},
+                   "lan_port": 8090, "lan_tls": False, "lan_password": True},
         retention={"log_days": 30, "step_days": 365},
         limits={"unattended_idle_min": 15, "unattended_max_hours": 24},
     )
@@ -257,7 +257,6 @@ def test_node_unknown_root_key(tmp_path):
         ('lan_range = "192.168.1.0/24"\nlan_address = "nope"', "dashboard.lan_address"),
         ('lan_range = "fd00::/64"\nlan_address = "fd00::1"', "dashboard.lan_address"),
         ('lan_address = "192.168.1.5"', "dashboard.lan_range"),
-        ("port = 8443", "dashboard.lan_port"),
         ('lan_tls = "yes"', "dashboard.lan_tls"),
         ('lan_password = "no"', "dashboard.lan_password"),
         ("port = 0", "dashboard.port"),
@@ -284,3 +283,10 @@ def test_node_max_limit_cannot_be_below_the_idle_limit(tmp_path):
     with pytest.raises(ConfigError, match="unattended_max_hours"):
         load_node(tmp_path, NODE + ROOTS + "[limits]\nunattended_idle_min = 90\n"
                   "unattended_max_hours = 1\n")
+
+
+def test_lan_port_follows_port_unless_set(tmp_path):
+    same = load_node(tmp_path, NODE + ROOTS + "[dashboard]\nport = 9000\n")
+    assert same.dashboard["lan_port"] == 9000
+    other = load_node(tmp_path, NODE + ROOTS + "[dashboard]\nport = 9000\nlan_port = 9443\n")
+    assert other.dashboard["lan_port"] == 9443

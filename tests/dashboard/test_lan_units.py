@@ -114,6 +114,11 @@ def test_ruleset_only_touches_its_port_and_table():
     assert rules.count("table inet mulebox_dashboard") == 3
 
 
+def test_ruleset_leaves_the_loopback_listener_on_the_same_port_alone():
+    rules = firewall.ruleset("192.168.1.0/24", 8090)
+    assert rules.index('iifname "lo" accept') < rules.index("tcp dport 8090")
+
+
 def test_script_validates_before_it_starts_anything():
     script = firewall.script("192.168.1.0/24", 8443)
     assert script.index("nft -c -f") < script.index("systemctl restart")

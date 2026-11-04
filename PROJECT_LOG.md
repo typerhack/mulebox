@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.41.0 - 2026-11-04 - minor
+- The dashboard uses one port: `lan_port` defaults to `port` (8090), not 8443, and may equal it. It stays two sockets, one on 127.0.0.1 and one on the LAN address, so the sign-in rules are unchanged.
+- Upgrading a `lan` machine with no `lan_port` set moves it to 8090: run the firewall step again, as the old rule covers the old port. The app's own range check holds meanwhile.
+- A test pins that loopback is accepted before the rule that drops other addresses on that port.
+
 ## 0.40.6 - 2026-11-04 - patch
 - Tests for how a stop ends moved to their own file, as the attendance tests had passed 300 lines.
 
