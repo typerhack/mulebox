@@ -66,6 +66,14 @@ def test_secrets_never_enter_the_archive_even_when_tracked(make_repo, snaps):
     assert b"_authToken" not in raw
 
 
+def test_only_a_tracked_env_template_enters_the_archive(make_repo, snaps):
+    repo = make_repo(tracked={"api/.env.example": "A=", ".env.local": "B=2"},
+                     untracked={".env.sample": "C="})
+    names = set(members(snapshot(snaps, repo)))
+    assert "api/.env.example" in names
+    assert ".env.local" not in names and ".env.sample" not in names
+
+
 def test_metadata_and_contents(make_repo, snaps):
     repo = make_repo(tracked={"run.sh": "#!/bin/sh\necho hi\n"})
     os.chmod(repo / "run.sh", 0o755)

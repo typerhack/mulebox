@@ -55,7 +55,9 @@ a project set up for mulebox it says so, and section 2 is your next step.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
   `.secret/`, `secrets/`, `*.pem`, `*.key`, ssh keys). If a job needs a value from such a
-  file, give it a throwaway value in `.mulebox.yml` `env:` instead.
+  file, give it a throwaway value in `.mulebox.yml` `env:` instead. The exception is a
+  template tracked in git (`.env.example`, `.env.sample`, `.env.template`, `.env.dist`),
+  which is uploaded so `setup` can build `.env` from it. Keep real values out of templates.
 - If you edit files while a job runs, mulebox prints a "stale" warning at the end: the
   result belongs to the snapshot, not to your current files. Run it again.
 - Jobs wait in one queue shared by every project and by GitHub Actions. Waiting is normal;
@@ -167,8 +169,8 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
 - **`env:` reaches compose**, for `${VAR}` in compose files, as it reaches commands. A service
   only sees what its `environment:` passes on, as always. `UID` and `GID` are set, so
   `user: "${UID}:${GID}"` works.
-- **`.env*` files are never uploaded**, so `env_file: .env.ci` fails on the build machine. Move
-  those throwaway values into `env:` and `environment:`.
+- **`.env*` files are not uploaded**, apart from tracked templates, so `env_file: .env.ci`
+  fails on the build machine. Move those throwaway values into `env:` and `environment:`.
 - **Root-owned files** in the checkout are fine: mulebox cleans them up.
 - **`up --wait` needs every service to stay up** and, if it has a healthcheck, become healthy.
   A service that exits on purpose should be a `depends_on` with

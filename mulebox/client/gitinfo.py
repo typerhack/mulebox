@@ -50,6 +50,12 @@ def list_files(root: Path) -> list[str]:
     return sorted(names)
 
 
+def tracked_files(root: Path) -> set[str]:
+    """Paths git tracks under `root`, relative to it."""
+    out = _git(root, "ls-files", "-c", "-z").stdout
+    return {os.fsdecode(raw) for raw in out.split(b"\0") if raw}
+
+
 def base_commit(root: Path) -> str:
     """`git rev-parse HEAD`, or an empty string in a repository without commits."""
     proc = _git(root, "rev-parse", "--verify", "-q", "HEAD", check=False)

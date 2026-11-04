@@ -42,7 +42,8 @@ class Entry:
 
 def selected_paths(root: Path, excludes: Excludes) -> list[str]:
     """The sorted paths git lists under `root`, minus every excluded one."""
-    return [p for p in gitinfo.list_files(root) if not excludes.excluded(p)]
+    tracked = gitinfo.tracked_files(root)
+    return [p for p in gitinfo.list_files(root) if not excludes.excluded(p, p in tracked)]
 
 
 def walk(root: Path, paths: list[str]) -> Iterator[Entry]:

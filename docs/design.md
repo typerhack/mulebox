@@ -49,7 +49,8 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 
 1. **Snapshot**: the client copies the worktree to coordinator staging: tracked and
    untracked files plus a deletion list, never following symlinks, always excluding
-   `.secret/`, `.env*`, `secrets/`, `.npmrc`, keys, and anything the project config adds.
+   `.secret/`, `.env*` (but not a template tracked in git, such as `.env.example`), `secrets/`,
+   `.npmrc`, keys, and anything the project config adds.
    The job is queued only when the upload is complete and fingerprinted.
 2. **Queue**: one FIFO line. Assignment is atomic: the oldest job a free worker can run.
    Cluster-wide and per-worker slot limits, both default 1.

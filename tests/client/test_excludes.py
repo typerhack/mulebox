@@ -72,3 +72,23 @@ def test_whole_path_pattern_excludes_directory_contents():
 def test_empty_patterns_are_ignored():
     excludes = Excludes(["", "/", "  "])
     assert not excludes.excluded("src/a.py")
+
+
+@pytest.mark.parametrize("path", [".env.example", "api/.env.sample", ".env.template", ".ENV.DIST"])
+def test_tracked_env_template_is_sent(path):
+    assert not Excludes().excluded(path, tracked=True)
+
+
+@pytest.mark.parametrize("path", [".env.example", "api/.env.sample"])
+def test_untracked_env_template_stays(path):
+    assert Excludes().excluded(path)
+
+
+@pytest.mark.parametrize("path", [".env", ".env.local", ".env.production", ".env.example.bak",
+                                  ".env.d/.env.example", "secrets/.env.example"])
+def test_tracked_real_env_files_stay(path):
+    assert Excludes().excluded(path, tracked=True)
+
+
+def test_project_exclude_beats_the_template_exception():
+    assert Excludes([".env.*"]).excluded(".env.example", tracked=True)
