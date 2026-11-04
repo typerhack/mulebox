@@ -9,17 +9,19 @@ anywhere else instead.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from mulebox.client import report, tui
+from mulebox.client import contract, report, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
 from mulebox.common.config import (
     ConfigError,
     ProjectConfig,
+    ProjectNotFound,
     find_project_config,
     load_client_config,
     load_project_config,
@@ -28,6 +30,7 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import MessageType, ProtocolError
 from mulebox.common.redact import Redactor
 from mulebox.common.ssh import RemoteTimeout, SSHError, SSHUnavailable
+from mulebox.version import get_version
 
 QUEUE_LIMIT = 20
 Handler = Callable[[argparse.Namespace], int]
@@ -59,6 +62,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     cancel = sub.add_parser("cancel", help="cancel a job")
     cancel.add_argument("job_id")
     cancel.set_defaults(func=guarded(_cancel))
+
+    terms = sub.add_parser("contract", help="print how to work in this project through "
+                           "mulebox, for agents")
+    terms.add_argument("--json", action="store_true", help="stable keys for tools")
+    terms.set_defaults(func=guarded(_contract))
 
 
 def guarded(handler: Handler) -> Handler:
@@ -97,6 +105,17 @@ def _project() -> tuple[ProjectConfig, Path]:
 
 def _remote() -> Remote:
     return Remote(load_client_config())
+
+
+def _contract(args: argparse.Namespace) -> int:
+    try:
+        config = _project()[0]
+    except ProjectNotFound:
+        config = None
+    terms = contract.build(config, get_version())
+    sys.stdout.write(json.dumps(terms, indent=2) + "\n" if args.json
+                     else contract.render(terms))
+    return 0
 
 
 def _check(args: argparse.Namespace) -> int:

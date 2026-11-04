@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.11.0 - 2026-11-04 - minor
+- `mulebox contract` (M7.1): tells an agent how this project builds, tests and uses git
+  through mulebox. Generated from `.mulebox.yml` and the code's own tables, so there is no
+  second copy; needs no network; `--json` has stable keys and a `schema` number.
+- `ProjectNotFound`: a missing `.mulebox.yml` and a broken one are now told apart.
+- docs/phases.md: new M7 for agent work, starting from the parking lot.
+
 ## 0.10.0 - 2026-11-04 - minor
 - Dashboard machines panel (M2.6): every worker, online or offline, free slots and what it
   is running. New `GET /api/machines` and `machines` event.

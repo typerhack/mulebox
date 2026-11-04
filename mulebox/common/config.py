@@ -99,6 +99,10 @@ class NodeConfig:
     dashboard: dict[str, Any] = field(default_factory=dict)
 
 
+class ProjectNotFound(ConfigError):
+    """No `.mulebox.yml` at or above the folder. A broken one is a plain ConfigError."""
+
+
 def find_project_config(start: Path) -> Path:
     """Return the nearest ``.mulebox.yml`` at or above ``start``."""
     start = Path(start).resolve()
@@ -107,7 +111,8 @@ def find_project_config(start: Path) -> Path:
         candidate = candidate_dir / PROJECT_FILE
         if candidate.is_file():
             return candidate
-    raise ConfigError(directory, None, f"no {PROJECT_FILE} here or in any parent directory")
+    raise ProjectNotFound(directory, None,
+                          f"no {PROJECT_FILE} here or in any parent directory")
 
 
 def _jobs(reader: Reader) -> dict[str, str]:

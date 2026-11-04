@@ -80,6 +80,15 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 - Build machine unreachable: the client fails fast with a clear message and never falls
   back to running locally on its own.
 
+## Agent contract
+
+`mulebox contract` tells an agent how a project builds, tests and uses git through mulebox.
+It is generated from `.mulebox.yml` and from the tables the code itself uses, so there is
+no file to keep in step, and it needs no network, so its rules are readable when the build
+machine is down. Text by default; `--json` has stable keys and a `schema` number, raised
+only when a key is removed or changes meaning. Exit 0 outside a project; a broken
+`.mulebox.yml` exits 2 rather than hiding the mistake.
+
 ## Project config: `.mulebox.yml`
 
 ```yaml

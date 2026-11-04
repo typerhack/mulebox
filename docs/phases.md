@@ -98,9 +98,14 @@ queue and returns the same result as running it locally.
 - [ ] M6.4 Security review; scan history for personal data before going public
 - [ ] M6.5 1.0.0 release (only when the user declares it)
 
+## M7: Agents
+Order agreed with the user on 2026-11-04.
+- [x] M7.1 Agent contract: `mulebox contract`, generated from `.mulebox.yml` and the code's
+      own tables, so there is one source. Done 2026-11-04 (0.11.0): run through the real CLI
+      in a project, outside one and with the build machine unreachable. Drift tests tie it
+      to the real commands and to docs/agents.md.
+
 ## Parking lot
-- Agent contract: a manifest an agent can read to learn how this project builds, tests and
-  uses git through mulebox, instead of inferring it from docs
 - Installable mulebox skill: installed once system-wide, so any project can say "use the
   mulebox skill" instead of pointing at docs/agents.md. The skill is built here; installing
   it is the user's step, in another session

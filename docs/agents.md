@@ -15,6 +15,15 @@ searching and using git locally; heavy commands go through `mulebox`.
 If either fails (command not found, exit code 3 "build machine unreachable"), **stop and
 tell the user**. Do not fall back to running heavy commands locally on your own.
 
+Then read what applies here:
+
+    mulebox contract          # add --json for stable keys
+
+It prints this project's jobs and commands, what stays local, how git fits in, what is
+never uploaded, the exit codes and the rules. It needs no network and is generated from
+`.mulebox.yml`, so it is always current; if it disagrees with this file, trust it. Outside
+a project set up for mulebox it says so, and section 2 is your next step.
+
 ## 1. Everyday use (project already set up)
 
 | You want to | Run |
@@ -22,6 +31,7 @@ tell the user**. Do not fall back to running heavy commands locally on your own.
 | the project's full gate | `mulebox check` |
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
+| see how this project works with mulebox | `mulebox contract` |
 | see the queue | `mulebox queue` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>` |

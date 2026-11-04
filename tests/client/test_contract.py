@@ -1,0 +1,95 @@
+"""`mulebox contract`: the facts, and tests that stop it drifting from the real tool."""
+
+import json
+import re
+from pathlib import Path
+
+import pytest
+
+from mulebox.cli import build_parser, main
+from mulebox.client import contract
+from mulebox.client.excludes import BUILTIN_EXCLUDES
+from mulebox.common.config import ProjectConfig
+from mulebox.version import get_version
+
+AGENTS_DOC = Path(__file__).resolve().parents[2] / "docs" / "agents.md"
+CONFIG = ProjectConfig(project="example-app", jobs={"check": "pnpm check", "test": "pnpm test"},
+                       toolchain={"node": "22.22.3"}, setup="pnpm install", timeout_min=30,
+                       exclude=("reports/",), env={"API_KEY": "must-not-appear"})
+YML = "project: example-app\ntimeout_min: 30\njobs:\n  check: pnpm check\n  test: pnpm test\n"
+
+
+def run(capsys, *argv):
+    code = main(["contract", *argv])
+    return code, capsys.readouterr()
+
+
+def test_project_facts_come_from_the_config():
+    terms = contract.build(CONFIG, "1.2.3")
+    assert terms["schema"] == contract.SCHEMA and terms["mulebox_version"] == "1.2.3"
+    assert terms["project"]["jobs"] == CONFIG.jobs and terms["project"]["full_gate"] == "check"
+    assert terms["project"]["setup"] == "pnpm install"
+
+
+def test_project_env_is_never_shown():
+    terms = contract.build(CONFIG, "1.2.3")
+    assert "must-not-appear" not in json.dumps(terms)
+    assert "must-not-appear" not in contract.render(terms)
+
+
+def test_never_uploaded_is_the_real_list_plus_the_project_excludes():
+    assert contract.build(CONFIG, "1")["never_uploaded"] == [*BUILTIN_EXCLUDES, "reports/"]
+
+
+def test_every_command_in_the_contract_exists_in_the_cli():
+    parser = build_parser()
+    for command in contract.COMMANDS.values():
+        words = [w for w in command.split()[1:] if w != "--" and not w.startswith("<")]
+        name = words[0]
+        args = parser.parse_args(["contract"] if name == "contract" else
+                                 [name, *(["x"] if "<job-id>" in command else [])])
+        assert args.command == name
+
+
+def test_exit_codes_match_the_table_in_the_agent_docs():
+    documented = {int(n) for n in re.findall(r"^\| (\d+) \|", AGENTS_DOC.read_text(), re.M)}
+    assert documented == {code for code, _, _ in contract.EXIT_CODES}
+
+
+def test_the_rule_that_matters_most_is_there():
+    assert any("never run heavy commands locally" in r for r in contract.RULES)
+
+
+def test_cli_inside_a_project_with_no_client_config(tmp_path, monkeypatch, capsys):
+    """No client config and no network: the contract must still answer."""
+    (tmp_path / ".mulebox.yml").write_text(YML)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MULEBOX_CONFIG", str(tmp_path / "missing.toml"))
+    code, out = run(capsys, "--json")
+    terms = json.loads(out.out)
+    assert code == 0 and terms["project"]["name"] == "example-app"
+    assert terms["mulebox_version"] == get_version()
+
+
+def test_cli_text_lists_the_jobs(tmp_path, monkeypatch, capsys):
+    (tmp_path / ".mulebox.yml").write_text(YML)
+    monkeypatch.chdir(tmp_path)
+    code, out = run(capsys)
+    assert code == 0 and "- mulebox check test: pnpm test" in out.out
+    assert "- mulebox check: pnpm check" in out.out and "check check" not in out.out
+
+
+def test_cli_outside_a_project_says_so_and_still_gives_the_rules(tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    code, out = run(capsys)
+    assert code == 0 and "not set up for mulebox" in out.out and "Rules:" in out.out
+    code, out = run(capsys, "--json")
+    assert code == 0 and json.loads(out.out)["project"] is None
+
+
+@pytest.mark.parametrize("text", ["project: [", "project: x\n", "jobs:\n  check: a\n"])
+def test_cli_broken_config_is_an_error_not_an_empty_contract(tmp_path, monkeypatch, capsys, text):
+    (tmp_path / ".mulebox.yml").write_text(text)
+    monkeypatch.chdir(tmp_path)
+    code, out = run(capsys)
+    assert code == 2 and out.out == "" and ".mulebox.yml" in out.err
