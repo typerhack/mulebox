@@ -1,4 +1,5 @@
-"""Field checks for `.mulebox.yml` that are more than a type: `compose:` and `env:`."""
+"""Field checks that are more than a type: `compose:` and `env:` of `.mulebox.yml`, and
+`job_env` of node.toml, which follows the same rules for names."""
 
 from __future__ import annotations
 
@@ -27,14 +28,23 @@ def compose_files(reader: Reader, project_dir: Path, project_file: str) -> tuple
     return files
 
 
-def env_values(reader: Reader, files: tuple[str, ...]) -> dict[str, str]:
-    """`env:` values for the job: throwaway CI values; names checked, no overriding PATH/HOME."""
-    env = reader.string_map("env")
+def _names(reader: Reader, field: str, env: dict[str, str], for_compose: bool) -> dict[str, str]:
     for key in env:
         if not _ENV_NAME.fullmatch(key):
-            reader.fail(f"env.{key}", "must be a shell variable name (letters, digits, _)")
+            reader.fail(f"{field}.{key}", "must be a shell variable name (letters, digits, _)")
         if key in _ENV_RESERVED or key.startswith("MULEBOX"):
-            reader.fail(f"env.{key}", "is set by mulebox or the build machine; choose another name")
-        if files and key in compose.RESERVED_ENV:
-            reader.fail(f"env.{key}", "is set by mulebox for a compose: project; remove it")
+            reader.fail(f"{field}.{key}",
+                        "is set by mulebox or the build machine; choose another name")
+        if for_compose and key in compose.RESERVED_ENV:
+            reader.fail(f"{field}.{key}", "is set by mulebox for a compose: project; remove it")
     return env
+
+
+def env_values(reader: Reader, files: tuple[str, ...]) -> dict[str, str]:
+    """`env:` values for the job: throwaway CI values; names checked, no overriding PATH/HOME."""
+    return _names(reader, "env", reader.string_map("env"), bool(files))
+
+
+def job_env(reader: Reader) -> dict[str, str]:
+    """`job_env` of a build machine. It reaches compose jobs too, so their names are out."""
+    return _names(reader, "job_env", reader.string_map("job_env"), True)

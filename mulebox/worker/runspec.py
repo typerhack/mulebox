@@ -9,8 +9,8 @@ takes root, so a person does it once, and then adds `playwright` to `capabilitie
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -32,6 +32,7 @@ class Machine:
     paths: NodePaths
     docker: Docker | None
     ports: PortPool
+    job_env: Mapping[str, str] = field(default_factory=dict)
 
 
 def _capability_env(machine: Machine, needs: Sequence[str]) -> dict[str, str]:
@@ -49,7 +50,8 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     base = _capability_env(machine, claim.get("needs") or ())
 
     def environment(extra: dict[str, str]) -> dict[str, str]:
-        return jobspec.build_env(job_id, bins, project_env=values, extra={**base, **extra})
+        return jobspec.build_env(job_id, bins, project_env=values, extra={**base, **extra},
+                                 machine_env=machine.job_env)
 
     first: tuple[str, ...] = ()
     extra: dict[str, str] = {}

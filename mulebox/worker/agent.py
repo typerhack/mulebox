@@ -57,7 +57,7 @@ class Agent:
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
         self.cleaner = Cleaner(paths, node.name, docker)
         self.ports = PortPool()
-        self.machine = runspec.Machine(node.name, paths, docker, self.ports)
+        self.machine = runspec.Machine(node.name, paths, docker, self.ports, node.job_env)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
         self.retry_at = 0.0

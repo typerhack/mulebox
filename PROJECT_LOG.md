@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.23.0 - 2026-11-04 - minor
+- `[job_env]` in node.toml: environment for every job on a machine, for what the machine
+  needs and no project should have to know. Below a project's `env:`. Node's 250 ms limit per
+  address made npm fail near 3 s on a slow network; `docs/install.md` has the setting.
+- Troubleshooting says how bridges were fixed in real use, as a NetworkManager setting.
+
 ## 0.22.1 - 2026-11-04 - patch
 - Port allocation probes the protocol a port is published on. It always tried TCP, so a UDP
   service on the chosen port was missed and the job failed with "address already in use".

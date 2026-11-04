@@ -35,3 +35,9 @@ port = 8090
 # lan_port = 8443
 # lan_tls = false
 # lan_password = true
+
+# Environment for every job on this machine, for what the machine needs and no project
+# should have to know; a project's `env:` can override it. Not for secrets: it ends up in
+# job processes. See docs/install.md.
+# [job_env]
+# NODE_OPTIONS = "--network-family-autoselection-attempt-timeout=5000"

@@ -41,3 +41,29 @@ def test_env_cannot_move_the_browser_folder(machine, paths, tmp_path):
 def test_compose_without_docker_is_refused(machine, tmp_path):
     with pytest.raises(ExecutorError, match="no Docker"):
         build(machine, tmp_path, env={"MULEBOX_COMPOSE_FILES": "a.yml"})
+
+
+def with_job_env(paths):
+    return runspec.Machine("build-1", paths, None, PortPool(), {"NODE_OPTIONS": "--slow-net"})
+
+
+def test_the_machines_job_env_reaches_every_job(paths, tmp_path):
+    spec, _ = build(with_job_env(paths), tmp_path)
+    assert spec.env["NODE_OPTIONS"] == "--slow-net"
+
+
+def test_a_project_overrides_the_machine(paths, tmp_path):
+    spec, _ = build(with_job_env(paths), tmp_path, env={"NODE_OPTIONS": "--max-old-space-size=2048"})
+    assert spec.env["NODE_OPTIONS"] == "--max-old-space-size=2048"
+
+
+def test_a_project_can_add_to_the_machine(paths, tmp_path):
+    env = {"NODE_OPTIONS": "${NODE_OPTIONS} --max-old-space-size=2048"}
+    spec, _ = build(with_job_env(paths), tmp_path, env=env)
+    assert spec.env["NODE_OPTIONS"] == "--slow-net --max-old-space-size=2048"
+
+
+def test_the_machine_cannot_change_what_mulebox_sets(paths, tmp_path):
+    machine = runspec.Machine("build-1", paths, None, PortPool(), {"MULEBOX": "0"})
+    spec, _ = build(machine, tmp_path)
+    assert spec.env["MULEBOX"] == "1"

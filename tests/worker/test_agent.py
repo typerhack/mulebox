@@ -243,3 +243,11 @@ def test_the_claim_reports_the_compose_capability_itself(node, fake_link, execut
     worker = Agent(replace(node, capabilities=("docker",)), fake_link, executor, paths, clock=clock)
     worker.step()
     assert fake_link.of_type(MessageType.CLAIM)[0].body["capabilities"] == ["docker", "compose-v1"]
+
+
+def test_job_env_of_the_node_reaches_the_job(node, fake_link, executor, paths, clock):
+    worker = Agent(replace(node, job_env={"FROM_MACHINE": "yes"}), fake_link, executor, paths,
+                   clock=clock)
+    submit(fake_link, "bash", "-c", "echo got=$FROM_MACHINE")
+    run_until(worker, lambda: fake_link.of_type(MessageType.RESULT))
+    assert "got=yes" in fake_link.log_text()

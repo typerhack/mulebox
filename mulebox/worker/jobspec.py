@@ -62,15 +62,18 @@ def port_references(project_env: Mapping[str, str]) -> list[str]:
 
 def build_env(job_id: str, toolchain_bins: Sequence[Path], base_path: str | None = None,
               project_env: Mapping[str, str] | None = None,
-              extra: Mapping[str, str] | None = None) -> dict[str, str]:
-    """MULEBOX=1, MULEBOX_JOB_ID, MULEBOX_JOB_SLUG, PATH with the toolchains first, then
-    `extra` from the worker, then the project's `env:` values. `${NAME}` in a value is
-    replaced by one of those or an earlier `env:` entry (no shell is involved); HOME is
-    untouched. `env:` cannot change `extra`."""
+              extra: Mapping[str, str] | None = None,
+              machine_env: Mapping[str, str] | None = None) -> dict[str, str]:
+    """`machine_env` (`job_env` of node.toml), MULEBOX=1, MULEBOX_JOB_ID, MULEBOX_JOB_SLUG, PATH
+    with the toolchains first, then `extra` from the worker, then the project's `env:`
+    values. `${NAME}` in a value is replaced by one of those or an earlier `env:` entry (no
+    shell is involved); HOME is untouched. `env:` cannot change `extra`, and it can change
+    `machine_env`: a project that sets a value knows it best, and can add to the machine's
+    with `${NAME}`."""
     base = os.environ.get("PATH", os.defpath) if base_path is None else base_path
     path = os.pathsep.join([*(str(p) for p in toolchain_bins), base])
-    env = {"MULEBOX": "1", "MULEBOX_JOB_ID": job_id, "MULEBOX_JOB_SLUG": job_slug(job_id),
-           "PATH": path, **(extra or {})}
+    env = {**(machine_env or {}), "MULEBOX": "1", "MULEBOX_JOB_ID": job_id,
+           "MULEBOX_JOB_SLUG": job_slug(job_id), "PATH": path, **(extra or {})}
     for key, value in (project_env or {}).items():
         if not isinstance(key, str) or not isinstance(value, str) or "\0" in value:
             raise JobSpecError(f"env {key!r}: names and values must be strings without NUL")

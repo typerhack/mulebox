@@ -106,6 +106,7 @@ class NodeConfig:
     capabilities: tuple[str, ...] = ()
     coordinator: str | None = None
     dashboard: dict[str, Any] = field(default_factory=dict)
+    job_env: dict[str, str] = field(default_factory=dict)
 
 
 class ProjectNotFound(ConfigError):
@@ -266,6 +267,7 @@ def load_node_config(path: Path | None = None) -> NodeConfig:
         capabilities=reader.strings("capabilities"),
         coordinator=reader.ssh_target("coordinator", None),
         dashboard=_dashboard(reader),
+        job_env=config_project.job_env(reader),
     )
     reader.finish()
     if config.coordinator is None and "coordinator" not in config.roles:
