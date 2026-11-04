@@ -9,14 +9,17 @@ from __future__ import annotations
 
 from typing import Any
 
-OFFLINE_AFTER_S = 15.0  # workers poll every 1 s, or heartbeat every 3 s while busy
+from mulebox.coordinator.workers import OFFLINE_AFTER_S, is_online
+
+__all__ = ["AVAILABLE", "BUSY", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "machine", "snapshot"]
+
 AVAILABLE, BUSY, OFFLINE = "available", "busy", "offline"
 JOB_FIELDS = ("job_id", "project", "job", "kind")
 
 
 def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
     slots = worker["slots"] if worker["slots"] is not None else max(len(jobs), 1)
-    online = now - worker["last_seen"] <= OFFLINE_AFTER_S
+    online = is_online(worker, now)
     free = max(0, slots - len(jobs)) if online else 0
     state = OFFLINE if not online else AVAILABLE if free else BUSY
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,

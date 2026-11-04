@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.16.0 - 2026-11-04 - minor
+- A job whose `needs` no worker offers no longer waits forever without a word: it is refused
+  at submit with what to change, and a queued job that cannot start says why in
+  `waiting_for`, shown by `mulebox check` and `mulebox queue`. Details: docs/interfaces-m4.md.
+- `workers.OFFLINE_AFTER_S` and `is_online` moved out of the dashboard, which now shares them.
+
 ## 0.15.0 - 2026-11-04 - minor
 - `services:` in `.mulebox.yml` is now a config error that says to use `compose:` or `env:`.
   It was parsed and printed by `mulebox contract`, but nothing ever started a service.

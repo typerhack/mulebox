@@ -74,7 +74,8 @@ sudo loginctl enable-linger alice
   the roles listed here.
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
   absolute, and not a system folder or your home folder itself.
-- `slots`, `capabilities`: see [interfaces.md](interfaces.md).
+- `slots`, `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
+  in `capabilities` of some worker, or its jobs are refused with that message.
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).

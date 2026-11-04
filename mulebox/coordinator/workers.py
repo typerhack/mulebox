@@ -10,6 +10,8 @@ import json
 import sqlite3
 from typing import Any
 
+OFFLINE_AFTER_S = 15.0  # workers poll every 1 s, or heartbeat every 3 s while busy
+
 
 def upsert(conn: sqlite3.Connection, worker: str, capabilities: list[str],
            free_slots: int, now: float, slots: int | None = None) -> None:
@@ -27,6 +29,10 @@ def upsert(conn: sqlite3.Connection, worker: str, capabilities: list[str],
 def touch(conn: sqlite3.Connection, worker: str | None, now: float) -> None:
     """Note that `worker` is alive; a name the store does not know changes nothing."""
     conn.execute("UPDATE workers SET last_seen = ? WHERE worker = ?", (now, worker))
+
+
+def is_online(worker: dict[str, Any], now: float) -> bool:
+    return now - worker["last_seen"] <= OFFLINE_AFTER_S
 
 
 def _decoded(row: sqlite3.Row) -> dict[str, Any]:

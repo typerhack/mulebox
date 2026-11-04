@@ -45,7 +45,7 @@ def test_status_and_position(store, staging):
     first = queued(store, staging)
     second = queued(store, staging)
     reply = call(store, staging, "status", job_id=second)
-    assert reply.body == {"job_id": second, "state": "queued", "position": 2}
+    assert reply.body["position"] == 2 and reply.body["state"] == "queued"
     assert call(store, staging, "status", job_id=first).body["position"] == 1
 
 

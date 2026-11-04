@@ -27,5 +27,11 @@ class Conflict(CoordinatorError):
     code = "conflict"
 
 
+class NoWorker(CoordinatorError):
+    """No known worker offers what the job needs, so it would wait forever."""
+
+    code = "no_worker"
+
+
 class TooLarge(CoordinatorError):
     code = "too_large"

@@ -11,14 +11,14 @@ from typing import Any
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import leases, projects, queue, runner_api, worker_api
+from mulebox.coordinator import leases, needs, projects, queue, runner_api, workers, worker_api
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
-from mulebox.coordinator.errors import BadRequest, CoordinatorError
+from mulebox.coordinator.errors import BadRequest, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
-from mulebox.coordinator.views import job_dict, status_body
+from mulebox.coordinator.views import job_dict, status_body, waiting_for
 
 _log = get_logger(__name__)
 DEFAULT_TIMEOUT_MIN = 30
@@ -62,6 +62,9 @@ def submit(req: Request) -> Message:
     with req.store.write() as conn:
         job = st.find_by_key(conn, fields["idempotency_key"])
         if job is None:
+            refused = needs.refusal(workers.listing(conn), fields["needs"])
+            if refused:
+                raise NoWorker(refused)
             job = st.insert_job(conn, {
                 **fields, "job_id": new_id("job"), "state": JobState.UPLOADING,
                 "created_at": req.now, "client_lease_until": req.now + leases.CLIENT_LEASE_S,
@@ -73,7 +76,8 @@ def status(req: Request) -> Message:
     with req.store.read() as conn:
         job = st.require_job(conn, v.job_id(req.body))
         place = queue.position(conn, job)
-    return req.reply(MessageType.STATUS_OK, status_body(job, place))
+        reason = waiting_for(conn, job, req.now)
+    return req.reply(MessageType.STATUS_OK, status_body(job, place, reason))
 
 
 def cancel(req: Request) -> Message:
@@ -98,8 +102,9 @@ def heartbeat(req: Request) -> Message:
 def queue_list(req: Request) -> Message:
     limit = v.integer(req.body, "limit", queue.DEFAULT_FINISHED_LIMIT, 0, 1000)
     with req.store.read() as conn:
-        rows = queue.listing(conn, limit)
-    return req.reply(MessageType.QUEUE_OK, {"jobs": [job_dict(job, pos) for job, pos in rows]})
+        rows = [job_dict(job, pos, waiting_for(conn, job, req.now))
+                for job, pos in queue.listing(conn, limit)]
+    return req.reply(MessageType.QUEUE_OK, {"jobs": rows})
 
 
 def project_list(req: Request) -> Message:

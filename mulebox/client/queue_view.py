@@ -74,9 +74,11 @@ def render_table(
     index = 0
     for title, group in groups:
         out.append(f"{title} ({len(group)})"[:width])
-        for _ in group:
+        for job in group:
             out.append(line(rows[index]))
             index += 1
+            if job.get("waiting_for"):
+                out.append(f"  waiting: {_cell(job['waiting_for'], None)}"[:width])
         if not group:
             out.append("  none"[:width])
     return out

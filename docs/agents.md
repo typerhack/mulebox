@@ -47,7 +47,7 @@ a project set up for mulebox it says so, and section 2 is your next step.
 | 0 / job's code | the job ran; read its output like a local run | fix the code if it failed |
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree) | fix the config |
 | 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox logs <id>` later |
-| 4 | the build machine refused the request | read the message; tell the user |
+| 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
 | 124 | the job hit `timeout_min` | look for a hang; raise `timeout_min` only if the work really takes that long |
 | 130 | cancelled | - |
@@ -59,7 +59,9 @@ a project set up for mulebox it says so, and section 2 is your next step.
 - If you edit files while a job runs, mulebox prints a "stale" warning at the end: the
   result belongs to the snapshot, not to your current files. Run it again.
 - Jobs wait in one queue shared by every project and by GitHub Actions. Waiting is normal;
-  do not cancel and resubmit to "speed it up".
+  do not cancel and resubmit to "speed it up". A line such as
+  `queued, position 1; waiting: no build machine for this job is online` is different:
+  nothing will start until a person fixes it, so tell the user.
 
 ## 2. Setting up a project (`.mulebox.yml`)
 

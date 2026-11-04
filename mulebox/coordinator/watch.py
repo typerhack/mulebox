@@ -23,7 +23,7 @@ from mulebox.coordinator.errors import CoordinatorError, NotFound
 from mulebox.coordinator.lineio import read_line, write_message
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
-from mulebox.coordinator.views import result_body, status_body
+from mulebox.coordinator.views import result_body, status_body, waiting_for
 
 _log = get_logger(__name__)
 POLL_S = 0.5
@@ -79,20 +79,21 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
     def send(type_: MessageType, body: dict) -> None:
         write_message(stdout, Message(type_, msg.request_id, body))
 
-    last: tuple[str, int | None] | None = None
+    last: tuple[str, int | None, str | None] | None = None
     while True:
         with store.read() as conn:  # state before log: finished means the log is complete
             job = st.require_job(conn, job_id)
             place = queue.position(conn, job)
+            reason = waiting_for(conn, job, clock())
         while True:
             body = api.log_chunk_body(staging, job, offset)
             if body["next_offset"] == offset:
                 break
             send(MessageType.LOG_CHUNK, body)
             offset = body["next_offset"]
-        if (job["state"], place) != last:
-            send(MessageType.STATUS_OK, status_body(job, place))
-            last = (job["state"], place)
+        if (job["state"], place, reason) != last:
+            send(MessageType.STATUS_OK, status_body(job, place, reason))
+            last = (job["state"], place, reason)
         if job["state"] == JobState.FINISHED:
             send(MessageType.RESULT, result_body(job))
             return 0

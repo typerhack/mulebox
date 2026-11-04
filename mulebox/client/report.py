@@ -81,7 +81,9 @@ def state_line(body: dict[str, Any]) -> str | None:
         return None
     if state == "queued":
         position = body.get("position")
-        return f"queued, position {position}" if position is not None else "queued"
+        line = f"queued, position {position}" if position is not None else "queued"
+        reason = body.get("waiting_for")
+        return f"{line}; waiting: {reason}" if reason else line
     if state in ("starting", "running"):
         worker = body.get("worker")
         return f"{state}" + (f" on {worker}" if worker else "")

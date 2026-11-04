@@ -176,6 +176,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 
 - Workers declare capabilities (`slots`, `docker`, `arch`, toolchains) and claim the
   oldest compatible job. No speed scores or weights yet.
+- A job whose `needs` no known worker offers is refused at submit, with what to change. A
+  queued job whose capable workers are all offline stays queued and says so.
 - Add a machine: run the worker setup on it; it registers and warms caches.
 - Replace a machine: mark the worker `draining` (finishes current work, takes no new
   jobs), then remove it. Moving the coordinator is a documented manual step.
