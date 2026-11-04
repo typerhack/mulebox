@@ -15,6 +15,7 @@ class Request:
     msg: Message
     now: float
     cluster_slots: int = 1
+    dashboard: dict[str, Any] | None = None  # common/dashboard_address.py, for replies
 
     @property
     def body(self) -> dict[str, Any]:

@@ -43,6 +43,12 @@ def test_a_missing_toolchain_fails_and_lists_what_the_machine_has():
     assert "mulebox toolchain install node 22.22.3" in found[0].text
 
 
+def test_the_dashboard_is_named_when_the_machine_says_where():
+    found = doctor.dashboard({"dashboard": {"url": "http://192.168.1.50:8090"}})
+    assert [(f.level, f.text) for f in found] == [("ok", "http://192.168.1.50:8090")]
+    assert doctor.dashboard({}) == []
+
+
 def test_a_missing_capability_fails():
     found = doctor.machines(PROJECT, [worker(capabilities=["node"])])
     assert found[0].level == "fail" and "capability docker" in found[0].text

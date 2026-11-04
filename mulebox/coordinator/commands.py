@@ -8,6 +8,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from mulebox.common import dashboard_address
 from mulebox.common.config import load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
@@ -52,6 +53,7 @@ def _with_store(args: argparse.Namespace, action) -> int:
         node = load_node_config(args.node_config)
         # M1 has one node: the cluster-wide slot limit is that node's slot count.
         args.cluster_slots = node.slots
+        args.dashboard = dashboard_address.where(node.dashboard)
         store, staging = open_local(node)
     except MuleboxError as exc:
         print(f"mulebox: {exc}", file=sys.stderr)
@@ -65,7 +67,7 @@ def _with_store(args: argparse.Namespace, action) -> int:
 def _rpc(args: argparse.Namespace) -> int:
     return _with_store(args, lambda store, staging: rpc.run_rpc(
         store, staging, sys.stdin.buffer, sys.stdout.buffer, sys.stderr,
-        cluster_slots=args.cluster_slots))
+        cluster_slots=args.cluster_slots, dashboard=args.dashboard))
 
 
 def _upload(args: argparse.Namespace) -> int:

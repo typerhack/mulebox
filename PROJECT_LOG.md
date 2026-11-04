@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.42.0 - 2026-11-04 - minor
+- `check`, `queue` and `status` say where to see the job on the dashboard, on stderr so `--json` stays clean, and `doctor` lists the address. A job's line links straight to its page.
+- The address comes from the build machine (`dashboard` in `submit_ok`, `status_ok`, `queue_ok`, `machines_ok`), via `common/dashboard_address.py`. With only `local` it names `mulebox dashboard open`; when off, or from an older coordinator, nothing is printed.
+
 ## 0.41.0 - 2026-11-04 - minor
 - The dashboard uses one port: `lan_port` defaults to `port` (8090), not 8443, and may equal it. It stays two sockets, one on 127.0.0.1 and one on the LAN address, so the sign-in rules are unchanged.
 - Upgrading a `lan` machine with no `lan_port` set moves it to 8090: run the firewall step again, as the old rule covers the old port. The app's own range check holds meanwhile.

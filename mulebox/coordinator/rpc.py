@@ -12,7 +12,7 @@ the error is repeated on stderr for callers that only see stderr.
 
 import time
 from collections.abc import Callable
-from typing import BinaryIO, TextIO
+from typing import Any, BinaryIO, TextIO
 
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
@@ -34,7 +34,7 @@ EXIT_PROTOCOL = 4
 def run_rpc(store: Store, staging: Staging, stdin: BinaryIO, stdout: BinaryIO,
             stderr: TextIO | None = None, *, clock: Callable[[], float] = time.time,
             sleep: Callable[[float], None] = time.sleep, poll_s: float = POLL_S,
-            cluster_slots: int = 1) -> int:
+            cluster_slots: int = 1, dashboard: dict[str, Any] | None = None) -> int:
     """Answer one request from `stdin` on `stdout`; return the exit code."""
     request_id = "unknown"
     try:
@@ -46,7 +46,8 @@ def run_rpc(store: Store, staging: Staging, stdin: BinaryIO, stdout: BinaryIO,
         if msg.type is MessageType.WATCH:
             return watch(store, staging, msg, stdin, stdout, clock=clock, sleep=sleep,
                          poll_s=poll_s)
-        reply = api.handle(store, staging, msg, clock(), cluster_slots=cluster_slots)
+        reply = api.handle(store, staging, msg, clock(), cluster_slots=cluster_slots,
+                           dashboard=dashboard)
     except CoordinatorError as exc:
         reply = error_message(request_id, exc.code, str(exc))
     except ProtocolError as exc:

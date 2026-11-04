@@ -79,7 +79,7 @@ def stderr_shape(text, job_id):
     """stderr of a run with the job id and the timings taken out."""
     lines = [line.replace(job_id, "<job>") for line in text.splitlines()]
     return [re.sub(r" in \d+s$", "", line) for line in lines
-            if "submitted" not in line and "snapshot" not in line]
+            if not any(word in line for word in ("submitted", "snapshot", "dashboard"))]
 
 
 def test_detach_prints_only_the_job_id_and_returns(local, in_project, capsys):

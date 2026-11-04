@@ -150,6 +150,14 @@ def test_queue_prints_a_plain_table(fake, capsys):
     assert fake.requests()[0]["body"] == {"limit": 20}
 
 
+def test_queue_says_where_the_dashboard_is_on_stderr(fake, capsys):
+    fake.scenario(jobs=[], dashboard={"url": "http://192.168.1.50:8090"})
+    assert cli.main(["queue"]) == 0
+    captured = capsys.readouterr()
+    assert "dashboard: http://192.168.1.50:8090" in captured.err
+    assert "192.168" not in captured.out
+
+
 def test_logs_and_cancel(fake, capsys):
     fake.scenario(log=["line 1\n", "line 2\n"])
     assert cli.main(["logs", JOB]) == 0

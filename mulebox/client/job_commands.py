@@ -90,4 +90,5 @@ def _status(args: argparse.Namespace) -> int:
         print("\n".join([_status_line(args.job_id, body),
                          *report.stage_lines(body, time.time()),
                          *attention.status_lines(body)]))
+    report.dashboard_hint(sys.stderr, body, args.job_id)
     return 0
