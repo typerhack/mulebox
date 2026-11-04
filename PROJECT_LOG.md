@@ -8,6 +8,19 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.28.0 - 2026-11-04 - minor
+- `mulebox check --detach` (also `run --detach`) prints the job id once the job is queued and
+  leaves it running; `mulebox wait <id>` returns what an attached `check` would have, whenever
+  asked (M8.4). An agent sat blocked for the whole job.
+- A detached job has no client to lose: `jobs.detached` (schema 5) and the client lease sweep
+  skips it. The worker lease, the upload timeout, `timeout_min` and `cancel` still apply.
+- A coordinator echoes `detached`; without the echo the client cancels the job and fails,
+  because an older coordinator would have ignored the flag and cancelled it minutes later.
+- A watch stream cut in the middle of a line, or ended without a result, now counts as a
+  dropped connection, so the client reconnects. It failed with exit 4 before.
+- `logs -f`, `wait` and the like retry a dropped connection for 30 minutes, and fail at once
+  when the machine cannot be reached at all.
+
 ## 0.27.0 - 2026-11-04 - minor
 - `mulebox doctor`: before any upload, validates `.mulebox.yml`, says whether a machine offers
   the project's toolchain versions and capabilities, and warns when client and machine

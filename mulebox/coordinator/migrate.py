@@ -9,6 +9,7 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 2 -> 3: `jobs.env` (the project's `env:` values, JSON, default '{}').
 - 3 -> 4: `workers.toolchains` (JSON, name to versions) and `workers.version`; NULL until a
   worker reports them.
+- 4 -> 5: `jobs.detached` (default 0): the job does not depend on its client (leases.py).
 """
 
 import sqlite3
@@ -26,6 +27,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     2: ("ALTER TABLE jobs ADD COLUMN env TEXT NOT NULL DEFAULT '{}'",),
     3: ("ALTER TABLE workers ADD COLUMN toolchains TEXT",
         "ALTER TABLE workers ADD COLUMN version TEXT"),
+    4: ("ALTER TABLE jobs ADD COLUMN detached INTEGER NOT NULL DEFAULT 0",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

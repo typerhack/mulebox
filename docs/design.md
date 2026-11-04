@@ -71,6 +71,9 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 - Client lease: renewed by the waiting client every 20 s, measured on the coordinator's
   clock; expires after 300 s (agent killed, laptop asleep, Wi-Fi gone) and cancels the job.
   Long enough to ride out a few minutes of Wi-Fi loss; the client keeps reconnecting.
+- Detached jobs (`check --detach`) have no client lease to lose: the sweep skips them, so
+  they survive the client going away. The worker lease, `timeout_min` and `cancel` still
+  apply. `mulebox wait <id>` gets the same result later, without taking the lease.
 - Worker lease: renewed by the worker while it executes; separate from the client lease.
 - Idempotent submit (client-chosen key): a lost reply never creates a duplicate job.
 - Restart: the coordinator reconciles stored jobs; the worker, before it claims anything,
@@ -182,6 +185,8 @@ of browser versions to maintain. mulebox never deletes from that folder.
 ```text
 mulebox doctor               check the project and the machine; uploads nothing
 mulebox check [job]          run a job from .mulebox.yml (default: check)
+mulebox check --detach       the same, left running; prints the job id
+mulebox wait <id>            the result of a job, as `check` would have given it
 mulebox run -- <cmd...>      run an ad-hoc command (for example one test file)
 mulebox queue [--watch]      list running/waiting/recent jobs; full-screen live view
 mulebox logs <id>            show a job's log

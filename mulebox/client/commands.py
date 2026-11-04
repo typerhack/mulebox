@@ -44,9 +44,13 @@ def register(sub: argparse._SubParsersAction) -> None:
     """Add this package's subcommands. Each sets func=handler(args) -> int."""
     check = sub.add_parser("check", help="run a job from .mulebox.yml on a build machine")
     check.add_argument("job", nargs="?", default="check", help="job name (default: check)")
+    check.add_argument("--detach", action="store_true",
+                       help="print the job id once it is queued and leave it running")
     check.set_defaults(func=guarded(_check))
 
     run = sub.add_parser("run", help="run an ad-hoc command on a build machine")
+    run.add_argument("--detach", action="store_true",
+                     help="print the job id once it is queued and leave it running")
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -104,18 +108,18 @@ def _fail(message: str, code: int) -> int:
     return code
 
 
-def _project() -> tuple[ProjectConfig, Path]:
+def project_here() -> tuple[ProjectConfig, Path]:
     path = find_project_config(Path.cwd())
     return load_project_config(path), path.parent
 
 
-def _remote() -> Remote:
+def connect() -> Remote:
     return Remote(load_client_config())
 
 
 def _contract(args: argparse.Namespace) -> int:
     try:
-        config = _project()[0]
+        config = project_here()[0]
     except ProjectNotFound:
         config = None
     terms = contract.build(config, get_version())
@@ -125,11 +129,11 @@ def _contract(args: argparse.Namespace) -> int:
 
 
 def _check(args: argparse.Namespace) -> int:
-    project, root = _project()
+    project, root = project_here()
     if args.job not in project.jobs:
         names = ", ".join(sorted(project.jobs))
         raise UsageError(f"no job {args.job!r} in .mulebox.yml (jobs: {names})")
-    return run_job(project, args.job, root, _remote())
+    return run_job(project, args.job, root, connect(), detach=args.detach)
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -138,12 +142,12 @@ def _run(args: argparse.Namespace) -> int:
         argv = argv[1:]
     if not argv:
         raise UsageError("nothing to run; use `mulebox run -- <command> [args...]`")
-    project, root = _project()
-    return run_job(project, argv, root, _remote())
+    project, root = project_here()
+    return run_job(project, argv, root, connect(), detach=args.detach)
 
 
 def _queue(args: argparse.Namespace) -> int:
-    remote = _remote()
+    remote = connect()
 
     def fetch() -> list[dict]:
         reply = remote.call(request(MessageType.QUEUE, limit=QUEUE_LIMIT))
@@ -159,7 +163,7 @@ def _queue(args: argparse.Namespace) -> int:
 
 
 def _projects(args: argparse.Namespace) -> int:
-    rows = _remote().call(request(MessageType.PROJECTS)).body.get("projects")
+    rows = connect().call(request(MessageType.PROJECTS)).body.get("projects")
     if not isinstance(rows, list):
         raise CoordinatorError("the projects reply has no project list")
     if args.json:
@@ -170,13 +174,13 @@ def _projects(args: argparse.Namespace) -> int:
 
 
 def _logs(args: argparse.Namespace) -> int:
-    remote = _remote()
+    remote = connect()
     watcher = Watcher(remote, Streams())
     watcher.job_id = args.job_id
     if args.summary:
         return _log_summary(remote, args.job_id)
     if args.follow:
-        result = watcher.follow(lease=False)
+        result = watcher.attach()
         watcher.finish(result)
         return report.exit_code_for(result)
     _read_log(remote, args.job_id, 0, watcher.write_log)
@@ -211,7 +215,7 @@ def _log_summary(remote: Remote, job_id: str) -> int:
 
 
 def _cancel(args: argparse.Namespace) -> int:
-    reply = _remote().call(request(MessageType.CANCEL, job_id=args.job_id))
+    reply = connect().call(request(MessageType.CANCEL, job_id=args.job_id))
     state = reply.body.get("state", "unknown")
     report.status(sys.stderr, f"cancel requested for job {args.job_id} (state {state})")
     return 0

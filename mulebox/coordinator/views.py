@@ -7,7 +7,7 @@ from mulebox.coordinator import needs, workers
 
 JOB_FIELDS = (
     "job_id", "project", "job", "branch", "client", "state", "outcome", "exit_code",
-    "worker", "created_at", "started_at", "finished_at", "kind",
+    "worker", "created_at", "started_at", "finished_at", "kind", "detached",
 )
 
 
@@ -47,8 +47,9 @@ def status_body(job: dict[str, Any], position: int | None = None,
 
 
 def result_body(job: dict[str, Any]) -> dict[str, Any]:
-    """The final `result` line of a watch stream: the job dict plus duration_s."""
-    return {**job_dict(job), "duration_s": job["duration_s"]}
+    """The final `result` line of a watch stream: the job dict plus duration_s, and the
+    fingerprint, so `mulebox wait` can tell whether the result is stale."""
+    return {**job_dict(job), "duration_s": job["duration_s"], "fingerprint": job["fingerprint"]}
 
 
 RESERVATION_FIELDS = ("kind", "pinned_worker", "runner", "run_url")

@@ -34,6 +34,16 @@ It uploads nothing, and finds what a job would fail on.
   to running heavy commands on this machine. That rule matters most: it is what keeps the
   laptop free.
 
+## Long jobs
+
+Do not sit blocked on a job that takes minutes. Start it detached, and go on working:
+
+    mulebox check --detach
+
+It prints the job id once the job is queued; the job then runs without this session. Get its
+result, which is what an attached `mulebox check` would have given, with `mulebox wait
+<job-id>`. Cancel a detached job you no longer want: nothing else will.
+
 ## When something goes wrong
 
 - A job failed: that is a normal result. Read the short failure summary at the end of its

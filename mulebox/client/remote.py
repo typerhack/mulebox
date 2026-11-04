@@ -44,6 +44,10 @@ class CoordinatorError(MuleboxError):
         self.code = code
 
 
+class StreamEnded(CoordinatorError):
+    """A watch stream stopped before its result; reconnecting gets the rest."""
+
+
 def request(kind: MessageType, **body: Any) -> Message:
     return Message(kind, new_id("req"), body)
 
@@ -102,15 +106,15 @@ class Remote:
             beats.start()
             while True:
                 line = stream.readline(_READ_LIMIT)
-                if not line:
-                    break
+                if not line or (len(line) < _READ_LIMIT and not line.endswith(b"\n")):
+                    break  # the end, or half a line from a connection that dropped
                 reply = _decode_line(line)
                 yield reply
                 if reply.type is MessageType.RESULT:
                     return
             stop.set()
             stream.finish()  # raises SSHUnavailable / RemoteError for a failed exit
-            raise CoordinatorError(f"the watch stream for {job_id} ended without a result")
+            raise StreamEnded(f"the watch stream for {job_id} ended without a result")
         finally:
             stop.set()
             stream.close()

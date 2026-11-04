@@ -5,6 +5,9 @@ Clock: the coordinator's `time.time()`, passed in as `now` so tests control it.
 - Client lease (300 s, renewed by `heartbeat lease=client` and the watch stream): when it
   runs out the job gets a cancel request; a `queued` job finishes `cancelled` at once,
   an active job is stopped by its worker (heartbeat replies `cancel: true`).
+- A detached job (`check --detach`) has no client to lose: the sweep below skips it, so it
+  lives through any absence. Everything else still applies to it: the worker lease, the 10
+  minute upload timeout, `timeout_min` on the worker, and `cancel`.
 - Worker lease (120 s per job, renewed by every message of the current attempt): when it
   runs out the job finishes `interrupted`. It is never handed to another worker.
 - An `uploading` job older than 10 minutes finishes `interrupted`. Uploading jobs are not
@@ -82,7 +85,8 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
             finished.append(job["job_id"])
         for job in st.select_jobs(
             conn, f"(state = ? OR {_ACTIVE_SQL}) AND cancel_requested = 0 "
-            "AND kind = 'job' AND client_lease_until < ?", (JobState.QUEUED.value, *_ACTIVE, now),
+            "AND kind = 'job' AND detached = 0 AND client_lease_until < ?",
+            (JobState.QUEUED.value, *_ACTIVE, now),
         ):
             if request_cancel(conn, job, now)["state"] == JobState.FINISHED:
                 finished.append(job["job_id"])

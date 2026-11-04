@@ -10,7 +10,8 @@ Scenario keys: `down` (exit 255 like a failed ssh connection), `submit_state`, `
 `drop_watch_once` (first watch exits 255 after the first log chunk), `error` (reply
 `error` with this code to every request), `jobs` (for queue), `status_state`, `workers` and
 `machine_version` (for machines and `mulebox version`), `unknown_requests` (types answered
-the way a coordinator older than them does).
+the way a coordinator older than them does), `no_detached_echo` (submit_ok as a coordinator
+older than detached jobs sends it).
 """
 
 import hashlib
@@ -76,8 +77,10 @@ def main():
         send("error", "unknown", code="bad_request", message=f"unknown message type {kind!r}")
         return 4
     if kind == "submit":
+        echo = {} if scenario.get("no_detached_echo") else {
+            "detached": body.get("detached", False)}
         send("submit_ok", rid, job_id="job-01JC3X0000000000000000ABCD",
-             state=scenario.get("submit_state", "uploading"))
+             state=scenario.get("submit_state", "uploading"), **echo)
     elif kind == "watch":
         return watch(scenario, rid, body)
     elif kind == "machines":
@@ -113,6 +116,11 @@ def watch(scenario, rid, body):
         offset += size
         if scenario.get("drop_watch_once") and not os.path.exists(dropped):
             open(dropped, "w").close()
+            return 255
+        if scenario.get("cut_watch_once") and not os.path.exists(dropped):
+            open(dropped, "w").close()
+            sys.stdout.write('{"body":{"job_')  # half a line, then the connection is gone
+            sys.stdout.flush()
             return 255
     time.sleep(delay)
     send("result", rid, job_id=job_id, outcome=scenario.get("outcome", "passed"),

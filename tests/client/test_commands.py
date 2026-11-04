@@ -54,6 +54,24 @@ def test_unreachable_exits_3_and_never_suggests_local(fake, in_repo, capsys):
     assert "unreachable" in err and "locally" not in err.lower()
 
 
+def test_detach_on_a_coordinator_too_old_for_it_cancels_and_fails(fake, in_repo, capsys):
+    """It would ignore the flag and cancel the job 5 minutes after the client left."""
+    fake.scenario(no_detached_echo=True)
+    assert cli.main(["check", "--detach"]) == 4
+    captured = capsys.readouterr()
+    assert "too old for --detach" in captured.err and captured.out == ""
+    assert [r["type"] for r in fake.requests()] == ["submit", "cancel"]
+
+
+def test_a_stream_cut_mid_line_reconnects(fake, in_repo, capsys, monkeypatch):
+    from mulebox.client import submit
+
+    monkeypatch.setattr(submit, "WATCH_RETRY_DELAY_S", 0)
+    fake.scenario(log=["one\n", "two\n"], cut_watch_once=True)
+    assert cli.main(["check"]) == 0
+    assert capsys.readouterr().out == "one\ntwo\n"
+
+
 def test_coordinator_error_exits_4(fake, in_repo, capsys):
     fake.scenario(error="internal")
     assert cli.main(["check"]) == 4

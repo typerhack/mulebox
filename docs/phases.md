@@ -159,6 +159,11 @@ Marked `[~]` until checked on a real machine.
       capabilities per machine, warns on a version difference. Workers report toolchains and
       version with every claim (schema 4). Tested 2026-11-04 (0.27.0) with the fake
       coordinator and the real coordinator code. Open: run against a real, upgraded machine.
+- [~] M8.4 `mulebox check --detach` and `mulebox wait <id>`. Detached jobs are skipped by the
+      client lease sweep (schema 5). Tested 2026-11-04 (0.28.0) with the real client and
+      coordinator code through a local stand-in for ssh: survives lease expiry queued and
+      running, `wait` matches an attached run in output, summary and exit code. Open: a real
+      job on a real machine with the client killed.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

@@ -37,8 +37,9 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 
 | Command | Package | Notes |
 | --- | --- | --- |
-| `mulebox check [job]` | client | default job `check`; exit code = job exit code |
-| `mulebox run -- <cmd...>` | client | ad-hoc argv |
+| `mulebox check [job] [--detach]` | client | default job `check`; exit code = job exit code; `--detach` prints the job id once queued and exits 0 |
+| `mulebox run [--detach] -- <cmd...>` | client | ad-hoc argv |
+| `mulebox wait <job_id>` | client | what an attached `check` gives (log, summary, exit code), via watch without lease |
 | `mulebox queue [--watch]` | client | table; `--watch` = live view (M1.7) |
 | `mulebox logs <job_id> [-f] [--summary]` | client | `-f` follows via watch without lease; `--summary` reads the log's tail only (client/summary.py) |
 | `mulebox cancel <job_id>` | client | |
@@ -64,7 +65,7 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 
 | Request | Body (required + used extras) | Reply |
 | --- | --- | --- |
-| submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch` | submit_ok (job_id, state); repeat key returns the same job |
+| submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch`, `detached` | submit_ok (job_id, state, `detached`); repeat key returns the same job. A client that asked for `detached` and does not see it echoed cancels the job |
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
 | status | job_id | status_ok (+ `log_size`) |
 | cancel | job_id | status_ok |
@@ -81,7 +82,8 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 
 `claim_ok` body: job_id, attempt_id, project, argv, fingerprint, base_commit, timeout_min,
 setup, toolchain, needs, job. Job dicts in queue_ok: job_id, project, job, branch, client,
-state, outcome, exit_code, worker, position, created_at, started_at, finished_at (epoch s).
+state, outcome, exit_code, worker, position, created_at, started_at, finished_at (epoch s),
+kind, detached. A `result` adds duration_s and fingerprint.
 
 Watch stream: after the `watch` request line the client keeps stdin open and writes a
 `heartbeat` line (lease `client`) every 20 s; each renews the client lease if
@@ -105,7 +107,8 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
   `cluster_slots` jobs are `starting|running|cleaning`. Sets `starting`, worker, attempt_id,
   worker lease. `position(job_id)`.
 - `leases.py`: `renew_client`, `renew_worker`, `expire(store, now)`: expired client lease
-  -> cancel request (queued/uploading jobs finish `cancelled` at once); expired worker lease
+  -> cancel request (queued/uploading jobs finish `cancelled` at once; never for a
+  `detached` job, which also leaves a client lease unused); expired worker lease
   -> `finished/interrupted`. Uploading jobs older than 10 min -> `finished/interrupted`.
 - `recovery.py`: on coordinator start, jobs in `starting|running|cleaning` whose worker
   lease expired -> `interrupted`. Never replays a job.

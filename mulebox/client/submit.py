@@ -5,8 +5,13 @@ prefix, so an agent reading the output sees what it would see running the comman
 locally. The exit code is the job's (see report.exit_code_for).
 
 Ctrl-C sends `cancel`, waits up to 15 s for the job to finish and returns 130. A watch
-stream that drops (Wi-Fi blip, laptop sleep) is reopened from the last log offset a few
-times, well inside the 120 s client lease.
+stream that drops (Wi-Fi blip, laptop sleep) is reopened from the last log offset, for 4
+minutes while this client holds the job's lease, for 30 minutes when it does not.
+
+With `detach` the job is left to run once its snapshot is uploaded: the job id goes to
+stdout and the client exits. The upload has to finish first, because the snapshot is here.
+A coordinator too old for detached jobs would cancel this one when its lease ran out, so
+a reply that does not echo `detached` cancels the job and fails.
 """
 
 from __future__ import annotations
@@ -20,18 +25,19 @@ from pathlib import Path
 from typing import Any, Protocol, TextIO
 
 from mulebox.client import report, summary
-from mulebox.client.remote import request
+from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import Snapshot, current_fingerprint, make_snapshot
 from mulebox.common import compose
 from mulebox.common.config import ProjectConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import Message, MessageType
-from mulebox.common.ssh import SSHUnavailable
+from mulebox.common.ssh import RemoteError, SSHUnavailable
 
 CANCEL_WAIT_S = 15.0
 CANCEL_POLL_S = 1.0
 WATCH_RETRIES = 24  # with the delay: keep trying for 4 min, inside the 300 s client lease
+PATIENT_RETRIES = 180  # 30 min; without the lease nothing is lost by waiting longer
 WATCH_RETRY_DELAY_S = 10.0
 RUN_JOB_NAME = "run"  # job name sent for `mulebox run`
 
@@ -70,7 +76,8 @@ def job_env(project: ProjectConfig) -> dict[str, str]:
     return env
 
 
-def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot) -> dict:
+def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
+                detach: bool = False) -> dict:
     return {
         "project": project.project,
         "job": job,
@@ -85,6 +92,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "env": job_env(project),
         "needs": list(project.all_needs),
         "timeout_min": project.timeout_min,
+        **({"detached": True} if detach else {}),
     }
 
 
@@ -94,8 +102,11 @@ def run_job(
     root: Path,
     remote: RemoteLike,
     streams: Streams | None = None,
+    detach: bool = False,
 ) -> int:
-    """Run a job on the build machines as if it ran here; return its exit code."""
+    """Run a job on the build machines as if it ran here; return its exit code.
+
+    With `detach`, return 0 once the job is queued, with its id on stdout."""
     io = streams or Streams()
     job, argv = job_request(project, target)
     try:
@@ -108,25 +119,45 @@ def run_job(
         for path in snap.skipped_links:
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {report.format_size(snap.size)}")
-        reply = remote.call(request(MessageType.SUBMIT, **submit_body(project, job, argv, snap)))
+        body = submit_body(project, job, argv, snap, detach)
+        reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
+        if detach and reply.body.get("detached") is not True:
+            _refuse_detach(remote, watcher.job_id)
         if reply.body.get("state") == "uploading":
             remote.upload(watcher.job_id, snap.path, snap.sha256)
         snap.discard()
+        if detach:
+            _left_running(watcher.job_id, io)
+            return 0
         result = watcher.follow()
     except KeyboardInterrupt:
         return watcher.cancel()
     finally:
         snap.discard()
     watcher.finish(result)
-    _stale_check(root, project, snap, io)
+    stale_check(root, project, snap.fingerprint, io)
     return report.exit_code_for(result)
 
 
-def _stale_check(root: Path, project: ProjectConfig, snap: Snapshot, io: Streams) -> None:
+def _refuse_detach(remote: RemoteLike, job_id: str) -> None:
+    remote.call(request(MessageType.CANCEL, job_id=job_id))
+    raise CoordinatorError("the build machine's mulebox is too old for --detach, so the job "
+                           "was cancelled. Upgrade it (docs/install.md), or run without --detach.")
+
+
+def _left_running(job_id: str, io: Streams) -> None:
+    io.out.write(f"{job_id}\n")
+    io.out.flush()
+    report.status(io.err, f"job {job_id} runs on without this client, within timeout_min. Follow "
+                  f"it: mulebox events --job {job_id} --json. Its result: mulebox wait {job_id}")
+
+
+def stale_check(root: Path, project: ProjectConfig, fingerprint: str, io: Streams) -> None:
+    """Warn when the project's files are no longer the ones the job ran on."""
     try:
-        changed = current_fingerprint(root, project.exclude) != snap.fingerprint
+        changed = current_fingerprint(root, project.exclude) != fingerprint
     except Exception:  # the result stands; only the staleness is unknown
         changed = False
     if changed:
@@ -145,6 +176,7 @@ class Watcher:
         self.job_id = ""
         self.offset = 0
         self.tail = summary.LogTail()
+        self.connected = False  # a message has arrived on some stream
         self._last_line: str | None = None
 
     def follow(self, lease: bool = True) -> dict[str, Any]:
@@ -153,18 +185,34 @@ class Watcher:
             try:
                 for msg in self.remote.watch(self.job_id, self.offset, lease):
                     failures = 0
+                    self.connected = True
                     if self.handle(msg):
                         return msg.body
-            except SSHUnavailable as exc:
+            except (SSHUnavailable, RemoteError, StreamEnded) as exc:
+                self._raise_unless_dropped(exc, lease)
                 failures += 1
-                if failures > WATCH_RETRIES:
+                if failures > (WATCH_RETRIES if lease else PATIENT_RETRIES):
                     raise WatchLost(
                         f"lost the connection to the build machine ({exc}). Job "
-                        f"{self.job_id} keeps running there; see its result with "
-                        f"`mulebox logs {self.job_id}`."
+                        f"{self.job_id} may still be running there; see how it ended with "
+                        f"`mulebox wait {self.job_id}`."
                     ) from exc
                 report.status(self.io.err, "connection lost, reconnecting")
                 self.io.sleep(WATCH_RETRY_DELAY_S)
+
+    def _raise_unless_dropped(self, exc: Exception, lease: bool) -> None:
+        """Before the first message there is no connection to lose. A client that just
+        submitted knows the machine is there; one that only came to look fails at once."""
+        if not self.connected and (not lease or isinstance(exc, RemoteError)):
+            raise exc
+
+    def attach(self) -> dict[str, Any]:
+        """Follow a job without holding its lease, as `wait`, `events` and `logs -f` do."""
+        try:
+            return self.follow(lease=False)
+        except SSHUnavailable as exc:
+            raise WatchLost(f"cannot reach the build machine ({exc}). Job {self.job_id} is not "
+                            "affected; run this again once the machine is back.") from exc
 
     def handle(self, msg: Message) -> bool:
         """Print what `msg` says; True when it is the final result."""

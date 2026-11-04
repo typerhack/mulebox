@@ -59,6 +59,7 @@ def submit(req: Request) -> Message:
         "env": v.string_map(body, "env"),
         "needs": needs.required(v.strings(body, "needs"), v.string_map(body, "env")),
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
+        "detached": v.flag(body, "detached"),
     }
     with req.store.write() as conn:
         job = st.find_by_key(conn, fields["idempotency_key"])
@@ -70,7 +71,10 @@ def submit(req: Request) -> Message:
                 **fields, "job_id": new_id("job"), "state": JobState.UPLOADING,
                 "created_at": req.now, "client_lease_until": req.now + leases.CLIENT_LEASE_S,
             })
-    return req.reply(MessageType.SUBMIT_OK, {"job_id": job["job_id"], "state": job["state"]})
+    # `detached` is echoed: a client must not leave a job behind that a coordinator too old to
+    # know the flag would cancel 5 minutes later.
+    return req.reply(MessageType.SUBMIT_OK, {"job_id": job["job_id"], "state": job["state"],
+                                             "detached": job["detached"]})
 
 
 def status(req: Request) -> Message:

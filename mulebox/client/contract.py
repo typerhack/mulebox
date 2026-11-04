@@ -23,6 +23,8 @@ COMMANDS = {
     "full_gate": "mulebox check",
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
+    "leave_running": "mulebox check --detach",
+    "its_result": "mulebox wait <job-id>",
     "queue": "mulebox queue",
     "all_projects": "mulebox projects",
     "read_log": "mulebox logs <job-id>",
@@ -35,7 +37,7 @@ KEEP_LOCAL = ("git", "search", "reading files", "diffs")
 EXIT_CODES = (
     (report.EXIT_USAGE, "config or usage error", "fix .mulebox.yml or the command"),
     (report.EXIT_UNREACHABLE, "build machine unreachable, or the live view lost it",
-     "tell the user; if a job id was printed, read it with mulebox logs later"),
+     "tell the user; if a job id was printed, get its result with mulebox wait later"),
     (report.EXIT_REMOTE, "the build machine refused the request",
      "read the message and tell the user"),
     (report.EXIT_INTERRUPTED, "interrupted on the build machine", "run it again once"),
@@ -58,6 +60,8 @@ COMPOSE = (
     "port number from a compose file; the address is 127.0.0.1",
 )
 RULES = (
+    "a detached job keeps running without you, within timeout_min: cancel it with mulebox "
+    "cancel if you no longer want it, nobody else will",
     "run mulebox doctor before a project's first job, and after changing toolchain or needs: "
     "it finds what a job would fail on, before anything is uploaded",
     "a failed job ends with a short summary on stderr: read it first, and the full log only "

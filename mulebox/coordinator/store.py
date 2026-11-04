@@ -22,8 +22,8 @@ from mulebox.common.protocol import JobState, Outcome, ProtocolError, check_tran
 from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
-# 2: reservations for GitHub runners; 3: job env; 4: worker reports (migrate.py)
-SCHEMA_VERSION = 4
+# 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached (migrate.py)
+SCHEMA_VERSION = 5
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -64,7 +64,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     kind TEXT NOT NULL DEFAULT 'job',
     pinned_worker TEXT,
     runner TEXT,
-    run_url TEXT
+    run_url TEXT,
+    detached INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX IF NOT EXISTS jobs_state ON jobs (state, queued_at, seq);
 CREATE TABLE IF NOT EXISTS workers (
@@ -81,7 +82,8 @@ _JOB_COLUMNS = frozenset(
     "job_id idempotency_key project job argv fingerprint base_commit client branch setup "
     "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
-    "created_at queued_at started_at finished_at kind pinned_worker runner run_url env".split()
+    "created_at queued_at started_at finished_at kind pinned_worker runner run_url env "
+    "detached".split()
 )
 
 
@@ -185,6 +187,7 @@ def _row_to_job(row: sqlite3.Row | None) -> dict[str, Any] | None:
     for name in _JSON_COLUMNS & job.keys():
         job[name] = json.loads(job[name])
     job["cancel_requested"] = bool(job["cancel_requested"])
+    job["detached"] = bool(job["detached"])
     return job
 
 

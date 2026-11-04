@@ -40,6 +40,8 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
 | --- | --- |
 | the project's full gate | `mulebox check` |
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
+| leave a long job running and go on working | `mulebox check [job] --detach`, also `mulebox run --detach -- <cmd...>` |
+| get a detached job's result | `mulebox wait <job-id>` |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
@@ -61,12 +63,21 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
 | --- | --- | --- |
 | 0 / job's code | the job ran; read its output like a local run | fix the code if it failed |
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree) | fix the config |
-| 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox logs <id>` later |
+| 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
 | 124 | the job hit `timeout_min` | look for a hang; raise `timeout_min` only if the work really takes that long |
 | 130 | cancelled | - |
 
+- **Long jobs run detached.** `mulebox check --detach` uploads the snapshot, prints the job
+  id on stdout and exits; the upload has to finish first, the queueing does not. The job then
+  does not depend on your session: an attached job is cancelled about 5 minutes after its
+  client disappears, a detached one is not. `mulebox wait <job-id>` returns what an attached
+  `check` would have: the same log on stdout, the same failure summary and the same exit
+  code, whenever you ask, also after the job ended. From the project it also gives the stale
+  warning. Ctrl-C on `wait` stops the waiting, not the job. `timeout_min` still applies, a
+  dead build machine still ends it `interrupted`, and `mulebox cancel` still stops it. If you
+  no longer want it, cancel it: nobody else will.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
   `.secret/`, `secrets/`, `*.pem`, `*.key`, ssh keys). If a job needs a value from such a
@@ -144,7 +155,8 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
 
 Run builds, type checks, lint and tests through mulebox, never directly on this machine:
 
-- full gate: `mulebox check`
+- full gate: `mulebox check`, or `mulebox check --detach` for a long run, then
+  `mulebox wait <job-id>`
 - one job from `.mulebox.yml`: `mulebox check <job>`
 - one-off command (single test file, script): `mulebox run -- <cmd...>`
 

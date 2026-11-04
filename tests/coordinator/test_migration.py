@@ -56,7 +56,8 @@ def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
         assert store.schema_version() == st.SCHEMA_VERSION
         with store.read() as conn:
-            assert {"kind", "pinned_worker", "runner", "run_url"} <= columns(conn, "jobs")
+            assert {"kind", "pinned_worker", "runner", "run_url", "detached"} <= columns(
+                conn, "jobs")
             assert {"slots", "toolchains", "version"} <= columns(conn, "workers")
             indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master "
                                                   "WHERE type = 'index'")}
@@ -66,6 +67,7 @@ def test_version_one_store_is_migrated(old_db, staging):
         old = store.get_job("job-01JC3X0000000000000000000")
         assert old["kind"] == "job" and old["state"] == JobState.QUEUED
         assert old["pinned_worker"] is None and old["argv"] == ["pnpm", "check"]
+        assert old["detached"] is False
         new_id = submit(store, staging)
         assert store.get_job(new_id)["kind"] == "job"
 
