@@ -38,7 +38,7 @@ through the worker protocol, so more workers later are configuration, not a rewr
   JSON on stdin (`ssh -T build-1 ~/.mulebox/bin/mulebox rpc`). No shell-built commands, no
   interpolated paths. One transport for everything.
 - Coordinator internals: a local Unix socket between the CLI and the daemon.
-- Dashboard: HTTP(S) served by the coordinator (see Dashboard).
+- Dashboard: HTTP(S) served on the coordinator machine (see Dashboard).
 - GitHub runners connect outbound to GitHub; nothing needs inbound internet access.
 - SQLite stays local to the coordinator and is never shared over the network.
 
@@ -118,14 +118,15 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 
 ## Dashboard
 
-- Inside the coordinator: aiohttp, plain HTML and JS, canvas graphs, one Server-Sent Events
-  stream for queue changes, log chunks and metrics; resumes by event id after drops.
+- A separate read-only process beside the coordinator: aiohttp, plain HTML and JS, canvas
+  graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
+  log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
 - Shows: running and waiting jobs (project, branch, source), live log, history, CPU per
   core, memory, disk, Docker containers.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by
-  `mulebox dashboard`) or `lan` (password login, HTTPS with a self-signed certificate,
+  `mulebox dashboard open`) or `lan` (password login, HTTPS with a self-signed certificate,
   firewall limited to the configured LAN range). Never internet-facing.
 - Logs are redacted before they are stored or streamed, rendered as text, never HTML; no
   environment variables or full container inspect output.
@@ -165,7 +166,7 @@ mulebox/
   common/       config.py  protocol.py  ssh.py  ids.py  log.py  safepath.py  redact.py
   client/       snapshot.py  submit.py  tui.py  commands.py
   coordinator/  store.py  queue.py  leases.py  recovery.py  api.py  staging.py
-  dashboard/    server.py  events.py  metrics.py  static/
+  dashboard/    server.py  streams.py  hub.py  events.py  metrics.py  data.py  static/
   worker/       agent.py  workspace.py  executor.py  docker_cleanup.py  toolchains.py
                 runner_hooks.py
   cli.py        single entry point: `mulebox <command>`

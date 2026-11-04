@@ -11,6 +11,7 @@ requires-python = ">=3.12"
 # Runtime dependencies are added (and pinned) by the module that first needs them.
 dependencies = [
     "PyYAML==6.0.3",
+    "aiohttp==3.14.5",  # dashboard (M2)
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,9 @@ version = { file = "VERSION" }
 
 [tool.setuptools.packages.find]
 include = ["mulebox*"]
+
+[tool.setuptools.package-data]
+"mulebox.dashboard" = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

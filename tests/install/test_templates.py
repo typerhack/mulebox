@@ -88,6 +88,7 @@ def read_unit(name):
     [
         ("mulebox-coordinator.service", "%h/.mulebox/bin/mulebox coordinator serve"),
         ("mulebox-worker.service", "%h/.mulebox/bin/mulebox worker serve"),
+        ("mulebox-dashboard.service", "%h/.mulebox/bin/mulebox dashboard serve"),
     ],
 )
 def test_unit_has_required_keys(name, command):
@@ -127,4 +128,9 @@ def test_install_copies_but_does_not_enable_the_runner_template():
     assert "mulebox-runner@.service" in copied
     script = 'ROLES=(coordinator worker); wanted_units'
     assert call_install_function(script).split() == [
-        "mulebox-coordinator.service", "mulebox-worker.service"]
+        "mulebox-coordinator.service", "mulebox-dashboard.service", "mulebox-worker.service"]
+
+
+def test_only_a_coordinator_machine_runs_the_dashboard():
+    script = 'ROLES=(worker); wanted_units'
+    assert call_install_function(script).split() == ["mulebox-worker.service"]

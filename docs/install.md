@@ -74,14 +74,20 @@ sudo loginctl enable-linger alice
   the roles listed here.
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
   absolute, and not a system folder or your home folder itself.
-- `slots`, `capabilities`, `dashboard`: see [interfaces.md](interfaces.md).
+- `slots`, `capabilities`: see [interfaces.md](interfaces.md).
+- `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
+  `"off"` turns it off. `"lan"` is not available yet and the service refuses it. See
+  [interfaces-m2.md](interfaces-m2.md).
 
 The installer never overwrites this file. After editing it, check it and restart:
 
 ```sh
 ~/.mulebox/venv/bin/python -c 'from mulebox.common.config import load_node_config; print(load_node_config())'
-systemctl --user restart mulebox-coordinator mulebox-worker
+systemctl --user restart mulebox-coordinator mulebox-worker mulebox-dashboard
 ```
+
+The dashboard (`mulebox-dashboard`) is installed and started with the coordinator. It
+reads the queue's database read-only and never changes anything.
 
 ## 2. Configure the laptop
 
@@ -185,3 +191,16 @@ enabled it only for mulebox: `sudo loginctl disable-linger alice`. On the laptop
 | Job or worker errors | `journalctl --user -u mulebox-worker -e` and `journalctl --user -u mulebox-coordinator -e` |
 | `pip` inside the venv | use `~/.mulebox/venv/bin/python -m pip ...` (the venv is built in a temp folder and moved, so its `bin/pip` script may point at the old path) |
 | Old venvs and copied wheels pile up | everything in `~/.mulebox/tmp/` is safe to delete by hand |
+
+## Using the dashboard
+
+From the laptop:
+
+```sh
+mulebox dashboard open                 # opens the browser; Ctrl-C closes the tunnel
+mulebox dashboard open --no-browser    # only prints the URL
+mulebox dashboard open --port 8091     # if local port 8090 is taken
+```
+
+If `[dashboard] port` was changed in `node.toml`, pass the same value as `--remote-port`.
+Nothing but the SSH connection is exposed: the page is reached only through the tunnel.

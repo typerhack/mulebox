@@ -8,6 +8,18 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.7.0 - 2026-11-04 - minor
+- Web dashboard (M2.1-M2.3, `local` part of M2.4): `mulebox dashboard open` on the laptop,
+  service `mulebox-dashboard` on the coordinator machine. Queue, live log, history, CPU per
+  core, memory, disk, Docker. Read-only and bound to 127.0.0.1; plain HTML and JS, no CDN.
+  Contract: docs/interfaces-m2.md. New dependency: aiohttp.
+- `common/status.py`: one status model for the terminal view and the dashboard.
+- Found in real use and fixed before release: `ssh -L` joined a shared `ControlMaster` and
+  exited, leaving a forward nobody held (the tunnel is now its own connection); a browser
+  filter list blocked a script named `logview.js`, which blanked the page (renamed, and the
+  page now says what to check if its scripts never run).
+- README no longer claims LAN access, which is not built yet.
+
 ## 0.6.5 - 2026-11-04 - patch
 - M3.3 done. A runner recovers from a hard kill by itself (GitHub drops the old session
   after ~3 min). Reboot drill passed with an agent job running and a CI job waiting; sudden

@@ -83,20 +83,29 @@ _JOB_COLUMNS = frozenset(
 
 
 class Store:
-    """Handle on the SQLite file at `path`. Call `open()` before use."""
+    """Handle on the SQLite file at `path`. Call `open()` before use.
 
-    def __init__(self, path: Path) -> None:
+    `readonly=True` (the dashboard) opens an existing file with `mode=ro`: no schema
+    setup, and every write fails in SQLite itself.
+    """
+
+    def __init__(self, path: Path, readonly: bool = False) -> None:
         self.path = Path(path)
+        self.readonly = readonly
         self._conn: sqlite3.Connection | None = None
         self._lock = threading.RLock()
 
     def open(self) -> "Store":
+        target = f"{self.path.resolve().as_uri()}?mode=ro" if self.readonly else self.path
         conn = sqlite3.connect(
-            self.path, timeout=BUSY_TIMEOUT_MS / 1000, isolation_level=None,
-            check_same_thread=False,
+            target, timeout=BUSY_TIMEOUT_MS / 1000, isolation_level=None,
+            check_same_thread=False, uri=self.readonly,
         )
         conn.row_factory = sqlite3.Row
         conn.execute(f"PRAGMA busy_timeout = {BUSY_TIMEOUT_MS}")
+        if self.readonly:
+            self._conn = conn
+            return self
         conn.execute("PRAGMA journal_mode = WAL")
         conn.execute("PRAGMA synchronous = NORMAL")
         self._conn = conn
