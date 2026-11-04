@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.14.1 - 2026-11-04 - patch
+- Docs: README, docs/install.md and the node.toml template now say the LAN password is
+  optional. No behaviour change.
+
 ## 0.14.0 - 2026-11-04 - minor
 - `lan_password = false` turns off the dashboard's LAN sign-in, keeping the code and the
   range and Host rules. Requested by the user; the default stays true. `/healthz` also

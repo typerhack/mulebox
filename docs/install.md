@@ -220,7 +220,8 @@ Agents without skills can read [agents.md](agents.md) instead.
 ### Dashboard on the LAN
 
 `lan` mode lets other devices, such as a phone, open the dashboard directly at
-`http://<address>:8443` with a password. The tunnel above keeps working. Reserve the
+`http://<address>:8443`, with a password unless you turn it off (below). The tunnel above
+keeps working. Reserve the
 machine's address on your router first, so that it stays the same.
 
 This is plain HTTP: the password and everything on the page cross your network
