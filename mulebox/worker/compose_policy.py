@@ -72,13 +72,20 @@ def _outside_problem(path: str) -> str | None:
     return None
 
 
+def inside(path: str, checkout: Path) -> bool:
+    return is_within(Path(os.path.realpath(path)), checkout)
+
+
 def _bind_problem(volume: Model, checkout: Path) -> str | None:
     path = volume.get("source") or ""
     problem = _outside_problem(path)
     if problem:
         return problem
-    if is_within(Path(os.path.realpath(path)), checkout):
+    if inside(path, checkout):
         return None
+    if not os.path.exists(path):
+        return (f"bind-mounts {path}, outside the checkout, and it does not exist on the "
+                "build machine. mulebox does not create folders there")
     if not volume.get("read_only"):
         return (f"bind-mounts {path} writable, outside the checkout. Use a path in the "
                 "project, a named volume, or mount it read-only")
@@ -179,11 +186,15 @@ def _section_problem(section: str, key: str, spec: Model) -> str | None:
     return None
 
 
-def _file_problem(section: str, key: str, spec: Model) -> str | None:
+def _file_problem(section: str, key: str, spec: Model, checkout: Path) -> str | None:
     if spec.get("external"):
         return f"{section} {key} is external, which a job cannot have"
     path = spec.get("file")
-    problem = _outside_problem(path) if path else None
+    if not path:
+        return None
+    problem = _outside_problem(path)
+    if not problem and not inside(path, checkout) and not os.path.exists(path):
+        problem = f"reads {path}, outside the checkout, and it does not exist"
     return f"{section} {key} {problem}" if problem else None
 
 
@@ -201,6 +212,6 @@ def check(model: Model, checkout: Path) -> None:
                 raise ComposeError(problem)
     for section in ("secrets", "configs"):
         for key, spec in (model.get(section) or {}).items():
-            problem = _file_problem(section, key, spec or {})
+            problem = _file_problem(section, key, spec or {}, checkout)
             if problem:
                 raise ComposeError(problem)

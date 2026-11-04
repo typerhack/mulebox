@@ -188,7 +188,8 @@ These are refused with the reason, because they reach past the job:
 - `external` networks, volumes, secrets or configs; networks not on the bridge driver;
   volumes not on the local driver or on a host device;
 - the Docker socket, or a folder holding it, in any bind or file secret; writable bind
-  mounts outside the checkout.
+  mounts outside the checkout, and any bind outside it whose source does not exist on the
+  build machine (mulebox never creates one there).
 
 `container_name`
 is dropped, with a note in the log; use the service name. Put CI-only changes in a separate

@@ -169,6 +169,47 @@ def test_a_bind_that_escapes_by_dotdot_or_symlink_is_refused(tmp_path):
             run(model(volumes=[bind(source)]), checkout=str(checkout))
 
 
+def test_a_read_only_bind_outside_never_creates_its_source(tmp_path):
+    volume = {"type": "bind", "source": str(tmp_path), "target": "/seed", "read_only": True,
+              "bind": {"create_host_path": True, "propagation": "rprivate"}}
+    result, _ = run(model(volumes=[volume]))
+    assert result["services"]["api"]["volumes"][0]["bind"] == {
+        "create_host_path": False, "propagation": "rprivate"}
+    assert result["services"]["api"]["volumes"][0]["read_only"] is True
+    assert volume["bind"]["create_host_path"] is True  # the input stays as it was
+
+
+def test_a_read_only_bind_without_a_bind_section_is_sealed_too(tmp_path):
+    volume = {"type": "bind", "source": str(tmp_path), "target": "/seed", "read_only": True}
+    result, _ = run(model(volumes=[volume]))
+    assert result["services"]["api"]["volumes"][0]["bind"] == {"create_host_path": False}
+
+
+def test_a_missing_outside_source_is_refused(tmp_path):
+    gone = tmp_path / "missing-cache"
+    volume = {"type": "bind", "source": str(gone), "target": "/c", "read_only": True,
+              "bind": {"create_host_path": True}}
+    with pytest.raises(ComposeError, match="does not exist"):
+        run(model(volumes=[volume]))
+    assert not gone.exists()
+
+
+def test_a_missing_source_inside_the_checkout_may_be_created(tmp_path):
+    (tmp_path / "src").mkdir()
+    source = tmp_path / "src" / "storage"
+    volume = {"type": "bind", "source": str(source), "target": "/s",
+              "bind": {"create_host_path": True}}
+    result, _ = run(model(volumes=[volume]), checkout=tmp_path / "src")
+    assert result["services"]["api"]["volumes"][0]["bind"]["create_host_path"] is True
+
+
+@pytest.mark.parametrize("section", ["secrets", "configs"])
+def test_a_missing_outside_file_is_refused(tmp_path, section):
+    data = {**model(), section: {"s": {"file": str(tmp_path / "gone")}}}
+    with pytest.raises(ComposeError, match="does not exist"):
+        run(data)
+
+
 def test_a_read_only_bind_outside_is_allowed():
     run(model(volumes=[bind("/etc/localtime", read_only=True)]))
 

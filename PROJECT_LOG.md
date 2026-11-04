@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.21.1 - 2026-11-04 - patch
+- A read-only bind outside the checkout must already exist, and gets `create_host_path: false`.
+  Compose would otherwise create the folder on the build machine, and nothing removes it.
+
 ## 0.21.0 - 2026-11-04 - minor
 - `worker/compose_policy.py` holds what a compose model may not do, and refuses more: `volumes_from`
   outside the project, `container:` namespaces, `uts`, `userns_mode` and `cgroup` on the host,

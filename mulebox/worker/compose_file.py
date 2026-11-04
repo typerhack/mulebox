@@ -12,7 +12,9 @@ collide with anything else on the machine, and writes nothing itself:
 - networks and named volumes are named after the job's project and carry its labels, as do
   containers and built images. That is what makes them findable after a crash.
 
-What would reach past the job is refused first, by compose_policy.py.
+What would reach past the job is refused first, by compose_policy.py. A read-only bind of a
+path outside the checkout gets `create_host_path: false` as well: Compose would otherwise
+create the folder on the machine if it disappeared after the check, and nothing removes it.
 """
 
 from __future__ import annotations
@@ -81,12 +83,20 @@ def _rewrite_ports(spec: Model, assigned: Mapping[str, int], name: str) -> None:
         spec["ports"] = rewritten
 
 
+def _never_create_outside(spec: Model, checkout: Path) -> None:
+    for volume in spec.get("volumes") or []:
+        source = volume.get("source") or ""
+        if volume.get("type") == "bind" and not compose_policy.inside(source, checkout):
+            volume["bind"] = {**(volume.get("bind") or {}), "create_host_path": False}
+
+
 def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
-                     assigned: Mapping[str, int], notes: list[str]) -> None:
+                     assigned: Mapping[str, int], checkout: Path, notes: list[str]) -> None:
     spec["labels"] = {**(spec.get("labels") or {}), **labels}
     if isinstance(spec.get("build"), dict):
         spec["build"]["labels"] = {**(spec["build"].get("labels") or {}), **labels}
     _rewrite_ports(spec, assigned, name)
+    _never_create_outside(spec, checkout)
     fixed = spec.pop("container_name", None)
     if fixed:
         notes.append(f"container_name {fixed} of service {name} was dropped, so jobs cannot "
@@ -108,7 +118,7 @@ def rewrite(model: Model, project: str, labels: Mapping[str, str],
     result["name"] = project
     compose_policy.check(result, checkout)
     for name, spec in _services(result).items():
-        _rewrite_service(name, spec, labels, assigned, notes)
+        _rewrite_service(name, spec, labels, assigned, checkout, notes)
     for section in ("networks", "volumes"):
         _rewrite_section(result, section, labels)
     return result, notes
