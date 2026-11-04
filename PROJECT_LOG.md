@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.26.0 - 2026-11-04 - minor
+- A failed job ends with a short summary on stderr: stage if known, exit code, and its last
+  lines without progress output and container logs (M8.2). `mulebox logs <id> --summary`
+  prints it without the log, reading only the tail; `status` replies carry `log_size` for
+  that. An agent read a huge log to find one line.
+- The worker's two log notes the summary looks for are shared constants in `common/status.py`
+  (one line each in `worker/agent.py` and `worker/compose_job.py`).
+
 ## 0.25.4 - 2026-11-04 - patch
 - A missing toolchain error lists the versions the machine has (M8.1). It only named the
   install command, so an agent had no alternative to offer. Small change in

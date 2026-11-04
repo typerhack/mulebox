@@ -36,10 +36,14 @@ a project set up for mulebox it says so, and section 2 is your next step.
 | list every project that has run on this build machine | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>` |
+| see why a job failed, without its whole log | `mulebox logs <job-id> --summary` |
 | stop a job | `mulebox cancel <job-id>` (Ctrl-C on a running `check` also cancels) |
 
 - The job's output arrives on stdout as if it ran locally; mulebox's own status lines go to
   stderr and start with `mulebox:`.
+- A failed job ends with a short summary on stderr: the failed stage if known, the exit
+  code, and its last lines without progress output and container logs. Read that first;
+  open the full log only if it is not enough.
 - The exit code is the job's exit code. mulebox's own codes:
 
 | Code | Meaning | What to do |

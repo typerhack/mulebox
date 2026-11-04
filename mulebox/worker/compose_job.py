@@ -28,6 +28,7 @@ from typing import Any
 
 from mulebox.common import compose
 from mulebox.common.compose import ComposeError
+from mulebox.common.status import CONTAINER_LOGS_NOTE
 from mulebox.worker import compose_file
 from mulebox.worker.compose_file import Port
 from mulebox.worker.docker import Docker, DockerError
@@ -69,7 +70,7 @@ def script_lines() -> tuple[str, ...]:
         "mulebox_containers() {",
         '  code=$?; trap - EXIT',
         '  if [ "$code" -ne 0 ]; then',
-        "    echo 'mulebox: the job failed; the state and last log lines of its containers:'",
+        f"    echo {shlex.quote(CONTAINER_LOGS_NOTE)}",
         "    docker compose ps --all || true",
         f"    docker compose logs --no-color --tail={LOG_LINES} || true",
         "  fi",

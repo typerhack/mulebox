@@ -77,10 +77,12 @@ def main():
     elif kind == "logs":
         text = "".join(scenario.get("log", []))
         data = text.encode()[body["offset"]:].decode()
-        send("log_chunk", rid, job_id=body["job_id"], offset=body["offset"], data=data, eof=True)
+        send("log_chunk", rid, job_id=body["job_id"], offset=body["offset"], data=data, eof=True,
+             next_offset=body["offset"] + len(data.encode()))
     else:  # status, cancel
         send("status_ok", rid, job_id=body["job_id"], state=scenario.get("status_state", "queued"),
-             outcome=scenario.get("outcome", "cancelled"))
+             outcome=scenario.get("outcome", "cancelled"), exit_code=scenario.get("exit_code"),
+             log_size=scenario.get("log_size", 0))
     return 0
 
 

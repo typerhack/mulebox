@@ -23,7 +23,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.common import compose
+from mulebox.common import compose, status
 from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
@@ -141,7 +141,7 @@ class Agent:
             self._end(job, Outcome.INTERRUPTED, None, now)
         except (MuleboxError, OSError) as exc:
             LOG.error("job %s could not start: %s", job_id, exc)
-            tailer.note(f"mulebox: the job could not start: {exc}\n")
+            tailer.note(f"{status.NOT_STARTED_NOTE} {exc}\n")
             self._end(job, Outcome.FAILED, None, now)
 
     def _prepare(self, job: ActiveJob, claim: dict[str, Any], log_path: Path) -> RunSpec:

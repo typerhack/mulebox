@@ -151,6 +151,10 @@ job, a missing toolchain showed only after submission, and the error offered no 
 Marked `[~]` until checked on a real machine.
 - [~] M8.1 A missing toolchain error lists the versions the machine has. Tested 2026-11-04
       (0.25.4) by unit tests only. Open: seen in a real job.
+- [~] M8.2 Short failure summary at the end of a failed job, and `mulebox logs <id> --summary`.
+      Tested 2026-11-04 (0.26.0) with unit tests and the fake coordinator. The stage shows
+      only when a job never started, or when a result carries `stage`. Open: read on a real
+      failed compose job's log.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

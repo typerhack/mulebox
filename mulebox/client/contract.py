@@ -25,6 +25,7 @@ COMMANDS = {
     "queue": "mulebox queue",
     "all_projects": "mulebox projects",
     "read_log": "mulebox logs <job-id>",
+    "why_it_failed": "mulebox logs <job-id> --summary",
     "cancel": "mulebox cancel <job-id>",
     "report_a_problem": "mulebox feedback draft <job-id> --summary <text>",
 }
@@ -56,6 +57,8 @@ COMPOSE = (
     "port number from a compose file; the address is 127.0.0.1",
 )
 RULES = (
+    "a failed job ends with a short summary on stderr: read it first, and the full log only "
+    "if it is not enough",
     "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
     "do not ssh into the build machine to change, install or delete things",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",

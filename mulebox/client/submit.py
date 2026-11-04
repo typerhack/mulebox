@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import report
+from mulebox.client import report, summary
 from mulebox.client.remote import request
 from mulebox.client.snapshot import Snapshot, current_fingerprint, make_snapshot
 from mulebox.common import compose
@@ -119,7 +119,7 @@ def run_job(
         return watcher.cancel()
     finally:
         snap.discard()
-    report.status(io.err, report.outcome_line(watcher.job_id, result))
+    watcher.finish(result)
     _stale_check(root, project, snap, io)
     return report.exit_code_for(result)
 
@@ -144,6 +144,7 @@ class Watcher:
         self.remote, self.io = remote, io
         self.job_id = ""
         self.offset = 0
+        self.tail = summary.LogTail()
         self._last_line: str | None = None
 
     def follow(self, lease: bool = True) -> dict[str, Any]:
@@ -186,8 +187,18 @@ class Watcher:
         if start < self.offset:
             raw = raw[self.offset - start :]
         self.offset = max(self.offset, start) + len(raw)
-        self.io.out.write(raw.decode("utf-8", errors="replace"))
+        text = raw.decode("utf-8", errors="replace")
+        self.tail.feed(text)
+        self.io.out.write(text)
         self.io.out.flush()
+
+    def finish(self, result: dict[str, Any]) -> None:
+        """The last lines after a job's log: its outcome, then what went wrong."""
+        report.status(self.io.err, report.outcome_line(self.job_id, result))
+        if summary.wanted(result):
+            lines = summary.relevant_lines(self.tail)
+            for line in summary.render(self.job_id, result, lines):
+                report.status(self.io.err, line)
 
     def cancel(self) -> int:
         if not self.job_id:

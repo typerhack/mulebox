@@ -24,6 +24,9 @@ FINISHED = "finished"
 SECTIONS = ("running", "queued", "recent")
 RUNNER_KIND = "runner"
 RELEASED = "released"
+# Lines the worker writes into a job's log; the client's failure summary looks for them.
+CONTAINER_LOGS_NOTE = "mulebox: the job failed; the state and last log lines of its containers:"
+NOT_STARTED_NOTE = "mulebox: the job could not start:"
 
 
 def number(value: Any) -> float | None:

@@ -33,7 +33,8 @@ Use `mulebox contract --json` if you want to read it with a tool.
 
 ## When something goes wrong
 
-- A job failed: that is a normal result. Read its output and fix the code.
+- A job failed: that is a normal result. Read the short failure summary at the end of its
+  output first, the full log only if that is not enough, and fix the code.
 - A toolchain is missing: the error lists the versions the machine has. Use one only if it
   matches the project; otherwise ask the user to install the version it needs.
 - A job waits in the queue: that is normal too. Other projects and CI share it.

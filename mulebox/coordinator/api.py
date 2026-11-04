@@ -77,7 +77,8 @@ def status(req: Request) -> Message:
         job = st.require_job(conn, v.job_id(req.body))
         place = queue.position(conn, job)
         reason = waiting_for(conn, job, req.now)
-    return req.reply(MessageType.STATUS_OK, status_body(job, place, reason))
+    return req.reply(MessageType.STATUS_OK,
+                     status_body(job, place, reason, log_size=job["log_size"]))
 
 
 def cancel(req: Request) -> Message:

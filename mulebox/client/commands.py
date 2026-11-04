@@ -14,7 +14,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from mulebox.client import contract, queue_view, report, tui
+from mulebox.client import contract, queue_view, report, summary, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -61,6 +61,8 @@ def register(sub: argparse._SubParsersAction) -> None:
     logs = sub.add_parser("logs", help="show a job's log")
     logs.add_argument("job_id")
     logs.add_argument("-f", "--follow", action="store_true", help="follow until it finishes")
+    logs.add_argument("--summary", action="store_true",
+                      help="only why it failed: stage, exit code, last relevant lines")
     logs.set_defaults(func=guarded(_logs))
 
     cancel = sub.add_parser("cancel", help="cancel a job")
@@ -171,16 +173,41 @@ def _logs(args: argparse.Namespace) -> int:
     remote = _remote()
     watcher = Watcher(remote, Streams())
     watcher.job_id = args.job_id
+    if args.summary:
+        return _log_summary(remote, args.job_id)
     if args.follow:
         result = watcher.follow(lease=False)
-        report.status(sys.stderr, report.outcome_line(args.job_id, result))
+        watcher.finish(result)
         return report.exit_code_for(result)
+    _read_log(remote, args.job_id, 0, watcher.write_log)
+    return 0
+
+
+def _read_log(remote: Remote, job_id: str, offset: int, sink: Callable[[dict], None]) -> None:
     while True:
-        offset = watcher.offset
-        reply = remote.call(request(MessageType.LOGS, job_id=args.job_id, offset=offset))
-        watcher.write_log(reply.body)
-        if reply.body.get("eof", True) or watcher.offset == offset:
-            return 0
+        reply = remote.call(request(MessageType.LOGS, job_id=job_id, offset=offset))
+        sink(reply.body)
+        next_offset = reply.body.get("next_offset", offset)
+        if reply.body.get("eof", True) or next_offset == offset:
+            return
+        offset = next_offset
+
+
+def _log_summary(remote: Remote, job_id: str) -> int:
+    body = remote.call(request(MessageType.STATUS, job_id=job_id)).body
+    state = body.get("state")
+    if state != "finished":
+        print(f"job {job_id} is {state}; a summary needs it to end")
+    elif not summary.wanted(body):
+        print(report.outcome_line(job_id, body))
+    else:
+        tail = summary.LogTail()
+        size = body.get("log_size")
+        start = max(0, size - summary.TAIL_BYTES) if isinstance(size, int) else 0
+        tail.cut = start > 0
+        _read_log(remote, job_id, start, lambda chunk: tail.feed(chunk.get("data") or ""))
+        print("\n".join(summary.render(job_id, body, summary.relevant_lines(tail))))
+    return 0
 
 
 def _cancel(args: argparse.Namespace) -> int:

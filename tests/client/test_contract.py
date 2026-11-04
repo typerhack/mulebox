@@ -16,6 +16,7 @@ AGENTS_DOC = Path(__file__).resolve().parents[2] / "docs" / "agents.md"
 CONFIG = ProjectConfig(project="example-app", jobs={"check": "pnpm check", "test": "pnpm test"},
                        toolchain={"node": "22.22.3"}, setup="pnpm install", timeout_min=30,
                        exclude=("reports/",), env={"API_KEY": "must-not-appear"})
+FILLED = {"<job-id>": "x", "<text>": "x"}
 YML = "project: example-app\ntimeout_min: 30\njobs:\n  check: pnpm check\n  test: pnpm test\n"
 
 
@@ -64,12 +65,9 @@ def test_never_uploaded_is_the_real_list_plus_the_project_excludes():
 def test_every_command_in_the_contract_exists_in_the_cli():
     parser = build_parser()
     for command in contract.COMMANDS.values():
-        words = [w for w in command.split()[1:] if w != "--" and not w.startswith("<")]
-        name = words[0]
-        given = words + (["x"] if "<job-id>" in command else [])
-        given = [w for w in given if w != "--summary"] + (
-            ["--summary", "x"] if "--summary" in words else [])
-        assert parser.parse_args(given).command == name
+        words = [FILLED.get(w, w) for w in command.split()[1:]]
+        given = [w for w in words if w != "--" and not w.startswith("<")]
+        assert parser.parse_args(given).command == given[0]
 
 
 def test_exit_codes_match_the_table_in_the_agent_docs():

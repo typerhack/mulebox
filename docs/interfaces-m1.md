@@ -40,7 +40,7 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 | `mulebox check [job]` | client | default job `check`; exit code = job exit code |
 | `mulebox run -- <cmd...>` | client | ad-hoc argv |
 | `mulebox queue [--watch]` | client | table; `--watch` = live view (M1.7) |
-| `mulebox logs <job_id> [-f]` | client | `-f` follows via watch without lease |
+| `mulebox logs <job_id> [-f] [--summary]` | client | `-f` follows via watch without lease; `--summary` reads the log's tail only (client/summary.py) |
 | `mulebox cancel <job_id>` | client | |
 | `mulebox rpc` | coordinator | one request line on stdin; replies on stdout |
 | `mulebox rpc-upload <job_id> <sha256>` | coordinator | tar.gz bytes on stdin |
@@ -65,7 +65,7 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | --- | --- | --- |
 | submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch` | submit_ok (job_id, state); repeat key returns the same job |
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
-| status | job_id | status_ok |
+| status | job_id | status_ok (+ `log_size`) |
 | cancel | job_id | status_ok |
 | heartbeat | job_id, lease (`client`/`worker`), + `attempt_id` for worker | status_ok (+ `cancel`) |
 | queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts) |
