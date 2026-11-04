@@ -1,0 +1,206 @@
+"""What a job's compose model may not do: reach past the job. Pure checks, nothing changes.
+
+The model comes from `docker compose config`, so every value is resolved and `extends` and
+`include` are already merged in. A job's containers should see the job and nothing else, so
+this refuses what opens a door out of that: the host's namespaces and those of containers
+outside the project, devices, extra kernel powers, inherited mounts, the Docker API, host
+paths that Compose would create or write, and build features that do the same for a build.
+
+Refused, not repaired: the project's owner decides what to do, and the message says why.
+This guards against a CI file written for a throwaway runner, not against a hostile project:
+a job can run any command, and Docker access is root-equivalent (docs/design.md, Safety).
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+from typing import Any
+
+from mulebox.common.compose import ComposeError
+from mulebox.common.mounts import is_within
+
+Model = dict[str, Any]
+
+_NAMESPACES = ("network_mode", "pid", "ipc", "uts", "userns_mode", "cgroup")
+_FOREIGN_NAMESPACE = ("container:", "ns:")
+_SERVICE_NAMESPACE = "service:"
+_REFUSED_KEYS = {
+    "privileged": "is privileged",
+    "devices": "uses host devices (devices:)",
+    "device_cgroup_rules": "changes which host devices it may use",
+    "gpus": "uses host GPUs",
+    "cgroup_parent": "picks its own control group",
+    "external_links": "links to containers outside the project",
+    "use_api_socket": "gets the Docker API",
+    "provider": "runs a program on the build machine (provider:)",
+    "runtime": "picks its own container runtime",
+}
+_HOOKS = ("pre_start", "post_start", "pre_stop")
+_VOLUME_TYPES = (None, "bind", "volume", "tmpfs", "image")
+# Docker's default set, which `cap_drop: [ALL]` files add back, and three that databases and
+# search engines ask for and that stay inside the container.
+_CAPABILITIES = frozenset({
+    "AUDIT_WRITE", "CHOWN", "DAC_OVERRIDE", "FOWNER", "FSETID", "KILL", "MKNOD",
+    "NET_BIND_SERVICE", "NET_RAW", "SETFCAP", "SETGID", "SETPCAP", "SETUID", "SYS_CHROOT",
+    "IPC_LOCK", "SYS_NICE", "SYS_PTRACE",
+})
+_SECURITY_OPT_ALLOWED = "no-new-privileges"
+_BUILD_REFUSED = {
+    "privileged": "is privileged",
+    "entitlements": "asks for build entitlements",
+    "ssh": "forwards an SSH agent",
+    "cache_to": "writes its cache outside the job (cache_to:)",
+}
+_SOCKETS = ("/run/docker.sock", "/var/run/docker.sock")
+_NETWORK_DRIVERS = (None, "bridge", "default")
+_VOLUME_DRIVERS = (None, "local")
+
+
+def _holds_socket(source: Path) -> bool:
+    """True if `source` is a Docker socket, or a folder with one in it. The socket may be a
+    symlink, so its folder and its target both count."""
+    spots = {Path(os.path.realpath(path)) for path in _SOCKETS}
+    spots |= {Path(os.path.realpath(os.path.dirname(path))) / "docker.sock" for path in _SOCKETS}
+    return source.name == "docker.sock" or any(is_within(spot, source) for spot in spots)
+
+
+def _outside_problem(path: str) -> str | None:
+    """Reading this host path from a job: what is wrong with it, or None."""
+    if _holds_socket(Path(os.path.realpath(path))):
+        return f"mounts the Docker socket through {path}"
+    return None
+
+
+def _bind_problem(volume: Model, checkout: Path) -> str | None:
+    path = volume.get("source") or ""
+    problem = _outside_problem(path)
+    if problem:
+        return problem
+    if is_within(Path(os.path.realpath(path)), checkout):
+        return None
+    if not volume.get("read_only"):
+        return (f"bind-mounts {path} writable, outside the checkout. Use a path in the "
+                "project, a named volume, or mount it read-only")
+    if (volume.get("bind") or {}).get("selinux"):
+        return f"relabels {path}, outside the checkout"
+    return None
+
+
+def _volume_problem(volume: Model, checkout: Path) -> str | None:
+    kind = volume.get("type")
+    if kind not in _VOLUME_TYPES:
+        return f"uses a {kind} volume, which would reach past the job"
+    return _bind_problem(volume, checkout) if kind == "bind" else None
+
+
+def _inherited_problem(entry: str, services: Model) -> str | None:
+    if entry.startswith("container:"):
+        return f"inherits the mounts of a container outside the project ({entry})"
+    name = entry.split(":", 1)[0]
+    return None if name in services else f"inherits mounts from unknown service {name}"
+
+
+def _namespace_problem(key: str, value: Any, services: Model) -> str | None:
+    text = str(value or "")
+    if text == "host" or text.startswith(_FOREIGN_NAMESPACE):
+        return f"uses {key}: {text}, which would reach past the job"
+    if text.startswith(_SERVICE_NAMESPACE) and text.split(":", 1)[1] not in services:
+        return f"uses {key}: {text}, which is no service of this project"
+    return None
+
+
+def _capability_problem(names: list[str]) -> str | None:
+    for name in names:
+        bare = str(name).upper().removeprefix("CAP_")
+        if bare not in _CAPABILITIES:
+            return f"adds the capability {name}, which would reach past the job"
+    return None
+
+
+def _security_problem(options: list[str]) -> str | None:
+    for option in options:
+        if not str(option).startswith(_SECURITY_OPT_ALLOWED):
+            return f"changes container security ({option}), which would reach past the job"
+    return None
+
+
+def _build_problem(build: Any) -> str | None:
+    if not isinstance(build, dict):
+        return None
+    if build.get("network") == "host":
+        return "builds with network: host, which would reach past the job"
+    for key, reason in _BUILD_REFUSED.items():
+        if build.get(key):
+            return f"has a build that {reason}, which would reach past the job"
+    return None
+
+
+def _hook_problem(spec: Model) -> str | None:
+    for key in _HOOKS:
+        if any(hook.get("privileged") for hook in spec.get(key) or []):
+            return f"has a privileged {key} hook, which would reach past the job"
+    return None
+
+
+def _service_problem(spec: Model, services: Model, checkout: Path) -> str | None:
+    for key, reason in _REFUSED_KEYS.items():
+        if spec.get(key):
+            return f"{reason}, which would reach past the job"
+    for key in _NAMESPACES:
+        problem = _namespace_problem(key, spec.get(key), services)
+        if problem:
+            return problem
+    for volume in spec.get("volumes") or []:
+        problem = _volume_problem(volume, checkout)
+        if problem:
+            return problem
+    for entry in spec.get("volumes_from") or []:
+        problem = _inherited_problem(entry, services)
+        if problem:
+            return problem
+    return (_capability_problem(spec.get("cap_add") or [])
+            or _security_problem(spec.get("security_opt") or [])
+            or _build_problem(spec.get("build"))
+            or _hook_problem(spec))
+
+
+def _section_problem(section: str, key: str, spec: Model) -> str | None:
+    if spec.get("external"):
+        return (f"{section} {key} is external, so jobs would share it; declare it in the "
+                "compose file so each job gets its own")
+    if section == "networks" and spec.get("driver") not in _NETWORK_DRIVERS:
+        return f"network {key} uses the {spec['driver']} driver; use a plain bridge network"
+    if section == "volumes":
+        if spec.get("driver") not in _VOLUME_DRIVERS:
+            return f"volume {key} uses the {spec['driver']} driver; use a plain named volume"
+        if (spec.get("driver_opts") or {}).get("device"):
+            return f"volume {key} is backed by a host device or folder; use a plain named volume"
+    return None
+
+
+def _file_problem(section: str, key: str, spec: Model) -> str | None:
+    if spec.get("external"):
+        return f"{section} {key} is external, which a job cannot have"
+    path = spec.get("file")
+    problem = _outside_problem(path) if path else None
+    return f"{section} {key} {problem}" if problem else None
+
+
+def check(model: Model, checkout: Path) -> None:
+    """ComposeError naming the first thing in `model` that reaches past the job."""
+    services = model.get("services") or {}
+    for name, spec in services.items():
+        problem = _service_problem(spec, services, checkout)
+        if problem:
+            raise ComposeError(f"service {name} {problem}")
+    for section in ("networks", "volumes"):
+        for key, spec in (model.get(section) or {}).items():
+            problem = _section_problem(section, key, spec or {})
+            if problem:
+                raise ComposeError(problem)
+    for section in ("secrets", "configs"):
+        for key, spec in (model.get(section) or {}).items():
+            problem = _file_problem(section, key, spec or {})
+            if problem:
+                raise ComposeError(problem)

@@ -69,7 +69,8 @@ comma in the path is refused because it would end the `--mount` value.
   trap that prints `docker compose ps --all` and `logs --tail=50` when the script fails,
   `docker compose up --detach --wait`, then `setup`, then the job.
 - `worker/compose_file.py`: `published_ports(model)`, `rewrite(model, project, labels,
-  assigned, checkout) -> (model, notes)`; raises `ComposeError` for what it refuses.
+  assigned, checkout) -> (model, notes)`; `compose_policy.check(model, checkout)` raises
+  `ComposeError` for what is refused.
 - `worker/ports.py`: `PortPool(free, pick)`: `take(job_id, names)`, `release(job_id)`. Range
   20000-29999, random start, proven free by a bind on 127.0.0.1, held until the job is clean.
 - A compose problem found before the unit starts fails the job with the reason in its log.

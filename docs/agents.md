@@ -174,9 +174,23 @@ when the job ends, however it ends; pulled images and build layers stay as cache
   that depends on `setup` having run cannot pass, because setup comes after.
 - When a job fails, its log ends with the state and last lines of its containers.
 
-These are refused with the reason, because they reach past the job: `network_mode: host`,
-`pid: host`, `ipc: host`, `privileged: true`, `external` networks or volumes, volumes on a
-host device, the Docker socket, and writable bind mounts outside the checkout. `container_name`
+These are refused with the reason, because they reach past the job:
+
+- the host's namespaces (`network_mode`, `pid`, `ipc`, `uts`, `userns_mode`, `cgroup` set to
+  `host`) and those of containers outside the project (`container:...`). `service:...` of the
+  same project is fine;
+- `privileged`, privileged hooks, `devices`, `device_cgroup_rules`, `gpus`, `cgroup_parent`,
+  `runtime`, `provider`, `use_api_socket`, `external_links`;
+- `cap_add` beyond Docker's defaults and `SYS_NICE`, `SYS_PTRACE`, `IPC_LOCK`; `security_opt`
+  other than `no-new-privileges`;
+- `volumes_from` of anything but a service of the project;
+- builds with `network: host`, `privileged`, `entitlements`, `ssh` or `cache_to`;
+- `external` networks, volumes, secrets or configs; networks not on the bridge driver;
+  volumes not on the local driver or on a host device;
+- the Docker socket, or a folder holding it, in any bind or file secret; writable bind
+  mounts outside the checkout.
+
+`container_name`
 is dropped, with a note in the log; use the service name. Put CI-only changes in a separate
 compose file rather than changing how the project runs locally.
 

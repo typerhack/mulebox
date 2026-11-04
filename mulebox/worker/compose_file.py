@@ -12,17 +12,12 @@ collide with anything else on the machine, and writes nothing itself:
 - networks and named volumes are named after the job's project and carry its labels, as do
   containers and built images. That is what makes them findable after a crash.
 
-It also refuses what would reach past the job: host networking, the host's process or IPC
-namespace, `privileged`, external volumes and networks, volumes backed by a host device, the
-Docker socket, and writable bind mounts outside the checkout. This guards against a CI
-file written for a throwaway runner, not against a hostile project: a job can run any
-command, and Docker access is root-equivalent (docs/design.md, Safety).
+What would reach past the job is refused first, by compose_policy.py.
 """
 
 from __future__ import annotations
 
 import copy
-import os
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -30,12 +25,11 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.compose import ComposeError
-from mulebox.common.mounts import is_within
+from mulebox.worker import compose_policy
 
 Model = dict[str, Any]
 LOOPBACK = "127.0.0.1"
 PORT_PREFIX = "MULEBOX_PORT_"
-_HOST_NAMESPACES = ("network_mode", "pid", "ipc")
 _NOT_A_NAME = re.compile(r"[^A-Za-z0-9]")
 
 
@@ -76,29 +70,6 @@ def published_ports(model: Model) -> list[Port]:
     return distinct
 
 
-def _bind_problem(volume: Model, checkout: Path) -> str | None:
-    source = Path(os.path.realpath(volume.get("source") or ""))
-    if source.name == "docker.sock":
-        return f"mounts the Docker socket {source}"
-    if is_within(source, checkout) or volume.get("read_only"):
-        return None
-    return (f"bind-mounts {volume.get('source')} writable, outside the checkout. Use a path "
-            "in the project, a named volume, or mount it read-only")
-
-
-def _service_problem(spec: Model, checkout: Path) -> str | None:
-    for key in _HOST_NAMESPACES:
-        if spec.get(key) == "host":
-            return f"uses {key}: host, which would reach past the job"
-    if spec.get("privileged"):
-        return "is privileged, which would reach past the job"
-    for volume in spec.get("volumes") or []:
-        problem = _bind_problem(volume, checkout) if volume.get("type") == "bind" else None
-        if problem:
-            return problem
-    return None
-
-
 def _rewrite_ports(spec: Model, assigned: Mapping[str, int], name: str) -> None:
     done, rewritten = set(), []
     for entry, port in zip(spec.get("ports") or [], _ports_of(name, spec)):
@@ -126,12 +97,6 @@ def _rewrite_section(model: Model, section: str, labels: Mapping[str, str]) -> N
     project = model["name"]
     for key, spec in (model.get(section) or {}).items():
         spec = spec if spec is not None else {}
-        if spec.get("external"):
-            raise ComposeError(f"{section} {key} is external, so jobs would share it; declare "
-                               "it in the compose file so each job gets its own")
-        if (spec.get("driver_opts") or {}).get("device"):
-            raise ComposeError(f"{section} {key} is backed by a host device or folder; use a "
-                               "plain named volume")
         model[section][key] = {**spec, "name": f"{project}_{key}",
                                "labels": {**(spec.get("labels") or {}), **labels}}
 
@@ -141,10 +106,8 @@ def rewrite(model: Model, project: str, labels: Mapping[str, str],
     """The model a job runs, plus notes for its log. ComposeError for what is refused."""
     result, notes = copy.deepcopy(model), []
     result["name"] = project
+    compose_policy.check(result, checkout)
     for name, spec in _services(result).items():
-        problem = _service_problem(spec, checkout)
-        if problem:
-            raise ComposeError(f"service {name} {problem}")
         _rewrite_service(name, spec, labels, assigned, notes)
     for section in ("networks", "volumes"):
         _rewrite_section(result, section, labels)

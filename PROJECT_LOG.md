@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.21.0 - 2026-11-04 - minor
+- `worker/compose_policy.py` holds what a compose model may not do, and refuses more: `volumes_from`
+  outside the project, `container:` namespaces, `uts`, `userns_mode` and `cgroup` on the host,
+  `devices`, `cap_add` beyond a short list, `security_opt`, the Docker API, `provider`, `runtime`,
+  privileged hooks and builds, non-bridge networks, non-local volumes, and any bind of a
+  folder holding the Docker socket. Review found these went straight through.
+
 ## 0.20.1 - 2026-11-04 - patch
 - M4 status from the real drills: M4.2 done, M4.1 and M4.3 built with what is still open.
   Troubleshooting entry for NetworkManager detaching Docker's bridges, which blocks services
