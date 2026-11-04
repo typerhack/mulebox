@@ -35,6 +35,17 @@ export function safeUrl(text) {
   }
 }
 
+// A job's display name and its link to the detail view. A runner reservation only holds a
+// slot for GitHub Actions, so it is named by its project.
+export function jobName(job) {
+  if (job.kind === "runner") return `${job.project ?? "-"} (CI)`;
+  return `${job.project ?? "-"} / ${job.job ?? "-"}`;
+}
+
+export function jobLink(job) {
+  return el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, text: jobName(job) });
+}
+
 // Build a DOM element. Text always goes through textContent, so nothing is parsed as HTML.
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -67,7 +78,7 @@ export function meter(attrs = {}) {
 const TONES = {
   passed: "good", failed: "bad", timed_out: "warn", interrupted: "warn",
   running: "active", starting: "active", cleaning: "active",
-  available: "good", busy: "active", offline: "bad",
+  available: "good", busy: "active", offline: "bad", stuck: "bad",
 };
 
 // State as words plus a shape: colour never carries the meaning alone.

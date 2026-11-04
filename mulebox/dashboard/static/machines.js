@@ -1,12 +1,14 @@
-// The machines box: every worker, whether it is online, and its slots as filled or empty
-// squares, so what is free shows at a glance.
+// The machines box: every worker, whether it is online, its slots as filled or empty
+// squares, its capabilities, what it is running, and a small live reading of its CPU and
+// memory on the same load ramp as the big graphs.
+//
+// A reading is only shown when the server measured it (`cpu_pct`, `mem_pct` on the row).
+// Today that is the machine the dashboard runs on; other machines say "no live data" until
+// their workers report (M5.3), and nothing here will need to change when they do.
 
-import { badge, clock, el, fill } from "./format.js";
+import { badge, clock, el, fill, jobLink, meter } from "./format.js";
 
-function jobLink(job) {
-  const label = job.kind === "runner" ? `${job.project} (CI)` : `${job.project} / ${job.job}`;
-  return el("li", {}, el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, text: label }));
-}
+const READINGS = [["cpu", "cpu_pct"], ["mem", "mem_pct"]];
 
 function slots(row) {
   const used = row.state === "offline" ? 0 : Math.max(0, row.slots - row.free_slots);
@@ -19,15 +21,35 @@ function slots(row) {
             el("span", { text }));
 }
 
+// One meter per reading. The value is always text too, so colour never carries it alone.
+function reading(row, label, key) {
+  const value = row[key];
+  const bar = meter({ "aria-label": `${row.name} ${label}: ${value.toFixed(0)}%` });
+  bar.set(value / 100);
+  return el("div", { class: "row" }, el("span", { class: "label", text: label }), bar.node,
+            el("span", { class: "value num", text: `${value.toFixed(0)}%` }));
+}
+
+function readings(row) {
+  const live = READINGS.filter(([, key]) => typeof row[key] === "number");
+  if (!live.length) {
+    return el("p", { class: "muted reading-none", text: "no live data" });
+  }
+  return el("div", { class: "readings" }, ...live.map(([label, key]) => reading(row, label, key)));
+}
+
 function card(row) {
   const parts = [
     el("p", { class: "head" }, el("strong", { text: row.name }), badge(row.state)),
+    readings(row),
     slots(row),
   ];
   if (row.capabilities.length) {
     parts.push(el("p", { class: "muted", text: row.capabilities.join(", ") }));
   }
-  if (row.jobs.length) parts.push(el("ul", { class: "jobs" }, ...row.jobs.map(jobLink)));
+  if (row.jobs.length) {
+    parts.push(el("ul", { class: "jobs" }, ...row.jobs.map((job) => el("li", {}, jobLink(job)))));
+  }
   return el("div", { class: "machine", "data-state": row.state }, ...parts);
 }
 

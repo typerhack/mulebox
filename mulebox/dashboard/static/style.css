@@ -95,6 +95,7 @@ button.icon:hover { color: var(--ink); }
   color: var(--ink-muted); line-height: 15px; white-space: nowrap;
 }
 .box > .body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+#work > .body { padding-right: 10px; }  /* the overlay scrollbar must not cover the times */
 .empty { color: var(--ink-muted); margin: 2px 0; }
 .empty code { color: var(--ink-soft); }
 
@@ -134,7 +135,46 @@ button.icon:hover { color: var(--ink); }
 .badge[data-tone="bad"]::before { background: var(--bad); border-radius: 0; clip-path: polygon(50% 0, 100% 100%, 0 100%); }
 .badge[data-tone="warn"]::before { background: var(--warn); border-radius: 0; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
 
-/* Jobs: a process-list style table. Running rows are the brightest thing in the box. */
+/* Jobs: tabs on top (kept in view while the body scrolls), then lanes or a table. */
+.tabs { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; gap: 0 14px; margin: -2px 0 8px; background: var(--bg); border-bottom: 1px solid var(--line); }
+.tabs [role="tab"] { border: none; border-radius: 0; min-height: 0; padding: 3px 0 5px; color: var(--ink-soft); }
+.tabs [role="tab"]:hover { color: var(--ink); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--ink); font-weight: 700; box-shadow: inset 0 -2px 0 var(--accent); }
+.tabs .count { color: var(--ink-muted); font-weight: 400; margin-left: 6px; }
+.panel { display: flex; flex-direction: column; }
+
+/* Lanes: one row per machine, its name and state, a block per running job, and the jobs
+   waiting for it with their real positions. Slots and capabilities live in the Machines box. */
+.lanes { --lane-cols: minmax(120px, 170px) minmax(0, 1fr) minmax(0, 1.2fr); }
+.lane { display: grid; grid-template-columns: var(--lane-cols); gap: 6px 16px; padding: 7px 0; border-top: 1px solid var(--line-soft); }
+.lane-head { padding: 0 0 3px; border-top: none; color: var(--ink-muted); }
+.lane-head + .lane { border-top-color: var(--line); }
+.lane .head { display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; margin: 0; }
+.lane strong { overflow-wrap: anywhere; }
+.lane-machine p { margin: 1px 0; overflow-wrap: anywhere; }
+.lane[data-state="offline"] .lane-machine strong, .lane[data-state="offline"] .slot-block { color: var(--ink-muted); }
+.lane-running { display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start; }
+.slot-block {
+  flex: 1 1 180px; max-width: 280px; min-height: 52px; padding: 4px 8px 5px;
+  border: 1px dashed var(--line); border-radius: 3px; color: var(--ink-muted); overflow-wrap: anywhere;
+}
+.slot-block[data-filled] { border-style: solid; border-color: var(--active); background: var(--row); color: var(--ink); font-weight: 700; }
+.slot-block[data-filled] .badge { color: var(--active); }
+.slot-block .slot-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 1px; }
+.slot-block .branch { display: block; margin: 0; font-weight: 400; }
+.waits { list-style: none; margin: 0; padding: 0; }
+.wait { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: 0 10px; align-items: baseline; padding: 2px 0; }
+.wait + .wait { border-top: 1px solid var(--line-soft); }
+.wait .pos { color: var(--accent); font-weight: 700; min-width: 3ch; }
+.wait .branch { margin-left: 8px; }
+.wait .num { text-align: right; }
+.wait .reason, .wait .muted { grid-column: 2 / -1; margin: 0 0 1px; }
+.wait .reason { display: flex; gap: 8px; align-items: baseline; color: var(--ink-soft); }
+.wait .reason .badge { flex: none; color: var(--bad); }
+.lane[data-state="stuck"] .lane-machine strong { color: var(--bad); }
+
+/* Tables: the process-list style of All, Failed, Recent and History. Running rows are the
+   brightest thing in the box. */
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-weight: 400; color: var(--ink-muted); padding: 0 12px 3px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td { padding: 3px 12px 3px 0; vertical-align: top; overflow-wrap: anywhere; }
@@ -142,9 +182,6 @@ th:last-child, td:last-child { padding-right: 0; text-align: right; }
 th.state, td.state { width: 1%; white-space: nowrap; }
 td.num { width: 1%; }
 tbody tr:nth-child(even) td { background: var(--row); }
-tr.group th { padding: 7px 0 3px; color: var(--accent); font-weight: 700; border-bottom: none; text-align: left; }
-td.empty { text-align: left; }
-tr.group th .count { color: var(--ink-muted); font-weight: 400; margin-left: 6px; }
 tr.running td { color: var(--ink); font-weight: 700; }
 tr.running td .badge { color: var(--active); }
 td .branch { color: var(--ink-muted); margin-left: 8px; }
@@ -154,11 +191,14 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 .status:empty { display: none; }
 .more { align-self: flex-start; margin-top: 8px; }
 
-/* Machines */
+/* Machines: a card per worker with its own small readings on the load ramp. */
 .machine { padding: 7px 0; border-top: 1px solid var(--line-soft); }
 .machine:first-child { border-top: none; padding-top: 2px; }
-.machine .head { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 8px; align-items: baseline; }
+.machine .head { display: grid; grid-template-columns: minmax(0, 1fr) max-content; gap: 8px; align-items: baseline; margin: 0; }
 .machine strong { font-weight: 700; overflow-wrap: anywhere; }
+.readings { display: grid; gap: 2px; margin: 4px 0 3px; }
+.readings .label { color: var(--ink-muted); min-width: 3ch; }
+.reading-none { margin: 3px 0; }
 .slots { display: flex; align-items: center; gap: 8px; margin: 3px 0; color: var(--ink-soft); }
 .slots .boxes { display: inline-flex; gap: 3px; }
 .slot { width: 11px; height: 11px; border: 1px solid var(--accent); border-radius: 2px; }
@@ -175,7 +215,8 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 @media (min-width: 1101px) { .facts { grid-template-columns: repeat(3, max-content minmax(0, 1fr)); gap: 1px 16px; } }
 .facts dt { color: var(--ink-muted); }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
-.log-head { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-muted); margin: 4px 0 4px; }
+.log-head { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--ink-muted); margin: 4px 0 4px; }
+.log-head a { margin-left: auto; }
 .log {
   flex: 1; min-height: 180px; margin: 0; padding: 8px 10px; overflow: auto;
   border: 1px solid var(--line-soft); border-radius: 3px; background: var(--row);
@@ -206,12 +247,18 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 }
 @media (max-width: 760px) {
   .layout { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cpu" "side" "machines" "work"; gap: 16px 0; padding: 12px; }
+  #machines { max-height: 75vh; }
   .side { grid-template-rows: auto auto; }
   .side .graph, #cpu .graph { flex: none; height: 110px; }
   .wide { display: none; }
   th, td { padding-right: 8px; }
   td .branch { display: block; margin: 0; }
-  #work, #machines { max-height: 75vh; }
+  #work { max-height: 75vh; }
+  .lanes { --lane-cols: minmax(0, 1fr); }
+  .lane { gap: 6px; }
+  .lane-head { display: none; }
+  .lane-head + .lane { border-top: none; padding-top: 0; }
+  .slot-block { max-width: none; }
   .log { min-height: 45vh; }
   .top { padding: 7px 12px 6px; gap: 4px 12px; }
 }

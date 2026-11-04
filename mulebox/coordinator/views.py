@@ -29,6 +29,25 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
     return needs.waiting_for(workers.listing(conn), job["needs"], now)
 
 
+def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> dict[str, Any]:
+    """Where a waiting agent job may go, for the dashboard's per-machine view.
+
+    `needs`, `can_run_on` (workers whose capabilities cover them, online or not: the same
+    test `queue.claim` makes) and `waiting_for` (needs.py) when a queued job cannot start
+    now. Nothing is an assignment: the queue is one line, and the first capable worker with
+    a free slot takes the job. Empty for anything else: a running job has its `worker`, a
+    runner reservation its `pinned_worker`.
+    """
+    if job["kind"] != "job" or job["state"] not in (JobState.QUEUED, JobState.UPLOADING):
+        return {}
+    out: dict[str, Any] = {"needs": job["needs"],
+                           "can_run_on": [w["worker"] for w in needs.capable(fleet, job["needs"])]}
+    reason = needs.waiting_for(fleet, job["needs"], now) if job["state"] == JobState.QUEUED else None
+    if reason:
+        out["waiting_for"] = reason
+    return out
+
+
 def status_body(job: dict[str, Any], position: int | None = None,
                 waiting: str | None = None, **extra: Any) -> dict[str, Any]:
     """status_ok body: job_id, state, plus outcome/exit_code/duration_s when finished, position

@@ -8,6 +8,39 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.26.0 - 2026-11-04 - minor
+- Jobs box redesigned (M2.8): tabs Queue, Failed, Passed and Recent, each with a live
+  count and showing one thing, the choice remembered per browser. One running and one
+  waiting job were lost above twenty finished rows; the user could not see what was in the
+  queue. Released runner slots and cancelled jobs are neither a pass nor a failure, so they
+  are listed under Recent (and History) only, with no tab of their own; the old mixed list
+  is gone, because it was the crowding.
+- The Queue tab is the queue by machine: a lane per machine with what it runs and what
+  waits for it, in real queue order. The queue stays one line: a job sits in a lane only
+  when that machine is the one place it can run, jobs several machines could take wait in
+  one shared list, and a job no machine fits is shown first as stuck with the
+  coordinator's reason. Lanes carry only the machine's name and state beside its jobs:
+  slots and capabilities stay in the Machines box, shown once.
+- Machines box: a small CPU and memory meter per machine, on the load ramp of the big
+  graphs. Rows carry `cpu_pct` and `mem_pct`, null until measured: today only the machine
+  the dashboard runs on (its own sampler, matched by the node name); every other machine
+  reads "no live data" until workers report their load (M5.3), with no page change needed
+  then. The worker and the protocol are untouched.
+- Job log: the note beside the log says "connecting", "connected, no output yet", "not
+  connected, retrying" or "wrote no output" instead of leaving the box blank. A user saw a
+  blank box for a running job with a large log; a browser's limit of about six connections
+  per site over plain HTTP can hold the stream back when several tabs are open.
+- A theme switch redraws the graphs at once with the new colours; they kept the old ones
+  until the next sample.
+- Dashboard queue rows carry `needs`, `can_run_on` and `waiting_for` on waiting agent jobs
+  (`views.placement`, `needs.capable`); the queue fingerprint sees them, so a capable
+  machine going offline redraws the queue.
+- Ticking times are keyed by job id, not document order, so a tab or lane can never show
+  another job's time.
+- A viewer's first queue snapshot is built when it connects. It was the last published
+  event, so a viewer opening the page minutes after the last change ticked on from stale
+  elapsed times (found in headless Chrome: 15 minutes shown for a job 23 minutes in).
+
 ## 0.25.3 - 2026-11-04 - patch
 - A template tracked in git (`.env.example`, `.sample`, `.template`, `.dist`) is now uploaded:
   a real project builds `.env` from one in `setup` and could not start without it. Untracked

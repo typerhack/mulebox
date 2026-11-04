@@ -118,12 +118,14 @@ def snapshot(jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
 
 
 def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
-    """What changes when a view must redraw: ids, states, outcomes and positions.
+    """What changes when a view must redraw: ids, states, outcomes, positions and, for a
+    waiting job, where it may go (`can_run_on`, `waiting_for`, when the rows carry them).
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
     return tuple(
         (j.get("job_id"), j.get("state"), j.get("outcome"), j.get("position"),
-         j.get("worker"), j.get("started_at"), j.get("finished_at"))
+         j.get("worker"), j.get("started_at"), j.get("finished_at"),
+         j.get("waiting_for"), tuple(j.get("can_run_on") or ()))
         for j in jobs
     )

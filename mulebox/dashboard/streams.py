@@ -45,7 +45,9 @@ async def events(request: web.Request) -> web.StreamResponse:
         response = await _open(request)
         if replay is None:
             data, now = request.app[keys.DATA], request.app[keys.CLOCK]()
-            queue = hub.current_queue() or await asyncio.to_thread(data.queue_snapshot, now)
+            # Always a fresh queue snapshot: the last published one carries the elapsed
+            # times of its moment, and a viewer ticks from the moment it connects.
+            queue = await asyncio.to_thread(data.queue_snapshot, now)
             panel = hub.current_machines() or await asyncio.to_thread(data.machines, now)
             await response.write(frame("queue", queue, bus.last_id))
             await response.write(frame("machines", panel, bus.last_id))

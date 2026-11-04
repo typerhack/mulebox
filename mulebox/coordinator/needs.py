@@ -41,6 +41,15 @@ def _missing(worker: Worker, needs: list[str]) -> list[str]:
     return sorted(set(needs) - set(worker["capabilities"]))
 
 
+def capable(workers: list[Worker], needs: list[str]) -> list[Worker]:
+    """The workers whose capabilities cover `needs`, online or not, in the given order.
+
+    This is the same test `queue.claim` makes, so a queued job can only ever start on one
+    of these; the dashboard shows them as where the job may go (never as an assignment).
+    """
+    return [w for w in workers if not _missing(w, needs)]
+
+
 def _offers(worker: Worker) -> str:
     return ", ".join(worker["capabilities"]) or "nothing"
 
@@ -67,10 +76,10 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | No
     """Why a queued job cannot start right now, or None when a worker for it is online."""
     if not workers:
         return "no build machine has connected to this coordinator yet"
-    capable = [w for w in workers if not _missing(w, needs)]
-    if not capable:
+    fitting = capable(workers, needs)
+    if not fitting:
         return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
-    if any(is_online(w, now) for w in capable):
+    if any(is_online(w, now) for w in fitting):
         return None
-    names = ", ".join(w["worker"] for w in capable)
+    names = ", ".join(w["worker"] for w in fitting)
     return f"no build machine for this job is online (offline: {names})"
