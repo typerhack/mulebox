@@ -43,8 +43,9 @@ p { margin: 4px 0; }
 :focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
 [hidden] { display: none !important; }
 svg { display: block; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-:root[data-theme="dark"] .moon, :root:not([data-theme="light"]) .moon { display: none; }
-:root[data-theme="light"] .sun { display: none; }
+button.icon svg { display: none; }
+:root:not([data-mode]) .system, :root[data-mode="system"] .system,
+:root[data-mode="light"] .sun, :root[data-mode="dark"] .moon { display: block; }
 
 /* Header */
 .top {

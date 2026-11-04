@@ -56,23 +56,35 @@ async function signOut() {
   location.assign("/login");
 }
 
-// Theme: theme.js chose one before the first paint; here the switch and the system follow.
+// Theme: theme.js chose one before the first paint. The button steps through the modes and
+// shows the current one; in system mode the page follows the system as it changes.
 const themeButton = document.getElementById("theme");
 const systemLight = window.matchMedia("(prefers-color-scheme: light)");
-function applyTheme(theme, remember) {
-  document.documentElement.dataset.theme = theme;
-  themeButton.setAttribute("aria-label", `Switch to ${theme === "dark" ? "light" : "dark"} theme`);
-  if (remember) { try { localStorage.setItem("mulebox-theme", theme); } catch { /* private mode */ } }
+const MODES = ["system", "light", "dark"];
+const nextMode = (mode) => MODES[(MODES.indexOf(mode) + 1) % MODES.length];
+function applyMode(mode) {
+  const root = document.documentElement;
+  root.dataset.mode = mode;
+  root.dataset.theme = mode === "system" ? (systemLight.matches ? "light" : "dark") : mode;
+  const label = `Theme: ${mode}. Switch to ${nextMode(mode)}`;
+  themeButton.setAttribute("aria-label", label);
+  themeButton.title = label;
   machine.redraw();  // the graphs read their colours from the stylesheet
 }
-applyTheme(document.documentElement.dataset.theme === "light" ? "light" : "dark", false);
+function saveMode(mode) {
+  try {
+    if (mode === "system") localStorage.removeItem("mulebox-theme");
+    else localStorage.setItem("mulebox-theme", mode);
+  } catch { /* private mode: the choice lasts until the page closes */ }
+}
+applyMode(document.documentElement.dataset.mode ?? "system");
 themeButton.addEventListener("click", () => {
-  applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark", true);
+  const mode = nextMode(document.documentElement.dataset.mode);
+  saveMode(mode);
+  applyMode(mode);
 });
-systemLight.addEventListener("change", (event) => {
-  let chosen = null;
-  try { chosen = localStorage.getItem("mulebox-theme"); } catch { chosen = null; }
-  if (chosen !== "light" && chosen !== "dark") applyTheme(event.matches ? "light" : "dark", false);
+systemLight.addEventListener("change", () => {
+  if (document.documentElement.dataset.mode === "system") applyMode("system");
 });
 
 const stream = new EventSource("/api/events");

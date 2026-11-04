@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.2 - 2026-11-04 - patch
+- The theme button has a third setting: it steps through system, light and dark and shows
+  the current one. System was the default but could not be chosen again once set.
+
 ## 0.36.1 - 2026-11-04 - patch
 - A stage mark counts only at the end of a line: a job printing its own mark mid-line could
   record a false stage and lose the rest of that line (found by review).
