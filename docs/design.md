@@ -159,8 +159,12 @@ machine that also does other work. So the worker does not run them as they are:
   them. Pulled images stay; build layers stay in Docker's build cache. A built image gets
   a tag of this job only, and only that tag is removed, by name and without force.
 - **Refused, not repaired:** what would reach past the job (see `worker/compose_policy.py`).
-  That guards against a CI file's assumptions, not against a hostile project: a job can run
-  any command, and Docker access is root-equivalent.
+  `up` is the first thing a job runs, and environment names that would put project code or
+  other files before it are refused (`common/env_rules.py`), on the worker too.
+- **The boundary.** That policy stops a CI file's assumptions from reaching past the job. It
+  does not contain a hostile project. A job can run any command, including `docker run
+  --privileged` in a job line, and Docker access is root-equivalent. Run only projects you
+  trust on a build machine.
 
 ## Browser tests
 
@@ -236,7 +240,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Test databases are per job; jobs must not use existing databases on the machine.
 - Container ports of `compose:` projects bind to 127.0.0.1, whatever the compose file says.
 - Docker access is root-equivalent: running jobs as the machine's normal user is fine for
-  a single trusted owner; a dedicated user is optional hygiene, not isolation.
+  a single trusted owner; a dedicated user is optional hygiene, not isolation. mulebox is not
+  a sandbox: its checks stop mistakes and a CI file's assumptions, not a hostile project.
 - Docker cleanup removes only what a listing filtered on one job's exact labels returned.
   `prune` and `system` cannot be run through mulebox at all. Containers, networks and
   volumes of the job go; images stay as cache.

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from mulebox.common import compose
+from mulebox.common import compose, env_rules
 from mulebox.common.safepath import ensure_dir
 from mulebox.worker import compose_job, jobspec
 from mulebox.worker.docker import Docker
@@ -42,11 +42,19 @@ def _capability_env(machine: Machine, needs: Sequence[str]) -> dict[str, str]:
     return {"PLAYWRIGHT_BROWSERS_PATH": str(browsers)}
 
 
+def _check_names(values: Mapping[str, str], for_compose: bool) -> None:
+    for name in values:
+        problem = env_rules.problem(name, for_compose)
+        if problem:
+            raise jobspec.JobSpecError(f"env {name} {problem}")
+
+
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,
           bins: Sequence[Path]) -> tuple[RunSpec, tuple[str, ...]]:
     """(the run spec, notes for the job's log)."""
     values = dict(claim.get("env") or {})
     files = values.pop(compose.COMPOSE_FILES_KEY, None)
+    _check_names(values, files is not None)
     base = _capability_env(machine, claim.get("needs") or ())
 
     def environment(extra: dict[str, str]) -> dict[str, str]:

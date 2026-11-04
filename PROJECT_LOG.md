@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.0 - 2026-11-04 - minor
+- Environment names that change how a job starts are refused, on the client and on the worker
+  (`common/env_rules.py`): `BASH_ENV` and its like for every job, `COMPOSE_*` and `DOCKER_*` for
+  a compose project. `BASH_ENV` ran project code before `up`, which could replace the checked
+  file. `up` is the first line of the script, so nothing of the project runs before it now.
+- design.md and agents.md say the boundary plainly: this stops a CI file's assumptions from
+  reaching past the job, and does not contain a hostile project.
+
 ## 0.23.1 - 2026-11-04 - patch
 - `tools/drill_compose.py`: a drill against a real Docker daemon, since the tests use a fake one
   and cannot show that generated files make resources teardown can find.

@@ -193,6 +193,15 @@ These are refused with the reason, because they reach past the job:
   mounts outside the checkout, and any bind outside it whose source does not exist on the
   build machine (mulebox never creates one there).
 
+This stops a CI file's assumptions from reaching past the job. It does not contain a hostile
+project: a job can run any command and Docker access is root-equivalent, so a build machine
+is only for projects its owner trusts.
+
+`env:` may not set what changes how a job starts: `BASH_ENV`, `ENV`, `SHELLOPTS`, `BASHOPTS`,
+`PS4`, `IFS`, `GCONV_PATH`, `LD_*` and `BASH_FUNC_*` for any project, and for a `compose:` project
+`COMPOSE_*` and `DOCKER_*`, except `DOCKER_BUILDKIT` and `DOCKER_DEFAULT_PLATFORM`. A job that
+sets one fails at the start, whichever client sent it.
+
 `container_name`
 is dropped, with a note in the log; use the service name. Put CI-only changes in a separate
 compose file rather than changing how the project runs locally.

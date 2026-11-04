@@ -2,8 +2,9 @@
 
 import pytest
 
+from mulebox.common import compose
 from mulebox.common.ids import new_id
-from mulebox.worker import runspec
+from mulebox.worker import jobspec, runspec
 from mulebox.worker.executor import ExecutorError
 from mulebox.worker.ports import PortPool
 
@@ -67,3 +68,20 @@ def test_the_machine_cannot_change_what_mulebox_sets(paths, tmp_path):
     machine = runspec.Machine("build-1", paths, None, PortPool(), {"MULEBOX": "0"})
     spec, _ = build(machine, tmp_path)
     assert spec.env["MULEBOX"] == "1"
+
+
+@pytest.mark.parametrize("name", ["BASH_ENV", "LD_PRELOAD", "PATH", "BASH_FUNC_docker%%"])
+def test_the_worker_refuses_what_an_older_client_let_through(machine, tmp_path, name):
+    with pytest.raises(jobspec.JobSpecError, match="env "):
+        build(machine, tmp_path, env={name: "./prelude.sh"})
+
+
+def test_a_compose_name_is_fine_without_compose(machine, tmp_path):
+    spec, _ = build(machine, tmp_path, env={"COMPOSE_PROFILES": "ci"})
+    assert spec.env["COMPOSE_PROFILES"] == "ci"
+
+
+def test_the_worker_refuses_compose_names_for_a_compose_job(machine, tmp_path):
+    env = {compose.COMPOSE_FILES_KEY: "a.yml", "DOCKER_HOST": "tcp://192.168.1.50:2375"}
+    with pytest.raises(jobspec.JobSpecError, match="DOCKER_HOST"):
+        build(machine, tmp_path, env=env)

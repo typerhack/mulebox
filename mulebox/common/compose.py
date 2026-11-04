@@ -28,7 +28,6 @@ COMPOSE_FILES_KEY = "MULEBOX_COMPOSE_FILES"
 LABEL_JOB = "mulebox.job"
 LABEL_WORKER = "mulebox.worker"
 LABEL_COMPOSE_PROJECT = "com.docker.compose.project"
-RESERVED_ENV = ("COMPOSE_FILE", "COMPOSE_PATH_SEPARATOR", "COMPOSE_PROJECT_NAME")
 _SEPARATOR = ":"  # the separator of COMPOSE_FILE on Linux
 _FILE_RE = re.compile(r"[A-Za-z0-9._/-]+")
 _NOT_IN_A_TAG = re.compile(r"[^a-z0-9]+")

@@ -3,14 +3,10 @@
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
-from mulebox.common import compose
+from mulebox.common import compose, env_rules
 from mulebox.common.config_reader import Reader
-
-_ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
-_ENV_RESERVED = ("PATH", "HOME", "USER", "SHELL")
 
 
 def compose_files(reader: Reader, project_dir: Path, project_file: str) -> tuple[str, ...]:
@@ -30,13 +26,9 @@ def compose_files(reader: Reader, project_dir: Path, project_file: str) -> tuple
 
 def _names(reader: Reader, field: str, env: dict[str, str], for_compose: bool) -> dict[str, str]:
     for key in env:
-        if not _ENV_NAME.fullmatch(key):
-            reader.fail(f"{field}.{key}", "must be a shell variable name (letters, digits, _)")
-        if key in _ENV_RESERVED or key.startswith("MULEBOX"):
-            reader.fail(f"{field}.{key}",
-                        "is set by mulebox or the build machine; choose another name")
-        if for_compose and key in compose.RESERVED_ENV:
-            reader.fail(f"{field}.{key}", "is set by mulebox for a compose: project; remove it")
+        problem = env_rules.problem(key, for_compose)
+        if problem:
+            reader.fail(f"{field}.{key}", problem)
     return env
 
 

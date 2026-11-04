@@ -71,7 +71,9 @@ def test_docker_is_not_needed_twice_or_without_compose(tmp_path):
     assert load_project_config(write(tmp_path, MINIMAL)).all_needs == ()
 
 
-@pytest.mark.parametrize("key", compose.RESERVED_ENV)
+@pytest.mark.parametrize("key", ["COMPOSE_FILE", "COMPOSE_PATH_SEPARATOR", "COMPOSE_PROJECT_NAME",
+                                 "COMPOSE_ENV_FILES", "COMPOSE_PROFILES", "DOCKER_HOST",
+                                 "DOCKER_CONFIG", "DOCKER_CONTEXT"])
 def test_compose_env_names_are_reserved_only_for_a_compose_project(tmp_path, key):
     touch(tmp_path, "a.yml")
     err = error_for(tmp_path, f"{MINIMAL}compose: [a.yml]\nenv:\n  {key}: x\n")

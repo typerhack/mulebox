@@ -247,3 +247,8 @@ def test_a_udp_port_of_a_job_is_probed_as_udp(tmp_path):
 
     job = prepare(daemon, (new_id("job"), tmp_path), pool=PortPool(free=free))
     assert asked == ["udp"] and "MULEBOX_PORT_DNS_53_UDP" in job.extra_env
+
+
+def test_containers_start_before_anything_of_the_project():
+    script = jobspec.build_script("project-setup", ["project-job"], compose_job.script_lines())
+    assert script.index("docker compose up") < script.index("project-setup")
