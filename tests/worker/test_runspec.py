@@ -70,7 +70,7 @@ def test_the_machine_cannot_change_what_mulebox_sets(paths, tmp_path):
     assert spec.env["MULEBOX"] == "1"
 
 
-@pytest.mark.parametrize("name", ["BASH_ENV", "LD_PRELOAD", "PATH", "BASH_FUNC_docker%%"])
+@pytest.mark.parametrize("name", ["BASH_ENV", "PATH", "BASH_FUNC_docker%%"])
 def test_the_worker_refuses_what_an_older_client_let_through(machine, tmp_path, name):
     with pytest.raises(jobspec.JobSpecError, match="env "):
         build(machine, tmp_path, env={name: "./prelude.sh"})

@@ -18,7 +18,8 @@ import re
 _NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _MACHINE = ("PATH", "HOME", "USER", "SHELL")
 _STARTUP = ("BASH_ENV", "ENV", "SHELLOPTS", "BASHOPTS", "PS4", "IFS", "GCONV_PATH")
-_STARTUP_PREFIXES = ("BASH_FUNC_", "LD_")
+_STARTUP_PREFIXES = ("BASH_FUNC_",)
+_LOADER = ("LD_PRELOAD", "LD_AUDIT", "LD_LIBRARY_PATH")  # others, like LD_RUN_PATH, run nothing
 _COMPOSE_PREFIXES = ("COMPOSE_", "DOCKER_")
 _COMPOSE_HARMLESS = ("DOCKER_BUILDKIT", "DOCKER_DEFAULT_PLATFORM")
 
@@ -31,6 +32,8 @@ def problem(name: str, for_compose: bool) -> str | None:
         return "is set by mulebox or the build machine; choose another name"
     if name in _STARTUP or name.startswith(_STARTUP_PREFIXES):
         return "changes how the job's shell starts, so a job may not set it"
+    if for_compose and name in _LOADER:
+        return "changes what runs before Docker Compose starts, so a compose: project may not set it"
     if for_compose and name.startswith(_COMPOSE_PREFIXES) and name not in _COMPOSE_HARMLESS:
         return "changes how Docker Compose starts, and mulebox sets that for a compose: project"
     return None

@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.5 - 2026-11-04 - patch
+- The loader names `LD_PRELOAD`, `LD_AUDIT` and `LD_LIBRARY_PATH` are refused only for a
+  `compose:` project, the only place with a checked file to protect, and other `LD_*` names
+  are not refused at all. 0.24.0 failed ordinary builds that set `LD_RUN_PATH`.
+
 ## 0.24.4 - 2026-11-04 - patch
 - A service using a name from `build.tags` follows the job's private tag, as one using `image:`
   did. It kept the shared name, so it ran a stale image or pulled an unrelated one.
