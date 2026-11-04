@@ -36,4 +36,6 @@ Use `mulebox contract --json` if you want to read it with a tool.
 - A job failed: that is a normal result. Read its output and fix the code.
 - A job waits in the queue: that is normal too. Other projects and CI share it.
 - mulebox itself could not do what you needed: tell the user what happened, with the
-  command, the exit code and the job id.
+  command, the exit code and the job id. If they want it reported, make a draft with
+  `mulebox feedback draft <job-id> --summary "<what happened>"`. It sends nothing. Show
+  them the draft; post it with `mulebox feedback post <file>` only once they approve.

@@ -86,6 +86,7 @@ class ClientConfig:
     coordinator: str
     remote_bin: str = DEFAULT_REMOTE_BIN
     connect_timeout_s: int = 10
+    feedback_repo: str | None = None
 
 
 @dataclass(frozen=True)
@@ -178,6 +179,7 @@ def load_client_config(path: Path | None = None) -> ClientConfig:
         coordinator=reader.ssh_target("coordinator"),
         remote_bin=reader.text("remote_bin", DEFAULT_REMOTE_BIN),
         connect_timeout_s=reader.integer("connect_timeout_s", 10, 1, 300),
+        feedback_repo=reader.text("feedback_repo", None),
     )
     reader.finish()
     return config

@@ -9,3 +9,6 @@ remote_bin = "~/.mulebox/bin/mulebox"
 
 # Seconds to wait for the ssh connection (1..300).
 connect_timeout_s = 10
+
+# GitHub repository for `mulebox feedback post`, as owner/name. Off until set.
+# feedback_repo = "example-org/mulebox"

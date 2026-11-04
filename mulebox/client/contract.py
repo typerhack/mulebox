@@ -25,6 +25,7 @@ COMMANDS = {
     "queue": "mulebox queue",
     "read_log": "mulebox logs <job-id>",
     "cancel": "mulebox cancel <job-id>",
+    "report_a_problem": "mulebox feedback draft <job-id> --summary <text>",
 }
 THROUGH_MULEBOX = ("builds", "type checks", "lint", "tests")
 KEEP_LOCAL = ("git", "search", "reading files", "diffs")
@@ -52,6 +53,7 @@ RULES = (
     "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",
     "waiting in the queue is normal; do not cancel and resubmit to speed it up",
     "do not cancel other people's jobs",
+    "show the user a feedback draft and get their approval before mulebox feedback post",
 )
 
 

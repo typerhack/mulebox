@@ -46,9 +46,10 @@ def test_every_command_in_the_contract_exists_in_the_cli():
     for command in contract.COMMANDS.values():
         words = [w for w in command.split()[1:] if w != "--" and not w.startswith("<")]
         name = words[0]
-        args = parser.parse_args(["contract"] if name == "contract" else
-                                 [name, *(["x"] if "<job-id>" in command else [])])
-        assert args.command == name
+        given = words + (["x"] if "<job-id>" in command else [])
+        given = [w for w in given if w != "--summary"] + (
+            ["--summary", "x"] if "--summary" in words else [])
+        assert parser.parse_args(given).command == name
 
 
 def test_exit_codes_match_the_table_in_the_agent_docs():

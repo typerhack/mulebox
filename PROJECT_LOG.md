@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.12.0 - 2026-11-04 - minor
+- `mulebox feedback draft` and `post` (M7.3): agents report what mulebox could not handle as
+  GitHub issues. Drafting is local; `post` needs `feedback_repo` and refuses a file the
+  scrub would still change. Rules: docs/design.md, Agent feedback.
+- `common/anonymize.py`: removes names, home folders, email and IP addresses and URLs, on
+  top of `redact.py`.
+- Screenshots from the original idea are dropped: they cannot be scrubbed automatically.
+
 ## 0.11.1 - 2026-11-04 - patch
 - `skills/mulebox/`: an installable skill for coding agents (M7.2), which sends them to
   `mulebox contract` rather than copying it. Built here; installing it is the user's step.

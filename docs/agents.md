@@ -166,7 +166,20 @@ jobs:
 5. If the project had a runner on the laptop before, tell the user it can be stopped; do
    not remove it yourself.
 
-## 4. Things you must not do
+## 4. Reporting what mulebox could not handle
+
+If mulebox itself got in the way, and the user wants it reported:
+
+    mulebox feedback draft <job-id> --summary "what happened" > draft.md   # sends nothing
+    mulebox feedback post draft.md                                         # opens the issue
+
+Add `--log` to the draft to include the job's last lines. Leave out the job id when no job
+is involved, such as an unreachable machine. **Show the user the draft and get their
+approval before posting.** Read it yourself too: file names and code in logs cannot be
+recognised automatically. `post` needs `feedback_repo` in `client.toml`, and it refuses a
+file that still holds something the scrub would remove.
+
+## 5. Things you must not do
 
 - Do not run heavy commands locally when mulebox is unavailable; tell the user.
 - Do not ssh into the build machine to change, install or delete things.

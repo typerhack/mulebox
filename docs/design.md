@@ -89,6 +89,25 @@ machine is down. Text by default; `--json` has stable keys and a `schema` number
 only when a key is removed or changes meaning. Exit 0 outside a project; a broken
 `.mulebox.yml` exits 2 rather than hiding the mistake.
 
+## Agent feedback
+
+`mulebox feedback draft` turns what mulebox could not handle into a GitHub issue draft, and
+`mulebox feedback post <file>` sends it. mulebox will be public, and the projects using it
+may be private, so:
+
+- **Two steps.** `draft` only prints; nothing leaves the machine. An agent shows the draft
+  to its user and posts only with their approval. `post` is off until `feedback_repo` is set.
+- **Little to leak.** A draft holds the summary, the mulebox version, the operating system
+  and the job's result. Never a project, branch, machine or command.
+- **Scrubbed.** Secrets, then every name known locally and from the coordinator, including
+  other projects', then home folders, email and IP addresses and URLs
+  (`common/anonymize.py`).
+- **Checked again.** `post` refuses a file the scrub would still change, so what was
+  reviewed is what is sent, and details added by hand are caught when they match a rule.
+- **Logs on request only.** The scrub cannot recognise a private file name or line of code
+  it has no name for, so `--log` is a choice, and reading the draft is a real step.
+- **No screenshots.** They cannot be scrubbed, and `gh issue create` cannot attach them.
+
 ## Project config: `.mulebox.yml`
 
 ```yaml

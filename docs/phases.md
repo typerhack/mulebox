@@ -107,10 +107,13 @@ Order agreed with the user on 2026-11-04.
 - [~] M7.2 Installable skill: `skills/mulebox/`, installed once system-wide, so any project
       can say "use the mulebox skill". Built 2026-11-04 (0.11.1). Open: the user installs it
       in another session, and an agent uses it in a real project.
+- [~] M7.3 Agent feedback: `mulebox feedback draft` and `post`, redacted first. Built
+      2026-11-04 (0.12.0): a real failed job with fake private output left no project,
+      branch, identity, address, password or machine name in its draft; `post` sent the
+      reviewed file to a stand-in `gh` and refused a tampered one. Screenshots dropped: they
+      cannot be scrubbed. Open: the user sets `feedback_repo`, and one real issue is posted.
 
 ## Parking lot
-- Agent feedback: agents file GitHub issues about what mulebox could not handle, with
-  enough logs and screenshots to reproduce (redacted first, no secrets or private data)
 - Project registration: each project registers with mulebox and stays registered, to avoid
   copy-pasted setup and to manage projects later
 - MCP wrapper over the client commands

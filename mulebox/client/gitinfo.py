@@ -56,6 +56,18 @@ def base_commit(root: Path) -> str:
     return proc.stdout.decode().strip() if proc.returncode == 0 else ""
 
 
+def remote_url(root: Path) -> str:
+    """The `origin` remote's URL, or "" without one."""
+    proc = _git(root, "remote", "get-url", "origin", check=False)
+    return proc.stdout.decode().strip() if proc.returncode == 0 else ""
+
+
+def config_value(root: Path, key: str) -> str:
+    """A `git config` value, or "" when it is not set."""
+    proc = _git(root, "config", "--get", key, check=False)
+    return proc.stdout.decode().strip() if proc.returncode == 0 else ""
+
+
 def branch(root: Path) -> str:
     """`git rev-parse --abbrev-ref HEAD` (`HEAD` when detached), or "" without commits."""
     proc = _git(root, "rev-parse", "--abbrev-ref", "HEAD", check=False)
