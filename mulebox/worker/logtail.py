@@ -73,10 +73,11 @@ class LogTailer:
     def sent_all(self) -> bool:
         return not self._queue
 
-    def read_new(self) -> None:
-        """Read what was appended to the raw log and queue its redacted text."""
+    def read_new(self) -> bool:
+        """Read what was appended to the raw log and queue its redacted text; True if any."""
+        before = self._read_pos
         if self.path is None:
-            return
+            return False
         try:
             with open(self.path, "rb") as fh:
                 fh.seek(self._read_pos)
@@ -85,6 +86,7 @@ class LogTailer:
                     self._take(self._redactor.feed(self._decoder.decode(chunk)))
         except FileNotFoundError:
             pass
+        return self._read_pos > before
 
     def note(self, text: str) -> None:
         """Add a worker message (e.g. why the job could not start) to the stream."""

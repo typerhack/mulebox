@@ -71,9 +71,10 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 - Client lease: renewed by the waiting client every 20 s, measured on the coordinator's
   clock; expires after 300 s (agent killed, laptop asleep, Wi-Fi gone) and cancels the job.
   Long enough to ride out a few minutes of Wi-Fi loss; the client keeps reconnecting.
-- Detached jobs (`check --detach`) have no client lease to lose: the sweep skips them, so
-  they survive the client going away. The worker lease, `timeout_min` and `cancel` still
-  apply. `mulebox wait <id>` gets the same result later, without taking the lease.
+- Detached jobs (`check --detach`) have no client to lose: the sweep never cancels them for
+  that, so they survive the client going away. Their lease says whether anyone is watching, see
+  Time limits. The worker lease and `cancel` still apply. `mulebox wait <id>` gets the same
+  result later.
 - Worker lease: renewed by the worker while it executes; separate from the client lease.
 - Idempotent submit (client-chosen key): a lost reply never creates a duplicate job.
 - Restart: the coordinator reconciles stored jobs; the worker, before it claims anything,
@@ -85,6 +86,42 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 - Client disconnected after submit: the outcome is "unknown"; reconnect by job id.
 - Build machine unreachable: the client fails fast with a clear message and never falls
   back to running locally on its own.
+
+## Time limits
+
+No job runs forever, and a person or agent decides what is stuck. The worker sets no runtime
+limit; the coordinator's sweep stops what nobody watches. `timeout_min` was a hard limit until
+0.37, and a real job with a long quiet stretch showed why that cannot be right: no number fits
+every run, and the one who knows what the job is doing is whoever started it.
+
+- **Watched** means an attached `check`, which holds the client lease, or `wait`, `events` or
+  `logs -f` on a detached job, whose heartbeats renew it. There is no hard limit then. Every
+  `timeout_min` a running job checks in with the time, stage, last output and machine readings.
+  Nothing else happens: stopping it is a decision for the watcher.
+- **Unattended** is a detached job whose lease ran out, queued or running. It needs no column:
+  a lease in the past says it and when it began, and a renewed lease undoes it. So taking a job
+  back is the same act as watching it, and a dropped connection has the lease's 5 minutes of
+  grace.
+- **Stopped.** Running with no activity for `unattended_idle_min` (15), or at
+  `unattended_max_hours` (24) whatever it does, queued too. The idle clock starts when the job
+  became unattended at the earliest, so nothing stops without the warning having been possible.
+  The coordinator reads activity, the worker measures it (worker/activity.py), and "cannot
+  tell" is never "idle": an older worker, a machine without `/proc` and the `images` stage leave
+  only the long limit.
+- **Activity is the machine's** for CPU and network. The job's own unit would be narrower and
+  wrong: containers are not in it, an image build is not in any labelled container, and user
+  units have no network counters. The two ways to be wrong are not equal: a stuck job read as
+  active lives until the 24 hours and is then stopped, a busy job read as idle loses real work.
+- **A stop travels as a cancel.** The worker gets `cancel: true` and reports `cancelled`; the
+  coordinator keeps `stop_reason`, so any worker can be stopped and an older client reads
+  `cancelled`, not an unknown outcome it would refuse. Views and the client show
+  `stopped: unattended`, exit 76, which never reads as a failed check. A job that ended by itself
+  before the stop reached it keeps its own result.
+- **Warnings go to whoever can act.** The agent: an `unattended` event, `status`, `wait`, and
+  stderr of any command run from the project. The user: the dashboard and `mulebox queue`.
+- GitHub runner reservations are outside all this: GitHub owns those jobs.
+- The limits are `[limits]` in the coordinator's `node.toml`. The service writes them to `meta`
+  when it starts, so `mulebox rpc` processes and the read-only dashboard share them.
 
 ## Agent contract
 
@@ -163,7 +200,7 @@ machine that also does other work. So the worker does not run them as they are:
 - **Containers start first**, before `setup`, inside the job's unit, with `up --wait`. Setup
   can then use them, as CI does, and the timeout, cancel and log redaction need no special
   case. The cost: `setup` cannot produce something an image build needs.
-- **Teardown is the worker's**, after the unit ends and outside `timeout_min`, by label, on
+- **Teardown is the worker's**, after the unit ends, by label, on
   every outcome, beside the worker's loop, so a stuck Docker daemon cannot cost another
   job its lease. Containers are not in the unit's control group, so nothing else stops
   them. Pulled images stay; build layers stay in Docker's build cache. A built image gets

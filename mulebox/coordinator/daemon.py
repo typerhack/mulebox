@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from mulebox.common.config import DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS, NodeConfig
 from mulebox.common.log import get_logger
-from mulebox.coordinator import leases, recovery, retention
+from mulebox.coordinator import attendance, leases, recovery, retention
 from mulebox.coordinator.node import open_local
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -56,6 +56,14 @@ def _keep_tidy(store: Store, staging: Staging, now: float, log_days: int, step_d
         _log.exception("retention failed")
 
 
+def limits_of(node: NodeConfig) -> attendance.Limits:
+    """The machine's `[limits]`, the defaults when the node has none."""
+    if not node.limits:
+        return attendance.Limits()
+    return attendance.Limits(node.limits["unattended_idle_min"] * 60.0,
+                             node.limits["unattended_max_hours"] * 3600.0)
+
+
 def serve(node: NodeConfig, stop: threading.Event | None = None) -> int:
     """Run the coordinator service for `node` until SIGTERM; return the exit code."""
     stop = stop or threading.Event()
@@ -66,6 +74,7 @@ def serve(node: NodeConfig, stop: threading.Event | None = None) -> int:
     store, staging = open_local(node)
     try:
         _log.info("coordinator %s serving (store %s)", node.name, store.path)
+        attendance.save_limits(store, limits_of(node))
         run(store, staging, stop, **node.retention)
     finally:
         store.close()

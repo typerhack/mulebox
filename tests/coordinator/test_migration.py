@@ -1,6 +1,7 @@
 """Opening a store written by an older mulebox brings its schema forward."""
 
 import sqlite3
+import time
 
 import pytest
 
@@ -54,7 +55,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 7
+        assert store.schema_version() == st.SCHEMA_VERSION == 8
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url", "detached"} <= columns(
                 conn, "jobs")
@@ -156,3 +157,22 @@ def test_a_store_without_steps_gets_the_table_and_keeps_its_jobs(staging):
         with store.read() as conn:
             assert {"stage", "started_at", "finished_at", "exit_code", "bytes_downloaded",
                     "failing_line"} <= columns(conn, "job_steps")
+
+
+def test_an_open_detached_job_is_not_unattended_since_the_day_it_started(staging):
+    store_at(staging.db_path, 7)
+    conn = sqlite3.connect(staging.db_path)
+    conn.execute("UPDATE jobs SET detached = 1, client_lease_until = 901.0")
+    conn.execute("INSERT INTO jobs (job_id, idempotency_key, project, job, argv, fingerprint, "
+                 "base_commit, client, timeout_min, state, outcome, created_at, detached, "
+                 "client_lease_until) VALUES ('job-01JC3X0000000000000000001', 'sub-done', "
+                 "'example-app', 'check', '[]', 'f', 'a', 'x', 30, 'finished', 'passed', 900.0, "
+                 "1, NULL)")
+    conn.commit()
+    conn.close()
+    with Store(staging.db_path).open() as store:
+        job = store.get_job("job-01JC3X0000000000000000000")
+        done = store.get_job("job-01JC3X0000000000000000001")
+    assert job["client_lease_until"] > time.time()
+    assert job["stop_reason"] is None and job["activity"] == {} and job["active_at"] is None
+    assert done["client_lease_until"] is None

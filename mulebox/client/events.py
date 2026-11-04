@@ -9,9 +9,13 @@ dropped here.
 
 An event line is one JSON object with `v`, `event`, `job_id` and `state`. `event` is `queued`
 (`position`, `waiting_for` when set), `started` (`machine`) or `finished` (`outcome`,
-`exit_code`, `duration_s`, and `stage`: where a job that ended badly failed, null when that is
-not known). `exit_code` is the code the command exits with. Readers must ignore events and keys
-they do not know: events for each `stage` and `check_in` events are planned.
+`exit_code`, `duration_s`, `stage`: where a job that ended badly failed, null when that is not
+known, and `stop_reason` for outcome `stopped`), `check_in` (`number`, `elapsed_s`, `stage`,
+`output_idle_s`, `idle_s`, `cpu_pct`, `net_kib_s`; every `timeout_min`, readings null when the
+worker could not measure them) or `unattended` (`reason`, `stop_reason`, `left_s`, `stop_at`,
+`taken_back`: seen once, by the watcher that takes the job back). `exit_code` is the code the
+command exits with. Readers must ignore events and keys they do not know: events for each
+`stage` are planned.
 """
 
 from __future__ import annotations
@@ -20,10 +24,10 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from mulebox.client import report
+from mulebox.client import attention, report
 from mulebox.client.submit import RemoteLike, Streams, Watcher
 from mulebox.common.protocol import Message, MessageType
-from mulebox.common.status import job_event
+from mulebox.common.status import NOTICES, job_event
 
 Event = dict[str, Any]
 
@@ -45,6 +49,10 @@ def as_json(event: Event) -> str:
 def as_text(event: Event) -> str:
     """One readable line; `--json` has every key."""
     kind = event["event"]
+    if kind == "check_in":
+        return attention.check_in_line(str(event.get("job_id")), event)
+    if kind == "unattended":
+        return attention.unattended_line(str(event.get("job_id")), event)
     if kind == "queued":
         place = event.get("position")
         return f"queued, position {place}" if place is not None else "queued"
@@ -65,11 +73,20 @@ class EventStream(Watcher):
         super().__init__(remote, io)
         self.render = render
         self.last: Event | None = None
+        self.notices: set[tuple] = set()
+
+    def _is_new(self, event: Event) -> bool:
+        """State events differ from the last one, notices from every one before."""
+        if event["event"] in NOTICES:
+            key = (event["event"], event.get("number"), event.get("since"))
+            new, _ = key not in self.notices, self.notices.add(key)
+            return new
+        new, self.last = event != self.last, event
+        return new
 
     def handle(self, msg: Message) -> bool:
         event = event_of(msg)
-        if event is not None and event != self.last:
-            self.last = event
+        if event is not None and self._is_new(event):
             self.io.out.write(self.render(event) + "\n")
             self.io.out.flush()
         return msg.type is MessageType.RESULT

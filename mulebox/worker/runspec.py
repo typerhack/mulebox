@@ -24,6 +24,7 @@ from mulebox.worker.paths import NodePaths
 from mulebox.worker.ports import PortPool
 
 PLAYWRIGHT_CAPABILITY = "playwright"
+COORDINATOR_LIMITS = "coordinator"  # `limits` in claim_ok, coordinator/attendance.py
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,14 @@ def _check_names(values: Mapping[str, str], for_compose: bool) -> None:
         problem = env_rules.problem(name, for_compose)
         if problem:
             raise jobspec.JobSpecError(f"env {name} {problem}")
+
+
+def _runtime_limit(claim: dict[str, Any]) -> float | None:
+    """No limit when the coordinator runs the job's time limits; an older one does not, so
+    `timeout_min` stays a hard limit there and no job can run forever."""
+    if claim.get("limits") == COORDINATOR_LIMITS:
+        return None
+    return jobspec.timeout_seconds(claim["timeout_min"])
 
 
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,
@@ -78,5 +87,5 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
                    argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first,
                                            marker or steps.new_marker()),
                    cwd=src, env=environment(extra), log_path=log_path,
-                   timeout_s=jobspec.timeout_seconds(claim["timeout_min"]))
+                   timeout_s=_runtime_limit(claim))
     return spec, (*cached.notes, *notes)

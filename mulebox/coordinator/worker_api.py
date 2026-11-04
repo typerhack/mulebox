@@ -47,11 +47,23 @@ def _current_job(conn: Any, req: Request, reservations: bool = False) -> dict[st
     return job
 
 
+def _activity(conn: Any, req: Request, job: dict[str, Any]) -> None:
+    """Keep what a worker measured, on this machine's clock. A worker too old to say sends
+    nothing, and `active_at` stays NULL: not knowing never counts as idle (attendance.py)."""
+    report = req.body.get("activity")
+    if not isinstance(report, dict):
+        return
+    idle = v.number(report, "idle_s", None)
+    st.update_job(conn, job["job_id"], activity=report,
+                  active_at=None if idle is None else req.now - max(0.0, idle))
+
+
 def heartbeat(req: Request) -> Message:
     with req.store.write() as conn:
         job = _current_job(conn, req, reservations=True)
         job = leases.renew_worker_in(conn, job, req.now)
         workers.touch(conn, job["worker"], req.now)
+        _activity(conn, req, job)
     return _status(req, job)
 
 
@@ -97,6 +109,9 @@ def result(req: Request) -> Message:
         job = _current_job(conn, req)
         if job["state"] == JobState.FINISHED:
             raise Conflict(f"job {job['job_id']} already finished ({job['outcome']})")
-        job = st.finish(conn, job, outcome, req.now, exit_code=exit_code, duration_s=duration_s)
+        # A job that ended by itself before its stop arrived was not stopped.
+        kept = job["stop_reason"] if outcome is Outcome.CANCELLED else None
+        job = st.finish(conn, job, outcome, req.now, exit_code=exit_code, duration_s=duration_s,
+                        stop_reason=kept)
     req.staging.remove_upload(job["job_id"])
     return _status(req, job)

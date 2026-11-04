@@ -102,6 +102,11 @@ class StepTracker:
             row["bytes_downloaded"] = (row["bytes_downloaded"] or 0) + count
             self._changed.add(row["seq"])
 
+    @property
+    def stage(self) -> str | None:
+        """The stage in progress, as far as this tracker knows."""
+        return self._open["stage"] if self._open is not None else None
+
     def finish_cleanup(self, at: float) -> None:
         if self._open is not None and self._open["stage"] == CLEANUP:
             self.close(0, at, failed=False)

@@ -12,7 +12,12 @@ tolerant of missing or malformed fields, because the client reads them off the w
   slot, the job's real result is on GitHub.
 - Elapsed: waiting time for queued jobs, running time for active ones and the run time
   (`duration_s`, else finished_at - started_at) for finished ones.
-- Event: what a state change means to a follower (`job_event`, `mulebox events`).
+- Stopped: a job nobody watched was stopped by the time limits. On the wire and in the store it
+  stays outcome `cancelled` with a `stop_reason`, so an older client or worker reads a cancelled
+  job and nothing worse; every view here shows `stopped: unattended`, and `outcome_of` says
+  `stopped` wherever an outcome is printed for a reader.
+- Event: what a state change means to a follower (`job_event`, `mulebox events`). `check_in` and
+  `unattended` are events too: the reply that carries one means that and not a state change.
 - Steps: the rows of `steps` in a `status_ok` reply, one per stage of a job. An open row has
   no `finished_at`; only a job still active is really in that stage.
 """
@@ -36,6 +41,13 @@ PREPARE, ENVIRONMENT, IMAGES, SERVICES = "prepare", "environment", "images", "se
 SETUP, COMMAND, CLEANUP = "setup", "command", "cleanup"
 STAGES = (PREPARE, ENVIRONMENT, IMAGES, SERVICES, SETUP, COMMAND, CLEANUP)
 MAX_FAILING_LINE = 500
+STOPPED = "stopped"
+SHOWN_STOPPED = "stopped: unattended"
+STOP_IDLE, STOP_LIMIT, STOP_QUEUED = "unattended_idle", "unattended_limit", "unattended_queued"
+STOP_TEXT = {STOP_IDLE: "no activity while nobody watched",
+             STOP_LIMIT: "the machine's limit for a job nobody watches",
+             STOP_QUEUED: "still queued at the machine's limit for a job nobody watches"}
+NOTICES = ("check_in", "unattended")
 
 
 def number(value: Any) -> float | None:
@@ -68,8 +80,19 @@ def section_of(job: dict[str, Any]) -> str | None:
     return None
 
 
+def stopped(job: dict[str, Any]) -> bool:
+    """Was this job stopped because nobody watched it? A stop the job beat to the end is not."""
+    return bool(job.get("stop_reason")) and job.get("outcome") == "cancelled"
+
+
+def outcome_of(job: dict[str, Any]) -> Any:
+    return STOPPED if stopped(job) else job.get("outcome")
+
+
 def shown_state(job: dict[str, Any]) -> Any:
     """What a view shows in its state column (see the module docstring)."""
+    if stopped(job):
+        return SHOWN_STOPPED
     state = job.get("outcome") if job.get("state") == FINISHED else job.get("state")
     if job.get("kind") == RUNNER_KIND and state in ("passed", "failed"):
         return RELEASED
@@ -89,10 +112,13 @@ def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
     """
     state = FINISHED if "outcome" in job and job.get("state") is None else job.get("state")
     event = {"v": EVENT_VERSION, "job_id": job.get("job_id"), "state": state}
+    for name in NOTICES:
+        if isinstance(job.get(name), dict):
+            return {**job[name], **event, "event": name}
     if state == FINISHED:
-        return {**event, "event": "finished", "outcome": job.get("outcome"),
+        return {**event, "event": "finished", "outcome": outcome_of(job),
                 "exit_code": job.get("exit_code"), "duration_s": job.get("duration_s"),
-                "stage": job.get("stage")}
+                "stage": job.get("stage"), "stop_reason": job.get("stop_reason")}
     if state in ACTIVE:
         return {**event, "state": "running", "event": "started", "machine": job.get("worker")}
     if state in WAITING:
@@ -138,6 +164,7 @@ def row(job: dict[str, Any], now: float) -> dict[str, Any]:
         "shown_state": shown_state(job),
         "position": queue_position(job),
         "elapsed_s": elapsed_s(job, now),
+        **({"outcome": STOPPED} if stopped(job) else {}),
     }
 
 
@@ -173,14 +200,22 @@ def failed_step(steps: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 
 def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
-    """What changes when a view must redraw: ids, states, outcomes, positions and, for a
-    waiting job, where it may go (`can_run_on`, `waiting_for`, when the rows carry them).
+    """What changes when a view must redraw: ids, states, outcomes, positions, for a
+    waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), and
+    an unattended job's reason and whole minutes left.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
     return tuple(
         (j.get("job_id"), j.get("state"), j.get("outcome"), j.get("position"),
          j.get("worker"), j.get("started_at"), j.get("finished_at"),
-         j.get("waiting_for"), tuple(j.get("can_run_on") or ()))
+         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), _left_mark(j))
         for j in jobs
     )
+
+
+def _left_mark(job: dict[str, Any]) -> tuple[Any, int] | None:
+    view = job.get("unattended")
+    if not isinstance(view, dict):
+        return None
+    return view.get("stop_reason"), int((number(view.get("left_s")) or 0.0) // 60)

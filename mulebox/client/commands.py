@@ -1,8 +1,8 @@
 """CLI subcommands of the client package (docs/interfaces-m1.md, CLI).
 
 Exit codes for client failures: 2 usage/config error, 3 build machine unreachable,
-4 protocol/remote error, 5 job could not start, 130 Ctrl-C. Job failures return the job's
-own exit code.
+4 protocol/remote error, 5 job could not start, 76 stopped because nobody watched it,
+130 Ctrl-C. Job failures return the job's own exit code.
 A build machine that cannot be reached is reported as such; mulebox never runs the job
 anywhere else instead.
 """
@@ -15,7 +15,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from mulebox.client import contract, queue_view, report, summary, tui
+from mulebox.client import attention, contract, queue_view, report, summary, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -61,18 +61,18 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     known = sub.add_parser("projects", help="list every project that has run here")
     known.add_argument("--json", action="store_true", help="stable keys for tools")
-    known.set_defaults(func=guarded(_projects))
+    known.set_defaults(func=guarded(_projects, notices=True))
 
     logs = sub.add_parser("logs", help="show a job's log")
     logs.add_argument("job_id")
     logs.add_argument("-f", "--follow", action="store_true", help="follow until it finishes")
     logs.add_argument("--summary", action="store_true",
                       help="only why it failed: stage, exit code, last relevant lines")
-    logs.set_defaults(func=guarded(_logs))
+    logs.set_defaults(func=guarded(_logs, notices=True))
 
     cancel = sub.add_parser("cancel", help="cancel a job")
     cancel.add_argument("job_id")
-    cancel.set_defaults(func=guarded(_cancel))
+    cancel.set_defaults(func=guarded(_cancel, notices=True))
 
     terms = sub.add_parser("contract", help="print how to work in this project through "
                            "mulebox, for agents")
@@ -80,12 +80,16 @@ def register(sub: argparse._SubParsersAction) -> None:
     terms.set_defaults(func=guarded(_contract))
 
 
-def guarded(handler: Handler) -> Handler:
-    """Turn expected errors into one clear stderr line and the contract's exit code."""
+def guarded(handler: Handler, notices: bool = False) -> Handler:
+    """Turn expected errors into one clear stderr line and the contract's exit code. `notices`:
+    a command that reached the machine also warns about this project's unattended jobs."""
 
     def run(args: argparse.Namespace) -> int:
         try:
-            return handler(args)
+            code = handler(args)
+            if notices:
+                attention.warn_here(sys.stderr)
+            return code
         except KeyboardInterrupt:
             return report.EXIT_CANCELLED
         except (ConfigError, SnapshotError, UsageError) as exc:

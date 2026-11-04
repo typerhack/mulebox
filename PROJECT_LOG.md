@@ -8,6 +8,22 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.37.0 - 2026-11-04 - minor
+- `timeout_min` is a check-in now, not a hard limit: every `timeout_min` a running job reports its
+  time, stage, last output and machine readings, as a `check_in` event and a warning in `check`
+  and `wait`. A watched job has no limit; `mulebox status` shows its activity and who watches.
+- A detached job nobody watches is unattended. `wait` and `events` take it back, also from older
+  clients. Stopped after 15 minutes without output, CPU or network (`unattended_idle_min`) or
+  at 24 hours whatever it does (`unattended_max_hours`, queued jobs too), both `[limits]` in
+  node.toml and saved to `meta` when the service starts.
+- A stop shows as `stopped: unattended`, exit 76, reason in `stop_reason`. On the wire it stays
+  `cancelled`, so older peers keep working. 124 only comes from a worker older than 0.37.
+- The agent is warned by an `unattended` event, `status`, `wait` and on stderr of any command run
+  from the project; `--json` output is untouched. `mulebox queue` and the live view show `!`, a
+  line per job and a line on top. `claim_ok` carries `limits: "coordinator"`, without it the
+  worker keeps the hard limit. Store schema 8: `stop_reason`, `activity`, `active_at`.
+- Contract schema 5 with `time_limits`.
+
 ## 0.36.7 - 2026-11-04 - patch
 - Docs from real project reports: a hardcoded database address and `network_mode: service:...`,
   Playwright `--with-deps` in a project's own scripts, `COMPOSE_PROJECT_NAME` in CI scripts, and

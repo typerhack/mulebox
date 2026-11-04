@@ -112,7 +112,7 @@ def test_the_client_prints_the_reason():
 def test_the_watch_stream_sends_the_reason_when_it_changes(store, staging):
     seen(store, capabilities=["docker"], at=NOW)
     job_id = queued(store, staging, needs=["docker"], now=NOW)
-    times = iter([NOW, NOW + 1, NOW + 100, NOW + 101])
+    times = iter([NOW, NOW, NOW + 1, NOW + 100, NOW + 101])
     out = io.BytesIO()
 
     class Done(Exception):

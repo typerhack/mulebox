@@ -24,7 +24,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-PROC = Path("/proc")
+from mulebox.common.proc import IDLE, IOWAIT, PROC, core_times
+
 DiskUsage = Callable[[str], Any]
 
 
@@ -38,16 +39,9 @@ def _read(path: Path) -> str | None:
 def parse_cpu(text: str) -> list[tuple[int, int]]:
     """(busy, total) jiffies per core from /proc/stat, in core order."""
     cores = []
-    for line in text.splitlines():
-        name, _, rest = line.partition(" ")
-        if not (name.startswith("cpu") and name[3:].isdigit()):
-            continue
-        values = [int(v) for v in rest.split()[:8] if v.isdigit()]
-        if len(values) < 5:
-            continue
+    for values in core_times(text):
         total = sum(values)
-        idle = values[3] + values[4]  # idle + iowait
-        cores.append((total - idle, total))
+        cores.append((total - values[IDLE] - values[IOWAIT], total))
     return cores
 
 

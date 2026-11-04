@@ -39,7 +39,7 @@ class RunSpec:
     cwd: Path
     env: dict[str, str]  # added to (systemd: set in) the job environment
     log_path: Path
-    timeout_s: float
+    timeout_s: float | None = None  # None: the coordinator decides when the job ends
 
 
 class Executor(Protocol):
@@ -102,7 +102,8 @@ class SubprocessExecutor:
                 )
         except OSError as exc:
             raise ExecutorError(f"cannot start {spec.name}: {exc}") from exc
-        handle = ProcessHandle(spec, proc, self.clock() + spec.timeout_s)
+        limit = float("inf") if spec.timeout_s is None else spec.timeout_s
+        handle = ProcessHandle(spec, proc, self.clock() + limit)
         self.running[spec.name] = handle
         return handle
 

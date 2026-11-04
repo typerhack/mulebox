@@ -1,5 +1,5 @@
-"""Field checks that are more than a type: `compose:` and `env:` of `.mulebox.yml`, and
-`job_env` of node.toml, which follows the same rules for names."""
+"""Field checks that are more than a type: `compose:` and `env:` of `.mulebox.yml`, and of
+node.toml `job_env`, which follows the same rules for names, `[retention]` and `[limits]`."""
 
 from __future__ import annotations
 
@@ -45,3 +45,23 @@ def env_values(reader: Reader, files: tuple[str, ...]) -> dict[str, str]:
 def job_env(reader: Reader) -> dict[str, str]:
     """`job_env` of a build machine. It reaches compose jobs too, so their names are out."""
     return _names(reader, "job_env", reader.string_map("job_env"), True)
+
+
+def retention(reader: Reader, log_default: int, step_default: int) -> dict[str, int]:
+    """`[retention]` of node.toml."""
+    sub = reader.table("retention")
+    log_days = sub.integer("log_days", log_default, 1)
+    step_days = sub.integer("step_days", max(step_default, log_days), log_days)
+    sub.finish()
+    return {"log_days": log_days, "step_days": step_days}
+
+
+def limits(reader: Reader, idle_default: int, hours_default: int) -> dict[str, int]:
+    """`[limits]` of node.toml: how long a job nobody watches may go on."""
+    sub = reader.table("limits")
+    idle = sub.integer("unattended_idle_min", idle_default, 1)
+    hours = sub.integer("unattended_max_hours", hours_default, 1)
+    sub.finish()
+    if hours * 60 < idle:
+        sub.fail("unattended_max_hours", "must not be shorter than unattended_idle_min")
+    return {"unattended_idle_min": idle, "unattended_max_hours": hours}

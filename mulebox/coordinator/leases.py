@@ -5,9 +5,10 @@ Clock: the coordinator's `time.time()`, passed in as `now` so tests control it.
 - Client lease (300 s, renewed by `heartbeat lease=client` and the watch stream): when it
   runs out the job gets a cancel request; a `queued` job finishes `cancelled` at once,
   an active job is stopped by its worker (heartbeat replies `cancel: true`).
-- A detached job (`check --detach`) has no client to lose: the sweep below skips it, so it
-  lives through any absence. Everything else still applies to it: the worker lease, the 10
-  minute upload timeout, `timeout_min` on the worker, and `cancel`.
+- A detached job (`check --detach`) has no client to lose, so the sweep never cancels it for
+  that. Its lease says whether anyone is watching, and when nobody is it runs under the limits
+  of attendance.py, which `stop` applies. Everything else still applies to it: the worker lease,
+  the 10 minute upload timeout and `cancel`.
 - Worker lease (120 s per job, renewed by every message of the current attempt): when it
   runs out the job finishes `interrupted`. It is never handed to another worker.
 - An `uploading` job older than 10 minutes finishes `interrupted`. Uploading jobs are not
@@ -20,6 +21,7 @@ import sqlite3
 from typing import Any
 
 from mulebox.common.protocol import JobState, Outcome
+from mulebox.coordinator import attendance
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest, Conflict
 from mulebox.coordinator.staging import Staging
@@ -90,10 +92,34 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
         ):
             if request_cancel(conn, job, now)["state"] == JobState.FINISHED:
                 finished.append(job["job_id"])
+        finished += _stop_unattended(conn, now)
     if staging is not None:
         for job_id in finished:
             staging.remove_upload(job_id)
     return finished
+
+
+def _stop_unattended(conn: sqlite3.Connection, now: float) -> list[str]:
+    """Stop the unattended jobs that have run out of time; return those finished at once."""
+    limits = attendance.read_limits(conn)
+    finished = []
+    for job in st.select_jobs(
+        conn, f"(state = ? OR {_ACTIVE_SQL}) AND cancel_requested = 0 AND kind = 'job' "
+        "AND detached = 1 AND client_lease_until <= ?", (JobState.QUEUED.value, *_ACTIVE, now),
+    ):
+        view = attendance.unattended(job, now, limits)
+        if view is not None and now >= view["stop_at"]:
+            if stop(conn, job, view["stop_reason"], now)["state"] == JobState.FINISHED:
+                finished.append(job["job_id"])
+    return finished
+
+
+def stop(conn: sqlite3.Connection, job: dict[str, Any], reason: str, now: float
+         ) -> dict[str, Any]:
+    """`request_cancel` with the reason recorded. A running job's worker sees an ordinary cancel
+    and reports `cancelled`, the reason turns that into a stop, so any worker can do this."""
+    st.update_job(conn, job["job_id"], stop_reason=reason)
+    return request_cancel(conn, st.require_job(conn, job["job_id"]), now)
 
 
 def request_cancel(conn: sqlite3.Connection, job: dict[str, Any], now: float

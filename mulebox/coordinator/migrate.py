@@ -14,6 +14,9 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   store._SCHEMA, which runs first, so it says IF NOT EXISTS.
 - 6 -> 7: `jobs.env_order` (JSON list, default '[]'): the order of `env:` in the file, which a
   JSON object sorted on the wire and in the store loses.
+- 7 -> 8: `jobs.stop_reason`, `jobs.activity` (JSON, default '{}') and `jobs.active_at`
+  (attendance.py). An open detached job gets a new client lease: nothing renewed it before, so
+  it would count as unattended since the day it started and could stop at the first sweep.
 """
 
 import sqlite3
@@ -47,6 +50,11 @@ _STEPS: dict[int, tuple[str, ...]] = {
     4: ("ALTER TABLE jobs ADD COLUMN detached INTEGER NOT NULL DEFAULT 0",),
     5: (JOB_STEPS,),
     6: ("ALTER TABLE jobs ADD COLUMN env_order TEXT NOT NULL DEFAULT '[]'",),
+    7: ("ALTER TABLE jobs ADD COLUMN stop_reason TEXT",
+        "ALTER TABLE jobs ADD COLUMN activity TEXT NOT NULL DEFAULT '{}'",
+        "ALTER TABLE jobs ADD COLUMN active_at REAL",
+        "UPDATE jobs SET client_lease_until = CAST(strftime('%s', 'now') AS REAL) + 300 "
+        "WHERE detached = 1 AND state != 'finished'"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

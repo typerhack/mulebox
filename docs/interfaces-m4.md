@@ -151,7 +151,8 @@ added by `migrate.py` with no change to `jobs`). `seq` orders them. Raw logs sta
 - `failed_step(steps)` reaches clients as `stage` (`coordinator/steps.py`, `failed_stage`), for
   outcomes `failed`, `timed_out` and `interrupted` only: a cancelled job has a non-zero exit
   code in its last stage and did not fail there. A job that left no such row has no `stage`.
-- `timeout_min` still ends the job, whatever the stage. The rows are enough to turn that into
+- A stop or a cancel ends the job, whatever the stage (`timeout_min` too on a worker older
+  than 0.37). The rows are enough to turn that into
   a warning later: they say how long each stage took on this project.
 
 ## Image pulls in a log

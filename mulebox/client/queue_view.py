@@ -2,7 +2,8 @@
 
 Used by `mulebox queue` (plain table, printed once) and by the live view in tui.py.
 Sections (running, queued, recent), their order, the shown state and the elapsed time
-come from the shared status model (common/status.py), which the web dashboard uses too.
+come from the shared status model (common/status.py), which the web dashboard uses too. An
+unattended job has `!` in its state and a line of its own, and a line on top says so.
 """
 
 from __future__ import annotations
@@ -17,6 +18,7 @@ COLUMNS = ("ID", "PROJECT", "JOB", "BRANCH", "STATE", "ELAPSED", "POS")
 PROJECT_COLUMNS = ("PROJECT", "JOBS", "LAST RUN", "LAST RESULT")
 _MAX_CELL = {"PROJECT": 20, "JOB": 16, "BRANCH": 28}
 _TITLES = {"running": "Running", "queued": "Queued", "recent": "Recent"}
+MARK = "!"
 
 
 def _elapsed(job: dict[str, Any], now: float) -> str:
@@ -39,7 +41,7 @@ def job_row(job: dict[str, Any], now: float, full_ids: bool = False) -> list[str
         "PROJECT": job.get("project"),
         "JOB": job.get("job"),
         "BRANCH": job.get("branch"),
-        "STATE": shown_state(job),
+        "STATE": f"{MARK} {shown_state(job)}" if job.get("unattended") else shown_state(job),
         "ELAPSED": _elapsed(job, now),
         "POS": queue_position(job),
     }
@@ -59,6 +61,13 @@ def render_projects(projects: list[dict[str, Any]]) -> list[str]:
             for line in [list(PROJECT_COLUMNS), *rows]]
 
 
+def _unattended_row(job: dict[str, Any]) -> str:
+    job_id = _cell(job.get("job_id"), None)
+    view = job["unattended"]
+    return (f"  {MARK} unattended, {format_duration(float(view.get('left_s') or 0))} left: "  # the
+            f"mulebox wait {job_id} takes it back ({view.get('reason')})")  # way out survives a cut
+
+
 def render_table(
     jobs: list[dict[str, Any]], now: float, width: int = 120, full_ids: bool = False
 ) -> list[str]:
@@ -70,7 +79,10 @@ def render_table(
     def line(cells: list[str]) -> str:
         return "  ".join(c.ljust(w) for c, w in zip(cells, widths)).rstrip()[:width]
 
-    out = [line(list(COLUMNS))]
+    alone = sum(1 for _, group in groups for job in group if job.get("unattended"))
+    out = [f"{MARK} {alone} unattended: nobody is watching, and it stops by itself"[:width]
+           ] if alone else []
+    out.append(line(list(COLUMNS)))
     index = 0
     for title, group in groups:
         out.append(f"{title} ({len(group)})"[:width])
@@ -79,6 +91,8 @@ def render_table(
             index += 1
             if job.get("waiting_for"):
                 out.append(f"  waiting: {_cell(job['waiting_for'], None)}"[:width])
+            if job.get("unattended"):
+                out.append(_unattended_row(job)[:width])
         if not group:
             out.append("  none"[:width])
     return out

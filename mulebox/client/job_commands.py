@@ -1,8 +1,9 @@
 """CLI for a job that is already there: `mulebox wait`, `events` and `status`.
 
-None of these holds the job's client lease, so none can cancel it by going away, and Ctrl-C
-only stops the waiting. `events` exits with the job's exit code, `status` with 0: it answers
-a question and does not stand in for the job.
+Going away from these never cancels a job, and Ctrl-C only stops the waiting. `wait` and
+`events` count as watching a detached job, so they take an unattended one back and it is
+unattended again some 5 minutes after they stop; `status` only looks. `events` exits with the
+job's exit code, `status` with 0: it answers a question and does not stand in for the job.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import sys
 import time
 from typing import Any
 
-from mulebox.client import events, report
+from mulebox.client import attention, events, report
 from mulebox.client.commands import connect, guarded, note_expired_log, project_here
 from mulebox.client.remote import request
 from mulebox.client.submit import Streams, Watcher, stale_check
@@ -25,17 +26,17 @@ from mulebox.common.protocol import MessageType
 def register(sub: argparse._SubParsersAction) -> None:
     wait = sub.add_parser("wait", help="wait for a job and return what an attached check would")
     wait.add_argument("job_id")
-    wait.set_defaults(func=guarded(_wait))
+    wait.set_defaults(func=guarded(_wait, notices=True))
 
     follow = sub.add_parser("events", help="follow a job's state changes as lines, without its log")
     follow.add_argument("--job", required=True, metavar="JOB_ID", dest="job_id")
     follow.add_argument("--json", action="store_true", help="one JSON object per line")
-    follow.set_defaults(func=guarded(_events))
+    follow.set_defaults(func=guarded(_events, notices=True))
 
     state = sub.add_parser("status", help="show one job's current state")
     state.add_argument("job_id")
     state.add_argument("--json", action="store_true", help="stable keys for tools")
-    state.set_defaults(func=guarded(_status))
+    state.set_defaults(func=guarded(_status, notices=True))
 
 
 def _warn_if_stale(result: dict[str, Any], io: Streams) -> None:
@@ -87,5 +88,6 @@ def _status(args: argparse.Namespace) -> int:
         print(json.dumps(status.row(body, time.time()), indent=2, sort_keys=True))
     else:
         print("\n".join([_status_line(args.job_id, body),
-                         *report.stage_lines(body, time.time())]))
+                         *report.stage_lines(body, time.time()),
+                         *attention.status_lines(body)]))
     return 0

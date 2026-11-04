@@ -78,7 +78,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 5 | the job could not start (toolchain missing, compose file refused), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
-| 124 | the job hit `timeout_min` | look for a hang; raise `timeout_min` only if the work really takes that long |
+| 76 | `stopped: unattended`: nobody watched the job and it ran out of time (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
+| 124 | the job hit a hard `timeout_min`, which only a build machine older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
 | 130 | cancelled | - |
 
 - **Long jobs run detached.** `mulebox check --detach` uploads the snapshot, prints the job
@@ -87,9 +88,9 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   client disappears, a detached one is not. `mulebox wait <job-id>` returns what an attached
   `check` would have: the same log on stdout, the same failure summary and the same exit
   code, whenever you ask, also after the job ended. From the project it also gives the stale
-  warning. Ctrl-C on `wait` stops the waiting, not the job. `timeout_min` still applies, a
-  dead build machine still ends it `interrupted`, and `mulebox cancel` still stops it. If you
-  no longer want it, cancel it: nobody else will.
+  warning. Ctrl-C on `wait` stops the waiting, not the job. A dead build machine still ends it
+  `interrupted`, and `mulebox cancel` still stops it. A job nobody watches runs under the limits
+  of section 1a. If you no longer want it, cancel it.
 - **Watching a job.** `mulebox events --job <job-id> --json` prints one JSON line per state
   change and no log text, and exits when the job ends, with the job's exit code. A dropped
   connection is resumed for 30 minutes with nothing repeated and the final line kept; if it
@@ -99,13 +100,15 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 ```json
 {"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
 {"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
-{"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "v": 1}
+{"cpu_pct": 212.5, "elapsed_s": 1800.2, "event": "check_in", "idle_s": 4.1, "job_id": "job-...", "net_kib_s": 0.3, "number": 1, "output_idle_s": 41.0, "stage": "command", "state": "running", "v": 1}
+{"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "stop_reason": null, "v": 1}
 ```
 
-  Ignore events and keys you do not know; an event per stage and `check_in` events are planned.
-  In `finished`, `stage` is where a job that ended badly failed, null when that is not known.
-  `exit_code` is the code the command exits with (5 could not start, 124 for a timeout,
-  130 cancelled, 75 interrupted). `mulebox status <job-id>` answers once and exits 0 whatever the job did.
+  Ignore events and keys you do not know; an event per stage is planned. In `finished`, `stage`
+  is where a job that ended badly failed, null when that is not known. `exit_code` is the code
+  the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,
+  75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. `unattended` is in
+  section 1a. `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
   `.secret/`, `secrets/`, `*.pem`, `*.key`, ssh keys). If a job needs a value from such a
@@ -139,6 +142,47 @@ A build machine keeps a job's log for 30 days unless its owner chose otherwise. 
 The coordinator and the workers must be upgraded together: stage rows, toolchain reports and
 detached jobs need both. If `mulebox doctor` reports different versions, tell the user.
 
+## 1a. Time limits
+
+While someone is watching a job there is no hard limit: a person or agent decides what is stuck.
+Watching means an attached `check`, `mulebox wait`, `mulebox events` or `mulebox logs -f`.
+
+- **`timeout_min` is a check-in, not a limit.** Every `timeout_min` of a running job (default
+  30), `mulebox events` prints a `check_in` event, and an attached `check` or `wait` prints the
+  same as a warning: elapsed time, stage, seconds since the last output, and the machine's CPU
+  and network, null when they cannot be read. Stop a job with `mulebox cancel <job-id>`; if it
+  is fine, do nothing. `mulebox status <job-id>` shows the same any time, without watching.
+- **A job nobody watches is `unattended`.** A detached job becomes so about 5 minutes after its
+  last watcher left, so a dropped connection is forgiven, and a queued one counts as well. An
+  attached `check` that goes away is different: its job is cancelled, as before.
+- **The limits**, defaults of the build machine, set in `node.toml`:
+  - no activity for 15 minutes: the job is stopped, once it is unattended and never less than
+    15 minutes after that;
+  - 24 hours unattended, however active: the job is stopped, queued or running.
+- **Activity** is new output, or the build machine using at least a tenth of a CPU core, waiting
+  on a disk included, or at least 4 KiB/s of network. CPU and network are the machine's, because
+  nothing narrower sees containers and image builds. So a job that is silent but busy is never
+  idle, whatever it runs. The price: a stuck job beside other work on the machine counts as
+  active and lasts until the 24 hours. While a machine cannot measure, and during `images`,
+  which may build for a long time without a word, nothing counts as idle.
+- **Taking a job back:** `mulebox wait` or `mulebox events`. The job is attended again, the
+  count ends and starts afresh the next time it is left alone.
+- **The warning** comes in three ways: `mulebox status` has `unattended` with `reason`, `left_s`
+  and `stop_at`; `mulebox wait` and `events` say what they found once, as an `unattended` event
+  with `taken_back: true`; and any `mulebox` command that reaches the build machine from the
+  project warns on stderr, naming the job, so `--json` output stays clean. `mulebox contract`
+  does not, as it needs no network. The dashboard and `mulebox queue` show it to the user.
+- **A stopped job** shows `stopped: unattended`, with the reason in `stop_reason`, and exits 76.
+  It never reads as a failed check: it says nothing about the code. Run it again, and watch it.
+- **GitHub runner reservations** are not touched by any of this: GitHub owns those jobs.
+
+With mixed versions nothing is stopped wrongly. A worker older than 0.37 keeps its hard
+`timeout_min` (exit 124) and reports no activity, so only the 24 hours apply to it, and that
+stop reaches it as an ordinary cancel. A client older than 0.37 sees a stopped job as
+`cancelled` (exit 130), its `wait` and `events` count as watching all the same, and it prints
+no warnings. A coordinator older than 0.37 has none of these rules, and for it a job keeps
+its hard `timeout_min`.
+
 ## 2. Setting up a project (`.mulebox.yml`)
 
 Do this once per repository, on a branch, following the project's own rules for commits
@@ -167,7 +211,7 @@ jobs:
   check: pnpm check              # required: the full gate
   test: pnpm exec vitest run
   typecheck: pnpm typecheck
-timeout_min: 30
+timeout_min: 30                 # how often a running job checks in; not a limit (section 1a)
 exclude: [reports/]             # extra paths never uploaded (secrets are excluded already)
 ```
 
@@ -484,5 +528,4 @@ file that still holds something the scrub would remove.
 - Do not ssh into the build machine to change, install or delete things.
 - Do not put real secrets, real hosts or personal paths into `.mulebox.yml` or workflows.
 - Do not use or modify databases that already exist on the build machine.
-- Do not raise `timeout_min` above what the work needs, and do not cancel other people's
-  jobs.
+- Do not cancel other people's jobs.

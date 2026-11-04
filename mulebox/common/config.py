@@ -33,6 +33,8 @@ Choices where docs/interfaces.md is silent:
   ``lan_tls`` defaults to false, ``lan_password`` to true.
 - ``retention`` has ``log_days`` (default 30, at least 1) and ``step_days`` (default 365, at
   least ``log_days``).
+- ``limits`` has ``unattended_idle_min`` (default 15, at least 1) and ``unattended_max_hours``
+  (default 24, at least 1), which must not be shorter than the idle limit.
 - An explicit ``path`` argument wins over ``$MULEBOX_CONFIG``; an empty
   ``$MULEBOX_CONFIG`` is ignored.
 """
@@ -72,6 +74,8 @@ DEFAULT_DASHBOARD_PORT = 8090
 DEFAULT_DASHBOARD_LAN_PORT = 8443
 DEFAULT_LOG_DAYS = 30
 DEFAULT_STEP_DAYS = 365
+DEFAULT_UNATTENDED_IDLE_MIN = 15
+DEFAULT_UNATTENDED_MAX_HOURS = 24
 
 
 @dataclass(frozen=True)
@@ -112,6 +116,7 @@ class NodeConfig:
     dashboard: dict[str, Any] = field(default_factory=dict)
     job_env: dict[str, str] = field(default_factory=dict)
     retention: dict[str, int] = field(default_factory=dict)
+    limits: dict[str, int] = field(default_factory=dict)
 
 
 class ProjectNotFound(ConfigError):
@@ -246,14 +251,6 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
             "lan_port": lan_port, "lan_tls": lan_tls, "lan_password": lan_password}
 
 
-def _retention(reader: Reader) -> dict[str, int]:
-    sub = reader.table("retention")
-    log_days = sub.integer("log_days", DEFAULT_LOG_DAYS, 1)
-    step_days = sub.integer("step_days", max(DEFAULT_STEP_DAYS, log_days), log_days)
-    sub.finish()
-    return {"log_days": log_days, "step_days": step_days}
-
-
 def _lan_address(sub, text: str, lan_range: str | None) -> str:
     """This machine's address on the LAN: one IPv4 address, inside `lan_range`."""
     try:
@@ -281,7 +278,9 @@ def load_node_config(path: Path | None = None) -> NodeConfig:
         coordinator=reader.ssh_target("coordinator", None),
         dashboard=_dashboard(reader),
         job_env=config_project.job_env(reader),
-        retention=_retention(reader),
+        retention=config_project.retention(reader, DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS),
+        limits=config_project.limits(reader, DEFAULT_UNATTENDED_IDLE_MIN,
+                                     DEFAULT_UNATTENDED_MAX_HOURS),
     )
     reader.finish()
     if config.coordinator is None and "coordinator" not in config.roles:

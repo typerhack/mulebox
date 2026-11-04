@@ -85,3 +85,11 @@ def test_the_worker_refuses_compose_names_for_a_compose_job(machine, tmp_path):
     env = {compose.COMPOSE_FILES_KEY: "a.yml", "DOCKER_HOST": "tcp://192.168.1.50:2375"}
     with pytest.raises(jobspec.JobSpecError, match="DOCKER_HOST"):
         build(machine, tmp_path, env=env)
+
+
+def test_no_runtime_limit_when_the_coordinator_runs_the_limits():
+    assert runspec._runtime_limit({"limits": "coordinator", "timeout_min": 1}) is None
+
+
+def test_an_older_coordinator_keeps_the_hard_limit():
+    assert runspec._runtime_limit({"timeout_min": 2}) == 120.0

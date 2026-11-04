@@ -9,7 +9,15 @@ from typing import Any, TextIO
 
 from mulebox.common.config import DEFAULT_LOG_DAYS
 from mulebox.common.protocol import Outcome
-from mulebox.common.status import current_stage, duration_of, number, step_duration_s
+from mulebox.common.status import (
+    SHOWN_STOPPED,
+    STOP_TEXT,
+    current_stage,
+    duration_of,
+    number,
+    step_duration_s,
+    stopped,
+)
 
 __all__ = ["duration_of"]  # re-exported: the shared status model owns it
 
@@ -20,6 +28,7 @@ EXIT_NOT_STARTED = 5  # the job never ran: the machine could not set it up
 EXIT_CANCELLED = 130
 EXIT_TIMED_OUT = 124
 EXIT_INTERRUPTED = 75
+EXIT_STOPPED = 76  # nobody was watching: the machine's limits stopped it, the check said nothing
 
 PREFIX = "mulebox: "
 LONG_QUEUE_POSITION = 2  # jobs ahead in line, not only one running
@@ -34,6 +43,8 @@ def status(err: TextIO, text: str) -> None:
 
 def exit_code_for(result: dict[str, Any]) -> int:
     """Map a finished job to the exit code `mulebox check` returns."""
+    if stopped(result):
+        return EXIT_STOPPED
     outcome = result.get("outcome")
     code = result.get("exit_code")
     valid = isinstance(code, int) and not isinstance(code, bool) and 0 <= code <= 255
@@ -71,8 +82,11 @@ def format_size(size: int) -> str:
 
 
 def outcome_line(job_id: str, result: dict[str, Any]) -> str:
-    outcome = result.get("outcome", "unknown")
     took = format_duration(duration_of(result))
+    if stopped(result):
+        reason = STOP_TEXT.get(result["stop_reason"], result["stop_reason"])
+        return f"job {job_id} {SHOWN_STOPPED} after {took}: {reason}; it is not a failed check"
+    outcome = result.get("outcome", "unknown")
     code = result.get("exit_code")
     detail = ""
     if outcome == Outcome.FAILED:

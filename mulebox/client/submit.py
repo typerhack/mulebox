@@ -12,6 +12,9 @@ With `detach` the job is left to run once its snapshot is uploaded: the job id g
 stdout and the client exits. The upload has to finish first, because the snapshot is here.
 A coordinator too old for detached jobs would cancel this one when its lease ran out, so
 a reply that does not echo `detached` cancels the job and fails.
+
+`timeout_min` is no limit: every that many minutes the stream carries a check-in, printed as a
+warning, and the person or agent decides. Check-ins and unattended warnings: attention.py.
 """
 
 from __future__ import annotations
@@ -24,7 +27,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import report, summary
+from mulebox.client import attention, report, summary
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import Snapshot, current_fingerprint, make_snapshot
 from mulebox.common import compose
@@ -128,6 +131,7 @@ def run_job(
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
+        attention.warn(reply.body.get("unattended"), io.err)
         if detach and reply.body.get("detached") is not True:
             _refuse_detach(remote, watcher.job_id)
         if reply.body.get("state") == "uploading":
@@ -155,8 +159,9 @@ def _refuse_detach(remote: RemoteLike, job_id: str) -> None:
 def _left_running(job_id: str, io: Streams) -> None:
     io.out.write(f"{job_id}\n")
     io.out.flush()
-    report.status(io.err, f"job {job_id} runs on without this client, within timeout_min. Follow "
-                  f"it: mulebox events --job {job_id} --json. Its result: mulebox wait {job_id}")
+    report.status(io.err, f"job {job_id} runs on without this client. Follow it, so it is not "
+                  f"stopped as unattended: mulebox events --job {job_id} --json. "
+                  f"Its result: mulebox wait {job_id}")
 
 
 def stale_check(root: Path, project: ProjectConfig, fingerprint: str, io: Streams) -> None:
@@ -187,6 +192,7 @@ class Watcher:
         self.connected = False  # a message has arrived on some stream
         self._suggested = False
         self._last_line: str | None = None
+        self._notices: set[Any] = set()  # a reconnect sends the latest again
 
     def follow(self, lease: bool = True) -> dict[str, Any]:
         failures = 0
@@ -237,6 +243,10 @@ class Watcher:
             if self.suggest_detach and not self._suggested and report.long_wait(body):
                 self._suggested = True
                 report.status(self.io.err, DETACH_HINT)
+            found = attention.notice(self.job_id, body)
+            if found is not None and found[0] not in self._notices:
+                self._notices.add(found[0])
+                report.status(self.io.err, found[1])
         return msg.type is MessageType.RESULT
 
     def write_log(self, body: dict[str, Any]) -> None:

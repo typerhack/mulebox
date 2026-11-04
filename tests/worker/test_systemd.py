@@ -125,3 +125,9 @@ def test_list_orphans_only_returns_mulebox_units():
     assert SystemdExecutor(runner).list_orphans() == [
         UNIT, "mulebox-job-01JC3XAMPLE0000000000000001"]
     assert runner.calls[0][-1] == "mulebox-job-*"
+
+
+def test_a_job_without_a_limit_has_no_runtime_limit(tmp_path):
+    spec = RunSpec(name="mulebox-job-a", argv=("true",), cwd=tmp_path, env={},
+                   log_path=tmp_path / "out.log", timeout_s=None)
+    assert not any("RuntimeMaxSec" in arg for arg in run_argv(spec))

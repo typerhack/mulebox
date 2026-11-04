@@ -255,3 +255,27 @@ def test_job_env_of_the_node_reaches_the_job(node, fake_link, executor, paths, c
     submit(fake_link, "bash", "-c", "echo got=$FROM_MACHINE")
     run_until(worker, lambda: fake_link.of_type(MessageType.RESULT))
     assert "got=yes" in fake_link.log_text()
+
+
+def test_heartbeats_say_what_the_job_is_doing(agent, fake_link, clock):
+    submit(fake_link, "bash", "-c", LONG)
+    _running_pgid(agent, fake_link)
+    clock.now += HEARTBEAT_S + 1
+    agent.step()
+    report = fake_link.of_type(MessageType.HEARTBEAT)[-1].body["activity"]
+    assert set(report) == {"output_idle_s", "idle_s", "cpu_pct", "net_kib_s"}
+    assert report["output_idle_s"] >= 0
+    fake_link.cancel = True
+    clock.now += HEARTBEAT_S + 1
+    agent.step()
+
+
+def test_output_moves_the_time_of_the_last_output(agent, fake_link, clock):
+    job_id = submit(fake_link, "bash", "-c", f"echo hello; {LONG}")
+    _running_pgid(agent, fake_link)
+    job = agent.active[job_id]
+    run_until(agent, lambda: job.last_output > 0 or "hello" in fake_link.log_text())
+    assert job.last_output >= job.started_at
+    fake_link.cancel = True
+    clock.now += HEARTBEAT_S + 1
+    agent.step()

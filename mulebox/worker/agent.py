@@ -1,18 +1,17 @@
 """The worker loop: recovery, claim, run, heartbeat, clean up, report.
 
-`Agent.step(now)` is one iteration and does no sleeping, so tests drive it with an
-injected clock, a fake link and the subprocess executor. `serve()` runs recovery and then
-calls `step` once per second until asked to stop.
+`Agent.step(now)` is one iteration and does no sleeping; `serve()` runs recovery and then
+calls it once per second until asked to stop.
 
-Per job: fetch snapshot, prepare the workspace, `job_update running`, start the unit, then
-each step ship new log text, poll the process, heartbeat every 3 s. The job is stopped on
-`cancel: true`, when the coordinator says the job is over, or when no reply came for
-120 s (the worker lease length). After it ends: flush the log, `job_update cleaning`,
-remove what the job left (cleaner.py), `result`. Stages go out with the log. Cleanup runs beside the loop (background.py),
-so heartbeats, cancels and supervision go on while Docker is slow, and the job keeps its
-lease. It happens even while the coordinator is unreachable; the reports are delivered once
-it answers again. No new job is claimed while reports are pending. With a supervisor, each
-step also lets it watch this worker's runner reservations (runners/supervise.py; every 10 s).
+Per job: fetch snapshot, prepare the workspace, `job_update running`, start the unit, then each
+step ship new log text, poll the process, heartbeat every 3 s with what the job is doing
+(activity.py). It is stopped on `cancel: true`, when the coordinator says it is over, or when no
+reply came for 120 s (the lease). After it ends: flush the log, `job_update cleaning`, remove
+what it left (cleaner.py), `result`. Stages go out with the log. Cleanup runs beside the loop
+(background.py), so heartbeats, cancels and supervision go on while Docker is slow, and the job
+keeps its lease, also while the coordinator is unreachable; the reports follow once it
+answers. No new job is claimed while reports are pending. With a supervisor, each step also
+lets it watch this worker's runner reservations (runners/supervise.py; every 10 s).
 """
 
 from __future__ import annotations
@@ -31,7 +30,7 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.common.status import CLEANUP, ENVIRONMENT, PREPARE
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker import advert, background, runspec, toolchains, workspace
+from mulebox.worker import activity, advert, background, runspec, toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -58,6 +57,7 @@ class Agent:
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
         self.cleaner = Cleaner(paths, node.name, docker)
         self.ports = PortPool()
+        self.meter = activity.MachineMeter()
         self.machine = runspec.Machine(node.name, paths, docker, self.ports, node.job_env)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
@@ -158,7 +158,8 @@ class Agent:
         return spec
 
     def _tend(self, job: ActiveJob, now: float) -> None:
-        job.tailer.read_new()
+        self.meter.update(now)
+        job.last_output = now if job.tailer.read_new() else job.last_output
         if self._online(now):
             try:
                 job.tailer.send(self._sender(now))
@@ -179,7 +180,8 @@ class Agent:
     def _ping(self, job: ActiveJob, now: float) -> Message | None:
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
-                      attempt_id=job.attempt_id)
+                      attempt_id=job.attempt_id, activity=self.meter.report(
+                          job.started_at, job.last_output, job.steps.stage, now))
         try:
             return self._call(msg, now)
         except LinkError:

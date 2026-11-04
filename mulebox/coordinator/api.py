@@ -12,6 +12,7 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (
+    attendance,
     leases,
     needs,
     projects,
@@ -82,10 +83,20 @@ def submit(req: Request) -> Message:
                 **fields, "job_id": new_id("job"), "state": JobState.UPLOADING,
                 "created_at": req.now, "client_lease_until": req.now + leases.CLIENT_LEASE_S,
             })
+        left = _unattended_in(conn, fields["project"], req.now)
     # `detached` is echoed: a client must not leave a job behind that a coordinator too old to
     # know the flag would cancel 5 minutes later.
     return req.reply(MessageType.SUBMIT_OK, {"job_id": job["job_id"], "state": job["state"],
-                                             "detached": job["detached"]})
+                                             "detached": job["detached"], "unattended": left})
+
+
+def _unattended_in(conn: Any, project: str, now: float) -> list[dict[str, Any]]:
+    """This project's jobs nobody is watching, for the warning a submitting client prints."""
+    limits = attendance.read_limits(conn)
+    rows = st.select_jobs(conn, "project = ? AND detached = 1 AND state != ?",
+                          (project, JobState.FINISHED.value))
+    return [{**job_dict(job), **fields} for job in rows
+            if (fields := attendance.fields(job, now, limits))]
 
 
 def status(req: Request) -> Message:
@@ -96,10 +107,11 @@ def status(req: Request) -> Message:
         rows = steps.for_job(conn, job["job_id"])
         typical = usual.for_job(conn, job)
         failed = steps.failed_stage(conn, job)
+        limits = attendance.read_limits(conn)
     return req.reply(MessageType.STATUS_OK, {
         **status_body(job, place, reason, steps=rows, usual=typical,
                       **usual.estimate(job, typical), **failed),
-        **status_facts(job)})
+        **status_facts(job), **attendance.status_fields(job, rows, req.now, limits)})
 
 
 def cancel(req: Request) -> Message:
@@ -124,7 +136,9 @@ def heartbeat(req: Request) -> Message:
 def queue_list(req: Request) -> Message:
     limit = v.integer(req.body, "limit", queue.DEFAULT_FINISHED_LIMIT, 0, 1000)
     with req.store.read() as conn:
-        rows = [job_dict(job, pos, waiting_for(conn, job, req.now))
+        limits = attendance.read_limits(conn)
+        rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now)),
+                 **attendance.fields(job, req.now, limits)}
                 for job, pos in queue.listing(conn, limit)]
     return req.reply(MessageType.QUEUE_OK, {"jobs": rows})
 

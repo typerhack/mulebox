@@ -147,6 +147,7 @@ def test_node_minimal_defaults(tmp_path):
         dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
                    "lan_port": 8443, "lan_tls": False, "lan_password": True},
         retention={"log_days": 30, "step_days": 365},
+        limits={"unattended_idle_min": 15, "unattended_max_hours": 24},
     )
     assert config.slots == 1 and config.capabilities == () and config.coordinator is None
 
@@ -271,3 +272,15 @@ def test_node_invalid_dashboard(tmp_path, dash, field):
 
 def test_node_dashboard_must_be_table(tmp_path):
     assert node_error(tmp_path, NODE + 'dashboard = "lan"\n').field == "dashboard"
+
+
+def test_node_limits_are_settings(tmp_path):
+    config = load_node(tmp_path, NODE + ROOTS + "[limits]\nunattended_idle_min = 20\n"
+                       "unattended_max_hours = 2\n")
+    assert config.limits == {"unattended_idle_min": 20, "unattended_max_hours": 2}
+
+
+def test_node_max_limit_cannot_be_below_the_idle_limit(tmp_path):
+    with pytest.raises(ConfigError, match="unattended_max_hours"):
+        load_node(tmp_path, NODE + ROOTS + "[limits]\nunattended_idle_min = 90\n"
+                  "unattended_max_hours = 1\n")

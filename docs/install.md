@@ -99,6 +99,12 @@ sudo loginctl enable-linger alice
   and `step_days` (default 365, at least `log_days`) how long its stage rows are. The coordinator
   service removes what is older, once an hour and when it starts, from
   `<staging>/logs/` and nowhere else. A finished job's row stays for good.
+- `[limits]`: how long a job nobody watches may go on, on the coordinator's machine, read when
+  the coordinator service starts. `unattended_idle_min` (default 15) stops an unattended job with
+  no output, CPU or network for that long; `unattended_max_hours` (default 24, not shorter)
+  stops any unattended job, queued ones too. A watched job has no limit, and GitHub runner
+  jobs are not affected. What counts as activity: [agents.md](agents.md), 1a. Upgrade workers and
+  the coordinator together: an older worker keeps `timeout_min` as a hard limit (exit 124).
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).

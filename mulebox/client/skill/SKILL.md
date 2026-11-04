@@ -24,7 +24,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 4. `mulebox contract` prints the current schema on
+This skill was written for contract schema 5. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
@@ -60,12 +60,30 @@ When it has ended, `mulebox logs <job-id> --summary` says why it failed, and `mu
 <job-id>` gives what an attached `mulebox check` would have: the log and the exit code. Old
 logs expire on the build machine; `mulebox logs` says so when one has, and `mulebox status
 <job-id>` still has the result.
-Cancel a detached job you no longer want: nothing else will.
+Cancel a detached job you no longer want. Follow one you do want, or it counts as unattended.
 
 A job goes through stages, and `mulebox status <job-id>` shows `steps` and `usual`: what each
 stage took and what passed runs usually take. `usual` is a length from the past, not progress,
 so never turn it into a percentage. Image pull progress is summarised, so a quiet log during a
 pull is normal. Logs expire after 30 days by default; the job and its stages remain.
+
+## Time limits
+
+No job has a hard time limit while someone watches it. You decide what is stuck.
+
+- Every `timeout_min` of a running job, a `check_in` event in `mulebox events`, and a warning in
+  an attached `check` or `wait`, give the elapsed time, the stage, the seconds since its last
+  output and the machine's CPU and network. `mulebox status <job-id>` shows the same at any
+  time. Look at them and decide: let it run, or stop it with `mulebox cancel <job-id>`. A job can
+  be busy and silent for minutes, so a quiet log alone proves nothing.
+- A detached job nobody watches is `unattended`, queued or running, a few minutes after its
+  last watcher left. `mulebox wait` or `mulebox events` takes it back, and the count ends.
+- An unattended job stops after 15 minutes with no output, CPU or network, and in any case after
+  24 hours. Those are defaults of the build machine. It then shows `stopped: unattended`, with
+  an exit code of its own, which is not a failed check: it says nothing about the code, so run it
+  again and follow it.
+- Any `mulebox` command in the project warns on stderr about its unattended jobs. Take the
+  job back, or cancel it if you no longer want it.
 
 ## Package caches and services
 

@@ -37,7 +37,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     parser = sub.add_parser("doctor", help="check this project and the build machine before "
                             "submitting; read-only")
     parser.add_argument("--json", action="store_true", help="stable keys for tools")
-    parser.set_defaults(func=guarded(_doctor))
+    parser.set_defaults(func=guarded(_doctor, notices=True))
 
 
 def _project() -> tuple[ProjectConfig | None, Finding]:

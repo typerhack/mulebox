@@ -24,6 +24,8 @@ def job_dict(job: dict[str, Any], position: int | None = None,
     data["position"] = position if job["state"] == JobState.QUEUED else None
     if waiting:
         data["waiting_for"] = waiting
+    if job["stop_reason"]:
+        data["stop_reason"] = job["stop_reason"]
     return data
 
 
@@ -62,6 +64,8 @@ def status_body(job: dict[str, Any], position: int | None = None,
         body["outcome"] = job["outcome"]
         body["exit_code"] = job["exit_code"]
         body["duration_s"] = job["duration_s"]
+        if job["stop_reason"]:
+            body["stop_reason"] = job["stop_reason"]
     if job["state"] == JobState.QUEUED and position is not None:
         body["position"] = position
     if job["state"] in ACTIVE_STATES:

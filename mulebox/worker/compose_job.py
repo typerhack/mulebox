@@ -10,12 +10,11 @@ command needs no flags, from any folder, and cannot reach another project.
 Starting the containers is the first thing the job's script does, not a step of the worker,
 in two parts, so that time spent on images can be told from time spent on services: `up
 --no-start` pulls, builds and creates, on any Compose v2, and `up --wait` starts them.
-It therefore runs inside the job's unit: `timeout_min` covers it, a cancel stops it, and
-its output goes into the job's log and through redaction like any other output. If the
+It therefore runs inside the job's unit: a cancel stops it, and its output goes into the job's log and through redaction like any other output. If the
 job fails, the end of the containers' logs goes there too, since they are gone a moment
 later. Containers do not run in the unit, so stopping it does not stop them; the worker's
-teardown does that on every outcome (cleaner.py), and it runs outside `timeout_min`, so a
-job that used all its time still leaves nothing behind.
+teardown does that on every outcome (cleaner.py), so a job that was stopped still leaves
+nothing behind.
 """
 
 from __future__ import annotations

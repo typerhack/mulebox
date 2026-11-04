@@ -1,6 +1,6 @@
 """Executor that runs each job as a transient systemd user unit (Linux build machines).
 
-The unit is `mulebox-job-<job_id>` with a runtime limit, `KillMode=control-group` (stopping
+The unit is `mulebox-job-<job_id>`, with a runtime limit only if the job has one, `KillMode=control-group` (stopping
 it kills the whole process tree) and lower CPU and IO weights. Output is appended to the
 job's `out.log`. Environment values are passed as separate `--setenv=K=V` arguments; no
 shell ever sees them.
@@ -53,10 +53,10 @@ def run_argv(spec: RunSpec) -> list[str]:
     for path in (spec.log_path, spec.cwd):
         if any(c.isspace() for c in str(path)):
             raise ExecutorError(f"path {path} contains whitespace; systemd cannot use it")
-    seconds = max(1, math.ceil(spec.timeout_s))
+    limit = [] if spec.timeout_s is None else [
+        f"--property=RuntimeMaxSec={max(1, math.ceil(spec.timeout_s))}"]
     argv = [
-        "systemd-run", "--user", f"--unit={unit}",
-        f"--property=RuntimeMaxSec={seconds}",
+        "systemd-run", "--user", f"--unit={unit}", *limit,
         "--property=KillMode=control-group",
         "--property=TimeoutStopSec=10s",
         "--property=CPUWeight=50",

@@ -122,7 +122,7 @@ def test_cli_all_good(fake, make_repo, monkeypatch, capsys):
     fake.scenario(machine_version=get_version(), workers=[worker(version=get_version())])
     code, out = run(capsys)
     assert code == 0 and "ok    config" in out.out and "ok    machine" in out.out
-    assert [r["type"] for r in fake.requests()] == ["machines"]  # no job, no upload
+    assert [r["type"] for r in fake.requests()] == ["machines", "queue"]  # no job, no upload
 
 
 def test_cli_reports_a_skill_behind_but_does_not_touch_it(fake, make_repo, monkeypatch, capsys,
@@ -201,7 +201,7 @@ def test_a_compose_file_a_worker_would_refuse_fails_before_any_upload(fake, in_p
         capabilities=["docker", "compose-v1"], version=get_version())])
     assert cli.main(["doctor"]) == 1
     assert "volumes data is external" in capsys.readouterr().out
-    assert [r["type"] for r in fake.requests()] == ["machines"]
+    assert [r["type"] for r in fake.requests()] == ["machines", "queue"]
 
 
 LATER = "project: example-app\njobs:\n  check: x\nenv:\n  URL: ${HOST}\n  HOST: db\n"

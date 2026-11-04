@@ -18,6 +18,7 @@ class ActiveJob:
     tailer: LogTailer
     started_at: float  # agent clock
     last_heartbeat: float
+    last_output: float = 0.0  # agent clock: the last bytes in the job's raw log
     handle: Any = None  # executor handle once the process runs
     uses_docker: bool = False  # a `compose:` job: its Docker resources are torn down
     outcome: Outcome | None = None  # set when the job ended

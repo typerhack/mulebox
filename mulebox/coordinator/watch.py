@@ -7,6 +7,12 @@ for new log bytes and `status_ok` when the state (or queue position) changes, an
 one `result` line once the job is finished and its whole log has been sent. With `log: false`
 (`mulebox events`) there are no `log_chunk` lines.
 
+Anyone watching a detached job holds its lease, whatever `lease` asked for: that is what makes
+it attended (attendance.py). A job with a client keeps its one lease holder. A watcher that
+finds a job unattended is told so once, and that the job is back. Every `timeout_min` of a
+running job a `status_ok` carries `check_in`, and a new stream gets the latest one, so someone
+who reconnects still hears it; a client tells them apart by number.
+
 Streams, clock and sleep are injected so the loop runs in tests without real stdin.
 """
 
@@ -17,7 +23,7 @@ from typing import BinaryIO
 
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, leases, queue, steps, usual
+from mulebox.coordinator import api, attendance, leases, queue, steps, usual
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.errors import CoordinatorError, NotFound
@@ -72,21 +78,28 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
     offset = v.integer(msg.body, "offset", low=0)
     renew = v.flag(msg.body, "lease", False)
     with_log = v.flag(msg.body, "log", True)
-    if store.get_job(job_id) is None:
+    found = store.get_job(job_id)
+    if found is None:
         raise NotFound(f"no job {job_id}")
+    renew = renew or found["detached"]
+    started = clock()
+    with store.read() as conn:
+        came_back = attendance.unattended(found, started, attendance.read_limits(conn))
     if renew:
-        leases.renew_client(store, job_id, clock())
+        leases.renew_client(store, job_id, started)
     HeartbeatReader(stdin, store, job_id, renew, clock).start()
 
     def send(type_: MessageType, body: dict) -> None:
         write_message(stdout, Message(type_, msg.request_id, body))
 
     last: tuple[str, int | None, str | None] | None = None
+    checked_in = 0
     while True:
+        now = clock()
         with store.read() as conn:  # state before log: finished means the log is complete
             job = st.require_job(conn, job_id)
             place = queue.position(conn, job)
-            reason = waiting_for(conn, job, clock())
+            reason = waiting_for(conn, job, now)
             failed = steps.failed_stage(conn, job)
         while with_log:
             body = api.log_chunk_body(staging, job, offset)
@@ -99,6 +112,17 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
                 estimate = usual.estimate(job, usual.for_job(conn, job))
             send(MessageType.STATUS_OK, status_body(job, place, reason, **estimate, **failed))
             last = (job["state"], place, reason)
+            if came_back:
+                send(MessageType.STATUS_OK, status_body(
+                    job, place, reason, **estimate, unattended={**came_back, "taken_back": True}))
+                came_back = None
+        number = attendance.check_in_number(job, now)
+        if number > checked_in:
+            checked_in = number
+            with store.read() as conn:
+                rows = steps.for_job(conn, job_id)
+            send(MessageType.STATUS_OK, status_body(job, check_in={
+                **attendance.activity(job, rows, now), "number": number}))
         if job["state"] == JobState.FINISHED:
             send(MessageType.RESULT, result_body(job, **failed))
             return 0

@@ -20,7 +20,8 @@ from mulebox.common.status import STAGES
 # 2: `project.services` removed; `project.needs` includes what compose implies
 # 3: the skill teaches detached jobs and events, and says the schema it was written for
 # 4: the skill teaches package caches, stages, `usual` and log retention
-SCHEMA = 4
+# 5: timeout_min is a check-in; the skill teaches check-ins, unattended jobs and exit 76
+SCHEMA = 5
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -33,6 +34,7 @@ COMMANDS = {
     "follow_it": "mulebox events --job <job-id> --json",
     "its_state": "mulebox status <job-id>",
     "its_result": "mulebox wait <job-id>",
+    "take_it_back": "mulebox wait <job-id>",
     "queue": "mulebox queue",
     "all_projects": "mulebox projects",
     "read_log": "mulebox logs <job-id>",
@@ -52,8 +54,10 @@ EXIT_CODES = (
     (report.EXIT_NOT_STARTED, "the job could not start, so no project code ran",
      "not a failed check: read the reason in the log; mulebox doctor checks most causes"),
     (report.EXIT_INTERRUPTED, "interrupted on the build machine", "run it again once"),
-    (report.EXIT_TIMED_OUT, "the job hit timeout_min",
-     "look for a hang; raise timeout_min only if the work needs it"),
+    (report.EXIT_STOPPED, "stopped: unattended; nobody watched the job and it ran out of time",
+     "not a failed check: nothing is known about the code, so run it again and watch it"),
+    (report.EXIT_TIMED_OUT, "the job hit a hard timeout_min on a build machine older than 0.37",
+     "look for a hang; a current machine has no such limit, it sends check-ins"),
     (report.EXIT_CANCELLED, "cancelled", "nothing to do"),
 )
 GIT = (
@@ -98,16 +102,39 @@ EVENTS = (
     "queued has position, waiting_for and estimate_s (how long this job usually runs, from "
     "its past runs; null when unknown; an estimate, not a promise, and not the time in line); "
     "started has machine; finished has outcome, exit_code and duration_s",
-    "finished also has stage, where a job that ended badly failed (null when not known)",
+    "finished also has stage, where a job that ended badly failed (null when not known), and "
+    "stop_reason when its outcome is stopped",
+    "check_in comes every timeout_min of a running job, with elapsed_s, stage, output_idle_s, "
+    "idle_s, cpu_pct and net_kib_s; a reading it could not measure is null",
+    "unattended says a job was left unwatched: reason, left_s and taken_back, as it comes back",
     "after finished, read mulebox logs <job-id> --summary if the job failed",
+)
+TIME_LIMITS = (
+    "no job has a hard time limit while someone watches it: an attached check, mulebox wait or "
+    "mulebox events; you decide what is stuck and stop it with mulebox cancel",
+    "timeout_min is how often a watched job checks in, not a limit: a check_in event with "
+    "elapsed time, stage, seconds since the last output, and the machine's CPU and network",
+    "mulebox status shows the same activity at any time, and whether anyone is watching",
+    "a detached job nobody watches is unattended, from 5 minutes after the last watcher left; "
+    "queued jobs count too",
+    "an unattended running job is stopped after 15 minutes with no output, CPU or network, by "
+    "default; a job the machine cannot measure, and one that stays active, runs on to the limit",
+    "any unattended job is stopped at 24 hours by default, a queued one too; both are the "
+    "machine's settings",
+    "mulebox wait or mulebox events takes a job back: it is attended again and the count ends",
+    "a stopped job shows stopped: unattended and exits 76: it says nothing about the code",
+    "any mulebox command in the project warns about its unattended jobs on stderr; --json stays "
+    "clean; mulebox contract does not, as it needs no network",
 )
 RULES = (
     "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
     "if this contract's schema is higher than the one your mulebox skill says it was written "
     "for, tell the user the skill is behind and that mulebox skill update fixes it; never "
     "update the skill yourself",
-    "a detached job keeps running without you, within timeout_min: cancel it with mulebox "
-    "cancel if you no longer want it, nobody else will",
+    "a detached job keeps running without you, for as long as someone watches it, and within "
+    "the unattended limits otherwise: cancel it with mulebox cancel if you no longer want it",
+    "a check-in or an unattended warning is yours to act on: look at the activity, then let the "
+    "job go on, take it back, or cancel it",
     "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
     "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
     "1 if a job would not run, and warnings alone exit 0",
@@ -149,7 +176,7 @@ def build(config: ProjectConfig | None, version: str) -> Contract:
         "events": list(EVENTS),
         "git": list(GIT), "never_uploaded": [*BUILTIN_EXCLUDES, *exclude],
         "compose": list(COMPOSE) if config and config.compose else [],
-        "caches": list(CACHES), "stages": list(JOB_STAGES),
+        "caches": list(CACHES), "stages": list(JOB_STAGES), "time_limits": list(TIME_LIMITS),
         "exit_codes": [{"code": code, "meaning": meaning, "action": action}
                        for code, meaning, action in EXIT_CODES],
         "rules": list(RULES),
@@ -164,7 +191,7 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
     if project is None:
         return ["No .mulebox.yml here: this project is not set up for mulebox yet.",
                 "Setup steps: mulebox's docs/agents.md, section 2."]
-    lines = [f"Project: {project['name']} (timeout {project['timeout_min']} min)"]
+    lines = [f"Project: {project['name']} (check-in every {project['timeout_min']} min)"]
     if project["setup"]:
         lines.append(f"Setup before every job: {project['setup']}")
     lines += ["", "Jobs:"]
@@ -190,6 +217,7 @@ def render(contract: Contract) -> str:
               *(["", "Containers:", *_bullets(contract["compose"])] if contract["compose"] else []),
               "", "Package caches:", *_bullets(contract["caches"]),
               "", "Stages:", *_bullets(contract["stages"]),
+              "", "Time limits:", *_bullets(contract["time_limits"]),
               "", "Never uploaded:",
               ", ".join(contract["never_uploaded"]), "",
               "Exit codes (otherwise the job's own code):"]

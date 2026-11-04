@@ -17,6 +17,7 @@ from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
 from mulebox.coordinator import store as st
 from mulebox.coordinator import workers
+from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
 from mulebox.coordinator.store import ACTIVE_STATES, Store
 
@@ -123,4 +124,4 @@ def claim_body(job: dict[str, Any]) -> dict[str, Any]:
     """claim_ok body (docs/interfaces-m1.md, Wire usage)."""
     names = ("job_id", "attempt_id", "project", "job", "argv", "fingerprint", "base_commit",
              "timeout_min", "setup", "toolchain", "needs", "env", "env_order")
-    return {name: job[name] for name in names}
+    return {**{name: job[name] for name in names}, "limits": LIMITS_BY_COORDINATOR}

@@ -248,6 +248,22 @@ coordinator code; none of this has run on a build machine yet.
 - [x] M10.3 The contract's database rule is about shared databases: a job's own compose service
       needs no `${MULEBOX_JOB_SLUG}`. (2026-11-04, 0.36.4)
 
+## M11: Time limits, decided by the user
+`timeout_min` as a hard limit is gone; rules in docs/design.md, Time limits, and docs/agents.md, 1a.
+Tested with unit tests, the real coordinator code and a local stand-in for ssh. Open on all of
+it: a real machine.
+- [~] M11.1 Check-ins: `check_in` every `timeout_min` in `events`, a warning in `check` and `wait`,
+      activity and watcher in `mulebox status`. Built 2026-11-04 (0.37.0). Open: a real long job.
+- [~] M11.2 Activity: output, the machine's CPU and network from `/proc`, reported with worker
+      heartbeats. Built 2026-11-04 (0.37.0). Open: real readings of an idle machine with a compose
+      stack up, to check the thresholds, and a silent but busy real job.
+- [~] M11.3 Unattended jobs: `wait` and `events` count as watching, 15 minutes idle and 24 hours
+      total as `[limits]`, queued jobs included, `stopped: unattended`, exit 76, schema 8 with
+      an upgrade test. Built 2026-11-04 (0.37.0). Open: a job really stopped on a machine,
+      with its containers gone, and the 124 path with a worker still on an older version.
+- [~] M11.4 Warnings to the agent: `unattended` event, `status`, `wait`, stderr of any command from
+      the project. Built 2026-11-04 (0.37.0). Open: seen by an agent in a real session.
+
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)
