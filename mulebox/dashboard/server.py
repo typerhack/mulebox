@@ -1,9 +1,10 @@
 """The dashboard's aiohttp application: routes, guards and static files (interfaces-m2.md).
 
-Read-only and GET-only. Guards on every request:
+Read-only, and GET-only apart from signing in and out. Guards on every request:
 - Host check: only `127.0.0.1`, `localhost` and `[::1]` (any port, since the SSH tunnel's
-  local port may differ). This stops DNS rebinding from a web page in the laptop's
-  browser reaching the tunnel. `lan` mode (not built yet) will need its own list.
+  local port may differ), or the configured address on the TLS listener. This stops DNS
+  rebinding from a web page reaching the dashboard.
+- On the TLS listener (`lan` mode): the address range and a session (login.py).
 - Headers: a strict Content-Security-Policy (only this origin, no inline script), no
   sniffing, no referrer, no framing; API replies are not cached.
 Static files come from the package (`static/`); no CDN, no build step.
@@ -18,15 +19,17 @@ from pathlib import Path
 
 from aiohttp import web
 
-from mulebox.dashboard import keys, streams
+from mulebox.dashboard import keys, login, streams
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
 from mulebox.dashboard.hub import Hub
+from mulebox.dashboard.session import LanAccess
 from mulebox.version import get_version
 
 STATIC_DIR = Path(__file__).with_name("static")
 LOCAL_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; "
        "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+LOGIN_CSP = CSP.replace("form-action 'none'", "form-action 'self'")
 Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 
@@ -40,7 +43,9 @@ def host_name(host: str | None) -> str:
 
 @web.middleware
 async def guard(request: web.Request, handler: Handler) -> web.StreamResponse:
-    if host_name(request.host) not in request.app[keys.ALLOWED_HOSTS]:
+    access = request.app.get(keys.LAN)
+    allowed = access.hosts if request.secure and access else request.app[keys.ALLOWED_HOSTS]
+    if host_name(request.host) not in allowed:
         return web.Response(status=421, text="unexpected Host header\n")
     return await handler(request)
 
@@ -48,7 +53,7 @@ async def guard(request: web.Request, handler: Handler) -> web.StreamResponse:
 async def _headers(request: web.Request, response: web.StreamResponse) -> None:
     """Runs for every response just before its headers go out (streams and errors too)."""
     headers = response.headers
-    headers["Content-Security-Policy"] = CSP
+    headers["Content-Security-Policy"] = LOGIN_CSP if request.path == "/login" else CSP
     headers["X-Content-Type-Options"] = "nosniff"
     headers["Referrer-Policy"] = "no-referrer"
     headers["X-Frame-Options"] = "DENY"
@@ -58,9 +63,12 @@ async def _headers(request: web.Request, response: web.StreamResponse) -> None:
 
 def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = time.time,
               allowed_hosts: frozenset[str] = LOCAL_HOSTS, start_hub: bool = True,
-              static_dir: Path = STATIC_DIR) -> web.Application:
-    app = web.Application(middlewares=[guard])
+              static_dir: Path = STATIC_DIR, lan: LanAccess | None = None) -> web.Application:
+    app = web.Application(middlewares=[guard, login.lan_guard])
     app[keys.ALLOWED_HOSTS] = allowed_hosts
+    if lan is not None:
+        app[keys.LAN] = lan
+        login.add_routes(app, static_dir)
     app[keys.HUB], app[keys.DATA], app[keys.CLOCK] = hub, data, clock
     app.on_response_prepare.append(_headers)
     app.router.add_get("/", _index(static_dir))
@@ -94,7 +102,7 @@ def _index(static_dir: Path) -> Handler:
 
 
 async def _health(request: web.Request) -> web.Response:
-    return web.json_response({"ok": True, "version": get_version()})
+    return web.json_response({"ok": True, "version": get_version(), "lan": request.secure})
 
 
 async def _queue(request: web.Request) -> web.Response:

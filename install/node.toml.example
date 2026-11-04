@@ -24,7 +24,11 @@ cache = "@HOME@/.mulebox/cache"
 staging = "@HOME@/.mulebox/staging"
 runners = "@HOME@/.mulebox/runners"
 
-# Web dashboard (M2): "off", "local" (this machine only) or "lan" (needs lan_range).
+# Web dashboard (M2): "off", "local" (this machine only) or "lan" (also HTTPS on the LAN,
+# with a password). "lan" needs lan_range and lan_address; docs/install.md has the steps.
 [dashboard]
 mode = "local"
 port = 8090
+# lan_range = "192.168.1.0/24"
+# lan_address = "192.168.1.50"
+# lan_port = 8443

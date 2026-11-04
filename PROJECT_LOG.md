@@ -8,6 +8,19 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.8.0 - 2026-11-04 - minor
+- `lan` dashboard mode (M2.4): HTTPS on a configured address with a password, for devices
+  on the LAN. The SSH tunnel keeps working. Set up with the new `mulebox dashboard cert`,
+  `password` and `firewall` commands. New node.toml keys: `lan_address`, `lan_port`.
+- `lan_range` must now be a private network, and `lan` mode is IPv4 only.
+- Self-signed certificate marked CA, because phones only fully trust those, with name
+  constraints so it is valid for one address. No new Python dependency.
+- Firewall: mulebox prints a script for the operator instead of running anything as root;
+  one nftables table for one port, leaving ufw, Docker and VPN clients alone.
+- `mulebox-dashboard` no longer restarts on exit 2 (configuration), and a failed bind exits
+  1 so that it retries. `/healthz` also returns `lan`.
+- docs/phases.md: new M2.6 machines panel (next after M2.4), new M5.3 per-machine metrics.
+
 ## 0.7.1 - 2026-11-04 - patch
 - docs/phases.md: parking lot ideas from the user: agent contract, installable skill, agent
   feedback through GitHub issues, project registration. No behaviour change.

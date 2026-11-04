@@ -20,9 +20,12 @@ Input is a public job dict; every function tolerates missing or malformed fields
 ## Processes and access
 
 - `mulebox dashboard serve` runs on the coordinator machine as the user service
-  `mulebox-dashboard`. It binds `127.0.0.1` and has no option to bind anything else.
+  `mulebox-dashboard`. It binds `127.0.0.1`, plus `lan_address` in `lan` mode, and has no
+  option to bind anything else.
 - `[dashboard] mode` in `node.toml`: `local` (default) serves; `off` exits 0 at once, and
-  the unit does not restart; `lan` is refused with exit 2 until it is built (M2.4).
+  the unit does not restart; `lan` adds the TLS listener (below). Exit 2 is a configuration
+  problem, which the unit does not retry; exit 1 is a failed bind, which it does, because
+  Wi-Fi can come up after the service.
 - `mulebox dashboard open [--port N] [--remote-port N] [--no-browser]` on the laptop runs
   `ssh -N -L 127.0.0.1:<local>:127.0.0.1:<remote> <coordinator>`, waits for `/healthz`,
   opens the browser and holds the tunnel until Ctrl-C (exit 0). A tunnel that closes or a
@@ -30,12 +33,48 @@ Input is a public job dict; every function tolerates missing or malformed fields
   own ssh connection, never a shared `ControlMaster` one: ssh would otherwise hand the
   forward to the master and exit, and Ctrl-C could not close it.
 
+## `lan` mode
+
+Setup steps: [install.md](install.md). Modules: `lan_commands.py` (CLI, checks before
+serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
+`firewall.py`, `lanfiles.py`, `listeners.py`.
+
+- **Two listeners, one app.** Plain HTTP on `127.0.0.1:<port>` for the tunnel, with no
+  password, and HTTPS on `<lan_address>:<lan_port>`. The rules follow `request.secure`,
+  which comes from the connection, never from a header. Forwarded-for headers are ignored.
+- **Order on the TLS listener.** Host must be `lan_address` (421), the peer must be in
+  `lan_range` (403), then a session is needed. Only `/login` and `/static/style.css` are
+  open without one. Pages redirect to `/login`; `/healthz` and `/api/` get 401.
+- **Password.** scrypt hash in `dashboard/password` beside `node.toml`, mode 600. Read at
+  start, so a new one needs a restart. Never an argument: `mulebox dashboard password`
+  prompts, or reads one line from stdin when that is not a terminal.
+- **Sessions.** In memory, as hashes, 24 h, at most 64 (oldest dropped). A restart signs
+  everyone out; open pages then return to `/login` on their own. Cookie: `Secure`,
+  `HttpOnly`, `SameSite=Strict`.
+- **Failed logins.** Per address: 5 free, then a wait of 30 s doubling to 15 min (429),
+  even for the right password. One scrypt at a time, so logins cannot starve jobs.
+- **Cross-site posts** are refused with `Sec-Fetch-Site`. `Origin` cannot do this: with the
+  `no-referrer` policy, browsers send `Origin: null` on a same-site form post.
+- **Certificate.** Self-signed, marked CA because phones only fully trust those, with
+  `pathlen:0` and name constraints for this one address. Created with the `openssl`
+  command, so there is no new Python dependency. Checked at start: exists, matches
+  `lan_address`, not expired.
+- **Firewall.** mulebox never runs anything as root. `mulebox dashboard firewall` prints a
+  script for the operator. Its rules sit in their own table, not in `/etc/nftables.conf`,
+  whose usual `flush ruleset` would remove every other tool's rules. The range check in
+  the app stands on its own if the rule is missing.
+- **IPv4 only.** `lan_address` is IPv4, and the rule drops IPv6 to the LAN port.
+- **Files outside the roots.** `dashboard/` holds operator configuration, written only by
+  the explicit `cert` and `password` commands, never by a job.
+
 ## Guarantees
 
 - **Read-only.** The store is opened with SQLite `mode=ro`, so a write fails in SQLite
-  itself. All routes are GET; any other method gets 405. There is no cancel button (M2.5).
-- **Host check.** Only `127.0.0.1`, `localhost` and `[::1]`, on any port; anything else
-  gets 421. This stops DNS rebinding from a web page in the laptop's browser.
+  itself. All routes are GET, apart from `POST /login` and `POST /logout` on the TLS
+  listener, which only touch sessions; any other method gets 405. There is no cancel
+  button (M2.5).
+- **Host check.** Only `127.0.0.1`, `localhost` and `[::1]`, on any port, or `lan_address`
+  on the TLS listener; anything else gets 421. This stops DNS rebinding from a web page.
 - **Headers on every reply**, errors and streams included: a strict
   Content-Security-Policy (same origin, no inline script or style), `nosniff`,
   `no-referrer`, `X-Frame-Options: DENY`. API replies are `no-store`.
@@ -51,7 +90,9 @@ Input is a public job dict; every function tolerates missing or malformed fields
 
 | Route | Reply |
 | --- | --- |
-| `GET /healthz` | `{ok, version}` |
+| `GET /healthz` | `{ok, version, lan}`; `lan` is true on the TLS listener |
+| `GET`, `POST /login` | sign-in page and form; TLS listener only, else 404 |
+| `POST /logout` | ends the session, 204; TLS listener only, else 404 |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent` |
 | `GET /api/history?limit=&before=&project=` | `{jobs, next_before}`, newest first; `limit` 1..200, default 50; page with `before = next_before` |
 | `GET /api/jobs/{id}` | job detail with redacted `command` and `log_size`; 404 if unknown |

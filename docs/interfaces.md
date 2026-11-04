@@ -36,7 +36,8 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   `roles: tuple[str, ...]` (`coordinator`, `worker`), `roots: Roots-compatible dict`
   (`jobs`, `cache`, `staging`, `runners`, all absolute), `slots: int` (default 1),
   `capabilities: tuple[str, ...]`, `coordinator: str | None` (ssh target; None if local),
-  `dashboard: dict` (`mode`: `off|local|lan`, `port`: 8090, `lan_range`: CIDR or None).
+  `dashboard: dict` (`mode`: `off|local|lan`, `port`: 8090, `lan_range`: private CIDR or
+  None, `lan_address`: IPv4 inside `lan_range` or None, `lan_port`: 8443).
 - `load_client_config(path: Path | None = None) -> ClientConfig`,
   `load_node_config(path: Path | None = None) -> NodeConfig`
 - YAML via PyYAML (`yaml.safe_load` only), TOML via `tomllib`. Unknown keys are errors.
@@ -103,7 +104,7 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   the previous handler.
 - config: generic reading and `ConfigError(path, field, problem)` live in
   `config_reader.py` (re-exported from `config.py`). Toolchain versions must be quoted
-  strings. `lan` mode needs `lan_range`. Explicit path beats `$MULEBOX_CONFIG`. Extra:
+  strings. `lan` mode needs `lan_range` and `lan_address`. Explicit path beats `$MULEBOX_CONFIG`. Extra:
   `client_config_path()`, `node_config_path()`. Duplicate YAML keys are not detected.
 - protocol: envelope is exactly `v, type, request_id, body`; extra body fields pass
   through; `state`/`outcome` values are validated anywhere; `v` is checked before `type`.

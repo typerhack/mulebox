@@ -130,3 +130,9 @@ button[hidden] { display: none; }
   .wide { display: none; }
   .log { height: 46vh; }
 }
+
+.login-page { display: grid; place-items: center; min-height: 100vh; padding: 16px; }
+.login { width: min(100%, 320px); }
+.login form { display: grid; gap: 8px; }
+.login input, .login button { font-size: 16px; padding: 8px; }
+.login-error { color: var(--bad); }

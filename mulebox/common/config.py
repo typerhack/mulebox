@@ -24,8 +24,9 @@ Choices where docs/interfaces.md is silent:
 - ``dashboard`` defaults to ``mode = "local"``, ``port = 8090``, ``lan_range = None``;
   ``mode = "lan"`` requires ``lan_range``, which must be a network in CIDR form with an
   explicit prefix length (a bare address, or host bits set as in ``192.168.1.5/24``, is
-  an error). ``lan_range`` is normalised
-  to its string form, e.g. ``192.168.1.0/24``.
+  an error) and a private range. ``lan_range`` is normalised to its string form, e.g.
+  ``192.168.1.0/24``. ``lan`` also requires ``lan_address``, this machine's IPv4 address
+  inside ``lan_range``; ``lan_port`` defaults to 8443 and must differ from ``port``.
 - An explicit ``path`` argument wins over ``$MULEBOX_CONFIG``; an empty
   ``$MULEBOX_CONFIG`` is ignored.
 """
@@ -62,6 +63,7 @@ DASHBOARD_MODES = ("off", "local", "lan")
 DEFAULT_TIMEOUT_MIN = 30
 DEFAULT_REMOTE_BIN = "~/.mulebox/bin/mulebox"
 DEFAULT_DASHBOARD_PORT = 8090
+DEFAULT_DASHBOARD_LAN_PORT = 8443
 
 
 @dataclass(frozen=True)
@@ -207,6 +209,10 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
         sub.fail("mode", f"must be one of {', '.join(DASHBOARD_MODES)}, got {mode!r}")
     port = sub.integer("port", DEFAULT_DASHBOARD_PORT, 1, 65535)
     lan_range = sub.text("lan_range", None)
+    lan_address = sub.text("lan_address", None)
+    lan_port = sub.integer("lan_port", DEFAULT_DASHBOARD_LAN_PORT, 1, 65535)
+    if lan_port == port:
+        sub.fail("lan_port", f"must differ from port ({port})")
     if lan_range is not None:
         if "/" not in lan_range:
             hint = f"needs a prefix length, e.g. 192.168.1.0/24, got {lan_range!r}"
@@ -215,10 +221,31 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
             lan_range = str(ipaddress.ip_network(lan_range, strict=True))
         except ValueError as exc:
             sub.fail("lan_range", f"must be a network in CIDR form: {exc}")
+        if not ipaddress.ip_network(lan_range).is_private:
+            sub.fail("lan_range", f"must be a private network, got {lan_range!r}")
     elif mode == "lan":
         sub.fail("lan_range", "is required when mode is 'lan'")
+    if lan_address is not None:
+        lan_address = _lan_address(sub, lan_address, lan_range)
+    elif mode == "lan":
+        sub.fail("lan_address", "is required when mode is 'lan'")
     sub.finish()
-    return {"mode": mode, "port": port, "lan_range": lan_range}
+    return {"mode": mode, "port": port, "lan_range": lan_range, "lan_address": lan_address,
+            "lan_port": lan_port}
+
+
+def _lan_address(sub, text: str, lan_range: str | None) -> str:
+    """This machine's address on the LAN: one IPv4 address, inside `lan_range`."""
+    try:
+        address = ipaddress.IPv4Address(text)
+    except ValueError:
+        sub.fail("lan_address", f"must be an IPv4 address, got {text!r}")
+    if lan_range is None:
+        sub.fail("lan_range", "is required when lan_address is set")
+    network = ipaddress.ip_network(lan_range)
+    if network.version != 4 or address not in network:
+        sub.fail("lan_address", f"{text} is not inside lan_range {lan_range}")
+    return str(address)
 
 
 def load_node_config(path: Path | None = None) -> NodeConfig:

@@ -76,8 +76,8 @@ sudo loginctl enable-linger alice
   absolute, and not a system folder or your home folder itself.
 - `slots`, `capabilities`: see [interfaces.md](interfaces.md).
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
-  `"off"` turns it off. `"lan"` is not available yet and the service refuses it. See
-  [interfaces-m2.md](interfaces-m2.md).
+  `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
+  below. Contract: [interfaces-m2.md](interfaces-m2.md).
 
 The installer never overwrites this file. After editing it, check it and restart:
 
@@ -204,3 +204,56 @@ mulebox dashboard open --port 8091     # if local port 8090 is taken
 
 If `[dashboard] port` was changed in `node.toml`, pass the same value as `--remote-port`.
 Nothing but the SSH connection is exposed: the page is reached only through the tunnel.
+
+### Dashboard on the LAN
+
+`lan` mode lets other devices, such as a phone, open the dashboard directly at
+`https://<address>:8443` with a password. The tunnel above keeps working. Reserve the
+machine's address on your router first: the certificate is tied to it.
+
+On the build machine, add to `[dashboard]` in `node.toml`, leaving `mode` as it is for now:
+
+```toml
+lan_range = "192.168.1.0/24"   # who may connect; must be a private network
+lan_address = "192.168.1.50"   # this machine, inside lan_range
+lan_port = 8443                # optional
+```
+
+Then:
+
+```sh
+mulebox dashboard cert                         # prints the file and its fingerprint
+mulebox dashboard password                     # asks twice; at least 10 characters
+mulebox dashboard firewall > firewall.sh       # read it, then:
+sudo sh firewall.sh
+```
+
+Now set `mode = "lan"` and run `systemctl --user restart mulebox-dashboard`. If a step is
+missing, the service stops and says which: see `journalctl --user -u mulebox-dashboard`.
+
+The firewall script adds one nftables table that only affects `lan_port`, and a root unit,
+`mulebox-dashboard-firewall`, that loads it at boot. It leaves ufw, Docker, VPN clients and
+SSH alone, and it is the only step that needs root. To remove it:
+
+```sh
+sudo systemctl disable --now mulebox-dashboard-firewall
+sudo rm /etc/systemd/system/mulebox-dashboard-firewall.service
+sudo rm /etc/mulebox/dashboard-firewall.nft
+```
+
+**Trust the certificate** on each device, or the browser will warn on every visit. Copy
+`~/.config/mulebox/dashboard/cert.pem` there and compare its SHA-256 fingerprint with the
+one `mulebox dashboard cert` printed:
+
+- macOS: open it in Keychain Access, then set Trust to Always Trust.
+- iPhone: install the profile, then turn it on in Settings > General > About > Certificate
+  Trust Settings.
+- Android: Settings > Security > More security settings > Install from device storage > CA
+  certificate. The exact path differs by phone.
+
+The device treats it as a certificate authority, the only kind phones fully trust, but it
+is limited to this one address and cannot vouch for any other site. It lasts 825 days;
+replace it with `mulebox dashboard cert --force`, then trust the new one on each device.
+
+Changing the password: run `mulebox dashboard password`, then restart the service, which
+signs everyone out. A session lasts 24 hours.

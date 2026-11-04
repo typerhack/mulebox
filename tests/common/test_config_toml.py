@@ -144,7 +144,8 @@ def test_node_minimal_defaults(tmp_path):
         name="build-1",
         roles=("coordinator", "worker"),
         roots={k: f"/home/alice/.mulebox/{k}" for k in ("jobs", "cache", "staging", "runners")},
-        dashboard={"mode": "local", "port": 8090, "lan_range": None},
+        dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
+                   "lan_port": 8443},
     )
     assert config.slots == 1 and config.capabilities == () and config.coordinator is None
 
@@ -154,12 +155,14 @@ def test_node_full(tmp_path):
         'name = "build-2"\nroles = ["worker"]\nslots = 4\n'
         'capabilities = ["docker", "arch:x86_64"]\ncoordinator = "build-1"\n'
     )
-    dash = '[dashboard]\nmode = "lan"\nport = 8443\nlan_range = "192.168.1.0/24"\n'
+    dash = ('[dashboard]\nmode = "lan"\nport = 8091\nlan_range = "192.168.1.0/24"\n'
+            'lan_address = "192.168.1.50"\nlan_port = 9443\n')
     config = load_node(tmp_path, top + ROOTS + dash)
     assert config.roles == ("worker",) and config.slots == 4
     assert config.capabilities == ("docker", "arch:x86_64")
     assert config.coordinator == "build-1"
-    assert config.dashboard == {"mode": "lan", "port": 8443, "lan_range": "192.168.1.0/24"}
+    assert config.dashboard == {"mode": "lan", "port": 8091, "lan_range": "192.168.1.0/24",
+                                "lan_address": "192.168.1.50", "lan_port": 9443}
 
 
 def test_node_default_path_under_home(isolated_home, monkeypatch, tmp_path):
@@ -171,7 +174,7 @@ def test_node_default_path_under_home(isolated_home, monkeypatch, tmp_path):
 
 
 def test_node_ipv6_lan_range_normalised(tmp_path):
-    dash = '[dashboard]\nmode = "lan"\nlan_range = "FD00:0:0:0::/64"\n'
+    dash = '[dashboard]\nlan_range = "FD00:0:0:0::/64"\n'
     assert load_node(tmp_path, NODE + ROOTS + dash).dashboard["lan_range"] == "fd00::/64"
 
 
@@ -243,6 +246,14 @@ def test_node_unknown_root_key(tmp_path):
         ('mode = "lan"\nlan_range = "192.168.1.5/24"', "dashboard.lan_range"),
         ('mode = "lan"\nlan_range = "not-a-network"', "dashboard.lan_range"),
         ('mode = "lan"\nlan_range = "192.168.1.0/33"', "dashboard.lan_range"),
+        ('lan_range = "0.0.0.0/0"', "dashboard.lan_range"),
+        ('lan_range = "8.8.8.0/24"', "dashboard.lan_range"),
+        ('mode = "lan"\nlan_range = "192.168.1.0/24"', "dashboard.lan_address"),
+        ('lan_range = "192.168.1.0/24"\nlan_address = "192.168.2.5"', "dashboard.lan_address"),
+        ('lan_range = "192.168.1.0/24"\nlan_address = "nope"', "dashboard.lan_address"),
+        ('lan_range = "fd00::/64"\nlan_address = "fd00::1"', "dashboard.lan_address"),
+        ('lan_address = "192.168.1.5"', "dashboard.lan_range"),
+        ("port = 8443", "dashboard.lan_port"),
         ("port = 0", "dashboard.port"),
         ("port = 65536", "dashboard.port"),
         ('port = "8090"', "dashboard.port"),

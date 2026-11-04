@@ -37,9 +37,24 @@ function navigate() {
   else showQueue();
 }
 
+async function sessionEnded() {
+  const reply = await fetch("/healthz").catch(() => null);
+  if (reply?.status === 401) location.assign("/login");
+  else setConn("lost", "closed; reload the page");
+}
+
+async function signOut() {
+  await fetch("/logout", { method: "POST" }).catch(() => {});
+  location.assign("/login");
+}
+
 const stream = new EventSource("/api/events");
 stream.onopen = () => setConn("live", "live");
-stream.onerror = () => setConn("lost", "reconnecting");
+stream.onerror = () => {
+  setConn("lost", "reconnecting");
+  // The browser retries a dropped connection by itself, but gives up on a refused one.
+  if (stream.readyState === EventSource.CLOSED) sessionEnded();
+};
 stream.addEventListener("queue", (event) => {
   snapshot = JSON.parse(event.data);
   snapshotAt = performance.now();
@@ -57,4 +72,7 @@ setInterval(() => {
 navigate();
 getJson("/healthz").then((health) => {
   document.getElementById("version").textContent = health.version;
+  const signout = document.getElementById("signout");
+  signout.hidden = !health.lan;
+  signout.addEventListener("click", signOut);
 }).catch(() => {});

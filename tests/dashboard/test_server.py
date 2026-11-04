@@ -64,7 +64,7 @@ def test_health_and_queue(call, run_job):
     async def go(client):
         return await (await client.get("/healthz")).json(), await (await client.get("/api/queue")).json()
     health, queue = call(go)
-    assert health == {"ok": True, "version": get_version()}
+    assert health == {"ok": True, "version": get_version(), "lan": False}
     assert queue["running"][0]["job_id"] == job_id
 
 
