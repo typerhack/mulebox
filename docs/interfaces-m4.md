@@ -30,8 +30,9 @@ queue without a word, for as long as its client lived.
   `worker_filter` give the `--filter` values; the first two refuse anything but a valid job id.
 - `docker_cleanup.teardown(docker, job_id)`: lists containers, networks, volumes and images
   under `job_filter` and `project_filter`, removes those ids (`rm --force --volumes` for
-  containers) and lists again, up to 3 passes; `DockerError` if anything stays. Images found
-  this way are the ones built for the job, with a tag only it uses.
+  containers) and lists again, up to 3 passes; `DockerError` if anything stays. Images are
+  listed by `repository:tag`, and only tags from `compose.image_name` go, with a plain
+  `image rm`: no ids and no force. Another tag on the same image keeps it.
 - `docker_cleanup.labelled_jobs(docker, worker)`: job ids on containers, networks and volumes
   carrying `mulebox.job` and this worker's label.
 - `worker/cleaner.py`: `Cleaner.clean(project, job_id, uses_docker)` tears down, then removes

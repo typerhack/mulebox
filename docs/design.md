@@ -155,7 +155,8 @@ machine that also does other work. So the worker does not run them as they are:
   case. The cost: `setup` cannot produce something an image build needs.
 - **Teardown is the worker's**, after the unit ends and outside `timeout_min`, by label, on
   every outcome. Containers are not in the unit's control group, so nothing else stops
-  them. Pulled images stay; build layers stay in Docker's build cache.
+  them. Pulled images stay; build layers stay in Docker's build cache. A built image gets
+  a tag of this job only, and only that tag is removed, by name and without force.
 - **Refused, not repaired:** what would reach past the job (see `worker/compose_policy.py`).
   That guards against a CI file's assumptions, not against a hostile project: a job can run
   any command, and Docker access is root-equivalent.

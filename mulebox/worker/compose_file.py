@@ -10,7 +10,11 @@ collide with anything else on the machine, and writes nothing itself:
 - `container_name` goes, because a fixed name collides with the next job, and with any
   container of that name; the job is told, and `docker compose exec` still finds it;
 - networks and named volumes are named after the job's project and carry its labels, as do
-  containers and built images. That is what makes them findable after a crash.
+  containers and built images. That is what makes them findable after a crash;
+- an image the project builds gets a tag only this job has, also where the compose file
+  names one, and `build.tags` go. Two jobs would otherwise share `example-app:ci`, one could
+  run the other's build, and removing it could take a tag that is not the job's to remove.
+  A service that uses such an image without building it follows the new tag.
 
 What would reach past the job is refused first, by compose_policy.py. A read-only bind of a
 path outside the checkout gets `create_host_path: false` as well: Compose would otherwise
@@ -26,6 +30,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from mulebox.common import compose
 from mulebox.common.compose import ComposeError
 from mulebox.worker import compose_policy
 
@@ -103,6 +108,28 @@ def _rewrite_service(name: str, spec: Model, labels: Mapping[str, str],
                      f"collide; use `docker compose exec -T {name} ...`")
 
 
+def _plain(image: str) -> str:
+    return image.removesuffix(":latest")
+
+
+def _own_images(services: dict[str, Model], job_id: str, notes: list[str]) -> None:
+    owned: dict[str, str] = {}
+    for index, (name, spec) in enumerate(services.items(), 1):
+        if not spec.get("build"):
+            continue
+        wanted = spec.get("image")
+        tag = owned.get(_plain(wanted or "")) or compose.image_name(job_id, index, name)
+        spec["image"] = tag
+        spec["build"].pop("tags", None)
+        if wanted:
+            owned[_plain(wanted)] = tag
+            notes.append(f"the image {wanted} of service {name} is built as {tag}, so jobs "
+                         "cannot share it; use the service name, not the tag")
+    for spec in services.values():
+        if not spec.get("build") and _plain(spec.get("image") or "") in owned:
+            spec["image"] = owned[_plain(spec["image"])]
+
+
 def _rewrite_section(model: Model, section: str, labels: Mapping[str, str]) -> None:
     project = model["name"]
     for key, spec in (model.get(section) or {}).items():
@@ -111,12 +138,13 @@ def _rewrite_section(model: Model, section: str, labels: Mapping[str, str]) -> N
                                "labels": {**(spec.get("labels") or {}), **labels}}
 
 
-def rewrite(model: Model, project: str, labels: Mapping[str, str],
+def rewrite(model: Model, job_id: str, labels: Mapping[str, str],
             assigned: Mapping[str, int], checkout: Path) -> tuple[Model, list[str]]:
     """The model a job runs, plus notes for its log. ComposeError for what is refused."""
     result, notes = copy.deepcopy(model), []
-    result["name"] = project
+    result["name"] = compose.project_name(job_id)
     compose_policy.check(result, checkout)
+    _own_images(_services(result), job_id, notes)
     for name, spec in _services(result).items():
         _rewrite_service(name, spec, labels, assigned, checkout, notes)
     for section in ("networks", "volumes"):

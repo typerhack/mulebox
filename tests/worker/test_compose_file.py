@@ -8,8 +8,9 @@ from mulebox.common.compose import ComposeError
 from mulebox.worker import compose_file
 from mulebox.worker.compose_file import Port, published_ports, rewrite
 
+JOB_ID = "job-01M6JW0YXQ5TASH2X7D95J4H8Z"
 PROJECT = "mulebox-job-01m6jw0yxq5tash2x7d95j4h8z"
-LABELS = {"mulebox.job": "job-01M6JW0YXQ5TASH2X7D95J4H8Z", "mulebox.worker": "build-1"}
+LABELS = {"mulebox.job": JOB_ID, "mulebox.worker": "build-1"}
 
 
 def model(**service):
@@ -25,7 +26,7 @@ def tcp(target, published="8000", **extra):
 def run(data, assigned=None, checkout="/jobs/app/job/src"):
     from pathlib import Path
 
-    return rewrite(data, PROJECT, LABELS, assigned or {}, Path(checkout))
+    return rewrite(data, JOB_ID, LABELS, assigned or {}, Path(checkout))
 
 
 def test_port_variables():

@@ -104,7 +104,7 @@ def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str
         final = _config(docker, build_env({**fixed, **port_env}), src)
         labels = {compose.LABEL_JOB: job_id, compose.LABEL_WORKER: worker}
         checkout = Path(os.path.realpath(src))
-        model, notes = compose_file.rewrite(final, project, labels, assigned, checkout)
+        model, notes = compose_file.rewrite(final, job_id, labels, assigned, checkout)
     except DockerError as exc:
         raise ComposeError(f"the compose files cannot be used: {exc}") from exc
     generated.write_text(json.dumps(model, indent=1), encoding="utf-8")

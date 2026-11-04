@@ -153,7 +153,9 @@ timeout_min: 30
 
 mulebox starts the containers (`docker compose up --detach --wait`) before `setup`, inside
 the job. Every job gets its own containers, networks and volumes. All of them are removed
-when the job ends, however it ends; pulled images and build layers stay as cache.
+when the job ends, however it ends; pulled images and build layers stay as cache. An image
+the project builds gets a tag of this job only, whatever `image:` says, so reach it through
+the service name (`docker compose exec`), not by a tag in `docker run`.
 
 - **`docker compose exec -T <service> ...`** works as it is, from any folder. Use `-T`: a job
   has no terminal. Do not add `-f` or `-p`, and do not run `up` or `down`.

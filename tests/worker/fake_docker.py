@@ -66,7 +66,9 @@ class FakeDocker:
     def _list(self, kind, args):
         filters = [args[i + 1] for i, word in enumerate(args) if word == "--filter"]
         matches = [r for r in self.resources if r.kind == kind and _matches(r, filters)]
-        if "--format" in args:
+        if kind == "images":  # listed by repository:tag, one line per tag
+            lines = [r.rid for r in matches]
+        elif "--format" in args:
             lines = [r.labels.get("mulebox.job", "") for r in matches]
         else:
             lines = [r.rid for r in matches]

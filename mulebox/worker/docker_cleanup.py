@@ -4,9 +4,10 @@ The rule that matters: something is removed only because a docker listing, filte
 exact labels of one job (common/compose.py), returned its id. There is no other way in:
 no prune, no removal by name, nothing derived from what looks unused. That leaves
 everything else on the machine alone, including stopped containers, other volumes, and
-images, which stay as cache. The one image exception is an image built for this job: it
-carries the job's label and its tag exists for this job only, while the layers stay in
-Docker's build cache.
+images, which stay as cache. The one image exception is an image built for this job. There
+the label alone is not enough, since another tag can sit on the same image: what goes is the
+job's own tag (`compose.owns_image`), by name and without force, so Docker only drops that
+tag if another exists and refuses if a container uses it. The layers stay in the build cache.
 
 A normal end and a crash take the same path, so the crash path runs on every job. After
 removing, the listing runs again, and teardown only returns when it comes back empty:
@@ -14,7 +15,7 @@ compose killed mid-`up` can still leave the daemon finishing a container. Resour
 depend on each other go in order (containers, then what they use), and a failure is
 logged and retried on the next pass; if something is still there at the end, DockerError
 is raised and the agent tries again. An image alone does not hold a job back: it is a
-leftover tag, and another job can be using it if the compose file names its own tag.
+leftover tag, and the machine works the same with it.
 """
 
 from __future__ import annotations
@@ -29,6 +30,7 @@ from mulebox.worker.docker import Docker, DockerError
 LOG = get_logger("worker.docker_cleanup")
 PASSES = 3
 _JOB_LABEL_FORMAT = '{{.Label "' + compose.LABEL_JOB + '"}}'
+_IMAGE_REFERENCE_FORMAT = "{{.Repository}}:{{.Tag}}"
 
 
 @dataclass(frozen=True)
@@ -42,7 +44,7 @@ KINDS = (
     Kind("containers", ("ps", "--all", "--quiet", "--no-trunc"), ("rm", "--force", "--volumes")),
     Kind("networks", ("network", "ls", "--quiet", "--no-trunc"), ("network", "rm")),
     Kind("volumes", ("volume", "ls", "--quiet"), ("volume", "rm")),
-    Kind("images", ("image", "ls", "--quiet", "--no-trunc"), ("image", "rm", "--force")),
+    Kind("images", ("image", "ls", "--format", _IMAGE_REFERENCE_FORMAT), ("image", "rm")),
 )
 # What can be listed with the job's label as text. Images cannot, and an image alone is
 # never all that is left of a job: its folder is still there, and that is enumerated too.
@@ -56,6 +58,8 @@ def _found(docker: Docker, job_id: str) -> list[tuple[Kind, list[str]]]:
         ids: list[str] = []
         for exact in (compose.job_filter(job_id), compose.project_filter(job_id)):
             ids += docker.lines(*kind.list_args, "--filter", exact)
+        if kind.name == "images":
+            ids = [reference for reference in ids if compose.owns_image(job_id, reference)]
         if ids:
             found.append((kind, list(dict.fromkeys(ids))))
     return found

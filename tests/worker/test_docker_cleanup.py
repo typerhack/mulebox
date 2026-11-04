@@ -27,10 +27,20 @@ def docker(daemon):
     return Docker(daemon)
 
 
+def image_of(job_id):
+    return f"{compose.image_name(job_id, 1, 'api')}:latest"
+
+
 def add_job(daemon, job_id):
     labels = job_labels(job_id)
-    for kind in ("containers", "networks", "volumes", "images"):
+    for kind in ("containers", "networks", "volumes"):
         daemon.add_labelled(kind, f"{kind}-{job_id}", labels)
+    daemon.add_labelled("images", image_of(job_id), labels)
+
+
+def created(job_id):
+    return {f"{kind}-{job_id}" for kind in ("containers", "networks", "volumes")} | {
+        image_of(job_id)}
 
 
 def add_foreign(daemon):
@@ -52,8 +62,7 @@ def test_teardown_removes_all_four_kinds_and_nothing_else(daemon, docker):
     add_foreign(daemon)
     before = set(daemon.left())
     docker_cleanup.teardown(docker, job_id)
-    assert before - set(daemon.left()) == {f"{k}-{job_id}" for k in
-                                           ("containers", "networks", "volumes", "images")}
+    assert before - set(daemon.left()) == created(job_id)
     assert not any(other in r for c in daemon.removals() for r in c if job_id not in r)
 
 
@@ -126,7 +135,24 @@ def test_an_image_alone_does_not_hold_the_job(daemon, docker):
     add_job(daemon, job_id)
     daemon.fail_remove["images"] = 99
     docker_cleanup.teardown(docker, job_id)
-    assert daemon.left() == [f"images-{job_id}"]
+    assert daemon.left() == [image_of(job_id)]
+
+
+def test_a_tag_on_the_same_image_that_is_not_the_jobs_stays(daemon, docker):
+    job_id = new_id("job")
+    add_job(daemon, job_id)
+    daemon.add_labelled("images", "example-app:ci", job_labels(job_id))
+    daemon.add_labelled("images", "<none>:<none>", job_labels(job_id))
+    docker_cleanup.teardown(docker, job_id)
+    assert sorted(daemon.left()) == ["<none>:<none>", "example-app:ci"]
+
+
+def test_an_image_goes_by_its_tag_and_never_by_force(daemon, docker):
+    job_id = new_id("job")
+    add_job(daemon, job_id)
+    docker_cleanup.teardown(docker, job_id)
+    image_calls = [call for call in daemon.removals() if call[:2] == ("image", "rm")]
+    assert image_calls == [("image", "rm", image_of(job_id))]
 
 
 def test_teardown_refuses_a_bad_id_before_any_call(daemon, docker):

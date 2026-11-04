@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.21.2 - 2026-11-04 - patch
+- A built image gets a tag only its job has, whatever `image:` and `build.tags` say; services
+  using that image follow. Cleanup removes that tag by name, without force, not the image
+  by id, so a tag someone else put on the same image survives.
+
 ## 0.21.1 - 2026-11-04 - patch
 - A read-only bind outside the checkout must already exist, and gets `create_host_path: false`.
   Compose would otherwise create the folder on the build machine, and nothing removes it.

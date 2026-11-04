@@ -24,6 +24,7 @@ LABEL_COMPOSE_PROJECT = "com.docker.compose.project"
 RESERVED_ENV = ("COMPOSE_FILE", "COMPOSE_PATH_SEPARATOR", "COMPOSE_PROJECT_NAME")
 _SEPARATOR = ":"  # the separator of COMPOSE_FILE on Linux
 _FILE_RE = re.compile(r"[A-Za-z0-9._/-]+")
+_NOT_IN_A_TAG = re.compile(r"[^a-z0-9]+")
 
 
 class ComposeError(MuleboxError):
@@ -63,6 +64,17 @@ def project_name(job_id: str) -> str:
     """The job's Compose project name. Compose wants lowercase, and a ULID has one case, so
     lowering it keeps the name unique."""
     return f"mulebox-{_checked(job_id).lower()}"
+
+
+def image_name(job_id: str, index: int, service: str) -> str:
+    """The tag of an image built for this job. Only this job has it, so only it removes it."""
+    slug = _NOT_IN_A_TAG.sub("-", service.lower()).strip("-")
+    return f"{project_name(job_id)}-{index}-{slug}"
+
+
+def owns_image(job_id: str, reference: str) -> bool:
+    """True if a `repository:tag` is one `image_name` gave this job."""
+    return reference.startswith(f"{project_name(job_id)}-")
 
 
 def job_filter(job_id: str) -> str:
