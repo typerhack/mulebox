@@ -34,7 +34,12 @@ def _names(reader: Reader, field: str, env: dict[str, str], for_compose: bool) -
 
 def env_values(reader: Reader, files: tuple[str, ...]) -> dict[str, str]:
     """`env:` values for the job: throwaway CI values; names checked, no overriding PATH/HOME."""
-    return _names(reader, "env", reader.string_map("env"), bool(files))
+    env = _names(reader, "env", reader.string_map("env"), bool(files))
+    later = env_rules.later_reference(env)
+    if later:
+        reader.fail(f"env.{later[0]}", f"uses ${{{later[1]}}}, which comes later in the file; "
+                    f"entries are read in file order, so move {later[1]} above {later[0]}")
+    return env
 
 
 def job_env(reader: Reader) -> dict[str, str]:

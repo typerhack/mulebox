@@ -202,3 +202,20 @@ def test_a_compose_file_a_worker_would_refuse_fails_before_any_upload(fake, in_p
     assert cli.main(["doctor"]) == 1
     assert "volumes data is external" in capsys.readouterr().out
     assert [r["type"] for r in fake.requests()] == ["machines"]
+
+
+LATER = "project: example-app\njobs:\n  check: x\nenv:\n  URL: ${HOST}\n  HOST: db\n"
+
+
+def test_a_later_env_entry_exits_2_before_anything_runs(tmp_path, monkeypatch, capsys):
+    (tmp_path / ".mulebox.yml").write_text(LATER)
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MULEBOX_CONFIG", str(tmp_path / "none.toml"))
+    assert cli.main(["doctor"]) == 2
+    assert "move HOST above URL" in capsys.readouterr().out
+
+
+def test_a_name_only_the_machine_could_set_is_a_warning():
+    project = ProjectConfig(project="example-app", jobs={"check": "x"}, env={"A": "${MISSING}"})
+    found = doctor.env_references(project)
+    assert [f.level for f in found] == [doctor.WARN] and "job_env" in found[0].text

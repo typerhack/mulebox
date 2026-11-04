@@ -11,6 +11,7 @@ from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
 from mulebox.common.config import ProjectConfig
+from mulebox.common.env_rules import unknown_references
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 TOPIC_WIDTH = 9
@@ -23,6 +24,14 @@ class Finding:
     level: str
     topic: str
     text: str
+
+
+def env_references(project: ProjectConfig) -> list[Finding]:
+    """Names in `env:` this file cannot explain. Later entries never get here: they fail to
+    load. These may come from the machine's `job_env`; if not, the job cannot start."""
+    return [Finding(WARN, "env", f"{key} uses ${{{name}}}, which is no earlier env: entry and no "
+                    "mulebox variable; unless the machine's job_env sets it, the job cannot "
+                    "start (exit 5)") for key, name in unknown_references(project.env)]
 
 
 def versions(client: str, facts: Facts) -> list[Finding]:

@@ -43,3 +43,18 @@ def test_ordinary_names_are_fine(name):
 @pytest.mark.parametrize("name", ["PATH", "HOME", "USER", "SHELL", "MULEBOX_X"])
 def test_what_mulebox_sets_stays_refused(name):
     assert "set by mulebox" in env_rules.problem(name, False)
+
+
+def test_a_later_entry_is_found_and_an_earlier_one_is_not():
+    assert env_rules.later_reference({"A": "${B}", "B": "1"}) == ("A", "B")
+    assert env_rules.later_reference({"B": "1", "A": "${B}"}) is None
+
+
+def test_adding_to_the_machines_value_is_no_later_reference():
+    assert env_rules.later_reference({"NODE_OPTIONS": "${NODE_OPTIONS} --x"}) is None
+
+
+def test_only_what_the_machine_alone_could_set_is_unknown():
+    env = {"URL": "${MULEBOX_JOB_SLUG}-${MULEBOX_PORT_API_8000}-${MULEBOX_CACHE_PNPM}",
+           "MINE": "${URL}", "OPTS": "${OPTS} --x", "ELSE": "${NOT_SET}"}
+    assert env_rules.unknown_references(env) == [("OPTS", "OPTS"), ("ELSE", "NOT_SET")]

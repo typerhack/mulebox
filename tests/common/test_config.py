@@ -228,3 +228,11 @@ def test_env_values(tmp_path):
 @pytest.mark.parametrize("key", ["PATH", "HOME", "MULEBOX_JOB_ID", "1BAD", "A-B"])
 def test_env_rejects_reserved_or_bad_names(tmp_path, key):
     assert f"env.{key}" in str(error_for(tmp_path, ENV_BASE + f'env:\n  {key}: "x"\n'))
+
+
+def test_an_env_entry_using_a_later_one_is_a_config_error(tmp_path):
+    path = tmp_path / ".mulebox.yml"
+    path.write_text("project: example-app\njobs:\n  check: x\n"
+                    "env:\n  URL: http://${HOST}\n  HOST: db\n")
+    with pytest.raises(ConfigError, match=r"env\.URL.*move HOST above URL"):
+        load_project_config(path)

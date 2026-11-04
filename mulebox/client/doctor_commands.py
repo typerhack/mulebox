@@ -83,7 +83,8 @@ def _about_compose(project: ProjectConfig | None) -> list[Finding]:
 def examine() -> tuple[list[Finding], int]:
     """(findings, the exit code they call for)."""
     project, about_config = _project()
-    findings = [about_config, *_about_compose(project), *_about_skill()]
+    findings = [about_config, *(doctor.env_references(project) if project else ()),
+                *_about_compose(project), *_about_skill()]
     code = report.EXIT_USAGE if project is None else 0
     try:
         facts = machine_facts(Remote(load_client_config()))

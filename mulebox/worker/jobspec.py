@@ -19,11 +19,11 @@ reaches the program unchanged.
 from __future__ import annotations
 
 import os
-import re
 import shlex
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 
+from mulebox.common import env_rules
 from mulebox.common.errors import MuleboxError
 from mulebox.common.status import COMMAND, SETUP
 from mulebox.worker import steps
@@ -55,7 +55,7 @@ def build_argv(setup: str | None, argv: Sequence[str], first: Sequence[str] = ()
     return ("bash", "-c", build_script(setup, argv, first, marker))
 
 
-_REF = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+_REF = env_rules.REFERENCE
 _PORT_PREFIX = "MULEBOX_PORT_"
 
 

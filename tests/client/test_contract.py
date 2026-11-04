@@ -116,3 +116,13 @@ def test_cli_broken_config_is_an_error_not_an_empty_contract(tmp_path, monkeypat
     monkeypatch.chdir(tmp_path)
     code, out = run(capsys)
     assert code == 2 and out.out == "" and ".mulebox.yml" in out.err
+
+
+@pytest.mark.parametrize("command", [["contract"], ["check"], ["run", "--", "true"]])
+def test_a_later_env_entry_exits_2_with_nothing_sent(command, tmp_path, monkeypatch, capsys):
+    (tmp_path / ".mulebox.yml").write_text(
+        "project: example-app\njobs:\n  check: x\nenv:\n  URL: ${HOST}\n  HOST: db\n")
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MULEBOX_CONFIG", str(tmp_path / "none.toml"))
+    assert main(command) == 2
+    assert "move HOST above URL" in capsys.readouterr().err

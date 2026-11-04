@@ -233,6 +233,9 @@ Fixes from the first real project reports (2026-11-04). Tested with unit tests a
 coordinator code; none of this has run on a build machine yet.
 - [~] M10.1 `env:` entries are read in file order: the order travels beside the sorted JSON
       (`env_order`, schema 7). Open: a real project with one entry using an earlier one.
+- [~] M10.2 A later `env:` reference fails on the client with exit 2, before upload, in `check`,
+      `run`, `contract` and `doctor`; `doctor` warns about names only `job_env` could set.
+      Open: seen on a real project's file.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

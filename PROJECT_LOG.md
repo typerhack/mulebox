@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.3 - 2026-11-04 - patch
+- An `env:` entry using a later one is a config error on the client: exit 2 before any upload,
+  from `check`, `run`, `contract` and `doctor`. It used to reach the worker, where the job
+  could not start. A name the file does not explain may come from the machine's `job_env`, so
+  `doctor` warns and the worker still decides (exit 5).
+
 ## 0.36.2 - 2026-11-04 - patch
 - `env:` entries are read in file order, as the docs say. They were not: JSON objects are
   sorted on the wire and in the store, so an entry using an earlier one failed whenever the
