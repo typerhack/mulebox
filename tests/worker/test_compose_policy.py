@@ -193,7 +193,8 @@ def test_ordinary_deploy_limits_are_fine():
     "/run/containerd/containerd.sock", "/run/containerd", "/run/crio/crio.sock", "/run/crio",
     "/var/run/crio/crio.sock", "/run/podman/podman.sock", "/run/podman",
     "/run/k3s/containerd", "/run/buildkit", f"/run/user/{os.getuid()}/podman",
-    f"/run/user/{os.getuid()}", "/run/user",
+    f"/run/user/{os.getuid()}", "/run/user", f"/run/user/{os.getuid()}/buildkit",
+    "/var/run/anything-else",
 ])
 def test_other_runtimes_are_refused_whether_or_not_they_exist_here(source):
     volume = {"type": "bind", "source": source, "target": "/s", "read_only": True}

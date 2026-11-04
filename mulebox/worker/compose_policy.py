@@ -60,6 +60,7 @@ _RUNTIME_SOCKETS = tuple(f"{run}/{socket}" for run in ("/run", "/var/run") for s
     "docker.sock", "containerd/containerd.sock", "crio/crio.sock", "podman/podman.sock",
     "k3s/containerd/containerd.sock", "cri-dockerd.sock", "buildkit/buildkitd.sock",
     f"user/{os.getuid()}/docker.sock", f"user/{os.getuid()}/podman/podman.sock"))
+_RUN_FOLDERS = ("/run", "/var/run")
 _NETWORK_DRIVERS = (None, "bridge", "default")
 _VOLUME_DRIVERS = (None, "local")
 
@@ -77,6 +78,8 @@ def _holds_socket(source: Path) -> bool:
     symlink, or its folder may be, so what they lead to counts as well."""
     if _is_socket(source):
         return True
+    if any(is_within(source, Path(os.path.realpath(run))) for run in _RUN_FOLDERS):
+        return True  # sockets live here under names no list can hold
     spots = {Path(path) for path in _RUNTIME_SOCKETS}
     spots |= {Path(os.path.realpath(path)) for path in _RUNTIME_SOCKETS}
     spots |= {Path(os.path.realpath(os.path.dirname(path))) / Path(path).name
