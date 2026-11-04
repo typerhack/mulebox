@@ -65,7 +65,9 @@ a project set up for mulebox it says so, and section 2 is your next step.
 
 A job goes through stages: `prepare`, `environment`, `images`, `services`, `setup`, `command`,
 `cleanup`. A `status` reply lists them, with when each started and ended, its exit code and
-the last line of a failed one. The first four need no action from a project.
+the last line of a failed one. The first four need no action from a project. It also has
+`usual`, what passed runs of this job took, whole and per stage, or nothing if there is
+no history yet. Say "usually about 4 min" if that helps. It is no progress measure.
 
 ## 2. Setting up a project (`.mulebox.yml`)
 

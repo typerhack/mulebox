@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.30.0 - 2026-11-04 - minor
+- `status` replies give `usual`: the median length of a project's job and of each stage over
+  its last passed runs, or nothing without history. No percentage: a length from the past
+  does not say how far a running job has come.
+
 ## 0.29.0 - 2026-11-04 - minor
 - Job steps: a new table in the coordinator's store, schema version 4, holds one row per stage
   of a job: start, end, exit code, bytes downloaded, failing line. The worker reports them in

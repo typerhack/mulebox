@@ -42,6 +42,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (
     "CREATE INDEX IF NOT EXISTS jobs_kind ON jobs (kind, state, pinned_worker)",
+    "CREATE INDEX IF NOT EXISTS jobs_project ON jobs (project, job, seq)",
 )
 
 

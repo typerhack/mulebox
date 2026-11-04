@@ -12,7 +12,7 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import leases, needs, projects, queue, runner_api, steps, workers
-from mulebox.coordinator import worker_api
+from mulebox.coordinator import usual, worker_api
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -79,7 +79,9 @@ def status(req: Request) -> Message:
         place = queue.position(conn, job)
         reason = waiting_for(conn, job, req.now)
         rows = steps.for_job(conn, job["job_id"])
-    return req.reply(MessageType.STATUS_OK, status_body(job, place, reason, steps=rows))
+        typical = usual.usual(conn, job["project"], job["job"])
+    return req.reply(MessageType.STATUS_OK,
+                     status_body(job, place, reason, steps=rows, usual=typical))
 
 
 def cancel(req: Request) -> Message:

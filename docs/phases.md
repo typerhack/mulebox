@@ -160,6 +160,8 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
 - [~] M9.4 Job steps: `job_steps` table with a migration, reported by the worker, read through
       `status` and `common/status.py`. No view yet. Built 2026-11-04 (0.29.0): a compose job
       on a local Docker daemon. Open: a job on a build machine under systemd.
+- [~] M9.5 Usual duration of a project's job and of each stage, in `status` replies. Built
+      2026-11-04 (0.30.0), with tests. Open: seeing it on real history.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

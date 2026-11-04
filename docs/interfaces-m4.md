@@ -141,6 +141,10 @@ added by `migrate.py` with no change to `jobs`). `seq` orders them. Raw logs sta
   that has none). Inside the coordinator: `coordinator/steps.py`, `for_job(conn, job_id)`,
   which the dashboard can use with its read-only store. Pure helpers in `common/status.py`:
   `current_stage(job, steps)`, `step_duration_s(step, now)`, `failed_step(steps)`.
+- `coordinator/usual.py`: `usual(conn, project, job)` gives `{"runs", "job_s", "stages":
+  {stage: seconds}}`, or None without history: medians over the last 20 passed runs that have
+  rows. A `status` reply has it as `usual` (null without history). It gives lengths, not
+  progress: a client may say "usually about 4 min", and must not turn it into a percentage.
 - `timeout_min` still ends the job, whatever the stage. The rows are enough to turn that into
   a warning later: they say how long each stage took on this project.
 
