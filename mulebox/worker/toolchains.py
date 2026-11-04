@@ -70,11 +70,18 @@ def path_for(paths: NodePaths, toolchain: Mapping[str, str]) -> list[Path]:
     for name, version in toolchain.items():
         bin_dir = toolchain_dir(paths, name, version) / "bin"
         if not bin_dir.is_dir():
-            raise ToolchainError(
-                f"toolchain {name} {version} is not installed on this worker; "
-                f"run `mulebox toolchain install {name} {version}` on it")
+            raise ToolchainError(_not_installed(paths, name, version))
         bins.append(bin_dir)
     return bins
+
+
+def _not_installed(paths: NodePaths, name: str, version: str) -> str:
+    """What is missing, what is there instead, and how to get what was asked for."""
+    have = [v for n, v in installed(paths) if n == name]
+    choice = (f"installed {name} versions: {', '.join(have)}; use one of them in .mulebox.yml"
+              if have else f"no {name} version is installed")
+    return (f"toolchain {name} {version} is not installed on this worker ({choice}), or "
+            f"run `mulebox toolchain install {name} {version}` on it")
 
 
 def installed(paths: NodePaths) -> list[tuple[str, str]]:

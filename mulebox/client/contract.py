@@ -62,6 +62,8 @@ RULES = (
     "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",
     "waiting in the queue is normal; do not cancel and resubmit to speed it up",
     "do not cancel other people's jobs",
+    "a missing toolchain error lists the versions the machine has: switch to one only if it "
+    "matches the project, otherwise ask the user to install the version the project needs",
     "show the user a feedback draft and get their approval before mulebox feedback post",
 )
 

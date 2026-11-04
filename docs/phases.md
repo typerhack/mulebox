@@ -145,6 +145,13 @@ Order agreed with the user on 2026-11-04.
       dropped: it would hold nothing beyond `.mulebox.yml` and that history, so it would
       only be a second copy. Done 2026-11-04 (0.13.0): run against a real coordinator.
 
+## M8: Agents at work
+From real use by agents on 2026-11-04: an agent sat blocked on `mulebox check` for the whole
+job, a missing toolchain showed only after submission, and the error offered no alternative.
+Marked `[~]` until checked on a real machine.
+- [~] M8.1 A missing toolchain error lists the versions the machine has. Tested 2026-11-04
+      (0.25.4) by unit tests only. Open: seen in a real job.
+
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)

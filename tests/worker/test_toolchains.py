@@ -61,6 +61,21 @@ def test_not_listed_in_shasums(paths, node_dist):
         toolchains.install(paths, "node", VERSION, fetch=node_dist, arch="x64")
 
 
+def test_missing_version_lists_what_the_machine_has(paths):
+    for version in ("22.9.0", "20.18.1"):
+        (toolchains.toolchain_dir(paths, "node", version) / "bin").mkdir(parents=True)
+    with pytest.raises(toolchains.ToolchainError) as caught:
+        toolchains.path_for(paths, {"node": "22.22.3"})
+    text = str(caught.value)
+    assert "installed node versions: 20.18.1, 22.9.0;" in text
+    assert "mulebox toolchain install node 22.22.3" in text
+
+
+def test_missing_with_nothing_installed_says_so(paths):
+    with pytest.raises(toolchains.ToolchainError, match="no pnpm version is installed"):
+        toolchains.path_for(paths, {"pnpm": "11.22.0"})
+
+
 def test_path_for_missing_names_the_install_command(paths):
     with pytest.raises(ToolchainError, match=r"mulebox toolchain install pnpm 11\.22\.0"):
         toolchains.path_for(paths, {"pnpm": "11.22.0"})

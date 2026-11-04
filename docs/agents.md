@@ -109,7 +109,9 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      If a check truly needs a real credential, stop and ask the user.
    - **Toolchain versions** must match what the project uses (`.nvmrc`, `packageManager`,
      `engines`, the CI workflow). If the build machine lacks one, the job fails with a
-     message naming `mulebox toolchain install <name> <version>`; ask the user to run it.
+     message listing the versions it has and naming `mulebox toolchain install <name>
+     <version>`. Switch to a listed version only if it matches the project; otherwise ask
+     the user to run the install.
    - `setup` runs before every job in the same shell; keep it to dependency install.
    - A job may span several lines (`check: |`). The first line that fails ends it, as in a
      GitHub Actions `run:` step.

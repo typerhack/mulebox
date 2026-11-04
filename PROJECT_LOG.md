@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.25.4 - 2026-11-04 - patch
+- A missing toolchain error lists the versions the machine has (M8.1). It only named the
+  install command, so an agent had no alternative to offer. Small change in
+  `worker/toolchains.py`.
+
 ## 0.25.3 - 2026-11-04 - patch
 - A template tracked in git (`.env.example`, `.sample`, `.template`, `.dist`) is now uploaded:
   a real project builds `.env` from one in `setup` and could not start without it. Untracked
