@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.19.0 - 2026-11-04 - minor
+- `needs: [playwright]`: jobs share one browser folder in the cache root, so a browser is
+  fetched once per machine. A worker offers the capability once a person has installed the
+  system libraries, which takes root. `worker/runspec.py` keeps this out of the agent loop.
+
 ## 0.18.0 - 2026-11-04 - minor
 - `compose:` works. mulebox merges the project's files with `docker compose config`, rewrites
   the result (`worker/compose_file.py`) and gives the job only that file, through

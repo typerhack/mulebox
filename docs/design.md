@@ -160,6 +160,16 @@ machine that also does other work. So the worker does not run them as they are:
   That guards against a CI file's assumptions, not against a hostile project: a job can run
   any command, and Docker access is root-equivalent.
 
+## Browser tests
+
+Browsers run on the worker, not in a container: that is how a project's own Playwright
+setup works, and it reaches `compose:` containers through their loopback ports. A worker
+offers `playwright` once a person has installed the system libraries, which takes root, so
+mulebox cannot do it. `needs: [playwright]` sets `PLAYWRIGHT_BROWSERS_PATH` to one folder in
+the cache root, shared by all jobs, so a version is fetched once. The job asks for its
+browser itself, which keeps it matched to the project's lockfile, and mulebox has no list
+of browser versions to maintain. mulebox never deletes from that folder.
+
 ## Client commands
 
 ```text

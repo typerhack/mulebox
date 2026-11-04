@@ -43,5 +43,8 @@ class NodePaths:
             raise UnsafePath(f"job id {job_id!r} is not a valid mulebox job id")
         return self.project_dir(project) / job_id
 
+    def browsers_dir(self) -> Path:
+        return self.cache / "playwright"
+
     def toolchains_dir(self) -> Path:
         return self.cache / "toolchains"

@@ -79,6 +79,11 @@ sudo loginctl enable-linger alice
   on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to
   run `compose:` projects, then restart the worker. mulebox fetches one small helper image
   the first time, and never removes images.
+- Add `playwright` for browser tests, once this has run on the machine, which needs root:
+  `sudo npx playwright install-deps chromium` (node comes from any install, for example a
+  mulebox toolchain). Browsers themselves are fetched by jobs into
+  `<cache>/playwright`, once per version, and are kept. They are large: on a slow network,
+  the first job with a new Playwright version takes minutes.
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).

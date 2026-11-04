@@ -181,6 +181,27 @@ compose file rather than changing how the project runs locally.
 If mulebox says no build machine offers `docker`, tell the user: a person has to add it
 to the build machine's `capabilities`.
 
+## 2b. Browser tests (Playwright)
+
+Add `playwright` to `needs`. The build machine must offer it: that means a person has
+installed the system libraries browsers use. mulebox then sets `PLAYWRIGHT_BROWSERS_PATH` to
+one folder on the build machine, so a browser is downloaded once, not for every job.
+
+```yaml
+needs: [playwright]
+env:
+  BASE_URL: http://127.0.0.1:${MULEBOX_PORT_API_8000}
+jobs:
+  e2e: pnpm exec playwright install chromium && pnpm exec playwright test
+```
+
+`playwright install chromium` does nothing once that version is there, so keep it in the
+job: it is what keeps the version in step with the project's lockfile. Do not use
+`install --with-deps`: it needs root, which a job does not have. Browsers run on the
+build machine, not in a container, so they reach containers through `127.0.0.1` and the
+`MULEBOX_PORT_...` variable. Read the URL from the environment in `playwright.config`, and
+do not let Playwright's `webServer` start something on a fixed port.
+
 ## 3. Moving GitHub Actions to mulebox runners
 
 A repository's CI can run on the build machine through the same queue. Do this only when

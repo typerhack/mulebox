@@ -29,10 +29,10 @@ from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker import compose_job, jobspec, toolchains, workspace
+from mulebox.worker import runspec, toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
-from mulebox.worker.executor import Executor, ExecutorError, RunSpec, unit_name
+from mulebox.worker.executor import Executor, RunSpec
 from mulebox.worker.job import ActiveJob, outcome_for
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.worker.logtail import LogTailer
@@ -53,9 +53,9 @@ class Agent:
         self.node, self.link, self.executor, self.paths = node, link, executor, paths
         self.clock = clock
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
-        self.docker = docker
         self.cleaner = Cleaner(paths, node.name, docker)
         self.ports = PortPool()
+        self.machine = runspec.Machine(node.name, paths, docker, self.ports)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
         self.retry_at = 0.0
@@ -150,30 +150,10 @@ class Agent:
         src = workspace.prepare(self.paths, job.project, job.job_id, snapshot)
         remove_tree(snapshot, self.paths.roots)
         bins = toolchains.path_for(self.paths, claim.get("toolchain") or {})
-        values = dict(claim.get("env") or {})
-        files = values.pop(compose.COMPOSE_FILES_KEY, None)
-
-        def environment(extra: dict[str, str]) -> dict[str, str]:
-            return jobspec.build_env(job.job_id, bins, project_env=values, extra=extra)
-
-        first: tuple[str, ...] = ()
-        extra: dict[str, str] = {}
-        if files is not None:
-            if self.docker is None:
-                raise ExecutorError("this worker has no Docker to run a compose: project")
-            ready = compose_job.prepare(self.docker, self.ports, job.job_id, self.node.name,
-                                        files, src, values, environment)
-            first, extra = ready.script, ready.extra_env
-            for note in ready.notes:
-                job.tailer.note(f"mulebox: {note}\n")
-        return RunSpec(
-            name=unit_name(job.job_id),
-            argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first),
-            cwd=src,
-            env=environment(extra),
-            log_path=log_path,
-            timeout_s=jobspec.timeout_seconds(claim["timeout_min"]),
-        )
+        spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins)
+        for note in notes:
+            job.tailer.note(f"mulebox: {note}\n")
+        return spec
 
     def _tend(self, job: ActiveJob, now: float) -> None:
         job.tailer.read_new()

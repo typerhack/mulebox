@@ -11,6 +11,7 @@ from mulebox.worker.jobspec import (
     build_argv,
     build_env,
     build_script,
+    port_references,
     timeout_seconds,
 )
 
@@ -41,6 +42,11 @@ def test_failed_setup_stops_the_script(tmp_path):
 
 def test_job_exit_code_is_kept(tmp_path):
     assert subprocess.run(list(build_argv(None, ["bash", "-c", "exit 7"])), cwd=tmp_path).returncode == 7
+
+
+def test_port_references_finds_only_ports():
+    env = {"A": "${MULEBOX_PORT_API_80}/${MULEBOX_JOB_ID}", "B": "plain"}
+    assert port_references(env) == ["MULEBOX_PORT_API_80"]
 
 
 def test_lines_from_the_worker_run_before_setup():

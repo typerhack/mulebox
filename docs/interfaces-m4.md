@@ -73,3 +73,11 @@ comma in the path is refused because it would end the `--mount` value.
 - `worker/ports.py`: `PortPool(free, pick)`: `take(job_id, names)`, `release(job_id)`. Range
   20000-29999, random start, proven free by a bind on 127.0.0.1, held until the job is clean.
 - A compose problem found before the unit starts fails the job with the reason in its log.
+
+## Browser tests
+
+`worker/runspec.py`: `build(machine, job_id, claim, src, log_path, bins) -> (RunSpec, notes)`
+holds what a job's capabilities add. With `playwright` in `needs`, the job gets
+`PLAYWRIGHT_BROWSERS_PATH=<cache>/playwright` (`NodePaths.browsers_dir`), created through
+safepath. A value in `env:` cannot override it. No other job gets the variable, so
+projects that rely on Playwright's default folder are not affected.
