@@ -1,5 +1,8 @@
 """What a compose model may not do. Models are shaped as `docker compose config` prints them."""
 
+import os
+import socket
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -130,7 +133,7 @@ def test_unknown_volume_types_are_refused(kind):
                                     "/"])
 def test_a_folder_holding_the_socket_is_refused_even_read_only(source):
     volume = {"type": "bind", "source": source, "target": "/s", "read_only": True}
-    assert "Docker socket" in refused(model(volumes=[volume]))
+    assert "socket" in refused(model(volumes=[volume]))
 
 
 def test_relabelling_an_outside_folder_is_refused():
@@ -163,7 +166,7 @@ def test_external_secrets_and_configs_are_refused(section):
 @pytest.mark.parametrize("section", ["secrets", "configs"])
 def test_a_secret_cannot_be_the_docker_socket(section):
     data = {**model(), section: {"s": {"file": "/var/run/docker.sock"}}}
-    assert "Docker socket" in refused(data)
+    assert "socket" in refused(data)
 
 
 def test_a_refusal_names_the_service():
@@ -184,3 +187,52 @@ def test_host_hardware_through_deploy_is_refused(kind, key, value):
 def test_ordinary_deploy_limits_are_fine():
     compose_policy.check(model(deploy={"replicas": 1, "resources": {
         "limits": {"cpus": "1", "memory": "512M"}, "reservations": {"memory": "128M"}}}), CHECKOUT)
+
+
+@pytest.mark.parametrize("source", [
+    "/run/containerd/containerd.sock", "/run/containerd", "/run/crio/crio.sock", "/run/crio",
+    "/var/run/crio/crio.sock", "/run/podman/podman.sock", "/run/podman",
+    "/run/k3s/containerd", "/run/buildkit", f"/run/user/{os.getuid()}/podman",
+    f"/run/user/{os.getuid()}", "/run/user",
+])
+def test_other_runtimes_are_refused_whether_or_not_they_exist_here(source):
+    volume = {"type": "bind", "source": source, "target": "/s", "read_only": True}
+    assert "socket" in refused(model(volumes=[volume]))
+
+
+@pytest.fixture
+def unix_socket():
+    """A short path: Unix socket paths are limited, and pytest's are long."""
+    with tempfile.TemporaryDirectory(dir="/tmp", prefix="mb") as folder:
+        path = Path(folder) / "any.sock"
+        with socket.socket(socket.AF_UNIX) as server:
+            server.bind(str(path))
+            yield path
+
+
+@pytest.mark.parametrize("read_only", [True, False])
+def test_any_unix_socket_is_refused_by_its_type(unix_socket, read_only):
+    volume = {"type": "bind", "source": str(unix_socket), "target": "/s", "read_only": read_only}
+    assert "socket" in refused(model(volumes=[volume]))
+
+
+def test_a_socket_inside_the_checkout_is_refused_too(unix_socket):
+    volume = {"type": "bind", "source": str(unix_socket), "target": "/s"}
+    with pytest.raises(ComposeError, match="socket"):
+        compose_policy.check(model(volumes=[volume]), unix_socket.parent)
+
+
+def test_a_symlink_to_a_socket_is_refused(unix_socket, tmp_path):
+    link = tmp_path / "innocent"
+    link.symlink_to(unix_socket)
+    volume = {"type": "bind", "source": str(link), "target": "/s", "read_only": True}
+    assert "socket" in refused(model(volumes=[volume]))
+
+
+def test_a_secret_cannot_be_a_socket(unix_socket):
+    assert "socket" in refused({**model(), "secrets": {"s": {"file": str(unix_socket)}}})
+
+
+def test_an_ordinary_read_only_folder_is_fine(tmp_path):
+    volume = {"type": "bind", "source": str(tmp_path), "target": "/s", "read_only": True}
+    compose_policy.check(model(volumes=[volume]), CHECKOUT)

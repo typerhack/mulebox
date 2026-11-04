@@ -14,6 +14,7 @@ a job can run any command, and Docker access is root-equivalent (docs/design.md,
 from __future__ import annotations
 
 import os
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -53,23 +54,40 @@ _BUILD_REFUSED = {
     "cache_to": "writes its cache outside the job (cache_to:)",
 }
 _DEPLOY_REFUSED = ("devices", "generic_resources")
-_SOCKETS = ("/run/docker.sock", "/var/run/docker.sock")
+# Only for a folder as a source: a socket itself is found by its type. A folder can be huge,
+# so these are the places to look at, on both spellings of the run directory.
+_RUNTIME_SOCKETS = tuple(f"{run}/{socket}" for run in ("/run", "/var/run") for socket in (
+    "docker.sock", "containerd/containerd.sock", "crio/crio.sock", "podman/podman.sock",
+    "k3s/containerd/containerd.sock", "cri-dockerd.sock", "buildkit/buildkitd.sock",
+    f"user/{os.getuid()}/docker.sock", f"user/{os.getuid()}/podman/podman.sock"))
 _NETWORK_DRIVERS = (None, "bridge", "default")
 _VOLUME_DRIVERS = (None, "local")
 
 
+def _is_socket(path: Path) -> bool:
+    try:
+        return stat.S_ISSOCK(os.stat(path).st_mode)
+    except OSError:
+        return False
+
+
 def _holds_socket(source: Path) -> bool:
-    """True if `source` is a Docker socket, or a folder with one in it. The socket may be a
-    symlink, so its folder and its target both count."""
-    spots = {Path(os.path.realpath(path)) for path in _SOCKETS}
-    spots |= {Path(os.path.realpath(os.path.dirname(path))) / "docker.sock" for path in _SOCKETS}
-    return source.name == "docker.sock" or any(is_within(spot, source) for spot in spots)
+    """True if `source` is a Unix socket of any kind, or a folder holding a runtime's socket.
+    A read-only mount does not stop anyone talking to a socket. A known socket may be a
+    symlink, or its folder may be, so what they lead to counts as well."""
+    if _is_socket(source):
+        return True
+    spots = {Path(path) for path in _RUNTIME_SOCKETS}
+    spots |= {Path(os.path.realpath(path)) for path in _RUNTIME_SOCKETS}
+    spots |= {Path(os.path.realpath(os.path.dirname(path))) / Path(path).name
+              for path in _RUNTIME_SOCKETS}
+    return any(is_within(spot, source) for spot in spots)
 
 
 def _outside_problem(path: str) -> str | None:
     """Reading this host path from a job: what is wrong with it, or None."""
     if _holds_socket(Path(os.path.realpath(path))):
-        return f"mounts the Docker socket through {path}"
+        return f"mounts a container runtime or other Unix socket through {path}"
     return None
 
 

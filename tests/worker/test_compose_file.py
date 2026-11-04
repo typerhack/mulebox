@@ -217,7 +217,7 @@ def test_a_read_only_bind_outside_is_allowed():
 
 @pytest.mark.parametrize("read_only", [False, True])
 def test_the_docker_socket_is_refused_even_read_only(read_only):
-    with pytest.raises(ComposeError, match="Docker socket"):
+    with pytest.raises(ComposeError, match="socket"):
         run(model(volumes=[bind("/var/run/docker.sock", read_only=read_only)]))
 
 

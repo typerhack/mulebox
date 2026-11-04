@@ -190,7 +190,8 @@ These are refused with the reason, because they reach past the job:
 - builds with `network: host`, `privileged`, `entitlements`, `ssh` or `cache_to`;
 - `external` networks, volumes, secrets or configs; networks not on the bridge driver;
   volumes not on the local driver or on a host device;
-- the Docker socket, or a folder holding it, in any bind or file secret; writable bind
+- any Unix socket, or a folder holding a known runtime's socket (Docker, containerd, CRI-O,
+  podman, k3s, BuildKit), in any bind or file secret, read-only or not; writable bind
   mounts outside the checkout, and any bind outside it whose source does not exist on the
   build machine (mulebox never creates one there).
 

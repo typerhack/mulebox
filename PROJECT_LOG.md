@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.24.2 - 2026-11-04 - patch
+- A bind or file secret that is a Unix socket is refused by its file type, and a folder holding
+  a known runtime's socket by a list: Docker, containerd, CRI-O, podman, k3s, BuildKit. Only
+  Docker's was known, and a read-only mount does not stop anyone talking to a socket.
+
 ## 0.24.1 - 2026-11-04 - patch
 - Devices asked for through `deploy.resources` are refused, as `devices:` and `gpus:` already were.
 
