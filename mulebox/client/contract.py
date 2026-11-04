@@ -61,6 +61,8 @@ GIT = (
     "a job runs on a snapshot of the worktree: tracked and untracked files git does not "
     "ignore, so uncommitted changes are included and nothing needs committing first",
     "a stale warning means files changed while the job ran: run it again",
+    "a job has no git history: checks that read it, such as commitlint or a diff against main, "
+    "stay local",
 )
 COMPOSE = (
     "mulebox starts the compose files' containers before setup and removes them, with their "

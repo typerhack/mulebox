@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.7 - 2026-11-04 - patch
+- Docs from real project reports: a hardcoded database address and `network_mode: service:...`,
+  Playwright `--with-deps` in a project's own scripts, `COMPOSE_PROJECT_NAME` in CI scripts, and
+  git-based checks staying local because a job has no git history. The contract's git section
+  says the last one as well.
+
 ## 0.36.6 - 2026-11-04 - patch
 - `mulebox feedback draft`: the report of a title cut at the first `;` could not be reproduced;
   a test now pins that a title keeps its punctuation. What the code did cut was a long first

@@ -131,3 +131,7 @@ def test_a_later_env_entry_exits_2_with_nothing_sent(command, tmp_path, monkeypa
 def test_the_database_rule_is_about_shared_databases():
     rule = next(r for r in contract.RULES if "database" in r)
     assert "${MULEBOX_JOB_SLUG}" in rule and "shares" in rule and "compose service" in rule
+
+
+def test_git_says_a_job_has_no_history():
+    assert any("no git history" in line for line in contract.GIT)

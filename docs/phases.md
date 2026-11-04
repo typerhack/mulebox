@@ -242,6 +242,9 @@ coordinator code; none of this has run on a build machine yet.
 - [x] M10.5 `mulebox feedback draft` keeps a title's punctuation and cuts a long one at a word.
       A cut at `;` could not be reproduced: the old code cut only at 100 characters, wherever
       that fell. (2026-11-04, 0.36.6)
+- [x] M10.6 Docs: hardcoded database addresses and `network_mode: service:...`, Playwright
+      `--with-deps` in a project's scripts, `COMPOSE_PROJECT_NAME` in CI scripts, and git-based
+      checks that stay local. The contract says the last one too. (2026-11-04, 0.36.7)
 - [x] M10.3 The contract's database rule is about shared databases: a job's own compose service
       needs no `${MULEBOX_JOB_SLUG}`. (2026-11-04, 0.36.4)
 

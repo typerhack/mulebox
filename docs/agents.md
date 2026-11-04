@@ -219,6 +219,9 @@ Keep git, search, reading files and diffs local. If mulebox is unreachable (exit
 and tell the user instead of running the command locally. See mulebox's docs/agents.md.
 ```
 
+   Keep checks that read git history out of `jobs:`. A job runs on a snapshot of files with no
+   `.git` folder, so `commitlint`, `git diff origin/main...`, "changed files only" scripts and
+   anything else that asks git stay local, where the history is. They are light anyway.
 5. **Commit** `.mulebox.yml` and the rule on a branch and open a pull request if that is
    the project's workflow. Report to the user: the jobs you defined, the check time, and
    anything you could not set up.
@@ -263,6 +266,15 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
 - **`.env*` files are not uploaded**, apart from tracked templates, so `env_file: .env.ci`
   fails on the build machine. Move those throwaway values into `env:` and `environment:`.
 - **Root-owned files** in the checkout are fine: mulebox cleans them up.
+- **A hardcoded database address** such as `localhost:27017` in a test works without changing the
+  code: run the tests in a service that shares the database's network, in a CI-only compose
+  file. `network_mode: service:mongo` is allowed, as it stays inside the job's project, and that
+  service then reaches the database on `localhost`. From a command on the machine the address
+  is `127.0.0.1` and `MULEBOX_PORT_...`.
+- **CI scripts that use `COMPOSE_PROJECT_NAME`** work: mulebox sets it, with `COMPOSE_FILE`, for
+  the whole job, and `env:` cannot change it. So read it, as in
+  `${COMPOSE_PROJECT_NAME}_default` for the job's network. A script that writes a fixed project
+  or container name will not find the job's containers: use `docker compose exec` or the variable.
 - **`up --wait` needs every service to stay up** and, if it has a healthcheck, become healthy.
   A service that exits on purpose should be a `depends_on` with
   `condition: service_completed_successfully`, or moved into a job command. A healthcheck
@@ -409,7 +421,10 @@ jobs:
 
 `playwright install chromium` does nothing once that version is there, so keep it in the
 job: it is what keeps the version in step with the project's lockfile. Do not use
-`install --with-deps`: it needs root, which a job does not have. Browsers run on the
+`install --with-deps`: it needs root, which a job does not have. That goes for a project's own
+install script too: if `pnpm test:e2e:install` or a CI step says `--with-deps`, call
+`playwright install chromium` from the job directly instead of the script. The system libraries
+are already there, since a machine only offers `playwright` once a person installed them. Browsers run on the
 build machine, not in a container, so they reach containers through `127.0.0.1` and the
 `MULEBOX_PORT_...` variable. Read the URL from the environment in `playwright.config`, and
 do not let Playwright's `webServer` start something on a fixed port.
