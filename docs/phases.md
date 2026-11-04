@@ -68,6 +68,11 @@ queue and returns the same result as running it locally.
       showed busy with nothing free for its whole run; a frozen worker showed offline in 14 s
       and came back in 2 s, and its job still passed. Only one real worker so far; more
       than one is covered by tests.
+- [~] M2.7 Monitor redesign: boxed live view with meters and graphs, one theme, icon switch.
+      Built 2026-11-04 (0.25.0): in real Microsoft Edge the theme switch and its memory, the
+      queue, job and history views work, with no sideways scroll in a 390 px frame; the page
+      fits without scrolling at 1440x900 and 1280x800 in headless Chrome. Open: deployed on
+      a real machine, a job's real load on the meters, and a real phone.
 
 ## M3: GitHub Actions runners
 - [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)

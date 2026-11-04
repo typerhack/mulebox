@@ -48,6 +48,22 @@ export function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+// A box: its title on the border, a note on the right of the border, a scrolling body.
+export function fill(box, title, note, ...children) {
+  const parts = [el("h2", { text: title })];
+  if (note !== null && note !== undefined) parts.push(el("span", { class: "note" }, note));
+  parts.push(el("div", { class: "body" }, ...children));
+  box.replaceChildren(...parts);
+  return parts.at(-1);
+}
+
+// A meter on the load ramp; `set(share)` moves the cover that hides the unused part.
+export function meter(attrs = {}) {
+  const rest = el("div", { class: "rest" });
+  const node = el("div", { class: "meter", role: "img", ...attrs }, el("div", { class: "ramp" }), rest);
+  return { node, set(share) { rest.style.width = `${(100 - Math.max(0, Math.min(1, share)) * 100).toFixed(1)}%`; } };
+}
+
 const TONES = {
   passed: "good", failed: "bad", timed_out: "warn", interrupted: "warn",
   running: "active", starting: "active", cleaning: "active",

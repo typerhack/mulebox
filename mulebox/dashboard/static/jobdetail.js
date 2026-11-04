@@ -1,7 +1,7 @@
 // One job's detail and live log. Log text is appended as text nodes, never parsed as HTML.
 // Reconnects resume by byte offset (the event id); the stream ends with an `end` event.
 
-import { badge, clock, duration, el, getJson, safeUrl } from "./format.js";
+import { badge, clock, duration, el, fill, getJson, safeUrl } from "./format.js";
 
 const TAIL = 256 * 1024;
 const KEEP_CHARS = 1024 * 1024;  // cap the page, not the job: the full log has its own link
@@ -16,7 +16,7 @@ function facts(job) {
     ["Run time", job.duration_s === null ? null : duration(job.duration_s)],
     ["Commit", job.base_commit?.slice(0, 12)], ["Timeout", job.timeout_min && `${job.timeout_min} min`],
     ["Toolchain", typeof job.toolchain === "string" ? job.toolchain : null],
-    ["Command", job.command],
+    ["Command", job.command], ["Job id", job.job_id],
   ].filter(([, value]) => value !== null && value !== undefined && value !== "");
   return el("dl", { class: "facts" }, ...rows.flatMap(([name, value]) => [
     el("dt", { text: name }), el("dd", { text: String(value) }),
@@ -50,10 +50,11 @@ function follow(pre, stateSlot, onEnd) {
   return source;
 }
 
-// Render into `root`; returns a function that closes the live log.
-export function jobView(root, jobId) {
+// Render into the work box; returns a function that closes the live log.
+export function jobView(box, jobId) {
   let source = null, closed = false;
-  root.replaceChildren(el("p", { class: "muted", role: "status", text: "Loading" }));
+  const back = () => el("p", { class: "crumb" }, el("a", { href: "#/", text: "Back to the queue" }));
+  fill(box, "Job", null, back(), el("p", { class: "muted", role: "status", text: "Loading" }));
   getJson(`/api/jobs/${encodeURIComponent(jobId)}`).then((job) => {
     if (closed) return;
     const stateSlot = el("span", {}, badge(job.shown_state ?? job.outcome ?? job.state));
@@ -63,27 +64,26 @@ export function jobView(root, jobId) {
     const link = el("a", { href: `/api/jobs/${encodeURIComponent(jobId)}/log.txt`,
                            text: "Full log as text" });
     const run = safeUrl(job.run_url);
-    // replaceChildren would turn a null into the text "null", so optional parts go first.
     const parts = [
-      el("p", {}, el("a", { href: "#/", text: "Back to the queue" })),
-      el("h2", { text: `${job.project ?? "-"} / ${job.job ?? "-"}` }),
-      el("p", {}, stateSlot),
+      back(),
       job.kind === "runner"
-        ? el("p", { class: "muted", text: "This entry only held a build slot for a GitHub " +
-                    "runner. The job's result and log are on GitHub." })
+        ? el("p", { class: "muted note-text", text: "This entry only held a build slot for a " +
+                    "GitHub runner. The job's result and log are on GitHub." })
         : null,
       run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
-      info, el("h3", { text: "Log" }), pre, el("p", {}, link),
-    ];
-    root.replaceChildren(...parts.filter(Boolean));
+      info,
+      el("div", { class: "log-head" }, el("span", { text: "log" }), link),
+      pre,
+    ].filter(Boolean);
+    fill(box, `Job ${job.project ?? "-"} / ${job.job ?? "-"}`, stateSlot, ...parts);
     source = follow(pre, stateSlot, (final) => {
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));
       info.replaceChildren(facts(final));
     });
   }).catch((error) => {
     if (!closed) {
-      root.replaceChildren(el("p", { text: `Could not load this job: ${error.message}` }),
-                           el("p", {}, el("a", { href: "#/", text: "Back to the queue" })));
+      fill(box, "Job", null, back(),
+           el("p", { text: `Could not load this job: ${error.message}` }));
     }
   });
   return () => { closed = true; source?.close(); };

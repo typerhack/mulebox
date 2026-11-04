@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.25.0 - 2026-11-04 - minor
+- Dashboard redesigned as a live monitor: boxes that fill the window, per-core meters, CPU
+  and memory history, disk meters, machines with slot squares, and one jobs list. The page
+  was a task list before; the user wanted to see the machine at a glance.
+- One theme over the whole page, with a sun and moon switch remembered per browser. The
+  sign-in page follows the system setting, because it may not load scripts.
+- Drawing stops while the tab is hidden, and two graphs replace nine.
+
 ## 0.24.7 - 2026-11-04 - patch
 - Test only: the dashboard snapshot test read an event stream once and sometimes saw two of
   its three events. It now reads until all three arrive.

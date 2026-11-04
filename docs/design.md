@@ -200,6 +200,9 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Shows: running and waiting jobs (project, branch, source), live log, history, every
   machine with whether it is online and its free slots, and CPU per core, memory, disk and
   Docker containers for the machine the dashboard runs on.
+- Layout: a live monitor in boxes that fills the window, machine load first and the jobs
+  list below, one theme over the whole page, and a light or dark switch that is remembered
+  per browser. Before a choice it follows the system; the sign-in page always does.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by

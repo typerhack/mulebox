@@ -1,45 +1,62 @@
-// Job tables: the live queue and the paged history. Rows come from the server's status
-// model (common/status.py), so sections, order and shown state match `mulebox queue`.
+// Job views: the live queue as one process-list style table (running, queued, recent) and
+// the paged history. Rows come from the server's status model (common/status.py), so
+// sections, order and shown state match `mulebox queue`.
 
-import { badge, clock, duration, el, getJson } from "./format.js";
+import { badge, clock, duration, el, fill, getJson } from "./format.js";
 
-const TITLES = { running: "Running", queued: "Queued", recent: "Recent" };
-const EMPTY = { running: "Nothing is running.", queued: "Nothing is waiting.",
-                recent: "No finished jobs yet." };
+const TITLES = { running: "running", queued: "queued", recent: "recent" };
+const EMPTY = { running: "nothing is running", queued: "nothing is waiting",
+                recent: "no finished jobs yet" };
 
+const name = (job) => `${job.project ?? "-"} / ${job.job ?? "-"}`;
+const link = (job) => el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, text: name(job) });
+const state = (job) => badge(job.shown_state ?? job.outcome ?? job.state);
+
+function where(job) {
+  if (job.section === "queued") return job.position ? `queue #${job.position}` : "queue";
+  return job.worker ?? "-";
+}
+
+// Columns: state, job (with branch), machine, time. Running rows are the brightest.
 function row(job, last) {
-  const name = `${job.project ?? "-"} / ${job.job ?? "-"}`;
-  return el("tr", {},
-    el("td", {}, el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, text: name })),
-    el("td", { class: "wide", text: job.branch ?? "-" }),
-    el("td", {}, badge(job.shown_state ?? job.outcome ?? job.state)),
-    el("td", { class: "num", "data-elapsed": job.section === "recent" ? null : "",
-               text: duration(job.elapsed_s ?? job.duration_s) }),
-    el("td", { class: "wide", text: last(job) }));
+  const ticking = job.section === "recent" ? null : "";
+  return el("tr", { class: job.section === "running" ? "running" : null },
+    el("td", { class: "state" }, state(job)),
+    el("td", {}, link(job), el("span", { class: "branch", text: job.branch ?? "-" })),
+    el("td", { class: "wide", text: last(job) }),
+    el("td", { class: "num", "data-elapsed": ticking,
+               text: duration(job.elapsed_s ?? job.duration_s) }));
 }
 
-function table(jobs, heading, last) {
-  const head = el("tr", {}, ...["Job", "Branch", "State", "Elapsed", heading].map((text, i) =>
-    el("th", { scope: "col", class: i === 1 || i === 4 ? "wide" : null, text })));
-  return el("table", {}, el("thead", {}, head),
-            el("tbody", {}, ...jobs.map((job) => row(job, last))));
+function head(last) {
+  return el("thead", {}, el("tr", {}, ...[["state", "state"], ["job", null], [last, "wide"],
+                                           ["time", null]].map(([text, cls]) =>
+    el("th", { scope: "col", class: cls, text }))));
 }
 
-export function queueView(snapshot) {
-  const root = el("div", {});
+function group(section, count) {
+  return el("tr", { class: "group" }, el("th", { colspan: "4" }, TITLES[section],
+    el("span", { class: "count", text: String(count) })));
+}
+
+export function queueView(box, snapshot) {
+  const body = el("tbody", {});
+  const counts = {};
   for (const section of ["running", "queued", "recent"]) {
     const jobs = snapshot?.[section] ?? [];
-    root.append(el("section", {},
-      el("h2", { text: `${TITLES[section]} (${jobs.length})` }),
-      jobs.length
-        ? table(jobs, section === "queued" ? "Position" : "Worker",
-                (j) => String(j.position ?? j.worker ?? "-"))
-        : el("p", { class: "muted", text: EMPTY[section] })));
+    counts[section] = jobs.length;
+    body.append(group(section, jobs.length));
+    if (!jobs.length) {
+      body.append(el("tr", {}, el("td", { colspan: "4", class: "empty", text: EMPTY[section] })));
+    }
+    for (const job of jobs) body.append(row(job, where));
   }
-  return root;
+  const note = snapshot ? `${counts.running} running, ${counts.queued} queued` : "waiting for data";
+  fill(box, "Jobs", note, el("table", {}, head("machine"), body));
 }
 
 // Waiting and running rows tick locally between queue events; the server sends the base.
+// Document order is running rows first, then queued rows, matching the snapshot's order.
 export function tick(root, snapshot, sinceSnapshot) {
   const rows = [...(snapshot?.running ?? []), ...(snapshot?.queued ?? [])];
   const cells = root.querySelectorAll("[data-elapsed]");
@@ -49,10 +66,11 @@ export function tick(root, snapshot, sinceSnapshot) {
   });
 }
 
-export function historyView() {
+export function historyView(box) {
   const body = el("tbody", {});
-  const note = el("p", { class: "muted", role: "status" });
-  const more = el("button", { type: "button", text: "Load more", hidden: "" });
+  const note = el("p", { class: "status", role: "status" });
+  const count = el("span", { text: "" });
+  const more = el("button", { type: "button", class: "more", text: "Load more", hidden: "" });
   const filter = el("input", { type: "search", placeholder: "Project name",
                                "aria-label": "Filter by project" });
   const form = el("form", { class: "filters" }, filter,
@@ -68,12 +86,12 @@ export function historyView() {
     try {
       const page = await getJson(`/api/history?${query}`);
       for (const job of page.jobs) {
-        body.append(row({ ...job, section: "recent", shown_state: job.shown_state }, (j) =>
-          clock(j.finished_at)));
+        body.append(row({ ...job, section: "recent" }, (j) => clock(j.finished_at)));
       }
       next = page.next_before;
       more.hidden = next === null;
       note.textContent = body.children.length ? "" : "No finished jobs match.";
+      count.textContent = `${body.children.length} shown${next === null ? "" : ", more below"}`;
     } catch (error) {
       note.textContent = `Could not load the history: ${error.message}`;
     }
@@ -81,9 +99,6 @@ export function historyView() {
 
   form.addEventListener("submit", (event) => { event.preventDefault(); load(true); });
   more.addEventListener("click", () => load(false));
-  const head = el("tr", {}, ...["Job", "Branch", "State", "Run time", "Finished"].map((text, i) =>
-    el("th", { scope: "col", class: i === 1 || i === 4 ? "wide" : null, text })));
   load(true);
-  return el("div", {}, el("h2", { text: "History" }), form,
-            el("table", {}, el("thead", {}, head), body), note, more);
+  fill(box, "History", count, form, el("table", {}, head("finished"), body), note, more);
 }
