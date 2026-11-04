@@ -1,8 +1,8 @@
 // Dashboard start-up: the one event stream, the hash routes and the once-a-second tick.
 
 import { getJson } from "./format.js";
+import { jobView } from "./jobdetail.js";
 import { historyView, queueView, tick } from "./jobs.js";
-import { jobView } from "./logview.js";
 import { Machine } from "./machine.js";
 
 const work = document.getElementById("work");

@@ -142,8 +142,11 @@ def test_the_shipped_page_works_under_the_policy():
     assert "style=" not in page and "onclick" not in page.lower()
     assert not re.search(r"<script(?![^>]*\bsrc=)", page)  # no inline script
     assert "http://" not in page and "https://" not in page  # no CDN
-    for name in ("app.js", "style.css", "charts.js", "jobs.js", "logview.js", "machine.js",
+    for name in ("app.js", "style.css", "charts.js", "jobs.js", "jobdetail.js", "machine.js",
                  "format.js"):
         assert (STATIC_DIR / name).is_file()
+    # Filter lists block some names outright, and one blocked module blanks the page.
+    assert not (STATIC_DIR / "logview.js").exists()
+    assert "Loading" in page  # what a viewer sees if the scripts never run
     code = "".join(p.read_text(encoding="utf-8") for p in STATIC_DIR.glob("*.js"))
     assert "innerHTML" not in code and "insertAdjacentHTML" not in code and "eval(" not in code

@@ -49,6 +49,12 @@ def test_tunnel_argv_binds_both_ends_to_loopback():
     assert "-N" in argv and "ExitOnForwardFailure=yes" in argv and argv[-1] == "build-1"
 
 
+def test_tunnel_never_shares_a_control_master():
+    # A shared master takes the forward and ssh exits at once, leaving it held by nobody.
+    argv = ssh.tunnel_argv("build-1", 8090, 8091)
+    assert "ControlMaster=no" in argv and "ControlPath=none" in argv
+
+
 def test_opens_the_browser_and_ctrl_c_closes_the_tunnel():
     proc = FakeProc(wait_raises=KeyboardInterrupt())
     code, text, _, urls = opened(proc, lambda url: True)

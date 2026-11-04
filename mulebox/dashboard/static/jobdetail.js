@@ -63,7 +63,8 @@ export function jobView(root, jobId) {
     const link = el("a", { href: `/api/jobs/${encodeURIComponent(jobId)}/log.txt`,
                            text: "Full log as text" });
     const run = safeUrl(job.run_url);
-    root.replaceChildren(
+    // replaceChildren would turn a null into the text "null", so optional parts go first.
+    const parts = [
       el("p", {}, el("a", { href: "#/", text: "Back to the queue" })),
       el("h2", { text: `${job.project ?? "-"} / ${job.job ?? "-"}` }),
       el("p", {}, stateSlot),
@@ -72,7 +73,9 @@ export function jobView(root, jobId) {
                     "runner. The job's result and log are on GitHub." })
         : null,
       run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
-      info, el("h3", { text: "Log" }), pre, el("p", {}, link));
+      info, el("h3", { text: "Log" }), pre, el("p", {}, link),
+    ];
+    root.replaceChildren(...parts.filter(Boolean));
     source = follow(pre, stateSlot, (final) => {
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));
       info.replaceChildren(facts(final));

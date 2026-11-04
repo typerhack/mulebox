@@ -48,10 +48,15 @@ queue and returns the same result as running it locally.
       cancelled by lease expiry; two clients -> run one after the other.
 
 ## M2: Web dashboard
-- [~] M2.1 (agent on branch m2-dashboard, 2026-11-03) Shared status/event model (also used by the terminal view)
-- [ ] M2.2 aiohttp server: queue, live log over SSE, history
-- [ ] M2.3 Resource graphs (CPU per core, memory, disk, Docker); measure overhead
-- [ ] M2.4 Access modes `local` (SSH tunnel) and `lan` (password, HTTPS, firewall range)
+- [x] M2.1 Shared status/event model (also used by the terminal view) (2026-11-04, 0.7.0)
+- [x] M2.2 aiohttp server: queue, live log over SSE, history. Done 2026-11-04 (0.7.0):
+      used in a real browser through the tunnel on a real machine; live log, job end,
+      history filter and reconnect after a service restart work.
+- [x] M2.3 Resource graphs (CPU per core, memory, disk, Docker); measure overhead.
+      Done 2026-11-04 (0.7.0): 0.48% of one core (0.06% of a 4C/8T machine) and 44 MB over
+      60 s with one viewer and a live log open.
+- [~] M2.4 Access modes `local` (SSH tunnel) and `lan` (password, HTTPS, firewall range).
+      `local` done 2026-11-04 (0.7.0); `lan` open.
 - [ ] M2.5 Optional cancel button with its own protection
 
 ## M3: GitHub Actions runners

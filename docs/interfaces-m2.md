@@ -26,7 +26,9 @@ Input is a public job dict; every function tolerates missing or malformed fields
 - `mulebox dashboard open [--port N] [--remote-port N] [--no-browser]` on the laptop runs
   `ssh -N -L 127.0.0.1:<local>:127.0.0.1:<remote> <coordinator>`, waits for `/healthz`,
   opens the browser and holds the tunnel until Ctrl-C (exit 0). A tunnel that closes or a
-  dashboard that does not answer exits 3, the "unreachable" code.
+  dashboard that does not answer exits 3, the "unreachable" code. The tunnel is always its
+  own ssh connection, never a shared `ControlMaster` one: ssh would otherwise hand the
+  forward to the master and exit, and Ctrl-C could not close it.
 
 ## Guarantees
 
@@ -42,6 +44,8 @@ Input is a public job dict; every function tolerates missing or malformed fields
 - **Logs are text.** They are redacted by the worker before storage. The page appends them
   as text nodes; no code path parses server data as HTML.
 - **No external resources.** No CDN, no build step; `static/` ships in the wheel.
+- **File names.** Browser filter lists block some script names outright (`logview.js` was
+  one), and one blocked ES module stops the whole page. Check new names in a real browser.
 
 ## HTTP API
 
