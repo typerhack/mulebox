@@ -4,11 +4,16 @@ from typing import Any
 
 from mulebox.common.protocol import JobState
 from mulebox.coordinator import needs, workers
+from mulebox.coordinator.store import ACTIVE_STATES
 
 JOB_FIELDS = (
     "job_id", "project", "job", "branch", "client", "state", "outcome", "exit_code",
     "worker", "created_at", "started_at", "finished_at", "kind", "detached",
 )
+
+
+STATUS_FIELDS = ("project", "job", "branch", "kind", "detached", "created_at", "started_at",
+                 "finished_at", "log_size")
 
 
 def job_dict(job: dict[str, Any], position: int | None = None,
@@ -32,7 +37,7 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
 def status_body(job: dict[str, Any], position: int | None = None,
                 waiting: str | None = None, **extra: Any) -> dict[str, Any]:
     """status_ok body: job_id, state, plus outcome/exit_code/duration_s when finished, position
-    when queued, and `waiting_for` when a queued job cannot start."""
+    when queued, worker when active, and `waiting_for` when a queued job cannot start."""
     body: dict[str, Any] = {"job_id": job["job_id"], "state": job["state"]}
     if job["state"] == JobState.FINISHED:
         body["outcome"] = job["outcome"]
@@ -40,10 +45,17 @@ def status_body(job: dict[str, Any], position: int | None = None,
         body["duration_s"] = job["duration_s"]
     if job["state"] == JobState.QUEUED and position is not None:
         body["position"] = position
+    if job["state"] in ACTIVE_STATES:
+        body["worker"] = job["worker"]
     if waiting:
         body["waiting_for"] = waiting
     body.update(extra)
     return body
+
+
+def status_facts(job: dict[str, Any]) -> dict[str, Any]:
+    """What a `status` reply adds, for someone who only has a job id."""
+    return {name: job[name] for name in STATUS_FIELDS}
 
 
 def result_body(job: dict[str, Any]) -> dict[str, Any]:

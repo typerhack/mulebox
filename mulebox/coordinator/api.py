@@ -18,7 +18,7 @@ from mulebox.coordinator.context import Request, error_message
 from mulebox.coordinator.errors import BadRequest, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
-from mulebox.coordinator.views import job_dict, status_body, waiting_for
+from mulebox.coordinator.views import job_dict, status_body, status_facts, waiting_for
 from mulebox.version import get_version
 
 _log = get_logger(__name__)
@@ -82,8 +82,8 @@ def status(req: Request) -> Message:
         job = st.require_job(conn, v.job_id(req.body))
         place = queue.position(conn, job)
         reason = waiting_for(conn, job, req.now)
-    return req.reply(MessageType.STATUS_OK,
-                     status_body(job, place, reason, log_size=job["log_size"]))
+    return req.reply(MessageType.STATUS_OK, {**status_body(job, place, reason),
+                                             **status_facts(job)})
 
 
 def cancel(req: Request) -> Message:

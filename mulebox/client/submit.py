@@ -49,7 +49,8 @@ class WatchLost(MuleboxError):
 class RemoteLike(Protocol):
     def call(self, msg: Message) -> Message: ...
     def upload(self, job_id: str, path: Path, sha256: str) -> Message: ...
-    def watch(self, job_id: str, offset: int = 0, lease: bool = True) -> Iterator[Message]: ...
+    def watch(self, job_id: str, offset: int = 0, lease: bool = True,
+              log: bool = True) -> Iterator[Message]: ...
 
 
 @dataclass
@@ -171,6 +172,8 @@ def stale_check(root: Path, project: ProjectConfig, fingerprint: str, io: Stream
 class Watcher:
     """Follows one job's watch stream: log to stdout, state changes to stderr."""
 
+    watch_options: dict[str, Any] = {}
+
     def __init__(self, remote: RemoteLike, io: Streams) -> None:
         self.remote, self.io = remote, io
         self.job_id = ""
@@ -183,7 +186,8 @@ class Watcher:
         failures = 0
         while True:
             try:
-                for msg in self.remote.watch(self.job_id, self.offset, lease):
+                for msg in self.remote.watch(self.job_id, self.offset, lease,
+                                             **self.watch_options):
                     failures = 0
                     self.connected = True
                     if self.handle(msg):

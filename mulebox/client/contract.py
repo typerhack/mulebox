@@ -24,6 +24,8 @@ COMMANDS = {
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
     "leave_running": "mulebox check --detach",
+    "follow_it": "mulebox events --job <job-id> --json",
+    "its_state": "mulebox status <job-id>",
     "its_result": "mulebox wait <job-id>",
     "queue": "mulebox queue",
     "all_projects": "mulebox projects",
@@ -59,6 +61,14 @@ COMPOSE = (
     "published ports move: read MULEBOX_PORT_<SERVICE>_<PORT> or use it in env:, never a "
     "port number from a compose file; the address is 127.0.0.1",
 )
+EVENTS = (
+    "mulebox events prints one JSON line per state change and no log; it exits when the job "
+    "ends, with the job's exit code, and survives a dropped connection",
+    "every line has v, event, job_id and state; ignore events and keys you do not know",
+    "queued has position and waiting_for; started has machine; finished has outcome, exit_code "
+    "and duration_s",
+    "after finished, read mulebox logs <job-id> --summary if the job failed",
+)
 RULES = (
     "a detached job keeps running without you, within timeout_min: cancel it with mulebox "
     "cancel if you no longer want it, nobody else will",
@@ -93,6 +103,7 @@ def build(config: ProjectConfig | None, version: str) -> Contract:
         "project": _project(config) if config else None,
         "commands": dict(COMMANDS),
         "through_mulebox": list(THROUGH_MULEBOX), "keep_local": list(KEEP_LOCAL),
+        "events": list(EVENTS),
         "git": list(GIT), "never_uploaded": [*BUILTIN_EXCLUDES, *exclude],
         "compose": list(COMPOSE) if config and config.compose else [],
         "exit_codes": [{"code": code, "meaning": meaning, "action": action}
@@ -128,7 +139,8 @@ def render(contract: Contract) -> str:
     lines = [f"mulebox {contract['mulebox_version']} contract", "",
              *_project_text(contract["project"]), "", "Commands:"]
     lines += [f"- {name.replace('_', ' ')}: {text}" for name, text in contract["commands"].items()]
-    lines += ["", f"Through mulebox: {', '.join(contract['through_mulebox'])}",
+    lines += ["", "Events:", *_bullets(contract["events"]),
+              "", f"Through mulebox: {', '.join(contract['through_mulebox'])}",
               f"Keep local: {', '.join(contract['keep_local'])}", "", "Git:",
               *_bullets(contract["git"]),
               *(["", "Containers:", *_bullets(contract["compose"])] if contract["compose"] else []),

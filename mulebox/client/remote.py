@@ -3,8 +3,8 @@
 - `call(msg)`: one request line on stdin, one reply line on stdout.
 - `upload(job_id, path, sha256)`: `rpc-upload <job_id> <sha256>` with the tar.gz streamed
   on stdin; the reply is `status_ok`.
-- `watch(job_id, offset, lease)`: the request line, then a heartbeat line every 20 s on the
-  still-open stdin; yields `log_chunk` / `status_ok` messages and finally the `result`.
+- `watch(job_id, offset, lease, log)`: the request line, then a heartbeat line every 20 s on
+  the still-open stdin; yields `log_chunk` / `status_ok` messages and finally the `result`.
 
 An `error` reply raises CoordinatorError (its `code` kept); a reply that is not protocol
 raises ProtocolError; connection failures raise `common.ssh.SSHUnavailable`.
@@ -91,8 +91,10 @@ class Remote:
         )
         return self._reply(argv, None, result)
 
-    def watch(self, job_id: str, offset: int = 0, lease: bool = True) -> Iterator[Message]:
-        msg = request(MessageType.WATCH, job_id=job_id, offset=offset, lease=lease)
+    def watch(self, job_id: str, offset: int = 0, lease: bool = True,
+              log: bool = True) -> Iterator[Message]:
+        options = {} if log else {"log": False}
+        msg = request(MessageType.WATCH, job_id=job_id, offset=offset, lease=lease, **options)
         return self._watch(msg, job_id)
 
     def _watch(self, msg: Message, job_id: str) -> Iterator[Message]:

@@ -41,6 +41,8 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
 | the project's full gate | `mulebox check` |
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
 | leave a long job running and go on working | `mulebox check [job] --detach`, also `mulebox run --detach -- <cmd...>` |
+| follow a job without its log | `mulebox events --job <job-id> --json` |
+| see one job's state once | `mulebox status <job-id>` (add `--json`) |
 | get a detached job's result | `mulebox wait <job-id>` |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | see how this project works with mulebox | `mulebox contract` |
@@ -78,6 +80,21 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
   warning. Ctrl-C on `wait` stops the waiting, not the job. `timeout_min` still applies, a
   dead build machine still ends it `interrupted`, and `mulebox cancel` still stops it. If you
   no longer want it, cancel it: nobody else will.
+- **Watching a job.** `mulebox events --job <job-id> --json` prints one JSON line per state
+  change and no log text, and exits when the job ends, with the job's exit code. A dropped
+  connection is resumed for 30 minutes with nothing repeated and the final line kept; if it
+  gives up (exit 3), run it again, a finished job still gives its result. In Claude Code, the
+  Monitor tool can follow this command, so each line reaches you while you do other work.
+
+```json
+{"event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
+{"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
+{"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "state": "finished", "v": 1}
+```
+
+  Ignore events and keys you do not know; `stage` and `check_in` events are planned.
+  `exit_code` is the code the command exits with (124 for a timeout, 130 cancelled, 75
+  interrupted). `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
   `.secret/`, `secrets/`, `*.pem`, `*.key`, ssh keys). If a job needs a value from such a

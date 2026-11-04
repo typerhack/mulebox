@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.29.0 - 2026-11-04 - minor
+- `mulebox events --job <id> --json`: one JSON line per state change, no log text, resumes a
+  dropped connection with nothing repeated, exits with the job's exit code (M8.5). It reads
+  the coordinator's `watch` stream through `common/status.py`, so it is not a second event
+  source. `watch` takes `log: false`; an older coordinator's log is ignored.
+- `mulebox status <id>`: one job's state; `status` replies carry the job's facts for it.
+- `status_ok` names the worker of an active job. `check` printed `running` without it.
+
 ## 0.28.0 - 2026-11-04 - minor
 - `mulebox check --detach` (also `run --detach`) prints the job id once the job is queued and
   leaves it running; `mulebox wait <id>` returns what an attached `check` would have, whenever

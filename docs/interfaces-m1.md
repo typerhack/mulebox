@@ -40,6 +40,8 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 | `mulebox check [job] [--detach]` | client | default job `check`; exit code = job exit code; `--detach` prints the job id once queued and exits 0 |
 | `mulebox run [--detach] -- <cmd...>` | client | ad-hoc argv |
 | `mulebox wait <job_id>` | client | what an attached `check` gives (log, summary, exit code), via watch without lease |
+| `mulebox events --job <job_id> [--json]` | client | state changes from watch with `log: false`, through `status.job_event`; exit code = job exit code. Format: client/events.py |
+| `mulebox status <job_id> [--json]` | client | one `status` request; exit 0 whatever the job did |
 | `mulebox queue [--watch]` | client | table; `--watch` = live view (M1.7) |
 | `mulebox logs <job_id> [-f] [--summary]` | client | `-f` follows via watch without lease; `--summary` reads the log's tail only (client/summary.py) |
 | `mulebox cancel <job_id>` | client | |
@@ -60,20 +62,20 @@ timed_out -> 124, cancelled -> 130, interrupted -> 75.
 ## Wire usage (protocol.py; replies reuse `request_id`)
 
 `status_ok` is the generic reply carrying `job_id, state` (+ `outcome`, `exit_code`,
-`position` when queued, `cancel: bool` for worker heartbeats). Errors reply `error` with
+`position` when queued, `worker` when active, `cancel: bool` for worker heartbeats). Errors reply `error` with
 codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 
 | Request | Body (required + used extras) | Reply |
 | --- | --- | --- |
 | submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch`, `detached` | submit_ok (job_id, state, `detached`); repeat key returns the same job. A client that asked for `detached` and does not see it echoed cancels the job |
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
-| status | job_id | status_ok (+ `log_size`) |
+| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`) |
 | cancel | job_id | status_ok |
 | heartbeat | job_id, lease (`client`/`worker`), + `attempt_id` for worker | status_ok (+ `cancel`) |
 | queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts) |
 | projects | - | projects_ok (projects: `project`, `jobs`, `last_run`, `kind`, `state`, `outcome` of the newest job, newest first) |
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
-| watch | job_id, offset, + `lease: bool` | stream: log_chunk / status_ok lines, final `result` |
+| watch | job_id, offset, + `lease: bool`, `log: bool` (default true) | stream: log_chunk (none with `log: false`) / status_ok lines, final `result` |
 | claim | worker, capabilities, free_slots, + `toolchains` (name to versions), `version` | claim_ok or claim_none |
 | machines | - | machines_ok (`version` of the coordinator; `workers`: worker, online, capabilities, toolchains or null, version or null, slots) |
 | job_update | job_id, state, + attempt_id | status_ok |

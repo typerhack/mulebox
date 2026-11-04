@@ -12,6 +12,7 @@ tolerant of missing or malformed fields, because the client reads them off the w
   slot, the job's real result is on GitHub.
 - Elapsed: waiting time for queued jobs, running time for active ones and the run time
   (`duration_s`, else finished_at - started_at) for finished ones.
+- Event: what a state change means to a follower (`job_event`, `mulebox events`).
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ FINISHED = "finished"
 SECTIONS = ("running", "queued", "recent")
 RUNNER_KIND = "runner"
 RELEASED = "released"
+EVENT_VERSION = 1  # of `job_event` lines; raised only when a key changes meaning
 # Lines the worker writes into a job's log; the client's failure summary looks for them.
 CONTAINER_LOGS_NOTE = "mulebox: the job failed; the state and last log lines of its containers:"
 NOT_STARTED_NOTE = "mulebox: the job could not start:"
@@ -70,6 +72,25 @@ def shown_state(job: dict[str, Any]) -> Any:
 def queue_position(job: dict[str, Any]) -> Any:
     """The queue position for a waiting job, None for any other state."""
     return job.get("position") if job.get("state") in WAITING else None
+
+
+def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
+    """A status or result body as one event, None for a state with nothing to say.
+
+    `started` covers `starting`, `running` and `cleaning`, so someone who reconnects late
+    still learns where the job ran, and sees it once.
+    """
+    state = FINISHED if "outcome" in job and job.get("state") is None else job.get("state")
+    event = {"v": EVENT_VERSION, "job_id": job.get("job_id"), "state": state}
+    if state == FINISHED:
+        return {**event, "event": "finished", "outcome": job.get("outcome"),
+                "exit_code": job.get("exit_code"), "duration_s": job.get("duration_s")}
+    if state in ACTIVE:
+        return {**event, "state": "running", "event": "started", "machine": job.get("worker")}
+    if state in WAITING:
+        return {**event, "event": "queued", "position": queue_position(job),
+                "waiting_for": job.get("waiting_for")}
+    return None
 
 
 def elapsed_s(job: dict[str, Any], now: float) -> float | None:

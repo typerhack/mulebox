@@ -164,6 +164,11 @@ Marked `[~]` until checked on a real machine.
       coordinator code through a local stand-in for ssh: survives lease expiry queued and
       running, `wait` matches an attached run in output, summary and exit code. Open: a real
       job on a real machine with the client killed.
+- [~] M8.5 `mulebox events --job <id> --json` and `mulebox status <id>`, on the coordinator's
+      `watch` stream and the shared status model, open for later `stage` and `check_in`
+      events. Tested 2026-11-04 (0.29.0) with the real coordinator code: position changes,
+      machine, outcome, exit code, no log text; with the fake: a dropped stream repeats
+      nothing and keeps the final line. Open: the Monitor tool following a real job.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

@@ -104,10 +104,11 @@ def watch(scenario, rid, body):
     threading.Thread(target=lambda: [record(ln) for ln in sys.stdin.buffer], daemon=True).start()
     delay = scenario.get("delay_s", 0)
     job_id = body["job_id"]
-    send("status_ok", rid, job_id=job_id, state="queued", position=2)
+    dropped = os.path.join(DIR, "dropped")
+    if not os.path.exists(dropped):  # a reconnect gets the current state, as from the real one
+        send("status_ok", rid, job_id=job_id, state="queued", position=2)
     send("status_ok", rid, job_id=job_id, state="running", worker="build-1")
     offset = 0
-    dropped = os.path.join(DIR, "dropped")
     for chunk in scenario.get("log", []):
         time.sleep(delay)
         size = len(chunk.encode())

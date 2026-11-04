@@ -186,6 +186,8 @@ of browser versions to maintain. mulebox never deletes from that folder.
 mulebox doctor               check the project and the machine; uploads nothing
 mulebox check [job]          run a job from .mulebox.yml (default: check)
 mulebox check --detach       the same, left running; prints the job id
+mulebox events --job <id>    a job's state changes as lines, no log; --json for tools
+mulebox status <id>          one job's current state
 mulebox wait <id>            the result of a job, as `check` would have given it
 mulebox run -- <cmd...>      run an ad-hoc command (for example one test file)
 mulebox queue [--watch]      list running/waiting/recent jobs; full-screen live view

@@ -4,7 +4,8 @@ After the `watch` request the client keeps stdin open and sends a `heartbeat` li
 (lease `client`) every 20 s; a reader thread renews the client lease for each one when the
 request asked for `lease: true`. The loop polls every 0.5 s and writes `log_chunk` lines
 for new log bytes and `status_ok` when the state (or queue position) changes, and ends with
-one `result` line once the job is finished and its whole log has been sent.
+one `result` line once the job is finished and its whole log has been sent. With `log: false`
+(`mulebox events`) there are no `log_chunk` lines.
 
 Streams, clock and sleep are injected so the loop runs in tests without real stdin.
 """
@@ -70,6 +71,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
     job_id = v.job_id(msg.body)
     offset = v.integer(msg.body, "offset", low=0)
     renew = v.flag(msg.body, "lease", False)
+    with_log = v.flag(msg.body, "log", True)
     if store.get_job(job_id) is None:
         raise NotFound(f"no job {job_id}")
     if renew:
@@ -85,7 +87,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
             job = st.require_job(conn, job_id)
             place = queue.position(conn, job)
             reason = waiting_for(conn, job, clock())
-        while True:
+        while with_log:
             body = api.log_chunk_body(staging, job, offset)
             if body["next_offset"] == offset:
                 break

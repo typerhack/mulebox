@@ -26,9 +26,9 @@ def message(kind, **body):
 class FakeWorker:
     """What `worker/agent.py` tells the coordinator about one job."""
 
-    def __init__(self, store, staging, log=("line one\n", "boom\n"), exit_code=3):
+    def __init__(self, store, staging, log=("line one\n", "boom\n"), exit_code=3, pause=0.0):
         self.store, self.staging = store, staging
-        self.log, self.exit_code = log, exit_code
+        self.log, self.exit_code, self.pause = log, exit_code, pause
 
     def send(self, kind, **body):
         return api.handle(self.store, self.staging, message(kind, **body), time.time(),
@@ -40,12 +40,15 @@ class FakeWorker:
 
     def run(self, claim):
         job = {"job_id": claim["job_id"], "attempt_id": claim["attempt_id"]}
+        time.sleep(self.pause)
         self.send(MessageType.JOB_UPDATE, state="running", **job)
+        time.sleep(self.pause)
         offset = 0
         for text in self.log:
             self.send(MessageType.LOG_CHUNK, offset=offset, data=text, **job)
             offset += len(text.encode())
         self.send(MessageType.JOB_UPDATE, state="cleaning", **job)
+        time.sleep(self.pause)
         outcome = "passed" if self.exit_code == 0 else "failed"
         self.send(MessageType.RESULT, outcome=outcome, exit_code=self.exit_code, duration_s=1.5,
                   **job)
