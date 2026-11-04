@@ -57,12 +57,15 @@ queue and returns the same result as running it locally.
 ## M3: GitHub Actions runners
 - [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)
 - [x] M3.2 Start/complete hooks with pinned slot reservation, timeout, supervision (2026-11-03)
-- [~] M3.3 Example workflow snippet; drills for cancelled runs, crashes and reboots
-      Passed 2026-11-03: overlap (CI waits behind an agent job), cancelled run (slot freed
-      in ~20 s), runner killed mid-job (supervision freed the slot after 60 s, unit
-      restarted). Open: after the hard kill GitHub kept the old runner session ("A session
-      for this runner already exists"); check the runner comes back online by itself and
-      document it; reboot drill not run yet.
+- [x] M3.3 Example workflow snippet; drills for cancelled runs, crashes and reboots
+      Done 2026-11-04 (0.6.5). Passed 2026-11-03: overlap (CI waits behind an agent job),
+      cancelled run (slot freed in ~20 s), runner killed mid-job (supervision freed the
+      slot after 60 s, unit restarted). After that hard kill GitHub kept the old runner
+      session for ~3 min; the runner retried and reconnected by itself. Reboot drill on a
+      real machine, with an agent job running and a CI job waiting: back in 66 s, services
+      up unattended, agent job `interrupted` (exit 75, not replayed), nothing left behind,
+      the waiting reservation released after 60 s, the next CI run passed. Not covered:
+      sudden power loss (a clean reboot lets the worker report the job as it stops).
 
 ## M4: Docker Compose projects
 - [ ] M4.1 `compose:` services in `.mulebox.yml`; unique project names and labels per job

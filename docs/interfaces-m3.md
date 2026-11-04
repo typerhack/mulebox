@@ -46,6 +46,17 @@ hook retried by GitHub never creates two reservations. `heartbeat` with `lease: 
 and no `attempt_id` renews a reservation's worker lease. Reservations ignore the client
 lease. A release on a finished reservation is a no-op `status_ok`.
 
+## Runner recovery (measured)
+
+- Hard kill: GitHub keeps the old session for about 3 minutes and answers "A session for
+  this runner already exists". The runner retries every ~30 s and reconnects by itself;
+  nothing needs restarting.
+- Reboot: the unit starts with the machine and the runner connects in seconds to a few
+  minutes, depending on the network. GitHub can show it `offline` for a few minutes more.
+- A reservation whose hook died while waiting for a slot is released by supervision 60 s
+  after the worker starts. Until then it holds its place in the line.
+- GitHub ends an interrupted run on its own; queued runs then start on the runner.
+
 ## Hook entry points (`mulebox/runners/hooks.py`, CLI `mulebox runner-hook`)
 
 - `mulebox runner-hook started`: reads `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`,
