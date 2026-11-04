@@ -205,6 +205,18 @@ mulebox dashboard open --port 8091     # if local port 8090 is taken
 If `[dashboard] port` was changed in `node.toml`, pass the same value as `--remote-port`.
 Nothing but the SSH connection is exposed: the page is reached only through the tunnel.
 
+### Skill for coding agents
+
+`skills/mulebox/` in this repository is a skill that teaches a coding agent to work through
+mulebox in any project. It is short on purpose: it sends the agent to `mulebox contract`.
+For Claude Code, install it for all your projects by copying the folder:
+
+```sh
+cp -R skills/mulebox ~/.claude/skills/
+```
+
+Agents without skills can read [agents.md](agents.md) instead.
+
 ### Dashboard on the LAN
 
 `lan` mode lets other devices, such as a phone, open the dashboard directly at

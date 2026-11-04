@@ -104,11 +104,11 @@ Order agreed with the user on 2026-11-04.
       own tables, so there is one source. Done 2026-11-04 (0.11.0): run through the real CLI
       in a project, outside one and with the build machine unreachable. Drift tests tie it
       to the real commands and to docs/agents.md.
+- [~] M7.2 Installable skill: `skills/mulebox/`, installed once system-wide, so any project
+      can say "use the mulebox skill". Built 2026-11-04 (0.11.1). Open: the user installs it
+      in another session, and an agent uses it in a real project.
 
 ## Parking lot
-- Installable mulebox skill: installed once system-wide, so any project can say "use the
-  mulebox skill" instead of pointing at docs/agents.md. The skill is built here; installing
-  it is the user's step, in another session
 - Agent feedback: agents file GitHub issues about what mulebox could not handle, with
   enough logs and screenshots to reproduce (redacted first, no secrets or private data)
 - Project registration: each project registers with mulebox and stays registered, to avoid

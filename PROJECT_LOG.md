@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.11.1 - 2026-11-04 - patch
+- `skills/mulebox/`: an installable skill for coding agents (M7.2), which sends them to
+  `mulebox contract` rather than copying it. Built here; installing it is the user's step.
+
 ## 0.11.0 - 2026-11-04 - minor
 - `mulebox contract` (M7.1): tells an agent how this project builds, tests and uses git
   through mulebox. Generated from `.mulebox.yml` and the code's own tables, so there is no
