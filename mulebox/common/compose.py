@@ -7,6 +7,12 @@ what Docker removes starts from these functions.
 The list of compose files travels inside the job's `env` values, under `COMPOSE_FILES_KEY`,
 and the worker takes it out again. `env:` in `.mulebox.yml` cannot set a `MULEBOX*` name, so
 the key cannot clash, and the coordinator's store needs no new column.
+
+An older worker offering `docker` would see that key as plain environment, skip all of this
+and run the job's commands against whatever is on the machine. So a `compose:` job also
+needs `COMPOSE_CAPABILITY`, which is no setting: a worker reports it by itself, when it
+offers docker, and a worker that cannot do this cannot report it. Raise the number when a
+job needs something older workers cannot do.
 """
 
 from __future__ import annotations
@@ -17,6 +23,7 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import is_valid_id
 
 DOCKER_CAPABILITY = "docker"
+COMPOSE_CAPABILITY = "compose-v1"
 COMPOSE_FILES_KEY = "MULEBOX_COMPOSE_FILES"
 LABEL_JOB = "mulebox.job"
 LABEL_WORKER = "mulebox.worker"
@@ -29,6 +36,13 @@ _NOT_IN_A_TAG = re.compile(r"[^a-z0-9]+")
 
 class ComposeError(MuleboxError):
     """A compose project cannot be used as it is."""
+
+
+def worker_capabilities(configured: tuple[str, ...]) -> list[str]:
+    """What a worker tells the coordinator: `capabilities` from its node.toml, and the one it
+    reports by itself."""
+    implied = (COMPOSE_CAPABILITY,) if DOCKER_CAPABILITY in configured else ()
+    return list(dict.fromkeys((*configured, *implied)))
 
 
 def file_problem(name: str) -> str | None:

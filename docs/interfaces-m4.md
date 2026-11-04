@@ -57,7 +57,9 @@ comma in the path is refused because it would end the `--mount` value.
 ## Compose jobs
 
 - `.mulebox.yml`: `compose: [a.yml, b.yml]`, files next to it, in Compose's merge order.
-  Implies `docker` in `needs` (`ProjectConfig.all_needs`). `env:` may not set `COMPOSE_FILE`,
+  Implies `docker` and `compose-v1` in `needs` (`ProjectConfig.all_needs`). A worker reports
+  `compose-v1` by itself in `claim` when it offers docker (`compose.worker_capabilities`), so
+  a worker from before compose can never claim such a job. `env:` may not set `COMPOSE_FILE`,
   `COMPOSE_PROJECT_NAME` or `COMPOSE_PATH_SEPARATOR` in such a project.
 - Wire: the client adds `MULEBOX_COMPOSE_FILES` (the names joined by `:`) to the job's `env`.
   The worker removes it and checks each name again (`compose.split_files`). No new column

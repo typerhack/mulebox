@@ -84,8 +84,8 @@ class ProjectConfig:
 
     @property
     def all_needs(self) -> tuple[str, ...]:
-        """`needs`, plus docker for a `compose:` project: it cannot run anywhere else."""
-        implied = (compose.DOCKER_CAPABILITY,) if self.compose else ()
+        """`needs`, plus what a `compose:` project cannot run without (common/compose.py)."""
+        implied = (compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY) if self.compose else ()
         return tuple(dict.fromkeys((*self.needs, *implied)))
 
 

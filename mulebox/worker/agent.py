@@ -107,7 +107,7 @@ class Agent:
 
     def _claim(self, now: float) -> None:
         msg = request(MessageType.CLAIM, worker=self.node.name,
-                      capabilities=list(self.node.capabilities),
+                      capabilities=compose.worker_capabilities(self.node.capabilities),
                       free_slots=self.node.slots - len(self.active),
                       restarted=self.fresh)
         try:

@@ -1,6 +1,7 @@
 """The agent loop, one step() at a time: fake clock, fake link, real SubprocessExecutor."""
 
 import time
+from dataclasses import replace
 
 import pytest
 
@@ -236,3 +237,9 @@ def test_recovery_removes_orphans_and_leftovers(agent, executor, paths, snapshot
     assert executor.list_orphans() == []
     assert not group_alive(orphan.pgid)
     assert not (paths.jobs / "example-app" / leftover).exists()
+
+
+def test_the_claim_reports_the_compose_capability_itself(node, fake_link, executor, paths, clock):
+    worker = Agent(replace(node, capabilities=("docker",)), fake_link, executor, paths, clock=clock)
+    worker.step()
+    assert fake_link.of_type(MessageType.CLAIM)[0].body["capabilities"] == ["docker", "compose-v1"]

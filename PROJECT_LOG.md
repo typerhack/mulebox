@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.22.0 - 2026-11-04 - minor
+- A `compose:` job needs `compose-v1`, which a worker reports by itself. A worker from before
+  compose offering `docker` used to claim such a job, ignore the compose file list and run
+  its commands against the machine. It is now refused, with "upgrade the build machine".
+  Deploy workers before clients.
+
 ## 0.21.3 - 2026-11-04 - patch
 - Cleanup runs beside the worker's loop. It ran inside it, so a stuck Docker daemon could stop
   heartbeats past another job's lease, and cancels and runner supervision with them. The

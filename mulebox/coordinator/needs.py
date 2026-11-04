@@ -9,17 +9,23 @@ A job whose `needs` no worker offers would wait in the queue forever and say not
   It stays queued: both can resolve themselves.
 
 Being busy is not a reason: a capable online worker is simply the queue working.
+
+A worker reports `compose-v1` by itself (common/compose.py), so nobody can add it to a
+config: a machine offering docker without it is running an older mulebox.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from mulebox.common import compose
 from mulebox.coordinator.workers import is_online
 
 Worker = dict[str, Any]
 HOW_TO_ADD = ("add it to `capabilities` in ~/.config/mulebox/node.toml on a build machine and "
               "restart its worker, or remove it from the project")
+HOW_TO_UPGRADE = ("the build machine runs a mulebox too old for `compose:` projects; upgrade "
+                  "it (docs/install.md, Upgrade)")
 
 
 def _missing(worker: Worker, needs: list[str]) -> list[str]:
@@ -35,11 +41,17 @@ def _nobody_offers(needs: list[str], workers: list[Worker]) -> str:
     return f"no build machine offers {', '.join(sorted(set(needs)))} ({known})"
 
 
+def _what_to_do(workers: list[Worker], needs: list[str]) -> str:
+    too_old = any(compose.COMPOSE_CAPABILITY in _missing(w, needs)
+                  and compose.DOCKER_CAPABILITY in w["capabilities"] for w in workers)
+    return HOW_TO_UPGRADE if too_old else HOW_TO_ADD
+
+
 def refusal(workers: list[Worker], needs: list[str]) -> str | None:
     """Why a job with `needs` must not be queued at all, or None."""
     if not workers or any(not _missing(w, needs) for w in workers):
         return None
-    return f"{_nobody_offers(needs, workers)}: {HOW_TO_ADD}"
+    return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
 
 
 def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | None:
@@ -48,7 +60,7 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | No
         return "no build machine has connected to this coordinator yet"
     capable = [w for w in workers if not _missing(w, needs)]
     if not capable:
-        return _nobody_offers(needs, workers)
+        return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
     if any(is_online(w, now) for w in capable):
         return None
     names = ", ".join(w["worker"] for w in capable)

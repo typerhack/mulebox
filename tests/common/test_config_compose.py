@@ -60,13 +60,14 @@ def test_compose_files_keep_their_order_and_imply_docker(tmp_path):
     text = MINIMAL + "needs: [node]\ncompose: [docker-compose.yml, docker-compose.ci.yml]\n"
     config = load_project_config(write(tmp_path, text))
     assert config.compose == ("docker-compose.yml", "docker-compose.ci.yml")
-    assert config.needs == ("node",) and config.all_needs == ("node", "docker")
+    assert config.needs == ("node",)
+    assert config.all_needs == ("node", "docker", compose.COMPOSE_CAPABILITY)
 
 
 def test_docker_is_not_needed_twice_or_without_compose(tmp_path):
     touch(tmp_path, "a.yml")
     both = load_project_config(write(tmp_path, MINIMAL + "needs: [docker]\ncompose: [a.yml]\n"))
-    assert both.all_needs == ("docker",)
+    assert both.all_needs == ("docker", compose.COMPOSE_CAPABILITY)
     assert load_project_config(write(tmp_path, MINIMAL)).all_needs == ()
 
 

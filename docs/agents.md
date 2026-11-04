@@ -198,7 +198,8 @@ is dropped, with a note in the log; use the service name. Put CI-only changes in
 compose file rather than changing how the project runs locally.
 
 If mulebox says no build machine offers `docker`, tell the user: a person has to add it
-to the build machine's `capabilities`.
+to the build machine's `capabilities`. If it says the machine's mulebox is too old, it has to
+be upgraded. `compose-v1` in `needs` comes with `compose:`; nobody sets it.
 
 ## 2b. Browser tests (Playwright)
 

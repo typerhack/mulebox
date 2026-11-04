@@ -121,3 +121,32 @@ def test_the_watch_stream_sends_the_reason_when_it_changes(store, staging):
     except Done:
         pass
     assert b"waiting_for" in out.getvalue().splitlines()[-1]
+
+
+COMPOSE_NEEDS = ["docker", "compose-v1"]
+
+
+def test_an_older_worker_with_docker_is_not_offered_a_compose_job():
+    text = needs.refusal([worker(capabilities=["docker"])], COMPOSE_NEEDS)
+    assert "compose-v1" in text and "upgrade" in text and "capabilities" not in text.split(":")[1]
+
+
+def test_a_worker_without_docker_is_told_how_to_add_it():
+    text = needs.refusal([worker(capabilities=["node"])], COMPOSE_NEEDS)
+    assert "add it to `capabilities`" in text and "upgrade" not in text
+
+
+def test_a_current_worker_runs_a_compose_job():
+    workers = [worker(capabilities=["docker", "compose-v1"])]
+    assert needs.refusal(workers, COMPOSE_NEEDS) is None
+    assert needs.waiting_for(workers, COMPOSE_NEEDS, NOW) is None
+
+
+def test_a_mixed_fleet_waits_for_the_current_worker():
+    workers = [worker("old", ["docker"]), worker("new", ["docker", "compose-v1"], seen=0.0)]
+    assert needs.refusal(workers, COMPOSE_NEEDS) is None
+    assert "offline: new" in needs.waiting_for(workers, COMPOSE_NEEDS, NOW)
+
+
+def test_an_older_queued_job_says_upgrade_while_it_waits():
+    assert "upgrade" in needs.waiting_for([worker(capabilities=["docker"])], COMPOSE_NEEDS, NOW)
