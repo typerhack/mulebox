@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.5 - 2026-11-04 - patch
+- The roadmap lists the real-machine checks still missing: the 124 path with an older worker, an
+  upgrade or reboot with an open detached job, and exit 5 on an older worker with `ports:`.
+
 ## 0.40.4 - 2026-11-04 - patch
 - A finished job is always a `finished` event, even if the message also carries a `check_in` or
   `unattended` notice. No coordinator sends such a result today; `events` no longer depends on that.

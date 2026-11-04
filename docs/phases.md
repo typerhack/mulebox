@@ -266,6 +266,10 @@ it: a real machine.
       a seeded local store. Open: a real job on a real machine, in a real browser, and a phone.
 - [~] M11.4 Warnings to the agent: `unattended` event, `status`, `wait`, stderr of any command from
       the project. Built 2026-11-04 (0.37.0). Open: seen by an agent in a real session.
+- [ ] M11.6 Mixed versions and restarts on a real machine, none run yet: a job on a worker older than
+      0.37 ends at its hard `timeout_min` with exit 124; an upgrade and a reboot with an open
+      detached job stop nothing wrongly; a job with `ports:` on a worker older than 0.40 is
+      refused at the start with exit 5.
 
 ## M12: Per-job settings
 - [~] M12.1 A job in `.mulebox.yml` may be a mapping with `run`, `setup` and `compose: false`; plain
