@@ -2,9 +2,9 @@
 
 Read-only, and GET-only apart from signing in and out. Guards on every request:
 - Host check: only `127.0.0.1`, `localhost` and `[::1]` (any port, since the SSH tunnel's
-  local port may differ), or the configured address on the TLS listener. This stops DNS
+  local port may differ), or the configured address on the LAN listener. This stops DNS
   rebinding from a web page reaching the dashboard.
-- On the TLS listener (`lan` mode): the address range and a session (login.py).
+- On the LAN listener (`lan` mode): the address range and a session (login.py).
 - Headers: a strict Content-Security-Policy (only this origin, no inline script), no
   sniffing, no referrer, no framing; API replies are not cached.
 Static files come from the package (`static/`); no CDN, no build step.
@@ -43,8 +43,8 @@ def host_name(host: str | None) -> str:
 
 @web.middleware
 async def guard(request: web.Request, handler: Handler) -> web.StreamResponse:
-    access = request.app.get(keys.LAN)
-    allowed = access.hosts if request.secure and access else request.app[keys.ALLOWED_HOSTS]
+    lan = login.on_lan(request)
+    allowed = request.app[keys.LAN].hosts if lan else request.app[keys.ALLOWED_HOSTS]
     if host_name(request.host) not in allowed:
         return web.Response(status=421, text="unexpected Host header\n")
     return await handler(request)
@@ -102,7 +102,7 @@ def _index(static_dir: Path) -> Handler:
 
 
 async def _health(request: web.Request) -> web.Response:
-    return web.json_response({"ok": True, "version": get_version(), "lan": request.secure})
+    return web.json_response({"ok": True, "version": get_version(), "lan": login.on_lan(request)})
 
 
 async def _queue(request: web.Request) -> web.Response:

@@ -1,4 +1,4 @@
-"""The TLS listener over real TLS, so `request.secure` is the real thing, not a stub."""
+"""The LAN listener on a real socket, plain and over real TLS: the rules are the same."""
 
 import asyncio
 import ipaddress
@@ -6,7 +6,7 @@ import shutil
 
 import pytest
 from aiohttp import ClientSession, CookieJar, TCPConnector
-from aiohttp.test_utils import TestClient, TestServer
+from aiohttp.test_utils import TestClient, TestServer, unused_port
 from yarl import URL
 
 from mulebox.dashboard import cert, password
@@ -28,9 +28,10 @@ def tls_dir(tmp_path_factory):
     return directory
 
 
-@pytest.fixture
-def lan(data, hub, tls_dir, tmp_path):
-    """Run `async fn(http, url)` over HTTPS; `range_` is the allowed network."""
+@pytest.fixture(params=["http", "https"])
+def lan(request, data, hub, tls_dir, tmp_path):
+    """Run `async fn(http, url)` on the LAN listener; `range_` is the allowed network."""
+    scheme = request.param
     static = tmp_path / "static"
     static.mkdir()
     for name in ("index.html", "login.html", "style.css"):
@@ -39,19 +40,27 @@ def lan(data, hub, tls_dir, tmp_path):
     def run(fn, range_="127.0.0.0/8"):
         async def main():
             clock = lambda: NOW  # noqa: E731
-            access = LanAccess(ipaddress.ip_network(range_), frozenset({HOST}),
+            port = unused_port()
+            access = LanAccess(ipaddress.ip_network(range_), frozenset({HOST}), (HOST, port),
                                password.load(tls_dir), Sessions(clock), LoginLimiter(clock))
             app = build_app(data, hub, clock=clock, start_hub=False, static_dir=static, lan=access)
-            server = TestServer(app, scheme="https")
-            await server.start_server(ssl=cert.server_context(tls_dir))
+            server = TestServer(app, scheme=scheme, port=port)
+            await server.start_server(
+                ssl=cert.server_context(tls_dir) if scheme == "https" else None)
             jar = CookieJar(unsafe=True)
             try:
                 async with ClientSession(connector=TCPConnector(ssl=False), cookie_jar=jar) as http:
-                    return await fn(http, f"https://{HOST}:{server.port}")
+                    return await fn(http, f"{scheme}://{HOST}:{server.port}")
             finally:
                 await server.close()
         return asyncio.run(main())
     return run
+
+
+def lan_is_tls(run):
+    async def go(http, url):
+        return url.startswith("https")
+    return run(go)
 
 
 async def sign_in(http, url, given=PASSWORD):
@@ -82,8 +91,9 @@ def test_sign_in_sets_a_locked_down_cookie_and_opens_the_api(lan):
     status, cookie, queue, health = lan(go)
     assert status == 303 and queue == 200 and health["lan"] is True
     assert cookie.startswith(f"{COOKIE}=")
-    for flag in ("Secure", "HttpOnly", "SameSite=Strict", "Path=/"):
+    for flag in ("HttpOnly", "SameSite=Strict", "Path=/"):
         assert flag in cookie
+    assert ("Secure" in cookie) is lan_is_tls(lan)
 
 
 def test_wrong_password_does_not_sign_in(lan):
@@ -122,7 +132,7 @@ def test_outside_the_range_is_refused_even_with_the_login_page(lan):
     assert lan(go, range_="10.0.0.0/8") == (403, 403)
 
 
-def test_wrong_host_is_refused_on_the_tls_listener(lan):
+def test_wrong_host_is_refused_on_the_lan_listener(lan):
     async def go(http, url):
         reply = await http.get(f"{url}/login", headers={"Host": "evil.example"})
         return reply.status
@@ -130,6 +140,7 @@ def test_wrong_host_is_refused_on_the_tls_listener(lan):
 
 
 def test_cross_site_post_is_refused_but_a_same_site_null_origin_passes(lan):
+    # Over HTTP browsers omit this header; a browser that sends it is still held to it.
     async def go(http, url):
         cross = await http.post(f"{url}/login", data={"password": PASSWORD},
                                 headers={"Sec-Fetch-Site": "cross-site"}, allow_redirects=False)
@@ -160,7 +171,7 @@ def test_signed_in_visitor_skips_the_login_page(lan):
     assert lan(go) == 303
 
 
-def test_plain_listener_has_no_sign_in_and_stays_open(call):
+def test_tunnel_listener_has_no_sign_in_and_stays_open(call):
     async def go(client):
         health = await (await client.get("/healthz")).json()
         return (await client.get("/login")).status, (await client.get("/api/queue")).status, health
@@ -168,9 +179,10 @@ def test_plain_listener_has_no_sign_in_and_stays_open(call):
     assert login_status == 404 and queue == 200 and health["lan"] is False
 
 
-def test_plain_listener_with_lan_on_keeps_the_local_host_rule(lan, data, hub):
+def test_tunnel_listener_with_lan_on_keeps_the_local_host_rule(data, hub):
     access = LanAccess(ipaddress.ip_network("192.168.1.0/24"), frozenset({"192.168.1.50"}),
-                       "", Sessions(lambda: NOW), LoginLimiter(lambda: NOW))
+                       ("192.168.1.50", 8443), "", Sessions(lambda: NOW),
+                       LoginLimiter(lambda: NOW))
 
     async def main():
         app = build_app(data, hub, clock=lambda: NOW, start_hub=False, lan=access)

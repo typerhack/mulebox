@@ -26,7 +26,8 @@ Choices where docs/interfaces.md is silent:
   explicit prefix length (a bare address, or host bits set as in ``192.168.1.5/24``, is
   an error) and a private range. ``lan_range`` is normalised to its string form, e.g.
   ``192.168.1.0/24``. ``lan`` also requires ``lan_address``, this machine's IPv4 address
-  inside ``lan_range``; ``lan_port`` defaults to 8443 and must differ from ``port``.
+  inside ``lan_range``; ``lan_port`` defaults to 8443 and must differ from ``port``;
+  ``lan_tls`` defaults to false.
 - An explicit ``path`` argument wins over ``$MULEBOX_CONFIG``; an empty
   ``$MULEBOX_CONFIG`` is ignored.
 """
@@ -211,6 +212,7 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
     lan_range = sub.text("lan_range", None)
     lan_address = sub.text("lan_address", None)
     lan_port = sub.integer("lan_port", DEFAULT_DASHBOARD_LAN_PORT, 1, 65535)
+    lan_tls = sub.boolean("lan_tls", False)
     if lan_port == port:
         sub.fail("lan_port", f"must differ from port ({port})")
     if lan_range is not None:
@@ -231,7 +233,7 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
         sub.fail("lan_address", "is required when mode is 'lan'")
     sub.finish()
     return {"mode": mode, "port": port, "lan_range": lan_range, "lan_address": lan_address,
-            "lan_port": lan_port}
+            "lan_port": lan_port, "lan_tls": lan_tls}
 
 
 def _lan_address(sub, text: str, lan_range: str | None) -> str:

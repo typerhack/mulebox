@@ -1,9 +1,9 @@
-"""The TLS listener's rules and the login pages (`lan` mode, interfaces-m2.md).
+"""The LAN listener's rules and the login pages (`lan` mode, interfaces-m2.md).
 
-A request on the TLS listener must come from the LAN range and hold a session, except
-for the login page and its stylesheet. `request.secure` comes from the connection
-itself, never from a header, and the plain listener is only ever on 127.0.0.1, where
-the SSH tunnel keeps working without a password.
+A request on the LAN listener must come from the LAN range and hold a session, except
+for the login page and its stylesheet. Which listener a request arrived on comes from
+its socket, never from a header, and TLS plays no part in that. The other listener is
+only ever on 127.0.0.1, where the SSH tunnel keeps working without a password.
 """
 
 from __future__ import annotations
@@ -28,12 +28,21 @@ _log = get_logger(__name__)
 Handler = Callable[[web.Request], Awaitable[web.StreamResponse]]
 
 
+def on_lan(request: web.Request) -> bool:
+    """True when this request came in on the LAN listener."""
+    access = request.app.get(keys.LAN)
+    if access is None:
+        return False
+    transport = request.transport
+    return access.is_lan_socket(transport.get_extra_info("sockname") if transport else None)
+
+
 @web.middleware
 async def lan_guard(request: web.Request, handler: Handler) -> web.StreamResponse:
-    if not request.secure:
+    if not on_lan(request):
         return await handler(request)
-    access = request.app.get(keys.LAN)
-    if access is None or not access.allows(request.remote):
+    access = request.app[keys.LAN]
+    if not access.allows(request.remote):
         return web.Response(status=403, text="not allowed from this address\n")
     if request.path in PUBLIC_PATHS or access.sessions.valid(request.cookies.get(COOKIE)):
         return await handler(request)
@@ -50,14 +59,15 @@ def add_routes(app: web.Application, static_dir: Path) -> None:
 
 def _lan(request: web.Request) -> LanAccess:
     """The LAN state; these pages do not exist on the plain listener."""
-    if not request.secure:
+    if not on_lan(request):
         raise web.HTTPNotFound(text="no sign-in here\n")
     return request.app[keys.LAN]
 
 
 def _same_site(request: web.Request) -> None:
     """Refuse cross-site posts. `Origin` cannot do this: the page's no-referrer policy
-    makes browsers send `Origin: null` on a same-site form post."""
+    makes browsers send `Origin: null` on a same-site form post. Browsers send
+    `Sec-Fetch-Site` only over HTTPS; over HTTP, `SameSite=Strict` does this job."""
     if request.headers.get("Sec-Fetch-Site", "same-origin") not in ("same-origin", "none"):
         raise web.HTTPForbidden(text="cross-site request refused\n")
 
@@ -96,7 +106,7 @@ def _submit(static_dir: Path) -> Handler:
         access.limiter.succeeded(who)
         response = web.HTTPSeeOther("/")
         response.set_cookie(COOKIE, access.sessions.create(), max_age=SESSION_TTL_S, path="/",
-                            secure=True, httponly=True, samesite="Strict")
+                            secure=request.secure, httponly=True, samesite="Strict")
         raise response
     return submit
 
@@ -106,5 +116,6 @@ async def _logout(request: web.Request) -> web.Response:
     _same_site(request)
     access.sessions.end(request.cookies.get(COOKIE))
     response = web.Response(status=204)
-    response.del_cookie(COOKIE, path="/", secure=True, httponly=True, samesite="Strict")
+    response.del_cookie(COOKIE, path="/", secure=request.secure, httponly=True,
+                        samesite="Strict")
     return response

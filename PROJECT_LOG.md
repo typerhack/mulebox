@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.9.0 - 2026-11-04 - minor
+- `lan` mode is now plain HTTP by default; HTTPS is the new optional `lan_tls = true`. User's
+  decision: on a trusted home network, a browser warning on every visit is worse than no
+  encryption, and installing a certificate on each device is not worth it.
+- The password and range rules now follow the listener a request arrived on, not TLS.
+  Without this, dropping TLS would have left the LAN port with no sign-in.
+
 ## 0.8.0 - 2026-11-04 - minor
 - `lan` dashboard mode (M2.4): HTTPS on a configured address with a password, for devices
   on the LAN. The SSH tunnel keeps working. Set up with the new `mulebox dashboard cert`,

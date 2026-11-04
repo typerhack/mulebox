@@ -208,8 +208,12 @@ Nothing but the SSH connection is exposed: the page is reached only through the 
 ### Dashboard on the LAN
 
 `lan` mode lets other devices, such as a phone, open the dashboard directly at
-`https://<address>:8443` with a password. The tunnel above keeps working. Reserve the
-machine's address on your router first: the certificate is tied to it.
+`http://<address>:8443` with a password. The tunnel above keeps working. Reserve the
+machine's address on your router first, so that it stays the same.
+
+This is plain HTTP: the password and everything on the page cross your network
+unencrypted, and browsers mark the page "Not secure". That is fine on a network where you
+trust everyone. On an office or shared network, use the tunnel, or HTTPS (below).
 
 On the build machine, add to `[dashboard]` in `node.toml`, leaving `mode` as it is for now:
 
@@ -222,7 +226,6 @@ lan_port = 8443                # optional
 Then:
 
 ```sh
-mulebox dashboard cert                         # prints the file and its fingerprint
 mulebox dashboard password                     # asks twice; at least 10 characters
 mulebox dashboard firewall > firewall.sh       # read it, then:
 sudo sh firewall.sh
@@ -241,9 +244,10 @@ sudo rm /etc/systemd/system/mulebox-dashboard-firewall.service
 sudo rm /etc/mulebox/dashboard-firewall.nft
 ```
 
-**Trust the certificate** on each device, or the browser will warn on every visit. Copy
+**Optional: HTTPS.** Set `lan_tls = true`, run `mulebox dashboard cert` and restart. To
+avoid a browser warning on every visit, trust the certificate on each device: copy
 `~/.config/mulebox/dashboard/cert.pem` there and compare its SHA-256 fingerprint with the
-one `mulebox dashboard cert` printed:
+one the command printed.
 
 - macOS: open it in Keychain Access, then set Trust to Always Trust.
 - iPhone: install the profile, then turn it on in Settings > General > About > Certificate
@@ -254,6 +258,7 @@ one `mulebox dashboard cert` printed:
 The device treats it as a certificate authority, the only kind phones fully trust, but it
 is limited to this one address and cannot vouch for any other site. It lasts 825 days;
 replace it with `mulebox dashboard cert --force`, then trust the new one on each device.
+Trusting it on a phone has not been tried yet.
 
 Changing the password: run `mulebox dashboard password`, then restart the service, which
 signs everyone out. A session lasts 24 hours.

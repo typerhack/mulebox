@@ -55,12 +55,12 @@ queue and returns the same result as running it locally.
 - [x] M2.3 Resource graphs (CPU per core, memory, disk, Docker); measure overhead.
       Done 2026-11-04 (0.7.0): 0.48% of one core (0.06% of a 4C/8T machine) and 44 MB over
       60 s with one viewer and a live log open.
-- [~] M2.4 Access modes `local` (SSH tunnel) and `lan` (password, HTTPS, firewall range).
-      `local` done 2026-11-04 (0.7.0). `lan` built 2026-11-04 (0.8.0): on a real machine,
-      sign-in, live events, history, session end and sign-out work in real Chrome; outside
-      addresses are stopped by the firewall and by the app's own check; the tunnel still
-      works. Open: certificate trusted on a real phone and laptop, and a reboot and a Wi-Fi
-      drop with `lan` on.
+- [~] M2.4 Access modes `local` (SSH tunnel) and `lan` (password, firewall range; HTTPS
+      optional since 0.9.0, user's choice). `local` done 2026-11-04 (0.7.0). `lan` built
+      2026-11-04 (0.8.0, plain HTTP 0.9.0): on a real machine, sign-in, live events, session
+      end and sign-out work in real Chrome; outside addresses are stopped by the firewall
+      and by the app's own check; the tunnel still works. Open: used from a real phone, and
+      a reboot and a Wi-Fi drop with `lan` on.
 - [ ] M2.5 Optional cancel button with its own protection
 - [ ] M2.6 Machines panel: every worker, online or offline, free slots. Built on the
       coordinator's `workers` table (`last_seen`, `slots`, `free_slots`, capabilities).

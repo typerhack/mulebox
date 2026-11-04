@@ -28,7 +28,7 @@ mulebox queue  --SSH-->        |
   machine is never overloaded.
 - **Live views**: a terminal view on the laptop and a read-only web dashboard showing the
   queue, live logs and machine load, opened through an SSH tunnel with `mulebox dashboard
-  open`, or directly from other devices on your LAN with a password over HTTPS.
+  open`, or directly from other devices on your LAN with a password.
 - **Grows with your hardware**: add a faster machine as another worker; retire an old one
   by draining it. Agents and projects do not change.
 - **Per-project config**: a small `.mulebox.yml` in each repo says what "check" means.

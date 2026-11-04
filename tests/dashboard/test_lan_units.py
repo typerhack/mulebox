@@ -91,9 +91,19 @@ def test_limiter_backs_off_per_address_and_resets():
                                         ("nonsense", False)])
 def test_range_check(remote, ok):
     clock = Clock()
-    access = LanAccess(ipaddress.ip_network("192.168.1.0/24"), frozenset({ADDRESS}), "",
-                       Sessions(clock), LoginLimiter(clock))
+    access = LanAccess(ipaddress.ip_network("192.168.1.0/24"), frozenset({ADDRESS}),
+                       (ADDRESS, 8443), "", Sessions(clock), LoginLimiter(clock))
     assert access.allows(remote) is ok
+
+
+@pytest.mark.parametrize("sockname, lan", [((ADDRESS, 8443), True), (("127.0.0.1", 8090), False),
+                                           (("127.0.0.1", 8443), False), ((ADDRESS, 1), False),
+                                           ((ADDRESS, 8443, 0, 0), True), (None, True), ("x", True)])
+def test_lan_socket_check_fails_closed(sockname, lan):
+    clock = Clock()
+    access = LanAccess(ipaddress.ip_network("192.168.1.0/24"), frozenset({ADDRESS}),
+                       (ADDRESS, 8443), "", Sessions(clock), LoginLimiter(clock))
+    assert access.is_lan_socket(sockname) is lan
 
 
 def test_ruleset_only_touches_its_port_and_table():
@@ -137,8 +147,15 @@ def test_prepare_says_which_step_is_missing(tmp_path):
     with pytest.raises(LanNotReady, match="password"):
         lan_commands.prepare(DASH, config)
     password.save(lan_dir(config), "correct horse")
-    with pytest.raises(LanNotReady, match="cert"):
-        lan_commands.prepare(DASH, config)
-    cert.generate(lan_dir(config), ADDRESS)
     access, context = lan_commands.prepare(DASH, config)
+    assert context is None and access.listen == (ADDRESS, 8443)
+
+
+def test_prepare_with_tls_needs_the_certificate(tmp_path):
+    config, dash = tmp_path / "node.toml", {**DASH, "lan_tls": True}
+    password.save(lan_dir(config), "correct horse")
+    with pytest.raises(LanNotReady, match="cert"):
+        lan_commands.prepare(dash, config)
+    cert.generate(lan_dir(config), ADDRESS)
+    access, context = lan_commands.prepare(dash, config)
     assert access.hosts == {ADDRESS} and context is not None

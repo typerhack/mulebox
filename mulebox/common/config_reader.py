@@ -85,6 +85,12 @@ class Reader:
             self.fail(key, f"must be {limit}, got {value}")
         return value
 
+    def boolean(self, key: str, default: bool) -> bool:
+        value = self.get(key, default)
+        if not isinstance(value, bool):
+            self.fail(key, f"must be true or false, got {kind(value)}")
+        return value
+
     def strings(self, key: str) -> tuple[str, ...]:
         value = self.get(key, [])
         if not isinstance(value, list):

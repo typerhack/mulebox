@@ -25,7 +25,7 @@ EXIT_CONFIG = 2
 def register(dash: argparse._SubParsersAction) -> None:
     pw = dash.add_parser("password", help="set the LAN sign-in password (build machine)")
     pw.set_defaults(func=_guarded(_password))
-    made = dash.add_parser("cert", help="create the LAN HTTPS certificate (build machine)")
+    made = dash.add_parser("cert", help="create the certificate for lan_tls (build machine)")
     made.add_argument("--force", action="store_true", help="replace an existing certificate")
     made.set_defaults(func=_guarded(_cert))
     wall = dash.add_parser("firewall", help="print the root script for the LAN firewall rule")
@@ -91,12 +91,16 @@ def _firewall(args: argparse.Namespace) -> int:
     return 0
 
 
-def prepare(dashboard: dict, config_path: Path | None) -> tuple[LanAccess, ssl.SSLContext]:
+def prepare(dashboard: dict, config_path: Path | None
+            ) -> tuple[LanAccess, ssl.SSLContext | None]:
     """All `lan` mode needs before it serves. Raises LanNotReady naming the missing step."""
     directory = lan_dir(config_path)
     stored = password.load(directory)
-    cert.check(directory, dashboard["lan_address"])
+    address, tls = dashboard["lan_address"], dashboard.get("lan_tls", False)
+    if tls:
+        cert.check(directory, address)
     access = LanAccess(network=ipaddress.ip_network(dashboard["lan_range"]),
-                       hosts=frozenset({dashboard["lan_address"]}), password_hash=stored,
-                       sessions=Sessions(time.time), limiter=LoginLimiter(time.time))
-    return access, cert.server_context(directory)
+                       hosts=frozenset({address}), listen=(address, dashboard["lan_port"]),
+                       password_hash=stored, sessions=Sessions(time.time),
+                       limiter=LoginLimiter(time.time))
+    return access, cert.server_context(directory) if tls else None

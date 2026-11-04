@@ -2,7 +2,7 @@
 
 `serve` reads node.toml's `[dashboard]`: `off` exits 0 with a note (so an enabled unit
 does not restart in a loop), `local` serves on 127.0.0.1 only, and `lan` also serves
-HTTPS on `lan_address` once its setup is complete (docs/interfaces-m2.md). There is
+on `lan_address` once its setup is complete (docs/interfaces-m2.md). There is
 deliberately no option to bind any other address. The store is opened read-only.
 
 `open` reads the client config and tunnels to the coordinator machine (client/tunnel.py).
@@ -98,10 +98,10 @@ def run(node, port: int, lan=None) -> int:
         app = build_app(data, Hub(data, EventBus(), node.roots), lan=access)
         listeners = [Listener(BIND_HOST, port)]
         _log.info("dashboard on http://%s:%d", BIND_HOST, port)
-        if tls is not None:
-            address, lan_port = node.dashboard["lan_address"], node.dashboard["lan_port"]
+        if access is not None:
+            address, lan_port = access.listen
             listeners.append(Listener(address, lan_port, tls))
-            _log.info("dashboard on https://%s:%d", address, lan_port)
+            _log.info("dashboard on %s://%s:%d", "https" if tls else "http", address, lan_port)
         serve(app, listeners)
     except OSError as exc:  # Wi-Fi not up yet, port busy: the unit retries
         _log.error("cannot listen: %s", exc)

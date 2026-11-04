@@ -81,11 +81,18 @@ class LanAccess:
 
     network: ipaddress.IPv4Network
     hosts: frozenset[str]
+    listen: tuple[str, int]  # the LAN listener's address and port
     password_hash: str
     sessions: Sessions
     limiter: LoginLimiter
     # One hash at a time: scrypt takes memory and CPU from jobs on the build machine.
     hashing: asyncio.Lock = field(default_factory=asyncio.Lock)
+
+    def is_lan_socket(self, sockname: object) -> bool:
+        """True for the LAN listener, and when it is unknown: never assume the open one."""
+        if not isinstance(sockname, tuple) or len(sockname) < 2:
+            return True
+        return sockname[:2] == self.listen
 
     def allows(self, remote: str | None) -> bool:
         try:

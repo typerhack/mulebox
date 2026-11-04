@@ -127,8 +127,10 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by
   `mulebox dashboard open`) or `lan`, which keeps that and adds a direct address (password
-  login, HTTPS with a self-signed certificate limited to that address, firewall limited to
-  the configured LAN range). Never internet-facing: `lan_range` must be a private network.
+  login, firewall limited to the configured LAN range). `lan` is plain HTTP by default:
+  on a trusted home network a browser warning about a self-signed certificate costs more
+  than encryption gives. `lan_tls` turns on HTTPS for networks that need it. Never
+  internet-facing: `lan_range` must be a private network.
 - Logs are redacted before they are stored or streamed, rendered as text, never HTML; no
   environment variables or full container inspect output.
 

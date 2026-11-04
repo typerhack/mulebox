@@ -1,4 +1,4 @@
-"""The `lan` mode HTTPS certificate: one self-signed certificate for one address.
+"""The optional `lan_tls` certificate: one self-signed certificate for one address.
 
 Phones only offer full trust to a certificate marked as a CA, so it is one, and name
 constraints make it valid for this address alone: if its key ever leaked, it could not
