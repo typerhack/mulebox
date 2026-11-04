@@ -117,7 +117,9 @@ every run, and the one who knows what the job is doing is whoever started it.
   `cancelled`, not an unknown outcome it would refuse. Views and the client show
   `stopped: unattended`, exit 76, which never reads as a failed check. A job that ended by itself
   before the stop reached it keeps its own result. A worker lost around the stop does not turn it
-  into `interrupted`: a stop that was due or asked for keeps its reason. A worker that comes back
+  into `interrupted`: a stop that was due or asked for keeps its reason. A person's or agent's
+  `cancel` wins over a stop until the worker has acted on it (state `cleaning`), and the job then
+  reads `cancelled`, exit 130. A worker that comes back
   is told the job is over, stops it and cleans up, and its late result is refused.
 - **Warnings go to whoever can act.** The agent: an `unattended` event, `status`, `wait`, and
   stderr of any command run from the project. The user: the dashboard and `mulebox queue`.

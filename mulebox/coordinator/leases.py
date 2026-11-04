@@ -127,6 +127,15 @@ def stop(conn: sqlite3.Connection, job: dict[str, Any], reason: str, now: float
     return request_cancel(conn, st.require_job(conn, job["job_id"]), now)
 
 
+def cancel(conn: sqlite3.Connection, job: dict[str, Any], now: float) -> dict[str, Any]:
+    """A cancel somebody asked for. Their decision outranks a stop still on its way, so the job
+    reads `cancelled`. From `cleaning` on the worker has acted on the stop, and the stop stands."""
+    if job["stop_reason"] and job["state"] in (JobState.STARTING, JobState.RUNNING):
+        st.update_job(conn, job["job_id"], stop_reason=None)
+        job = st.require_job(conn, job["job_id"])
+    return request_cancel(conn, job, now)
+
+
 def request_cancel(conn: sqlite3.Connection, job: dict[str, Any], now: float
                    ) -> dict[str, Any]:
     """Cancel a job: uploading/queued finish `cancelled` now, active ones get a request.

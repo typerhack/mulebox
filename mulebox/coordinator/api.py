@@ -117,7 +117,7 @@ def status(req: Request) -> Message:
 def cancel(req: Request) -> Message:
     with req.store.write() as conn:
         before = st.require_job(conn, v.job_id(req.body))
-        job = leases.request_cancel(conn, before, req.now)
+        job = leases.cancel(conn, before, req.now)
     if before["state"] != JobState.FINISHED and job["state"] == JobState.FINISHED:
         req.staging.remove_upload(job["job_id"])
     return req.reply(MessageType.STATUS_OK, status_body(job, cancel_requested=job["cancel_requested"]))

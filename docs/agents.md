@@ -174,6 +174,7 @@ Watching means an attached `check`, `mulebox wait`, `mulebox events` or `mulebox
   does not, as it needs no network. The dashboard and `mulebox queue` show it to the user.
 - **A stopped job** shows `stopped: unattended`, with the reason in `stop_reason`, and exits 76.
   It never reads as a failed check: it says nothing about the code. Run it again, and watch it.
+  A `mulebox cancel` before the machine has acted on the stop wins: the job reads `cancelled`.
 - **GitHub runner reservations** are not touched by any of this: GitHub owns those jobs.
 
 With mixed versions nothing is stopped wrongly. A worker older than 0.37 keeps its hard

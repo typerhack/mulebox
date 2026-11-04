@@ -161,6 +161,39 @@ def test_a_worker_back_after_a_stop_is_told_to_end_and_cannot_change_the_result(
     assert stopped_view(store, job) == STOPPED_IDLE
 
 
+def cancel_then_report(store, staging, job, now, state=None):
+    """Somebody cancels after the stop was asked for, and the worker ends the job."""
+    if state:
+        call(store, staging, "job_update", now, state=state, **job)
+    call(store, staging, "cancel", now, job_id=job["job_id"])
+    call(store, staging, "result", now, outcome="cancelled", exit_code=None, duration_s=1.0, **job)
+
+
+def test_a_persons_cancel_outranks_a_stop_that_has_not_taken_effect(store, staging):
+    job = running(store, staging)
+    sweep(store, staging, GONE + LIMITS.max_s + 1)
+    assert job_of(store, job)["stop_reason"] == STOP_LIMIT
+    cancel_then_report(store, staging, job, GONE + LIMITS.max_s + 2)
+    row = job_of(store, job)
+    assert row["stop_reason"] is None and shown_state(row) == "cancelled"
+    assert report.exit_code_for(row) == 130
+
+
+def test_a_cancel_after_the_worker_acted_on_the_stop_changes_nothing(store, staging):
+    job = running(store, staging)
+    sweep(store, staging, GONE + LIMITS.max_s + 1)
+    cancel_then_report(store, staging, job, GONE + LIMITS.max_s + 2, state="cleaning")
+    row = job_of(store, job)
+    assert row["stop_reason"] == STOP_LIMIT and report.exit_code_for(row) == 76
+
+
+def test_a_cancel_of_a_stopped_queued_job_changes_nothing(store, staging):
+    job_id = queued(store, staging, T0, detached=True)
+    sweep(store, staging, GONE + LIMITS.max_s + 1)
+    call(store, staging, "cancel", GONE + LIMITS.max_s + 2, job_id=job_id)
+    assert store.get_job(job_id)["stop_reason"] == STOP_QUEUED
+
+
 def test_a_job_that_beat_its_stop_keeps_its_result(store, staging):
     job = running(store, staging)
     sweep(store, staging, GONE + LIMITS.max_s + 1)

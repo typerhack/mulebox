@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.3 - 2026-11-04 - patch
+- A `mulebox cancel` after an unattended stop was asked for, but before the worker acted on it,
+  now reads `cancelled` (exit 130), not `stopped: unattended`. From `cleaning` on the stop stands.
+
 ## 0.40.2 - 2026-11-04 - patch
 - A stop that was due or asked for keeps its reason when the worker is lost around it: exit 76, not
   `interrupted` with 75. The sweep looks at stops before worker leases for that. A worker that
