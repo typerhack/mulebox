@@ -83,9 +83,30 @@ queue and returns the same result as running it locally.
       sudden power loss (a clean reboot lets the worker report the job as it stops).
 
 ## M4: Docker Compose projects
-- [ ] M4.1 `compose:` services in `.mulebox.yml`; unique project names and labels per job
-- [ ] M4.2 Teardown on every outcome; root-owned file cleanup through safepath
-- [ ] M4.3 Browser test support (Playwright dependencies on workers)
+- [~] M4.1 `compose:` services in `.mulebox.yml`; unique project names and labels per job.
+      Built 2026-11-04 (0.18.0). On a real machine: two compose files merged, `env:` reached
+      compose, `docker compose exec -T` and `setup` worked, ports asked for 6379 and 27017
+      (one held by a running database) moved to 127.0.0.1, `depends_on` on a one-shot passed,
+      a job that asks for docker with no capable worker was refused at once. Open: services
+      reaching each other over the job's compose network. That machine's NetworkManager
+      detaches the ports of every user-defined bridge, with or without mulebox (Troubleshooting
+      in install.md), so those runs used the default bridge. Also not run: a real Laravel
+      project.
+- [x] M4.2 Teardown on every outcome; root-owned file cleanup through safepath.
+      Done 2026-11-04 (0.20.0): on a real machine, passed, failed, cancelled (also during
+      `up --wait`), timed out (exit 124 in 1m01s), failed setup, and a worker hard kill (also
+      during `up --wait`) followed by a restart each left no labelled container, network or
+      volume, no job folder and no unit; containers of a killed worker were removed by label
+      on restart. Root-owned files, a 700 folder, a 000 file and a symlink to /etc/passwd
+      were cleaned with no sudo. Built images removed, base images and build cache kept
+      (second build all cached). A database, a GitHub runner and a foreign volume stayed
+      untouched. Sudden power loss not covered.
+- [~] M4.3 Browser test support (Playwright dependencies on workers). Built 2026-11-04
+      (0.19.0). On a real machine a compose job drove real Chromium against a container
+      through `MULEBOX_PORT_...`, and cleaned up the root-owned file it caused. Open:
+      `needs: [playwright]` itself on a real machine (the capability was not added there, so
+      that run pointed at browsers already on the machine) and `playwright install` from a
+      job.
 
 ## M5: More machines
 - [ ] M5.1 Separate worker install; register, capabilities, warm-up

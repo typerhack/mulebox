@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.20.1 - 2026-11-04 - patch
+- M4 status from the real drills: M4.2 done, M4.1 and M4.3 built with what is still open.
+  Troubleshooting entry for NetworkManager detaching Docker's bridges, which blocks services
+  reaching each other on an affected machine.
+
 ## 0.20.0 - 2026-11-04 - minor
 - Jobs from `.mulebox.yml` run with `bash -e`. A multi-line job used to report only its last
   line, so failed migrations followed by a passing line counted as passed. A job relying

@@ -200,6 +200,7 @@ enabled it only for mulebox: `sudo loginctl disable-linger alice`. On the laptop
 | Job or worker errors | `journalctl --user -u mulebox-worker -e` and `journalctl --user -u mulebox-coordinator -e` |
 | `pip` inside the venv | use `~/.mulebox/venv/bin/python -m pip ...` (the venv is built in a temp folder and moved, so its `bin/pip` script may point at the old path) |
 | Old venvs and copied wheels pile up | everything in `~/.mulebox/tmp/` is safe to delete by hand |
+| `compose:` services cannot reach each other (`Host is unreachable`), or a published port resets, while `docker0` containers work | something on the machine is making NetworkManager take over Docker's `br-*` bridges. Check with `journalctl -u NetworkManager \| grep detached`; `docker network create` with no mulebox shows the same thing. Fix, as root: find what activates those connections, or add `unmanaged-devices=interface-name:br-*;interface-name:veth*` to a file in `/etc/NetworkManager/conf.d/` and reload NetworkManager |
 
 ## Using the dashboard
 
