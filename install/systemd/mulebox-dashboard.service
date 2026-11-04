@@ -1,0 +1,17 @@
+# mulebox dashboard: read-only web view, on 127.0.0.1 unless node.toml says otherwise.
+# Installed by install.sh into ~/.config/systemd/user/. %h is the user's home folder.
+# `[dashboard] mode = "off"` makes it exit 0 at once, which on-failure does not restart.
+[Unit]
+Description=mulebox dashboard (read-only web view)
+After=mulebox-coordinator.service
+
+[Service]
+Type=simple
+ExecStart=%h/.mulebox/bin/mulebox dashboard serve
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+RestartSec=5
+Nice=10
+
+[Install]
+WantedBy=default.target

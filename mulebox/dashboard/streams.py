@@ -19,7 +19,7 @@ from typing import Any
 from aiohttp import web
 
 from mulebox.dashboard import keys
-from mulebox.dashboard.events import KEEPALIVE, encode, frame
+from mulebox.dashboard.events import KEEPALIVE, count, encode, frame
 
 POLL_S = 0.5
 KEEPALIVE_S = 15.0
@@ -73,12 +73,11 @@ async def events(request: web.Request) -> web.StreamResponse:
 
 def _start_offset(request: web.Request, size: int) -> int:
     for raw in (request.headers.get("Last-Event-ID"), request.query.get("offset")):
-        if raw is not None and raw.isdigit():
-            return int(raw)
-    tail = request.query.get("tail")
-    if tail is not None and tail.isdigit():
-        return max(0, size - int(tail))
-    return 0
+        start = count(raw)
+        if start is not None:
+            return start
+    tail = count(request.query.get("tail"))
+    return max(0, size - tail) if tail is not None else 0
 
 
 async def log_stream(request: web.Request) -> web.StreamResponse:

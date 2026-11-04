@@ -23,6 +23,7 @@ tell the user**. Do not fall back to running heavy commands locally on your own.
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | see the queue | `mulebox queue` |
+| open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>` |
 | stop a job | `mulebox cancel <job-id>` (Ctrl-C on a running `check` also cancels) |
 

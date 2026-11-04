@@ -31,6 +31,17 @@ class Event:
     data: dict[str, Any]
 
 
+def count(text: str | None) -> int | None:
+    """`text` as a non-negative whole number, None unless it is plain, sane digits.
+
+    `str.isdigit` alone is not enough: it accepts characters `int` rejects ("\u00b2"), and
+    these values come straight from request headers and query strings.
+    """
+    if text and len(text) <= 18 and text.isascii() and text.isdigit():
+        return int(text)
+    return None
+
+
 def frame(type_: str, data: dict[str, Any], id_: str | None = None) -> bytes:
     """One SSE frame. Compact JSON never contains a raw line break."""
     text = json.dumps(data, separators=(",", ":"), allow_nan=False)
@@ -118,9 +129,7 @@ class EventBus:
         if not event_id or "-" not in event_id:
             return None
         epoch, _, number = event_id.rpartition("-")
-        if epoch != self.epoch or not number.isdigit():
-            return None
-        return int(number)
+        return count(number) if epoch == self.epoch else None
 
     @staticmethod
     def _end(sub: Subscriber) -> None:
