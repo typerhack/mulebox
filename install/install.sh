@@ -97,6 +97,19 @@ install_wheel() {
     "${pip[@]}" install --no-deps --force-reinstall "$1"
     mkdir -p "$MB_HOME/bin"
     ln -sfn "$VENV/bin/mulebox" "$BIN"
+    link_on_path
+}
+
+# The same `mulebox` name on a build machine as on the laptop. A real file of that name is
+# someone else's, so it stays.
+link_on_path() {
+    local link="$HOME/.local/bin/mulebox"
+    mkdir -p "$HOME/.local/bin"
+    if [ -e "$link" ] && [ ! -L "$link" ]; then
+        say "mulebox install: note: $link is a real file, left alone"
+        return 0
+    fi
+    ln -sfn "$BIN" "$link"
 }
 
 # --- node config and roots -----------------------------------------------------------

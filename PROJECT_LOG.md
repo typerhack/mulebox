@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.36.3 - 2026-11-04 - patch
+- A build machine gets `~/.local/bin/mulebox`, so the command has the same name there as on
+  the laptop. A real file of that name is left alone.
+
 ## 0.36.2 - 2026-11-04 - patch
 - The theme button has a third setting: it steps through system, light and dark and shows
   the current one. System was the default but could not be chosen again once set.

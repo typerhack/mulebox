@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from .helpers import DEPLOY_SH, INSTALL_SH, UNIT_DIR
+from .helpers import DEPLOY_SH, INSTALL_SH, UNIT_DIR, call_install_function
 
 SCRIPTS = [INSTALL_SH, DEPLOY_SH]
 # A command position: line start, or after ; & | ( ` or a shell keyword.
@@ -94,3 +94,18 @@ def test_deploy_rejects_bad_targets_before_any_ssh(stub_path, args):
     done = subprocess.run(["bash", str(DEPLOY_SH), *args], env=env, capture_output=True)
     assert done.returncode != 0
     assert not log.exists()
+
+
+def test_the_command_is_linked_on_the_path(tmp_path):
+    env = {**os.environ, "HOME": str(tmp_path)}
+    call_install_function("link_on_path", env=env)
+    link = tmp_path / ".local" / "bin" / "mulebox"
+    assert os.readlink(link) == str(tmp_path / ".mulebox" / "bin" / "mulebox")
+
+
+def test_a_real_file_of_that_name_stays(tmp_path):
+    link = tmp_path / ".local" / "bin" / "mulebox"
+    link.parent.mkdir(parents=True)
+    link.write_text("mine")
+    out = call_install_function("link_on_path", env={**os.environ, "HOME": str(tmp_path)})
+    assert link.read_text() == "mine" and "left alone" in out
