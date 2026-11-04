@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.30.0 - 2026-11-04 - minor
+- While queued, `check` suggests `--detach` once, at position 2 or later or for a job that
+  usually takes 5 minutes or more (M8.6).
+- A labelled estimate of how long a job runs once started: the median of its last 10 passed
+  runs with the same command, from 3 runs up (`coordinator/history.py`), on `status_ok` and in
+  `queued` events. design.md promised an estimate the code did not have; it now says what
+  there is, and that the time in line is not estimated.
+
 ## 0.29.0 - 2026-11-04 - minor
 - `mulebox events --job <id> --json`: one JSON line per state change, no log text, resumes a
   dropped connection with nothing repeated, exits with the job's exit code (M8.5). It reads

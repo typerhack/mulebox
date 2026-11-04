@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, TextIO
 
 from mulebox.common.protocol import Outcome
-from mulebox.common.status import duration_of
+from mulebox.common.status import duration_of, number
 
 __all__ = ["duration_of"]  # re-exported: the shared status model owns it
 
@@ -20,6 +20,8 @@ EXIT_TIMED_OUT = 124
 EXIT_INTERRUPTED = 75
 
 PREFIX = "mulebox: "
+LONG_QUEUE_POSITION = 2  # jobs ahead in line, not only one running
+LONG_JOB_S = 300.0
 
 
 def status(err: TextIO, text: str) -> None:
@@ -82,6 +84,8 @@ def state_line(body: dict[str, Any]) -> str | None:
     if state == "queued":
         position = body.get("position")
         line = f"queued, position {position}" if position is not None else "queued"
+        estimate = _estimate(body)
+        line = f"{line}; {estimate}" if estimate else line
         reason = body.get("waiting_for")
         return f"{line}; waiting: {reason}" if reason else line
     if state in ("starting", "running"):
@@ -90,6 +94,22 @@ def state_line(body: dict[str, Any]) -> str | None:
     if state == "cleaning":
         return "cleaning up"
     return None
+
+
+def _estimate(body: dict[str, Any]) -> str | None:
+    seconds, runs = number(body.get("estimate_s")), body.get("estimate_runs")
+    if seconds is None:
+        return None
+    return f"estimate: runs about {format_duration(seconds)} once started ({runs} past runs)"
+
+
+def long_wait(body: dict[str, Any]) -> bool:
+    """Is this a wait worth leaving? Known only from the line and the job's past runs: a job
+    at position 1 behind a long job looks short, as nothing says how long that one takes."""
+    if body.get("state") != "queued":
+        return False
+    place, estimate = number(body.get("position")), number(body.get("estimate_s"))
+    return (place or 0) >= LONG_QUEUE_POSITION or (estimate or 0) >= LONG_JOB_S
 
 
 def short_id(job_id: str, length: int = 8) -> str:

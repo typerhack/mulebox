@@ -59,7 +59,8 @@ Cancel a detached job you no longer want: nothing else will.
   output first, the full log only if that is not enough, and fix the code.
 - A toolchain is missing: the error lists the versions the machine has. Use one only if it
   matches the project; otherwise ask the user to install the version it needs.
-- A job waits in the queue: that is normal too. Other projects and CI share it.
+- A job waits in the queue: that is normal too. Other projects and CI share it. If `check`
+  suggests detaching, cancel nothing: the suggestion is for the next run.
 - mulebox itself could not do what you needed: tell the user what happened, with the
   command, the exit code and the job id. If they want it reported, make a draft with
   `mulebox feedback draft <job-id> --summary "<what happened>"`. It sends nothing. Show

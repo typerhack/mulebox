@@ -11,7 +11,7 @@ Scenario keys: `down` (exit 255 like a failed ssh connection), `submit_state`, `
 `error` with this code to every request), `jobs` (for queue), `status_state`, `workers` and
 `machine_version` (for machines and `mulebox version`), `unknown_requests` (types answered
 the way a coordinator older than them does), `no_detached_echo` (submit_ok as a coordinator
-older than detached jobs sends it).
+older than detached jobs sends it), `queue_position`, `estimate_s`, `estimate_runs`.
 """
 
 import hashlib
@@ -106,7 +106,9 @@ def watch(scenario, rid, body):
     job_id = body["job_id"]
     dropped = os.path.join(DIR, "dropped")
     if not os.path.exists(dropped):  # a reconnect gets the current state, as from the real one
-        send("status_ok", rid, job_id=job_id, state="queued", position=2)
+        send("status_ok", rid, job_id=job_id, state="queued",
+             position=scenario.get("queue_position", 2),
+             **{k: scenario[k] for k in ("estimate_s", "estimate_runs") if k in scenario})
     send("status_ok", rid, job_id=job_id, state="running", worker="build-1")
     offset = 0
     for chunk in scenario.get("log", []):

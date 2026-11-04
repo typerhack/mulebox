@@ -62,7 +62,8 @@ timed_out -> 124, cancelled -> 130, interrupted -> 75.
 ## Wire usage (protocol.py; replies reuse `request_id`)
 
 `status_ok` is the generic reply carrying `job_id, state` (+ `outcome`, `exit_code`,
-`position` when queued, `worker` when active, `cancel: bool` for worker heartbeats). Errors reply `error` with
+`position` when queued, `worker` when active, `estimate_s` and `estimate_runs` when queued
+with enough history (coordinator/history.py), `cancel: bool` for worker heartbeats). Errors reply `error` with
 codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 
 | Request | Body (required + used extras) | Reply |

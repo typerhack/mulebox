@@ -65,8 +65,9 @@ EVENTS = (
     "mulebox events prints one JSON line per state change and no log; it exits when the job "
     "ends, with the job's exit code, and survives a dropped connection",
     "every line has v, event, job_id and state; ignore events and keys you do not know",
-    "queued has position and waiting_for; started has machine; finished has outcome, exit_code "
-    "and duration_s",
+    "queued has position, waiting_for and estimate_s (how long this job usually runs, from "
+    "its past runs; null when unknown; an estimate, not a promise, and not the time in line); "
+    "started has machine; finished has outcome, exit_code and duration_s",
     "after finished, read mulebox logs <job-id> --summary if the job failed",
 )
 RULES = (
@@ -80,7 +81,8 @@ RULES = (
     "do not ssh into the build machine to change, install or delete things",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",
     "every database name must include ${MULEBOX_JOB_SLUG}; never use an existing database",
-    "waiting in the queue is normal; do not cancel and resubmit to speed it up",
+    "waiting in the queue is normal; do not cancel and resubmit to speed it up; if the wait "
+    "may be long, run the job detached",
     "do not cancel other people's jobs",
     "a missing toolchain error lists the versions the machine has: switch to one only if it "
     "matches the project, otherwise ask the user to install the version the project needs",

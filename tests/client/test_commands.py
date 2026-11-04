@@ -72,6 +72,45 @@ def test_a_stream_cut_mid_line_reconnects(fake, in_repo, capsys, monkeypatch):
     assert capsys.readouterr().out == "one\ntwo\n"
 
 
+def test_a_long_queue_prints_the_position_and_suggests_detaching(fake, in_repo, capsys):
+    fake.scenario(log=["ok\n"])
+    assert cli.main(["check"]) == 0
+    err = capsys.readouterr().err
+    assert "queued, position 2" in err
+    assert err.count("next time add --detach") == 1
+
+
+def test_position_one_of_a_short_job_needs_no_suggestion(fake, in_repo, capsys):
+    fake.scenario(log=["ok\n"], queue_position=1)
+    assert cli.main(["check"]) == 0
+    assert "--detach" not in capsys.readouterr().err
+
+
+def test_a_known_long_job_suggests_detaching_and_labels_the_estimate(fake, in_repo, capsys):
+    fake.scenario(log=["ok\n"], queue_position=1, estimate_s=600.0, estimate_runs=4)
+    assert cli.main(["check"]) == 0
+    err = capsys.readouterr().err
+    assert "estimate: runs about 10m 00s once started (4 past runs)" in err
+    assert "--detach" in err
+
+
+def test_without_past_runs_no_estimate_is_shown(fake, in_repo, capsys):
+    fake.scenario(log=["ok\n"])
+    assert cli.main(["check"]) == 0
+    assert "estimate" not in capsys.readouterr().err
+
+
+def test_waiting_with_logs_follow_does_not_suggest_detaching(fake, capsys):
+    fake.scenario(log=["ok\n"])
+    assert cli.main(["logs", JOB, "-f"]) == 0
+    assert "--detach" not in capsys.readouterr().err
+
+
+def test_a_detached_job_gets_no_suggestion(fake, in_repo, capsys):
+    assert cli.main(["check", "--detach"]) == 0
+    assert "next time" not in capsys.readouterr().err
+
+
 def test_coordinator_error_exits_4(fake, in_repo, capsys):
     fake.scenario(error="internal")
     assert cli.main(["check"]) == 4

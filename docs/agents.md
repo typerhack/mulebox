@@ -87,7 +87,7 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
   Monitor tool can follow this command, so each line reaches you while you do other work.
 
 ```json
-{"event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
+{"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
 {"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
 {"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "state": "finished", "v": 1}
 ```
@@ -104,7 +104,11 @@ exits 0 when a job can run, also with warnings, 1 when it would not, 2 without a
 - If you edit files while a job runs, mulebox prints a "stale" warning at the end: the
   result belongs to the snapshot, not to your current files. Run it again.
 - Jobs wait in one queue shared by every project and by GitHub Actions. Waiting is normal;
-  do not cancel and resubmit to "speed it up". A line such as
+  do not cancel and resubmit to "speed it up". While queued, `check` prints its position and,
+  once a job has at least 3 passed runs, an estimate of how long it runs once started (the
+  median of its last 10). There is no estimate of the time in line. At position 2 or later,
+  or for a job that usually takes 5 minutes or more, it suggests `--detach` for next time. A
+  line such as
   `queued, position 1; waiting: no build machine for this job is online` is different:
   nothing will start until a person fixes it, so tell the user.
 

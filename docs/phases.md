@@ -169,6 +169,11 @@ Marked `[~]` until checked on a real machine.
       events. Tested 2026-11-04 (0.29.0) with the real coordinator code: position changes,
       machine, outcome, exit code, no log text; with the fake: a dropped stream repeats
       nothing and keeps the final line. Open: the Monitor tool following a real job.
+- [~] M8.6 While queued, `check` prints its position and suggests `--detach` for a long wait.
+      The estimate design.md promised did not exist: there is now a labelled one, how long the
+      job usually runs, from its past passed runs, and none of the time in line; design.md
+      says so. Tested 2026-11-04 (0.30.0) with the fake coordinator and the real store.
+      Open: seen in a real queue. A job at position 1 behind a long job gets no suggestion.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

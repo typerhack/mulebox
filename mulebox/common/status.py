@@ -89,7 +89,7 @@ def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
         return {**event, "state": "running", "event": "started", "machine": job.get("worker")}
     if state in WAITING:
         return {**event, "event": "queued", "position": queue_position(job),
-                "waiting_for": job.get("waiting_for")}
+                "waiting_for": job.get("waiting_for"), "estimate_s": job.get("estimate_s")}
     return None
 
 

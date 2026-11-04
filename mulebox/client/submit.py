@@ -40,6 +40,8 @@ WATCH_RETRIES = 24  # with the delay: keep trying for 4 min, inside the 300 s cl
 PATIENT_RETRIES = 180  # 30 min; without the lease nothing is lost by waiting longer
 WATCH_RETRY_DELAY_S = 10.0
 RUN_JOB_NAME = "run"  # job name sent for `mulebox run`
+DETACH_HINT = ("this may take a while; next time add --detach and follow the job with "
+               "mulebox events")
 
 
 class WatchLost(MuleboxError):
@@ -116,6 +118,7 @@ def run_job(
         report.status(io.err, "cancelled before the job was submitted")
         return report.EXIT_CANCELLED
     watcher = Watcher(remote, io)
+    watcher.suggest_detach = not detach
     try:
         for path in snap.skipped_links:
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
@@ -173,6 +176,7 @@ class Watcher:
     """Follows one job's watch stream: log to stdout, state changes to stderr."""
 
     watch_options: dict[str, Any] = {}
+    suggest_detach = False
 
     def __init__(self, remote: RemoteLike, io: Streams) -> None:
         self.remote, self.io = remote, io
@@ -180,6 +184,7 @@ class Watcher:
         self.offset = 0
         self.tail = summary.LogTail()
         self.connected = False  # a message has arrived on some stream
+        self._suggested = False
         self._last_line: str | None = None
 
     def follow(self, lease: bool = True) -> dict[str, Any]:
@@ -228,6 +233,9 @@ class Watcher:
             if line is not None and line != self._last_line:
                 self._last_line = line
                 report.status(self.io.err, line)
+            if self.suggest_detach and not self._suggested and report.long_wait(body):
+                self._suggested = True
+                report.status(self.io.err, DETACH_HINT)
         return msg.type is MessageType.RESULT
 
     def write_log(self, body: dict[str, Any]) -> None:

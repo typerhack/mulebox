@@ -195,8 +195,11 @@ mulebox logs <id>            show a job's log
 mulebox cancel <id>          cancel a job
 ```
 
-While waiting, `check` shows queue position and an estimate; while running, the live log
-plus a status line (elapsed time, build machine CPU and memory). Ctrl-C cancels.
+While waiting, `check` shows its queue position and, once a job has passed at least 3 times,
+how long it usually runs, labelled as an estimate (the median of its last 10 passed runs with
+the same command). That is not the time in line: nothing here knows how long the jobs ahead
+will take. At position 2 or later, or for a job that usually takes 5 minutes or more, it
+suggests `--detach`. While running, the live log. Ctrl-C cancels.
 
 Recommended agent rule for each project: run builds, type checks, lint and tests with
 `mulebox check` / `mulebox run`; keep only git, search, reading and diffs local.
