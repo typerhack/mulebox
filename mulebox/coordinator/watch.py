@@ -11,7 +11,8 @@ Anyone watching a detached job holds its lease, whatever `lease` asked for: that
 it attended (attendance.py). A job with a client keeps its one lease holder. A watcher that
 finds a job unattended is told so once, and that the job is back. Every `timeout_min` of a
 running job a `status_ok` carries `check_in`, and a new stream gets the latest one, so someone
-who reconnects still hears it; a client tells them apart by number.
+who reconnects still hears it; a client tells them apart by number. `mulebox events` also gets a
+`status_ok` with `stage` as a job enters each stage; a stream with the log already shows that.
 
 Streams, clock and sleep are injected so the loop runs in tests without real stdin.
 """
@@ -94,6 +95,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
 
     last: tuple[str, int | None, str | None] | None = None
     checked_in = 0
+    stage_seq: int | None = None
     while True:
         now = clock()
         with store.read() as conn:  # state before log: finished means the log is complete
@@ -123,6 +125,14 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
                 rows = steps.for_job(conn, job_id)
             send(MessageType.STATUS_OK, status_body(job, check_in={
                 **attendance.activity(job, rows, now), "number": number}))
+        if not with_log and job["state"] != JobState.FINISHED:
+            with store.read() as conn:
+                rows = steps.for_job(conn, job_id)
+            if rows and rows[-1]["seq"] != stage_seq:
+                stage_seq = rows[-1]["seq"]
+                send(MessageType.STATUS_OK, status_body(job, stage={
+                    "stage": rows[-1]["stage"], "number": stage_seq,
+                    "started_at": rows[-1]["started_at"]}))
         if job["state"] == JobState.FINISHED:
             send(MessageType.RESULT, result_body(job, **failed))
             return 0

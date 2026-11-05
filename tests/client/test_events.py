@@ -143,6 +143,23 @@ def test_events_follow_a_real_job_through_the_queue(local, in_project, capsys):
     assert {e["job_id"] for e in lines} == {second} and first != second
 
 
+def test_events_say_when_a_job_enters_a_stage(local, in_project, capsys):
+    job_id, _ = detach(capsys)
+    rows = tuple({"seq": seq, "stage": stage, "started_at": 1.0 + seq, "finished_at": None,
+                  "exit_code": None} for seq, stage in enumerate(("prepare", "command")))
+    worker = FakeWorker(local.store, local.staging, exit_code=0, pause=1.0, steps=rows)
+    thread = threading.Thread(target=worker.run_next)
+    thread.start()
+    code = cli.main(["events", "--job", job_id, "--json"])
+    thread.join()
+    stages = [e for e in lines_of(capsys.readouterr().out) if e["event"] == "stage"]
+    assert code == 0 and stages[-1]["stage"] == "command" and stages[-1]["number"] == 1
+
+
+def test_stage_events_read_as_text():
+    assert events.as_text({"event": "stage", "stage": "services"}) == "stage services"
+
+
 def test_events_after_the_job_ended_still_give_the_result(local, in_project, capsys):
     job_id, _ = detach(capsys)
     FakeWorker(local.store, local.staging, exit_code=0).run_next()

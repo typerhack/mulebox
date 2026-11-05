@@ -107,6 +107,7 @@ EVENTS = (
     "started has machine; finished has outcome, exit_code and duration_s",
     "finished also has stage, where a job that ended badly failed (null when not known), and "
     "stop_reason when its outcome is stopped",
+    "stage comes as a job enters a stage, with stage, number and started_at",
     "check_in comes every timeout_min of a running job, with elapsed_s, stage, output_idle_s, "
     "idle_s, cpu_pct and net_kib_s; a reading it could not measure is null",
     "unattended says a job was left unwatched: reason, left_s and taken_back, as it comes back",

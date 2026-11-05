@@ -104,7 +104,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 {"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "stop_reason": null, "v": 1}
 ```
 
-  Ignore events and keys you do not know; an event per stage is planned. In `finished`, `stage`
+  A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
   is where a job that ended badly failed, null when that is not known. `exit_code` is the code
   the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,
   75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. `unattended` is in

@@ -13,9 +13,10 @@ An event line is one JSON object with `v`, `event`, `job_id` and `state`. `event
 known, and `stop_reason` for outcome `stopped`), `check_in` (`number`, `elapsed_s`, `stage`,
 `output_idle_s`, `idle_s`, `cpu_pct`, `net_kib_s`; every `timeout_min`, readings null when the
 worker could not measure them) or `unattended` (`reason`, `stop_reason`, `left_s`, `stop_at`,
-`taken_back`: seen once, by the watcher that takes the job back). `exit_code` is the code the
-command exits with. Readers must ignore events and keys they do not know: events for each
-`stage` are planned.
+`taken_back`: seen once, by the watcher that takes the job back) or `stage` (`stage`, `number`,
+`started_at`: the job entered a stage; someone who connects late gets the current one).
+`exit_code` is the code the command exits with. Readers must ignore events and keys they do not
+know.
 """
 
 from __future__ import annotations
@@ -53,6 +54,8 @@ def as_text(event: Event) -> str:
         return attention.check_in_line(str(event.get("job_id")), event)
     if kind == "unattended":
         return attention.unattended_line(str(event.get("job_id")), event)
+    if kind == "stage":
+        return f"stage {event.get('stage')}"
     if kind == "queued":
         place = event.get("position")
         return f"queued, position {place}" if place is not None else "queued"

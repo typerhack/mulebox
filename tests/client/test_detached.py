@@ -54,6 +54,7 @@ class FakeWorker:
         time.sleep(self.pause)
         if self.steps:
             self.send(MessageType.STEPS, steps=self.steps, **job)
+            time.sleep(self.pause)
         outcome = "passed" if self.exit_code == 0 else "failed"
         self.send(MessageType.RESULT, outcome=outcome, exit_code=self.exit_code, duration_s=1.5,
                   **job)

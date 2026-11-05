@@ -47,7 +47,7 @@ STOP_IDLE, STOP_LIMIT, STOP_QUEUED = "unattended_idle", "unattended_limit", "una
 STOP_TEXT = {STOP_IDLE: "no activity while nobody watched",
              STOP_LIMIT: "the machine's limit for a job nobody watches",
              STOP_QUEUED: "still queued at the machine's limit for a job nobody watches"}
-NOTICES = ("check_in", "unattended")
+NOTICES = ("check_in", "unattended", "stage")
 
 
 def number(value: Any) -> float | None:

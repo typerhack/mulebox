@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.44.0 - 2026-11-05 - minor
+- `mulebox events` has a `stage` event as a job enters each stage, so an agent can follow a job
+  without its log. Before, a job's events were only started and finished.
+
 ## 0.43.2 - 2026-11-05 - patch
 - `usual` counts only runs before the job asked about, and of two middle runs takes the lower. A
   real report: `status` on an old job compared it with itself and later runs, and two runs of
