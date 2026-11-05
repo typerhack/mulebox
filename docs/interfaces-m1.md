@@ -64,6 +64,10 @@ stop (`cancelled` with a `stop_reason`, docs/design.md, Time limits) -> 76.
 
 ## Wire usage (protocol.py; replies reuse `request_id`)
 
+`submit_ok`, `status`, `queue_ok` and `machines_ok` also carry `dashboard`: `{"url": str | null}`,
+null when the dashboard is only reachable through a tunnel, or `null` when it is off. Older
+coordinators leave it out, and the client then prints nothing.
+
 `status_ok` is the generic reply carrying `job_id, state` (+ `outcome`, `exit_code`,
 `position` when queued, `worker` when active, `estimate_s` and `estimate_runs` when queued
 with enough history (coordinator/usual.py), `stage` when a job ended badly in a known stage, `cancel: bool` for worker heartbeats). Errors reply `error` with
@@ -76,7 +80,7 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity`; `stop_reason` on a stopped job) |
 | cancel | job_id | status_ok |
 | heartbeat | job_id, lease (`client`/`worker`), + `attempt_id` and `activity` for worker | status_ok (+ `cancel`) |
-| queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts) |
+| queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts; `dashboard`, see below) |
 | projects | - | projects_ok (projects: `project`, `jobs`, `last_run`, `kind`, `state`, `outcome` of the newest job, newest first) |
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
 | watch | job_id, offset, + `lease: bool`, `log: bool` (default true) | stream: log_chunk (none with `log: false`) / status_ok lines, final `result` |

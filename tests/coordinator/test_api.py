@@ -131,3 +131,10 @@ def test_outcome_values_on_finished_status(store, staging):
     call(store, staging, "cancel", job_id=job_id)
     body = call(store, staging, "status", job_id=job_id).body
     assert body["outcome"] == Outcome.CANCELLED and body["exit_code"] is None
+
+
+def test_replies_carry_where_the_dashboard_is(store, staging):
+    where = {"url": "http://192.168.1.50:8090"}
+    msg = request(MessageType.QUEUE)
+    assert api.handle(store, staging, msg, T0, dashboard=where).body["dashboard"] == where
+    assert api.handle(store, staging, msg, T0).body["dashboard"] is None

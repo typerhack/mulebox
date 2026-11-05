@@ -11,6 +11,7 @@ from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
 from mulebox.common.config import ProjectConfig
+from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
 
 OK, WARN, FAIL = "ok", "warn", "fail"
@@ -32,6 +33,12 @@ def env_references(project: ProjectConfig) -> list[Finding]:
     return [Finding(WARN, "env", f"{key} uses ${{{name}}}, which is no earlier env: entry and no "
                     "mulebox variable; unless the machine's job_env sets it, the job cannot "
                     "start (exit 5)") for key, name in unknown_references(project.env)]
+
+
+def dashboard(facts: Facts) -> list[Finding]:
+    """Where the user can watch, if the machine says."""
+    found = place(facts.get("dashboard"))
+    return [Finding(OK, "dashboard", found)] if found else []
 
 
 def versions(client: str, facts: Facts) -> list[Finding]:

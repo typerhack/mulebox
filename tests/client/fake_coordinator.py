@@ -87,7 +87,7 @@ def main():
         send("machines_ok", rid, version=scenario.get("machine_version", "0.0.0"),
              workers=scenario.get("workers", []))
     elif kind == "queue":
-        send("queue_ok", rid, jobs=scenario.get("jobs", []))
+        send("queue_ok", rid, jobs=scenario.get("jobs", []), dashboard=scenario.get("dashboard"))
     elif kind == "logs":
         text = "".join(scenario.get("log", []))
         data = text.encode()[body["offset"]:].decode()

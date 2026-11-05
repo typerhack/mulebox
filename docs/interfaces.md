@@ -40,7 +40,7 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   (`jobs`, `cache`, `staging`, `runners`, all absolute), `slots: int` (default 1),
   `capabilities: tuple[str, ...]`, `coordinator: str | None` (ssh target; None if local),
   `dashboard: dict` (`mode`: `off|local|lan`, `port`: 8090, `lan_range`: private CIDR or
-  None, `lan_address`: IPv4 inside `lan_range` or None, `lan_port`: 8443, `lan_tls`: false),
+  None, `lan_address`: IPv4 inside `lan_range` or None, `lan_port`: same as `port`, `lan_tls`: false),
   `job_env: dict[str, str]` (environment for every job on this machine; `env:` of a project
   overrides it), `retention: dict` (`log_days`: 30, `step_days`: 365), `limits: dict`
   (`unattended_idle_min`: 15, `unattended_max_hours`: 24).

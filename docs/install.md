@@ -274,7 +274,7 @@ Agents without skills can read [agents.md](agents.md) instead.
 ### Dashboard on the LAN
 
 `lan` mode lets other devices, such as a phone, open the dashboard directly at
-`http://<address>:8443`, with a password unless you turn it off (below). The tunnel above
+`http://<address>:8090`, the same port as on the machine itself, with a password unless you turn it off (below). The tunnel above
 keeps working. Reserve the
 machine's address on your router first, so that it stays the same.
 
@@ -287,7 +287,6 @@ On the build machine, add to `[dashboard]` in `node.toml`, leaving `mode` as it 
 ```toml
 lan_range = "192.168.1.0/24"   # who may connect; must be a private network
 lan_address = "192.168.1.50"   # this machine, inside lan_range
-lan_port = 8443                # optional
 ```
 
 Then:
@@ -301,8 +300,9 @@ sudo sh firewall.sh
 Now set `mode = "lan"` and run `systemctl --user restart mulebox-dashboard`. If a step is
 missing, the service stops and says which: see `journalctl --user -u mulebox-dashboard`.
 
-The firewall script adds one nftables table that only affects `lan_port`, and a root unit,
-`mulebox-dashboard-firewall`, that loads it at boot. It leaves ufw, Docker, VPN clients and
+The firewall script adds one nftables table that only affects the dashboard's port, and a root unit,
+`mulebox-dashboard-firewall`, that loads it at boot. If the port changes, run the two
+firewall lines again. It leaves ufw, Docker, VPN clients and
 SSH alone, and it is the only step that needs root. To remove it:
 
 ```sh

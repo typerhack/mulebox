@@ -32,7 +32,7 @@ mode = "local"
 port = 8090
 # lan_range = "192.168.1.0/24"
 # lan_address = "192.168.1.50"
-# lan_port = 8443
+# lan_port = 9443              # only for a different port; the default is `port`
 # lan_tls = false
 # lan_password = true
 

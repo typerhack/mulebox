@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, TextIO
 
 from mulebox.common.config import DEFAULT_LOG_DAYS
+from mulebox.common.dashboard_address import hint
 from mulebox.common.protocol import Outcome
 from mulebox.common.status import (
     SHOWN_STOPPED,
@@ -39,6 +40,13 @@ def status(err: TextIO, text: str) -> None:
     """One mulebox status line on stderr (never mixed into the job log on stdout)."""
     err.write(f"{PREFIX}{text}\n")
     err.flush()
+
+
+def dashboard_hint(err: TextIO, body: dict[str, Any], job_id: str | None = None) -> None:
+    """Where to see this, from a coordinator reply; silent when the reply does not say."""
+    line = hint(body.get("dashboard"), job_id)
+    if line:
+        status(err, line)
 
 
 def exit_code_for(result: dict[str, Any]) -> int:

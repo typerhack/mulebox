@@ -57,7 +57,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
 | list every project that has run on this build machine | `mulebox projects` |
-| open the web dashboard (for a person; holds a tunnel until Ctrl-C) | `mulebox dashboard open` |
+| open the web dashboard (for a person; holds a tunnel until Ctrl-C). `check`, `queue`, `status` and `doctor` print its address when the machine has one on the LAN: pass it to the user | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>`; old logs expire on the build machine, and it says so when one has (`mulebox status <job-id>` still has the result) |
 | see why a job failed, without its whole log | `mulebox logs <job-id> --summary` |
 | stop a job | `mulebox cancel <job-id>` (Ctrl-C on a running `check` also cancels) |

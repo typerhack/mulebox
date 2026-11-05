@@ -95,6 +95,7 @@ def run_job(
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
+        report.dashboard_hint(io.err, reply.body, watcher.job_id)
         attention.warn(reply.body.get("unattended"), io.err)
         if detach and reply.body.get("detached") is not True:
             _refuse_detach(remote, watcher.job_id)

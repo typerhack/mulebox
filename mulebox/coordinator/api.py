@@ -38,13 +38,13 @@ MAX_TIMEOUT_MIN = 240
 
 
 def handle(store: Store, staging: Staging, msg: Message, now: float, *,
-           cluster_slots: int = 1) -> Message:
+           cluster_slots: int = 1, dashboard: dict[str, Any] | None = None) -> Message:
     """Answer one request message. Never raises for a bad request; replies `error`."""
     try:
         handler = _HANDLERS.get(msg.type)
         if handler is None:
             raise BadRequest(f"'{msg.type}' is not a request the coordinator answers here")
-        return handler(Request(store, staging, msg, now, cluster_slots))
+        return handler(Request(store, staging, msg, now, cluster_slots, dashboard))
     except CoordinatorError as exc:
         return error_message(msg.request_id, exc.code, str(exc))
     except (ProtocolError, ValueError) as exc:
@@ -87,7 +87,8 @@ def submit(req: Request) -> Message:
     # `detached` is echoed: a client must not leave a job behind that a coordinator too old to
     # know the flag would cancel 5 minutes later.
     return req.reply(MessageType.SUBMIT_OK, {"job_id": job["job_id"], "state": job["state"],
-                                             "detached": job["detached"], "unattended": left})
+                                             "detached": job["detached"], "unattended": left,
+                                             "dashboard": req.dashboard})
 
 
 def _unattended_in(conn: Any, project: str, now: float) -> list[dict[str, Any]]:
@@ -111,7 +112,8 @@ def status(req: Request) -> Message:
     return req.reply(MessageType.STATUS_OK, {
         **status_body(job, place, reason, steps=rows, usual=typical,
                       **usual.estimate(job, typical), **failed),
-        **status_facts(job), **attendance.status_fields(job, rows, req.now, limits)})
+        **status_facts(job), **attendance.status_fields(job, rows, req.now, limits),
+        "dashboard": req.dashboard})
 
 
 def cancel(req: Request) -> Message:
@@ -140,7 +142,7 @@ def queue_list(req: Request) -> Message:
         rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now)),
                  **attendance.fields(job, req.now, limits)}
                 for job, pos in queue.listing(conn, limit)]
-    return req.reply(MessageType.QUEUE_OK, {"jobs": rows})
+    return req.reply(MessageType.QUEUE_OK, {"jobs": rows, "dashboard": req.dashboard})
 
 
 def project_list(req: Request) -> Message:
@@ -152,7 +154,8 @@ def project_list(req: Request) -> Message:
 def machine_list(req: Request) -> Message:
     with req.store.read() as conn:
         rows = [workers.report(worker, req.now) for worker in workers.listing(conn)]
-    return req.reply(MessageType.MACHINES_OK, {"version": get_version(), "workers": rows})
+    return req.reply(MessageType.MACHINES_OK, {"version": get_version(), "workers": rows,
+                                               "dashboard": req.dashboard})
 
 
 def logs(req: Request) -> Message:

@@ -114,7 +114,8 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 `firewall.py`, `lanfiles.py`, `listeners.py`.
 
 - **Two listeners, one app.** `127.0.0.1:<port>` for the tunnel, with no password, and
-  `<lan_address>:<lan_port>`, plain HTTP unless `lan_tls` is on. The rules follow which
+  `<lan_address>:<lan_port>`, plain HTTP unless `lan_tls` is on. `lan_port` is `port` unless set,
+  so one number works on both addresses; they stay two sockets. The rules follow which
   listener the socket belongs to, never a header, and do not depend on TLS. If the socket
   address is unknown, the request counts as LAN. Forwarded-for headers are ignored.
 - **Plain HTTP is a choice, not a default to fix** (user, 2026-11-04): the password and

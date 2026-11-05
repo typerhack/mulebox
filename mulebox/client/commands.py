@@ -14,6 +14,7 @@ import json
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from mulebox.client import attention, contract, queue_view, report, summary, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
@@ -153,9 +154,11 @@ def _run(args: argparse.Namespace) -> int:
 
 def _queue(args: argparse.Namespace) -> int:
     remote = connect()
+    latest: dict[str, Any] = {}
 
     def fetch() -> list[dict]:
         reply = remote.call(request(MessageType.QUEUE, limit=QUEUE_LIMIT))
+        latest.update(reply.body)
         jobs = reply.body.get("jobs")
         if not isinstance(jobs, list):
             raise CoordinatorError("the queue reply has no job list")
@@ -164,6 +167,7 @@ def _queue(args: argparse.Namespace) -> int:
     if args.watch:
         return tui.watch(fetch, remote.target)
     tui.show_once(fetch, sys.stdout)
+    report.dashboard_hint(sys.stderr, latest)
     return 0
 
 
