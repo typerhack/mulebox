@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.53.1 - 2026-11-05 - patch
+- Roadmap: tasks seen working on a real machine are closed; the rest say what stays open. A merge marker left in docs/design.md by 0.53.0 is gone.
+
 ## 0.53.0 - 2026-11-05 - minor
 - Optional cancel button on the dashboard for signed-in users on the lan address, off by default, through `mulebox rpc`.
 
