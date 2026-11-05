@@ -20,11 +20,13 @@ import re
 from typing import Any
 
 from mulebox.client import report
+from mulebox.common.network_errors import LOST
 from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, NOT_STARTED_NOTE
 
 TAIL_BYTES = 256 * 1024  # room for the container logs (50 lines per service) and what precedes
 MAX_LINES = 20
 MAX_WIDTH = 300
+HINT_LINES = 6  # a network failure ends the job; one earlier in a log was survived
 SIMILAR_RUN = 3  # shorter runs of similar lines stay: they may be different test failures
 STAGE_START = "start"
 
@@ -117,6 +119,14 @@ def _stage(result: dict[str, Any], lines: list[str]) -> str | None:
     return STAGE_START if any(ln.startswith(NOT_STARTED_NOTE) for ln in lines) else None
 
 
+def _network_hint(lines: list[str]) -> list[str]:
+    """A hint, not a verdict: the job ran and failed, and only someone reading it can tell why."""
+    if any(LOST.search(line) for line in lines[-HINT_LINES:]):
+        return ["this reads like a network failure, not a fault in the code: the last lines show "
+                "a lost connection or lookup. If so, run it again"]
+    return []
+
+
 def render(job_id: str, result: dict[str, Any], lines: list[str]) -> list[str]:
     """The summary as text lines; the exit code is the one this job's commands return."""
     out = [f"failure summary of job {job_id}"]
@@ -124,6 +134,7 @@ def render(job_id: str, result: dict[str, Any], lines: list[str]) -> list[str]:
     if stage:
         out.append(f"failed stage: {stage}")
     out.append(f"outcome: {result.get('outcome')}, exit code {report.exit_code_for(result)}")
+    out += _network_hint(lines)
     if lines:
         out.append(f"last lines of the log, without progress and container logs "
                    f"(full log: mulebox logs {job_id}):")

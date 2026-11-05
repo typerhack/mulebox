@@ -29,6 +29,19 @@ def test_the_workers_last_word_stays_after_container_logs():
     assert lines_of(text) == ["Error: dial tcp", f"{NOT_STARTED_NOTE} no image"]
 
 
+def test_a_lost_connection_at_the_end_gets_a_hint():
+    out = summary.render(JOB, {"outcome": "failed", "exit_code": 1},
+                         ["npm ERR! code ECONNRESET", "npm ERR! network request failed"])
+    assert any("reads like a network failure" in line for line in out)
+
+
+def test_a_service_refusing_or_an_old_timeout_gets_no_hint():
+    lines = ["ETIMEDOUT, retrying", *(f"test {n} ok" for n in range(summary.HINT_LINES)),
+             "Error: connect ECONNREFUSED 127.0.0.1:5432"]
+    out = summary.render(JOB, {"outcome": "failed", "exit_code": 1}, lines)
+    assert not any("reads like a network failure" in line for line in out)
+
+
 def test_progress_is_left_out_but_numbers_in_results_are_not():
     text = ("Progress: resolved 543, reused 500, downloaded 0, added 0\n"
             "  45% building\n[=====>     ] 12/40\n12MB/40MB\n"

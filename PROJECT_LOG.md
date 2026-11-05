@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.49.1 - 2026-11-05 - patch
+- A failure summary whose last lines show a lost connection or lookup says that it reads like a
+  network failure. The texts moved to `common/network_errors.py`, shared with `pull_failure.py`.
+
 ## 0.49.0 - 2026-11-05 - minor
 - A package cache that starts empty says so in the job's log. A project that turned a cache on saw
   every package downloaded again, with nothing to explain it. The roadmap records today's real
