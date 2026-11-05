@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.9 - 2026-11-05 - patch
+- The notice for `env:` entries a job goes without lost its doubled colon and reads right for one.
+
 ## 0.40.8 - 2026-11-05 - patch
 - A job whose images could not be fetched for a network reason is a job that never ran, exit 5, not
   a failed check with exit 1. `worker/pull_failure.py` reads the images stage's last line. The

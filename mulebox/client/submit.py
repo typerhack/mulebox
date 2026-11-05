@@ -79,8 +79,7 @@ def run_job(
     job, argv = job_request(project, target)
     project, dropped = for_job(project, target if isinstance(target, str) else None)
     if dropped:
-        report.status(io.err, f"this job has no {', '.join(dropped)} from env:: they use a port "
-                      "it does not have")
+        report.status(io.err, left_out(dropped))
     try:
         snap = make_snapshot(root, project.exclude)
     except KeyboardInterrupt:
@@ -113,6 +112,13 @@ def run_job(
     stale_check(root, project, snap.fingerprint, io)
     watcher.finish(result)
     return report.exit_code_for(result)
+
+
+def left_out(names: Sequence[str]) -> str:
+    """The notice for `env:` entries a job goes without."""
+    what = f"entry {names[0]}, which uses" if len(names) == 1 else (
+        f"entries {', '.join(names)}, which use")
+    return f"this job leaves out the env: {what} a port it does not have"
 
 
 def _refuse_detach(remote: RemoteLike, job_id: str) -> None:

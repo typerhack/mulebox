@@ -270,3 +270,9 @@ def test_the_failure_summary_is_the_last_thing_printed_after_the_container_logs(
     assert any("stale" in line for line in err)
     assert err[-1].endswith("the real error")
     assert not any("a line of a container" in line for line in err)
+
+
+def test_the_left_out_notice_reads_for_one_entry_and_for_more():
+    assert submit.left_out(["A"]) == ("this job leaves out the env: entry A, which uses a port "
+                                      "it does not have")
+    assert "entries A, B, which use a port" in submit.left_out(["A", "B"])
