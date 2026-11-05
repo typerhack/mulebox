@@ -9,6 +9,8 @@ and `render` makes the summary. What is left out:
   terminal would have overwritten (`\\r`);
 - runs of a line that differs only in its numbers, kept once with a count.
 
+A line that reads as the failure stays even above the last lines: see `relevant_lines`.
+
 The stage comes from the result: the coordinator works it out from the job's stage rows
 (`common/status.py`, `failed_step`). Without one, from an older worker or a job that left no
 rows, the only stage a log can show is a job that never started.
@@ -26,6 +28,8 @@ from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, NOT_STARTED_
 TAIL_BYTES = 256 * 1024  # room for the container logs (50 lines per service) and what precedes
 MAX_LINES = 20
 MAX_WIDTH = 300
+MAX_EARLIER = 6  # the first failures explain the rest; a long list is what the log is for
+SKIPPED = "[...]"
 HINT_LINES = 6  # a network failure ends the job; one earlier in a log was survived
 SIMILAR_RUN = 3  # shorter runs of similar lines stay: they may be different test failures
 STAGE_START = "start"
@@ -45,6 +49,13 @@ _PROGRESS = re.compile("|".join((
     r"^\s*(Downloading|Extracting|Fetching)\b",
     rf"^[0-9a-f]{{12}}: ({_LAYER_WORDS})\b",  # image layers
     rf"^\W*(Container|Network|Volume|Image) \S+\s+({_COMPOSE_WORDS})\s*$",  # compose up
+)))
+_FAILURE = re.compile("|".join((
+    r"^\s*not ok\b",  # TAP: node --test, prove
+    r"^\s*(FAIL|FAILED|ERROR)\b",  # vitest, jest, pytest
+    r"^\s*[✖✕×]",  # mocha, vitest
+    r"^\s*error(\[|:)",  # cargo, TAP's `error: |-`
+    r"\b[A-Z]\w*Error\b:",  # TypeError: ...
 )))
 
 
@@ -96,15 +107,31 @@ def _collapse(lines: list[str]) -> list[str]:
     return out
 
 
+def _earlier_failures(lines: list[str]) -> list[str]:
+    """The first lines that read as the failure, with what a `key: |-` header introduces."""
+    picked: list[str] = []
+    for index, line in enumerate(lines):
+        if _FAILURE.search(line):
+            picked.append(line)
+            if line.endswith("|-") and index + 1 < len(lines):
+                picked.append(lines[index + 1])
+    return picked[:MAX_EARLIER]
+
+
 def relevant_lines(tail: LogTail, limit: int = MAX_LINES) -> list[str]:
-    """The last `limit` lines worth reading, oldest first."""
+    """The last `limit` lines worth reading, after any earlier line that reads as the failure.
+
+    A test runner prints its stack and totals after the message, which can push the message
+    itself out of the last lines. Oldest first."""
     text = _before_containers(tail.text)
     raw = text.split("\n")
     if tail.cut:
         raw = raw[1:]  # its start is gone
     lines = [_clean(line) for line in raw]
-    kept = [line for line in lines if line and not _PROGRESS.search(line)]
-    return [line[:MAX_WIDTH] for line in _collapse(kept)[-limit:]]
+    kept = _collapse([line for line in lines if line and not _PROGRESS.search(line)])
+    earlier = _earlier_failures(kept[:-limit])
+    shown = [*earlier, SKIPPED, *kept[-limit:]] if earlier else kept[-limit:]
+    return [line[:MAX_WIDTH] for line in shown]
 
 
 def wanted(result: dict[str, Any]) -> bool:

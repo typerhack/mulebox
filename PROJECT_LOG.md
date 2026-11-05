@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.52.2 - 2026-11-05 - patch
+- The failure summary keeps earlier lines that read as the failure, as a test runner's stack and totals can fill the last lines.
+
 ## 0.52.1 - 2026-11-05 - patch
 - User docs: getting started, troubleshooting, toolchains, a laptop install that works with current
   Python packaging, a warning against runners on public repositories, and the release process.

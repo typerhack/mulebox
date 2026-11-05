@@ -19,6 +19,31 @@ def test_keeps_the_end_of_the_log():
     assert lines_of(text) == [line for line in text.splitlines()[-20:]]
 
 
+def test_the_failure_stays_when_its_stack_and_totals_fill_the_last_lines():
+    head = ["TAP version 13", "# Subtest: top order", "not ok 1 - top order",
+            "  duration_ms: 112", "  failureType: 'testCodeFailure'", "  error: |-",
+            "    ranking differs", "  code: 'ERR_ASSERTION'", "  name: 'AssertionError'"]
+    rest = [f"  frame {chr(97 + i)} of the stack" for i in range(12)]
+    rest += [f"# {word} 1" for word in ("tests", "suites", "pass", "fail", "cancelled",
+                                        "skipped", "todo", "duration_ms")]
+    shown = lines_of("\n".join(head + rest) + "\n")
+    at = shown.index(summary.SKIPPED)
+    assert shown[:at] == ["not ok 1 - top order", "  error: |-", "    ranking differs"]
+    assert shown[at + 1:] == rest
+
+
+def test_earlier_failures_are_capped_at_the_first():
+    text = "".join(f"FAIL test {chr(97 + i)}\n" for i in range(20))
+    text += "".join(f"line {chr(97 + i)} of the rest\n" for i in range(26))
+    shown = lines_of(text)
+    assert shown[0] == "FAIL test a" and len(shown) == summary.MAX_EARLIER + 1 + 20
+
+
+def test_a_quiet_log_has_no_earlier_lines():
+    text = "".join(f"step {chr(97 + i)}\n" for i in range(26))
+    assert summary.SKIPPED not in lines_of(text)
+
+
 def test_container_logs_are_left_out():
     text = f"src/a.ts(3,1): error TS2322\n{CONTAINER_LOGS_NOTE}\nNAME  STATE\napi-1 | boom\n"
     assert lines_of(text) == ["src/a.ts(3,1): error TS2322"]
