@@ -188,7 +188,7 @@ def test_status_is_the_activity_view(store, staging):
     assert body["attended"] is True and body["unattended"] is None
     assert body["activity"] == {"elapsed_s": 42.0, "stage": None, "output_idle_s": 12.5,
                                 "idle_s": 2.0, "job_cpu_pct": None, "cpu_pct": 180.0,
-                                "net_kib_s": 1.5}
+                                "net_kib_s": 1.5, "last_line": None}
     away = call(store, staging, "status", GONE + 1, job_id=job["job_id"]).body
     assert away["attended"] is False and away["unattended"]["reason"]
 
@@ -251,7 +251,7 @@ def test_a_running_job_checks_in_every_timeout_min(store, staging):
              if "check_in" in b]
     assert found == [{"number": 2, "elapsed_s": 1500.0, "stage": None, "output_idle_s": 30.0,
                       "idle_s": 1.0, "job_cpu_pct": None, "cpu_pct": 99.0,
-                      "net_kib_s": 2.0}]
+                      "net_kib_s": 2.0, "last_line": None}]
 
 
 def test_a_queued_job_does_not_check_in(store, staging):

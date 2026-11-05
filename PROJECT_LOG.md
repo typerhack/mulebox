@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.45.0 - 2026-11-05 - minor
+- A check-in and `status` carry `last_line`, the job's last output, redacted. A check-in named only
+  the stage, and `command` is most of a job.
+
 ## 0.44.0 - 2026-11-05 - minor
 - `mulebox events` has a `stage` event as a job enters each stage, so an agent can follow a job
   without its log. Before, a job's events were only started and finished.

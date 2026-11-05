@@ -109,7 +109,8 @@ EVENTS = (
     "stop_reason when its outcome is stopped",
     "stage comes as a job enters a stage, with stage, number and started_at",
     "check_in comes every timeout_min of a running job, with elapsed_s, stage, output_idle_s, "
-    "idle_s, cpu_pct and net_kib_s; a reading it could not measure is null",
+    "last_line (the job's last output, redacted), idle_s, job_cpu_pct, cpu_pct and net_kib_s; "
+    "a reading it could not measure is null",
     "unattended says a job was left unwatched: reason, left_s and taken_back, as it comes back",
     "after finished, read mulebox logs <job-id> --summary if the job failed",
 )

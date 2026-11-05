@@ -70,11 +70,12 @@ class MachineMeter:
 
 
 def report(machine: MachineMeter, job: JobMeter, started_at: float, output_at: float,
-           stage: str | None, now: float) -> dict[str, Any]:
-    """The `activity` of a heartbeat, for a job with these times (agent clock)."""
+           stage: str | None, last_line: str | None, now: float) -> dict[str, Any]:
+    """The `activity` of a heartbeat, for a job with these times (agent clock). `last_line` is
+    the stage's last output, redacted: inside `command`, the only sign of which step is on."""
     output_idle = max(0.0, now - max(started_at, output_at))
     idle = None
     if job.busy_at is not None and stage != IMAGES:
         idle = round(min(output_idle, now - job.busy_at), 1)
     return {"output_idle_s": round(output_idle, 1), "idle_s": idle, "job_cpu_pct": job.cpu_pct,
-            "cpu_pct": machine.cpu_pct, "net_kib_s": machine.net_kib_s}
+            "cpu_pct": machine.cpu_pct, "net_kib_s": machine.net_kib_s, "last_line": last_line}

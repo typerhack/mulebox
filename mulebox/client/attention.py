@@ -63,6 +63,8 @@ def activity_text(activity: dict[str, Any]) -> str:
         parts.append(f"machine CPU {cpu:.0f}% of a core")
     if net is not None:
         parts.append(f"machine network {net:.1f} KiB/s")
+    if activity.get("last_line"):
+        parts.append(f"last line: {activity['last_line']}")
     return ", ".join(parts) or "no readings from the machine"
 
 

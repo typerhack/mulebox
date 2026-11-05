@@ -291,6 +291,8 @@ Fixes from the second project tests (2026-11-04).
       a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
       and a test through the worker with a stand-in `docker`. Done 2026-11-05 (0.43.0): a real job on
       a build machine with an unreachable registry: exit 5, stage `images`, reason in the summary.
+- [~] M13.6 A check-in and `status` give the job's last output line, redacted, so `command` does
+      not hide which step is on. Built 2026-11-05 (0.45.0), with tests. Open: a real long job.
 - [~] M13.5 `mulebox events` has a `stage` event as a job enters each stage. Built 2026-11-05
       (0.44.0), tested with the real coordinator code. Open: a real job on a build machine.
 - [x] M13.4 `usual` counts only runs before the job, so `status` on an old job says what was usual

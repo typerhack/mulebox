@@ -11,8 +11,8 @@ An event line is one JSON object with `v`, `event`, `job_id` and `state`. `event
 (`position`, `waiting_for` when set), `started` (`machine`) or `finished` (`outcome`,
 `exit_code`, `duration_s`, `stage`: where a job that ended badly failed, null when that is not
 known, and `stop_reason` for outcome `stopped`), `check_in` (`number`, `elapsed_s`, `stage`,
-`output_idle_s`, `idle_s`, `cpu_pct`, `net_kib_s`; every `timeout_min`, readings null when the
-worker could not measure them) or `unattended` (`reason`, `stop_reason`, `left_s`, `stop_at`,
+`output_idle_s`, `last_line`, `idle_s`, `job_cpu_pct`, `cpu_pct`, `net_kib_s`; every
+`timeout_min`, readings null when the worker could not measure them) or `unattended` (`reason`, `stop_reason`, `left_s`, `stop_at`,
 `taken_back`: seen once, by the watcher that takes the job back) or `stage` (`stage`, `number`,
 `started_at`: the job entered a stage; someone who connects late gets the current one).
 `exit_code` is the code the command exits with. Readers must ignore events and keys they do not

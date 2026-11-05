@@ -92,7 +92,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `interrupted`, and `mulebox cancel` still stops it. A job nobody watches runs under the limits
   of section 1a. If you no longer want it, cancel it.
 - **Watching a job.** `mulebox events --job <job-id> --json` prints one JSON line per state
-  change and no log text, and exits when the job ends, with the job's exit code. A dropped
+  change, with no log text but for `last_line` in a `check_in`, and exits when the job ends, with the job's exit code. A dropped
   connection is resumed for 30 minutes with nothing repeated and the final line kept; if it
   gives up (exit 3), run it again, a finished job still gives its result. In Claude Code, the
   Monitor tool can follow this command, so each line reaches you while you do other work.
@@ -100,7 +100,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 ```json
 {"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
 {"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
-{"cpu_pct": 212.5, "elapsed_s": 1800.2, "event": "check_in", "idle_s": 4.1, "job_id": "job-...", "net_kib_s": 0.3, "number": 1, "output_idle_s": 41.0, "stage": "command", "state": "running", "v": 1}
+{"cpu_pct": 212.5, "elapsed_s": 1800.2, "event": "check_in", "idle_s": 4.1, "job_id": "job-...", "net_kib_s": 0.3, "number": 1, "output_idle_s": 41.0, "last_line": "Compiling app", "stage": "command", "state": "running", "v": 1}
 {"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "stop_reason": null, "v": 1}
 ```
 
@@ -149,8 +149,8 @@ Watching means an attached `check`, `mulebox wait`, `mulebox events` or `mulebox
 
 - **`timeout_min` is a check-in, not a limit.** Every `timeout_min` of a running job (default
   30), `mulebox events` prints a `check_in` event, and an attached `check` or `wait` prints the
-  same as a warning: elapsed time, stage, seconds since the last output, the job's own CPU, and
-  the machine's CPU and network, null when they cannot be read. Stop a job with `mulebox cancel <job-id>`; if it
+  same as a warning: elapsed time, stage, seconds since the last output and that line, the job's
+  own CPU, and the machine's CPU and network, null when they cannot be read. Stop a job with `mulebox cancel <job-id>`; if it
   is fine, do nothing. `mulebox status <job-id>` shows the same any time, without watching.
 - **A job nobody watches is `unattended`.** A detached job becomes so about 5 minutes after its
   last watcher left, so a dropped connection is forgiven, and a queued one counts as well. An

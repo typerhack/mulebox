@@ -178,3 +178,8 @@ def test_wait_takes_a_job_back(local, in_project, capsys):
     thread.join()
     assert code == 3
     assert "being watched again" in capsys.readouterr().err
+
+
+def test_a_check_in_names_the_last_line():
+    line = attention.check_in_line("job-1", {"elapsed_s": 60, "last_line": "tests: 40 of 90"})
+    assert "last line: tests: 40 of 90" in line

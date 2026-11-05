@@ -36,7 +36,7 @@ def test_no_proc_is_unknown(tmp_path):
 
 
 def report(job, now, output_at=0.0, stage=COMMAND):
-    return activity.report(MachineMeter(lambda: None), job, 0.0, output_at, stage, now)
+    return activity.report(MachineMeter(lambda: None), job, 0.0, output_at, stage, None, now)
 
 
 def job_with(*readings):
@@ -51,7 +51,8 @@ def test_machine_readings_are_kept_and_decide_nothing():
     machine.update(0.0)
     machine.update(SAMPLE_S)
     job = job_with({"unit": 0.0}, {"unit": 0.0})
-    got = activity.report(machine, job, 0.0, 0.0, COMMAND, SAMPLE_S)
+    got = activity.report(machine, job, 0.0, 0.0, COMMAND, "tests: 40 of 90", SAMPLE_S)
+    assert got["last_line"] == "tests: 40 of 90"
     assert got["cpu_pct"] == 100.0 and got["net_kib_s"] == 102.4
     assert got["idle_s"] == SAMPLE_S and got["job_cpu_pct"] == 0.0
 

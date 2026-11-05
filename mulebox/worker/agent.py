@@ -186,7 +186,7 @@ class Agent:
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
                       attempt_id=job.attempt_id, activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
-                          job.steps.stage, now))
+                          job.steps.stage, job.steps.last_line, now))
         try:
             return self._call(msg, now)
         except LinkError:
