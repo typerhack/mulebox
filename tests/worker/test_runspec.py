@@ -23,6 +23,8 @@ def build(machine, tmp_path, needs=(), env=None):
 
 def test_playwright_jobs_share_a_folder_in_the_cache_root(machine, paths, tmp_path):
     spec, _ = build(machine, tmp_path, needs=["playwright"])
+    assert spec.env["PLAYWRIGHT_SKIP_BROWSER_GC"] == "1"
+    assert spec.env["PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT"] == "120000"
     assert spec.env["PLAYWRIGHT_BROWSERS_PATH"] == str(paths.cache / "playwright")
     assert (paths.cache / "playwright").is_dir()
 
@@ -30,6 +32,7 @@ def test_playwright_jobs_share_a_folder_in_the_cache_root(machine, paths, tmp_pa
 def test_other_jobs_keep_playwrights_default(machine, paths, tmp_path):
     spec, _ = build(machine, tmp_path, needs=["node"])
     assert "PLAYWRIGHT_BROWSERS_PATH" not in spec.env
+    assert "PLAYWRIGHT_SKIP_BROWSER_GC" not in spec.env
     assert not (paths.cache / "playwright").exists()
 
 

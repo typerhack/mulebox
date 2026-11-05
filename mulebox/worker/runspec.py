@@ -24,6 +24,13 @@ from mulebox.worker.paths import NodePaths
 from mulebox.worker.ports import PortPool
 
 PLAYWRIGHT_CAPABILITY = "playwright"
+PLAYWRIGHT_SETTINGS = {
+    # An install removes every browser whose project folder is gone, and a job's checkout always
+    # is, so without this each job deleted what the jobs before it had downloaded.
+    "PLAYWRIGHT_SKIP_BROWSER_GC": "1",
+    # Its default is 30 s of silence, then a new attempt from zero; a slow link stalls longer.
+    "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT": "120000",
+}
 COORDINATOR_LIMITS = "coordinator"  # `limits` in claim_ok, coordinator/attendance.py
 
 
@@ -41,7 +48,7 @@ def _capability_env(machine: Machine, needs: Sequence[str]) -> dict[str, str]:
     if PLAYWRIGHT_CAPABILITY not in needs:
         return {}
     browsers = ensure_dir(machine.paths.browsers_dir(), machine.paths.roots)
-    return {"PLAYWRIGHT_BROWSERS_PATH": str(browsers)}
+    return {"PLAYWRIGHT_BROWSERS_PATH": str(browsers), **PLAYWRIGHT_SETTINGS}
 
 
 def _check_names(values: Mapping[str, str], for_compose: bool) -> None:

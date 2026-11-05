@@ -296,7 +296,8 @@ Fixes from the second project tests (2026-11-04).
 - [~] M13.11 A cache that starts empty says so in the job's log, as that job downloads everything.
       Seeding was left out: a cache is one project's, and the machine's default store is shared.
       Built 2026-11-05 (0.49.0), with tests. Open: seen in a real job.
-- [ ] M13.12 A shared browser download for `needs: [playwright]` jobs; a 184 MiB fetch took 24 min.
+- [~] M13.12 Browsers stay in the shared folder: Playwright's cleanup removed them after every job.
+      Built 2026-11-05 (0.49.2). Open: see the real check below.
 - [~] M13.13 A failure summary whose last lines read as a network failure says so, as a hint: the
       job still counts as failed, it ran. Pulls are M13.2. Built 2026-11-05 (0.49.1), with tests.
       Open: a real install failing on the network.
@@ -319,6 +320,8 @@ Fixes from the second project tests (2026-11-04).
       (2026-11-05, 0.40.9)
 
 ## Parking lot
+- Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own
+  (`PLAYWRIGHT_DOWNLOAD_HOST`); worth it only if a first download keeps failing after M13.12.
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)
 - MCP wrapper over the client commands

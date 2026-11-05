@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.49.2 - 2026-11-05 - patch
+- `needs: [playwright]` turns off Playwright's own browser cleanup. It removes any browser whose
+  project folder is gone, and a job's checkout always is, so each job deleted the browsers of the
+  jobs before it. Read off Playwright 1.62's source and a real job's log. A stall may also last
+  2 minutes before a retry, not 30 s.
+
 ## 0.49.1 - 2026-11-05 - patch
 - A failure summary whose last lines show a lost connection or lookup says that it reads like a
   network failure. The texts moved to `common/network_errors.py`, shared with `pull_failure.py`.

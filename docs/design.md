@@ -229,7 +229,12 @@ offers `playwright` once a person has installed the system libraries, which take
 mulebox cannot do it. `needs: [playwright]` sets `PLAYWRIGHT_BROWSERS_PATH` to one folder in
 the cache root, shared by all jobs, so a version is fetched once. The job asks for its
 browser itself, which keeps it matched to the project's lockfile, and mulebox has no list
-of browser versions to maintain. mulebox never deletes from that folder.
+of browser versions to maintain. mulebox never deletes from that folder, and it turns off
+Playwright's own cleanup there (`PLAYWRIGHT_SKIP_BROWSER_GC`): that removes any browser whose
+project folder is gone, and a job's checkout always is, so each job deleted the last one's
+browsers. Versions therefore add up until a person removes them. A download that drops still
+restarts from zero, up to 5 times: Playwright does not resume, so a slow link can lose a whole
+job to it, but only until one job has fetched that version.
 
 ## Job stages
 

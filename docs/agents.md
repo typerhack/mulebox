@@ -461,7 +461,7 @@ services:
 - **The first job after turning a cache on starts empty** and downloads everything again, even if
   earlier jobs had the packages elsewhere. On a slow connection, plan for that one long run.
 - **On a slow connection** a large download can take most of a job: a browser for Playwright is
-  about 180 MiB, and `corepack` fetches pnpm on every job, outside any cache. Prefer versions
+  about 180 MiB, restarts from zero if the connection drops, and is kept once one job has it; and `corepack` fetches pnpm on every job, outside any cache. Prefer versions
   already on the machine, and run `mulebox doctor` first: it says whether registries are reachable.
 - A pnpm install across mounts copies packages instead of linking them. That is slower than
   a link and far faster than a download.
@@ -498,8 +498,8 @@ jobs:
   e2e: pnpm exec playwright install chromium && pnpm exec playwright test
 ```
 
-`playwright install chromium` does nothing once that version is there, so keep it in the
-job: it is what keeps the version in step with the project's lockfile. Do not use
+`playwright install chromium` does nothing once that version is there, and browsers of other
+versions stay, so keep it in the job: it is what keeps the version in step with the project's lockfile. Do not use
 `install --with-deps`: it needs root, which a job does not have. That goes for a project's own
 install script too: if `pnpm test:e2e:install` or a CI step says `--with-deps`, call
 `playwright install chromium` from the job directly instead of the script. The system libraries

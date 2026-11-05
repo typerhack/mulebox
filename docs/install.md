@@ -82,8 +82,8 @@ sudo loginctl enable-linger alice
 - Add `playwright` for browser tests, once this has run on the machine, which needs root:
   `sudo npx playwright install-deps chromium` (node comes from any install, for example a
   mulebox toolchain). Browsers themselves are fetched by jobs into
-  `<cache>/playwright`, once per version, and are kept. They are large: on a slow network,
-  the first job with a new Playwright version takes minutes.
+  `<cache>/playwright`, once per version, and are kept, each some hundreds of MB, until you
+  remove them. On a slow network, the first job with a new Playwright version takes minutes.
 - Package caches need no setting: a project asks for one with `cache-pnpm` or `cache-composer`
   in `needs`, and they live in `<cache>/packages/<project>/`. Nothing removes them by itself.
   `mulebox cache list` shows their size, and `mulebox cache clear <project>` removes them,
