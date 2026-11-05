@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.51.1 - 2026-11-05 - patch
+- A test of `logs --summary` no longer depends on the folder it runs from: the repository now has
+  a `.mulebox.yml`, which made the client look up warnings. Found by the first run through mulebox.
+
 ## 0.51.0 - 2026-11-05 - minor
 - mulebox's own tests run through mulebox: `.mulebox.yml` in this repository, `mulebox check` runs
   them in parallel on the build machine. `needs: [cache-pip]` keeps Python downloads between jobs.

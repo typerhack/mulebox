@@ -136,7 +136,8 @@ def test_logs_summary_reads_only_the_tail(fake, capsys):
     assert read and read[0]["body"]["offset"] == 6
 
 
-def test_logs_summary_of_a_running_job_says_so(fake, capsys):
+def test_logs_summary_of_a_running_job_says_so(fake, capsys, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)  # outside any project, so no warnings are looked up
     fake.scenario(status_state="running")
     assert cli.main(["logs", JOB, "--summary"]) == 0
     assert "running" in capsys.readouterr().out
