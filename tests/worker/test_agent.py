@@ -263,7 +263,7 @@ def test_heartbeats_say_what_the_job_is_doing(agent, fake_link, clock):
     clock.now += HEARTBEAT_S + 1
     agent.step()
     report = fake_link.of_type(MessageType.HEARTBEAT)[-1].body["activity"]
-    assert set(report) == {"output_idle_s", "idle_s", "cpu_pct", "net_kib_s"}
+    assert set(report) == {"output_idle_s", "idle_s", "job_cpu_pct", "cpu_pct", "net_kib_s"}
     assert report["output_idle_s"] >= 0
     fake_link.cancel = True
     clock.now += HEARTBEAT_S + 1

@@ -31,7 +31,7 @@ from mulebox.coordinator.store import Store
 
 _IDLE_KEY, _MAX_KEY = "unattended_idle_s", "unattended_max_s"
 _OPEN = (JobState.QUEUED, JobState.STARTING, JobState.RUNNING)
-_REPORTED = ("output_idle_s", "idle_s", "cpu_pct", "net_kib_s")
+_REPORTED = ("output_idle_s", "idle_s", "job_cpu_pct", "cpu_pct", "net_kib_s")
 LIMITS_BY_COORDINATOR = "coordinator"  # in claim_ok: the worker sets no runtime limit of its own
 
 

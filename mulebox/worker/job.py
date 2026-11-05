@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from mulebox.common.protocol import Outcome
+from mulebox.worker.job_meter import JobMeter
 from mulebox.worker.logtail import LogTailer
 from mulebox.worker.steps import StepTracker
 
@@ -28,6 +29,7 @@ class ActiveJob:
     cleaned: bool = False
     cleaning_sent: bool = False
     result_sent: bool = False
+    meter: JobMeter = field(default_factory=JobMeter)
 
     @property
     def steps(self) -> StepTracker:

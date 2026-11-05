@@ -73,7 +73,7 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
 
 - Every `timeout_min` of a running job, a `check_in` event in `mulebox events`, and a warning in
   an attached `check` or `wait`, give the elapsed time, the stage, the seconds since its last
-  output and the machine's CPU and network. `mulebox status <job-id>` shows the same at any
+  output, the job's CPU, and the machine's CPU and network. `mulebox status <job-id>` shows the same at any
   time. Look at them and decide: let it run, or stop it with `mulebox cancel <job-id>`. A job can
   be busy and silent for minutes, so a quiet log alone proves nothing.
 - A detached job nobody watches is `unattended`, queued or running, a few minutes after its

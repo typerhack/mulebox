@@ -254,9 +254,10 @@ Tested with unit tests, the real coordinator code and a local stand-in for ssh. 
 it: a real machine.
 - [~] M11.1 Check-ins: `check_in` every `timeout_min` in `events`, a warning in `check` and `wait`,
       activity and watcher in `mulebox status`. Built 2026-11-04 (0.37.0). Open: a real long job.
-- [~] M11.2 Activity: output, the machine's CPU and network from `/proc`, reported with worker
-      heartbeats. Built 2026-11-04 (0.37.0). Open: real readings of an idle machine with a compose
-      stack up, to check the thresholds, and a silent but busy real job.
+- [~] M11.2 Activity: output, plus the job's own CPU and its services' traffic from control groups,
+      reported with worker heartbeats. Built 2026-11-04 (0.37.0) on the machine's readings; a real
+      drill on 2026-11-05 showed a sleeping job could never be idle that way, so 0.43.0 measures
+      the job. Open: a stuck and a silent busy real job, and a compose stack sitting idle.
 - [~] M11.3 Unattended jobs: `wait` and `events` count as watching, 15 minutes idle and 24 hours
       total as `[limits]`, queued jobs included, `stopped: unattended`, exit 76, schema 8 with
       an upgrade test. Built 2026-11-04 (0.37.0). Open: a job really stopped on a machine,

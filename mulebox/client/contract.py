@@ -116,11 +116,12 @@ TIME_LIMITS = (
     "no job has a hard time limit while someone watches it: an attached check, mulebox wait or "
     "mulebox events; you decide what is stuck and stop it with mulebox cancel",
     "timeout_min is how often a watched job checks in, not a limit: a check_in event with "
-    "elapsed time, stage, seconds since the last output, and the machine's CPU and network",
+    "elapsed time, stage, seconds since the last output, the job's CPU, and the machine's CPU "
+    "and network",
     "mulebox status shows the same activity at any time, and whether anyone is watching",
     "a detached job nobody watches is unattended, from 5 minutes after the last watcher left; "
     "queued jobs count too",
-    "an unattended running job is stopped after 15 minutes with no output, CPU or network, by "
+    "an unattended running job is stopped after 15 minutes with no output, CPU or service traffic of its own, by "
     "default; a job the machine cannot measure, and one that stays active, runs on to the limit",
     "any unattended job is stopped at 24 hours by default, a queued one too; both are the "
     "machine's settings",

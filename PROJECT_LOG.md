@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.43.0 - 2026-11-05 - minor
+- What can stop an unattended job as idle is now the job's own activity, from control groups: its
+  unit's CPU, and its labelled containers' CPU and traffic. A real drill showed the machine's
+  readings never got near idle with a desktop and a VPN, so a stuck job always ran to 24 hours.
+  `status` shows the job's CPU beside the machine's readings. New: `worker/cgroups.py`,
+  `worker/job_meter.py`. A job's own unlabelled `docker run` or `build` counts only by its output.
+
 ## 0.42.0 - 2026-11-04 - minor
 - `check`, `queue` and `status` say where to see the job on the dashboard, on stderr so `--json` stays clean, and `doctor` lists the address. A job's line links straight to its page.
 - The address comes from the build machine (`dashboard` in `submit_ok`, `status_ok`, `queue_ok`, `machines_ok`), via `common/dashboard_address.py`. With only `local` it names `mulebox dashboard open`; when off, or from an older coordinator, nothing is printed.

@@ -96,7 +96,7 @@ every run, and the one who knows what the job is doing is whoever started it.
 
 - **Watched** means an attached `check`, which holds the client lease, or `wait`, `events` or
   `logs -f` on a detached job, whose heartbeats renew it. There is no hard limit then. Every
-  `timeout_min` a running job checks in with the time, stage, last output and machine readings.
+  `timeout_min` a running job checks in with the time, stage, last output and readings.
   Nothing else happens: stopping it is a decision for the watcher.
 - **Unattended** is a detached job whose lease ran out, queued or running. It needs no column:
   a lease in the past says it and when it began, and a renewed lease undoes it. So taking a job
@@ -108,10 +108,14 @@ every run, and the one who knows what the job is doing is whoever started it.
   The coordinator reads activity, the worker measures it (worker/activity.py), and "cannot
   tell" is never "idle": an older worker, a machine without `/proc` and the `images` stage leave
   only the long limit.
-- **Activity is the machine's** for CPU and network. The job's own unit would be narrower and
-  wrong: containers are not in it, an image build is not in any labelled container, and user
-  units have no network counters. The two ways to be wrong are not equal: a stuck job read as
-  active lives until the 24 hours and is then stopped, a busy job read as idle loses real work.
+- **Activity is the job's** (worker/job_meter.py): output, CPU of the job's unit, CPU and traffic
+  of its labelled containers, from control-group files. It was the whole machine's until 0.43,
+  on the reasoning that a job's unit misses containers and that thresholds could sit above an
+  idle machine. A real drill disproved that: with a desktop and a VPN, a sleeping job's machine
+  never went below 12% of a core and 246 KiB/s, so nothing could ever be idle. A job's own
+  `docker run` or `docker build` has no label and shows only through output; the user accepted
+  that, as a silent one of those is rare, needs nobody watching, and watched jobs are never
+  stopped. The two ways to be wrong are still not equal, so anything unread is unknown, not idle.
 - **A stop travels as a cancel.** The worker gets `cancel: true` and reports `cancelled`; the
   coordinator keeps `stop_reason`, so any worker can be stopped and an older client reads
   `cancelled`, not an unknown outcome it would refuse. Views and the client show

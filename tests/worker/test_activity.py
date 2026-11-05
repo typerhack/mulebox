@@ -1,8 +1,9 @@
 """The worker's reading of what a job is doing; nothing here is a real machine's /proc."""
 
 from mulebox.common.status import COMMAND, IMAGES
-from mulebox.worker import activity
-from mulebox.worker.activity import MachineMeter, SAMPLE_S
+from mulebox.worker import activity, cgroups
+from mulebox.worker.activity import SAMPLE_S, MachineMeter
+from mulebox.worker.job_meter import JobMeter
 
 STAT = "cpu  90 0 10 800 100 0 0 0\ncpu0 40 0 10 400 50 0 0 0\ncpu1 50 0 0 400 50 0 0 0\nintr 1\n"
 NET = ("Inter-|   Receive\n face |bytes packets errs drop fifo frame compressed multicast|"
@@ -20,7 +21,7 @@ def test_busy_time_counts_waiting_on_a_disk():
 
 
 def test_network_leaves_out_loopback():
-    assert activity.net_bytes(NET) == 3000
+    assert cgroups.net_bytes(NET) == 3000
 
 
 def test_read_counters_from_a_proc_folder(tmp_path):
@@ -34,76 +35,38 @@ def test_no_proc_is_unknown(tmp_path):
     assert activity.read_counters(tmp_path) is None
 
 
-def report(meter, now, output_at=0.0, stage=COMMAND):
-    return meter.report(0.0, output_at, stage, now)
+def report(job, now, output_at=0.0, stage=COMMAND):
+    return activity.report(MachineMeter(lambda: None), job, 0.0, output_at, stage, now)
 
 
-def test_unknown_until_the_first_span_is_measured():
-    meter = MachineMeter(scripted((0.0, 0)))
-    meter.update(0.0)
-    assert report(meter, 1.0)["idle_s"] is None
+def job_with(*readings):
+    job = JobMeter(scripted(*readings))
+    for index in range(len(readings)):
+        job.update(index * SAMPLE_S)
+    return job
 
 
-def test_no_proc_stays_unknown():
-    meter = MachineMeter(lambda: None)
-    meter.update(0.0)
-    meter.update(100.0)
-    assert report(meter, 100.0)["idle_s"] is None
-
-
-def test_a_failed_read_forgets_what_was_known():
-    meter = MachineMeter(scripted((0.0, 0), (9.0, 0), None))
-    meter.update(0.0)
-    meter.update(SAMPLE_S)
-    assert report(meter, SAMPLE_S)["idle_s"] == 0.0
-    meter.update(SAMPLE_S * 2)
-    assert report(meter, SAMPLE_S * 2)["idle_s"] is None
-
-
-def test_a_quiet_machine_and_quiet_output_add_up_to_idle():
-    meter = MachineMeter(scripted((0.0, 0), (0.1, 100), (0.2, 200)))
-    for at in (0.0, SAMPLE_S, SAMPLE_S * 2):
-        meter.update(at)
-    got = report(meter, 70.0)
-    assert got["idle_s"] == 70.0 and got["output_idle_s"] == 70.0
-
-
-def test_cpu_alone_is_activity():
-    meter = MachineMeter(scripted((0.0, 0), (30.0, 0)))
-    meter.update(0.0)
-    meter.update(SAMPLE_S)
-    got = report(meter, SAMPLE_S + 2)
-    assert got["idle_s"] == 2.0 and got["output_idle_s"] == SAMPLE_S + 2
-    assert got["cpu_pct"] == 100.0
-
-
-def test_network_alone_is_activity():
-    meter = MachineMeter(scripted((0.0, 0), (0.0, 1024 * 1024)))
-    meter.update(0.0)
-    meter.update(SAMPLE_S)
-    assert report(meter, SAMPLE_S)["idle_s"] == 0.0
+def test_machine_readings_are_kept_and_decide_nothing():
+    machine = MachineMeter(scripted((0.0, 0), (30.0, 3 * 1024 * 1024)))
+    machine.update(0.0)
+    machine.update(SAMPLE_S)
+    job = job_with({"unit": 0.0}, {"unit": 0.0})
+    got = activity.report(machine, job, 0.0, 0.0, COMMAND, SAMPLE_S)
+    assert got["cpu_pct"] == 100.0 and got["net_kib_s"] == 102.4
+    assert got["idle_s"] == SAMPLE_S and got["job_cpu_pct"] == 0.0
 
 
 def test_output_alone_is_activity():
-    meter = MachineMeter(scripted((0.0, 0), (0.0, 0)))
-    meter.update(0.0)
-    meter.update(SAMPLE_S)
-    assert report(meter, 40.0, output_at=39.0)["idle_s"] == 1.0
+    job = job_with({"unit": 0.0}, {"unit": 0.0})
+    assert report(job, 40.0, output_at=39.0)["idle_s"] == 1.0
 
 
-def test_an_idle_database_is_no_activity():
-    """Below a tenth of a core, however long."""
-    meter = MachineMeter(scripted((0.0, 0), (2.0, 0)))
-    meter.update(0.0)
-    meter.update(SAMPLE_S)
-    assert report(meter, SAMPLE_S)["idle_s"] == SAMPLE_S
+def test_unknown_is_never_idle():
+    assert report(JobMeter(), 1000.0)["idle_s"] is None
 
 
 def test_image_builds_are_never_idle():
-    meter = MachineMeter(scripted((0.0, 0), (0.0, 0)))
-    meter.update(0.0)
-    meter.update(SAMPLE_S)
-    assert report(meter, 1000.0, stage=IMAGES)["idle_s"] is None
+    assert report(job_with({"unit": 0.0}, {"unit": 0.0}), 1000.0, stage=IMAGES)["idle_s"] is None
 
 
 def test_samples_only_every_so_often():

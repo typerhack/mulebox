@@ -55,6 +55,9 @@ def activity_text(activity: dict[str, Any]) -> str:
     quiet = number(activity.get("output_idle_s"))
     if quiet is not None:
         parts.append(f"last output {format_duration(quiet)} ago")
+    job_cpu = number(activity.get("job_cpu_pct"))
+    if job_cpu is not None:
+        parts.append(f"job CPU {job_cpu:.0f}% of a core")
     cpu, net = number(activity.get("cpu_pct")), number(activity.get("net_kib_s"))
     if cpu is not None:
         parts.append(f"machine CPU {cpu:.0f}% of a core")

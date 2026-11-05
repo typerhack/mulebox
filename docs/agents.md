@@ -149,8 +149,8 @@ Watching means an attached `check`, `mulebox wait`, `mulebox events` or `mulebox
 
 - **`timeout_min` is a check-in, not a limit.** Every `timeout_min` of a running job (default
   30), `mulebox events` prints a `check_in` event, and an attached `check` or `wait` prints the
-  same as a warning: elapsed time, stage, seconds since the last output, and the machine's CPU
-  and network, null when they cannot be read. Stop a job with `mulebox cancel <job-id>`; if it
+  same as a warning: elapsed time, stage, seconds since the last output, the job's own CPU, and
+  the machine's CPU and network, null when they cannot be read. Stop a job with `mulebox cancel <job-id>`; if it
   is fine, do nothing. `mulebox status <job-id>` shows the same any time, without watching.
 - **A job nobody watches is `unattended`.** A detached job becomes so about 5 minutes after its
   last watcher left, so a dropped connection is forgiven, and a queued one counts as well. An
@@ -159,12 +159,13 @@ Watching means an attached `check`, `mulebox wait`, `mulebox events` or `mulebox
   - no activity for 15 minutes: the job is stopped, once it is unattended and never less than
     15 minutes after that;
   - 24 hours unattended, however active: the job is stopped, queued or running.
-- **Activity** is new output, or the build machine using at least a tenth of a CPU core, waiting
-  on a disk included, or at least 4 KiB/s of network. CPU and network are the machine's, because
-  nothing narrower sees containers and image builds. So a job that is silent but busy is never
-  idle, whatever it runs. The price: a stuck job beside other work on the machine counts as
-  active and lasts until the 24 hours. While a machine cannot measure, and during `images`,
-  which may build for a long time without a word, nothing counts as idle.
+- **Activity** is the job's, not the machine's: new output, its own processes using at least 1% of
+  a core, its compose services using at least a tenth of a core together, or their traffic
+  reaching 4 KiB/s. The machine's readings are shown but decide nothing: a desktop or a VPN keeps
+  them busy, so a stuck job would never count as idle. The price: a `docker run` or `docker build`
+  of the job's own is seen only through its output, so an unattended job must not leave one
+  silent for 15 minutes. While a job cannot be measured, and during `images`, which may build
+  for a long time without a word, nothing counts as idle.
 - **Taking a job back:** `mulebox wait` or `mulebox events`. The job is attended again, the
   count ends and starts afresh the next time it is left alone.
 - **The warning** comes in three ways: `mulebox status` has `unattended` with `reason`, `left_s`

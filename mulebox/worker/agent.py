@@ -30,7 +30,7 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.common.status import CLEANUP, ENVIRONMENT, PREPARE
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker import activity, advert, background, pull_failure, runspec
+from mulebox.worker import activity, advert, background, job_meter, pull_failure, runspec
 from mulebox.worker import toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
@@ -56,6 +56,7 @@ class Agent:
         self.node, self.link, self.executor, self.paths = node, link, executor, paths
         self.clock = clock
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
+        self.docker = docker or Docker()
         self.cleaner = Cleaner(paths, node.name, docker)
         self.ports = PortPool()
         self.meter = activity.MachineMeter()
@@ -127,6 +128,7 @@ class Agent:
         tailer = LogTailer(log_path, job_id, attempt_id, request)
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}))
+        job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker)
         self.active[job_id] = job
         job.steps.begin(PREPARE, now)
         LOG.info("claimed %s (%s, attempt %s)", job_id, project, attempt_id)
@@ -160,6 +162,7 @@ class Agent:
 
     def _tend(self, job: ActiveJob, now: float) -> None:
         self.meter.update(now)
+        job.meter.update(now)
         job.last_output = now if job.tailer.read_new() else job.last_output
         if self._online(now):
             try:
@@ -181,8 +184,9 @@ class Agent:
     def _ping(self, job: ActiveJob, now: float) -> Message | None:
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
-                      attempt_id=job.attempt_id, activity=self.meter.report(
-                          job.started_at, job.last_output, job.steps.stage, now))
+                      attempt_id=job.attempt_id, activity=activity.report(
+                          self.meter, job.meter, job.started_at, job.last_output,
+                          job.steps.stage, now))
         try:
             return self._call(msg, now)
         except LinkError:
