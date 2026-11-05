@@ -31,7 +31,7 @@ from mulebox.coordinator.errors import CoordinatorError, NotFound
 from mulebox.coordinator.lineio import read_line, write_message
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
-from mulebox.coordinator.views import result_body, status_body, waiting_for
+from mulebox.coordinator.views import result_body, running_ahead, status_body, waiting_for
 
 _log = get_logger(__name__)
 POLL_S = 0.5
@@ -111,7 +111,8 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
             offset = body["next_offset"]
         if (job["state"], place, reason) != last:
             with store.read() as conn:
-                estimate = usual.estimate(job, usual.for_job(conn, job))
+                estimate = {**usual.estimate(job, usual.for_job(conn, job)),
+                            **running_ahead(conn, job)}
             send(MessageType.STATUS_OK, status_body(job, place, reason, **estimate, **failed))
             last = (job["state"], place, reason)
             if came_back:

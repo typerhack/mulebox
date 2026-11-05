@@ -138,6 +138,7 @@ def test_events_follow_a_real_job_through_the_queue(local, in_project, capsys):
     assert code == 3 and "line one" not in out
     assert [e["event"] for e in lines] == ["queued", "queued", "started", "finished"]
     assert [lines[0]["position"], lines[1]["position"]] == [2, 1]
+    assert lines[1]["running_ahead"] == [first]
     assert lines[2]["machine"] == "build-1"
     assert lines[3]["outcome"] == "failed" and lines[3]["exit_code"] == 3
     assert {e["job_id"] for e in lines} == {second} and first != second
@@ -154,6 +155,11 @@ def test_events_say_when_a_job_enters_a_stage(local, in_project, capsys):
     thread.join()
     stages = [e for e in lines_of(capsys.readouterr().out) if e["event"] == "stage"]
     assert code == 0 and stages[-1]["stage"] == "command" and stages[-1]["number"] == 1
+
+
+def test_queued_says_what_it_is_behind():
+    line = events.as_text({"event": "queued", "position": 1, "running_ahead": ["job-1"]})
+    assert line == "queued, position 1, behind job-1"
 
 
 def test_stage_events_read_as_text():

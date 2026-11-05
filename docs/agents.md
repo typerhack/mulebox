@@ -98,13 +98,13 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   Monitor tool can follow this command, so each line reaches you while you do other work.
 
 ```json
-{"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "state": "queued", "v": 1, "waiting_for": null}
+{"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "running_ahead": ["job-..."], "state": "queued", "v": 1, "waiting_for": null}
 {"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
 {"cpu_pct": 212.5, "elapsed_s": 1800.2, "event": "check_in", "idle_s": 4.1, "job_id": "job-...", "net_kib_s": 0.3, "number": 1, "output_idle_s": 41.0, "last_line": "Compiling app", "stage": "command", "state": "running", "v": 1}
 {"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "stop_reason": null, "v": 1}
 ```
 
-  A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
+  `waiting_for` is set only when nothing can run the job; a job simply in line has `running_ahead`, the jobs on the machines now. `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
   is where a job that ended badly failed, null when that is not known. `exit_code` is the code
   the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,
   75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. `unattended` is in

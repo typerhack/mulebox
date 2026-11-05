@@ -29,7 +29,13 @@ from mulebox.coordinator.context import Request, error_message
 from mulebox.coordinator.errors import BadRequest, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
-from mulebox.coordinator.views import job_dict, status_body, status_facts, waiting_for
+from mulebox.coordinator.views import (
+    job_dict,
+    running_ahead,
+    status_body,
+    status_facts,
+    waiting_for,
+)
 from mulebox.version import get_version
 
 _log = get_logger(__name__)
@@ -109,9 +115,10 @@ def status(req: Request) -> Message:
         typical = usual.for_job(conn, job)
         failed = steps.failed_stage(conn, job)
         limits = attendance.read_limits(conn)
+        ahead = running_ahead(conn, job)
     return req.reply(MessageType.STATUS_OK, {
         **status_body(job, place, reason, steps=rows, usual=typical,
-                      **usual.estimate(job, typical), **failed),
+                      **usual.estimate(job, typical), **ahead, **failed),
         **status_facts(job), **attendance.status_fields(job, rows, req.now, limits),
         "dashboard": req.dashboard})
 

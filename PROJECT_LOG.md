@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.46.0 - 2026-11-05 - minor
+- A queued job names the jobs on the machines, `running_ahead`, in `status` and `events`. A job in
+  a plain line read `waiting_for: null`, which said nothing about why it had not started.
+
 ## 0.45.0 - 2026-11-05 - minor
 - A check-in and `status` carry `last_line`, the job's last output, redacted. A check-in named only
   the stage, and `command` is most of a job.

@@ -8,7 +8,7 @@ still answers a new `watch` with its result. An older coordinator sends the log 
 dropped here.
 
 An event line is one JSON object with `v`, `event`, `job_id` and `state`. `event` is `queued`
-(`position`, `waiting_for` when set), `started` (`machine`) or `finished` (`outcome`,
+(`position`, `waiting_for` when set, `running_ahead`: the jobs on the machines now), `started` (`machine`) or `finished` (`outcome`,
 `exit_code`, `duration_s`, `stage`: where a job that ended badly failed, null when that is not
 known, and `stop_reason` for outcome `stopped`), `check_in` (`number`, `elapsed_s`, `stage`,
 `output_idle_s`, `last_line`, `idle_s`, `job_cpu_pct`, `cpu_pct`, `net_kib_s`; every
@@ -58,7 +58,9 @@ def as_text(event: Event) -> str:
         return f"stage {event.get('stage')}"
     if kind == "queued":
         place = event.get("position")
-        return f"queued, position {place}" if place is not None else "queued"
+        line = f"queued, position {place}" if place is not None else "queued"
+        ahead = event.get("running_ahead")
+        return f"{line}, behind {', '.join(ahead)}" if ahead else line
     if kind == "started":
         machine = event.get("machine")
         return f"started on {machine}" if machine else "started"

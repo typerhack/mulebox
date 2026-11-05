@@ -36,6 +36,17 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
     return needs.waiting_for(workers.listing(conn), job["needs"], now)
 
 
+def running_ahead(conn: Any, job: dict[str, Any]) -> dict[str, Any]:
+    """The jobs on the machines now, for a queued job: why it has not started when nothing is
+    wrong, which `waiting_for` does not say. Nothing for a job in any other state."""
+    if job["state"] != JobState.QUEUED:
+        return {}
+    marks = ", ".join("?" for _ in ACTIVE_STATES)
+    rows = conn.execute(f"SELECT job_id FROM jobs WHERE state IN ({marks}) ORDER BY seq",
+                        [state.value for state in ACTIVE_STATES])
+    return {"running_ahead": [row[0] for row in rows]}
+
+
 def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> dict[str, Any]:
     """Where a waiting agent job may go, for the dashboard's per-machine view.
 

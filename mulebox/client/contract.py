@@ -102,7 +102,8 @@ EVENTS = (
     "mulebox events prints one JSON line per state change and no log; it exits when the job "
     "ends, with the job's exit code, and survives a dropped connection",
     "every line has v, event, job_id and state; ignore events and keys you do not know",
-    "queued has position, waiting_for and estimate_s (how long this job usually runs, from "
+    "queued has position, waiting_for, running_ahead (the jobs on the machines now) and "
+    "estimate_s (how long this job usually runs, from "
     "its past runs; null when unknown; an estimate, not a promise, and not the time in line); "
     "started has machine; finished has outcome, exit_code and duration_s",
     "finished also has stage, where a job that ended badly failed (null when not known), and "
