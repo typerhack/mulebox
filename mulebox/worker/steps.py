@@ -13,9 +13,6 @@ in `setup` cannot break it. A failing job's report on its containers says `end` 
 counts neither as time nor as the failing line of the stage.
 
 Lines come here redacted, so nothing here can hold a secret that the log would not.
-
-The script must not contain `${`: systemd expands that in a unit's command line, inside
-a long argument as well.
 """
 
 from __future__ import annotations

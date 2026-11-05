@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.52.3 - 2026-11-05 - patch
+- Job scripts reach bash as written: systemd no longer expands `${...}` in them.
+
 ## 0.52.2 - 2026-11-05 - patch
 - The failure summary keeps earlier lines that read as the failure, as a test runner's stack and totals can fill the last lines.
 

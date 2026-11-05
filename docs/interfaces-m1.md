@@ -155,8 +155,8 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
     --property=RuntimeMaxSec=<s> --property=KillMode=control-group
     --property=TimeoutStopSec=10s --property=CPUWeight=50 --property=IOWeight=50
     --property=StandardOutput=append:<log> --property=StandardError=append:<log>
-    --working-directory=<cwd> --setenv=K=V ... -- <argv>`; state via `systemctl --user
-    show`; timeout recognised by `Result=timeout`.
+    --working-directory=<cwd> --setenv=K=V ... -- <argv>`, each `$` of the argv doubled so
+    that systemd leaves `${...}` to bash; state via `systemctl --user show`; timeout recognised by `Result=timeout`.
   - `SubprocessExecutor`: same contract with a process group (tests and macOS dev).
 - `toolchains.py`: `path_for(roots, toolchain: dict) -> list[Path]` (missing -> clear error
   naming `mulebox toolchain install`), `install(roots, name, version)`: node from

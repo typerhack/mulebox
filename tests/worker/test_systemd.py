@@ -38,6 +38,16 @@ def test_run_argv_is_exact():
     ]
 
 
+def test_a_script_reaches_bash_as_written():
+    """systemd would expand `${x}` in the command line and turn `$$` into `$`; each `$` doubled
+    comes back as one. The environment is not expanded, so it stays as it is."""
+    script = 'x=1; echo "${x} ${y:-z} $$ $HOME"\n'
+    argv = run_argv(_spec(argv=("bash", "-c", script)))
+    assert argv[-1] == 'x=1; echo "$${x} $${y:-z} $$$$ $$HOME"\n'
+    assert argv[-1].replace("$$", "$") == script
+    assert "--setenv=ODD=a b;$(x)" in argv
+
+
 def test_runtime_rounds_up():
     assert "--property=RuntimeMaxSec=2" in run_argv(_spec(timeout_s=1.2))
 

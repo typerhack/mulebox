@@ -5,6 +5,11 @@ it kills the whole process tree) and lower CPU and IO weights. Output is appende
 job's `out.log`. Environment values are passed as separate `--setenv=K=V` arguments; no
 shell ever sees them.
 
+systemd expands `${NAME}` in a unit's command line itself, inside a long argument as well,
+before bash sees the script: `${x}` of a variable the script sets, `${NAME:-default}` and
+`${list[1]}` all came out empty, and `$$` lost a dollar. So `run_argv` doubles every `$`, which
+systemd reads back as one, and a job's script reaches bash exactly as written.
+
 Reading the result: the unit is started without `--collect`. A unit whose main process
 exits 0 becomes inactive and is unloaded at once (`LoadState=not-found`); a non-zero exit,
 a signal or the runtime limit leaves it `failed` with `Result=` and `ExecMain*` set until
@@ -69,7 +74,7 @@ def run_argv(spec: RunSpec) -> list[str]:
         if not _ENV_KEY.fullmatch(key) or "\0" in value:
             raise ExecutorError(f"invalid environment variable {key!r}")
         argv.append(f"--setenv={key}={value}")
-    return [*argv, "--", *spec.argv]
+    return [*argv, "--", *(arg.replace("$", "$$") for arg in spec.argv)]
 
 
 def parse_show(text: str) -> dict[str, str]:
