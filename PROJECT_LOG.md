@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.47.0 - 2026-11-05 - minor
+- `mulebox doctor` tells whether the build machine can connect to the registries of the project's
+  images, through a new `reach` request. It said all was fine with no route to a registry.
+
 ## 0.46.0 - 2026-11-05 - minor
 - A queued job names the jobs on the machines, `running_ahead`, in `status` and `events`. A job in
   a plain line read `waiting_for: null`, which said nothing about why it had not started.

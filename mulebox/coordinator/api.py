@@ -29,6 +29,7 @@ from mulebox.coordinator.context import Request, error_message
 from mulebox.coordinator.errors import BadRequest, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
+from mulebox.coordinator.reach import reach
 from mulebox.coordinator.views import (
     job_dict,
     running_ahead,
@@ -192,6 +193,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.HEARTBEAT: heartbeat,
     MessageType.QUEUE: queue_list,
     MessageType.PROJECTS: project_list,
+    MessageType.REACH: reach,
     MessageType.MACHINES: machine_list,
     MessageType.LOGS: logs,
     MessageType.CLAIM: worker_api.claim,

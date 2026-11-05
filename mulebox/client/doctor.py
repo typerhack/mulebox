@@ -35,6 +35,17 @@ def env_references(project: ProjectConfig) -> list[Finding]:
                     "start (exit 5)") for key, name in unknown_references(project.env)]
 
 
+def registries(reached: dict[str, Any]) -> list[Finding]:
+    """What the machine could connect to, from a `reach` reply."""
+    missing = sorted(host for host, ok in reached.items() if not ok)
+    if missing:
+        return [Finding(WARN, "registry", f"the build machine cannot connect to "
+                        f"{', '.join(missing)}: a job that must fetch an image from there "
+                        "would not start (exit 5). Images it already has still work")]
+    return [Finding(OK, "registry", f"the build machine can connect to {host}")
+            for host in sorted(reached)]
+
+
 def dashboard(facts: Facts) -> list[Finding]:
     """Where the user can watch, if the machine says."""
     found = place(facts.get("dashboard"))

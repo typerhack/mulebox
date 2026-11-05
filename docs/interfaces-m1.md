@@ -100,6 +100,8 @@ kind, detached. A `result` adds duration_s and fingerprint.
 Watch stream: after the `watch` request line the client keeps stdin open and writes a
 `heartbeat` line (lease `client`) every 20 s; each renews the client lease if `lease: true`,
 or whatever `lease` says for a detached job, which is how `wait` and `events` count as watching.
+`reach` (`hosts`, at most 8) answers `reach_ok` with `hosts` as host to true or false: whether a TCP
+connection to each opened, for `mulebox doctor`.
 A `status_ok` may carry `stage` (`log: false` only, as a job enters a stage), `check_in` (every `timeout_min`) or `unattended` (`taken_back: true`,
 once, when the stream found the job unattended). The server polls every 0.5 s and writes `log_chunk` for new log bytes and
 `status_ok` on state changes; it ends with `result` (job dict fields) and exits 0.

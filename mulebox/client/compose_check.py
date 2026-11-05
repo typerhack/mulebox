@@ -30,6 +30,7 @@ TOPIC = "compose"
 _VARIABLE = re.compile(r"(?<!\$)\$(?!\$)")  # `$$` is a literal dollar sign
 _PATH_START = (".", "/", "~")
 _SHARED = ("volumes", "networks", "secrets", "configs")
+DEFAULT_REGISTRY = "registry-1.docker.io"
 
 
 def _known(value: Any) -> Any:
@@ -119,6 +120,26 @@ def _followed(raw: Model) -> str:
     skipped = bool(raw.get("include")) or any(
         isinstance(spec, dict) and spec.get("extends") for spec in services.values())
     return " Files named by include or extends were not read." if skipped else ""
+
+
+def _registry(image: str) -> str:
+    """Where Compose would pull `image` from; the first path part only if it looks like a host."""
+    first, slash, _ = image.partition("/")
+    if slash and ("." in first or ":" in first or first == "localhost"):
+        return first
+    return DEFAULT_REGISTRY
+
+
+def registries(files: tuple[str, ...], root: Path) -> list[str]:
+    """The registries these files' images come from; nothing if the files cannot be read.
+    A service with `build` may never pull, and an image with a variable is the machine's."""
+    try:
+        services = compose_yaml.load(root, files).get("services") or {}
+        images = [spec.get("image") for spec in services.values() if not spec.get("build")]
+    except (ConfigError, AttributeError, TypeError):
+        return []
+    return sorted({_registry(image) for image in images
+                   if isinstance(image, str) and not _unresolved(image)})
 
 
 def findings(files: tuple[str, ...], root: Path) -> list[Finding]:

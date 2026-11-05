@@ -30,6 +30,7 @@ from mulebox.common.ssh import RemoteTimeout, SSHUnavailable
 from mulebox.version import get_version
 
 EXIT_PROBLEM = 1
+MAX_REGISTRIES = 8  # what a coordinator takes in one request
 TOO_OLD_CODE = "bad_request"  # what a coordinator answers to a request type it does not know
 
 
@@ -69,6 +70,20 @@ def _about_machines(project: ProjectConfig | None, facts: Facts) -> list[Finding
     return doctor.machines(project, workers) if project else doctor.inventory(workers)
 
 
+def _about_registries(project: ProjectConfig | None, remote: Remote) -> list[Finding]:
+    if project is None or not project.compose:
+        return []
+    root = find_project_config(Path.cwd()).parent
+    hosts = compose_check.registries(project.compose, root)[:MAX_REGISTRIES]
+    try:
+        reply = remote.call(request(MessageType.REACH, hosts=hosts)) if hosts else None
+    except CoordinatorError as exc:
+        if exc.code != TOO_OLD_CODE:
+            raise
+        reply = None
+    return doctor.registries(reply.body["hosts"]) if reply else []
+
+
 def _about_skill() -> list[Finding]:
     folders = skill_install.config_folders(os.environ, Path.home())
     return doctor.skills(skill_install.inspect_all(folders, skill_install.packaged_text()), SCHEMA)
@@ -87,14 +102,16 @@ def examine() -> tuple[list[Finding], int]:
                 *_about_compose(project), *_about_skill()]
     code = report.EXIT_USAGE if project is None else 0
     try:
-        facts = machine_facts(Remote(load_client_config()))
+        remote = Remote(load_client_config())
+        facts = machine_facts(remote)
+        reached = _about_registries(project, remote)
     except ConfigError as exc:
         return [*findings, Finding(FAIL, "client", str(exc))], report.EXIT_USAGE
     except (SSHUnavailable, RemoteTimeout) as exc:
         reason = f"build machine unreachable: {exc} Tell the user; do not run heavy work here."
         return [*findings, Finding(FAIL, "machine", reason)], code or report.EXIT_UNREACHABLE
     findings += doctor.versions(get_version(), facts)
-    findings += _about_machines(project, facts)
+    findings += _about_machines(project, facts) + reached
     findings += doctor.dashboard(facts)
     return findings, code or (EXIT_PROBLEM if doctor.worst(findings) == FAIL else 0)
 

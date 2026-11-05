@@ -207,7 +207,7 @@ def test_a_compose_file_a_worker_would_refuse_fails_before_any_upload(fake, in_p
         capabilities=["docker", "compose-v1"], version=get_version())])
     assert cli.main(["doctor"]) == 1
     assert "volumes data is external" in capsys.readouterr().out
-    assert [r["type"] for r in fake.requests()] == ["machines", "queue"]
+    assert not {"submit", "upload_done"} & {r["type"] for r in fake.requests()}
 
 
 LATER = "project: example-app\njobs:\n  check: x\nenv:\n  URL: ${HOST}\n  HOST: db\n"
@@ -225,3 +225,32 @@ def test_a_name_only_the_machine_could_set_is_a_warning():
     project = ProjectConfig(project="example-app", jobs={"check": "x"}, env={"A": "${MISSING}"})
     found = doctor.env_references(project)
     assert [f.level for f in found] == [doctor.WARN] and "job_env" in found[0].text
+
+
+def compose_project(in_project, fake, **scenario):
+    (in_project / "docker-compose.yml").write_text(
+        "services:\n  db:\n    image: mysql:8\n  web:\n    image: ghcr.io/x/web:1\n")
+    (in_project / ".mulebox.yml").write_text(
+        "project: example-app\ncompose: [docker-compose.yml]\njobs:\n  check: x\n")
+    fake.scenario(machine_version=get_version(), workers=[worker(
+        capabilities=["docker", "compose-v1"], version=get_version())], **scenario)
+
+
+def test_doctor_says_which_registries_the_machine_reaches(fake, in_project, capsys):
+    compose_project(in_project, fake)
+    assert cli.main(["doctor"]) == 0
+    out = capsys.readouterr().out
+    assert "can connect to ghcr.io" in out and "can connect to registry-1.docker.io" in out
+
+
+def test_a_registry_out_of_reach_warns_and_a_job_may_still_run(fake, in_project, capsys):
+    compose_project(in_project, fake, unreached=["ghcr.io"])
+    assert cli.main(["doctor"]) == 0
+    out = capsys.readouterr().out
+    assert "warn  registry" in out and "cannot connect to ghcr.io" in out and "exit 5" in out
+
+
+def test_a_coordinator_too_old_for_this_says_nothing_about_registries(fake, in_project, capsys):
+    compose_project(in_project, fake, unknown_requests=["reach"])
+    assert cli.main(["doctor"]) == 0
+    assert "registry" not in capsys.readouterr().out

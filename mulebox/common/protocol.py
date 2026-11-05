@@ -98,6 +98,8 @@ class MessageType(StrEnum):
     PROJECTS_OK = "projects_ok"
     MACHINES = "machines"
     MACHINES_OK = "machines_ok"
+    REACH = "reach"
+    REACH_OK = "reach_ok"
     LOGS = "logs"
     WATCH = "watch"
     RESERVE = "reserve"
@@ -116,6 +118,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: snapshot upload complete; the job may be queued.
     MessageType.UPLOAD_DONE: frozenset({"job_id", "fingerprint"}),
     MessageType.STATUS: frozenset({"job_id"}),
+    # client -> coordinator: can the machine connect to these registries? (`mulebox doctor`)
+    MessageType.REACH: frozenset({"hosts"}),
+    MessageType.REACH_OK: frozenset({"hosts"}),
     # `outcome` is added once the state is `finished`.
     MessageType.STATUS_OK: frozenset({"job_id", "state"}),
     MessageType.CANCEL: frozenset({"job_id"}),

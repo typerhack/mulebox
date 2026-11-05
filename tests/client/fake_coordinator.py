@@ -11,7 +11,8 @@ Scenario keys: `down` (exit 255 like a failed ssh connection), `submit_state`, `
 `error` with this code to every request), `jobs` (for queue), `status_state`, `workers` and
 `machine_version` (for machines and `mulebox version`), `unknown_requests` (types answered
 the way a coordinator older than them does), `no_detached_echo` (submit_ok as a coordinator
-older than detached jobs sends it), `queue_position`, `estimate_s`, `estimate_runs`.
+older than detached jobs sends it), `unreached` (hosts `reach` cannot connect to),
+`queue_position`, `estimate_s`, `estimate_runs`.
 """
 
 import hashlib
@@ -76,6 +77,10 @@ def main():
     if kind in scenario.get("unknown_requests", []):
         send("error", "unknown", code="bad_request", message=f"unknown message type {kind!r}")
         return 4
+    if kind == "reach":
+        unreached = scenario.get("unreached", [])
+        send("reach_ok", rid, hosts={host: host not in unreached for host in body["hosts"]})
+        return 0
     if kind == "submit":
         echo = {} if scenario.get("no_detached_echo") else {
             "detached": body.get("detached", False)}

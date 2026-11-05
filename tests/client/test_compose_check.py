@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from mulebox.client import compose_yaml
+from mulebox.client import compose_check, compose_yaml
 from mulebox.client.compose_check import findings, model_of
 
 FILE = "docker-compose.yml"
@@ -156,3 +156,17 @@ def test_the_model_matches_what_a_real_compose_prints(tmp_path):
     assert os.path.join(root, ours["services"]["a"]["volumes"][0]["source"]) == theirs[0]["source"]
     assert ours["services"]["a"]["volumes"][0]["read_only"] == theirs[0]["read_only"]
     assert ours["services"]["b"] == {} and "b" not in printed["services"]
+
+
+def test_registries_of_the_files_images(tmp_path):
+    (tmp_path / FILE).write_text(
+        "services:\n  a: {image: redis:7}\n  b: {image: ghcr.io/x/y:1}\n"
+        "  c: {image: 'registry.example.com:5000/z'}\n  d: {image: library/mongo}\n"
+        "  e: {image: 'x/${TAG}'}\n  f: {image: mine, build: .}\n  g: {build: .}\n")
+    assert compose_check.registries((FILE,), tmp_path) == [
+        "ghcr.io", "registry-1.docker.io", "registry.example.com:5000"]
+
+
+def test_no_registries_from_a_file_that_cannot_be_read(tmp_path):
+    (tmp_path / FILE).write_text("services: [")
+    assert compose_check.registries((FILE,), tmp_path) == []

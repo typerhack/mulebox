@@ -35,8 +35,9 @@ Before a project's first job, and after changing `toolchain`, `needs` or compose
 
 It uploads nothing and creates no job. It validates `.mulebox.yml`, says whether a machine
 offers the project's toolchain versions and capabilities (and which versions it has
-instead), runs the worker's compose policy on the project's compose files, and warns when
-the client and the machine run different versions of mulebox. The compose check needs no
+instead), runs the worker's compose policy on the project's compose files, warns when the machine cannot
+connect to a registry the project's images come from, and warns when the client and the
+machine run different versions of mulebox. The compose check needs no
 Docker and sees only what the files show: not values with variables, and not files named by
 `include` or `extends`, so a clean result does not promise the worker will agree. It exits 0
 when a job can run, also with warnings, 1 when it would not, 2 without a usable
