@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.52.1 - 2026-11-05 - patch
+- User docs: getting started, troubleshooting, toolchains, a laptop install that works with current
+  Python packaging, a warning against runners on public repositories, and the release process.
+- CI on GitHub-hosted machines with a read-only token and pinned actions, safe for a public repository.
+- `check` and `doctor` say plainly that a repository needs a commit; before, the coordinator's
+  refusal read as a field error (exit 4).
+
 ## 0.52.0 - 2026-11-05 - minor
 - Security review: fork pull requests stay off self-hosted runners; README and install docs state
   the security model.

@@ -1,10 +1,12 @@
 # Installing mulebox
 
+New here? [getting-started.md](getting-started.md) gives the order; this page has the details.
+
 mulebox has two sides:
 
 - **Build machine** (Linux with systemd, Ubuntu first): runs the coordinator (the queue)
-  and a worker (runs the jobs) as two systemd user services. In M1 both run on one
-  machine, for one user.
+  and a worker (runs the jobs) as two systemd user services, on one machine, for one user.
+  Adding a second build machine is not finished yet: see the [roadmap](phases.md), M5.
 - **Laptop** (macOS or Linux): the `mulebox` client that agents call. It reaches the build
   machine over ssh.
 
@@ -23,7 +25,9 @@ Build machine:
 Laptop:
 
 - Python 3.12 or newer, a clone of mulebox, and ssh access to the build machine with a key
-  (an entry in `~/.ssh/config` such as `Host build-1` keeps commands short).
+  (an entry in `~/.ssh/config` such as `Host build-1` keeps commands short). Log in once by
+  hand so the machine's host key is known: mulebox's ssh never prompts, so a key with a
+  passphrase must be in your ssh agent.
 
 ## 1. Install on the build machine
 
@@ -70,7 +74,7 @@ sudo loginctl enable-linger alice
 `~/.config/mulebox/node.toml` (template: [install/node.toml.example](../install/node.toml.example)):
 
 - `name`: the short hostname by default.
-- `roles`: `["coordinator", "worker"]` in M1. The installer starts only the services of
+- `roles`: `["coordinator", "worker"]`. The installer starts only the services of
   the roles listed here.
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
   absolute, and not a system folder or your home folder itself.
@@ -123,13 +127,19 @@ reads the queue's database read-only and never changes anything.
 
 ## 2. Configure the laptop
 
-Install the client from the clone (or the same wheel) and point it at the build machine:
+Install the client from the clone into a folder of its own, and point it at the build machine.
+Plain `pip install --user` is refused by most current Python installs, Homebrew's and Ubuntu's
+among them (`externally-managed-environment`).
 
 ```sh
-python3 -m pip install --user .       # or use the clone's .venv/bin/mulebox
-mkdir -p ~/.config/mulebox
+python3 -m venv ~/.mulebox-client
+~/.mulebox-client/bin/python -m pip install .
+mkdir -p ~/.local/bin ~/.config/mulebox
+ln -s ~/.mulebox-client/bin/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
 cp install/client.toml.example ~/.config/mulebox/client.toml
 ```
+
+`uv tool install .` or `pipx install .` do the same job if you use those.
 
 Edit `~/.config/mulebox/client.toml` (template:
 [install/client.toml.example](../install/client.toml.example)):
@@ -146,6 +156,23 @@ connect_timeout_s = 10
 ssh build-1 '~/.mulebox/bin/mulebox --version'
 mulebox queue
 ```
+
+Next: [set up a project](getting-started.md#2-decide-where-the-projects-tools-come-from).
+
+## Toolchains
+
+A project pins `node` and `pnpm` versions under `toolchain:` in its `.mulebox.yml`. Each
+version is installed once on the build machine, by a person, and shared by every project:
+
+```sh
+ssh build-1 '~/.mulebox/bin/mulebox toolchain install node 22.22.3'
+ssh build-1 '~/.mulebox/bin/mulebox toolchain install pnpm 11.22.0'   # needs a node first
+ssh build-1 '~/.mulebox/bin/mulebox toolchain list'
+```
+
+`mulebox toolchain` runs on the build machine only. From the laptop, `mulebox doctor` in a
+project says which versions the machine has. They live in `<cache>/toolchains/`, and a job
+that needs a missing one does not start: it exits 5 and lists what is there.
 
 ## GitHub runners
 
@@ -179,12 +206,10 @@ never put on a command line or in a log. `roots.runners` must stay `~/.mulebox/r
 (the unit template runs runners from there). In workflows, use
 `runs-on: [self-hosted, mulebox]`.
 
-Do not put a runner on a public repository unless pull requests from forks are kept off it. A
-workflow that runs on `pull_request` runs the fork's code, and on this runner that means the
-build machine's user with Docker, which is root on the machine in all but name. It can read the
-user's keys and change what later jobs run. GitHub's approval setting only covers first-time
-contributors. [agents.md](agents.md), in its GitHub Actions steps, has a `runs-on` that sends
-those pull requests to GitHub's own machines. What a job can reach: [Security model](#security-model).
+**Private repositories only.** Never attach a runner to a public repository: anyone can open a
+pull request, and its workflow file comes from that pull request, so it can ask for your runner
+whatever your own workflow says, and run its code on your build machine.
+What a job can reach: [Security model](#security-model).
 
 ## Security model
 
@@ -207,10 +232,11 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 
 ## Upgrade
 
-Pull the new version on the laptop and deploy again:
+Pull the new version on the laptop, deploy it, and update the laptop's own client:
 
 ```sh
 git pull && tools/deploy.sh build-1
+~/.mulebox-client/bin/python -m pip install .
 ```
 
 The installer reinstalls the wheel into the existing venv, updates the unit files and
@@ -252,19 +278,7 @@ ssh build-1 '~/.mulebox/venv/bin/python - --real-docker' < tools/drill_compose.p
 
 ## Troubleshooting
 
-| Problem | What to do |
-| --- | --- |
-| `Python cannot create virtual environments here` | `sudo apt-get install python3-venv` (or `python3.12-venv`), then rerun the installer |
-| `Python 3.12 or newer is required` | install a newer Python and set `MULEBOX_PYTHON`, e.g. `MULEBOX_PYTHON=python3.12` |
-| `'systemctl --user' does not work` | log in as the user over ssh or a desktop session; `su`/`sudo -u` sessions have no user manager |
-| Services stop after logout or do not start at boot | `loginctl show-user alice -p Linger`; if `Linger=no`, run `sudo loginctl enable-linger alice` |
-| Generated or edited `node.toml` does not validate | the error names the file and the field; fix it and rerun the installer |
-| A service is not running | `systemctl --user status mulebox-worker mulebox-coordinator` |
-| Job or worker errors | `journalctl --user -u mulebox-worker -e` and `journalctl --user -u mulebox-coordinator -e` |
-| `pip` inside the venv | use `~/.mulebox/venv/bin/python -m pip ...` (the venv is built in a temp folder and moved, so its `bin/pip` script may point at the old path) |
-| Old venvs and copied wheels pile up | everything in `~/.mulebox/tmp/` is safe to delete by hand |
-| `compose:` services cannot reach each other (`Host is unreachable`), or a published port resets, while `docker0` containers work | NetworkManager is managing Docker's `br-*` bridges and detaches their ports. Check with `journalctl -u NetworkManager \| grep detached`; `docker network create` with no mulebox shows the same thing. Fix, as root: put `[keyfile]` and `unmanaged-devices=interface-name:br-*;interface-name:veth*` in a file in `/etc/NetworkManager/conf.d/` and reload NetworkManager. New bridges then work; profiles left from before do no harm |
-| npm, pnpm or `node` fail with `ETIMEDOUT` after about 3 s while `curl` reaches the same address | connections take longer than Node's limit per address (250 ms), as they can over a VPN or a slow network. Add `NODE_OPTIONS = "--network-family-autoselection-attempt-timeout=5000"` under `[job_env]` in `node.toml` and restart the worker |
+See [troubleshooting.md](troubleshooting.md).
 
 ## Using the dashboard
 
@@ -279,7 +293,7 @@ mulebox dashboard open --port 8091     # if local port 8090 is taken
 If `[dashboard] port` was changed in `node.toml`, pass the same value as `--remote-port`.
 Nothing but the SSH connection is exposed: the page is reached only through the tunnel.
 
-### Skill for coding agents
+## Skill for coding agents
 
 The package ships a skill that teaches a coding agent to work through mulebox in any project.
 It is short on purpose: it sends the agent to `mulebox contract`. For Claude Code, install it
@@ -299,7 +313,7 @@ it was written for; when `mulebox contract` shows a higher one, the agent tells 
 
 Agents without skills can read [agents.md](agents.md) instead.
 
-### Dashboard on the LAN
+## Dashboard on the LAN
 
 `lan` mode lets other devices, such as a phone, open the dashboard directly at
 `http://<address>:8090`, the same port as on the machine itself, with a password unless you turn it off (below). The tunnel above

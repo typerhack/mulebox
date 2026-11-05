@@ -7,7 +7,7 @@
 # Name of this node in the queue and the logs (letters, digits, '.', '_', '-').
 name = "@NAME@"
 
-# M1 runs both roles on one machine as two systemd user services.
+# Both roles run on one machine, as two systemd user services.
 roles = ["coordinator", "worker"]
 
 # Jobs this node runs at the same time.
@@ -24,7 +24,7 @@ cache = "@HOME@/.mulebox/cache"
 staging = "@HOME@/.mulebox/staging"
 runners = "@HOME@/.mulebox/runners"
 
-# Web dashboard (M2): "off", "local" (this machine only) or "lan" (also on the LAN, with a
+# Web dashboard: "off", "local" (this machine only) or "lan" (also on the LAN, with a
 # password unless lan_password = false). "lan" needs lan_range and lan_address; see
 # docs/install.md.
 [dashboard]

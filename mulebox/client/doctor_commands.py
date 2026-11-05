@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-from mulebox.client import compose_check, doctor, report, skill_install
+from mulebox.client import compose_check, doctor, gitinfo, report, skill_install
 from mulebox.client.commands import guarded
 from mulebox.client.contract import SCHEMA
 from mulebox.client.doctor import FAIL, OK, Facts, Finding
@@ -89,6 +89,19 @@ def _about_skill() -> list[Finding]:
     return doctor.skills(skill_install.inspect_all(folders, skill_install.packaged_text()), SCHEMA)
 
 
+def _about_git(project: ProjectConfig | None) -> list[Finding]:
+    """What `check` would refuse before any upload. Without a project there is no folder."""
+    if project is None:
+        return []
+    root = find_project_config(Path.cwd()).parent
+    try:
+        gitinfo.ensure_worktree(root)
+        gitinfo.ensure_commit(root)
+    except gitinfo.GitError as exc:
+        return [Finding(doctor.FAIL, "git", str(exc))]
+    return []
+
+
 def _about_compose(project: ProjectConfig | None) -> list[Finding]:
     if project is None:
         return []
@@ -99,7 +112,7 @@ def examine() -> tuple[list[Finding], int]:
     """(findings, the exit code they call for)."""
     project, about_config = _project()
     findings = [about_config, *(doctor.env_references(project) if project else ()),
-                *_about_compose(project), *_about_skill()]
+                *_about_git(project), *_about_compose(project), *_about_skill()]
     code = report.EXIT_USAGE if project is None else 0
     try:
         remote = Remote(load_client_config())

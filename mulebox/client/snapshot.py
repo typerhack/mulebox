@@ -81,6 +81,7 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = ()) -> Snapshot:
     root = Path(root).resolve()
     try:
         gitinfo.ensure_worktree(root)
+        gitinfo.ensure_commit(root)
         paths = selected_paths(root, Excludes(extra_excludes))
         commit, branch = gitinfo.base_commit(root), gitinfo.branch(root)
     except gitinfo.GitError as exc:

@@ -8,7 +8,15 @@ can freeze the laptop. mulebox gives every project and every agent **one waiting
 on one or more Linux build machines ("mules"), runs the jobs there, and streams the result
 back as if the command had run locally.
 
-Status: **early design, not usable yet** (version in [VERSION](VERSION)).
+Status: **in daily use on one build machine, not yet at 1.0** (version in [VERSION](VERSION)).
+Behaviour can still change between versions, and what is open is in the
+[roadmap](docs/phases.md).
+
+## Get started
+
+[docs/getting-started.md](docs/getting-started.md) takes you from nothing to a project whose checks
+run on a build machine. You need a Linux machine with systemd, ssh access to it with a key, and
+Python 3.12 or newer on both sides.
 
 ## How it works
 
@@ -29,12 +37,21 @@ mulebox queue  --SSH-->        |
 - **Live views**: a terminal view on the laptop and a read-only web dashboard showing the
   queue, live logs and machine load, opened through an SSH tunnel with `mulebox dashboard
   open`, or directly from other devices on your LAN, with a password unless you turn it off.
-- **Grows with your hardware**: add a faster machine as another worker; retire an old one
-  by draining it. Agents and projects do not change.
+- **Made to grow**: jobs are claimed by workers, so more machines need no change to agents or
+  projects. Installing a second machine is not finished yet (roadmap, M5).
 - **Per-project config**: a small `.mulebox.yml` in each repo says what "check" means.
 
-See [docs/design.md](docs/design.md) for the design and [docs/phases.md](docs/phases.md)
-for the roadmap.
+## Documentation
+
+| Page | For |
+| --- | --- |
+| [getting-started.md](docs/getting-started.md) | the first install and the first project, in order |
+| [install.md](docs/install.md) | build machine, laptop, upgrades, GitHub runners, the dashboard |
+| [agents.md](docs/agents.md) | everyday commands, every `.mulebox.yml` field, the agent rule |
+| [troubleshooting.md](docs/troubleshooting.md) | what an error means and what to do |
+| [design.md](docs/design.md) | how it works and why |
+| [phases.md](docs/phases.md) | the roadmap: what is done and what is open |
+| [releasing.md](docs/releasing.md) | CI and releases, for maintainers |
 
 ## Security
 
@@ -65,7 +82,8 @@ python3 -m venv .venv
 After a VERSION bump, rerun the `pip install -e` step: the installed metadata keeps the
 old version until then and the version test fails.
 
-Rules for contributors and agents: [AGENTS.md](AGENTS.md). Every change bumps
+CI and the release process: [docs/releasing.md](docs/releasing.md). Rules for contributors and
+agents: [AGENTS.md](AGENTS.md). Every change bumps
 [VERSION](VERSION) and adds an entry to [PROJECT_LOG.md](PROJECT_LOG.md).
 
 ## License

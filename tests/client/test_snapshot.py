@@ -153,9 +153,10 @@ def test_root_must_be_a_git_worktree(tmp_path):
         make_snapshot(folder, ())
 
 
-def test_repo_without_commits(make_repo, snaps):
-    snap = snapshot(snaps, make_repo(commit=False))
-    assert snap.base_commit == "" and snap.branch == ""
+def test_repo_without_commits_is_refused_before_packing(make_repo, snaps):
+    """The coordinator requires a base commit; asking it would upload first and read badly."""
+    with pytest.raises(SnapshotError, match="no commits yet"):
+        snapshot(snaps, make_repo(commit=False))
 
 
 def test_project_root_in_a_subfolder_sends_only_that_folder(make_repo, snaps):

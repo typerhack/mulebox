@@ -131,6 +131,14 @@ def test_cli_all_good(fake, make_repo, monkeypatch, capsys):
     assert [r["type"] for r in fake.requests()] == ["machines", "queue"]  # no job, no upload
 
 
+def test_cli_a_repository_without_commits_fails_as_check_would(fake, make_repo, monkeypatch,
+                                                               capsys):
+    monkeypatch.chdir(make_repo(tracked={".mulebox.yml": YML}, commit=False))
+    fake.scenario(machine_version=get_version(), workers=[worker(version=get_version())])
+    code, out = run(capsys)
+    assert code == 1 and "fail  git" in out.out and "no commits yet" in out.out
+
+
 def test_cli_reports_a_skill_behind_but_does_not_touch_it(fake, make_repo, monkeypatch, capsys,
                                                           home):
     in_project(make_repo, monkeypatch)

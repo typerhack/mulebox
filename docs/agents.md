@@ -33,7 +33,8 @@ Before a project's first job, and after changing `toolchain`, `needs` or compose
 
     mulebox doctor            # add --json for stable keys
 
-It uploads nothing and creates no job. It validates `.mulebox.yml`, says whether a machine
+It uploads nothing and creates no job. It validates `.mulebox.yml`, says if the folder is no git
+repository with a commit yet, says whether a machine
 offers the project's toolchain versions and capabilities (and which versions it has
 instead), runs the worker's compose policy on the project's compose files, warns when the machine cannot
 connect to a registry the project's images come from, and warns when the client and the
@@ -74,7 +75,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | Code | Meaning | What to do |
 | --- | --- | --- |
 | 0 / job's code | the job ran; read its output like a local run | fix the code if it failed |
-| 2 | config or usage error (`.mulebox.yml`, not in a git worktree) | fix the config |
+| 2 | config or usage error (`.mulebox.yml`, not in a git worktree, no commit yet) | fix the config |
 | 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 5 | the job could not start (toolchain missing, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
@@ -276,7 +277,7 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
    result as the project's CI. Then prove a broken change fails the same way it would
    locally: add an obvious type error, run `mulebox check typecheck` (or `check`), confirm
    it fails with that error and a non-zero exit code, and **revert the change**.
-4. **Add the agent rule** to the project's AGENTS.md (or CLAUDE.md if that is where the
+4. <a id="agent-rule"></a>**Add the agent rule** to the project's AGENTS.md (or CLAUDE.md if that is where the
    rules live). Show the user the exact text before committing it:
 
 ```markdown
@@ -290,7 +291,8 @@ Run builds, type checks, lint and tests through mulebox, never directly on this 
 - one-off command (single test file, script): `mulebox run -- <cmd...>`
 
 Keep git, search, reading files and diffs local. If mulebox is unreachable (exit 3), stop
-and tell the user instead of running the command locally. See mulebox's docs/agents.md.
+and tell the user instead of running the command locally. `mulebox contract` prints how
+this project works with mulebox.
 ```
 
    Keep checks that read git history out of `jobs:`. A job runs on a snapshot of files with no
@@ -513,7 +515,10 @@ do not let Playwright's `webServer` start something on a fixed port.
 ## 3. Moving GitHub Actions to mulebox runners
 
 A repository's CI can run on the build machine through the same queue. Do this only when
-the user asks for it.
+the user asks for it, and **never for a public repository**: anyone can open a pull request,
+GitHub takes its workflow from that pull request, so it can name the runner itself and run its
+code on the build machine, whatever the main branch's workflow says. If the repository is
+public, or is about to be, stop and tell the user.
 
 1. **Register a runner** (needs `gh` logged in with admin rights on the repository):
 

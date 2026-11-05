@@ -1,6 +1,6 @@
 # mulebox design
 
-Status: design reviewed, not implemented. Version: see [../VERSION](../VERSION).
+Status: implemented up to the open tasks in [phases.md](phases.md). Version: see [../VERSION](../VERSION).
 
 ## Problem
 
