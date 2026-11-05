@@ -73,6 +73,9 @@ def for_job(paths: NodePaths, project: str, needs: Sequence[str]) -> JobCaches:
         env |= {tool.mount_variable: str(folder), **dict.fromkeys(tool.settings, str(folder))}
         notes.append(f"package cache {tool.folder}: shared by every job of {project} on this "
                      f"machine (${tool.mount_variable})")
+        if not any(folder.iterdir()):
+            notes.append(f"package cache {tool.folder} is empty, so this job downloads "
+                         "everything; later jobs reuse it")
     return JobCaches(env, tuple(folders), tuple(notes))
 
 

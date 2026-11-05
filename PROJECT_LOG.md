@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.49.0 - 2026-11-05 - minor
+- A package cache that starts empty says so in the job's log. A project that turned a cache on saw
+  every package downloaded again, with nothing to explain it. The roadmap records today's real
+  checks: stage events, last line, `running_ahead`, the registry check and the idle stop.
+
 ## 0.48.2 - 2026-11-05 - patch
 - Docs: a newly turned on cache starts empty, and what to expect on a slow connection. The roadmap
   gets the fixes still open from the second project reports.

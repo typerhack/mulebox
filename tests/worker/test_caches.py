@@ -56,6 +56,14 @@ def test_a_job_that_asks_gets_its_projects_folder_and_the_tools_setting(paths, t
     assert any("package cache pnpm" in note for note in notes)
 
 
+def test_an_empty_cache_says_so_and_a_filled_one_does_not(paths, tmp_path):
+    _, notes = build(paths, tmp_path, ["cache-npm"])
+    assert any("is empty" in note for note in notes)
+    (paths.cache / "packages/example-app/npm/index").write_text("x")
+    _, notes = build(paths, tmp_path, ["cache-npm"])
+    assert not any("is empty" in note for note in notes)
+
+
 def test_npm_uses_its_own_setting(paths, tmp_path):
     spec, _ = build(paths, tmp_path, ["cache-npm"])
     assert spec.env["npm_config_cache"] == str(paths.cache / "packages/example-app/npm")

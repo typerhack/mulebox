@@ -257,7 +257,9 @@ it: a real machine.
 - [~] M11.2 Activity: output, plus the job's own CPU and its services' traffic from control groups,
       reported with worker heartbeats. Built 2026-11-04 (0.37.0) on the machine's readings; a real
       drill on 2026-11-05 showed a sleeping job could never be idle that way, so 0.43.0 measures
-      the job. Open: a stuck and a silent busy real job, and a compose stack sitting idle.
+      the job. 2026-11-05 on a real machine: a sleeping job beside idle Redis containers stopped at
+      20m 06s and left nothing; a silent job at 100% of a core ran its 23 minutes. Open: a real
+      database stack sitting idle, as Redis read only 3% of a core.
 - [~] M11.3 Unattended jobs: `wait` and `events` count as watching, 15 minutes idle and 24 hours
       total as `[limits]`, queued jobs included, `stopped: unattended`, exit 76, schema 8 with
       an upgrade test. Built 2026-11-04 (0.37.0). Open: a job really stopped on a machine,
@@ -291,23 +293,26 @@ Fixes from the second project tests (2026-11-04).
       a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
       and a test through the worker with a stand-in `docker`. Done 2026-11-05 (0.43.0): a real job on
       a build machine with an unreachable registry: exit 5, stage `images`, reason in the summary.
-- [ ] M13.11 A cache turned on starts empty and repeats every download: seed it, or warn.
+- [~] M13.11 A cache that starts empty says so in the job's log, as that job downloads everything.
+      Seeding was left out: a cache is one project's, and the machine's default store is shared.
+      Built 2026-11-05 (0.49.0), with tests. Open: seen in a real job.
 - [ ] M13.12 A shared browser download for `needs: [playwright]` jobs; a 184 MiB fetch took 24 min.
-- [ ] M13.13 A network failure inside a job's own install names the network in the summary, not
-      only a stack trace. Pulls are covered by M13.2.
+- [~] M13.13 A failure summary whose last lines read as a network failure says so, as a hint: the
+      job still counts as failed, it ran. Pulls are M13.2. Built 2026-11-05 (0.49.1), with tests.
+      Open: a real install failing on the network.
 - [x] M13.10 Docs: a cold cache and slow connections. (2026-11-05, 0.48.2)
 - [~] M13.9 `needs: [cache-npm]`, for npm projects. Built 2026-11-05 (0.48.0), with tests. Open: a
       real npm project on a build machine, with a second job showing the packages as reused.
 - [~] M13.8 `mulebox doctor` says whether the machine can connect to the registries of a project's
-      images. A warning, as images it has still work. Built 2026-11-05 (0.47.0), with tests. Open:
-      seen on a build machine with the VPN down.
-- [~] M13.7 A queued job names the jobs on the machines (`running_ahead`) in `status` and `events`,
-      as `waiting_for` is only for a job nothing can run. Built 2026-11-05 (0.46.0), with the real
-      coordinator code. Open: seen in a real queue.
-- [~] M13.6 A check-in and `status` give the job's last output line, redacted, so `command` does
-      not hide which step is on. Built 2026-11-05 (0.45.0), with tests. Open: a real long job.
-- [~] M13.5 `mulebox events` has a `stage` event as a job enters each stage. Built 2026-11-05
-      (0.44.0), tested with the real coordinator code. Open: a real job on a build machine.
+      images. A warning, as images it has still work. Built 2026-11-05 (0.47.0): on a build machine
+      one registry reached, one unknown host warned. Open: with the VPN really down.
+- [x] M13.7 A queued job names the jobs on the machines (`running_ahead`) in `status` and `events`,
+      as `waiting_for` is only for a job nothing can run. Done 2026-11-05 (0.46.0): seen in a real
+      queue on a build machine.
+- [x] M13.6 A check-in and `status` give the job's last output line, redacted, so `command` does
+      not hide which step is on. Done 2026-11-05 (0.45.0): seen in a real check-in and `status`.
+- [x] M13.5 `mulebox events` has a `stage` event as a job enters each stage. Done 2026-11-05 (0.44.0):
+      followed a real compose job on a build machine. Stages shorter than a report can be skipped.
 - [x] M13.4 `usual` counts only runs before the job, so `status` on an old job says what was usual
       then, and of two middle runs takes the lower, a length a run really had. (2026-11-05, 0.43.2)
 - [x] M13.3 The notice for `env:` entries a job goes without reads for one entry and for more.
