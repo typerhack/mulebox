@@ -31,8 +31,9 @@ def test_the_summary_and_events_show_the_stage_that_really_failed(local, in_proj
 
 def test_status_lists_stages_beside_what_is_usual(local, in_project, capsys):
     rows = ({"seq": 0, "stage": "command", "started_at": 1.0, "finished_at": 31.0, "exit_code": 0},)
-    job_id, _ = detach(capsys)
-    FakeWorker(local.store, local.staging, exit_code=0, steps=rows).run_next()
+    for _ in range(2):
+        job_id, _ = detach(capsys)
+        FakeWorker(local.store, local.staging, exit_code=0, steps=rows).run_next()
     assert cli.main(["status", job_id]) == 0
     out = capsys.readouterr().out
     assert "  command: 30s (usual 30s)\n" in out and "usual for this job: 30s (1 past runs)" in out

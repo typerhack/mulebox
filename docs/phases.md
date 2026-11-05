@@ -291,6 +291,8 @@ Fixes from the second project tests (2026-11-04).
       a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
       and a test through the worker with a stand-in `docker`. Done 2026-11-05 (0.43.0): a real job on
       a build machine with an unreachable registry: exit 5, stage `images`, reason in the summary.
+- [x] M13.4 `usual` counts only runs before the job, so `status` on an old job says what was usual
+      then, and of two middle runs takes the lower, a length a run really had. (2026-11-05, 0.43.2)
 - [x] M13.3 The notice for `env:` entries a job goes without reads for one entry and for more.
       (2026-11-05, 0.40.9)
 

@@ -129,7 +129,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 A job goes through stages: `prepare`, `environment`, `images`, `services`, `setup`, `command`,
 `cleanup`. `mulebox status <job-id>` shows them; with `--json`, `steps` has when each started
 and ended, its exit code and the last line of a failed one. The first four need no action
-from a project. `usual` is what passed runs of this job with this command took, whole and per
+from a project. `usual` is what earlier passed runs of this job with this command took, whole and per
 stage, or nothing if there is no history yet. Say "usually about 4 min" if that helps. It is
 not progress, so never turn it into a percentage. Once a job has ended badly, the reply, the
 failure summary and the `finished` event name the failed stage.

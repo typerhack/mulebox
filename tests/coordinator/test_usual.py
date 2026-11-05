@@ -74,7 +74,22 @@ def test_only_recent_runs_count(store, staging, monkeypatch):
     run(store, staging, [("command", 500)])
     run(store, staging, [("command", 10)])
     run(store, staging, [("command", 20)])
-    assert read(store)["runs"] == 2 and read(store)["job_s"] == 15.0
+    assert read(store)["runs"] == 2 and read(store)["job_s"] == 10.0
+
+
+def test_of_two_middle_runs_the_figure_is_one_that_happened(store, staging):
+    run(store, staging, [("command", 312)])
+    run(store, staging, [("command", 349)])
+    assert read(store)["job_s"] == 312.0
+
+
+def test_one_job_counts_only_the_runs_before_it(store, staging):
+    run(store, staging, [("command", 10)])
+    middle = run(store, staging, [("command", 500)])
+    run(store, staging, [("command", 900)])
+    with store.read() as conn:
+        typical = usual.for_job(conn, st.require_job(conn, middle))
+    assert typical["runs"] == 1 and typical["job_s"] == 10.0
 
 
 def test_an_open_row_is_ignored(store, staging):

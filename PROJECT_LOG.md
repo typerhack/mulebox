@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.43.2 - 2026-11-05 - patch
+- `usual` counts only runs before the job asked about, and of two middle runs takes the lower. A
+  real report: `status` on an old job compared it with itself and later runs, and two runs of
+  312 s and 349 s gave 331 s, which neither took.
+
 ## 0.43.1 - 2026-11-05 - patch
 - Roadmap: M13.2 done, after a real job with an unreachable registry exited 5 on a build machine.
 
