@@ -83,7 +83,8 @@ queue and returns the same result as running it locally.
       (the rest read "no live data"). Built 2026-11-04 (0.26.0): in headless Chrome with
       one, three (one offline) and no machines, stuck and pinned jobs, at 1440x900,
       1280x800 and 390 px in both themes, the page fits and nothing scrolls sideways.
-      Open: the real Edge review, deployment, and a real phone.
+      Reviewed 2026-11-05 (0.51.3) in real Edge on a real machine: lanes, tabs, a live job, and no
+      sideways scroll at 544 px. Open: a real phone.
 
 ## M3: GitHub Actions runners
 - [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)

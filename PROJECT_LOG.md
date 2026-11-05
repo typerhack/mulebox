@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.51.4 - 2026-11-05 - patch
+- Roadmap: the Jobs box is reviewed in real Edge and deployed; a real phone stays open.
+
 ## 0.51.3 - 2026-11-05 - patch
 - The job view marks the stage the rest of mulebox calls failed: `failed_stage` in the job detail,
   from the one rule in `common/status.py`. A job that never started had a green `images` stage,
