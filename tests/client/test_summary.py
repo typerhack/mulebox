@@ -24,6 +24,11 @@ def test_container_logs_are_left_out():
     assert lines_of(text) == ["src/a.ts(3,1): error TS2322"]
 
 
+def test_the_workers_last_word_stays_after_container_logs():
+    text = f"Error: dial tcp\n{CONTAINER_LOGS_NOTE}\ndb | noise\n{NOT_STARTED_NOTE} no image\n"
+    assert lines_of(text) == ["Error: dial tcp", f"{NOT_STARTED_NOTE} no image"]
+
+
 def test_progress_is_left_out_but_numbers_in_results_are_not():
     text = ("Progress: resolved 543, reused 500, downloaded 0, added 0\n"
             "  45% building\n[=====>     ] 12/40\n12MB/40MB\n"

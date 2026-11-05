@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.8 - 2026-11-05 - patch
+- A job whose images could not be fetched for a network reason is a job that never ran, exit 5, not
+  a failed check with exit 1. `worker/pull_failure.py` reads the images stage's last line. The
+  failure summary keeps the worker's reason, which stands after the container logs.
+
 ## 0.40.7 - 2026-11-05 - patch
 - `mulebox doctor` reads Compose's `!reset` and `!override` tags, in the new `client/compose_yaml.py`.
   A project using them got "could not check" and the refusal check never ran.

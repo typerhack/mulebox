@@ -52,6 +52,7 @@ def stand_in(tmp_path, monkeypatch):
     script.write_text(f"""#!/bin/sh
 echo "$* | $COMPOSE_PROJECT_NAME | $COMPOSE_FILE | $APP_ENV" >> {log}
 case "$*" in
+  "compose up --no-start") [ -f {tmp_path}/pull-fails ] && cat {tmp_path}/pull-fails && exit 1 ;;
   "compose up --detach --wait") [ -f {tmp_path}/up-prints ] && cat {tmp_path}/up-prints
       [ -f {tmp_path}/up-fails ] && exit 9 ;;
   "compose logs"*) echo "container said password=hunter2hunter2" ;;
@@ -197,6 +198,25 @@ def test_up_failing_still_tears_down_and_the_job_never_runs(
     assert result_of(fake_link)["exit_code"] == 9
     assert "never" not in stand_in.read_text()
     assert_all_gone(daemon, paths, job_id)
+
+
+def test_a_registry_out_of_reach_is_a_job_that_never_ran(
+        agent, fake_link, daemon, paths, tmp_path, stand_in):
+    (tmp_path / "pull-fails").write_text("Error: dial tcp 192.168.1.50:443: i/o timeout\n")
+    job_id = submit(fake_link, "never")
+    add_resources(daemon, job_id)
+    run_until(agent, finished(fake_link))
+    result = result_of(fake_link)
+    assert result["outcome"] == "failed" and result["exit_code"] is None
+    assert "could not start" in fake_link.log_text()
+    assert_all_gone(daemon, paths, job_id)
+
+
+def test_a_build_failing_in_the_images_stage_keeps_its_code(agent, fake_link, tmp_path):
+    (tmp_path / "pull-fails").write_text("failed to solve: did not complete successfully\n")
+    submit(fake_link, "never")
+    run_until(agent, finished(fake_link))
+    assert result_of(fake_link)["exit_code"] == 1
 
 
 def test_setup_failing_still_tears_down(agent, fake_link, daemon, paths):

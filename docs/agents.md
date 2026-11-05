@@ -76,7 +76,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree) | fix the config |
 | 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
-| 5 | the job could not start (toolchain missing, compose file refused), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
+| 5 | the job could not start (toolchain missing, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
 | 76 | `stopped: unattended`: nobody watched the job and it ran out of time (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
 | 124 | the job hit a hard `timeout_min`, which only a build machine older than 0.37 applies | look for a hang; a current machine sends check-ins instead |

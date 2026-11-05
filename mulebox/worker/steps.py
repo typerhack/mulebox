@@ -107,6 +107,11 @@ class StepTracker:
         """The stage in progress, as far as this tracker knows."""
         return self._open["stage"] if self._open is not None else None
 
+    @property
+    def last_line(self) -> str | None:
+        """The last line the open stage printed, before any report on its containers."""
+        return self._last_line
+
     def finish_cleanup(self, at: float) -> None:
         if self._open is not None and self._open["stage"] == CLEANUP:
             self.close(0, at, failed=False)

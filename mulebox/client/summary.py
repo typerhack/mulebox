@@ -71,8 +71,12 @@ def _clean(raw: str) -> str:
 
 
 def _before_containers(text: str) -> str:
+    """Without the container logs, but with the worker's last word when it stands after them."""
     at = text.find(CONTAINER_LOGS_NOTE)
-    return text if at < 0 else text[:at]
+    if at < 0:
+        return text
+    last = text.rstrip().rsplit("\n", 1)[-1]
+    return f"{text[:at]}{last}" if last.startswith(NOT_STARTED_NOTE) else text[:at]
 
 
 def _collapse(lines: list[str]) -> list[str]:

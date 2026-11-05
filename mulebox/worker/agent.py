@@ -30,7 +30,8 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.common.status import CLEANUP, ENVIRONMENT, PREPARE
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker import activity, advert, background, runspec, toolchains, workspace
+from mulebox.worker import activity, advert, background, pull_failure, runspec
+from mulebox.worker import toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -203,9 +204,10 @@ class Agent:
         """Stop the process, flush the log, clean up; reports go out via _deliver."""
         if job.handle is not None and self.executor.poll(job.handle) is None:
             self.executor.stop(job.handle)
-        job.outcome, job.exit_code = outcome, exit_code
         job.duration_s = max(0.0, now - job.started_at)
         job.tailer.finish()
+        exit_code = pull_failure.checked(outcome, exit_code, job.tailer)
+        job.outcome, job.exit_code = outcome, exit_code
         job.steps.close(exit_code, now, ended_badly(outcome))
         job.steps.begin(CLEANUP, now)
         self.active.pop(job.job_id, None)

@@ -285,6 +285,10 @@ Fixes from the second project tests (2026-11-04).
       runs for projects using them; before, it gave up with a warning. Built 2026-11-05 (0.40.7):
       the rules read off Compose 5.6, a test against `docker compose config`, and real `doctor`
       runs on such files, one refused, one clean. Open: a real project's compose files.
+- [~] M13.2 Images out of reach on the network: the job counts as never started, exit 5, with the
+      reason in the log and the summary. A build that fails or an image that does not exist stays
+      a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
+      and a test through the worker with a stand-in `docker`. Open: a real job on a build machine.
 
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
