@@ -6,15 +6,18 @@ import { bytes, duration, el } from "./format.js";
 
 const percent = (part, whole) => `${(part / whole * 100).toFixed(2)}%`;
 
+// Positions go through `.style`: the page's security policy refuses a style attribute.
 function bar(from, length, scale, tone) {
-  return el("span", { class: "span", "data-tone": tone,
-                      style: `left:${percent(from, scale)};width:${percent(length, scale)}` });
+  const node = el("span", { class: "span", "data-tone": tone });
+  node.style.left = percent(from, scale);
+  node.style.width = percent(length, scale);
+  return node;
 }
 
 function track(label, spanNode, usualAt, scale) {
-  const tick = usualAt ? el("span", { class: "tick", title: `usual ${duration(usualAt)}`,
-                                      style: `left:${percent(usualAt, scale)}` }) : null;
-  return el("span", { class: "lane", role: "img", "aria-label": label }, spanNode, tick);
+  const tick = usualAt ? el("span", { class: "tick", title: `usual ${duration(usualAt)}` }) : null;
+  if (tick) tick.style.left = percent(usualAt, scale);
+  return el("span", { class: "stage-track", role: "img", "aria-label": label }, spanNode, tick);
 }
 
 function row(name, took, track_, usual, extra) {

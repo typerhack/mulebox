@@ -133,15 +133,15 @@ button.icon:hover { color: var(--ink); }
 .stage-name, .stage-usual, .stage-fetched { color: var(--ink-muted); white-space: nowrap; }
 .stage-fetched, .failing-line { grid-column: 2 / -1; }
 .failing-line { color: var(--bad); overflow-wrap: anywhere; }
-.lane { position: relative; display: block; height: 9px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
-.lane::after {
+.stage-track { position: relative; display: block; height: 9px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
+.stage-track::after {
   content: ""; position: absolute; inset: 0;
   background: repeating-linear-gradient(90deg, transparent 0 5px, var(--bg) 5px 7px);
 }
-.lane .span { position: absolute; top: 0; bottom: 0; min-width: 2px; background: var(--accent); }
-.lane .span[data-tone="open"] { background: var(--active); }
-.lane .span[data-tone="failed"] { background: var(--bad); }
-.lane .tick { position: absolute; z-index: 1; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); }
+.stage-track .span { position: absolute; top: 0; bottom: 0; min-width: 2px; background: var(--accent); }
+.stage-track .span[data-tone="open"] { background: var(--active); }
+.stage-track .span[data-tone="failed"] { background: var(--bad); }
+.stage-track .tick { position: absolute; z-index: 1; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); }
 @media (max-width: 560px) {
   .stage-row { grid-template-columns: 11ch minmax(0, 1fr) 14ch; }
   .stage-usual { display: none; }

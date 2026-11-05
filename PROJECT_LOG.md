@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.51.2 - 2026-11-05 - patch
+- The job view's stage bars were empty: the page's security policy refuses a style attribute, so
+  they now go through `.style`. Their CSS class also collided with the queue's `.lane` and
+  flattened the Jobs box since 0.50.0. Both seen in real Edge.
+
 ## 0.51.1 - 2026-11-05 - patch
 - A test of `logs --summary` no longer depends on the folder it runs from: the repository now has
   a `.mulebox.yml`, which made the client look up warnings. Found by the first run through mulebox.
