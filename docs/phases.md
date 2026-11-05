@@ -296,6 +296,8 @@ Fixes from the second project tests (2026-11-04).
 - [~] M13.11 A cache that starts empty says so in the job's log, as that job downloads everything.
       Seeding was left out: a cache is one project's, and the machine's default store is shared.
       Built 2026-11-05 (0.49.0), with tests. Open: seen in a real job.
+- [~] M13.15 mulebox runs its own tests through itself: `.mulebox.yml` in this repository, and
+      `needs: [cache-pip]`. Built 2026-11-05 (0.51.0). Open: see the first real run.
 - [x] M13.14 Dashboard: a job's stages as a waterfall, with what is usual as a tick, live while it
       runs. Times only, no percentage: a length from past runs is not progress. (2026-11-05, 0.50.0)
 - [x] M13.12 Browsers stay in the shared folder: Playwright's cleanup removed them after every job.

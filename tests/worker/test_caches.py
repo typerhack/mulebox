@@ -70,6 +70,11 @@ def test_npm_uses_its_own_setting(paths, tmp_path):
     assert spec.env["MULEBOX_CACHE_NPM"] == spec.env["npm_config_cache"]
 
 
+def test_pip_uses_its_own_setting(paths, tmp_path):
+    spec, _ = build(paths, tmp_path, ["cache-pip"])
+    assert spec.env["PIP_CACHE_DIR"] == str(paths.cache / "packages/example-app/pip")
+
+
 def test_composer_uses_its_own_setting(paths, tmp_path):
     spec, _ = build(paths, tmp_path, ["cache-composer"])
     assert spec.env["COMPOSER_CACHE_DIR"] == str(paths.cache / "packages/example-app/composer")

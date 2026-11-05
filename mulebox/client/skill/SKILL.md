@@ -87,9 +87,10 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
 
 ## Package caches and services
 
-`needs: [cache-pnpm, cache-composer, cache-npm]` turns the caches on. Commands on the machine use
-them by themselves. A container sees a cache only if the compose file mounts
-`${MULEBOX_CACHE_PNPM}`, `${MULEBOX_CACHE_COMPOSER}` or `${MULEBOX_CACHE_NPM}`.
+`needs: [cache-pnpm, cache-composer, cache-npm, cache-pip]` turns the caches on. Commands on the
+machine use them by themselves. A container sees a cache only if the compose file mounts
+`${MULEBOX_CACHE_PNPM}`, `${MULEBOX_CACHE_COMPOSER}`, `${MULEBOX_CACHE_NPM}` or
+`${MULEBOX_CACHE_PIP}`.
 
 - To replace an external cache volume, mount the cache on the same container path in a CI-only
   compose file. The refusal of external volumes stands.

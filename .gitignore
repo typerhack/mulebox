@@ -20,3 +20,6 @@ build/
 .DS_Store
 .idea/
 .vscode/
+
+# Claude Code worktrees and local settings
+.claude/

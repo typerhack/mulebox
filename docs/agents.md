@@ -403,7 +403,7 @@ and downloads stay on the build machine between jobs of this project. It is off 
 project asks.
 
 ```yaml
-needs: [cache-pnpm, cache-composer, cache-npm]
+needs: [cache-pnpm, cache-composer, cache-npm, cache-pip]
 ```
 
 | `needs` | Folder on the build machine | Set for commands on the machine |
@@ -411,6 +411,7 @@ needs: [cache-pnpm, cache-composer, cache-npm]
 | `cache-pnpm` | `<cache>/packages/<project>/pnpm` | `pnpm_config_store_dir`, `npm_config_store_dir`, `MULEBOX_CACHE_PNPM` |
 | `cache-composer` | `<cache>/packages/<project>/composer` | `COMPOSER_CACHE_DIR`, `MULEBOX_CACHE_COMPOSER` |
 | `cache-npm` | `<cache>/packages/<project>/npm` | `npm_config_cache`, `MULEBOX_CACHE_NPM` |
+| `cache-pip` | `<cache>/packages/<project>/pip` | `PIP_CACHE_DIR`, `MULEBOX_CACHE_PIP` |
 
 Commands on the machine need nothing more. **A container sees a cache only if the compose
 file mounts it**, and that mount is yours to write. `MULEBOX_CACHE_<TOOL>` is the folder, and

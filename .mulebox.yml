@@ -1,0 +1,6 @@
+# mulebox's own gate, run through mulebox: `mulebox check`, or `--detach` to keep working.
+project: mulebox
+needs: [cache-pip]
+setup: python3 -m venv .venv && .venv/bin/pip install -q --disable-pip-version-check -e '.[dev]'
+jobs:
+  check: .venv/bin/python -m pytest -n auto

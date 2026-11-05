@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.51.0 - 2026-11-05 - minor
+- mulebox's own tests run through mulebox: `.mulebox.yml` in this repository, `mulebox check` runs
+  them in parallel on the build machine. `needs: [cache-pip]` keeps Python downloads between jobs.
+  `.claude/` is ignored, so worktrees stay out of a snapshot.
+
 ## 0.50.0 - 2026-11-05 - minor
 - The dashboard's job view shows the job's stages as a waterfall: where each ran, how long it took,
   what is usual, what it fetched, and the failing line, live while the job runs.
