@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.43.1 - 2026-11-05 - patch
+- Roadmap: M13.2 done, after a real job with an unreachable registry exited 5 on a build machine.
+
 ## 0.43.0 - 2026-11-05 - minor
 - What can stop an unattended job as idle is now the job's own activity, from control groups: its
   unit's CPU, and its labelled containers' CPU and traffic. A real drill showed the machine's
