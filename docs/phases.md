@@ -301,7 +301,7 @@ Fixes from the second project tests (2026-11-04).
       3.12 in parallel, in 24 s, also closing the M1.1 note on running there.
 - [x] M13.14 Dashboard: a job's stages as a waterfall, with what is usual as a tick, live while it
       runs. Times only, no percentage: a length from past runs is not progress. (2026-11-05, 0.50.0,
-      fixed 0.51.2 after the review in real Edge)
+      fixed 0.51.2 and 0.51.3 after the review in real Edge)
 - [x] M13.12 Browsers stay in the shared folder: Playwright's cleanup removed them after every job.
       Done 2026-11-05 (0.49.2): on a real machine two Playwright versions stayed side by side, and
       a repeat job took 2 s against 9 min with the download.

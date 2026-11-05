@@ -28,10 +28,9 @@ function row(name, took, track_, usual, extra) {
     extra ?? null);
 }
 
-function stageRow(step, base, scale, now, usual, isOpen) {
+function stageRow(step, base, scale, now, usual, isOpen, failed) {
   const end = step.finished_at ?? (isOpen ? now : step.started_at);
   const seconds = Math.max(0, end - step.started_at);
-  const failed = step.finished_at !== null && (step.exit_code ?? 0) !== 0;
   const tone = isOpen ? "open" : failed ? "failed" : "done";
   const took = `${duration(seconds)}${isOpen ? " so far" : ""}${failed ? " failed" : ""}`;
   const typical = usual?.stages?.[step.stage] ?? null;
@@ -61,5 +60,6 @@ export function timeline(job, now = Date.now() / 1000) {
           usual?.job_s ?? null, scale), usual?.job_s ?? null);
   return el("div", { class: "timeline" }, whole,
     ...steps.map((step) => stageRow(step, base, scale, now, usual,
-                                    running && step === last)));
+                                    running && step === last,
+                                    step.stage === job.failed_stage)));
 }

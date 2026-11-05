@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.51.3 - 2026-11-05 - patch
+- The job view marks the stage the rest of mulebox calls failed: `failed_stage` in the job detail,
+  from the one rule in `common/status.py`. A job that never started had a green `images` stage,
+  and a cancelled job's stage read as failed. Seen in real Edge.
+
 ## 0.51.2 - 2026-11-05 - patch
 - The job view's stage bars were empty: the page's security policy refuses a style attribute, so
   they now go through `.style`. Their CSS class also collided with the queue's `.lane` and

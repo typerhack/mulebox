@@ -128,3 +128,20 @@ def test_detail_has_the_stages_and_what_earlier_runs_took(data, store, staging, 
     assert data.job(first)["usual"] is None
     second, _ = run_job()
     assert data.job(second)["usual"]["job_s"] == 30.0 and data.job(second)["steps"] == []
+
+
+@pytest.mark.parametrize(("outcome", "exit_code", "step", "stage"), [
+    ("failed", None, {"exit_code": None, "failing_line": "no such host"}, "images"),  # never ran
+    ("failed", 2, {"exit_code": 2, "failing_line": "boom"}, "images"),
+    ("cancelled", 143, {"exit_code": 143, "failing_line": None}, None),  # nothing failed there
+    ("passed", 0, {"exit_code": 0, "failing_line": None}, None),
+])
+def test_detail_names_the_stage_a_job_failed_in(data, store, run_job, finish_job, outcome,
+                                                exit_code, step, stage):
+    job_id, ids = run_job()
+    row = {"seq": 0, "stage": "images", "started_at": 1.0, "finished_at": 2.0,
+           "bytes_downloaded": None, **step}
+    with store.write() as conn:
+        steps.save(conn, job_id, [row])
+    finish_job(ids, outcome, exit_code)
+    assert data.job(job_id)["failed_stage"] == stage

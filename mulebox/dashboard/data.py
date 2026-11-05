@@ -66,8 +66,9 @@ class DashboardData:
             limits = attendance.read_limits(conn)
             rows = steps.for_job(conn, job["job_id"])
             typical = usual.for_job(conn, job)
+            failed = steps.failed_stage(conn, job).get("stage")
         detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS},
-                  "steps": rows, "usual": typical,
+                  "steps": rows, "usual": typical, "failed_stage": failed,
                   **attendance.fields(job, time.time() if now is None else now, limits)}
         detail["shown_state"] = shown_state(detail)
         detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))
