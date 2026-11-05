@@ -2,10 +2,12 @@
 // Reconnects resume by byte offset (the event id); the stream ends with an `end` event.
 
 import { badge, clock, duration, el, fill, getJson, safeUrl, unattendedMark } from "./format.js";
+import { timeline } from "./timeline.js";
 
 const TAIL = 256 * 1024;
 const KEEP_CHARS = 1024 * 1024;  // cap the page, not the job: the full log has its own link
 const ANSI = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
+const STAGES_EVERY_MS = 5000;
 
 function facts(job) {
   const rows = [
@@ -77,12 +79,19 @@ function follow(pre, stateSlot, note, onEnd) {
 
 // Render into the work box; returns a function that closes the live log.
 export function jobView(box, jobId) {
-  let source = null, closed = false;
+  let source = null, closed = false, ticking = null;
   const back = () => el("p", { class: "crumb" }, el("a", { href: "#/", text: "Back to the queue" }));
   fill(box, "Job", null, back(), el("p", { class: "muted", role: "status", text: "Loading" }));
   getJson(`/api/jobs/${encodeURIComponent(jobId)}`).then((job) => {
     if (closed) return;
     const stateSlot = el("span", {}, badge(job.shown_state ?? job.outcome ?? job.state));
+    const stages = el("div", {}, timeline(job));
+    ticking = setInterval(() => {
+      if (document.hidden) return;
+      getJson(`/api/jobs/${encodeURIComponent(jobId)}`)
+        .then((latest) => { if (!closed) stages.replaceChildren(timeline(latest) ?? ""); })
+        .catch(() => {});  // the next tick tries again, and the log shows the connection
+    }, STAGES_EVERY_MS);
     const info = el("div", {}, facts(job));
     const pre = el("pre", { class: "log", tabindex: "0", "aria-label": "Job log",
                             "data-job": jobId });
@@ -98,6 +107,7 @@ export function jobView(box, jobId) {
         : null,
       run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
       aloneNote(job),
+      stages,
       info,
       el("div", { class: "log-head" }, el("span", { text: "log" }), note, link),
       pre,
@@ -106,6 +116,8 @@ export function jobView(box, jobId) {
     source = follow(pre, stateSlot, note, (final) => {
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));
       info.replaceChildren(facts(final));
+      clearInterval(ticking);
+      stages.replaceChildren(timeline(final) ?? "");
       box.querySelector("[data-alone]")?.remove();
     });
   }).catch((error) => {
@@ -114,5 +126,5 @@ export function jobView(box, jobId) {
            el("p", { text: `Could not load this job: ${error.message}` }));
     }
   });
-  return () => { closed = true; source?.close(); };
+  return () => { closed = true; clearInterval(ticking); source?.close(); };
 }

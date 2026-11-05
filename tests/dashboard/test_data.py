@@ -3,7 +3,7 @@ import sqlite3
 
 import pytest
 
-from mulebox.coordinator import api, queue
+from mulebox.coordinator import api, queue, steps
 from mulebox.coordinator import store as st
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.workers import OFFLINE_AFTER_S
@@ -116,3 +116,15 @@ def test_history_pages_and_filters(data, run_job, finish_job):
 
 def test_history_limit_is_bounded(data):
     assert data.history(limit=-5)["jobs"] == []
+
+
+def test_detail_has_the_stages_and_what_earlier_runs_took(data, store, staging, run_job, finish_job):
+    rows = [{"seq": 0, "stage": "command", "started_at": 1.0, "finished_at": 31.0, "exit_code": 0}]
+    first, ids = run_job()
+    with store.write() as conn:
+        steps.save(conn, first, [{**rows[0], "bytes_downloaded": None, "failing_line": None}])
+    finish_job(ids, "passed", 0)
+    assert data.job(first)["steps"][0]["stage"] == "command"
+    assert data.job(first)["usual"] is None
+    second, _ = run_job()
+    assert data.job(second)["usual"]["job_s"] == 30.0 and data.job(second)["steps"] == []

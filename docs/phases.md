@@ -217,7 +217,7 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
       Open: the real `mongo` test run that died with WiredTiger error 24.
 - [~] M9.4 Job steps: `job_steps` table with a migration, reported by the worker, read through
       `status` and `common/status.py`, shown by `mulebox status`. The failed stage reaches the
-      summary and `events`. No dashboard view yet. Built 2026-11-04 (0.35.0): a compose job
+      summary and `events`. The dashboard shows them since 0.50.0. Built 2026-11-04 (0.35.0): a compose job
       on a local Docker daemon. Open: a job on a build machine under systemd.
 - [~] M9.5 Usual duration of a project's job and of each stage, in `status` replies. The one
       source now: the queue estimate of M8.6 reads it too. Built 2026-11-04 (0.35.0), with tests. Open: seeing it on real history.
@@ -296,8 +296,11 @@ Fixes from the second project tests (2026-11-04).
 - [~] M13.11 A cache that starts empty says so in the job's log, as that job downloads everything.
       Seeding was left out: a cache is one project's, and the machine's default store is shared.
       Built 2026-11-05 (0.49.0), with tests. Open: seen in a real job.
-- [~] M13.12 Browsers stay in the shared folder: Playwright's cleanup removed them after every job.
-      Built 2026-11-05 (0.49.2). Open: see the real check below.
+- [x] M13.14 Dashboard: a job's stages as a waterfall, with what is usual as a tick, live while it
+      runs. Times only, no percentage: a length from past runs is not progress. (2026-11-05, 0.50.0)
+- [x] M13.12 Browsers stay in the shared folder: Playwright's cleanup removed them after every job.
+      Done 2026-11-05 (0.49.2): on a real machine two Playwright versions stayed side by side, and
+      a repeat job took 2 s against 9 min with the download.
 - [~] M13.13 A failure summary whose last lines read as a network failure says so, as a hint: the
       job still counts as failed, it ran. Pulls are M13.2. Built 2026-11-05 (0.49.1), with tests.
       Open: a real install failing on the network.

@@ -52,7 +52,7 @@ With no placement fields (an older server) every waiting job goes to the shared 
 
 `status_ok` of a `status` request has `steps`, one row per stage, and `common/status.py` reads
 them: `current_stage`, `step_duration_s`, `failed_step` ([interfaces-m4.md](interfaces-m4.md),
-Job steps). `mulebox status` shows them; no dashboard view does yet. A `status` reply, a
+Job steps). `mulebox status` shows them, and the job view as a waterfall with `steps` and `usual` in its reply. A `status` reply, a
 watch stream's last `status_ok` and its `result` have `stage` when a job ended badly in a known
 stage (`steps.failed_stage`), and `job_event` puts it in the `finished` event.
 

@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.50.0 - 2026-11-05 - minor
+- The dashboard's job view shows the job's stages as a waterfall: where each ran, how long it took,
+  what is usual, what it fetched, and the failing line, live while the job runs.
+
 ## 0.49.2 - 2026-11-05 - patch
 - `needs: [playwright]` turns off Playwright's own browser cleanup. It removes any browser whose
   project folder is gone, and a job's checkout always is, so each job deleted the browsers of the

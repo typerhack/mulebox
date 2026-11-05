@@ -121,6 +121,32 @@ button.icon:hover { color: var(--ink); }
 }
 .meter.flat .ramp { background: var(--accent); }
 .meter[data-low] .ramp { background: var(--bad); }
+
+/* A job's stages: one scale, bars placed where each stage ran, ticks at what is usual. */
+.timeline { margin: 6px 0 10px; }
+.stage-row {
+  display: grid; grid-template-columns: 11ch minmax(0, 1fr) 15ch 13ch; gap: 1px 10px;
+  align-items: center; padding: 1px 0;
+}
+.stage-row:first-child { padding-bottom: 4px; margin-bottom: 3px; border-bottom: 1px solid var(--line-soft); }
+.stage-row .value { text-align: right; color: var(--ink); white-space: nowrap; }
+.stage-name, .stage-usual, .stage-fetched { color: var(--ink-muted); white-space: nowrap; }
+.stage-fetched, .failing-line { grid-column: 2 / -1; }
+.failing-line { color: var(--bad); overflow-wrap: anywhere; }
+.lane { position: relative; display: block; height: 9px; background: var(--line-soft); border-radius: 2px; overflow: hidden; }
+.lane::after {
+  content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 5px, var(--bg) 5px 7px);
+}
+.lane .span { position: absolute; top: 0; bottom: 0; min-width: 2px; background: var(--accent); }
+.lane .span[data-tone="open"] { background: var(--active); }
+.lane .span[data-tone="failed"] { background: var(--bad); }
+.lane .tick { position: absolute; z-index: 1; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--ink); }
+@media (max-width: 560px) {
+  .stage-row { grid-template-columns: 11ch minmax(0, 1fr) 14ch; }
+  .stage-usual { display: none; }
+}
+
 .stat { display: flex; justify-content: space-between; gap: 10px; margin: 3px 0; }
 .stat .value { color: var(--ink); }
 .disk-row { margin: 2px 0 6px; }

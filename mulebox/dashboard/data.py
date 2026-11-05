@@ -16,7 +16,7 @@ from typing import Any
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import STOP_TEXT, shown_state, snapshot
-from mulebox.coordinator import api, attendance, queue, workers
+from mulebox.coordinator import api, attendance, queue, steps, usual, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -64,7 +64,10 @@ class DashboardData:
         job, place = raw
         with self.store.read() as conn:
             limits = attendance.read_limits(conn)
+            rows = steps.for_job(conn, job["job_id"])
+            typical = usual.for_job(conn, job)
         detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS},
+                  "steps": rows, "usual": typical,
                   **attendance.fields(job, time.time() if now is None else now, limits)}
         detail["shown_state"] = shown_state(detail)
         detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))
