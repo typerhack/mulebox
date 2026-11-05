@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from mulebox.client import compose_check
+from mulebox.client import compose_yaml
 from mulebox.client.compose_check import findings, model_of
 
 FILE = "docker-compose.yml"
@@ -117,7 +117,7 @@ def test_a_doubled_dollar_is_no_variable(tmp_path):
         "services"]["a"]["command"] == "echo $$HOME"
 
 
-@pytest.mark.parametrize("text", ["services: [", "- a\n- b\n", "services:\n  a: !reset null\n"])
+@pytest.mark.parametrize("text", ["services: [", "- a\n- b\n", "services:\n  a: !nonsense x\n"])
 def test_a_file_that_cannot_be_read_is_a_warning(tmp_path, text):
     found = one(tmp_path, text)
     assert found.level == "warn" and "could not check" in found.text
@@ -149,7 +149,7 @@ def test_the_model_matches_what_a_real_compose_prints(tmp_path):
     printed = json.loads(subprocess.run(
         ["docker", "compose", "-f", "docker/c.yml", "config", "--format", "json"], cwd=tmp_path,
         capture_output=True, text=True, check=True).stdout)
-    ours = model_of(compose_check._load(tmp_path, ("docker/c.yml",)), "docker/c.yml")
+    ours = model_of(compose_yaml.load(tmp_path, ("docker/c.yml",)), "docker/c.yml")
     assert set(ours["volumes"]) == set(printed["volumes"])
     theirs = printed["services"]["a"]["volumes"]
     root = os.path.realpath(tmp_path)

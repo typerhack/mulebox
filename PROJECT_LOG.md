@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.40.7 - 2026-11-05 - patch
+- `mulebox doctor` reads Compose's `!reset` and `!override` tags, in the new `client/compose_yaml.py`.
+  A project using them got "could not check" and the refusal check never ran.
+
 ## 0.40.6 - 2026-11-04 - patch
 - Tests for how a stop ends moved to their own file, as the attendance tests had passed 300 lines.
 

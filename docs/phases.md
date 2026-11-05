@@ -279,6 +279,13 @@ it: a real machine.
       pool compose ports use. Built 2026-11-04 (0.40.0). Open: a real dev server and browser
       test on a real machine.
 
+## M13: Second reports from real projects
+Fixes from the second project tests (2026-11-04).
+- [~] M13.1 `mulebox doctor` reads Compose's `!reset` and `!override` tags, so the refusal check
+      runs for projects using them; before, it gave up with a warning. Built 2026-11-05 (0.40.7):
+      the rules read off Compose 5.6, a test against `docker compose config`, and real `doctor`
+      runs on such files, one refused, one clean. Open: a real project's compose files.
+
 ## Parking lot
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)

@@ -2,9 +2,9 @@
 
 The worker's policy (worker/compose_policy.py) decides; this only gives it a model it can read
 on a client, which may have no Docker. The worker gets that model from `docker compose config`,
-so this does by hand the few things that command does to the files: merge them, leave out what
-an inactive profile hides, drop what no service uses, spell short volumes out, and resolve
-relative paths against the first file's folder.
+so this does by hand the few things that command does to the files: merge them (compose_yaml),
+leave out what an inactive profile hides, drop what no service uses, spell short volumes out,
+and resolve relative paths against the first file's folder.
 
 What is not in the files is left out, not guessed: values with a variable in them, and whatever
 `include` and `extends` pull in. So a problem found here is one the worker would refuse too,
@@ -18,9 +18,10 @@ import re
 from pathlib import Path
 from typing import Any
 
+from mulebox.client import compose_yaml
 from mulebox.client.doctor import FAIL, OK, WARN, Finding
 from mulebox.common.compose import ComposeError
-from mulebox.common.config_reader import ConfigError, load_yaml
+from mulebox.common.config_reader import ConfigError
 from mulebox.worker import compose_policy
 
 Model = dict[str, Any]
@@ -29,14 +30,6 @@ TOPIC = "compose"
 _VARIABLE = re.compile(r"(?<!\$)\$(?!\$)")  # `$$` is a literal dollar sign
 _PATH_START = (".", "/", "~")
 _SHARED = ("volumes", "networks", "secrets", "configs")
-
-
-def _merged(base: Any, over: Any) -> Any:
-    """Later files win, except that maps merge and lists add up, as Compose does."""
-    if isinstance(base, dict) and isinstance(over, dict):
-        return {**base, **{key: _merged(base[key], value) if key in base else value
-                           for key, value in over.items()}}
-    return [*base, *over] if isinstance(base, list) and isinstance(over, list) else over
 
 
 def _known(value: Any) -> Any:
@@ -121,16 +114,6 @@ def model_of(raw: Model, first_file: str) -> Model:
     return model
 
 
-def _load(root: Path, files: tuple[str, ...]) -> Model:
-    merged: Model = {}
-    for name in files:
-        data = load_yaml(root / name)
-        if not isinstance(data, dict):
-            raise ConfigError(root / name, None, "is not a compose file")
-        merged = _merged(merged, data)
-    return merged
-
-
 def _followed(raw: Model) -> str:
     services = raw.get("services") or {}
     skipped = bool(raw.get("include")) or any(
@@ -143,7 +126,7 @@ def findings(files: tuple[str, ...], root: Path) -> list[Finding]:
     if not files:
         return []
     try:
-        raw = _load(root, files)
+        raw = compose_yaml.load(root, files)
         compose_policy.check(model_of(raw, files[0]), None)
     except ConfigError as exc:
         return [Finding(WARN, TOPIC, f"could not check the compose files: {exc}")]

@@ -135,9 +135,9 @@ def read_bytes(path: Path) -> bytes:
         raise ConfigError(path, None, f"cannot read file: {exc.strerror or exc}") from None
 
 
-def load_yaml(path: Path) -> Any:
+def load_yaml(path: Path, loader: type[yaml.SafeLoader] = yaml.SafeLoader) -> Any:
     try:
-        data = yaml.safe_load(read_bytes(path))
+        data = yaml.load(read_bytes(path), Loader=loader)
     except yaml.YAMLError as exc:
         raise ConfigError(path, None, f"invalid YAML: {exc}") from None
     if data is None:
