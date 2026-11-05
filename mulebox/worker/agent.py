@@ -16,7 +16,6 @@ lets it watch this worker's runner reservations (runners/supervise.py; every 10 
 
 from __future__ import annotations
 
-import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -29,7 +28,6 @@ from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import remove_tree
 from mulebox.common.status import CLEANUP, ENVIRONMENT, PREPARE
-from mulebox.runners.supervise import Supervisor
 from mulebox.worker import activity, advert, background, job_meter, pull_failure, runspec
 from mulebox.worker import toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
@@ -285,22 +283,3 @@ class Agent:
             if job.cleanup is not None:
                 job.cleanup.wait(max(0.0, deadline - time.monotonic()))
             self._deliver(job, now)
-
-
-def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
-          paths: NodePaths | None = None, stop: threading.Event | None = None,
-          docker: Docker | None = None) -> None:
-    """Recovery first, then the claim loop until `stop` is set."""
-    paths = paths or NodePaths.from_config(node.roots)
-    stop = stop or threading.Event()
-    agent = Agent(node, link, executor, paths, docker=docker,
-                  supervisor=Supervisor(node.name, paths.runners))
-    agent.recover()
-    LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)
-    while not stop.is_set():
-        try:
-            agent.step()
-        except (MuleboxError, OSError) as exc:
-            LOG.error("worker step failed: %s", exc)
-        stop.wait(POLL_S)
-    agent.shutdown()

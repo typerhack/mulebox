@@ -136,7 +136,7 @@ def _executor() -> Any:
 
 
 def _serve(args: argparse.Namespace) -> int:
-    from mulebox.worker.agent import serve
+    from mulebox.worker.serve import serve
 
     setup_logging()
     try:

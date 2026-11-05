@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.48.1 - 2026-11-05 - patch
+- The worker's service loop moved to `worker/serve.py`, and the tests of compose jobs that do not
+  end by themselves to their own file: both had passed 300 lines. No behaviour change.
+
 ## 0.48.0 - 2026-11-05 - minor
 - `needs: [cache-npm]` keeps npm's downloads between a project's jobs; `cache-pnpm` was no use to
   an npm project. Contract schema 8 covers this and the new `events` and `status` fields.
