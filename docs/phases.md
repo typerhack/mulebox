@@ -291,6 +291,8 @@ Fixes from the second project tests (2026-11-04).
       a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
       and a test through the worker with a stand-in `docker`. Done 2026-11-05 (0.43.0): a real job on
       a build machine with an unreachable registry: exit 5, stage `images`, reason in the summary.
+- [~] M13.9 `needs: [cache-npm]`, for npm projects. Built 2026-11-05 (0.48.0), with tests. Open: a
+      real npm project on a build machine, with a second job showing the packages as reused.
 - [~] M13.8 `mulebox doctor` says whether the machine can connect to the registries of a project's
       images. A warning, as images it has still work. Built 2026-11-05 (0.47.0), with tests. Open:
       seen on a build machine with the VPN down.

@@ -10,4 +10,5 @@ from __future__ import annotations
 
 PNPM = "cache-pnpm"
 COMPOSER = "cache-composer"
-CAPABILITIES = (PNPM, COMPOSER)
+NPM = "cache-npm"
+CAPABILITIES = (PNPM, COMPOSER, NPM)

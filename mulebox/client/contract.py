@@ -24,7 +24,8 @@ from mulebox.common.status import STAGES
 # 5: timeout_min is a check-in; the skill teaches check-ins, unattended jobs and exit 76
 # 6: a job may have settings; `project.job_settings`
 # 7: `job_settings` has `ports`
-SCHEMA = 7
+# 8: `cache-npm`, `stage` events, `last_line`, `running_ahead`, activity is the job's own
+SCHEMA = 8
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -82,8 +83,9 @@ COMPOSE = (
     "services get 65536 open files unless they set ulimits.nofile",
 )
 CACHES = (
-    "needs: [cache-pnpm, cache-composer] turns package caches on; a container sees a cache only "
-    "if the compose file mounts ${MULEBOX_CACHE_PNPM} or ${MULEBOX_CACHE_COMPOSER}",
+    "needs: [cache-pnpm, cache-composer, cache-npm] turns package caches on; a container sees a "
+    "cache only if the compose file mounts ${MULEBOX_CACHE_PNPM}, ${MULEBOX_CACHE_COMPOSER} or "
+    "${MULEBOX_CACHE_NPM}",
     "to replace an external cache volume, mount the cache on the same container path in a "
     "CI-only compose file; external volumes stay refused",
     "mount the pnpm store at the same path as on the machine, or pnpm may recreate node_modules "

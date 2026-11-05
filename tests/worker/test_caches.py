@@ -56,6 +56,12 @@ def test_a_job_that_asks_gets_its_projects_folder_and_the_tools_setting(paths, t
     assert any("package cache pnpm" in note for note in notes)
 
 
+def test_npm_uses_its_own_setting(paths, tmp_path):
+    spec, _ = build(paths, tmp_path, ["cache-npm"])
+    assert spec.env["npm_config_cache"] == str(paths.cache / "packages/example-app/npm")
+    assert spec.env["MULEBOX_CACHE_NPM"] == spec.env["npm_config_cache"]
+
+
 def test_composer_uses_its_own_setting(paths, tmp_path):
     spec, _ = build(paths, tmp_path, ["cache-composer"])
     assert spec.env["COMPOSER_CACHE_DIR"] == str(paths.cache / "packages/example-app/composer")

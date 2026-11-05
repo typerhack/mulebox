@@ -47,6 +47,7 @@ TOOLS = (
     Tool(package_cache.PNPM, "pnpm", "MULEBOX_CACHE_PNPM",
          ("pnpm_config_store_dir", "npm_config_store_dir")),
     Tool(package_cache.COMPOSER, "composer", "MULEBOX_CACHE_COMPOSER", ("COMPOSER_CACHE_DIR",)),
+    Tool(package_cache.NPM, "npm", "MULEBOX_CACHE_NPM", ("npm_config_cache",)),
 )
 
 

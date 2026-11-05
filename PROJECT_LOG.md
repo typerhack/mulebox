@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.48.0 - 2026-11-05 - minor
+- `needs: [cache-npm]` keeps npm's downloads between a project's jobs; `cache-pnpm` was no use to
+  an npm project. Contract schema 8 covers this and the new `events` and `status` fields.
+
 ## 0.47.0 - 2026-11-05 - minor
 - `mulebox doctor` tells whether the build machine can connect to the registries of the project's
   images, through a new `reach` request. It said all was fine with no route to a registry.

@@ -24,7 +24,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 7. `mulebox contract` prints the current schema on
+This skill was written for contract schema 8. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
@@ -73,7 +73,7 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
 
 - Every `timeout_min` of a running job, a `check_in` event in `mulebox events`, and a warning in
   an attached `check` or `wait`, give the elapsed time, the stage, the seconds since its last
-  output, the job's CPU, and the machine's CPU and network. `mulebox status <job-id>` shows the same at any
+  output and that line, the job's CPU, and the machine's CPU and network. `mulebox status <job-id>` shows the same at any
   time. Look at them and decide: let it run, or stop it with `mulebox cancel <job-id>`. A job can
   be busy and silent for minutes, so a quiet log alone proves nothing.
 - A detached job nobody watches is `unattended`, queued or running, a few minutes after its
@@ -87,9 +87,9 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
 
 ## Package caches and services
 
-`needs: [cache-pnpm, cache-composer]` turns the caches on. Commands on the machine use them by
-themselves. A container sees a cache only if the compose file mounts `${MULEBOX_CACHE_PNPM}` or
-`${MULEBOX_CACHE_COMPOSER}`.
+`needs: [cache-pnpm, cache-composer, cache-npm]` turns the caches on. Commands on the machine use
+them by themselves. A container sees a cache only if the compose file mounts
+`${MULEBOX_CACHE_PNPM}`, `${MULEBOX_CACHE_COMPOSER}` or `${MULEBOX_CACHE_NPM}`.
 
 - To replace an external cache volume, mount the cache on the same container path in a CI-only
   compose file. The refusal of external volumes stands.
