@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.48.2 - 2026-11-05 - patch
+- Docs: a newly turned on cache starts empty, and what to expect on a slow connection. The roadmap
+  gets the fixes still open from the second project reports.
+
 ## 0.48.1 - 2026-11-05 - patch
 - The worker's service loop moved to `worker/serve.py`, and the tests of compose jobs that do not
   end by themselves to their own file: both had passed 300 lines. No behaviour change.

@@ -291,6 +291,11 @@ Fixes from the second project tests (2026-11-04).
       a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
       and a test through the worker with a stand-in `docker`. Done 2026-11-05 (0.43.0): a real job on
       a build machine with an unreachable registry: exit 5, stage `images`, reason in the summary.
+- [ ] M13.11 A cache turned on starts empty and repeats every download: seed it, or warn.
+- [ ] M13.12 A shared browser download for `needs: [playwright]` jobs; a 184 MiB fetch took 24 min.
+- [ ] M13.13 A network failure inside a job's own install names the network in the summary, not
+      only a stack trace. Pulls are covered by M13.2.
+- [x] M13.10 Docs: a cold cache and slow connections. (2026-11-05, 0.48.2)
 - [~] M13.9 `needs: [cache-npm]`, for npm projects. Built 2026-11-05 (0.48.0), with tests. Open: a
       real npm project on a build machine, with a second job showing the packages as reused.
 - [~] M13.8 `mulebox doctor` says whether the machine can connect to the registries of a project's

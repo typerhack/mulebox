@@ -458,6 +458,11 @@ services:
 - **Who writes.** Run the service as root or as `"${UID}:${GID}"`. Any other user cannot write
   to the folder and the install fails with a permission error. After a compose job
   mulebox hands what root wrote back to the machine's user.
+- **The first job after turning a cache on starts empty** and downloads everything again, even if
+  earlier jobs had the packages elsewhere. On a slow connection, plan for that one long run.
+- **On a slow connection** a large download can take most of a job: a browser for Playwright is
+  about 180 MiB, and `corepack` fetches pnpm on every job, outside any cache. Prefer versions
+  already on the machine, and run `mulebox doctor` first: it says whether registries are reachable.
 - A pnpm install across mounts copies packages instead of linking them. That is slower than
   a link and far faster than a download.
 - A service that uses one of these variables fails at the start if the project does not ask
