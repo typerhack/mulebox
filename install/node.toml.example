@@ -35,6 +35,9 @@ port = 8090
 # lan_port = 9443              # only for a different port; the default is `port`
 # lan_tls = false
 # lan_password = true
+# A cancel button on a job's page, for signed-in users on the LAN address. Needs mode = "lan"
+# and a password; without them there is no button.
+# cancel_button = false
 
 # Environment for every job on this machine, for what the machine needs and no project
 # should have to know; a project's `env:` can override it. Not for secrets: it ends up in

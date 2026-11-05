@@ -151,12 +151,45 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 - **Files outside the roots.** `dashboard/` holds operator configuration, written only by
   the explicit `cert` and `password` commands, never by a job.
 
+## Cancel button (`dashboard/cancel.py`, `dashboard/canceller.py`, `static/canceljob.js`)
+
+Off by default: `cancel_button = true` under `[dashboard]`. It exists only in `lan` mode with a
+password, and only on the LAN listener, for a signed-in session. Elsewhere `/api/session` gives
+`cancel_token: null`, the page shows nothing and the route is 404: the tunnel listener asks for no
+password, so nobody there is known to have asked. The setting without `lan` and a password logs a
+warning and has no other effect; it is no configuration error, since the coordinator reads the
+same file and must not stop for it.
+
+- **The way to the coordinator.** The same `cancel` request `mulebox cancel` sends, to the same
+  `mulebox rpc`, started as a child process instead of over ssh (`Canceller`, 30 s limit). So every
+  rule stays in `coordinator.api.cancel`, and the dashboard process itself keeps its read-only
+  store. `read_reply` in `client/remote.py` reads the answer for both.
+- **What it cancels.** Agent jobs before they finish, from a job's page only, so a click in a
+  moving queue cannot land on the wrong job. A runner reservation is refused (409): GitHub owns
+  those, and cancelling the slot would not stop the run. A finished job is 409. Unknown is 404.
+  A coordinator that fails or does not answer is 502, with the reason, and the job is untouched.
+  Cancelling twice is harmless. Each cancel is logged with the job and the address it came from.
+- **Asked twice.** In the page, not a browser dialog. The first click puts `Keep job` under the
+  pointer and takes the focus, so a double click or Enter keeps the job; Escape does too.
+- **Cross-site requests.** A session is not enough, as a browser adds the cookie by itself. All of
+  these must hold, and none is a guess at who is asking:
+  - `SameSite=Strict` keeps the cookie off a request from another site. It does not cover a page
+    on another port of this address, which browsers count as the same site, such as a project's
+    dev server on the build machine.
+  - `Sec-Fetch-Site` must be `same-origin` when sent, which browsers do only in a secure context.
+  - `Origin` must be exactly this page's origin. A form post has `null` under the page's
+    `no-referrer` policy, which is why `/login` cannot use this rule; `fetch` sends the real one.
+  - `X-Mulebox-Token` must hold `cancel_token`, derived from the session by a one-way hash, so it
+    ends with the session and does not reveal the `HttpOnly` cookie. Only a page of this origin
+    can read it from `/api/session`, and a cross-site page cannot set the header, because no
+    route answers a preflight and no reply carries CORS headers.
+
 ## Guarantees
 
 - **Read-only.** The store is opened with SQLite `mode=ro`, so a write fails in SQLite
   itself. All routes are GET, apart from `POST /login` and `POST /logout` on the LAN
-  listener, which only touch sessions; any other method gets 405. There is no cancel
-  button (M2.5).
+  listener, which only touch sessions, and the optional cancel button (below), whose write
+  happens in a `mulebox rpc` process; any other method gets 405.
 - **Host check.** Only `127.0.0.1`, `localhost` and `[::1]`, on any port, or `lan_address`
   on the LAN listener; anything else gets 421. This stops DNS rebinding from a web page.
 - **Headers on every reply**, errors and streams included: a strict
@@ -177,10 +210,12 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 | `GET /healthz` | `{ok, version, lan, sign_in}`; `lan` is true on the LAN listener, `sign_in` when it needs a password |
 | `GET`, `POST /login` | sign-in page and form; LAN listener only, else 404 |
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
+| `GET /api/session` | `{cancel_token}`: what this page sends to cancel, null where there is no button |
+| `POST /api/jobs/{id}/cancel` | with `cancel_button` on: `{job_id, state, outcome, cancel_requested}`; rules in Cancel button |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for` |
 | `GET /api/machines` | machines panel snapshot (above) |
 | `GET /api/history?limit=&before=&project=` | `{jobs, next_before}`, newest first; `limit` 1..200, default 50; page with `before = next_before` |
-| `GET /api/jobs/{id}` | job detail with redacted `command` and `log_size`; 404 if unknown |
+| `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested` and `log_size`; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |
 | `GET /api/events` | queue, machines and metrics, SSE (below) |

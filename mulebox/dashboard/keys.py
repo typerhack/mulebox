@@ -4,6 +4,7 @@ from collections.abc import Callable
 
 from aiohttp import web
 
+from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import DashboardData
 from mulebox.dashboard.hub import Hub
 from mulebox.dashboard.session import LanAccess
@@ -13,3 +14,4 @@ DATA = web.AppKey("data", DashboardData)
 CLOCK = web.AppKey("clock", Callable)
 ALLOWED_HOSTS = web.AppKey("allowed_hosts", frozenset)
 LAN = web.AppKey("lan", LanAccess)
+CANCELLER = web.AppKey("canceller", Canceller)

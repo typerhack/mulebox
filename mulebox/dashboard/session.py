@@ -43,6 +43,12 @@ class Sessions:
     def valid(self, token: str | None) -> bool:
         return bool(token) and self._expires.get(_key(token), 0.0) > self._clock()
 
+    def action_token(self, token: str) -> str:
+        """Proof that a request came from a page of this session. A page can read this, unlike
+        the `HttpOnly` cookie, and it reveals nothing about the cookie. It needs no storing and
+        ends with the session, and without the cookie it is worth nothing."""
+        return hashlib.sha256(b"action:" + token.encode("utf-8")).hexdigest()
+
     def end(self, token: str | None) -> None:
         if token:
             self._expires.pop(_key(token), None)

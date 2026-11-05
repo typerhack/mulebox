@@ -1,0 +1,11 @@
+/* The optional cancel button, on the line of a job's page that holds the way back. Its own
+   file so that the page's stylesheet stays within the size rule. */
+.job-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 6px; }
+.job-bar .crumb { margin: 0; }
+.job-cancel { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 8px; margin-left: auto; }
+.job-cancel p { margin: 0; color: var(--ink-soft); }
+.job-cancel .failed { color: var(--bad); }
+.job-cancel .failed a { color: inherit; }
+button.danger { color: var(--bad); border-color: var(--bad); }
+button.danger:hover { border-color: var(--ink); }
+button.danger.sure { color: var(--bg); background: var(--bad); }

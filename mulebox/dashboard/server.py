@@ -1,6 +1,7 @@
 """The dashboard's aiohttp application: routes, guards and static files (interfaces-m2.md).
 
-Read-only, and GET-only apart from signing in and out. Guards on every request:
+Read-only, and GET-only apart from signing in and out and the optional cancel button
+(cancel.py), which writes through `mulebox rpc`, never here. Guards on every request:
 - Host check: only `127.0.0.1`, `localhost` and `[::1]` (any port, since the SSH tunnel's
   local port may differ), or the configured address on the LAN listener. This stops DNS
   rebinding from a web page reaching the dashboard.
@@ -19,7 +20,8 @@ from pathlib import Path
 
 from aiohttp import web
 
-from mulebox.dashboard import keys, login, streams
+from mulebox.dashboard import cancel, keys, login, streams
+from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
 from mulebox.dashboard.hub import Hub
 from mulebox.dashboard.session import LanAccess
@@ -63,16 +65,21 @@ async def _headers(request: web.Request, response: web.StreamResponse) -> None:
 
 def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = time.time,
               allowed_hosts: frozenset[str] = LOCAL_HOSTS, start_hub: bool = True,
-              static_dir: Path = STATIC_DIR, lan: LanAccess | None = None) -> web.Application:
+              static_dir: Path = STATIC_DIR, lan: LanAccess | None = None,
+              canceller: Canceller | None = None) -> web.Application:
     app = web.Application(middlewares=[guard, login.lan_guard])
     app[keys.ALLOWED_HOSTS] = allowed_hosts
     if lan is not None:
         app[keys.LAN] = lan
         login.add_routes(app, static_dir)
     app[keys.HUB], app[keys.DATA], app[keys.CLOCK] = hub, data, clock
+    if canceller is not None:
+        app[keys.CANCELLER] = canceller
+        app.router.add_post("/api/jobs/{job_id}/cancel", cancel.cancel_job)
     app.on_response_prepare.append(_headers)
     app.router.add_get("/", _index(static_dir))
     app.router.add_get("/healthz", _health)
+    app.router.add_get("/api/session", cancel.session)
     app.router.add_get("/api/queue", _queue)
     app.router.add_get("/api/machines", _machines)
     app.router.add_get("/api/history", _history)

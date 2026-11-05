@@ -369,6 +369,11 @@ is limited to this one address and cannot vouch for any other site. It lasts 825
 replace it with `mulebox dashboard cert --force`, then trust the new one on each device.
 Trusting it on a phone has not been tried yet.
 
+**Optional: a cancel button.** Set `cancel_button = true` under `[dashboard]` and restart. A job's
+page then has a `Cancel job` button for whoever signed in at the LAN address. It needs
+`mode = "lan"` and a password: with `lan_password = false`, and through the tunnel, there is no
+button, as nobody has signed in there. `mulebox cancel` works either way.
+
 **Optional: no password.** On a network where you trust everyone, set `lan_password = false`
 and restart; `mulebox dashboard password` is then not needed. The page opens directly for
 any device in `lan_range`, and it still shows your job logs, so leave the password on

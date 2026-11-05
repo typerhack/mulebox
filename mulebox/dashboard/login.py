@@ -69,7 +69,7 @@ def _lan(request: web.Request) -> LanAccess:
     return request.app[keys.LAN]
 
 
-def _same_site(request: web.Request) -> None:
+def same_site(request: web.Request) -> None:
     """Refuse cross-site posts. `Origin` cannot do this: the page's no-referrer policy
     makes browsers send `Origin: null` on a same-site form post. Browsers send
     `Sec-Fetch-Site` only over HTTPS; over HTTP, `SameSite=Strict` does this job."""
@@ -96,7 +96,7 @@ def _page(static_dir: Path) -> Handler:
 def _submit(static_dir: Path) -> Handler:
     async def submit(request: web.Request) -> web.StreamResponse:
         access = _lan(request)
-        _same_site(request)
+        same_site(request)
         who = request.remote or ""
         wait = access.limiter.retry_after(who)
         if wait > 0:
@@ -126,7 +126,7 @@ def _submit(static_dir: Path) -> Handler:
 
 async def _logout(request: web.Request) -> web.Response:
     access = _lan(request)
-    _same_site(request)
+    same_site(request)
     access.sessions.end(request.cookies.get(COOKIE))
     response = web.Response(status=204)
     response.del_cookie(COOKIE, path="/", secure=request.secure, httponly=True,

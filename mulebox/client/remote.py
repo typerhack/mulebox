@@ -128,17 +128,25 @@ class Remote:
                 return
 
     def _reply(self, argv: list[str], msg: Message | None, result: ssh.RemoteResult) -> Message:
-        lines = [ln for ln in result.stdout.splitlines() if ln.strip()]
-        if not lines:
+        reply = read_reply(result.stdout, msg)
+        if reply is None:
             sshio.check_exit(self.target, argv, result.exit_code, result.stderr)
             raise CoordinatorError(f"`{argv[1]}` on {self.target} gave no reply")
-        reply = _decode_line(lines[0])
-        if msg is not None and reply.request_id != msg.request_id:
-            raise CoordinatorError(
-                f"reply to {msg.type} has request id {reply.request_id!r}, "
-                f"expected {msg.request_id!r}"
-            )
         return reply
+
+
+def read_reply(stdout: bytes, msg: Message | None) -> Message | None:
+    """The reply in the output of `mulebox rpc`, None when it wrote none. Raises like `call`."""
+    lines = [ln for ln in stdout.splitlines() if ln.strip()]
+    if not lines:
+        return None
+    reply = _decode_line(lines[0])
+    if msg is not None and reply.request_id != msg.request_id:
+        raise CoordinatorError(
+            f"reply to {msg.type} has request id {reply.request_id!r}, "
+            f"expected {msg.request_id!r}"
+        )
+    return reply
 
 
 def _decode_line(line: bytes) -> Message:

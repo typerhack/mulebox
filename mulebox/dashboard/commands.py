@@ -3,7 +3,8 @@
 `serve` reads node.toml's `[dashboard]`: `off` exits 0 with a note (so an enabled unit
 does not restart in a loop), `local` serves on 127.0.0.1 only, and `lan` also serves
 on `lan_address` once its setup is complete (docs/interfaces-m2.md). There is
-deliberately no option to bind any other address. The store is opened read-only.
+deliberately no option to bind any other address. The store is opened read-only; the
+optional cancel button goes through `mulebox rpc` (canceller.py).
 
 `open` reads the client config and tunnels to the coordinator machine (client/tunnel.py).
 """
@@ -74,10 +75,23 @@ def _serve(args: argparse.Namespace) -> int:
             return EXIT_CONFIG
     port = args.port if args.port is not None else node.dashboard.get("port",
                                                                     DEFAULT_DASHBOARD_PORT)
-    return run(node, port, lan)
+    return run(node, port, lan, args.node_config)
 
 
-def run(node, port: int, lan=None) -> int:
+def _canceller(node, access, config_path: Path | None):
+    """The cancel button's link, only where someone signs in: anywhere else it does not exist."""
+    from mulebox.dashboard.canceller import Canceller
+
+    if not node.dashboard.get("cancel_button"):
+        return None
+    if access is None or access.password_hash is None:
+        _log.warning("no cancel button: cancel_button needs mode = \"lan\" and a password")
+        return None
+    _log.info("the cancel button is on for signed-in users")
+    return Canceller(config_path)
+
+
+def run(node, port: int, lan=None, config_path: Path | None = None) -> int:
     """Serve until stopped (SIGTERM/SIGINT). Imports aiohttp only here."""
     from mulebox.coordinator.node import open_local
     from mulebox.dashboard.data import DashboardData
@@ -96,7 +110,7 @@ def run(node, port: int, lan=None) -> int:
         data = DashboardData(store, staging)
         access, tls = lan if lan else (None, None)
         hub = Hub(data, EventBus(), node.roots, local_name=node.name)
-        app = build_app(data, hub, lan=access)
+        app = build_app(data, hub, lan=access, canceller=_canceller(node, access, config_path))
         listeners = [Listener(BIND_HOST, port)]
         _log.info("dashboard on http://%s:%d", BIND_HOST, port)
         if access is not None:

@@ -30,7 +30,9 @@ Choices where docs/interfaces.md is silent:
   an error) and a private range. ``lan_range`` is normalised to its string form, e.g.
   ``192.168.1.0/24``. ``lan`` also requires ``lan_address``, this machine's IPv4 address
   inside ``lan_range``; ``lan_port`` defaults to ``port``, the same number on another address;
-  ``lan_tls`` defaults to false, ``lan_password`` to true.
+  ``lan_tls`` defaults to false, ``lan_password`` to true. ``cancel_button`` defaults to false;
+  it counts only in ``lan`` mode with a password, which the dashboard checks when it starts, so
+  a mismatch never stops the coordinator, which reads this file too.
 - ``retention`` has ``log_days`` (default 30, at least 1) and ``step_days`` (default 365, at
   least ``log_days``).
 - ``limits`` has ``unattended_idle_min`` (default 15, at least 1) and ``unattended_max_hours``
@@ -224,6 +226,7 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
     lan_port = sub.integer("lan_port", port, 1, 65535)
     lan_tls = sub.boolean("lan_tls", False)
     lan_password = sub.boolean("lan_password", True)
+    cancel_button = sub.boolean("cancel_button", False)
     if lan_range is not None:
         if "/" not in lan_range:
             hint = f"needs a prefix length, e.g. 192.168.1.0/24, got {lan_range!r}"
@@ -242,7 +245,8 @@ def _dashboard(reader: Reader) -> dict[str, Any]:
         sub.fail("lan_address", "is required when mode is 'lan'")
     sub.finish()
     return {"mode": mode, "port": port, "lan_range": lan_range, "lan_address": lan_address,
-            "lan_port": lan_port, "lan_tls": lan_tls, "lan_password": lan_password}
+            "lan_port": lan_port, "lan_tls": lan_tls, "lan_password": lan_password,
+            "cancel_button": cancel_button}
 
 
 def _lan_address(sub, text: str, lan_range: str | None) -> str:

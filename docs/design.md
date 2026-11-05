@@ -303,7 +303,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 
 ## Dashboard
 
-- A separate read-only process beside the coordinator: aiohttp, plain HTML and JS, canvas
+- A separate read-only process beside the coordinator (the optional cancel button is the one
+  exception, and its write goes through `mulebox rpc`): aiohttp, plain HTML and JS, canvas
   graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
   log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
 - Shows: every machine with whether it is online, its free slots, capabilities, what it
@@ -328,8 +329,18 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   `lan_password = false` turns off the password for those who want no sign-in. Never
   internet-facing: `lan_range` must be a private network.
 - Logs are redacted before they are stored or streamed, rendered as text, never HTML; no
+<<<<<<< ours
   environment variables or full container inspect output. A job's `setup` line is redacted the
   same way before the dashboard shows it, as the command is.
+=======
+  environment variables or full container inspect output.
+- Cancelling from the page is optional and off by default. It exists only for someone signed in
+  on the `lan` address: stopping another person's job is the one thing here that needs to know
+  somebody asked, and the tunnel and a passwordless `lan` cannot tell. Where the button does not
+  exist, `mulebox cancel` still does. It sends what `mulebox cancel` sends, by the same `mulebox
+  rpc`, so a job cancelled from the page ends like any other, and the dashboard process never
+  holds a writable store. Protection against other pages: interfaces-m2.md, Cancel button.
+>>>>>>> theirs
 
 ## Multiple machines
 

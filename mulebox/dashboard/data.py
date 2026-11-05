@@ -27,7 +27,8 @@ from mulebox.dashboard import machines
 QUEUE_FINISHED = 20
 HISTORY_DEFAULT = 50
 HISTORY_MAX = 200
-DETAIL_FIELDS = ("base_commit", "timeout_min", "needs", "toolchain", "duration_s", "setup")
+DETAIL_FIELDS = ("base_commit", "timeout_min", "needs", "toolchain", "duration_s", "setup",
+                 "cancel_requested")
 
 
 class DashboardData:

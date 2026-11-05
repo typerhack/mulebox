@@ -62,7 +62,11 @@ queue and returns the same result as running it locally.
       and by the app's own check; the tunnel still works. The password is optional since
       0.14.0, off on the author's machine. Open: used from a real phone, and a reboot and a
       Wi-Fi drop with `lan` on.
-- [ ] M2.5 Optional cancel button with its own protection
+- [~] M2.5 Optional cancel button with its own protection. Built 2026-11-05 (0.53.0): off by default,
+      only for a signed-in session on the lan address, through `mulebox rpc` like `mulebox cancel`,
+      with Origin and a session token on top of SameSite. In real Edge on localhost with a stand-in
+      worker: two-step cancel of a queued and a running job; pages on another port and site changed
+      nothing. Open: a real job at a plain-HTTP lan address with a password, and a phone.
 - [x] M2.6 Machines panel: every worker, online or offline, free slots. Live CPU and memory
       per machine is M5.3. Done 2026-11-04 (0.10.0): in real Chrome on a real machine, a job
       showed busy with nothing free for its whole run; a frozen worker showed offline in 14 s

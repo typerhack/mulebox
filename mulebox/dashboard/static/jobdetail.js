@@ -1,6 +1,7 @@
 // One job's detail and live log. Log text is appended as text nodes, never parsed as HTML.
 // Reconnects resume by byte offset (the event id); the stream ends with an `end` event.
 
+import { cancelControl } from "./canceljob.js";
 import { badge, clock, duration, el, fill, getJson, safeUrl, unattendedMark } from "./format.js";
 import { timeline } from "./timeline.js";
 
@@ -26,7 +27,7 @@ function facts(job) {
   ]));
 }
 
-// Nobody is watching: what happens, and the two ways out. The page shows no buttons for them.
+// Nobody is watching: what happens, and the two ways out, which work whatever this page offers.
 function aloneNote(job) {
   if (!job.unattended) return null;
   return el("div", { class: "alone-note", "data-alone": job.job_id }, unattendedMark(job),
@@ -82,14 +83,22 @@ export function jobView(box, jobId) {
   let source = null, closed = false, ticking = null;
   const back = () => el("p", { class: "crumb" }, el("a", { href: "#/", text: "Back to the queue" }));
   fill(box, "Job", null, back(), el("p", { class: "muted", role: "status", text: "Loading" }));
-  getJson(`/api/jobs/${encodeURIComponent(jobId)}`).then((job) => {
+  Promise.all([
+    getJson(`/api/jobs/${encodeURIComponent(jobId)}`),
+    getJson("/api/session").catch(() => null),  // no answer: no button, the rest still works
+  ]).then(([job, access]) => {
     if (closed) return;
+    const control = cancelControl(job, access?.cancel_token);
     const stateSlot = el("span", {}, badge(job.shown_state ?? job.outcome ?? job.state));
     const stages = el("div", {}, timeline(job));
     ticking = setInterval(() => {
       if (document.hidden) return;
       getJson(`/api/jobs/${encodeURIComponent(jobId)}`)
-        .then((latest) => { if (!closed) stages.replaceChildren(timeline(latest) ?? ""); })
+        .then((latest) => {
+          if (closed) return;
+          stages.replaceChildren(timeline(latest) ?? "");
+          control?.update(latest);
+        })
         .catch(() => {});  // the next tick tries again, and the log shows the connection
     }, STAGES_EVERY_MS);
     const info = el("div", {}, facts(job));
@@ -100,7 +109,7 @@ export function jobView(box, jobId) {
     const run = safeUrl(job.run_url);
     const note = el("span", { class: "muted", role: "status" });
     const parts = [
-      back(),
+      control ? el("div", { class: "job-bar" }, back(), control.node) : back(),
       job.kind === "runner"
         ? el("p", { class: "muted note-text", text: "This entry only held a build slot for a " +
                     "GitHub runner. The job's result and log are on GitHub." })
@@ -119,6 +128,7 @@ export function jobView(box, jobId) {
       clearInterval(ticking);
       stages.replaceChildren(timeline(final) ?? "");
       box.querySelector("[data-alone]")?.remove();
+      control?.update(final);
     });
   }).catch((error) => {
     if (!closed) {
