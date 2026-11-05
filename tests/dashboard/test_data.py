@@ -26,6 +26,16 @@ def test_read_only_store_does_not_create_a_database(tmp_path):
         Store(tmp_path / "missing.db", readonly=True).open().read().__enter__()
 
 
+def test_job_detail_redacts_the_setup_line(data, run_job):
+    job_id, _ = run_job(setup="DB_PASSWORD=fake123 ./init.sh")
+    assert data.job(job_id)["setup"] == "DB_PASSWORD=[redacted] ./init.sh"
+
+
+def test_job_detail_of_a_job_with_no_setup(data, run_job):
+    job_id, _ = run_job()
+    assert data.job(job_id)["setup"] is None
+
+
 def test_queue_snapshot_uses_the_status_model(data, run_job, finish_job):
     _, state = run_job()
     finish_job(state, "failed", 2)

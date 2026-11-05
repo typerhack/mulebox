@@ -256,6 +256,9 @@ def _lan_address(sub, text: str, lan_range: str | None) -> str:
     network = ipaddress.ip_network(lan_range)
     if network.version != 4 or address not in network:
         sub.fail("lan_address", f"{text} is not inside lan_range {lan_range}")
+    if address.is_unspecified or address.is_loopback:
+        # The sign-in applies by the listener's address: on these it would not apply at all.
+        sub.fail("lan_address", f"must be this machine's address on the LAN, got {text}")
     return str(address)
 
 

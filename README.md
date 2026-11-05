@@ -36,6 +36,13 @@ mulebox queue  --SSH-->        |
 See [docs/design.md](docs/design.md) for the design and [docs/phases.md](docs/phases.md)
 for the roadmap.
 
+## Security
+
+mulebox is for one owner and the projects that owner trusts. A job runs as the build machine's
+user, with Docker, so it is not a sandbox: read the
+[security model](docs/install.md#security-model) before pointing it at a machine that holds
+anything else, and keep fork pull requests away from its GitHub runners.
+
 ## For coding agents
 
 [docs/agents.md](docs/agents.md) is written for AI coding agents: everyday use, setting a

@@ -257,6 +257,8 @@ def test_node_unknown_root_key(tmp_path):
         ('lan_range = "192.168.1.0/24"\nlan_address = "nope"', "dashboard.lan_address"),
         ('lan_range = "fd00::/64"\nlan_address = "fd00::1"', "dashboard.lan_address"),
         ('lan_address = "192.168.1.5"', "dashboard.lan_range"),
+        ('lan_range = "0.0.0.0/8"\nlan_address = "0.0.0.0"', "dashboard.lan_address"),
+        ('lan_range = "127.0.0.0/8"\nlan_address = "127.0.0.1"', "dashboard.lan_address"),
         ('lan_tls = "yes"', "dashboard.lan_tls"),
         ('lan_password = "no"', "dashboard.lan_password"),
         ("port = 0", "dashboard.port"),

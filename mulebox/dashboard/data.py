@@ -73,6 +73,7 @@ class DashboardData:
         detail["shown_state"] = shown_state(detail)
         detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))
         detail["command"] = self._redactor.redact(shlex.join(job["argv"])) if job["argv"] else ""
+        detail["setup"] = self._redactor.redact(job["setup"]) if job["setup"] else job["setup"]
         detail["log_size"] = self.staging.log_size(job["job_id"])
         return detail
 

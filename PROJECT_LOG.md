@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.52.0 - 2026-11-05 - minor
+- Security review: fork pull requests stay off self-hosted runners; README and install docs state
+  the security model.
+- Sign-in attempts sent together get no extra guesses; the dashboard redacts a job's setup line;
+  `lan_address` cannot be the any-address or loopback.
+- Redaction covers more key names, colon forms, token shapes and secret-named `job_env` values;
+  more secret files stay out of snapshots.
+- The roadmap and an interface doc no longer name projects or a machine.
+
 ## 0.51.4 - 2026-11-05 - patch
 - Roadmap: the Jobs box is reviewed in real Edge and deployed; a real phone stays open.
 

@@ -40,6 +40,14 @@ BUILTIN_EXCLUDES: tuple[str, ...] = (
     "*.key",
     "id_rsa*",
     "id_ed25519*",
+    "id_ecdsa*",
+    "id_dsa*",
+    "*.p12",
+    "*.pfx",
+    ".git-credentials",
+    ".pypirc",
+    ".ssh/",
+    ".aws/",
     ".mulebox/",
 )
 

@@ -112,7 +112,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   section 1a. `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
-  `.secret/`, `secrets/`, `*.pem`, `*.key`, ssh keys). If a job needs a value from such a
+  `.git-credentials`, `.pypirc`, `.ssh/`, `.aws/`, `.secret/`, `secrets/`, `*.pem`, `*.key`,
+  `*.p12`, `*.pfx`, ssh keys). If a job needs a value from such a
   file, give it a throwaway value in `.mulebox.yml` `env:` instead. The exception is a
   template tracked in git (`.env.example`, `.env.sample`, `.env.template`, `.env.dist`),
   which is uploaded so `setup` can build `.env` from it. Keep real values out of templates.
@@ -525,11 +526,17 @@ the user asks for it.
 ```yaml
 jobs:
   check:
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox"]') }}
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository
+      && '["ubuntu-latest"]'
+      || vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox"]') }}
 ```
 
    With the `CI_RUNS_ON` repository variable the user can switch back (for example to
-   `["ubuntu-latest"]`) without a code change.
+   `["ubuntu-latest"]`) without a code change. Keep the first lines: a pull request from a
+   fork must never reach this runner. Its code would run as the build machine's user, with
+   Docker. On a public repository, ask the user before registering a runner at all.
 3. **Linux differences to check:**
    - The build machine is Linux, not macOS: Docker is Docker Engine, not Docker Desktop.
      Containers that write into the checkout leave root-owned files. Run them with the

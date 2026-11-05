@@ -94,7 +94,9 @@ sudo loginctl enable-linger alice
   reaches commands of mulebox jobs and every service of a `compose:` project, where what a
   service sets itself wins. It replaces an `ENV` of the same name in an image, since mulebox
   cannot see that one. It does not reach a `RUN` line of an image build or GitHub runner
-  jobs. Not for secrets: it ends up in job processes and in the job's compose file.
+  jobs. Not for secrets: it ends up in job processes and in the job's compose file. As a
+  safety net, a value whose name says it is a secret (`NPM_TOKEN`, `DB_PASSWORD`) is redacted
+  from job logs wherever it appears.
 - `[retention]`: `log_days` (default 30) is how long a job's log is kept after the job ended,
   and `step_days` (default 365, at least `log_days`) how long its stage rows are. The coordinator
   service removes what is older, once an hour and when it starts, from
@@ -176,6 +178,32 @@ checks its SHA-256 against the release notes, unpacks it into
 never put on a command line or in a log. `roots.runners` must stay `~/.mulebox/runners`
 (the unit template runs runners from there). In workflows, use
 `runs-on: [self-hosted, mulebox]`.
+
+Do not put a runner on a public repository unless pull requests from forks are kept off it. A
+workflow that runs on `pull_request` runs the fork's code, and on this runner that means the
+build machine's user with Docker, which is root on the machine in all but name. It can read the
+user's keys and change what later jobs run. GitHub's approval setting only covers first-time
+contributors. [agents.md](agents.md), in its GitHub Actions steps, has a `runs-on` that sends
+those pull requests to GitHub's own machines. What a job can reach: [Security model](#security-model).
+
+## Security model
+
+mulebox is for one owner and the projects that owner trusts. It is not a sandbox.
+
+- Everyone who can `ssh` to a build machine can already run anything there, so the client commands
+  have no accounts or permissions of their own.
+- A job runs as the machine's normal user, in that user's systemd session, with Docker. A job,
+  and any package a job installs, can read that user's files, including ssh keys, `node.toml`,
+  the runners' credentials and the logs of other projects, and can change the coordinator's data
+  and mulebox itself. Docker access makes that root in all but name.
+- So a machine used as a desktop shares all of that with every job. A dedicated user keeps the
+  desktop's files out of reach only without the `docker` group, and mulebox's Docker jobs need
+  that group. For a real boundary, use a machine that holds nothing else.
+- The compose checks stop a CI file's assumptions from reaching past the job, not an attacker.
+- Redaction is a safety net built on patterns and on `[job_env]` values with a secret-looking
+  name. Keep real secrets out of jobs: a value printed in another form is not found.
+- With `mode = "lan"` and `lan_tls` off, the password and the session travel in the clear. With
+  `lan_password = false`, every device in `lan_range` can read all queues and job logs.
 
 ## Upgrade
 

@@ -135,7 +135,10 @@ queue and returns the same result as running it locally.
 - [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)
 - [ ] M6.2 User docs: install, configure a project, agent rules snippet, troubleshooting
 - [ ] M6.3 Repository CI for mulebox itself; release process (tag on MAJOR releases)
-- [ ] M6.4 Security review; scan history for personal data before going public
+- [~] M6.4 Security review; scan history for personal data before going public. Reviewed
+      2026-11-05 (0.52.0): 7 fixes, the worst being fork pull requests on self-hosted runners, with a
+      security model in docs/install.md. All 143 commits and local branches scanned: no secrets or
+      addresses. Open: the history rewrite, and a real fork pull request on GitHub.
 - [ ] M6.5 1.0.0 release (only when the user declares it)
 
 ## M7: Agents

@@ -23,6 +23,14 @@ SECRET = [
     ".env/inside",
     ".envrc",
     "sub/.netrc",
+    "id_ecdsa",
+    "keys/id_dsa.pub",
+    "signing/release.p12",
+    "cert.PFX",
+    ".git-credentials",
+    "sub/.pypirc",
+    ".ssh/config",
+    "backup/.aws/credentials",
 ]
 KEPT = [
     "src/app.py",

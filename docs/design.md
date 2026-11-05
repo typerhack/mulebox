@@ -328,7 +328,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   `lan_password = false` turns off the password for those who want no sign-in. Never
   internet-facing: `lan_range` must be a private network.
 - Logs are redacted before they are stored or streamed, rendered as text, never HTML; no
-  environment variables or full container inspect output.
+  environment variables or full container inspect output. A job's `setup` line is redacted the
+  same way before the dashboard shows it, as the command is.
 
 ## Multiple machines
 

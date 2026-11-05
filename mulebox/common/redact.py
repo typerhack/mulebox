@@ -23,7 +23,7 @@ flush() redacts and returns whatever is still held.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import NamedTuple
 
 REPLACEMENT = "[redacted]"
@@ -32,12 +32,21 @@ MAX_LINE_CHARS = 8192
 STREAM_TAIL_CHARS = 1024
 PEM_HOLD_CHARS = 32 * 1024
 
-_KEY_WORDS = r"(?:password|passwd|secret|token|api_?key)"
+_KEY_WORDS = (r"(?:password|passwd|pwd|secret|token|credential|api[_-]?key|access[_-]?key"
+              r"|private[_-]?key|[_-]pass\b|\bpass\b)")
 
 # (compiled pattern, group whose text is replaced; 0 is the whole match)
 _PATTERNS: tuple[tuple[re.Pattern[str], int], ...] = (
     # GitHub tokens: classic (ghp_, gho_, ghs_, ghu_, ghr_) and fine-grained.
     (re.compile(r"\b(?:gh[pousr]_[A-Za-z0-9]{20,255}|github_pat_[A-Za-z0-9_]{20,255})"), 0),
+    # Other tokens with a shape of their own: GitLab, npm, PyPI, Slack, and `sk-` API keys.
+    (
+        re.compile(
+            r"\b(?:glpat-[A-Za-z0-9_-]{20,255}|npm_[A-Za-z0-9]{36}|pypi-[A-Za-z0-9_-]{50,255}"
+            r"|xox[abprs]-[A-Za-z0-9-]{10,255}|sk-[A-Za-z0-9_-]{20,255})"
+        ),
+        0,
+    ),
     # AWS access key ids (long-term and temporary).
     (re.compile(r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b"), 0),
     # Authorization headers: keep the scheme, drop the credential.
@@ -64,6 +73,15 @@ _PATTERNS: tuple[tuple[re.Pattern[str], int], ...] = (
         ),
         1,
     ),
+    # YAML and header style: `password: value`, `x-api-key: value`. Short values stay, so a
+    # compiler's `Unexpected token: ';'` can still be read in a failed job's log.
+    (
+        re.compile(
+            rf"(?i)\b\w{{0,64}}?{_KEY_WORDS}\w{{0,64}}[ \t]{{0,4}}:[ \t]{{0,4}}"
+            r"(\"[^\"\r\n]{6,1024}\"|'[^'\r\n]{6,1024}'|[^\s'\",;(){}\[\]]{8,1024})"
+        ),
+        1,
+    ),
     # URLs with credentials: scheme://user:password@host keeps the user.
     (re.compile(r"\b[A-Za-z][A-Za-z0-9+.-]{0,31}://[^\s/:@]{1,256}:([^\s/@]{1,256})@"), 1),
 )
@@ -73,6 +91,17 @@ _PEM = re.compile(
     r"-----BEGIN [A-Z0-9 ]{0,40}PRIVATE KEY-----"
     r"(?:[\s\S]*?(?P<end>-----END [A-Z0-9 ]{0,40}PRIVATE KEY-----)|[\s\S]*)"
 )
+
+
+_SECRET_NAME = re.compile(rf"(?i){_KEY_WORDS}")
+
+
+def secret_values(env: Mapping[str, str]) -> list[str]:
+    """The values of the names in `env` that say they hold a secret, to redact wherever they
+    appear. For a machine's private settings. A project's `env:` is left out on purpose: its
+    values are throwaway by rule, and `DB_PASSWORD: password` would take that word out of
+    every line of the job's log."""
+    return [value for name, value in env.items() if _SECRET_NAME.search(name)]
 
 
 class _Hit(NamedTuple):

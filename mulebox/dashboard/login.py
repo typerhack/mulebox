@@ -105,9 +105,15 @@ def _submit(static_dir: Path) -> Handler:
         given = form.get("password")
         given = given if isinstance(given, str) else ""
         async with access.hashing:
+            # Asked again here: attempts sent together all pass the check above, while the
+            # first is still being hashed, and each would otherwise get its guess.
+            wait = access.limiter.retry_after(who)
+            if wait > 0:
+                return _render(static_dir, WAIT.format(math.ceil(wait)), 429)
             good = await asyncio.to_thread(password.verify, given, access.password_hash)
+            if not good:
+                access.limiter.failed(who)
         if not good:
-            access.limiter.failed(who)
             _log.warning("failed dashboard login from %s", who)
             return _render(static_dir, FAILED, 401)
         access.limiter.succeeded(who)

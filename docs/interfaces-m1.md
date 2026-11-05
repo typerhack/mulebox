@@ -5,7 +5,7 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 
 ## Decisions for M1 (simplifications, revisit later)
 
-- **Full snapshot, no PC-side clone.** The client sends a tar.gz of the worktree (tracked +
+- **Full snapshot, no worker-side clone.** The client sends a tar.gz of the worktree (tracked +
   untracked, not ignored, minus excludes). The worker extracts it; no git remote access is
   needed on build machines. Delta uploads against a cached base are a parking-lot item.
 - **No coordinator socket daemon for requests.** `mulebox rpc` opens the SQLite store
@@ -177,7 +177,8 @@ Stage rows: `steps`, see [interfaces-m4.md](interfaces-m4.md), Job steps.
 - `snapshot.py`: `make_snapshot(root: Path, extra_excludes) -> Snapshot(path, sha256,
   fingerprint, base_commit, branch, files)`: `git ls-files -co --exclude-standard -z`;
   built-in excludes `.secret/`, `.env`, `.env.*`, `secrets/`, `.npmrc`, `.envrc`, `.netrc`, `*.pem`, `*.key`,
-  `id_rsa*`, `id_ed25519*`, `.mulebox/`; symlinks stored as links (never followed); tar.gz
+  `*.p12`, `*.pfx`, `id_rsa*`, `id_ed25519*`, `id_ecdsa*`, `id_dsa*`, `.git-credentials`, `.pypirc`, `.ssh/`,
+  `.aws/`, `.mulebox/`; symlinks stored as links (never followed); tar.gz
   to a temp file. `fingerprint`: sha256 over sorted (path, mode, sha256 of content or link
   target). `current_fingerprint(root, excludes)` for the stale check.
 - `remote.py`: `Remote(client_config)`: `call(msg)`, `upload(job_id, path, sha256)`,

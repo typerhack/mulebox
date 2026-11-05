@@ -6,6 +6,9 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -14,7 +17,13 @@ jobs:
   test:
     # A mulebox runner by default (it waits for a build slot in the mulebox queue).
     # Set the repository variable CI_RUNS_ON to e.g. ["ubuntu-24.04"] to use GitHub's.
-    runs-on: ${{ fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox"]') }}
+    # A pull request from a fork always runs on GitHub's machines: anyone can open one, and on
+    # a self-hosted runner its code would run as the build machine's user (docs/install.md).
+    runs-on: >-
+      ${{ fromJSON(github.event_name == 'pull_request'
+      && github.event.pull_request.head.repo.full_name != github.repository
+      && '["ubuntu-24.04"]'
+      || vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox"]') }}
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4

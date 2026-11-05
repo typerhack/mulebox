@@ -115,6 +115,23 @@ def test_repeated_failures_lock_even_the_right_password(lan):
     assert status == 429 and "Try again" in text
 
 
+def test_attempts_sent_together_get_no_more_guesses(lan, monkeypatch):
+    tried = []
+
+    def verify(given, stored):
+        tried.append(given)
+        return False
+
+    monkeypatch.setattr(password, "verify", verify)
+
+    async def go(http, url):
+        replies = await asyncio.gather(*(sign_in(http, url, f"guess-{n}") for n in range(30)))
+        return [reply.status for reply in replies]
+    statuses = lan(go)
+    assert len(tried) == FREE_FAILURES + 1
+    assert statuses.count(401) == FREE_FAILURES + 1 and statuses.count(429) == 24
+
+
 def test_sign_out_ends_the_session_on_the_server(lan):
     async def go(http, url):
         await sign_in(http, url)

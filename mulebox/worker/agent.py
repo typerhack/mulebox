@@ -35,6 +35,7 @@ from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
 from mulebox.worker.job import ActiveJob, ended_badly, outcome_for
 from mulebox.worker.link import CoordinatorLink, LinkError, request
+from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.worker.logtail import LogTailer
 from mulebox.worker.paths import NodePaths
 from mulebox.worker.ports import PortPool
@@ -123,7 +124,8 @@ class Agent:
         project = claim["project"]
         safe = self.paths.is_safe_job(project, job_id)
         log_path = self.paths.job_dir(project, job_id) / "out.log" if safe else None
-        tailer = LogTailer(log_path, job_id, attempt_id, request)
+        tailer = LogTailer(log_path, job_id, attempt_id, request,
+                           StreamRedactor(secret_values(self.node.job_env)))
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}))
         job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker)
