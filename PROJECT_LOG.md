@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.5 - 2026-11-06 - patch
+- `mulebox init` in a git worktree names the project after the repository, so its worktrees share one project on the machine.
+
 ## 0.66.4 - 2026-11-06 - patch
 - `check` no longer gives back a failure from an older mulebox: it may have been a fault in mulebox that is gone, as a real trial found after an upgrade. A pass stays a pass. A job records the worker's version (schema 12).
 

@@ -496,7 +496,8 @@ browser download blocked for the machine's network location.
       `mysql:8.4` mounting an init folder started, ran its seed file and read the row back, in 17 s.
 - [~] M19.14 `check` does not give back a failure from an older mulebox. Built (0.66.4), schema 12: tests
       with the real coordinator code. Open: seen across a real upgrade.
-- [ ] M19.2 `mulebox init` in a git worktree names the project after the repository, not the folder.
+- [~] M19.2 `mulebox init` in a git worktree names the project after the repository. Built (0.66.5), with a
+      real git worktree in a test. Open: an agent using it.
 - [ ] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link.
 - [ ] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install.
 - [ ] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not

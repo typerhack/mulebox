@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from mulebox.client import gitinfo
 from mulebox.common import package_cache
 
 LOCKFILES = (("pnpm-lock.yaml", "pnpm"), ("yarn.lock", "yarn"), ("package-lock.json", "npm"))
@@ -49,7 +50,10 @@ class Detected:
 
 
 def project_name(root: Path) -> str:
-    return _NOT_A_NAME.sub("-", root.resolve().name).strip("-._") or "project"
+    """The folder's name, and in a git worktree the repository's: a project's caches and folder
+    on a machine go by this name, so its worktrees must share it."""
+    folder = gitinfo.main_checkout(root) or root.resolve()
+    return _NOT_A_NAME.sub("-", folder.name).strip("-._") or "project"
 
 
 def _text(path: Path) -> str:

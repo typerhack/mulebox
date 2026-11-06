@@ -1,6 +1,7 @@
 """`mulebox init`: real project layouts in, a valid `.mulebox.yml` out."""
 
 import json
+import subprocess
 
 import pytest
 
@@ -177,3 +178,17 @@ def test_print_writes_nothing(project, capsys):
     assert cli.main(["init", "--check", "x", "--print"]) == 0
     assert "check: x" in capsys.readouterr().out
     assert list(project.iterdir()) == []
+
+
+def test_a_worktree_is_named_after_its_repository(tmp_path, monkeypatch):
+    main = tmp_path / "example-app"
+    main.mkdir()
+    commands = (["init", "-q"], ["-c", "user.name=a", "-c", "user.email=a@example.com", "commit",
+                                 "-q", "--allow-empty", "-m", "x"],
+                ["worktree", "add", "-q", str(tmp_path / "fix-the-login")])
+    for command in commands:
+        subprocess.run(["git", *command], cwd=main, check=True, capture_output=True)
+    assert init_detect.project_name(tmp_path / "fix-the-login") == "example-app"
+    assert init_detect.project_name(main) == "example-app"
+    (main / "api").mkdir()
+    assert init_detect.project_name(main / "api") == "api"

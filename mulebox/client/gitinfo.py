@@ -62,6 +62,24 @@ def tracked_files(root: Path) -> set[str]:
     return {os.fsdecode(raw) for raw in out.split(b"\0") if raw}
 
 
+def main_checkout(root: Path) -> Path | None:
+    """The repository's main folder when `root` is the top of a linked worktree, else None.
+
+    A worktree's folder is named after a task or a branch; the repository is what is shared."""
+    try:
+        out = _git(root, "rev-parse", "--path-format=absolute", "--show-toplevel", "--git-dir",
+                   "--git-common-dir", check=False)
+    except GitError:
+        return None
+    lines = out.stdout.decode(errors="surrogateescape").splitlines()
+    if out.returncode != 0 or len(lines) != 3:
+        return None
+    top, own, common = (Path(line) for line in lines)
+    if own == common or top != root.resolve():
+        return None
+    return common.parent if common.name == ".git" else common.with_suffix("")
+
+
 def base_commit(root: Path) -> str:
     """`git rev-parse HEAD`, or an empty string in a repository without commits."""
     proc = _git(root, "rev-parse", "--verify", "-q", "HEAD", check=False)
