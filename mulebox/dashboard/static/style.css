@@ -252,6 +252,11 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
 .log-head { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--ink-muted); margin: 4px 0 4px; }
 .log-head a { margin-left: auto; }
+.log-latest {
+  padding: 0 6px; border: 1px solid var(--line-soft); border-radius: 3px;
+  background: var(--row); color: var(--ink-soft); font: inherit; cursor: pointer;
+}
+.log-latest[hidden] { display: none; }
 .log {
   flex: 1; min-height: 180px; margin: 0; padding: 8px 10px; overflow: auto;
   border: 1px solid var(--line-soft); border-radius: 3px; background: var(--row);

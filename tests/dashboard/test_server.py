@@ -4,6 +4,7 @@ import re
 
 import pytest
 
+from mulebox.dashboard import streams
 from mulebox.dashboard.server import STATIC_DIR, host_name
 from mulebox.version import get_version
 
@@ -131,6 +132,20 @@ def test_log_stream_of_a_finished_job_ends(call, run_job, write_log, finish_job)
     assert [e for e, _ in events] == ["state", "log", "end"]
     assert events[1][1]["data"] == "<script>one</script>\n"  # text; the page never parses it
     assert events[2][1]["outcome"] == "passed"
+
+
+def test_a_quiet_log_stream_sends_a_beat_a_page_can_see(call, run_job, monkeypatch):
+    job_id, _ = run_job()
+    monkeypatch.setattr(streams, "BEAT_S", 0.0)
+
+    async def go(client):
+        reply = await client.get(f"/api/jobs/{job_id}/log")
+        text = b""
+        while b"event: beat" not in text:
+            text += await asyncio.wait_for(reply.content.readany(), 5)
+        reply.close()
+        return text.decode()
+    assert ("beat", {}) in sse(call(go))
 
 
 def test_log_stream_resumes_at_a_byte_offset_and_bad_offsets_are_ignored(

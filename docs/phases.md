@@ -380,6 +380,10 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 
+- [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
+      whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it
+      showed quiet for 45 s with 6.8 cores busy, and a stream cut with no error reopened at its offset in 30 s.
+
 ## M15: Managed environments
 - [x] M15.1 A job declares what it needs; mulebox builds the environment, reuses it until the
       project, lockfile, toolchain or image changes, and reports its failures apart from code

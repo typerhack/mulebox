@@ -1,14 +1,11 @@
-// One job's detail and live log. Log text is appended as text nodes, never parsed as HTML.
-// Reconnects resume by byte offset (the event id); the stream ends with an `end` event.
+// One job's detail, with its stages and live log (joblog.js).
 
 import { cancelControl } from "./canceljob.js";
 import { badge, clock, duration, el, fill, getJson, safeUrl, questionMark } from "./format.js";
+import { followLog, latestButton, quietText } from "./joblog.js";
 import { timeline } from "./timeline.js";
 
-const TAIL = 256 * 1024;
-const KEEP_CHARS = 1024 * 1024;  // cap the page, not the job: the full log has its own link
-const ANSI = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
-const STAGES_EVERY_MS = 5000;
+const ASK_EVERY_S = 5;  // the clocks tick each second from the last answer
 
 function facts(job) {
   const rows = [
@@ -36,51 +33,9 @@ function aloneNote(job) {
     el("p", {}, "Or end it: ", el("code", { text: `mulebox cancel ${job.job_id}` })));
 }
 
-// The note beside the log says what the stream is doing until output arrives: a blank box
-// must never mean "connected and empty" and "could not connect" at once. A browser allows
-// about six open connections per site over plain HTTP, so with several tabs open the
-// stream can wait in line; the full log link is a plain request and still works.
-function follow(pre, stateSlot, note, onEnd) {
-  const url = new URL(`/api/jobs/${encodeURIComponent(pre.dataset.job)}/log`, location.origin);
-  url.searchParams.set("tail", String(TAIL));
-  const source = new EventSource(url);
-  note.textContent = "connecting to the live log";
-  source.onopen = () => {
-    if (pre.dataset.started === undefined) note.textContent = "connected, no output yet";
-  };
-  source.onerror = () => {
-    note.textContent = source.readyState === EventSource.CLOSED
-      ? "live log closed; reload the page, or open the full log"
-      : "live log not connected, retrying; the full log link works meanwhile";
-  };
-  source.addEventListener("state", (event) => {
-    stateSlot.replaceChildren(badge(JSON.parse(event.data).state));
-  });
-  source.addEventListener("log", (event) => {
-    const { offset, data } = JSON.parse(event.data);
-    if (pre.dataset.started === undefined) {
-      pre.dataset.started = "1";
-      note.textContent = "";
-      if (offset > 0) pre.append(`[earlier output not shown, see the full log]\n`);
-    }
-    const stuck = pre.scrollTop + pre.clientHeight >= pre.scrollHeight - 24;
-    pre.append(data.replace(ANSI, ""));
-    pre.normalize();
-    const text = pre.firstChild;
-    if (text && text.length > KEEP_CHARS) text.deleteData(0, text.length - KEEP_CHARS);
-    if (stuck) pre.scrollTop = pre.scrollHeight;
-  });
-  source.addEventListener("end", (event) => {
-    source.close();
-    if (pre.dataset.started === undefined) note.textContent = "the job wrote no output";
-    onEnd(JSON.parse(event.data));
-  });
-  return source;
-}
-
 // Render into the work box; returns a function that closes the live log.
 export function jobView(box, jobId) {
-  let source = null, closed = false, ticking = null;
+  let stopLog = null, closed = false, ticking = null, onShow = null;
   const back = () => el("p", { class: "crumb" }, el("a", { href: "#/", text: "Back to the queue" }));
   fill(box, "Job", null, back(), el("p", { class: "muted", role: "status", text: "Loading" }));
   Promise.all([
@@ -91,23 +46,35 @@ export function jobView(box, jobId) {
     const control = cancelControl(job, access?.cancel_token);
     const stateSlot = el("span", {}, badge(job.shown_state ?? job.outcome ?? job.state));
     const stages = el("div", {}, timeline(job));
+    const info = el("div", {}, facts(job));
+    const quiet = el("span", { class: "muted", role: "status", text: quietText(job.activity) });
+    let latest = job, ended = false, seconds = 0;
+    const draw = () => stages.replaceChildren(timeline(latest) ?? "");
+    const ask = () => getJson(`/api/jobs/${encodeURIComponent(jobId)}`)
+      .then((fresh) => {
+        if (closed || ended) return;
+        if (fresh.state !== latest.state) info.replaceChildren(facts(fresh));
+        latest = fresh;
+        draw();
+        quiet.textContent = quietText(fresh.activity);
+        control?.update(fresh);
+      })
+      .catch(() => {});  // the next tick tries again, and the log shows the connection
     ticking = setInterval(() => {
       if (document.hidden) return;
-      getJson(`/api/jobs/${encodeURIComponent(jobId)}`)
-        .then((latest) => {
-          if (closed) return;
-          stages.replaceChildren(timeline(latest) ?? "");
-          control?.update(latest);
-        })
-        .catch(() => {});  // the next tick tries again, and the log shows the connection
-    }, STAGES_EVERY_MS);
-    const info = el("div", {}, facts(job));
+      seconds += 1;
+      if (seconds % ASK_EVERY_S === 0) ask();
+      else draw();
+    }, 1000);
+    onShow = () => { if (!document.hidden && !ended) ask(); };
+    document.addEventListener("visibilitychange", onShow);
     const pre = el("pre", { class: "log", tabindex: "0", "aria-label": "Job log",
                             "data-job": jobId });
     const link = el("a", { href: `/api/jobs/${encodeURIComponent(jobId)}/log.txt`,
                            text: "Full log as text" });
     const run = safeUrl(job.run_url);
     const note = el("span", { class: "muted", role: "status" });
+    const latestOut = latestButton(pre);
     const parts = [
       control ? el("div", { class: "job-bar" }, back(), control.node) : back(),
       job.kind === "runner"
@@ -118,15 +85,17 @@ export function jobView(box, jobId) {
       aloneNote(job),
       stages,
       info,
-      el("div", { class: "log-head" }, el("span", { text: "log" }), note, link),
+      el("div", { class: "log-head" }, el("span", { text: "log" }), note, quiet, latestOut, link),
       pre,
     ].filter(Boolean);
     fill(box, `Job ${job.project ?? "-"} / ${job.job ?? "-"}`, stateSlot, ...parts);
-    source = follow(pre, stateSlot, note, (final) => {
+    stopLog = followLog(pre, stateSlot, note, latestOut, (final) => {
+      ended = true;
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));
       info.replaceChildren(facts(final));
       clearInterval(ticking);
       stages.replaceChildren(timeline(final) ?? "");
+      quiet.textContent = "";
       box.querySelector("[data-alone]")?.remove();
       control?.update(final);
     });
@@ -136,5 +105,10 @@ export function jobView(box, jobId) {
            el("p", { text: `Could not load this job: ${error.message}` }));
     }
   });
-  return () => { closed = true; clearInterval(ticking); source?.close(); };
+  return () => {
+    closed = true;
+    clearInterval(ticking);
+    stopLog?.();
+    if (onShow) document.removeEventListener("visibilitychange", onShow);
+  };
 }

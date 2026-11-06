@@ -63,6 +63,7 @@ class DashboardData:
         if raw is None:
             return None
         job, place = raw
+        now = time.time() if now is None else now
         with self.store.read() as conn:
             limits = attendance.read_limits(conn)
             rows = steps.for_job(conn, job["job_id"])
@@ -70,7 +71,8 @@ class DashboardData:
             failed = steps.failed_stage(conn, job).get("stage")
         detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS},
                   "steps": rows, "usual": typical, "failed_stage": failed,
-                  **attendance.fields(job, time.time() if now is None else now, limits)}
+                  **attendance.fields(job, now, limits),
+                  "activity": attendance.status_fields(job, rows, now, limits)["activity"]}
         detail["shown_state"] = shown_state(detail)
         detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))
         detail["command"] = self._redactor.redact(shlex.join(job["argv"])) if job["argv"] else ""

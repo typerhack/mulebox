@@ -4,6 +4,9 @@
 snapshot (`queue`, `machines`, `metrics_history`) when that is not possible, then every bus event.
 A viewer that is too slow is dropped by the bus and its stream ends here.
 
+Both streams send a `beat` event while nothing else happens. It is an event and not an SSE
+comment because a page cannot see a comment, and silence is how it finds a dead connection.
+
 `/api/jobs/{id}/log`: `log` events whose id is the byte offset after the chunk, so a
 reconnect resumes exactly where it stopped; a `state` event when the job's state
 changes; one `end` event (the job detail) once the job is finished and its whole log has
@@ -19,10 +22,10 @@ from typing import Any
 from aiohttp import web
 
 from mulebox.dashboard import keys
-from mulebox.dashboard.events import KEEPALIVE, count, encode, frame
+from mulebox.dashboard.events import BEAT, count, encode, frame
 
 POLL_S = 0.5
-KEEPALIVE_S = 15.0
+BEAT_S = 5.0  # a page takes 20 s of silence for a dead connection (static/live.js)
 TEXT_CHUNK = 128 * 1024
 
 
@@ -58,9 +61,9 @@ async def events(request: web.Request) -> web.StreamResponse:
                 await response.write(encode(event))
         while True:
             try:
-                event = await asyncio.wait_for(sub.queue.get(), KEEPALIVE_S)
+                event = await asyncio.wait_for(sub.queue.get(), BEAT_S)
             except TimeoutError:
-                await response.write(KEEPALIVE)
+                await response.write(BEAT)
                 continue
             if event is None:  # dropped as too slow; the browser reconnects
                 break
@@ -108,8 +111,8 @@ async def log_stream(request: web.Request) -> web.StreamResponse:
                 final = await asyncio.to_thread(data.job, job_id)
                 await response.write(frame("end", final or {}, str(offset)))
                 break
-            if idle >= KEEPALIVE_S:
-                await response.write(KEEPALIVE)
+            if idle >= BEAT_S:
+                await response.write(BEAT)
                 idle = 0.0
             await asyncio.sleep(POLL_S)
             idle += POLL_S

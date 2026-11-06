@@ -4,6 +4,7 @@
 import { getJson } from "./format.js";
 import { jobView } from "./jobdetail.js";
 import { historyView, queueView, tick, tickLeft } from "./jobs.js";
+import { liveStream } from "./live.js";
 import { Machine } from "./machine.js";
 import { renderMachines } from "./machines.js";
 
@@ -90,22 +91,15 @@ systemLight.addEventListener("change", () => {
   if (document.documentElement.dataset.mode === "system") applyMode("system");
 });
 
-const stream = new EventSource("/api/events");
-stream.onopen = () => setConn("live", "live");
-stream.onerror = () => {
-  setConn("lost", "reconnecting");
-  // The browser retries a dropped connection by itself, but gives up on a refused one.
-  if (stream.readyState === EventSource.CLOSED) sessionEnded();
-};
-stream.addEventListener("queue", (event) => {
+function onQueue(event) {
   snapshot = JSON.parse(event.data);
   snapshotAt = performance.now();
   if (route === "") showQueue();
-});
+}
 // Readings move every couple of seconds; the lanes only care who is there and whether
 // it is online, so they are not redrawn for a reading alone.
 let laneKey = "";
-stream.addEventListener("machines", (event) => {
+function onMachines(event) {
   machines = JSON.parse(event.data);
   renderMachines(document.getElementById("machines"), machines);
   const key = JSON.stringify(machines.machines.map((m) => [m.name, m.state]));
@@ -113,10 +107,20 @@ stream.addEventListener("machines", (event) => {
     laneKey = key;
     if (route === "") showQueue();
   }
-});
-stream.addEventListener("metrics", (event) => machine.add(JSON.parse(event.data)));
-stream.addEventListener("metrics_history", (event) => {
-  machine.reset(JSON.parse(event.data).history);
+}
+
+liveStream(() => "/api/events", {
+  queue: onQueue,
+  machines: onMachines,
+  metrics: (event) => machine.add(JSON.parse(event.data)),
+  metrics_history: (event) => machine.reset(JSON.parse(event.data).history),
+}, {
+  opened: () => setConn("live", "live"),
+  lost: (closed) => {
+    setConn("lost", "reconnecting");
+    // The browser retries a dropped connection by itself, but gives up on a refused one.
+    if (closed) sessionEnded();
+  },
 });
 
 window.addEventListener("hashchange", navigate);

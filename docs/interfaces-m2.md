@@ -214,7 +214,7 @@ same file and must not stop for it.
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for` |
 | `GET /api/machines` | machines panel snapshot (above) |
 | `GET /api/history?limit=&before=&project=` | `{jobs, next_before}`, newest first; `limit` 1..200, default 50; page with `before = next_before` |
-| `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested` and `log_size`; 404 if unknown |
+| `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested`, `log_size` and, while it runs, `activity` as in a `status` reply; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |
 | `GET /api/events` | queue, machines and metrics, SSE (below) |
@@ -233,6 +233,8 @@ Bad numbers in `limit` or `before` give 400. An unusable offset or event id is i
   process or too old, the viewer gets a fresh snapshot instead.
 - A viewer more than 64 events behind is dropped, so it can never slow anyone else; its
   browser reconnects and resumes.
+- `beat` (empty, every 5 s with nothing else to send, on both streams): a connection can die
+  with no error, so a page that hears nothing for 20 s opens the stream again.
 
 `/api/jobs/{id}/log`: starts at `Last-Event-ID`, else `?offset=`, else `?tail=` bytes before
 the end, else 0.
@@ -242,6 +244,8 @@ the end, else 0.
 - `state` (`state`): when the job's state changes.
 - `end` (job detail): once, after the whole log of a finished job. The page closes the
   stream on it; otherwise the browser would reconnect.
+
+A page reopened after a dead connection asks with `?offset=`, the last `next_offset` it got.
 
 ## Metrics
 

@@ -53,7 +53,7 @@ def encode(event: Event) -> bytes:
     return frame(event.type, event.data, event.id)
 
 
-KEEPALIVE = b": keepalive\n\n"
+BEAT = frame("beat", {})
 
 
 class Subscriber:

@@ -36,6 +36,16 @@ def test_job_detail_of_a_job_with_no_setup(data, run_job):
     assert data.job(job_id)["setup"] is None
 
 
+def test_job_detail_has_activity_while_running_only(data, store, run_job, finish_job):
+    job_id, state = run_job()
+    with store.write() as conn:
+        st.update_job(conn, job_id, activity={"output_idle_s": 90.0, "job_cpu_pct": 364.4})
+    activity = data.job(job_id)["activity"]
+    assert (activity["output_idle_s"], activity["job_cpu_pct"]) == (90.0, 364.4)
+    finish_job(state)
+    assert data.job(job_id)["activity"] is None
+
+
 def test_queue_snapshot_uses_the_status_model(data, run_job, finish_job):
     _, state = run_job()
     finish_job(state, "failed", 2)

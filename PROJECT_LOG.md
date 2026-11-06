@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.65.0 - 2026-11-06 - minor
+- The live job page: a connection that dies with no error is noticed and reopened where it stopped, on the log and on the page's own stream. Both streams send a `beat` event a page can see, which replaces an SSE comment it could not.
+- A job that writes nothing says so: how long it has been quiet and whether it is working. `/api/jobs/{id}` has `activity` while a job runs.
+- Scrolled up in the log, new output shows a button to jump to the latest. Stage clocks tick each second, and catch up at once when a tab comes back.
+
 ## 0.64.2 - 2026-11-06 - patch
 - `docs/agent-trial.md`: a test plan and report format, so an agent can try mulebox on a real project with no skill installed.
 
