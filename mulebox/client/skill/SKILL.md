@@ -85,8 +85,8 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
   next `mulebox` command in the project prints the result: do not retest.
 - Every `timeout_min` a running job asks if all is well. Look at the activity, then answer:
   `mulebox ok <job-id>`, or `mulebox cancel <job-id>`.
-- Only a stuck job stops: an unanswered question for 30 minutes and no activity for 15, by
-  default. It then shows `stopped: stuck`, with an exit code of its own, which is not a failed
+- Only a stuck job stops: its question unanswered for one more `timeout_min`, and no activity
+  for that long, or 15 minutes if that is shorter. It then shows `stopped: stuck`, with an exit code of its own, which is not a failed
   check: it says nothing about the code.
 - `mulebox check` does not repeat itself. On the same files and settings it gives the result of
   the last 24 hours, or joins the same job if it is running. `--again` forces a run.

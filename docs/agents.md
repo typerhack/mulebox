@@ -157,8 +157,10 @@ is there or not.
   machine's CPU and network, null when they cannot be read.
 - **Answer it.** `mulebox ok <job-id>` says the job is fine, and `mulebox cancel <job-id>` stops
   it. `mulebox status <job-id>` shows the same at any time.
-- **Only a stuck job stops.** That takes both: its question unanswered for 30 minutes, and no
-  activity for 15 minutes (`unattended_idle_min` in `node.toml`). It then shows `stopped: stuck`
+- **Only a stuck job stops.** That takes both: its question unanswered for one more
+  `timeout_min`, and no activity for that long, or for 15 minutes if that is shorter
+  (`unattended_idle_min` in `node.toml`). So with the default it is asked at 30 minutes and stopped
+  at 60; with `timeout_min: 1`, at 1 and 2. It then shows `stopped: stuck`
   and exits 76, which is not a failed check: it says nothing about the code.
 - **Activity** is the job's, not the machine's: new output, its own processes using at least 1% of
   a core, its compose services using at least a tenth of a core together, or their traffic

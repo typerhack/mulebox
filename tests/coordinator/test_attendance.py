@@ -9,14 +9,14 @@ from mulebox.common.protocol import Message, MessageType
 from mulebox.common.status import STOP_STUCK, STOP_UNKNOWN
 from mulebox.coordinator import api, attendance, daemon, leases
 from mulebox.coordinator import store as st
-from mulebox.coordinator.attendance import ANSWER_S, Limits
+from mulebox.coordinator.attendance import Limits
 from mulebox.coordinator.watch import watch
 
 from .helpers import claimed, queued, request
 
 T0 = 1000.0
 ASKED = T0 + 600.0  # with timeout_min=10
-STUCK = ASKED + ANSWER_S  # no answer, and quiet since ASKED
+STUCK = ASKED + 600.0  # no answer for a timeout_min, and quiet since ASKED
 LIMITS = Limits(idle_s=900.0, max_s=86400.0)
 
 

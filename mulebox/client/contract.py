@@ -124,8 +124,9 @@ TIME_LIMITS = (
     "every timeout_min a running job asks if all is well: a check_in event with elapsed time, "
     "stage, seconds since the last output, the job's CPU, and the machine's CPU and network",
     "answer it: mulebox ok <job-id> if it is fine, mulebox cancel <job-id> if it is not",
-    "a job is stopped only when it is stuck: its question has gone unanswered for 30 minutes "
-    "and it has had no output, CPU or service traffic of its own for 15 minutes, by default",
+    "a job is stopped only when it is stuck: its question has gone unanswered for one more "
+    "timeout_min, and it has had no output, CPU or service traffic of its own for that long, "
+    "or 15 minutes if that is shorter",
     "a job the machine cannot measure stops only after 24 hours with its question unanswered",
     "a queued job is never stopped, and a job goes on if its client goes away; Ctrl-C and "
     "mulebox cancel stop it",

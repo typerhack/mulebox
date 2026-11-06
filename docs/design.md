@@ -93,8 +93,8 @@ the agent decides. The rules are in `coordinator/attendance.py`; agents read the
   answers `mulebox ok` or `mulebox cancel`.
 - **A job that is working finishes**, answered or not, however long it takes, with its agent gone
   or not. Its result waits for the agent (`coordinator/reuse.py`), so it need not retest.
-- **A stuck job stops.** That takes both an unanswered question (30 minutes) and no activity of
-  the job's own (`unattended_idle_min`, 15 minutes). It shows `stopped: stuck`, exit 76, which never
+- **A stuck job stops.** That takes both a question unanswered for one more `timeout_min` and no
+  activity of the job's own for that long, or `unattended_idle_min` (15) if that is shorter. It shows `stopped: stuck`, exit 76, which never
   reads as a failed check.
 - **Not knowing is not idle.** A job that cannot be measured stops only after
   `unattended_max_hours`, with its question unanswered, so nothing holds a slot for ever.

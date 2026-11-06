@@ -2,7 +2,7 @@
 
 from mulebox.coordinator import attendance, leases
 from mulebox.coordinator import store as st
-from mulebox.coordinator.attendance import ANSWER_S, Limits
+from mulebox.coordinator.attendance import Limits
 from mulebox.dashboard import machines
 
 from .conftest import NOW
@@ -60,7 +60,7 @@ def test_an_answer_changes_the_panel(data, store, run_job):
 def test_a_stopped_job_reads_stopped_in_every_place(data, store, staging, run_job, finish_job):
     job_id, state = run_job()
     ask(store, job_id)
-    stuck = ASKED + ANSWER_S
+    stuck = ASKED + 600.0
     with store.write() as conn:
         st.update_job(conn, job_id, active_at=ASKED, worker_lease_until=stuck + 5000.0)
     leases.expire(store, stuck, staging)

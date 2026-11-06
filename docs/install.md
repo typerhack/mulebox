@@ -106,8 +106,8 @@ sudo loginctl enable-linger alice
   service removes what is older, once an hour and when it starts, from
   `<staging>/logs/` and nowhere else. A finished job's row stays for good.
 - `[limits]`: when a stuck job stops, on the coordinator's machine, read when the coordinator
-  service starts. `unattended_idle_min` (default 15) is how long a job must show no output, CPU
-  or network, with its question unanswered for 30 minutes, to count as stuck;
+  service starts. `unattended_idle_min` (default 15) is the longest a job must show no output, CPU
+  or network, with its question unanswered for a `timeout_min`, to count as stuck;
   `unattended_max_hours` (default 24) is the same for a job that cannot be measured. A working job
   has no limit, and GitHub runner jobs are not affected. The names date from before 0.55.0.
   What counts as activity: [agents.md](agents.md), 1a. Upgrade workers and the coordinator

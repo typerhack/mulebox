@@ -5,9 +5,10 @@ is asked whether all is well (`check_in`), and answers with `mulebox ok` or `mul
 
 - A job that is working goes on, answered or not, however long it takes. If the agent has gone,
   the result waits for it (reuse.py).
-- A job is stuck when the oldest question has gone unanswered for `ANSWER_S` and the job has
-  done nothing for `idle_s`: no output, no CPU of its own, no traffic from its services. Only
-  that stops it. An answer starts the count over.
+- A job is stuck when the oldest question has gone unanswered for a `timeout_min`, and the job
+  has done nothing for a `timeout_min` or `idle_s`, whichever is shorter: no output, no CPU of
+  its own, no traffic from its services. Only that stops it. An answer starts the count over.
+  So `timeout_min` is the one setting a project needs: asked at 30 minutes, stopped at 60.
 - Activity is what the worker reports (worker/activity.py). `active_at` is NULL while it cannot
   tell (no /proc, a stage it cannot see into). Not knowing never counts as idle, so such a job
   has only `max_s`, and still only with its question unanswered.
@@ -29,7 +30,6 @@ from mulebox.common.protocol import JobState
 from mulebox.common.status import STOP_STUCK, STOP_TEXT, STOP_UNKNOWN, current_stage
 from mulebox.coordinator.store import Store
 
-ANSWER_S = 1800.0  # an agent busy elsewhere sees a question at its next mulebox command
 _IDLE_KEY, _MAX_KEY = "unattended_idle_s", "unattended_max_s"
 _RUNNING = (JobState.STARTING, JobState.RUNNING)
 _REPORTED = ("output_idle_s", "idle_s", "job_cpu_pct", "cpu_pct", "net_kib_s",
@@ -66,13 +66,15 @@ def question(job: dict[str, Any], now: float, limits: Limits) -> dict[str, Any] 
             or not started):
         return None
     number = job["check_in_ok"] + 1
-    asked = started + number * job["timeout_min"] * 60.0
+    period = job["timeout_min"] * 60.0
+    asked = started + number * period
     if now < asked:
         return None
     if job["active_at"] is None:
-        reason, stop_at = STOP_UNKNOWN, max(asked + ANSWER_S, started + limits.max_s)
+        reason, stop_at = STOP_UNKNOWN, max(asked + period, started + limits.max_s)
     else:
-        reason, stop_at = STOP_STUCK, max(asked + ANSWER_S, job["active_at"] + limits.idle_s)
+        quiet = min(period, limits.idle_s)
+        reason, stop_at = STOP_STUCK, max(asked + period, job["active_at"] + quiet)
     return {"number": number, "since": asked, "stop_reason": reason, "reason": STOP_TEXT[reason],
             "stop_at": stop_at, "left_s": max(0.0, round(stop_at - now, 1))}
 
