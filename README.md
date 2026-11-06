@@ -39,7 +39,15 @@ mulebox queue  --SSH-->        |
   open`, or directly from other devices on your LAN, with a password unless you turn it off.
 - **Made to grow**: jobs are claimed by workers, so more machines need no change to agents or
   projects. Installing a second machine is not finished yet (roadmap, M5).
-- **Per-project config**: a small `.mulebox.yml` in each repo says what "check" means.
+- **Per-project config**: a small `.mulebox.yml` in each repo says what "check" means, and
+  `mulebox init` writes it from the project's own files.
+- **No job is lost because an agent went away**: a job that is working always finishes, and the
+  agent's next command tells it the result, so it need not retest.
+- **Long jobs ask, they do not die**: a long job asks its agent if all is well, and the agent
+  answers `mulebox ok` or `mulebox cancel`. Only a job that is really stuck, with no answer, stops.
+- **Agents choose how to wait**: follow the job, be pinged when it ends, or check back later.
+- **No repeat runs**: on exactly the same files, `mulebox check` gives the earlier result, or joins
+  the same job if it is running, and says so. `--again` forces a run.
 
 ## Documentation
 

@@ -102,8 +102,9 @@ Watch stream: after the `watch` request line the client keeps stdin open and wri
 or whatever `lease` says for a detached job, which is how `wait` and `events` count as watching.
 `reach` (`hosts`, at most 8) answers `reach_ok` with `hosts` as host to true or false: whether a TCP
 connection to each opened, for `mulebox doctor`.
-A `status_ok` may carry `stage` (`log: false` only, as a job enters a stage), `check_in` (every `timeout_min`) or `unattended` (`taken_back: true`,
-once, when the stream found the job unattended). The server polls every 0.5 s and writes `log_chunk` for new log bytes and
+A `status_ok` may carry `stage` (`log: false` only, as a job enters a stage), or `check_in` (every `timeout_min`, a question: `job_ok` with `job_id` answers it). `submit` with
+`reuse: true` may answer with `already`, the earlier job's result, and that job's id, and
+`submit_ok` and `queue` with `news_for` carry `questions` and `finished_away`. The server polls every 0.5 s and writes `log_chunk` for new log bytes and
 `status_ok` on state changes; it ends with `result` (job dict fields) and exits 0.
 Line cap for any request: 1 MiB (`MAX_LINE_BYTES`). Upload cap: 1 GiB.
 
@@ -122,9 +123,8 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
   atomic: oldest `queued` job whose `needs` are a subset of capabilities, only if fewer than
   `cluster_slots` jobs are `starting|running|cleaning`. Sets `starting`, worker, attempt_id,
   worker lease. `position(job_id)`.
-- `leases.py`: `renew_client`, `renew_worker`, `expire(store, now)`: expired client lease
-  -> cancel request (queued/uploading jobs finish `cancelled` at once; never for a
-  `detached` job, which also leaves a client lease unused); expired worker lease
+- `leases.py`: `renew_client`, `renew_worker`, `expire(store, now)`: an expired client lease
+  stops nothing; a stuck job with no answer gets a stop (`attendance.py`); expired worker lease
   -> `finished/interrupted`. Uploading jobs older than 10 min -> `finished/interrupted`.
 - `recovery.py`: on coordinator start, jobs in `starting|running|cleaning` whose worker
   lease expired -> `interrupted`. Never replays a job.

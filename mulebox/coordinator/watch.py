@@ -7,11 +7,11 @@ for new log bytes and `status_ok` when the state (or queue position) changes, an
 one `result` line once the job is finished and its whole log has been sent. With `log: false`
 (`mulebox events`) there are no `log_chunk` lines.
 
-Anyone watching a detached job holds its lease, whatever `lease` asked for: that is what makes
-it attended (attendance.py). A job with a client keeps its one lease holder. A watcher that
-finds a job unattended is told so once, and that the job is back. Every `timeout_min` of a
-running job a `status_ok` carries `check_in`, and a new stream gets the latest one, so someone
-who reconnects still hears it; a client tells them apart by number. `mulebox events` also gets a
+Anyone watching a detached job holds its lease, whatever `lease` asked for. Every `timeout_min`
+of a running job a `status_ok` carries `check_in`, the question of attendance.py, and a new
+stream gets the latest one, so someone who reconnects still hears it; a client tells them apart
+by number. A `result` reaching a client tells the job's result, so it is not reported again
+(reuse.py); a client that has gone hears it at its next command. `mulebox events` also gets a
 `status_ok` with `stage` as a job enters each stage; a stream with the log already shows that.
 
 Streams, clock and sleep are injected so the loop runs in tests without real stdin.
@@ -24,7 +24,7 @@ from typing import BinaryIO
 
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, attendance, leases, queue, steps, usual
+from mulebox.coordinator import api, attendance, leases, queue, reuse, steps, usual
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.errors import CoordinatorError, NotFound
@@ -70,6 +70,21 @@ class HeartbeatReader(threading.Thread):
                     _log.warning("watch %s: heartbeat failed: %s", self.job_id, exc)
 
 
+def _send_result(store: Store, job: dict, client_there: bool, send: Callable[[], None],
+                 now: float) -> None:
+    """Told first: a client can be done, and ask for news, the moment it has the result. A client
+    whose stdin has closed has gone, and nothing it never received may count as told."""
+    if client_there:
+        with store.write() as conn:
+            reuse.told(conn, [job], now)
+    try:
+        send()
+    except OSError:
+        with store.write() as conn:
+            reuse.not_told(conn, job)
+        raise
+
+
 def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout: BinaryIO,
           *, clock: Callable[[], float] = time.time,
           sleep: Callable[[float], None] = time.sleep, poll_s: float = POLL_S) -> int:
@@ -84,11 +99,10 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
         raise NotFound(f"no job {job_id}")
     renew = renew or found["detached"]
     started = clock()
-    with store.read() as conn:
-        came_back = attendance.unattended(found, started, attendance.read_limits(conn))
     if renew:
         leases.renew_client(store, job_id, started)
-    HeartbeatReader(stdin, store, job_id, renew, clock).start()
+    reader = HeartbeatReader(stdin, store, job_id, renew, clock)
+    reader.start()
 
     def send(type_: MessageType, body: dict) -> None:
         write_message(stdout, Message(type_, msg.request_id, body))
@@ -115,10 +129,6 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
                             **running_ahead(conn, job)}
             send(MessageType.STATUS_OK, status_body(job, place, reason, **estimate, **failed))
             last = (job["state"], place, reason)
-            if came_back:
-                send(MessageType.STATUS_OK, status_body(
-                    job, place, reason, **estimate, unattended={**came_back, "taken_back": True}))
-                came_back = None
         number = attendance.check_in_number(job, now)
         if number > checked_in:
             checked_in = number
@@ -135,6 +145,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
                     "stage": rows[-1]["stage"], "number": stage_seq,
                     "started_at": rows[-1]["started_at"]}))
         if job["state"] == JobState.FINISHED:
-            send(MessageType.RESULT, result_body(job, **failed))
+            _send_result(store, job, reader.is_alive(),
+                         lambda: send(MessageType.RESULT, result_body(job, **failed)), clock())
             return 0
         sleep(poll_s)

@@ -6,7 +6,7 @@
 // Today that is the machine the dashboard runs on; other machines say "no live data" until
 // their workers report (M5.3), and nothing here will need to change when they do.
 
-import { badge, clock, el, fill, jobLink, meter, soonest, unattendedMark } from "./format.js";
+import { badge, clock, el, fill, jobLink, meter, soonest, questionMark } from "./format.js";
 
 const READINGS = [["cpu", "cpu_pct"], ["mem", "mem_pct"]];
 
@@ -42,7 +42,7 @@ function card(row) {
   const alone = soonest(row.jobs);
   const parts = [
     el("p", { class: "head" }, el("strong", { text: row.name }), badge(row.state)),
-    unattendedMark(alone.job, alone.count),
+    questionMark(alone.job, alone.count),
     readings(row),
     slots(row),
   ];
@@ -51,7 +51,7 @@ function card(row) {
   }
   if (row.jobs.length) {
     parts.push(el("ul", { class: "jobs" }, ...row.jobs.map((job) => el("li", {}, jobLink(job),
-                                                                       unattendedMark(job)))));
+                                                                       questionMark(job)))));
   }
   return el("div", { class: "machine", "data-state": row.state }, ...parts.filter(Boolean));
 }

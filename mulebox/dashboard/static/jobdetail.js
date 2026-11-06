@@ -2,7 +2,7 @@
 // Reconnects resume by byte offset (the event id); the stream ends with an `end` event.
 
 import { cancelControl } from "./canceljob.js";
-import { badge, clock, duration, el, fill, getJson, safeUrl, unattendedMark } from "./format.js";
+import { badge, clock, duration, el, fill, getJson, safeUrl, questionMark } from "./format.js";
 import { timeline } from "./timeline.js";
 
 const TAIL = 256 * 1024;
@@ -29,9 +29,9 @@ function facts(job) {
 
 // Nobody is watching: what happens, and the two ways out, which work whatever this page offers.
 function aloneNote(job) {
-  if (!job.unattended) return null;
-  return el("div", { class: "alone-note", "data-alone": job.job_id }, unattendedMark(job),
-    el("p", { text: `It stops by itself: ${job.unattended.reason}.` }),
+  if (!job.question) return null;
+  return el("div", { class: "alone-note", "data-alone": job.job_id }, questionMark(job),
+    el("p", { text: `The agent was asked if all is well. If the job stays stuck it stops: ${job.question.reason}.` }),
     el("p", {}, "Take it back: ", el("code", { text: `mulebox wait ${job.job_id}` })),
     el("p", {}, "Or end it: ", el("code", { text: `mulebox cancel ${job.job_id}` })));
 }

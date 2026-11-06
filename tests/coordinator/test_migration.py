@@ -55,7 +55,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 8
+        assert store.schema_version() == st.SCHEMA_VERSION == 9
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url", "detached"} <= columns(
                 conn, "jobs")
@@ -176,3 +176,4 @@ def test_an_open_detached_job_is_not_unattended_since_the_day_it_started(staging
     assert job["client_lease_until"] > time.time()
     assert job["stop_reason"] is None and job["activity"] == {} and job["active_at"] is None
     assert done["client_lease_until"] is None
+    assert job["check_in_ok"] == 0 and job["told_at"] is None

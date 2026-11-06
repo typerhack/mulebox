@@ -77,10 +77,10 @@ function tabs(snapshot, box, machines) {
                                   "aria-controls": "jobs-panel",
                                   tabindex: tab.id === current ? "0" : "-1" }, tab.label);
     if (count !== null) button.append(el("span", { class: "count", text: String(count) }));
-    const alone = tab.id === "queue" && snapshot ? tab.pick(snapshot).filter((j) => j.unattended).length : 0;
+    const alone = tab.id === "queue" && snapshot ? tab.pick(snapshot).filter((j) => j.question).length : 0;
     if (alone) {
-      button.append(el("span", { class: "count warned", title: `${alone} unattended` }, warningIcon(),
-                       el("span", { text: `${alone} unattended` })));
+      button.append(el("span", { class: "count warned", title: `${alone} waiting for an answer` }, warningIcon(),
+                       el("span", { text: `${alone} waiting for an answer` })));
     }
     button.addEventListener("click", () => { choose(tab.id); queueView(box, snapshot, machines); });
     return button;
@@ -129,12 +129,12 @@ export function tick(root, snapshot, sinceSnapshot) {
   });
 }
 
-// Time left on unattended jobs, wherever one is shown. Somebody watching again ends the mark
+// Time left on waiting questions, wherever one is shown. An answer ends the mark
 // (the machines box and a job's page redraw less often than the queue).
 export function tickLeft(root, snapshot, sinceSnapshot) {
   const base = new Map();
   for (const job of [...(snapshot?.running ?? []), ...(snapshot?.queued ?? [])]) {
-    base.set(job.job_id, job.unattended?.left_s ?? null);
+    base.set(job.job_id, job.question?.left_s ?? null);
   }
   root.querySelectorAll("[data-left]").forEach((cell) => {
     const value = base.get(cell.dataset.left);

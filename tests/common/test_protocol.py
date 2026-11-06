@@ -84,6 +84,7 @@ def test_enum_values_match_contract():
     assert [o.value for o in Outcome] == [
         "passed", "failed", "cancelled", "timed_out", "interrupted"]
     assert {t.value for t in MessageType} == {
+        "job_ok",
         "submit", "submit_ok", "upload_done", "status", "status_ok", "cancel", "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "steps", "error",
         "queue", "queue_ok", "projects", "projects_ok", "machines", "machines_ok", "logs", "watch",

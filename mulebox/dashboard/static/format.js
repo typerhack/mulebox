@@ -77,7 +77,7 @@ export function meter(attrs = {}) {
 
 const TONES = {
   passed: "good", failed: "bad", timed_out: "warn", interrupted: "warn",
-  "stopped: unattended": "warn",
+  "stopped: stuck": "warn",
   running: "active", starting: "active", cleaning: "active",
   available: "good", busy: "active", offline: "bad", stuck: "bad",
 };
@@ -108,20 +108,20 @@ export const timeLeft = (seconds) => `${duration(seconds)} left`;
 
 // The job among `jobs` that stops first, and how many nobody is watching.
 export function soonest(jobs) {
-  const alone = jobs.filter((job) => job.unattended);
-  alone.sort((a, b) => a.unattended.left_s - b.unattended.left_s);
+  const alone = jobs.filter((job) => job.question);
+  alone.sort((a, b) => a.question.left_s - b.question.left_s);
   return { job: alone[0] ?? null, count: alone.length };
 }
 
 // Warning icon, the word and the time left. `data-left` is the job id, so tick.js can count it
 // down, and drop the whole mark once somebody watches the job again.
-export function unattendedMark(job, count = 1) {
-  if (!job?.unattended) return null;
-  const word = count > 1 ? `${count} unattended` : "unattended";
+export function questionMark(job, count = 1) {
+  if (!job?.question) return null;
+  const word = count > 1 ? `${count} need an answer` : "needs an answer";
   return el("span", { class: "alone", "data-alone": job.job_id,
-                      title: `Nobody is watching this job. It stops: ${job.unattended.reason}.` },
+                      title: `The agent has not answered. A working job goes on; a stuck one stops: ${job.question.reason}.` },
     warningIcon(), el("span", { text: word }),
-    el("span", { class: "num", "data-left": job.job_id, text: timeLeft(job.unattended.left_s) }));
+    el("span", { class: "num", "data-left": job.job_id, text: timeLeft(job.question.left_s) }));
 }
 
 export async function getJson(url) {

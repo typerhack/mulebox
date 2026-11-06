@@ -82,7 +82,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 5 | the job could not start (toolchain missing, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
-| 76 | `stopped: unattended`: nobody watched the job and it ran out of time (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
+| 76 | `stopped: stuck`: it did nothing and nobody answered its question (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
 | 124 | the job hit a hard `timeout_min`, which only a build machine older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
 | 130 | cancelled | - |
 
@@ -93,8 +93,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `check` would have: the same log on stdout, the same failure summary and the same exit
   code, whenever you ask, also after the job ended. From the project it also gives the stale
   warning. Ctrl-C on `wait` stops the waiting, not the job. A dead build machine still ends it
-  `interrupted`, and `mulebox cancel` still stops it. A job nobody watches runs under the limits
-  of section 1a. If you no longer want it, cancel it.
+  `interrupted`, and `mulebox cancel` still stops it. If you no longer want it, cancel it.
 - **Watching a job.** `mulebox events --job <job-id> --json` prints one JSON line per state
   change, with no log text but for `last_line` in a `check_in`, and exits when the job ends, with the job's exit code. A dropped
   connection is resumed for 30 minutes with nothing repeated and the final line kept; if it
@@ -111,7 +110,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `waiting_for` is set only when nothing can run the job; a job simply in line has `running_ahead`, the jobs on the machines now. `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
   is where a job that ended badly failed, null when that is not known. `exit_code` is the code
   the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,
-  75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. `unattended` is in
+  75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. Questions are in
   section 1a. `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,
@@ -149,46 +148,35 @@ detached jobs need both. If `mulebox doctor` reports different versions, tell th
 
 ## 1a. Time limits
 
-While someone is watching a job there is no hard limit: a person or agent decides what is stuck.
-Watching means an attached `check`, `mulebox wait`, `mulebox events` or `mulebox logs -f`.
+No job has a time limit. A job that is working finishes, however long it takes, whether anyone
+is there or not.
 
-- **`timeout_min` is a check-in, not a limit.** Every `timeout_min` of a running job (default
-  30), `mulebox events` prints a `check_in` event, and an attached `check` or `wait` prints the
-  same as a warning: elapsed time, stage, seconds since the last output and that line, the job's
-  own CPU, and the machine's CPU and network, null when they cannot be read. Stop a job with `mulebox cancel <job-id>`; if it
-  is fine, do nothing. `mulebox status <job-id>` shows the same any time, without watching.
-- **A job nobody watches is `unattended`.** A detached job becomes so about 5 minutes after its
-  last watcher left, so a dropped connection is forgiven, and a queued one counts as well. An
-  attached `check` that goes away is different: its job is cancelled, as before.
-- **The limits**, defaults of the build machine, set in `node.toml`:
-  - no activity for 15 minutes: the job is stopped, once it is unattended and never less than
-    15 minutes after that;
-  - 24 hours unattended, however active: the job is stopped, queued or running.
+- **`timeout_min` is a question, not a limit.** Every `timeout_min` of a running job (default 30),
+  `mulebox events` prints a `check_in` event, and an attached `check` or `wait` prints the same:
+  elapsed time, stage, seconds since the last output and that line, the job's own CPU, and the
+  machine's CPU and network, null when they cannot be read.
+- **Answer it.** `mulebox ok <job-id>` says the job is fine, and `mulebox cancel <job-id>` stops
+  it. `mulebox status <job-id>` shows the same at any time.
+- **Only a stuck job stops.** That takes both: its question unanswered for 30 minutes, and no
+  activity for 15 minutes (`unattended_idle_min` in `node.toml`). It then shows `stopped: stuck`
+  and exits 76, which is not a failed check: it says nothing about the code.
 - **Activity** is the job's, not the machine's: new output, its own processes using at least 1% of
   a core, its compose services using at least a tenth of a core together, or their traffic
-  reaching 4 KiB/s. The machine's readings are shown but decide nothing: a desktop or a VPN keeps
-  them busy, so a stuck job would never count as idle. The price: a `docker run` or `docker build`
-  of the job's own is seen only through its output, so an unattended job must not leave one
-  silent for 15 minutes. While a job cannot be measured, and during `images`, which may build
-  for a long time without a word, nothing counts as idle.
-- **Taking a job back:** `mulebox wait` or `mulebox events`. The job is attended again, the
-  count ends and starts afresh the next time it is left alone.
-- **The warning** comes in three ways: `mulebox status` has `unattended` with `reason`, `left_s`
-  and `stop_at`; `mulebox wait` and `events` say what they found once, as an `unattended` event
-  with `taken_back: true`; and any `mulebox` command that reaches the build machine from the
-  project warns on stderr, naming the job, so `--json` output stays clean. `mulebox contract`
-  does not, as it needs no network. The dashboard and `mulebox queue` show it to the user.
-- **A stopped job** shows `stopped: unattended`, with the reason in `stop_reason`, and exits 76.
-  It never reads as a failed check: it says nothing about the code. Run it again, and watch it.
-  A `mulebox cancel` before the machine has acted on the stop wins: the job reads `cancelled`.
+  reaching 4 KiB/s. A `docker run` or `docker build` of the job's own is seen only through its
+  output. While a job cannot be measured, and during `images`, nothing counts as idle; such a job
+  stops only after 24 hours with its question unanswered (`unattended_max_hours`).
+- **A queued job is never stopped, and a job goes on if its client goes away**, however that
+  happens. Ctrl-C and `mulebox cancel` stop it.
+- **Three ways to wait:** follow it (`mulebox check`, or `mulebox events --job <job-id> --json`), be
+  pinged when it ends (`mulebox check --detach`, then `mulebox wait <job-id>` as a background
+  command), or check later (`mulebox status <job-id>`).
+- **Results wait for you.** A job that finished with nobody following is reported once, on stderr,
+  by your next `mulebox` command in the project, so `--json` output stays clean. Do not retest.
+- **`mulebox check` does not repeat itself.** On the same files, uncommitted changes included,
+  and the same settings, it gives the result of the last 24 hours with its exit code, or joins
+  the same job if it is queued or running. A cancelled or stopped job does not count. `--again`
+  forces a run.
 - **GitHub runner reservations** are not touched by any of this: GitHub owns those jobs.
-
-With mixed versions nothing is stopped wrongly. A worker older than 0.37 keeps its hard
-`timeout_min` (exit 124) and reports no activity, so only the 24 hours apply to it, and that
-stop reaches it as an ordinary cancel. A client older than 0.37 sees a stopped job as
-`cancelled` (exit 130), its `wait` and `events` count as watching all the same, and it prints
-no warnings. A coordinator older than 0.37 has none of these rules, and for it a job keeps
-its hard `timeout_min`.
 
 ## 2. Setting up a project (`.mulebox.yml`)
 
@@ -200,7 +188,9 @@ and pull requests.
    workflow in `.github/workflows/`. Find: the one command that is the full gate, the
    install step, the Node/pnpm (or other) versions, the services it needs (database,
    Docker), and the environment variables CI sets.
-2. **Write `.mulebox.yml`** in the repository root:
+2. **Write `.mulebox.yml`** in the repository root. `mulebox init` writes a first version from
+   the project's files, and `mulebox init --print` shows it without writing; then correct it
+   with what step 1 found. It cannot know a CI workflow's services or environment. The fields:
 
 ```yaml
 project: example-app            # letters, digits, '.', '_', '-'

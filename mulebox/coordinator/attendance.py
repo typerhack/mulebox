@@ -1,18 +1,18 @@
-"""Who is watching a job, and when nobody is, how long it has left (docs/design.md, Time limits).
+"""Is a long job fine? The agent is asked, and only a stuck job with no answer is stopped.
 
-Nothing here has a state of its own. The client lease says who is there: every watcher of a
-detached job (`wait`, `events`, `logs -f`) renews it, as an attached `check` renews its own. A
-detached job whose lease has run out is `unattended`, counted from that moment, so renewing the
-lease is all it takes to get a job back and the count starts over.
+A job never stops because nobody is watching it. Every `timeout_min` of a running job the agent
+is asked whether all is well (`check_in`), and answers with `mulebox ok` or `mulebox cancel`.
 
-- A running unattended job stops after `idle_s` without activity, a queued or running one after
-  `max_s` whatever it does. A job never goes without warning: the idle clock of a job that was
-  already quiet starts when it became unattended.
+- A job that is working goes on, answered or not, however long it takes. If the agent has gone,
+  the result waits for it (reuse.py).
+- A job is stuck when the oldest question has gone unanswered for `ANSWER_S` and the job has
+  done nothing for `idle_s`: no output, no CPU of its own, no traffic from its services. Only
+  that stops it. An answer starts the count over.
 - Activity is what the worker reports (worker/activity.py). `active_at` is NULL while it cannot
-  tell (an older worker, no /proc, a stage it cannot see into), and then only `max_s` applies:
-  not knowing never counts as idle.
-- A job with a client (`detached = 0`) has the lease rule of leases.py instead, a runner
-  reservation has GitHub, and a cancelled job is ending anyway: none is ever unattended.
+  tell (no /proc, a stage it cannot see into). Not knowing never counts as idle, so such a job
+  has only `max_s`, and still only with its question unanswered.
+- A queued job is never stopped. A runner reservation belongs to GitHub, and a cancelled job is
+  ending anyway.
 
 The limits belong to the coordinator's machine. The service writes them to `meta` when it
 starts, so a `mulebox rpc` process and the read-only dashboard read the same values.
@@ -26,11 +26,12 @@ from typing import Any
 
 from mulebox.common.config import DEFAULT_UNATTENDED_IDLE_MIN, DEFAULT_UNATTENDED_MAX_HOURS
 from mulebox.common.protocol import JobState
-from mulebox.common.status import STOP_IDLE, STOP_LIMIT, STOP_QUEUED, STOP_TEXT, current_stage
+from mulebox.common.status import STOP_STUCK, STOP_TEXT, STOP_UNKNOWN, current_stage
 from mulebox.coordinator.store import Store
 
+ANSWER_S = 1800.0  # an agent busy elsewhere sees a question at its next mulebox command
 _IDLE_KEY, _MAX_KEY = "unattended_idle_s", "unattended_max_s"
-_OPEN = (JobState.QUEUED, JobState.STARTING, JobState.RUNNING)
+_RUNNING = (JobState.STARTING, JobState.RUNNING)
 _REPORTED = ("output_idle_s", "idle_s", "job_cpu_pct", "cpu_pct", "net_kib_s",
              "last_line")
 LIMITS_BY_COORDINATOR = "coordinator"  # in claim_ok: the worker sets no runtime limit of its own
@@ -57,26 +58,34 @@ def read_limits(conn: sqlite3.Connection) -> Limits:
                   float(rows.get(_MAX_KEY, defaults.max_s)))
 
 
-def unattended(job: dict[str, Any], now: float, limits: Limits) -> dict[str, Any] | None:
-    """Why and when this job stops if nobody takes it back; None when it is not unattended."""
-    lease = job["client_lease_until"]
-    if (job["kind"] != "job" or not job["detached"] or job["cancel_requested"]
-            or job["state"] not in _OPEN or lease is None or now < lease):
+def question(job: dict[str, Any], now: float, limits: Limits) -> dict[str, Any] | None:
+    """The oldest unanswered question of a running job, and when the job stops if it stays
+    stuck; None when nothing is waiting for an answer."""
+    started = job["started_at"]
+    if (job["kind"] != "job" or job["cancel_requested"] or job["state"] not in _RUNNING
+            or not started):
         return None
-    reason = STOP_QUEUED if job["state"] == JobState.QUEUED else STOP_LIMIT
-    stop_at = lease + limits.max_s
-    if job["state"] == JobState.RUNNING and job["active_at"] is not None:
-        quiet_end = max(job["active_at"], lease) + limits.idle_s
-        if quiet_end < stop_at:
-            reason, stop_at = STOP_IDLE, quiet_end
-    return {"since": lease, "stop_reason": reason, "reason": STOP_TEXT[reason],
+    number = job["check_in_ok"] + 1
+    asked = started + number * job["timeout_min"] * 60.0
+    if now < asked:
+        return None
+    if job["active_at"] is None:
+        reason, stop_at = STOP_UNKNOWN, max(asked + ANSWER_S, started + limits.max_s)
+    else:
+        reason, stop_at = STOP_STUCK, max(asked + ANSWER_S, job["active_at"] + limits.idle_s)
+    return {"number": number, "since": asked, "stop_reason": reason, "reason": STOP_TEXT[reason],
             "stop_at": stop_at, "left_s": max(0.0, round(stop_at - now, 1))}
 
 
 def fields(job: dict[str, Any], now: float, limits: Limits) -> dict[str, Any]:
-    """What a queue row adds: the `unattended` view, only when there is one."""
-    view = unattended(job, now, limits)
-    return {"unattended": view} if view else {}
+    """What a queue row adds: the `question` view, only when there is one."""
+    view = question(job, now, limits)
+    return {"question": view} if view else {}
+
+
+def answer(job: dict[str, Any], now: float) -> int:
+    """`check_in_ok` after the agent said all is well: every question asked so far is settled."""
+    return max(job["check_in_ok"], check_in_number(job, now))
 
 
 def activity(job: dict[str, Any], rows: list[dict[str, Any]], now: float) -> dict[str, Any]:
@@ -91,17 +100,14 @@ def activity(job: dict[str, Any], rows: list[dict[str, Any]], now: float) -> dic
 
 def status_fields(job: dict[str, Any], rows: list[dict[str, Any]], now: float,
                   limits: Limits) -> dict[str, Any]:
-    """What a `status` reply adds. `attended` is null for a job with nothing to attend."""
-    lease = job["client_lease_until"]
-    open_job = job["kind"] == "job" and job["state"] in _OPEN
-    return {"attended": (lease is not None and now < lease) if open_job else None,
-            "unattended": unattended(job, now, limits),
-            "activity": activity(job, rows, now) if job["state"] in _OPEN[1:] else None}
+    """What a `status` reply adds."""
+    return {"question": question(job, now, limits),
+            "activity": activity(job, rows, now) if job["state"] in _RUNNING else None}
 
 
 def check_in_number(job: dict[str, Any], now: float) -> int:
     """How many `timeout_min` periods a running job has passed; 0 for any other job."""
     started = job["started_at"]
-    if job["kind"] != "job" or job["state"] not in _OPEN[1:] or not started:
+    if job["kind"] != "job" or job["state"] not in _RUNNING or not started:
         return 0
     return int((now - started) // (job["timeout_min"] * 60.0))

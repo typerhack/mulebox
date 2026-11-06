@@ -61,7 +61,7 @@ queue and returns the same result as running it locally.
       end and sign-out work in real Chrome; outside addresses are stopped by the firewall
       and by the app's own check; the tunnel still works. The password is optional since
       0.14.0, off on the author's machine. Open: used from a real phone, and a reboot and a
-      Wi-Fi drop with `lan` on.
+      Wi-Fi drop with `lan` on. Not a priority, the user's call on 2026-11-06.
 - [~] M2.5 Optional cancel button with its own protection. Built 2026-11-05 (0.53.0): off by default,
       only for a signed-in session on the lan address, through `mulebox rpc` like `mulebox cancel`,
       with Origin and a session token on top of SameSite. In real Edge on localhost with a stand-in
@@ -282,21 +282,21 @@ it: a real machine.
       with `timeout_min: 1`, a detached job gave a `check_in` each minute in `events` and the same
       warning in `wait`, an attached `check` printed them too, and `status` showed activity and the
       watcher.
-- [~] M11.2 Activity: output, plus the job's own CPU and its services' traffic from control groups,
+- [~] M11.2 (the stop rule was replaced by M18.1; the activity readings stay) Activity: output, plus the job's own CPU and its services' traffic from control groups,
       reported with worker heartbeats. Built 2026-11-04 (0.37.0) on the machine's readings; a real
       drill on 2026-11-05 showed a sleeping job could never be idle that way, so 0.43.0 measures the
       job. 2026-11-05 on a real machine: a sleeping job beside idle Redis containers stopped at 20m
       06s and left nothing; a silent job at 100% of a core ran its 23 minutes. Run 2026-11-05: a
       real MySQL, Postgres and Redis stack read 3.2 to 3.6% of a core, under the 10% line, and its
       idle count kept rising; it was cancelled before its stop. Open: the stop itself.
-- [~] M11.3 Unattended jobs: `wait` and `events` count as watching, 15 minutes idle and 24 hours
+- [-] M11.3 Replaced by M18.1 on 2026-11-06. Unattended jobs: `wait` and `events` count as watching, 15 minutes idle and 24 hours
       total as `[limits]`, queued jobs included, `stopped: unattended`, exit 76, schema 8 with
       an upgrade test. Built 2026-11-04 (0.37.0). Open: a job really stopped on a machine,
       with its containers gone, and the 124 path with a worker still on an older version.
-- [~] M11.5 Warnings to the user: warning icon, `unattended` and time left on the job, its machine
+- [-] M11.5 Replaced by M18.1 on 2026-11-06. Warnings to the user: warning icon, `unattended` and time left on the job, its machine
       and the Queue tab in the dashboard. Built 2026-11-04 (0.38.0): seen in headless Chrome on
       a seeded local store. Open: a real job on a real machine, in a real browser, and a phone.
-- [~] M11.4 Warnings to the agent: `unattended` event, `status`, `wait`, stderr of any command from
+- [-] M11.4 Replaced by M18.1 on 2026-11-06. Warnings to the agent: `unattended` event, `status`, `wait`, stderr of any command from
       the project. Built 2026-11-04 (0.37.0). Run 2026-11-05: seen by an agent on a queued job
       through `status`, `events`, `wait` and stderr. Open: a take-back while running, and a real
       stop.
@@ -359,6 +359,66 @@ Fixes from the second project tests (2026-11-04).
       then, and of two middle runs takes the lower, a length a run really had. (2026-11-05, 0.43.2)
 - [x] M13.3 The notice for `env:` entries a job goes without reads for one entry and for more.
       (2026-11-05, 0.40.9)
+
+## M14: Dashboard, from real use
+Decided by the user on 2026-11-05: the Jobs box comes before more project adoption.
+- [ ] M14.1 Jobs box redesign. Three mockups were rejected as flooded with data; the top row (CPU,
+      memory, disk, machines) stays. Done when: the user picks a design and it runs on the real
+      dashboard in Edge.
+- [ ] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
+      VPN tunnel once.
+- [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
+      only. Freezing a running job was advised against.
+
+## M15: Managed environments
+- [ ] M15.1 A job declares what it needs; mulebox builds the environment, reuses it until the
+      project, lockfile, toolchain or image changes, and reports its failures apart from code
+      failures. Built in the job's own image, with network retries, without holding a build slot.
+      Open question: secrets for private registries.
+- [ ] M15.2 Run pnpm's pre-run dependency check once in the environment stage and turn it off for the
+      job's commands, in containers too, as it can trigger a long silent install.
+
+## M16: Smaller ideas from real use
+- [ ] M16.1 `mulebox warm`: prepare a project's caches and images ahead of a job.
+- [ ] M16.2 Disk warning on a machine, with a confirmed cleanup.
+- [ ] M16.3 Deploy when idle: an upgrade waits until no job is running.
+- [-] M16.4 Reuse a passed result: moved to M18.3, the user wants it now.
+
+## M18: Jobs that respect the agent's time
+From the user on 2026-11-06. Comes first: mulebox must beat an agent running directly on the machine.
+Measured by that comparison on real jobs. Open on all of it: a real machine, as the build machine
+was offline.
+- [~] M18.1 No unattended rule. A check-in is a question, `mulebox ok` answers it, a working job always
+      finishes, and only a stuck job with no answer stops. Replaces M11.2 to M11.5. Built 2026-11-06
+      (0.55.0), tested with the real coordinator and client code.
+- [~] M18.2 Results wait for an agent that went away, and its next command says so. Built 2026-11-06
+      (0.55.0).
+- [~] M18.3 `mulebox check` does not repeat a job on the same files: it gives the result or joins the
+      running job, and `--again` forces a run. Replaces M16.4. Built 2026-11-06 (0.55.0).
+- [~] M18.4 Agents choose how to wait: follow, be pinged, or check later. In the docs, the contract
+      and the skill 2026-11-06 (0.55.0). Open: an agent using them in a real session.
+- [ ] M18.5 Project homes in git: one repository per project on the machine, one worktree per
+      branch at `~/.mulebox/projects/<project>/`, set up once and kept. A job sends only what changed
+      and installs only when the lockfile or setup changes. Measured: worktree add 0.2 s and a
+      warm pnpm install 2.1 s on the build machine.
+- [ ] M18.6 Different branches run at once, two jobs on one branch wait in line. Needs more than one
+      slot on a machine, which is a default of one today.
+- [ ] M18.7 `mulebox projects` shows each project's folder and size; `project clean` and `project
+      reset`.
+
+## M17: Easy for anyone
+Decided by the user on 2026-11-06, after M18: heavy work leaves the laptop, and anyone can set
+mulebox up easily. Today that takes a clone, a venv, ssh config, a hand-edited node.toml and
+toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
+- [~] M17.1 `mulebox init` writes `.mulebox.yml` from a project's files, checked by the real config
+      reader. Built 2026-11-06 (0.55.0): on copies of the manifests of 24 real repositories it
+      wrote 18, also for parts in `api/` and `web/`; the 6 it refused have nothing it can run on
+      Linux. Open: those files really running as jobs, as the build machine was offline.
+- [ ] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
+      it offers (such as Docker), writes the client config, and proves it with a first job.
+- [ ] M17.3 A job's pinned node and pnpm install themselves on the machine the first time.
+- [ ] M17.4 The client installs in one line, with no clone. Publishing it is the user's decision.
+- [ ] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures fixed.
 
 ## Parking lot
 - Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own

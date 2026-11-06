@@ -29,7 +29,7 @@ EXIT_NOT_STARTED = 5  # the job never ran: the machine could not set it up
 EXIT_CANCELLED = 130
 EXIT_TIMED_OUT = 124
 EXIT_INTERRUPTED = 75
-EXIT_STOPPED = 76  # nobody was watching: the machine's limits stopped it, the check said nothing
+EXIT_STOPPED = 76  # stuck, and the agent did not answer: the check said nothing
 
 PREFIX = "mulebox: "
 LONG_QUEUE_POSITION = 2  # jobs ahead in line, not only one running

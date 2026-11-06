@@ -1,7 +1,7 @@
 """CLI subcommands of the client package (docs/interfaces-m1.md, CLI).
 
 Exit codes for client failures: 2 usage/config error, 3 build machine unreachable,
-4 protocol/remote error, 5 job could not start, 76 stopped because nobody watched it,
+4 protocol/remote error, 5 job could not start, 76 stopped as stuck with no answer from the agent,
 130 Ctrl-C. Job failures return the job's own exit code.
 A build machine that cannot be reached is reported as such; mulebox never runs the job
 anywhere else instead.
@@ -48,6 +48,8 @@ def register(sub: argparse._SubParsersAction) -> None:
     check.add_argument("job", nargs="?", default="check", help="job name (default: check)")
     check.add_argument("--detach", action="store_true",
                        help="print the job id once it is queued and leave it running")
+    check.add_argument("--again", action="store_true",
+                       help="run even if these exact files were already tested")
     check.set_defaults(func=guarded(_check))
 
     run = sub.add_parser("run", help="run an ad-hoc command on a build machine")
@@ -83,13 +85,13 @@ def register(sub: argparse._SubParsersAction) -> None:
 
 def guarded(handler: Handler, notices: bool = False) -> Handler:
     """Turn expected errors into one clear stderr line and the contract's exit code. `notices`:
-    a command that reached the machine also warns about this project's unattended jobs."""
+    a command that reached the machine also tells this project's questions and results."""
 
     def run(args: argparse.Namespace) -> int:
         try:
             code = handler(args)
             if notices:
-                attention.warn_here(sys.stderr)
+                attention.tell_here(sys.stderr)
             return code
         except KeyboardInterrupt:
             return report.EXIT_CANCELLED
@@ -139,7 +141,8 @@ def _check(args: argparse.Namespace) -> int:
     if args.job not in project.jobs:
         names = ", ".join(sorted(project.jobs))
         raise UsageError(f"no job {args.job!r} in .mulebox.yml (jobs: {names})")
-    return run_job(project, args.job, root, connect(), detach=args.detach)
+    return run_job(project, args.job, root, connect(), detach=args.detach,
+                   again=args.again)
 
 
 def _run(args: argparse.Namespace) -> int:

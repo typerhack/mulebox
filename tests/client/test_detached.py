@@ -71,7 +71,7 @@ class FakeWorker:
 
 
 def detach(capsys):
-    assert cli.main(["check", "test", "--detach"]) == 0
+    assert cli.main(["check", "test", "--again", "--detach"]) == 0
     captured = capsys.readouterr()
     return captured.out.strip(), captured
 
@@ -133,7 +133,7 @@ def test_wait_returns_what_an_attached_check_returns(local, in_project, capsys):
     worker = FakeWorker(local.store, local.staging)
     thread = threading.Thread(target=worker.run_next)
     thread.start()
-    attached_code = cli.main(["check", "test"])
+    attached_code = cli.main(["check", "test", "--again"])
     thread.join()
     attached = capsys.readouterr()
     attached_id = re.search(JOB_RE, attached.err)[0]
@@ -201,11 +201,10 @@ def test_run_can_detach_too(local, in_project, capsys):
     assert job["detached"] is True and job["argv"] == ["true"]
 
 
-def test_an_attached_job_still_gets_cancelled(local):
+def test_a_job_whose_client_went_away_goes_on(local):
     job_id = queued(local.store, local.staging, now=time.time())
     leases.expire(local.store, time.time() + HOURS_LATER, local.staging)
-    job = local.store.get_job(job_id)
-    assert job["state"] == "finished" and job["outcome"] == "cancelled"
+    assert local.store.get_job(job_id)["state"] == "queued"
 
 
 def test_the_flag_is_stored_and_echoed(local):

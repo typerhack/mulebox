@@ -14,10 +14,10 @@ tolerant of missing or malformed fields, because the client reads them off the w
   (`duration_s`, else finished_at - started_at) for finished ones.
 - Stopped: a job nobody watched was stopped by the time limits. On the wire and in the store it
   stays outcome `cancelled` with a `stop_reason`, so an older client or worker reads a cancelled
-  job and nothing worse; every view here shows `stopped: unattended`, and `outcome_of` says
+  job and nothing worse; every view here shows `stopped: stuck`, and `outcome_of` says
   `stopped` wherever an outcome is printed for a reader.
 - Event: what a state change means to a follower (`job_event`, `mulebox events`). `check_in` and
-  `unattended` are events too: the reply that carries one means that and not a state change.
+  `stage` are events too: the reply that carries one means that and not a state change.
 - Steps: the rows of `steps` in a `status_ok` reply, one per stage of a job. An open row has
   no `finished_at`; only a job still active is really in that stage.
 """
@@ -42,12 +42,11 @@ SETUP, COMMAND, CLEANUP = "setup", "command", "cleanup"
 STAGES = (PREPARE, ENVIRONMENT, IMAGES, SERVICES, SETUP, COMMAND, CLEANUP)
 MAX_FAILING_LINE = 500
 STOPPED = "stopped"
-SHOWN_STOPPED = "stopped: unattended"
-STOP_IDLE, STOP_LIMIT, STOP_QUEUED = "unattended_idle", "unattended_limit", "unattended_queued"
-STOP_TEXT = {STOP_IDLE: "no activity while nobody watched",
-             STOP_LIMIT: "the machine's limit for a job nobody watches",
-             STOP_QUEUED: "still queued at the machine's limit for a job nobody watches"}
-NOTICES = ("check_in", "unattended", "stage")
+SHOWN_STOPPED = "stopped: stuck"
+STOP_STUCK, STOP_UNKNOWN = "stuck", "stuck_unknown"
+STOP_TEXT = {STOP_STUCK: "no activity and no answer from the agent",
+             STOP_UNKNOWN: "no answer from the agent, and its activity cannot be read"}
+NOTICES = ("check_in", "stage")
 
 
 def number(value: Any) -> float | None:
@@ -203,7 +202,7 @@ def failed_step(steps: list[dict[str, Any]]) -> dict[str, Any] | None:
 def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     """What changes when a view must redraw: ids, states, outcomes, positions, for a
     waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), and
-    an unattended job's reason and whole minutes left.
+    a waiting question's reason and whole minutes left.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
@@ -216,8 +215,8 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
 
 
 def left_mark(job: dict[str, Any]) -> tuple[Any, int] | None:
-    """An unattended job's reason and whole minutes left, for a view's fingerprint."""
-    view = job.get("unattended")
+    """A waiting question's reason and whole minutes left, for a view's fingerprint."""
+    view = job.get("question")
     if not isinstance(view, dict):
         return None
     return view.get("stop_reason"), int((number(view.get("left_s")) or 0.0) // 60)

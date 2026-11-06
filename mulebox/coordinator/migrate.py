@@ -17,6 +17,9 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 7 -> 8: `jobs.stop_reason`, `jobs.activity` (JSON, default '{}') and `jobs.active_at`
   (attendance.py). An open detached job gets a new client lease: nothing renewed it before, so
   it would count as unattended since the day it started and could stop at the first sweep.
+- 8 -> 9: `jobs.check_in_ok` (default 0, the last check-in the agent answered, attendance.py) and
+  `jobs.told_at` (reuse.py). Jobs that already finished count as told, or a first command after
+  an upgrade would report the whole history.
 """
 
 import sqlite3
@@ -55,6 +58,9 @@ _STEPS: dict[int, tuple[str, ...]] = {
         "ALTER TABLE jobs ADD COLUMN active_at REAL",
         "UPDATE jobs SET client_lease_until = CAST(strftime('%s', 'now') AS REAL) + 300 "
         "WHERE detached = 1 AND state != 'finished'"),
+    8: ("ALTER TABLE jobs ADD COLUMN check_in_ok INTEGER NOT NULL DEFAULT 0",
+        "ALTER TABLE jobs ADD COLUMN told_at REAL",
+        "UPDATE jobs SET told_at = finished_at WHERE state = 'finished'"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

@@ -17,6 +17,7 @@ from mulebox.coordinator import (
     needs,
     projects,
     queue,
+    reuse,
     runner_api,
     steps,
     usual,
@@ -32,6 +33,7 @@ from mulebox.coordinator.store import Store
 from mulebox.coordinator.reach import reach
 from mulebox.coordinator.views import (
     job_dict,
+    result_body,
     running_ahead,
     status_body,
     status_facts,
@@ -82,6 +84,9 @@ def submit(req: Request) -> Message:
     }
     with req.store.write() as conn:
         job = st.find_by_key(conn, fields["idempotency_key"])
+        same = reuse.earlier(conn, fields, req.now) if job is None and v.flag(body, "reuse") else None
+        if same is not None:
+            return _already(req, conn, same, fields)
         if job is None:
             refused = needs.refusal(workers.listing(conn), fields["needs"])
             if refused:
@@ -90,21 +95,42 @@ def submit(req: Request) -> Message:
                 **fields, "job_id": new_id("job"), "state": JobState.UPLOADING,
                 "created_at": req.now, "client_lease_until": req.now + leases.CLIENT_LEASE_S,
             })
-        left = _unattended_in(conn, fields["project"], req.now)
+        news = _news(conn, fields["project"], req.now)
     # `detached` is echoed: a client must not leave a job behind that a coordinator too old to
     # know the flag would cancel 5 minutes later.
     return req.reply(MessageType.SUBMIT_OK, {"job_id": job["job_id"], "state": job["state"],
-                                             "detached": job["detached"], "unattended": left,
+                                             "detached": job["detached"], **news,
                                              "dashboard": req.dashboard})
 
 
-def _unattended_in(conn: Any, project: str, now: float) -> list[dict[str, Any]]:
-    """This project's jobs nobody is watching, for the warning a submitting client prints."""
+def _already(req: Request, conn: Any, job: dict[str, Any], fields: dict[str, Any]) -> Message:
+    """`submit` found the same job (reuse.py): no new job, and this one's id and result."""
+    reuse.told(conn, [job] if job["state"] == JobState.FINISHED else [], req.now)
+    return req.reply(MessageType.SUBMIT_OK, {
+        "job_id": job["job_id"], "state": job["state"], "detached": fields["detached"],
+        "already": result_body(job), **_news(conn, fields["project"], req.now),
+        "dashboard": req.dashboard})
+
+
+def _news(conn: Any, project: str, now: float) -> dict[str, Any]:
+    """What a client from this project has to hear: questions waiting for an answer, and results
+    of jobs that finished without it. Telling a result here is what marks it told."""
     limits = attendance.read_limits(conn)
-    rows = st.select_jobs(conn, "project = ? AND detached = 1 AND state != ?",
-                          (project, JobState.FINISHED.value))
-    return [{**job_dict(job), **fields} for job in rows
-            if (fields := attendance.fields(job, now, limits))]
+    rows = st.select_jobs(conn, "project = ? AND state != ?", (project, JobState.FINISHED.value))
+    finished = reuse.untold(conn, project)
+    reuse.told(conn, finished, now)
+    return {"questions": [{**job_dict(job), **found} for job in rows
+                          if (found := attendance.fields(job, now, limits))],
+            "finished_away": [result_body(job) for job in finished]}
+
+
+def job_ok(req: Request) -> Message:
+    """The agent says a long job is fine: the count towards stopping it starts over."""
+    with req.store.write() as conn:
+        job = st.require_job(conn, v.job_id(req.body))
+        st.update_job(conn, job["job_id"], check_in_ok=attendance.answer(job, req.now))
+        job = st.require_job(conn, job["job_id"])
+    return req.reply(MessageType.STATUS_OK, status_body(job))
 
 
 def status(req: Request) -> Message:
@@ -145,12 +171,17 @@ def heartbeat(req: Request) -> Message:
 
 def queue_list(req: Request) -> Message:
     limit = v.integer(req.body, "limit", queue.DEFAULT_FINISHED_LIMIT, 0, 1000)
+    project = v.text(req.body, "news_for", None)
     with req.store.read() as conn:
         limits = attendance.read_limits(conn)
         rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now)),
                  **attendance.fields(job, req.now, limits)}
                 for job, pos in queue.listing(conn, limit)]
-    return req.reply(MessageType.QUEUE_OK, {"jobs": rows, "dashboard": req.dashboard})
+    news: dict[str, Any] = {}
+    if project:
+        with req.store.write() as conn:
+            news = _news(conn, project, req.now)
+    return req.reply(MessageType.QUEUE_OK, {"jobs": rows, **news, "dashboard": req.dashboard})
 
 
 def project_list(req: Request) -> Message:
@@ -190,6 +221,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.SUBMIT: submit,
     MessageType.STATUS: status,
     MessageType.CANCEL: cancel,
+    MessageType.JOB_OK: job_ok,
     MessageType.HEARTBEAT: heartbeat,
     MessageType.QUEUE: queue_list,
     MessageType.PROJECTS: project_list,

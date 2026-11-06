@@ -34,7 +34,7 @@ def job_env(project: ProjectConfig) -> dict[str, str]:
 
 
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
-                detach: bool = False) -> dict:
+                detach: bool = False, reuse: bool = False) -> dict:
     return {
         "project": project.project,
         "job": job,
@@ -51,4 +51,5 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "needs": list(project.all_needs),
         "timeout_min": project.timeout_min,
         **({"detached": True} if detach else {}),
+        **({"reuse": True} if reuse else {}),
     }

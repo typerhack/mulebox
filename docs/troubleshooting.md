@@ -34,7 +34,7 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 | Waiting with no such line | Normal: there is one line for everyone. `mulebox queue` shows it. Use `--detach` to go on working |
 | `stale` warning at the end | You edited files while it ran. The result belongs to the upload, so run it again |
 | Exit 75, `interrupted` | The build machine restarted or the worker died. Run it again once |
-| Exit 76, `stopped: unattended` | Nobody watched the job and it ran out of time. It says nothing about your code: run it again and watch it. Rules: [agents.md, 1a](agents.md#1a-time-limits) |
+| Exit 76, `stopped: stuck` | The job did nothing and nobody answered its question. It says nothing about your code: find what hangs, and run it again. |
 | A job's log has expired | Logs are kept for 30 days by default: [install.md, Node config](install.md#node-config) |
 | Containers refused, ports or caches behave oddly | [agents.md, 2a](agents.md#2a-projects-that-need-containers-compose) lists what is refused and why, and how ports and caches work |
 

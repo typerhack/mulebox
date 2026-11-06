@@ -14,7 +14,7 @@ A coordinator too old for detached jobs would cancel this one when its lease ran
 a reply that does not echo `detached` cancels the job and fails.
 
 `timeout_min` is no limit: every that many minutes the stream carries a check-in, printed as a
-warning, and the person or agent decides. Check-ins and unattended warnings: attention.py.
+warning, and the person or agent decides. Check-ins and results from while away: attention.py.
 """
 
 from __future__ import annotations
@@ -71,6 +71,7 @@ def run_job(
     remote: RemoteLike,
     streams: Streams | None = None,
     detach: bool = False,
+    again: bool = False,
 ) -> int:
     """Run a job on the build machines as if it ran here; return its exit code.
 
@@ -91,12 +92,22 @@ def run_job(
         for path in snap.skipped_links:
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {report.format_size(snap.size)}")
-        body = submit_body(project, job, argv, snap, detach)
+        body = submit_body(project, job, argv, snap, detach,
+                           reuse=isinstance(target, str) and not again)
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
         report.dashboard_hint(io.err, reply.body, watcher.job_id)
-        attention.warn(reply.body.get("unattended"), io.err)
+        attention.tell(reply.body, io.err)
+        already = reply.body.get("already")
+        if isinstance(already, dict):
+            report.status(io.err, attention.already_line(already))
+            if already.get("state") == "finished":
+                if detach:  # an id on stdout, as ever; `mulebox wait` gives the result
+                    io.out.write(f"{watcher.job_id}\n")
+                    io.out.flush()
+                    return 0
+                return report.exit_code_for(already)
         if detach and reply.body.get("detached") is not True:
             _refuse_detach(remote, watcher.job_id)
         if reply.body.get("state") == "uploading":
@@ -131,9 +142,10 @@ def _refuse_detach(remote: RemoteLike, job_id: str) -> None:
 def _left_running(job_id: str, io: Streams) -> None:
     io.out.write(f"{job_id}\n")
     io.out.flush()
-    report.status(io.err, f"job {job_id} runs on without this client. Follow it, so it is not "
-                  f"stopped as unattended: mulebox events --job {job_id} --json. "
-                  f"Its result: mulebox wait {job_id}")
+    report.status(io.err, f"job {job_id} runs on without this client, and finishes even if "
+                  f"you go away. Be pinged when it ends: mulebox wait {job_id}, in the background. "
+                  f"Follow it: mulebox events --job {job_id} --json. Or check later: mulebox "
+                  f"status {job_id}; the next mulebox command here tells you its result too")
 
 
 def stale_check(root: Path, project: ProjectConfig, fingerprint: str, io: Streams) -> None:

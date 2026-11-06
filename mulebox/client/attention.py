@@ -1,4 +1,4 @@
-"""What a person or agent has to decide about a job: check-ins and unattended warnings.
+"""What a person or agent has to hear about a job: questions, and results from while away.
 
 Pure text from `status_ok`, `queue_ok` and `submit_ok` bodies, except `warn_here`, which asks
 the coordinator on behalf of a command that does not otherwise see the queue. All of it goes to
@@ -22,6 +22,7 @@ from mulebox.common.config import (
 )
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import MessageType
+from mulebox.common import status
 from mulebox.common.status import number
 
 WARNING = "warning: "
@@ -34,17 +35,39 @@ def _name(job: dict[str, Any]) -> str:
 
 
 def stops_in(view: dict[str, Any]) -> str:
-    return f"stops in {format_duration(number(view.get('left_s')))}: {view.get('reason')}"
+    """When a job stops if it stays stuck. A working job does not: this time keeps moving."""
+    return f"stops in {format_duration(number(view.get('left_s')))} if it stays stuck"
 
 
-def unattended_line(job_id: str, view: dict[str, Any], job: dict[str, Any] | None = None) -> str:
-    """The warning for a job nobody is watching; it names both ways out."""
-    if view.get("taken_back"):
-        return (f"{WARNING}job {job_id} was unattended and would have stopped in "
-                f"{format_duration(number(view.get('left_s')))}; it is being watched again")
-    return (f"{WARNING}job {job_id}{_name(job or {})} is unattended, nobody is watching it, and it "
-            f"{stops_in(view)}. Take it back: mulebox wait {job_id}. "
-            f"Stop it: mulebox cancel {job_id}")
+def question_line(job_id: str, view: dict[str, Any], job: dict[str, Any] | None = None) -> str:
+    """The reminder of a question not answered yet; it names both answers."""
+    return (f"{WARNING}job {job_id}{_name(job or {})} has run a long time: is everything OK? "
+            f"While it works it goes on; it {stops_in(view)}. Yes: mulebox ok {job_id}. "
+            f"No: mulebox cancel {job_id}")
+
+
+def result_words(job: dict[str, Any]) -> str:
+    code = job.get("exit_code")
+    words = str(status.outcome_of(job)) + (f", exit {code}" if code is not None else "")
+    commit = job.get("base_commit")
+    return f"{words}, on commit {str(commit)[:10]}" if commit else words
+
+
+def away_line(job: dict[str, Any]) -> str:
+    """A result nobody received: the agent need not run the job again."""
+    job_id = job.get("job_id")
+    return (f"job {job_id}{_name(job)} finished while you were away: {result_words(job)}. "
+            f"No need to retest; its log: mulebox logs {job_id}")
+
+
+def already_line(job: dict[str, Any]) -> str:
+    """`check` found the same job on the same files."""
+    job_id = job.get("job_id")
+    if job.get("state") != "finished":
+        return f"this exact job is already {job.get('state')} as {job_id}: following that one"
+    return (f"already tested: job {job_id}{_name(job)} ran on exactly these files: "
+            f"{result_words(job)}. Not run again; to force a run: --again. "
+            f"Its log: mulebox logs {job_id}")
 
 
 def activity_text(activity: dict[str, Any]) -> str:
@@ -71,50 +94,50 @@ def activity_text(activity: dict[str, Any]) -> str:
 def check_in_line(job_id: str, check_in: dict[str, Any]) -> str:
     took = format_duration(number(check_in.get("elapsed_s")))
     return (f"{WARNING}check-in: job {job_id} has run {took}; {activity_text(check_in)}. "
-            f"Decide whether it is stuck; to stop it: mulebox cancel {job_id}")
+            f"Is everything OK? Yes: mulebox ok {job_id}. No: mulebox cancel {job_id}")
 
 
 def notice(job_id: str, body: dict[str, Any]) -> tuple[Any, str] | None:
     """(a key that is the same on a reconnect, the line) for a body that carries a notice."""
-    check_in, view = body.get("check_in"), body.get("unattended")
+    check_in = body.get("check_in")
     if isinstance(check_in, dict):
         return ("check_in", check_in.get("number")), check_in_line(job_id, check_in)
-    if isinstance(view, dict):
-        return ("unattended", view.get("since")), unattended_line(job_id, view)
     return None
 
 
 def status_lines(body: dict[str, Any]) -> list[str]:
-    """`mulebox status`: what the job is doing and who is watching it."""
+    """`mulebox status`: what the job is doing and what it is waiting to hear."""
     job_id, lines = str(body.get("job_id")), []
-    activity, view = body.get("activity"), body.get("unattended")
+    activity, view = body.get("activity"), body.get("question")
     if isinstance(activity, dict):
         took = format_duration(number(activity.get("elapsed_s")))
         lines.append(f"  activity: running {took}, {activity_text(activity)}")
-    if body.get("attended") is True:
-        lines.append("  watched: yes")
-    elif isinstance(view, dict):
-        lines.append(f"  watched: no, unattended; it {stops_in(view)}. "
-                     f"Take it back: mulebox wait {job_id}")
+    if isinstance(view, dict):
+        lines.append(f"  question: is everything OK? It {stops_in(view)}. "
+                     f"Yes: mulebox ok {job_id}. No: mulebox cancel {job_id}")
     return lines
 
 
-def warn(jobs: Any, err: TextIO) -> None:
-    """One warning for each job that carries an `unattended` view."""
-    for job in jobs if isinstance(jobs, list) else ():
-        if isinstance(job, dict) and isinstance(job.get("unattended"), dict):
-            report.status(err, unattended_line(str(job.get("job_id")), job["unattended"], job))
+def tell(body: dict[str, Any], err: TextIO) -> None:
+    """Questions waiting for an answer and results from while away, from a reply's body."""
+    for job in _dicts(body.get("questions")):
+        report.status(err, question_line(str(job.get("job_id")), job.get("question") or {}, job))
+    for job in _dicts(body.get("finished_away")):
+        report.status(err, away_line(job))
 
 
-def warn_here(err: TextIO, folder: Path | None = None) -> None:
-    """Warn about this project's unattended jobs. Only a remark on another command's way out:
-    nothing that goes wrong here may change what that command returned."""
+def _dicts(items: Any) -> list[dict[str, Any]]:
+    return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
+
+
+def tell_here(err: TextIO, folder: Path | None = None) -> None:
+    """Tell this project's news. Only a remark on another command's way out: nothing that goes
+    wrong here may change what that command returned."""
     try:
         project = load_project_config(find_project_config(folder or Path.cwd())).project
         remote = Remote(load_client_config())
-        reply = remote.call(request(MessageType.QUEUE, limit=QUEUE_NOTHING_FINISHED))
+        reply = remote.call(request(MessageType.QUEUE, limit=QUEUE_NOTHING_FINISHED,
+                                    news_for=project))
     except (ConfigError, MuleboxError, OSError):
         return
-    jobs = reply.body.get("jobs")
-    warn([j for j in jobs if isinstance(j, dict) and j.get("project") == project]
-         if isinstance(jobs, list) else [], err)
+    tell(reply.body, err)

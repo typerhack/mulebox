@@ -44,7 +44,19 @@ shell's, so tools from a shell profile (`nvm`, `~/.local/bin`) are not there.
 
 ## 3. Set up the project
 
-In the project's root, write `.mulebox.yml`:
+In the project's root, let mulebox work it out from the project's own files:
+
+```sh
+mulebox init
+```
+
+It writes `.mulebox.yml`, and prints what you should look at: the versions it pinned, and the
+tools the machine must have. Node, pnpm, npm, yarn, PHP with Composer, Python, Flutter, Go and
+Rust are recognised, also one folder down, such as `api/` and `web/`. If it cannot tell how the
+project is tested, say it yourself: `mulebox init --check "your test command"`. `--print` shows
+the file without writing it.
+
+The file is short and yours to edit. It looks like this:
 
 ```yaml
 project: example-app

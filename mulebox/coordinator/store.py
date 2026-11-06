@@ -24,7 +24,7 @@ from mulebox.coordinator.errors import Conflict, NotFound
 
 # 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
 # 7: env order; 8: stop reason and activity (migrate.py)
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -70,6 +70,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     detached INTEGER NOT NULL DEFAULT 0,
     env_order TEXT NOT NULL DEFAULT '[]',
     stop_reason TEXT,
+    check_in_ok INTEGER NOT NULL DEFAULT 0,
+    told_at REAL,
     activity TEXT NOT NULL DEFAULT '{}',
     active_at REAL
 );
@@ -89,7 +91,7 @@ _JOB_COLUMNS = frozenset(
     "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
     "created_at queued_at started_at finished_at kind pinned_worker runner run_url env "
-    "detached env_order stop_reason activity active_at".split()
+    "detached env_order stop_reason activity active_at check_in_ok told_at".split()
 )
 
 

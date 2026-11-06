@@ -1,4 +1,4 @@
-"""Who is watching a job, and what happens to a job nobody watches."""
+"""A long job asks if all is well, and only a stuck one with no answer stops."""
 
 import io
 import json
@@ -6,18 +6,18 @@ import json
 import pytest
 
 from mulebox.common.protocol import Message, MessageType
-from mulebox.common.status import STOP_IDLE, STOP_LIMIT, STOP_QUEUED
+from mulebox.common.status import STOP_STUCK, STOP_UNKNOWN
 from mulebox.coordinator import api, attendance, daemon, leases
 from mulebox.coordinator import store as st
-from mulebox.coordinator.attendance import Limits
+from mulebox.coordinator.attendance import ANSWER_S, Limits
 from mulebox.coordinator.watch import watch
 
 from .helpers import claimed, queued, request
 
 T0 = 1000.0
-LEASE = leases.CLIENT_LEASE_S
+ASKED = T0 + 600.0  # with timeout_min=10
+STUCK = ASKED + ANSWER_S  # no answer, and quiet since ASKED
 LIMITS = Limits(idle_s=900.0, max_s=86400.0)
-GONE = T0 + LEASE  # the moment nobody has been watching
 
 
 def call(store, staging, kind, now, **body):
@@ -25,7 +25,7 @@ def call(store, staging, kind, now, **body):
 
 
 def running(store, staging, now=T0, **extra):
-    claim = claimed(store, staging, now, detached=True, **extra)
+    claim = claimed(store, staging, now, timeout_min=10, **extra)
     job = {"job_id": claim["job_id"], "attempt_id": claim["attempt_id"]}
     call(store, staging, "job_update", now, state="running", **job)
     return job
@@ -35,8 +35,12 @@ def beat(store, staging, job, now, **activity):
     return call(store, staging, "heartbeat", now, lease="worker", activity=activity, **job)
 
 
+def active(store, staging, job, now):
+    return beat(store, staging, job, now, idle_s=0.0, output_idle_s=0.0)
+
+
 def sweep(store, staging, now):
-    # Keep the workers' leases out of it: these tests are about the client's.
+    # Keep the workers' leases out of it.
     with store.write() as conn:
         conn.execute("UPDATE jobs SET worker_lease_until = ?", (now + 120.0,))
     return leases.expire(store, now, staging)
@@ -49,165 +53,120 @@ def job_of(store, job):
 def view(store, job, now):
     row = job_of(store, job)
     with store.read() as conn:
-        return attendance.unattended(row, now, attendance.read_limits(conn))
+        return attendance.question(row, now, attendance.read_limits(conn))
 
 
-def test_a_detached_job_is_watched_until_its_lease_runs_out(store, staging):
+def test_nothing_is_asked_before_timeout_min(store, staging):
     job = running(store, staging)
-    assert view(store, job, GONE - 1) is None
-    assert view(store, job, GONE)["since"] == GONE
+    assert view(store, job, ASKED - 1) is None
+    assert view(store, job, ASKED)["number"] == 1
+
+
+def test_a_stuck_job_with_no_answer_stops_with_the_reason_recorded(store, staging):
+    job = running(store, staging)
+    active(store, staging, job, ASKED)
+    sweep(store, staging, STUCK - 1)
+    assert job_of(store, job)["cancel_requested"] is False
+    sweep(store, staging, STUCK)
+    row = job_of(store, job)
+    assert row["cancel_requested"] is True and row["stop_reason"] == STOP_STUCK
+
+
+@pytest.mark.parametrize("left_alone_for", [3600.0, 86400.0, 30 * 86400.0])
+def test_a_working_job_is_never_stopped_with_nobody_there(store, staging, left_alone_for):
+    job = running(store, staging)
+    step = left_alone_for / 40
+    for tick in range(1, 41):
+        active(store, staging, job, T0 + tick * step)
+        assert sweep(store, staging, T0 + tick * step) == []
+    assert job_of(store, job)["cancel_requested"] is False
+
+
+def test_a_silent_job_using_cpu_is_working(store, staging):
+    job = running(store, staging)
+    beat(store, staging, job, STUCK, idle_s=0.0, output_idle_s=5000.0)
+    sweep(store, staging, STUCK)
+    assert job_of(store, job)["cancel_requested"] is False
+
+
+def test_an_answer_starts_the_count_over(store, staging):
+    job = running(store, staging)
+    active(store, staging, job, ASKED)
+    call(store, staging, "job_ok", ASKED + 60, job_id=job["job_id"])
+    assert view(store, job, ASKED + 60) is None
+    sweep(store, staging, STUCK)
+    assert job_of(store, job)["cancel_requested"] is False
+    assert view(store, job, T0 + 1200.0)["number"] == 2
+
+
+def test_an_answer_settles_every_question_so_far(store, staging):
+    job = running(store, staging)
+    active(store, staging, job, T0 + 1900.0)
+    call(store, staging, "job_ok", T0 + 1900.0, job_id=job["job_id"])
+    assert job_of(store, job)["check_in_ok"] == 3
 
 
 def test_unknown_activity_never_counts_as_idle(store, staging):
-    """An older worker reports nothing: only the long limit applies."""
     job = running(store, staging)
-    call(store, staging, "heartbeat", GONE, lease="worker", **job)
-    assert view(store, job, GONE + 3600)["stop_reason"] == STOP_LIMIT
-    sweep(store, staging, GONE + 3600)
+    sweep(store, staging, T0 + LIMITS.max_s - 1)
+    assert job_of(store, job)["cancel_requested"] is False
+    sweep(store, staging, T0 + LIMITS.max_s)
+    assert job_of(store, job)["stop_reason"] == STOP_UNKNOWN
+
+
+def test_a_queued_job_is_never_stopped_or_asked(store, staging):
+    job_id = queued(store, staging, T0, timeout_min=1)
+    assert sweep(store, staging, T0 + 30 * 86400.0) == []
+    row = store.get_job(job_id)
+    assert row["state"] == "queued" and row["cancel_requested"] is False
+
+
+def test_a_job_with_a_client_gone_is_treated_the_same(store, staging):
+    job = running(store, staging)  # attached: no `detached`
+    active(store, staging, job, T0 + 500)
+    assert sweep(store, staging, T0 + 500 + leases.CLIENT_LEASE_S) == []
     assert job_of(store, job)["cancel_requested"] is False
 
 
-def test_a_report_that_cannot_tell_clears_what_was_known(store, staging):
+def test_a_runner_reservation_is_never_asked(store, staging):
     job = running(store, staging)
-    beat(store, staging, job, GONE, idle_s=5.0, output_idle_s=5.0)
-    assert view(store, job, GONE + 1)["stop_reason"] == STOP_IDLE
-    beat(store, staging, job, GONE + 2, idle_s=None, output_idle_s=9.0)
-    assert view(store, job, GONE + 3)["stop_reason"] == STOP_LIMIT
-
-
-def test_a_quiet_unattended_job_is_stopped_with_the_reason_recorded(store, staging):
-    job = running(store, staging)
-    beat(store, staging, job, GONE + 10, idle_s=60.0, output_idle_s=60.0)
-    assert view(store, job, GONE + 10)["left_s"] == pytest.approx(890.0)  # from GONE
-    sweep(store, staging, GONE + 899)
-    assert job_of(store, job)["cancel_requested"] is False
-    sweep(store, staging, GONE + 901)
-    row = job_of(store, job)
-    assert row["cancel_requested"] is True and row["stop_reason"] == STOP_IDLE
-    reply = beat(store, staging, job, GONE + 902, idle_s=1.0)
-    assert reply.body["cancel"] is True
-
-
-def test_a_silent_but_busy_job_is_not_stopped(store, staging):
-    """Output stopped long ago, the machine is working: idle_s stays low."""
-    job = running(store, staging)
-    for minute in range(0, 120, 5):
-        now = GONE + minute * 60
-        beat(store, staging, job, now, output_idle_s=minute * 60.0, idle_s=3.0, cpu_pct=390.0)
-        sweep(store, staging, now)
-    assert job_of(store, job)["cancel_requested"] is False
-
-
-def test_an_active_job_stops_at_the_long_limit(store, staging):
-    job = running(store, staging)
-    now = GONE + LIMITS.max_s + 1
-    beat(store, staging, job, now, idle_s=0.0, output_idle_s=0.0)
-    sweep(store, staging, now)
-    assert job_of(store, job)["stop_reason"] == STOP_LIMIT
-
-
-def test_the_worker_cancel_comes_back_as_a_stop(store, staging):
-    job = running(store, staging)
-    sweep(store, staging, GONE + LIMITS.max_s + 1)
-    now = GONE + LIMITS.max_s + 5
-    call(store, staging, "job_update", now, state="cleaning", **job)
-    reply = call(store, staging, "result", now, outcome="cancelled", exit_code=None,
-                 duration_s=5.0, **job)
-    assert reply.body["outcome"] == "cancelled" and reply.body["stop_reason"] == STOP_LIMIT
-
-
-def test_a_job_that_beat_its_stop_keeps_its_result(store, staging):
-    job = running(store, staging)
-    sweep(store, staging, GONE + LIMITS.max_s + 1)
-    now = GONE + LIMITS.max_s + 2
-    call(store, staging, "job_update", now, state="cleaning", **job)
-    call(store, staging, "result", now, outcome="passed", exit_code=0, duration_s=5.0, **job)
-    assert job_of(store, job)["stop_reason"] is None
-
-
-def test_a_detached_queued_job_warns_and_stops_at_the_long_limit(store, staging):
-    job = {"job_id": queued(store, staging, T0, detached=True)}
-    assert view(store, job, GONE + 3600)["stop_reason"] == STOP_QUEUED
-    finished = sweep(store, staging, GONE + LIMITS.max_s - 1)
-    assert not finished
-    assert sweep(store, staging, GONE + LIMITS.max_s + 1) == [job["job_id"]]
-    row = job_of(store, job)
-    assert row["outcome"] == "cancelled" and row["stop_reason"] == STOP_QUEUED
-
-
-def test_watching_takes_a_job_back_and_the_count_starts_over(store, staging):
-    job = running(store, staging)
-    assert view(store, job, GONE + 600) is not None
-    leases.renew_client(store, job["job_id"], GONE + 600)
-    assert view(store, job, GONE + 601) is None
-    assert view(store, job, GONE + 600 + LEASE)["since"] == GONE + 600 + LEASE
-
-
-def test_a_job_with_a_client_is_never_unattended_and_is_cancelled_as_before(store, staging):
-    claim = claimed(store, staging)
-    job = {"job_id": claim["job_id"]}
-    assert view(store, job, GONE) is None
-    sweep(store, staging, GONE + 1)
-    row = job_of(store, job)
-    assert row["cancel_requested"] is True and row["stop_reason"] is None
-
-
-def test_a_runner_reservation_is_never_unattended(store, staging):
-    reply = call(store, staging, "reserve", T0, worker="wrk-a", repository="example/app",
-                 job="ci", run_id="1", run_attempt="1", runner="r1")
-    job = {"job_id": reply.body["job_id"]}
     with store.write() as conn:
-        conn.execute("UPDATE jobs SET detached = 1, client_lease_until = 1")
-    assert view(store, job, T0 + LIMITS.max_s * 2) is None
-    sweep(store, staging, T0 + LIMITS.max_s * 2)
-    assert job_of(store, job)["stop_reason"] is None
+        conn.execute("UPDATE jobs SET kind = 'runner'")
+    assert view(store, job, STUCK * 10) is None
 
 
-def test_a_cancelled_job_is_not_shown_as_unattended(store, staging):
+def test_a_cancelled_job_is_not_asked(store, staging):
     job = running(store, staging)
-    call(store, staging, "cancel", GONE + 1, job_id=job["job_id"])
-    assert view(store, job, GONE + 2) is None
+    call(store, staging, "cancel", ASKED + 1, job_id=job["job_id"])
+    assert view(store, job, ASKED + 2) is None
 
 
 def test_limits_come_from_what_the_service_saved(store, staging, node):
+    attendance.save_limits(store, daemon.limits_of(node))
     with store.read() as conn:
-        assert attendance.read_limits(conn) == Limits()
-    attendance.save_limits(store, Limits(idle_s=60.0, max_s=7200.0))
-    with store.read() as conn:
-        assert attendance.read_limits(conn) == Limits(idle_s=60.0, max_s=7200.0)
-    job = running(store, staging)
-    beat(store, staging, job, GONE, idle_s=0.0)
-    assert view(store, job, GONE)["left_s"] == pytest.approx(60.0)
-    assert daemon.limits_of(node) == Limits()
+        assert attendance.read_limits(conn) == daemon.limits_of(node)
 
 
-def test_status_is_the_activity_view(store, staging):
+def test_status_has_the_activity_and_the_question(store, staging):
     job = running(store, staging)
     beat(store, staging, job, T0 + 40, output_idle_s=12.5, idle_s=2.0, cpu_pct=180.0, net_kib_s=1.5)
     body = call(store, staging, "status", T0 + 42, job_id=job["job_id"]).body
-    assert body["attended"] is True and body["unattended"] is None
+    assert body["question"] is None
     assert body["activity"] == {"elapsed_s": 42.0, "stage": None, "output_idle_s": 12.5,
                                 "idle_s": 2.0, "job_cpu_pct": None, "cpu_pct": 180.0,
                                 "net_kib_s": 1.5, "last_line": None}
-    away = call(store, staging, "status", GONE + 1, job_id=job["job_id"]).body
-    assert away["attended"] is False and away["unattended"]["reason"]
+    assert call(store, staging, "status", ASKED, job_id=job["job_id"]).body["question"]["reason"]
 
 
-def test_queue_and_submit_name_unattended_jobs(store, staging):
-    job = running(store, staging)
-    rows = call(store, staging, "queue", GONE + 1).body["jobs"]
-    assert rows[0]["unattended"]["left_s"] > 0
-    assert "unattended" not in call(store, staging, "queue", T0 + 1).body["jobs"][0]
-    other = claimed_body()
-    reply = call(store, staging, "submit", GONE + 2, **other)
-    assert [j["job_id"] for j in reply.body["unattended"]] == [job["job_id"]]
-    assert not call(store, staging, "submit", GONE + 2,
-                    **claimed_body(project="other-app")).body["unattended"]
-
-
-def claimed_body(**extra):
+def test_queue_and_submit_name_waiting_questions(store, staging):
     from .helpers import submit_body
-    return submit_body(**extra)
+    job = running(store, staging)
+    assert "question" not in call(store, staging, "queue", T0 + 1).body["jobs"][0]
+    assert call(store, staging, "queue", ASKED).body["jobs"][0]["question"]["left_s"] > 0
+    reply = call(store, staging, "submit", ASKED, **submit_body())
+    assert [j["job_id"] for j in reply.body["questions"]] == [job["job_id"]]
+    assert not call(store, staging, "submit", ASKED,
+                    **submit_body(project="other-app")).body["questions"]
 
 
 def stream(store, staging, job_id, clock, **body):
@@ -227,23 +186,8 @@ def stream(store, staging, job_id, clock, **body):
     return [json.loads(line)["body"] for line in out.getvalue().splitlines()]
 
 
-def test_a_watcher_takes_a_job_back_and_hears_that_it_was_unattended(store, staging):
-    job = running(store, staging)
-    bodies = stream(store, staging, job["job_id"], GONE + 60, lease=False, log=False)
-    notices = [b["unattended"] for b in bodies if "unattended" in b]
-    assert len(notices) == 1 and notices[0]["taken_back"] is True
-    assert notices[0]["left_s"] > 0
-    assert view(store, job, GONE + 61) is None
-
-
-def test_watching_never_holds_the_lease_of_a_job_with_a_client(store, staging):
-    claim = claimed(store, staging)
-    stream(store, staging, claim["job_id"], T0 + 100, lease=False, log=False)
-    assert store.get_job(claim["job_id"])["client_lease_until"] == GONE
-
-
 def test_a_running_job_checks_in_every_timeout_min(store, staging):
-    job = running(store, staging, timeout_min=10)
+    job = running(store, staging)
     assert not [b for b in stream(store, staging, job["job_id"], T0 + 599, lease=True)
                 if "check_in" in b]
     beat(store, staging, job, T0 + 1500, output_idle_s=30.0, idle_s=1.0, cpu_pct=99.0, net_kib_s=2.0)
@@ -255,14 +199,5 @@ def test_a_running_job_checks_in_every_timeout_min(store, staging):
 
 
 def test_a_queued_job_does_not_check_in(store, staging):
-    job_id = queued(store, staging, T0, detached=True, timeout_min=1)
+    job_id = queued(store, staging, T0, timeout_min=1)
     assert not any("check_in" in b for b in stream(store, staging, job_id, T0 + 9000, lease=True))
-
-
-def test_store_keeps_the_report_as_given(store, staging):
-    job = running(store, staging)
-    beat(store, staging, job, T0 + 5, idle_s=2.0, output_idle_s=4.0)
-    with store.read() as conn:
-        row = st.fetch_job(conn, job["job_id"])
-    assert row["activity"] == {"idle_s": 2.0, "output_idle_s": 4.0}
-    assert row["active_at"] == T0 + 3

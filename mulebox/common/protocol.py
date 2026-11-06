@@ -83,6 +83,7 @@ class MessageType(StrEnum):
     STATUS = "status"
     STATUS_OK = "status_ok"
     CANCEL = "cancel"
+    JOB_OK = "job_ok"
     HEARTBEAT = "heartbeat"
     CLAIM = "claim"
     CLAIM_OK = "claim_ok"
@@ -118,6 +119,8 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: snapshot upload complete; the job may be queued.
     MessageType.UPLOAD_DONE: frozenset({"job_id", "fingerprint"}),
     MessageType.STATUS: frozenset({"job_id"}),
+    # client -> coordinator: the agent says a long job is fine (attendance.py).
+    MessageType.JOB_OK: frozenset({"job_id"}),
     # client -> coordinator: can the machine connect to these registries? (`mulebox doctor`)
     MessageType.REACH: frozenset({"hosts"}),
     MessageType.REACH_OK: frozenset({"hosts"}),

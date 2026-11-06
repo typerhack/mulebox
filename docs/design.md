@@ -68,13 +68,9 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 
 ## Leases and failure handling
 
-- Client lease: renewed by the waiting client every 20 s, measured on the coordinator's
-  clock; expires after 300 s (agent killed, laptop asleep, Wi-Fi gone) and cancels the job.
-  Long enough to ride out a few minutes of Wi-Fi loss; the client keeps reconnecting.
-- Detached jobs (`check --detach`) have no client to lose: the sweep never cancels them for
-  that, so they survive the client going away. Their lease says whether anyone is watching, see
-  Time limits. The worker lease and `cancel` still apply. `mulebox wait <id>` gets the same
-  result later.
+- Client lease: renewed by a client following a job every 20 s, on the coordinator's clock. It
+  says a client is there and stops nothing: a job goes on when its client goes away (agent killed,
+  laptop asleep, Wi-Fi gone), and its result waits. Ctrl-C and `mulebox cancel` stop a job.
 - Worker lease: renewed by the worker while it executes; separate from the client lease.
 - Idempotent submit (client-chosen key): a lost reply never creates a duplicate job.
 - Restart: the coordinator reconciles stored jobs; the worker, before it claims anything,
@@ -89,47 +85,37 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 
 ## Time limits
 
-No job runs forever, and a person or agent decides what is stuck. The worker sets no runtime
-limit; the coordinator's sweep stops what nobody watches. `timeout_min` was a hard limit until
-0.37, and a real job with a long quiet stretch showed why that cannot be right: no number fits
-every run, and the one who knows what the job is doing is whoever started it.
+No job has a time limit, and a job never stops because nobody is watching it. mulebox asks, and
+the agent decides. The rules are in `coordinator/attendance.py`; agents read them in
+[agents.md](agents.md), 1a.
 
-- **Watched** means an attached `check`, which holds the client lease, or `wait`, `events` or
-  `logs -f` on a detached job, whose heartbeats renew it. There is no hard limit then. Every
-  `timeout_min` a running job checks in with the time, stage, last output and readings.
-  Nothing else happens: stopping it is a decision for the watcher.
-- **Unattended** is a detached job whose lease ran out, queued or running. It needs no column:
-  a lease in the past says it and when it began, and a renewed lease undoes it. So taking a job
-  back is the same act as watching it, and a dropped connection has the lease's 5 minutes of
-  grace.
-- **Stopped.** Running with no activity for `unattended_idle_min` (15), or at
-  `unattended_max_hours` (24) whatever it does, queued too. The idle clock starts when the job
-  became unattended at the earliest, so nothing stops without the warning having been possible.
-  The coordinator reads activity, the worker measures it (worker/activity.py), and "cannot
-  tell" is never "idle": an older worker, a machine without `/proc` and the `images` stage leave
-  only the long limit.
-- **Activity is the job's** (worker/job_meter.py): output, CPU of the job's unit, CPU and traffic
-  of its labelled containers, from control-group files. It was the whole machine's until 0.43,
-  on the reasoning that a job's unit misses containers and that thresholds could sit above an
-  idle machine. A real drill disproved that: with a desktop and a VPN, a sleeping job's machine
-  never went below 12% of a core and 246 KiB/s, so nothing could ever be idle. A job's own
-  `docker run` or `docker build` has no label and shows only through output; the user accepted
-  that, as a silent one of those is rare, needs nobody watching, and watched jobs are never
-  stopped. The two ways to be wrong are still not equal, so anything unread is unknown, not idle.
-- **A stop travels as a cancel.** The worker gets `cancel: true` and reports `cancelled`; the
-  coordinator keeps `stop_reason`, so any worker can be stopped and an older client reads
-  `cancelled`, not an unknown outcome it would refuse. Views and the client show
-  `stopped: unattended`, exit 76, which never reads as a failed check. A job that ended by itself
-  before the stop reached it keeps its own result. A worker lost around the stop does not turn it
-  into `interrupted`: a stop that was due or asked for keeps its reason. A person's or agent's
-  `cancel` wins over a stop until the worker has acted on it (state `cleaning`), and the job then
-  reads `cancelled`, exit 130. A worker that comes back
-  is told the job is over, stops it and cleans up, and its late result is refused.
-- **Warnings go to whoever can act.** The agent: an `unattended` event, `status`, `wait`, and
-  stderr of any command run from the project. The user: the dashboard and `mulebox queue`.
+- **A check-in is a question.** Every `timeout_min` a running job asks if all is well. The agent
+  answers `mulebox ok` or `mulebox cancel`.
+- **A job that is working finishes**, answered or not, however long it takes, with its agent gone
+  or not. Its result waits for the agent (`coordinator/reuse.py`), so it need not retest.
+- **A stuck job stops.** That takes both an unanswered question (30 minutes) and no activity of
+  the job's own (`unattended_idle_min`, 15 minutes). It shows `stopped: stuck`, exit 76, which never
+  reads as a failed check.
+- **Not knowing is not idle.** A job that cannot be measured stops only after
+  `unattended_max_hours`, with its question unanswered, so nothing holds a slot for ever.
+- **A queued job is never stopped.**
+- **mulebox cannot interrupt an agent.** A question reaches it through `events`, or at its next
+  command in the project. That is why the answer window is long and a working job does not need
+  an answer at all.
 - GitHub runner reservations are outside all this: GitHub owns those jobs.
 - The limits are `[limits]` in the coordinator's `node.toml`. The service writes them to `meta`
   when it starts, so `mulebox rpc` processes and the read-only dashboard share them.
+
+Until 0.55.0 a job was stopped for having nobody watching it: `unattended`, with limits of 15
+minutes and 24 hours. Real use showed that wasted working jobs, so it went.
+
+## Results an agent need not repeat
+
+A job is the same job when the project, the job's name, the exact files, uncommitted changes
+included (`fingerprint`), and argv, setup, toolchain and env are the same. `mulebox check` on the
+same job gets the result of the last 24 hours, or joins it if it is queued or running, and `--again`
+forces a run. Only a job that really ran counts. A finished job whose result reached nobody is
+told once, at the project's next command (`jobs.told_at`).
 
 ## Agent contract
 

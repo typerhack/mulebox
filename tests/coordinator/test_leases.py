@@ -34,21 +34,14 @@ def test_nothing_expires_early(store, staging):
     assert leases.expire(store, T0 + 100, staging) == []
 
 
-def test_expired_client_lease_cancels_queued_job(store, staging):
+def test_an_expired_client_lease_stops_nothing(store, staging):
     job_id = queued(store, staging, now=T0)
-    assert leases.expire(store, T0 + leases.CLIENT_LEASE_S + 1, staging) == [job_id]
-    job = store.get_job(job_id)
-    assert job["state"] == JobState.FINISHED and job["outcome"] == Outcome.CANCELLED
-    assert not os.path.exists(staging.upload_path(job_id))
-
-
-def test_expired_client_lease_requests_cancel_of_running_job(store, staging):
     claim = claimed(store, staging, now=T0)
     later = T0 + leases.CLIENT_LEASE_S + 1
     leases.renew_worker(store, claim["job_id"], claim["attempt_id"], later - 10)
     assert leases.expire(store, later, staging) == []
-    job = store.get_job(claim["job_id"])
-    assert job["state"] == JobState.STARTING and job["cancel_requested"]
+    assert store.get_job(job_id)["cancel_requested"] is False
+    assert store.get_job(claim["job_id"])["cancel_requested"] is False
 
 
 def test_expired_worker_lease_interrupts(store, staging):
@@ -69,7 +62,7 @@ def test_uploading_job_times_out_but_ignores_client_lease(store, staging):
 
 
 def test_expire_is_repeatable(store, staging):
-    queued(store, staging, now=T0)
+    claimed(store, staging, now=T0)
     now = T0 + 10_000
     assert len(leases.expire(store, now, staging)) == 1
     assert leases.expire(store, now, staging) == []

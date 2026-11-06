@@ -23,7 +23,7 @@ def test_run_recovers_then_sweeps(store, staging):
     sweeps = daemon.run(store, staging, stop, clock=clock, interval=0)
     assert sweeps == 2
     assert store.get_job(stale["job_id"])["outcome"] == Outcome.INTERRUPTED
-    assert store.get_job(waiting)["outcome"] == Outcome.CANCELLED  # client lease expired
+    assert store.get_job(waiting)["state"] == "queued"  # a queued job is never stopped
 
 
 def test_sweep_errors_do_not_stop_the_loop(store, staging, monkeypatch):

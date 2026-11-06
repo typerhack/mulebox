@@ -1,8 +1,7 @@
 """CLI for a job that is already there: `mulebox wait`, `events` and `status`.
 
 Going away from these never cancels a job, and Ctrl-C only stops the waiting. `wait` and
-`events` count as watching a detached job, so they take an unattended one back and it is
-unattended again some 5 minutes after they stop; `status` only looks. `events` exits with the
+`events` follow a job, and a job goes on without them; `status` only looks. `events` exits with the
 job's exit code, `status` with 0: it answers a question and does not stand in for the job.
 """
 
@@ -33,10 +32,20 @@ def register(sub: argparse._SubParsersAction) -> None:
     follow.add_argument("--json", action="store_true", help="one JSON object per line")
     follow.set_defaults(func=guarded(_events, notices=True))
 
+    fine = sub.add_parser("ok", help="answer a job's question: it is fine, let it go on")
+    fine.add_argument("job_id")
+    fine.set_defaults(func=guarded(_ok))
+
     state = sub.add_parser("status", help="show one job's current state")
     state.add_argument("job_id")
     state.add_argument("--json", action="store_true", help="stable keys for tools")
     state.set_defaults(func=guarded(_status, notices=True))
+
+
+def _ok(args: argparse.Namespace) -> int:
+    connect().call(request(MessageType.JOB_OK, job_id=args.job_id))
+    print(f"job {args.job_id} goes on; asked again after the next timeout_min")
+    return 0
 
 
 def _warn_if_stale(result: dict[str, Any], io: Streams) -> None:

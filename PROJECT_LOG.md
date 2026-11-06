@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.55.0 - 2026-11-06 - minor
+- No more unattended rule: a long job asks its agent, `mulebox ok` answers, a working job always finishes, and only a stuck job with no answer stops. A job also goes on when its client goes away. Store schema 9, contract schema 9.
+- Results wait for an agent that went away, and its next command says so.
+- `mulebox check` does not repeat a job on the same files: it gives the result or joins the running job; `--again` forces a run.
+- `mulebox init` writes a project's `.mulebox.yml` from its own files, so a new project needs no hand-written config.
+- README lists these. Roadmap: M18 first, with project homes in git worktrees next; ideas from real use move in as M14 to M16, M17 tracks easy setup, and the rest of M2.4's `lan` checks are not a priority.
+
 ## 0.53.2 - 2026-11-05 - patch
 - Roadmap: CI passed on GitHub, and the history rewrite is done.
 

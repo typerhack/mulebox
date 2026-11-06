@@ -9,7 +9,7 @@
 // list, and a job no machine fits is shown as stuck with the coordinator's reason.
 // Positions are the real queue positions in every list.
 
-import { badge, clock, duration, el, jobLink, soonest, unattendedMark } from "./format.js";
+import { badge, clock, duration, el, jobLink, soonest, questionMark } from "./format.js";
 
 const SHARED = { title: "next free machine", sub: "whichever of these is free first" };
 const STUCK = { title: "no machine fits", sub: "nothing offers what they need" };
@@ -48,7 +48,7 @@ function block(job) {
     el("div", { class: "slot-head" }, badge(job.shown_state ?? job.state), elapsed(job)),
     jobLink(job),
     el("span", { class: "branch", text: job.branch ?? "-" }),
-    unattendedMark(job));
+    questionMark(job));
 }
 
 function blocks(entry) {
@@ -62,7 +62,7 @@ function machineCell(entry) {
   const head = el("p", { class: "head" }, el("strong", { text: entry.name }),
                   badge(m ? m.state : "unknown"));
   const alone = soonest([...entry.running, ...entry.waiting]);
-  const lines = [head, unattendedMark(alone.job, alone.count)];
+  const lines = [head, questionMark(alone.job, alone.count)];
   if (m?.state === "offline") lines.push(el("p", { class: "muted", text: `last seen ${clock(m.last_seen)}` }));
   return el("div", { class: "lane-machine" }, ...lines);
 }
@@ -85,7 +85,7 @@ function waitingEntry(job, allMachines) {
   } else if (allMachines && Array.isArray(job.can_run_on) && job.can_run_on.length < allMachines) {
     lines.push(el("p", { class: "muted", text: `only ${job.can_run_on.join(", ")}` }));
   }
-  lines.push(unattendedMark(job));
+  lines.push(questionMark(job));
   return el("li", { class: "wait" }, place,
     el("span", {}, jobLink(job), el("span", { class: "branch", text: job.branch ?? "-" })),
     elapsed(job), ...lines);

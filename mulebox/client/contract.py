@@ -25,7 +25,9 @@ from mulebox.common.status import STAGES
 # 6: a job may have settings; `project.job_settings`
 # 7: `job_settings` has `ports`
 # 8: `cache-npm`, `cache-pip`, `stage` events, `last_line`, `running_ahead`, activity is the job's own
-SCHEMA = 8
+# 9: no unattended rule: a check_in is a question, `mulebox ok` answers it, a stuck job with no
+#    answer stops, results wait for an absent agent, and `check` does not repeat a tested job
+SCHEMA = 9
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -58,8 +60,8 @@ EXIT_CODES = (
     (report.EXIT_NOT_STARTED, "the job could not start, so no project code ran",
      "not a failed check: read the reason in the log; mulebox doctor checks most causes"),
     (report.EXIT_INTERRUPTED, "interrupted on the build machine", "run it again once"),
-    (report.EXIT_STOPPED, "stopped: unattended; nobody watched the job and it ran out of time",
-     "not a failed check: nothing is known about the code, so run it again and watch it"),
+    (report.EXIT_STOPPED, "stopped: stuck; it did nothing and nobody answered its question",
+     "not a failed check: nothing is known about the code, so find what hangs and run it again"),
     (report.EXIT_TIMED_OUT, "the job hit a hard timeout_min on a build machine older than 0.37",
      "look for a hang; a current machine has no such limit, it sends check-ins"),
     (report.EXIT_CANCELLED, "cancelled", "nothing to do"),
@@ -114,36 +116,44 @@ EVENTS = (
     "check_in comes every timeout_min of a running job, with elapsed_s, stage, output_idle_s, "
     "last_line (the job's last output, redacted), idle_s, job_cpu_pct, cpu_pct and net_kib_s; "
     "a reading it could not measure is null",
-    "unattended says a job was left unwatched: reason, left_s and taken_back, as it comes back",
     "after finished, read mulebox logs <job-id> --summary if the job failed",
 )
 TIME_LIMITS = (
-    "no job has a hard time limit while someone watches it: an attached check, mulebox wait or "
-    "mulebox events; you decide what is stuck and stop it with mulebox cancel",
-    "timeout_min is how often a watched job checks in, not a limit: a check_in event with "
-    "elapsed time, stage, seconds since the last output, the job's CPU, and the machine's CPU "
-    "and network",
-    "mulebox status shows the same activity at any time, and whether anyone is watching",
-    "a detached job nobody watches is unattended, from 5 minutes after the last watcher left; "
-    "queued jobs count too",
-    "an unattended running job is stopped after 15 minutes with no output, CPU or service traffic of its own, by "
-    "default; a job the machine cannot measure, and one that stays active, runs on to the limit",
-    "any unattended job is stopped at 24 hours by default, a queued one too; both are the "
-    "machine's settings",
-    "mulebox wait or mulebox events takes a job back: it is attended again and the count ends",
-    "a stopped job shows stopped: unattended and exits 76: it says nothing about the code",
-    "any mulebox command in the project warns about its unattended jobs on stderr; --json stays "
-    "clean; mulebox contract does not, as it needs no network",
+    "no job has a time limit: a job that is working finishes, however long it takes, whether "
+    "anyone is there or not",
+    "every timeout_min a running job asks if all is well: a check_in event with elapsed time, "
+    "stage, seconds since the last output, the job's CPU, and the machine's CPU and network",
+    "answer it: mulebox ok <job-id> if it is fine, mulebox cancel <job-id> if it is not",
+    "a job is stopped only when it is stuck: its question has gone unanswered for 30 minutes "
+    "and it has had no output, CPU or service traffic of its own for 15 minutes, by default",
+    "a job the machine cannot measure stops only after 24 hours with its question unanswered",
+    "a queued job is never stopped, and a job goes on if its client goes away; Ctrl-C and "
+    "mulebox cancel stop it",
+    "a stopped job shows stopped: stuck and exits 76: it says nothing about the code",
+    "mulebox status shows the activity and any waiting question at any time",
+    "any mulebox command in the project prints waiting questions and the results of jobs that "
+    "finished while you were away, on stderr; --json stays clean; mulebox contract does not, as "
+    "it needs no network",
+)
+WAYS_TO_WAIT = (
+    "follow: mulebox check, attached, or mulebox events --job <job-id> --json",
+    "be pinged when it ends: mulebox check --detach, then mulebox wait <job-id> as a background "
+    "command",
+    "check later: mulebox check --detach, then mulebox status <job-id>; your next mulebox "
+    "command in the project also tells you the result",
 )
 RULES = (
     "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
     "if this contract's schema is higher than the one your mulebox skill says it was written "
     "for, tell the user the skill is behind and that mulebox skill update fixes it; never "
     "update the skill yourself",
-    "a detached job keeps running without you, for as long as someone watches it, and within "
-    "the unattended limits otherwise: cancel it with mulebox cancel if you no longer want it",
-    "a check-in or an unattended warning is yours to act on: look at the activity, then let the "
-    "job go on, take it back, or cancel it",
+    "a detached job keeps running without you: cancel it with mulebox cancel if you no longer "
+    "want it",
+    "a check-in is a question to you: look at the activity, then answer with mulebox ok or "
+    "mulebox cancel",
+    "mulebox check does not repeat itself: on the same files and settings it gives the earlier "
+    "result of the last 24 hours, or joins the same job if it is running; a result from while "
+    "you were away counts, so do not retest; --again forces a run",
     "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
     "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
     "1 if a job would not run, and warnings alone exit 0",

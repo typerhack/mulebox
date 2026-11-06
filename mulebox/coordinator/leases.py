@@ -2,22 +2,19 @@
 
 Clock: the coordinator's `time.time()`, passed in as `now` so tests control it.
 
-- Client lease (300 s, renewed by `heartbeat lease=client` and the watch stream): when it
-  runs out the job gets a cancel request; a `queued` job finishes `cancelled` at once,
-  an active job is stopped by its worker (heartbeat replies `cancel: true`).
-- A detached job (`check --detach`) has no client to lose, so the sweep never cancels it for
-  that. Its lease says whether anyone is watching, and when nobody is it runs under the limits
-  of attendance.py, which `stop` applies. Everything else still applies to it: the worker lease,
-  the 10 minute upload timeout and `cancel`.
+- Client lease (300 s, renewed by `heartbeat lease=client` and the watch stream): it says a
+  client is there, and stops nothing. A job goes on when its client goes away, however that
+  happens, and its result waits (reuse.py). Stopping a job takes `mulebox cancel`, Ctrl-C, or
+  the stuck rule of attendance.py, which `stop` applies.
 - Worker lease (120 s per job, renewed by every message of the current attempt): when it
-  runs out the job finishes `interrupted`, or `cancelled` with its reason if an unattended stop
+  runs out the job finishes `interrupted`, or `cancelled` with its reason if a stuck stop
   was due or asked for: the stop decided the job's end, the lost worker only means nobody
   answered. It is never handed to another worker. A worker that comes back hears the job is
   over from its next heartbeat, stops it and cleans up; its result is refused. One that never
   answers stops the job itself after a lease without replies, and a restart clears the rest.
 - An `uploading` job older than 10 minutes finishes `interrupted`. Uploading jobs are not
   subject to the client lease: a client cannot heartbeat while it streams a large upload.
-- Runner reservations (`kind = 'runner'`) ignore the client lease; their worker lease is
+- Runner reservations (`kind = 'runner'`) have no client; their worker lease is
   renewed by the worker's supervision heartbeats and expires like any other.
 """
 
@@ -81,7 +78,7 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
     """
     finished: list[str] = []
     with store.write() as conn:
-        finished += _stop_unattended(conn, now)  # first: a stop that is due keeps its reason
+        finished += _stop_stuck(conn, now)  # first: a stop that is due keeps its reason
         for job in st.select_jobs(conn, f"{_ACTIVE_SQL} AND worker_lease_until < ?",
                                   (*_ACTIVE, now)):
             lost = Outcome.CANCELLED if job["stop_reason"] else Outcome.INTERRUPTED
@@ -91,28 +88,19 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
                                   (JobState.UPLOADING.value, now - UPLOAD_TIMEOUT_S)):
             st.finish(conn, job, Outcome.INTERRUPTED, now)
             finished.append(job["job_id"])
-        for job in st.select_jobs(
-            conn, f"(state = ? OR {_ACTIVE_SQL}) AND cancel_requested = 0 "
-            "AND kind = 'job' AND detached = 0 AND client_lease_until < ?",
-            (JobState.QUEUED.value, *_ACTIVE, now),
-        ):
-            if request_cancel(conn, job, now)["state"] == JobState.FINISHED:
-                finished.append(job["job_id"])
     if staging is not None:
         for job_id in finished:
             staging.remove_upload(job_id)
     return finished
 
 
-def _stop_unattended(conn: sqlite3.Connection, now: float) -> list[str]:
-    """Stop the unattended jobs that have run out of time; return those finished at once."""
+def _stop_stuck(conn: sqlite3.Connection, now: float) -> list[str]:
+    """Stop the jobs that are stuck with their question unanswered; return those finished."""
     limits = attendance.read_limits(conn)
     finished = []
-    for job in st.select_jobs(
-        conn, f"(state = ? OR {_ACTIVE_SQL}) AND cancel_requested = 0 AND kind = 'job' "
-        "AND detached = 1 AND client_lease_until <= ?", (JobState.QUEUED.value, *_ACTIVE, now),
-    ):
-        view = attendance.unattended(job, now, limits)
+    for job in st.select_jobs(conn, f"{_ACTIVE_SQL} AND cancel_requested = 0 AND kind = 'job'",
+                              _ACTIVE):
+        view = attendance.question(job, now, limits)
         if view is not None and now >= view["stop_at"]:
             if stop(conn, job, view["stop_reason"], now)["state"] == JobState.FINISHED:
                 finished.append(job["job_id"])

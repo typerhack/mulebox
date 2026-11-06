@@ -21,9 +21,9 @@ READINGS = ("cpu_pct", "mem_pct")
 
 
 def _job(job: dict[str, Any]) -> dict[str, Any]:
-    """A job on a machine's row; `unattended` only when nobody is watching it."""
-    view = job.get("unattended")
-    return {**{field: job[field] for field in JOB_FIELDS}, **({"unattended": view} if view else {})}
+    """A job on a machine's row; `question` only when one is waiting for an answer."""
+    view = job.get("question")
+    return {**{field: job[field] for field in JOB_FIELDS}, **({"question": view} if view else {})}
 
 
 def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
@@ -73,7 +73,7 @@ def snapshot(workers: list[dict[str, Any]], active: list[dict[str, Any]],
 def fingerprint(panel: dict[str, Any]) -> tuple:
     """What changes the panel. `last_seen` is left out: it moves every second. Readings
     count to the whole percent, so a live meter moves without a flood of events, and
-    an unattended job's time left to the whole minute: browsers tick it."""
+    a waiting question's time left to the whole minute: browsers tick it."""
     whole = (lambda v: None if v is None else round(v))
     return tuple((row["name"], row["state"], row["slots"], row["free_slots"],
                   tuple(row["capabilities"]), tuple((j["job_id"], left_mark(j)) for j in row["jobs"]),
