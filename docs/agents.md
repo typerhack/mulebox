@@ -80,7 +80,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree, no commit yet) | fix the config |
 | 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
-| 5 | the job could not start (toolchain missing, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
+| 5 | the job could not start (toolchain would not install, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
 | 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
 | 76 | `stopped: stuck`: it did nothing and nobody answered its question (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
 | 124 | the job hit a hard `timeout_min`, which only a build machine older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
@@ -234,10 +234,10 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
    - **No real secrets.** Use obviously fake values (`ci-secret-at-least-32-characters`).
      If a check truly needs a real credential, stop and ask the user.
    - **Toolchain versions** must match what the project uses (`.nvmrc`, `packageManager`,
-     `engines`, the CI workflow). If the build machine lacks one, the job fails with a
-     message listing the versions it has and naming `mulebox toolchain install <name>
-     <version>`. Switch to a listed version only if it matches the project; otherwise ask
-     the user to run the install.
+     `engines`, the CI workflow). If the build machine lacks one, the first job that needs it
+     installs it, once, which can take minutes on a slow network, and the job's log says so. If
+     that fails, the job exits 5 with the reason and the versions the machine has. Switch to a
+     listed version only if it matches the project; otherwise tell the user.
    - `setup` runs before a job in the same shell; keep it to dependency install. It is
      skipped when nothing it depends on changed: its text, the toolchain, the env and the
      manifests, lockfiles and version files at the root or one folder down (`package.json`,

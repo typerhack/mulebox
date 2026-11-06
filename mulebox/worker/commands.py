@@ -71,8 +71,8 @@ def _install(args: argparse.Namespace) -> int:
     from mulebox.worker import toolchains
 
     try:
-        _, paths = _load(args)
-        path = toolchains.install(paths, args.name, args.version)
+        node, paths = _load(args)
+        path = toolchains.install(paths, args.name, args.version, machine_env=node.job_env)
     except MuleboxError as exc:
         return _fail(exc)
     print(f"{args.name} {args.version}: {path}")

@@ -162,18 +162,18 @@ Next: [set up a project](getting-started.md#2-decide-where-the-projects-tools-co
 
 ## Toolchains
 
-A project pins `node` and `pnpm` versions under `toolchain:` in its `.mulebox.yml`. Each
-version is installed once on the build machine, by a person, and shared by every project:
+A project pins `node` and `pnpm` versions under `toolchain:` in its `.mulebox.yml`. Each version
+installs itself the first time a job needs it, and is shared by every project. Node is verified
+against the official checksums; pnpm needs a node, so pin both. To get one ready ahead of a job:
 
 ```sh
 ssh build-1 '~/.mulebox/bin/mulebox toolchain install node 22.22.3'
-ssh build-1 '~/.mulebox/bin/mulebox toolchain install pnpm 11.22.0'   # needs a node first
 ssh build-1 '~/.mulebox/bin/mulebox toolchain list'
 ```
 
 `mulebox toolchain` runs on the build machine only. From the laptop, `mulebox doctor` in a
-project says which versions the machine has. They live in `<cache>/toolchains/`, and a job
-that needs a missing one does not start: it exits 5 and lists what is there.
+project says which versions the machine has. They live in `<cache>/toolchains/`. A job whose
+version will not install does not start: it exits 5 with the reason and what is there.
 
 ## GitHub runners
 

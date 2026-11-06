@@ -27,7 +27,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 10. `mulebox contract` prints the current schema on
+This skill was written for contract schema 11. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
@@ -120,8 +120,9 @@ different versions, tell the user.
 
 - A job failed: that is a normal result. Read the short failure summary at the end of its
   output first, the full log only if that is not enough, and fix the code.
-- A toolchain is missing: the error lists the versions the machine has. Use one only if it
-  matches the project; otherwise ask the user to install the version it needs.
+- A toolchain will not install: a pinned version installs itself on first use, and if that fails
+  the error lists the versions the machine has. Use one only if it matches the project; otherwise
+  tell the user why it failed.
 - A job waits in the queue: that is normal too. Other projects and CI share it. If `check`
   suggests detaching, cancel nothing: the suggestion is for the next run.
 - mulebox itself could not do what you needed: tell the user what happened, with the

@@ -234,6 +234,10 @@ def test_a_failed_command_says_where_and_why(agent, fake_link):
 
 
 def test_a_job_that_cannot_start_fails_in_environment(agent, fake_link):
+    def offline(paths, name, version):
+        raise OSError("no route")
+
+    agent.install_toolchain = offline
     submit(fake_link, "true", toolchain={"node": "1.2.3"})
     run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     failed = status.failed_step(stages(fake_link))

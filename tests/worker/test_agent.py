@@ -1,5 +1,6 @@
 """The agent loop, one step() at a time: fake clock, fake link, real SubprocessExecutor."""
 
+import threading
 import time
 from dataclasses import replace
 
@@ -193,12 +194,45 @@ def test_coordinator_says_job_is_over(agent, fake_link, clock):
     assert not group_alive(pgid)
 
 
-def test_missing_toolchain_fails_with_a_clear_log(agent, fake_link, paths):
+def fake_install(paths, name, version):
+    (paths.toolchains_dir() / name / version / "bin").mkdir(parents=True)
+    tool = paths.toolchains_dir() / name / version / "bin" / name
+    tool.write_text("#!/bin/sh\necho fake $1\n")
+    tool.chmod(0o755)
+
+
+def test_a_toolchain_that_cannot_install_fails_with_a_clear_log(agent, fake_link, paths):
+    def no_route(paths, name, version):
+        raise OSError("no route to nodejs.org")
+
+    agent.install_toolchain = no_route
     job_id = submit(fake_link, "bash", "-c", "true", toolchain={"node": "22.22.3"})
     run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     assert (result_of(fake_link)["outcome"], result_of(fake_link)["exit_code"]) == ("failed", None)
-    assert "mulebox toolchain install node 22.22.3" in fake_link.log_text()
+    log = fake_link.log_text()
+    assert "no route to nodejs.org" in log and "mulebox toolchain install node 22.22.3" in log
     assert not (paths.jobs / "example-app" / job_id).exists()
+
+
+def test_a_missing_toolchain_installs_itself_and_the_job_runs(agent, fake_link):
+    agent.install_toolchain = fake_install
+    submit(fake_link, "node", "ran", toolchain={"node": "22.22.3"})
+    run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
+    assert result_of(fake_link)["outcome"] == "passed"
+    log = fake_link.log_text()
+    assert "installing node 22.22.3" in log and "fake ran" in log
+
+
+def test_a_job_waiting_for_its_toolchain_can_be_cancelled(agent, fake_link):
+    release = threading.Event()
+    agent.install_toolchain = lambda *args: release.wait(10)
+    submit(fake_link, "bash", "-c", "true", toolchain={"node": "22.22.3"})
+    agent.step(1000.0)
+    assert agent.active
+    fake_link.cancel = True
+    run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
+    release.set()
+    assert result_of(fake_link)["outcome"] == "cancelled"
 
 
 def test_refused_running_update_cancels_without_starting(agent, fake_link, executor):

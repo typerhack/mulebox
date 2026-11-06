@@ -36,11 +36,10 @@ def test_a_capable_online_machine_is_fine():
     assert [f.level for f in found] == ["ok"] and "build-1" in found[0].text
 
 
-def test_a_missing_toolchain_fails_and_lists_what_the_machine_has():
+def test_a_missing_toolchain_is_for_the_first_job_to_install():
     found = doctor.machines(PROJECT, [worker(toolchains={"node": ["20.18.1"]})])
-    assert found[0].level == "fail"
-    assert "node 22.22.3 (has 20.18.1)" in found[0].text
-    assert "mulebox toolchain install node 22.22.3" in found[0].text
+    assert [f.level for f in found] == ["ok", "ok"]
+    assert "node 22.22.3 (has 20.18.1)" in found[1].text and "first job" in found[1].text
 
 
 def test_the_dashboard_is_named_when_the_machine_says_where():
@@ -151,11 +150,11 @@ def test_cli_reports_a_skill_behind_but_does_not_touch_it(fake, make_repo, monke
     assert path.read_text() == "# an older skill\n"
 
 
-def test_cli_missing_toolchain_exits_1_with_alternatives(fake, make_repo, monkeypatch, capsys):
+def test_cli_missing_toolchain_passes_and_names_the_first_job(fake, make_repo, monkeypatch, capsys):
     in_project(make_repo, monkeypatch)
     fake.scenario(machine_version=get_version(), workers=[worker(toolchains={"node": ["20.18.1"]})])
     code, out = run(capsys)
-    assert code == 1 and "has 20.18.1" in out.out
+    assert code == 0 and "has 20.18.1" in out.out and "first job" in out.out
 
 
 def test_cli_json_has_stable_keys(fake, make_repo, monkeypatch, capsys):

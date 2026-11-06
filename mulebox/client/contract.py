@@ -28,7 +28,8 @@ from mulebox.common.status import STAGES
 # 9: no unattended rule: a check_in is a question, `mulebox ok` answers it, a stuck job with no
 #    answer stops, results wait for an absent agent, and `check` does not repeat a tested job
 # 10: jobs of different branches run at once, one branch waits in line, `branch_busy`
-SCHEMA = 10
+# 11: a job installs its own pinned toolchain
+SCHEMA = 11
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -174,8 +175,9 @@ RULES = (
     "waiting in the queue is normal; do not cancel and resubmit to speed it up; if the wait "
     "may be long, run the job detached",
     "do not cancel other people's jobs",
-    "a missing toolchain error lists the versions the machine has: switch to one only if it "
-    "matches the project, otherwise ask the user to install the version the project needs",
+    "a pinned toolchain version installs itself the first time a job needs it, which can take "
+    "minutes; if that fails the job exits 5 and lists the versions the machine has: switch to one "
+    "only if it matches the project, otherwise tell the user why the install failed",
     "show the user a feedback draft and get their approval before mulebox feedback post",
 )
 

@@ -431,7 +431,12 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       Linux. Open: those files really running as jobs, as the build machine was offline.
 - [~] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
       it offers (such as Docker), writes the client config, and proves it with a first job.
-- [ ] M17.3 A job's pinned node and pnpm install themselves on the machine the first time.
+      Built 2026-11-06 (0.60.0): on a real machine an upgrade and its first job passed, a bad host
+      gave advice, running jobs stopped it. Open: a machine with no mulebox on it (M17.5).
+- [x] M17.3 A job's pinned node and pnpm install themselves on the machine the first time. Done
+      2026-11-06 (0.61.0): on a real machine a job installed node in 48 s while a job on the other
+      slot ran in 14 s, the next job started in under 2 s, a cancel took 2 s, a version that does not
+      exist exited 5 with the reason, and pnpm installed once it got the machine's `[job_env]`.
 - [ ] M17.4 The client installs in one line, with no clone. Publishing it is the user's decision.
 - [ ] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures fixed.
 

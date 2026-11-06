@@ -26,6 +26,8 @@ class ActiveJob:
     exit_code: int | None = None
     duration_s: float = 0.0
     cleanup: Any = None  # the background.Task in progress
+    install: Any = None  # the background.Task installing the job's toolchain
+    launch: Any = None  # starts the job once that is done
     cleaned: bool = False
     cleaning_sent: bool = False
     result_sent: bool = False

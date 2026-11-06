@@ -71,10 +71,15 @@ def versions(client: str, facts: Facts) -> list[Finding]:
 
 
 def _missing(worker: Worker, project: ProjectConfig) -> list[str]:
-    """What this worker lacks; toolchains it does not report are not counted."""
+    """What this worker lacks and no job can add."""
     offers = set(worker.get("capabilities") or ())
-    gaps = [f"capability {need}" for need in project.all_needs if need not in offers]
+    return [f"capability {need}" for need in project.all_needs if need not in offers]
+
+
+def _toolchain_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
+    """Versions a job would install first; toolchains it does not report are not counted."""
     tools = worker.get("toolchains")
+    gaps = []
     for name, version in project.toolchain.items() if tools is not None else ():
         have = tools.get(name) or []
         if version not in have:
@@ -88,10 +93,6 @@ def _wanted(project: ProjectConfig) -> str:
 
 
 def _fix(project: ProjectConfig) -> str:
-    tools = "; ".join(f"mulebox toolchain install {n} {v}" for n, v in project.toolchain.items())
-    if tools:
-        return (f"use a listed version if it matches the project, or ask a person to run: {tools}"
-                "; a capability goes into `capabilities` in the machine's node.toml")
     return "a capability goes into `capabilities` in the machine's node.toml"
 
 
@@ -107,6 +108,7 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
         return [Finding(FAIL, "machine", f"no build machine can run this project: {lacking}. "
                         f"{_fix(project)}")]
     usable = [w for w in able if w.get("online")]
+    to_install = sorted({gap for w in usable for gap in _toolchain_gaps(w, project)})
     if not usable:
         names = ", ".join(str(w.get("worker")) for w in able)
         return [Finding(WARN, "machine", f"only offline machines can run this project: {names}; "
@@ -116,7 +118,11 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
         return [Finding(WARN, "machine", f"{', '.join(unsure)} did not report its toolchains (its "
                         f"mulebox is older), so {_wanted(project)} is unconfirmed")]
     names = ", ".join(str(w.get("worker")) for w in usable)
-    return [Finding(OK, "machine", f"{names} offers what this project needs: {_wanted(project)}")]
+    found = [Finding(OK, "machine", f"{names} offers what this project needs: {_wanted(project)}")]
+    if to_install:
+        found.append(Finding(OK, "machine", f"{'; '.join(to_install)}: the first job installs it, "
+                             "once, which can take minutes"))
+    return found
 
 
 def inventory(workers: list[Worker]) -> list[Finding]:

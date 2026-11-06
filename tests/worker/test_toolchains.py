@@ -126,3 +126,34 @@ def test_node_arch():
     assert toolchains.node_arch("aarch64") == "arm64"
     with pytest.raises(ToolchainError):
         toolchains.node_arch("sparc")
+
+
+def test_missing_is_what_is_not_there_node_first(paths):
+    wanted = {"pnpm": "11.22.0", "node": "22.22.3"}
+    assert toolchains.missing(paths, wanted) == [("node", "22.22.3"), ("pnpm", "11.22.0")]
+    (paths.toolchains_dir() / "node" / "22.22.3" / "bin").mkdir(parents=True)
+    assert toolchains.missing(paths, wanted) == [("pnpm", "11.22.0")]
+
+
+def test_a_failed_install_says_why_and_what_is_here(paths):
+    (paths.toolchains_dir() / "node" / "20.18.1" / "bin").mkdir(parents=True)
+
+    def offline(paths, name, version):
+        raise OSError("no route")
+
+    with pytest.raises(toolchains.ToolchainError, match="no route.*20.18.1"):
+        toolchains.install_missing(paths, [("node", "22.22.3")], offline)
+
+
+def test_a_machines_job_env_reaches_the_install(paths):
+    (paths.toolchains_dir() / "node" / "22.22.3" / "bin").mkdir(parents=True)
+    seen = {}
+
+    def run(argv, env):
+        seen.update(env)
+        return subprocess.CompletedProcess(argv, 1, "", "stop here")
+
+    with pytest.raises(toolchains.ToolchainError):
+        toolchains.install(paths, "pnpm", "11.22.0", run=run,
+                           machine_env={"NODE_OPTIONS": "--example"})
+    assert seen["NODE_OPTIONS"] == "--example"

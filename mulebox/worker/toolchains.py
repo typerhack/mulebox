@@ -75,6 +75,13 @@ def path_for(paths: NodePaths, toolchain: Mapping[str, str]) -> list[Path]:
     return bins
 
 
+def missing(paths: NodePaths, toolchain: Mapping[str, str]) -> list[tuple[str, str]]:
+    """What a job's toolchain map still needs, node first: pnpm installs through it."""
+    gaps = [(name, version) for name, version in toolchain.items()
+            if not (toolchain_dir(paths, name, version) / "bin").is_dir()]
+    return sorted(gaps, key=lambda gap: gap[0] != "node")
+
+
 def _not_installed(paths: NodePaths, name: str, version: str) -> str:
     """What is missing, what is there instead, and how to get what was asked for."""
     have = [v for n, v in installed(paths) if n == name]
@@ -129,14 +136,16 @@ def _install_node(paths: NodePaths, version: str, tmp: Path, fetch: Fetch, arch:
     return extract_tar(tarball, tmp / "tree", paths.roots, strip_prefix=stem)
 
 
-def _install_pnpm(paths: NodePaths, version: str, tmp: Path, run: Run) -> Path:
+def _install_pnpm(paths: NodePaths, version: str, tmp: Path, run: Run,
+                  machine_env: Mapping[str, str]) -> Path:
     nodes = [v for n, v in installed(paths) if n == "node"]
     if not nodes:
         raise ToolchainError("pnpm needs a node toolchain; run "
                              "`mulebox toolchain install node <version>` first")
     node_bin = toolchain_dir(paths, "node", nodes[-1]) / "bin"
     tree = ensure_dir(tmp / "tree", paths.roots)
-    env = {**os.environ, "PATH": os.pathsep.join([str(node_bin), os.environ.get("PATH", "")])}
+    env = {**os.environ, **machine_env,
+           "PATH": os.pathsep.join([str(node_bin), os.environ.get("PATH", "")])}
     argv = [str(node_bin / "npm"), "install", "-g", "--prefix", str(tree), f"pnpm@{version}"]
     proc = run(argv, env)
     if proc.returncode != 0:
@@ -146,9 +155,23 @@ def _install_pnpm(paths: NodePaths, version: str, tmp: Path, run: Run) -> Path:
     return tree
 
 
+def install_missing(paths: NodePaths, gaps: list[tuple[str, str]],
+                    install_one: Callable[[NodePaths, str, str], Path]) -> None:
+    """A job's first use of a version: install it, or say why not and what is here instead."""
+    for name, version in gaps:
+        try:
+            install_one(paths, name, version)
+        except (MuleboxError, OSError) as exc:
+            raise ToolchainError(f"could not install {name} {version}: {exc}. "
+                                 f"{_not_installed(paths, name, version)}") from exc
+
+
 def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fetch,
-            run: Run = run_command, arch: str | None = None) -> Path:
-    """Install a toolchain; return its folder. Already installed: return it unchanged."""
+            run: Run = run_command, arch: str | None = None,
+            machine_env: Mapping[str, str] | None = None) -> Path:
+    """Install a toolchain; return its folder. Already installed: return it unchanged.
+    `machine_env`: node.toml's `[job_env]`, as what a machine's network needs, such as
+    `NODE_OPTIONS`, a job's installs need as well."""
     final = toolchain_dir(paths, name, version)
     if (final / "bin").is_dir():
         return final
@@ -158,10 +181,14 @@ def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fe
         if name == "node":
             tree = _install_node(paths, version, tmp, fetch, arch or node_arch())
         else:
-            tree = _install_pnpm(paths, version, tmp, run)
+            tree = _install_pnpm(paths, version, tmp, run, machine_env or {})
         if final.exists():  # a leftover without bin/ from an older, broken install
             remove_tree(final, paths.roots)
-        os.rename(tree, final)
+        try:
+            os.rename(tree, final)
+        except OSError:
+            if not (final / "bin").is_dir():  # else another job's install got here first
+                raise
     finally:
         remove_tree(tmp, paths.roots)
     return final

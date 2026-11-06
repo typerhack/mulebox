@@ -34,7 +34,7 @@ shell's, so tools from a shell profile (`nvm`, `~/.local/bin`) are not there.
 
 | The project uses | Do this |
 | --- | --- |
-| Node or pnpm | Pin exact versions under `toolchain:`. They are installed once per version, on the build machine: `ssh build-1 '~/.mulebox/bin/mulebox toolchain install node 22.22.3'`, then the same with `pnpm 11.22.0`. Node first: pnpm is installed with it |
+| Node or pnpm | Pin exact versions under `toolchain:`. The first job that needs one installs it on the build machine, once. |
 | Docker containers, a database, or a language with no toolchain here | Use `compose:` ([agents.md, 2a](agents.md#2a-projects-that-need-containers-compose)). The machine must offer `docker`: [install.md, Node config](install.md#node-config) |
 | Python, or anything else already installed for all users | Nothing: jobs find it on the machine. Make a virtual environment in `setup` |
 
