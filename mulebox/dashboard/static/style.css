@@ -260,6 +260,9 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 .job-result[data-tone="warn"] strong, .job-result[data-tone="warn"] .result-icon { color: var(--warn); fill: var(--warn); }
 .job-result[data-tone="active"] strong, .job-result[data-tone="active"] .result-icon { color: var(--active); fill: var(--active); }
 .result-icon path { stroke: none; }
+.job-facts { margin: 0 0 6px; }
+.job-facts summary { color: var(--ink-soft); cursor: pointer; }
+.job-facts .facts { margin: 4px 0 0; }
 .which-run { margin: 0 0 6px; overflow-wrap: anywhere; }
 .going-back { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 6px; }
 .log-latest, .going-back button {

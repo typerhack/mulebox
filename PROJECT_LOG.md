@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.2 - 2026-11-06 - patch
+- A job's facts fold away under "Job details", closed by default, so a long command no longer stands between the stages and the log.
+
 ## 0.66.1 - 2026-11-06 - patch
 - The failure summary keeps every failed part of a gate: compiler, type and lint errors now read as failures, a line naming a failed part goes before the details, and forty errors in one part cannot hide another. Found by the first agent trial, where a type error was missing from the summary. Roadmap: M19, what the trial found.
 

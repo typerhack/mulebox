@@ -120,7 +120,7 @@ export function jobView(box, jobId) {
       run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
       aloneNote(job),
       stages,
-      info,
+      el("details", { class: "job-facts" }, el("summary", { text: "Job details" }), info),
       el("div", { class: "log-head" }, el("span", { text: "log" }), note, quiet, latestOut, link),
       pre,
     ].filter(Boolean);
