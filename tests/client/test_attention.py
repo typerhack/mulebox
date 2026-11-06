@@ -161,7 +161,7 @@ def test_a_job_that_finished_away_is_told_by_the_next_command(local, in_project,
     FakeWorker(local.store, local.staging, exit_code=0).run_next()
     assert cli.main(["projects"]) == 0
     seen = capsys.readouterr().err
-    assert f"job {job_id}" in seen and "while you were away" in seen
+    assert f"job {job_id}" in seen and "while you were away" in seen and "on commit" in seen
     assert cli.main(["projects"]) == 0
     assert "while you were away" not in capsys.readouterr().err
 

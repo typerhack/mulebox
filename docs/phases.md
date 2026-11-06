@@ -60,8 +60,8 @@ queue and returns the same result as running it locally.
       2026-11-04 (0.8.0, plain HTTP 0.9.0): on a real machine, sign-in, live events, session
       end and sign-out work in real Chrome; outside addresses are stopped by the firewall
       and by the app's own check; the tunnel still works. The password is optional since
-      0.14.0, off on the author's machine. Open: used from a real phone, and a reboot and a
-      Wi-Fi drop with `lan` on. Not a priority, the user's call on 2026-11-06.
+      0.14.0, off on the author's machine. Open: a reboot and a Wi-Fi drop with `lan` on. Not a
+      priority, the user's call on 2026-11-06. Phone-size view: see M2.7.
 - [~] M2.5 Optional cancel button with its own protection. Built 2026-11-05 (0.53.0): off by default,
       only for a signed-in session on the lan address, through `mulebox rpc` like `mulebox cancel`,
       with Origin and a session token on top of SameSite. In real Edge on localhost with a stand-in
@@ -72,13 +72,14 @@ queue and returns the same result as running it locally.
       showed busy with nothing free for its whole run; a frozen worker showed offline in 14 s
       and came back in 2 s, and its job still passed. Only one real worker so far; more
       than one is covered by tests.
-- [~] M2.7 Monitor redesign: boxed live view with meters and graphs, one theme, icon switch.
+- [x] M2.7 Monitor redesign: boxed live view with meters and graphs, one theme, icon switch.
       Built 2026-11-04 (0.25.0): in real Microsoft Edge the theme switch and its memory, the
       queue, job and history views work, with no sideways scroll in a 390 px frame; the page
       fits without scrolling at 1440x900 and 1280x800 in headless Chrome. Deployed on a real
       machine: a compose job at full load moved the graph and meters live in Edge, with no
-      console errors. Open: a real phone.
-- [~] M2.8 Jobs box redesign: tabs (Queue, Failed, Passed, Recent, with live counts,
+      console errors. Done 2026-11-06 (0.55.2): at phone size (390x844, the user's choice over a real
+      phone) in Edge on the deployed dashboard, a live job and its question, no sideways scroll.
+- [x] M2.8 Jobs box redesign: tabs (Queue, Failed, Passed, Recent, with live counts,
       remembered per browser) and the queue by machine: a lane per machine with what it
       runs and what waits for it, waiting jobs in exactly one place (a lane only when that
       machine is the one place the job can run, else one shared list, else stuck with the
@@ -88,7 +89,7 @@ queue and returns the same result as running it locally.
       one, three (one offline) and no machines, stuck and pinned jobs, at 1440x900,
       1280x800 and 390 px in both themes, the page fits and nothing scrolls sideways.
       Reviewed 2026-11-05 (0.51.3) in real Edge on a real machine: lanes, tabs, a live job, and no
-      sideways scroll at 544 px. Open: a real phone.
+      sideways scroll at 544 px; 390 px on 2026-11-06 (0.55.2). The redesign itself is M14.1.
 
 ## M3: GitHub Actions runners
 - [x] M3.1 Runner install per repository on a worker, as a service, with labels (2026-11-03)
@@ -386,15 +387,18 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 
 ## M18: Jobs that respect the agent's time
 From the user on 2026-11-06. Comes first: mulebox must beat an agent running directly on the machine.
-Measured by that comparison on real jobs. Open on all of it: a real machine, as the build machine
-was offline.
-- [~] M18.1 No unattended rule. A check-in is a question, `mulebox ok` answers it, a working job always
-      finishes, and only a stuck job with no answer stops. Replaces M11.2 to M11.5. Built 2026-11-06
-      (0.55.0), tested with the real coordinator and client code.
-- [~] M18.2 Results wait for an agent that went away, and its next command says so. Built 2026-11-06
-      (0.55.0).
-- [~] M18.3 `mulebox check` does not repeat a job on the same files: it gives the result or joins the
-      running job, and `--again` forces a run. Replaces M16.4. Built 2026-11-06 (0.55.0).
+Measured by that comparison on real jobs.
+- [x] M18.1 No unattended rule. A check-in is a question, `mulebox ok` answers it, a working job always
+      finishes, and only a stuck job with no answer stops. Replaces M11.2 to M11.5. Done 2026-11-06
+      (0.55.2): on a real machine, a job's client killed mid-queue and the job finished; `mulebox ok`
+      cleared a question; a hung job with `timeout_min: 1` was asked at 1 min and stopped at 2m 04s,
+      exit 76, nothing left behind.
+- [x] M18.2 Results wait for an agent that went away, and its next command says so, once. Done
+      2026-11-06 (0.55.2): a real job, told once by the next command.
+- [x] M18.3 `mulebox check` does not repeat a job on the same files: it gives the result or joins the
+      running job, and `--again` forces a run. Replaces M16.4. Done 2026-11-06
+      (0.55.2): real jobs, a repeat in 0.7 s, a failure kept exit 7, `--again` and a changed file ran,
+      and a second agent joined the running job.
 - [~] M18.4 Agents choose how to wait: follow, be pinged, or check later. In the docs, the contract
       and the skill 2026-11-06 (0.55.0). Open: an agent using them in a real session.
 - [ ] M18.5 Project homes in git: one repository per project on the machine, one worktree per

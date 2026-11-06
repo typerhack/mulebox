@@ -8,8 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
-## 0.55.1 - 2026-11-06 - patch
+## 0.55.2 - 2026-11-06 - patch
 - A stuck job's stop follows the job's own `timeout_min`, not a fixed 30 minutes, so `timeout_min` is the one setting a project needs.
+- A job's result names its commit, so an agent told a result can see what it was for. Roadmap: M18.1 to M18.3, M2.7 and M2.8 closed after real runs.
 
 ## 0.55.0 - 2026-11-06 - minor
 - No more unattended rule: a long job asks its agent, `mulebox ok` answers, a working job always finishes, and only a stuck job with no answer stops. A job also goes on when its client goes away. Store schema 9, contract schema 9.
