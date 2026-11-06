@@ -401,10 +401,12 @@ Measured by that comparison on real jobs.
       and a second agent joined the running job.
 - [~] M18.4 Agents choose how to wait: follow, be pinged, or check later. In the docs, the contract
       and the skill 2026-11-06 (0.55.0). Open: an agent using them in a real session.
-- [ ] M18.5 Project homes in git: one repository per project on the machine, one worktree per
+- [~] M18.5 Project homes in git: one repository per project on the machine, one worktree per
       branch at `~/.mulebox/projects/<project>/`, set up once and kept. A job sends only what changed
       and installs only when the lockfile or setup changes. Measured: worktree add 0.2 s and a
-      warm pnpm install 2.1 s on the build machine.
+      warm pnpm install 2.1 s on the build machine. Built 2026-11-06 (0.56.0), with tests: one job
+      per branch, `setup` skipped when nothing it depends on changed. Open: the client still
+      uploads every file, and a real job against an agent on the machine.
 - [ ] M18.6 Different branches run at once, two jobs on one branch wait in line. Needs more than one
       slot on a machine, which is a default of one today.
 - [ ] M18.7 `mulebox projects` shows each project's folder and size; `project clean` and `project

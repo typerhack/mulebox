@@ -26,8 +26,8 @@ laptop (agents edit code)              build machine(s) on your LAN
 mulebox check  --SSH-->  coordinator: one queue, history, web dashboard
 mulebox queue  --SSH-->        |
                                v
-                         worker(s): run jobs in isolated folders, with time limits,
-                         warm caches, and cleanup; optional GitHub Actions runners
+                         worker(s): run jobs in one kept folder per project and branch,
+                         with time limits, warm caches, and cleanup; optional GitHub Actions runners
 ```
 
 - **One command for agents**: `mulebox check` in any project folder runs that project's
@@ -46,6 +46,10 @@ mulebox queue  --SSH-->        |
 - **Long jobs ask, they do not die**: a long job asks its agent if all is well, and the agent
   answers `mulebox ok` or `mulebox cancel`. Only a job that is really stuck, with no answer, stops.
 - **Agents choose how to wait**: follow the job, be pinged when it ends, or check back later.
+- **A project is set up once**: each project has one folder on the build machine, with a git
+  worktree per branch, and installs stay there. A job writes only the files that changed and runs
+  `setup` only when what it depends on changed. Compose jobs still run `setup`, in new containers.
+- **One job per branch at a time**: a second job of the same branch waits for the first.
 - **No repeat runs**: on exactly the same files, `mulebox check` gives the earlier result, or joins
   the same job if it is running, and says so. `--again` forces a run.
 

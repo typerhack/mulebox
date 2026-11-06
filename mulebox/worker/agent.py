@@ -26,10 +26,10 @@ from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.common.safepath import remove_tree
-from mulebox.common.status import CLEANUP, ENVIRONMENT, PREPARE
+from mulebox.common.safepath import RemovalDenied, remove_tree
+from mulebox.common.status import CLEANUP, COMMAND, ENVIRONMENT, PREPARE
 from mulebox.worker import activity, advert, background, job_meter, pull_failure, runspec
-from mulebox.worker import toolchains, workspace
+from mulebox.worker import project_home, reclaim, toolchains, workspace
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -148,17 +148,56 @@ class Agent:
             self._end(job, Outcome.FAILED, None, now)
 
     def _prepare(self, job: ActiveJob, claim: dict[str, Any], log_path: Path) -> RunSpec:
-        snapshot = workspace.job_dir(self.paths, job.project, job.job_id) / "snapshot.tar.gz"
+        scratch = workspace.job_dir(self.paths, job.project, job.job_id)
+        snapshot = scratch / "snapshot.tar.gz"
         self.link.fetch_snapshot(job.job_id, snapshot)
-        src = workspace.prepare(self.paths, job.project, job.job_id, snapshot)
+        job.branch = claim.get("branch")
+        synced = self._into_home(job, snapshot)
+        src = job.tree = synced.tree
         remove_tree(snapshot, self.paths.roots)
+        job.tailer.note(f"mulebox: project folder {src}, {synced.changed} files changed\n")
+        claim = self._with_setup(job, claim, synced)
         job.steps.begin(ENVIRONMENT, self.clock())
         bins = toolchains.path_for(self.paths, claim.get("toolchain") or {})
         spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins,
-                                    job.steps.marker)
+                                    job.steps.marker, scratch)
         for note in notes:
             job.tailer.note(f"mulebox: {note}\n")
         return spec
+
+    def _into_home(self, job: ActiveJob, snapshot: Path) -> project_home.Synced:
+        """The job's files into the project's worktree; a crash can leave root's files there."""
+        branch = job.branch
+        try:
+            return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
+        except (RemovalDenied, PermissionError):
+            if self.docker is None:
+                raise
+        tree = project_home.tree_for(self.paths, job.project, branch)
+        reclaim.reclaim_tree(self.docker, self.paths, tree, job.job_id, self.node.name)
+        return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
+
+    def _with_setup(self, job: ActiveJob, claim: dict[str, Any], synced: project_home.Synced
+                    ) -> dict[str, Any]:
+        """`claim` without its `setup` when nothing it depends on changed."""
+        if not claim.get("setup") or job.uses_docker:
+            return claim
+        key = project_home.setup_key(synced.tree, claim)
+        if (not synced.lost
+                and project_home.setup_is_current(self.paths, job.project, job.branch, key)):
+            job.tailer.note("mulebox: setup skipped: nothing it depends on changed\n")
+            return {**claim, "setup": None}
+        project_home.forget_setup(self.paths, job.project, job.branch)
+        job.setup_key = key
+        return claim
+
+    def _keep_setup(self, job: ActiveJob) -> None:
+        if job.setup_key is None or not job.steps.reached(COMMAND):
+            return
+        try:
+            project_home.remember_setup(self.paths, job.project, job.branch, job.setup_key)
+        except (MuleboxError, OSError) as exc:  # the next job only runs it again
+            LOG.warning("could not record the setup of %s: %s", job.job_id, exc)
 
     def _tend(self, job: ActiveJob, now: float) -> None:
         self.meter.update(now)
@@ -213,6 +252,7 @@ class Agent:
         exit_code = pull_failure.checked(outcome, exit_code, job.tailer)
         job.outcome, job.exit_code = outcome, exit_code
         job.steps.close(exit_code, now, ended_badly(outcome))
+        self._keep_setup(job)
         job.steps.begin(CLEANUP, now)
         self.active.pop(job.job_id, None)
         self.finishing.append(job)
@@ -226,7 +266,7 @@ class Agent:
 
     def _clean(self, job: ActiveJob) -> None:
         if self.paths.is_safe_job(job.project, job.job_id):
-            self.cleaner.clean(job.project, job.job_id, job.uses_docker)
+            self.cleaner.clean(job.project, job.job_id, job.uses_docker, job.tree)
 
     def _cleanup(self, job: ActiveJob) -> None:
         """Start the job's cleanup, or take its outcome; a failed one starts again next step."""

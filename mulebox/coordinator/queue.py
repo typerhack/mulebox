@@ -49,11 +49,13 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         if free < 1 or active_count(conn) >= cluster_slots:
             return None
         blocker = oldest_reservation(conn, worker)
+        busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
+                if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         for job in st.select_jobs(conn, "state = ? AND kind = ?",
                                   (JobState.QUEUED.value, JOB_KIND), _QUEUE_ORDER):
             if blocker is not None and _key(blocker) < _key(job):
                 return None  # FIFO: the older reservation goes first
-            if set(job["needs"]) <= have:
+            if set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy:
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,
@@ -122,6 +124,7 @@ def listing(conn: sqlite3.Connection, finished_limit: int = DEFAULT_FINISHED_LIM
 
 def claim_body(job: dict[str, Any]) -> dict[str, Any]:
     """claim_ok body (docs/interfaces-m1.md, Wire usage)."""
-    names = ("job_id", "attempt_id", "project", "job", "argv", "fingerprint", "base_commit",
+    names = ("job_id", "attempt_id", "project", "job", "branch", "argv", "fingerprint",
+             "base_commit",
              "timeout_min", "setup", "toolchain", "needs", "env", "env_order")
     return {**{name: job[name] for name in names}, "limits": LIMITS_BY_COORDINATOR}

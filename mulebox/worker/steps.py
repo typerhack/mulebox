@@ -99,6 +99,10 @@ class StepTracker:
             row["bytes_downloaded"] = (row["bytes_downloaded"] or 0) + count
             self._changed.add(row["seq"])
 
+    def reached(self, stage: str) -> bool:
+        """Whether the job got as far as `stage`."""
+        return any(row["stage"] == stage for row in self._rows)
+
     @property
     def stage(self) -> str | None:
         """The stage in progress, as far as this tracker knows."""

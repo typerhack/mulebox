@@ -26,11 +26,15 @@ class Cleaner:
     def __init__(self, paths: NodePaths, worker: str, docker: Docker | None = None) -> None:
         self.paths, self.worker, self.docker = paths, worker, docker
 
-    def clean(self, project: str, job_id: str, uses_docker: bool) -> None:
-        """Remove the job's Docker resources and its folder; MuleboxError means try again."""
+    def clean(self, project: str, job_id: str, uses_docker: bool,
+              tree: Path | None = None) -> None:
+        """Remove the job's Docker resources and its folder; MuleboxError means try again. The
+        project's worktree stays, and containers' files in it become the worker's user's."""
         if uses_docker and self.docker is not None:
             docker_cleanup.teardown(self.docker, job_id)
             self._give_back_caches(project, job_id)
+            if tree is not None:
+                self._give_back_tree(tree, job_id)
         self._remove_folder(project, job_id)
 
     def _give_back_caches(self, project: str, job_id: str) -> None:
@@ -38,6 +42,12 @@ class Cleaner:
             caches.give_back(self.docker, self.paths, project, job_id, self.worker)
         except (MuleboxError, OSError) as exc:
             LOG.warning("could not give back the package caches of %s: %s", project, exc)
+
+    def _give_back_tree(self, tree: Path, job_id: str) -> None:
+        try:
+            reclaim.reclaim_tree(self.docker, self.paths, tree, job_id, self.worker)
+        except (MuleboxError, OSError) as exc:  # the next job's sync tries again
+            LOG.warning("could not give back %s: %s", tree, exc)
 
     def _remove_folder(self, project: str, job_id: str) -> None:
         try:

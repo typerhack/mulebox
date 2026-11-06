@@ -24,7 +24,10 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 | `<staging>/state/mulebox.db` | coordinator | SQLite store |
 | `<staging>/uploads/<job_id>.tar.gz` | coordinator | snapshot; removed when the job finishes |
 | `<staging>/logs/<job_id>.log` | coordinator | redacted job log, removed after `log_days` (interfaces-m4.md) |
-| `<jobs>/<project>/<job_id>/src/` | worker | extracted workspace |
+| `<projects>/<project>/repo.git` | worker | the project's repository on this machine |
+| `<projects>/<project>/trees/<branch>-<hash>/` | worker | one worktree per branch, kept between jobs: where jobs run |
+| `<projects>/<project>/state/<branch>-<hash>.setup` | worker | what the last finished `setup` depended on |
+| `<jobs>/<project>/<job_id>/` | worker | the job's scratch files, removed after it |
 | `<jobs>/<project>/<job_id>/out.log` | worker | raw unit output (worker redacts before sending) |
 | `<cache>/toolchains/<name>/<version>/bin` | worker | pinned toolchains, prepended to PATH |
 | `<cache>/packages/<project>/<tool>` | jobs that ask | package caches (interfaces-m4.md) |
@@ -144,10 +147,12 @@ Remote command: client and ssh link run `[remote_bin, "rpc"]` via `common.ssh`. 
   `fetch_snapshot(job_id, dest: Path) -> None`. `LocalLink(store, staging)` calls
   `coordinator.api.handle` (the only worker -> coordinator import); `SSHLink(target,
   remote_bin)` uses `common.ssh`.
-- `workspace.py`: `prepare(roots, project, job_id, snapshot: Path) -> Path` extracts with
-  `tarfile` `filter="data"` into `<jobs>/<project>/<job_id>/src`, then `git init -q`, `git
-  add -A`, one commit (author `mulebox`), so git-based tools work. `cleanup(...)` removes
-  the job folder through safepath.
+- `workspace.py`: `job_dir(...)`, `cleanup(...)` (the job's scratch folder, through safepath)
+  and `git(cwd, *args)`, with fixed settings so no hook of a project runs.
+- `project_home.py`: `prepare(paths, project, branch, job_id, snapshot) -> Synced(tree, changed,
+  lost)` extracts with `tarfile` `filter="data"`, then syncs the branch's worktree and commits it
+  (author `mulebox`), so git-based tools work. `setup_key`, `setup_is_current`, `remember_setup`
+  and `forget_setup` decide whether `setup` runs.
 - `executor.py`: `Executor` protocol: `start(spec) -> handle`, `poll(handle) -> int | None`
   (exit code when done), `stop(handle)`, `list_orphans() -> list[str]`, `kill(name)`.
   `RunSpec(name, argv, cwd, env, log_path, timeout_s)`.

@@ -1,4 +1,4 @@
-"""Named worker roots (jobs, cache, staging, runners) next to the checked `Roots`.
+"""Named worker roots (jobs, cache, staging, runners, projects) next to the checked `Roots`.
 
 `safepath.Roots` is an unnamed tuple of resolved folders, and `ensure_dir` only accepts
 paths spelled under those resolved folders. The worker needs to know which root is which,
@@ -24,14 +24,21 @@ class NodePaths:
     cache: Path
     staging: Path
     runners: Path
+    projects: Path
 
     @classmethod
     def from_config(cls, roots: dict[str, str]) -> NodePaths:
         """Build from NodeConfig.roots; every root is checked by `Roots.from_config`."""
+        if "projects" not in roots:  # a machine set up before there were project homes
+            roots = {**roots, "projects": str(Path(roots["jobs"]).parent / "projects")}
+            os.makedirs(roots["projects"], exist_ok=True)
         checked = Roots.from_config(roots)
         named = {key: Path(os.path.realpath(roots[key])) for key in
-                 ("jobs", "cache", "staging", "runners")}
+                 ("jobs", "cache", "staging", "runners", "projects")}
         return cls(roots=checked, **named)
+
+    def project_home(self, project: str) -> Path:
+        return self.projects / _project_name(project)
 
     def project_dir(self, project: str) -> Path:
         return self.jobs / _project_name(project)

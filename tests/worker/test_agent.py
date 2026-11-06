@@ -73,7 +73,9 @@ def test_passed_job(agent, fake_link, paths):
     result = result_of(fake_link)
     assert (result["outcome"], result["exit_code"]) == ("passed", 0)
     assert result["job_id"] == job_id and result["attempt_id"]
-    assert fake_link.log_text() == "setup\nhello\nmulebox\nok\n"
+    log = fake_link.log_text().splitlines()
+    assert "1 files" not in log[0] and log[0].startswith("mulebox: project folder ")
+    assert log[1:] == ["setup", "hello", "mulebox", "mulebox", "ok"]  # with the empty first commit
     states = [m.body["state"] for m in fake_link.of_type(MessageType.JOB_UPDATE)]
     assert states == ["running", "cleaning"]
     kinds = [m.type for m in fake_link.sent if m.type is not MessageType.CLAIM]
@@ -232,7 +234,7 @@ def test_unreachable_during_snapshot_fetch(agent, fake_link, paths):
 
 def test_recovery_removes_orphans_and_leftovers(agent, executor, paths, snapshot, tmp_path):
     leftover = new_id("job")
-    workspace.prepare(paths, "example-app", leftover, snapshot)
+    workspace.job_dir(paths, "example-app", leftover)
     spec = RunSpec(unit_name(new_id("job")), ("sleep", "300"), tmp_path, {},
                    tmp_path / "orphan.log", 300)
     orphan = executor.start(spec)
@@ -296,3 +298,46 @@ def test_a_worker_back_after_the_coordinator_finished_its_job_leaves_nothing(
     assert not group_alive(pgid)
     assert not paths.job_dir(project, job_id).exists()
     assert not agent.ports._held
+
+
+def run_job(agent, link, *argv, **kwargs):
+    count = len(link.of_type(MessageType.RESULT))
+    submit(link, *argv, **{"toolchain": {}, **kwargs})
+    run_until(agent, lambda: len(link.of_type(MessageType.RESULT)) > count)
+    return link.of_type(MessageType.RESULT)[-1].body
+
+
+SETUP = "echo x > ignored.txt"
+
+
+def test_a_setup_runs_once_and_what_git_ignores_stays(agent, fake_link, ignored_snapshot):
+    first = run_job(agent, fake_link, "bash", "-c", "cat ignored.txt", setup=SETUP)
+    second = run_job(agent, fake_link, "bash", "-c", "cat ignored.txt", setup=SETUP)
+    assert (first["outcome"], second["outcome"]) == ("passed", "passed")
+    assert fake_link.log_text().count("setup skipped") == 1
+
+
+def test_a_setup_runs_again_if_what_it_made_was_not_ignored(agent, fake_link):
+    first = run_job(agent, fake_link, "bash", "-c", "cat made.txt", setup="echo x > made.txt")
+    second = run_job(agent, fake_link, "bash", "-c", "cat made.txt", setup="echo x > made.txt")
+    assert (first["outcome"], second["outcome"]) == ("passed", "passed")
+    assert "setup skipped" not in fake_link.log_text()
+
+
+def test_a_failed_setup_runs_again(agent, fake_link):
+    run_job(agent, fake_link, "true", setup="exit 3")
+    run_job(agent, fake_link, "true", setup="exit 3")
+    assert "setup skipped" not in fake_link.log_text()
+
+
+def test_a_failed_check_after_a_good_setup_keeps_the_setup(agent, fake_link):
+    run_job(agent, fake_link, "false", setup="true")
+    run_job(agent, fake_link, "true", setup="true")
+    assert fake_link.log_text().count("setup skipped") == 1
+
+
+def test_the_job_folder_goes_and_the_project_stays(agent, fake_link, paths):
+    run_job(agent, fake_link, "true", branch="main")
+    run_until(agent, lambda: not agent.finishing)
+    assert not list((paths.jobs / "example-app").iterdir())
+    assert list((paths.projects / "example-app" / "trees").iterdir())

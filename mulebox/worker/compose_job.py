@@ -38,7 +38,7 @@ from mulebox.worker.ports import PortPool
 from mulebox.worker.reclaim import HELPER_IMAGE
 from mulebox.worker.steps import END, SHELL_NAME
 
-GENERATED_FILE = "compose.mulebox.yml"  # beside src/, so it is not in the project's checkout
+GENERATED_FILE = "compose.mulebox.yml"  # in the job's folder, not in the project's checkout
 LOG_LINES = 50
 CONFIG_TIMEOUT_S = 30.0  # this runs in the worker's loop: twice this stays inside a lease
 
@@ -95,13 +95,15 @@ def _port_notes(ports: Sequence[Port], assigned: Mapping[str, int]) -> list[str]
 
 def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str, src: Path,
             project_env: Mapping[str, str], build_env: EnvBuilder,
-            shared: Sequence[Path] = (), machine_names: Collection[str] = ()) -> ComposeJob:
+            shared: Sequence[Path] = (), machine_names: Collection[str] = (),
+            scratch: Path | None = None) -> ComposeJob:
     """Write the job's compose file; `build_env(extra)` makes the job's environment. `shared`:
     the job's package cache folders, which its services may mount. `machine_names`: the names
-    in the machine's `job_env`, which go to services with the value this job has for them."""
+    in the machine's `job_env`, which go to services with the value this job has for them.
+    `scratch`: the job's own folder, for the generated file; default: beside `src`."""
     project = compose.project_name(job_id)
     names = compose.split_files(files)
-    generated = src.parent / GENERATED_FILE
+    generated = (scratch or src.parent) / GENERATED_FILE
     if ":" in str(generated):
         raise ComposeError(f"{generated} contains ':', which COMPOSE_FILE cannot hold")
     fixed = {"COMPOSE_PROJECT_NAME": project, "COMPOSE_FILE": compose.join_files(names),

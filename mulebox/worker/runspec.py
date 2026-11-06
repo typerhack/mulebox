@@ -79,8 +79,10 @@ def _runtime_limit(claim: dict[str, Any]) -> float | None:
 
 
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,
-          bins: Sequence[Path], marker: str = "") -> tuple[RunSpec, tuple[str, ...]]:
-    """(the run spec, notes for the job's log). `marker`: of the job's StepTracker."""
+          bins: Sequence[Path], marker: str = "", scratch: Path | None = None
+          ) -> tuple[RunSpec, tuple[str, ...]]:
+    """(the run spec, notes for the job's log). `marker`: of the job's StepTracker; `scratch`:
+    the job's own folder, for what must not land in the project's."""
     values = jobspec.in_file_order(claim.get("env") or {}, claim.get("env_order") or ())
     files = values.pop(compose.COMPOSE_FILES_KEY, None)
     names = values.pop(config_jobs.HOST_PORTS_KEY, None)
@@ -102,7 +104,7 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
             raise ExecutorError("this worker has no Docker to run a compose: project")
         ready = compose_job.prepare(machine.docker, machine.ports, job_id, machine.name, files,
                                     src, values, environment, cached.folders,
-                                    tuple(machine.job_env))
+                                    tuple(machine.job_env), scratch)
         first, extra, notes = ready.script, ready.extra_env, ready.notes
     spec = RunSpec(name=unit_name(job_id),
                    argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first,

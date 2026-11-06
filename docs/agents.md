@@ -236,7 +236,12 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      message listing the versions it has and naming `mulebox toolchain install <name>
      <version>`. Switch to a listed version only if it matches the project; otherwise ask
      the user to run the install.
-   - `setup` runs before every job in the same shell; keep it to dependency install.
+   - `setup` runs before a job in the same shell; keep it to dependency install. It is
+     skipped when nothing it depends on changed: its text, the toolchain, the env and the
+     lockfiles at the root or one folder down. Its output must be something git ignores; if it
+     is not, the next job loses it and `setup` runs again. A compose job always runs `setup`.
+   - **A branch keeps its folder.** Jobs of a branch run in one folder on the build machine, with
+     the project's ignored files kept between them. Only one job of a branch runs at a time.
    - **A job can differ from the defaults.** Instead of a command, give it a mapping; a job
      left as a plain command keeps the top-level `setup` and `compose:`.
 
@@ -289,8 +294,8 @@ and tell the user instead of running the command locally. `mulebox contract` pri
 this project works with mulebox.
 ```
 
-   Keep checks that read git history out of `jobs:`. A job runs on a snapshot of files with no
-   `.git` folder, so `commitlint`, `git diff origin/main...`, "changed files only" scripts and
+   Keep checks that read git history out of `jobs:`. A job runs on a snapshot of files in a
+   repository of mulebox's own, without your project's history, so `commitlint`, `git diff origin/main...`, "changed files only" scripts and
    anything else that asks git stay local, where the history is. They are light anyway.
 5. **Commit** `.mulebox.yml` and the rule on a branch and open a pull request if that is
    the project's workflow. Report to the user: the jobs you defined, the check time, and
@@ -395,7 +400,7 @@ be upgraded. `compose-v1` in `needs` comes with `compose:`; nobody sets it.
 
 ## 2a-1. Package caches
 
-Installs are slow on a slow network, and a job starts from nothing. Ask for a cache in `needs`
+Installs are slow on a slow network, and a compose job's containers start empty. Ask for a cache in `needs`
 and downloads stay on the build machine between jobs of this project. It is off unless the
 project asks.
 

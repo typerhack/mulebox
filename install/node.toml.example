@@ -20,6 +20,7 @@ capabilities = []
 # outside system paths; they must not be your home folder itself.
 [roots]
 jobs = "@HOME@/.mulebox/jobs"
+projects = "@HOME@/.mulebox/projects"
 cache = "@HOME@/.mulebox/cache"
 staging = "@HOME@/.mulebox/staging"
 runners = "@HOME@/.mulebox/runners"

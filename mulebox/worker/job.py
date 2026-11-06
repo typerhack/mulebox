@@ -30,6 +30,9 @@ class ActiveJob:
     cleaning_sent: bool = False
     result_sent: bool = False
     meter: JobMeter = field(default_factory=JobMeter)
+    branch: str | None = None
+    tree: Any = None  # the Path of the project's worktree this job runs in
+    setup_key: str | None = None  # set when this job's `setup` counts once it has passed
 
     @property
     def steps(self) -> StepTracker:

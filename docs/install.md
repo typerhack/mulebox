@@ -53,7 +53,7 @@ What the installer does (it never uses sudo and never deletes a folder):
 | venv | `~/.mulebox/venv`, rebuilt only when the Python minor version changed |
 | Command | `~/.mulebox/bin/mulebox` (symlink into the venv), and `~/.local/bin/mulebox` so plain `mulebox` works in a login shell; a real file of that name is left alone |
 | Node config | `~/.config/mulebox/node.toml`, written once from the template, then validated |
-| Roots | `~/.mulebox/{jobs,cache,staging,runners}`, mode 750 |
+| Roots | `~/.mulebox/{jobs,projects,cache,staging,runners}`, mode 750 |
 | Services | `~/.config/systemd/user/mulebox-coordinator.service` and `mulebox-worker.service`, enabled and started; `mulebox-runner@.service` copied only |
 | Linger | prints how to enable it if it is off |
 
@@ -77,7 +77,8 @@ sudo loginctl enable-linger alice
 - `roles`: `["coordinator", "worker"]`. The installer starts only the services of
   the roles listed here.
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
-  absolute, and not a system folder or your home folder itself.
+  absolute, and not a system folder or your home folder itself. `projects` is optional: left
+  out, as in a `node.toml` from before 0.56.0, it is `projects` beside `jobs`.
 - `slots`, `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
   in `capabilities` of some worker, or its jobs are refused with that message. Add `docker`
   on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to

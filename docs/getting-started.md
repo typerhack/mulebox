@@ -71,8 +71,8 @@ jobs:
   typecheck: pnpm exec tsc --noEmit
 ```
 
-`project` names the project in the queue, `setup` runs before every job and `jobs` are what
-you can run. Every field and its rules: [agents.md, section 2](agents.md#2-setting-up-a-project-muleboxyml).
+`project` names the project in the queue, `setup` runs before a job when what it depends on
+changed, and `jobs` are what you can run. Every field and its rules: [agents.md, section 2](agents.md#2-setting-up-a-project-muleboxyml).
 Never put real secrets here; files such as `.env` are not uploaded at all.
 
 Then, from the project's folder:

@@ -81,3 +81,14 @@ def test_threads_never_claim_twice(store, staging):
         thread.join()
     assert not errors
     assert len(claimed) == 30 and len(set(claimed)) == 30
+
+
+def test_a_branch_runs_one_job_at_a_time(store, staging):
+    first = queued(store, staging, branch="main")
+    waits = queued(store, staging, branch="main")
+    other = queued(store, staging, branch="feature")
+    elsewhere = queued(store, staging, branch="main", project="other-app")
+    got = [queue.claim(store, "wrk-a", ["node"], 4, 4)["job_id"] for _ in range(3)]
+    assert got == [first, other, elsewhere]
+    assert queue.claim(store, "wrk-a", ["node"], 1, 4) is None
+    assert store.get_job(waits)["state"] == "queued"

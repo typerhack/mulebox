@@ -29,7 +29,8 @@ def test_node_template_renders_and_validates(tmp_path):
     assert node.coordinator is None
     assert node.slots == 1
     assert node.roots == {
-        key: f"/home/alice/.mulebox/{key}" for key in ("jobs", "cache", "staging", "runners")
+        key: f"/home/alice/.mulebox/{key}"
+        for key in ("jobs", "projects", "cache", "staging", "runners")
     }
 
 

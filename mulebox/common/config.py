@@ -205,6 +205,8 @@ def _roles(reader: Reader) -> tuple[str, ...]:
 def _roots(reader: Reader) -> dict[str, str]:
     sub = reader.table("roots", required=True)
     roots = {key: sub.text(key) for key in ROOT_KEYS}
+    if "projects" in sub.data:  # optional: beside `jobs` otherwise (worker/paths.py)
+        roots["projects"] = sub.text("projects")
     sub.finish()
     for key, value in roots.items():
         pure = PurePosixPath(value)

@@ -54,14 +54,22 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    The job is queued only when the upload is complete and fingerprinted.
 2. **Queue**: one FIFO line. Assignment is atomic: the oldest job a free worker can run.
    Cluster-wide and per-worker slot limits, both default 1.
-3. **Workspace**: the worker fetches and verifies the snapshot, then builds a private
-   checkout `jobs/<project>/<job-id>/` from its own clone of the project (a worktree's
-   `.git` points at the laptop and is useless remotely). Inputs never change during a job.
+3. **Project folder**: the worker fetches and verifies the snapshot, then makes the branch's
+   git worktree hold it: `projects/<project>/trees/<branch>/`, one repository per project.
+   Only files that differ are written, so timestamps stay and build tools stay incremental.
+   Ignored files (`node_modules`, `vendor`, `.venv`, build output) stay, so an install has
+   nothing to do; anything else a job left goes, so a job sees what a clean checkout would.
+   `setup` is skipped when its text, the toolchain, the env and the lockfiles are unchanged and
+   nothing it may have made was lost. A compose job always runs it: its containers are new.
+   One job at a time per project and branch; a second one waits, even with a free slot.
+   Inputs never change during a job. `jobs/<project>/<job-id>/` holds only the job's own
+   scratch files (its log, generated compose file).
 4. **Run**: as a transient systemd unit with a runtime limit, `KillMode=control-group`,
    CPU and IO weights. A `compose:` project starts first, in that unit, under a Compose
    project name and labels unique to the job (see Docker Compose projects).
-5. **Clean**: stop the unit, remove the job's labelled Docker resources, remove the job
-   folder through the path-safety module. The slot is free only after cleanup succeeded.
+5. **Clean**: stop the unit, remove the job's labelled Docker resources, hand back files
+   containers left as root in the project folder, remove the job folder through the path-safety
+   module. The slot is free only after cleanup succeeded.
 6. **Report**: job id, content fingerprint, base commit, command, toolchain versions, exit
    code, duration, log. If local files changed since submission, the client marks the
    result stale.
@@ -240,8 +248,8 @@ what a stage takes.
 
 ## Package caches
 
-A job starts from nothing, so on a slow network the install is most of its time, and a
-project's `external` cache volume cannot be used because it would cross jobs and projects. A
+A new project folder, a lockfile change or a compose job's fresh containers still mean an
+install, and on a slow network that is most of a job's time, and a project's `external` cache volume cannot be used because it would cross jobs and projects. A
 project can ask for a cache with `needs: [cache-pnpm]` or `cache-composer`: one folder per
 project and tool, `<cache>/packages/<project>/<tool>`.
 
@@ -345,7 +353,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 
 ## Safety
 
-- Configured roots per worker (`jobs/`, `cache/`, `runners/`); the path-safety module
+- Configured roots per worker (`jobs/`, `projects/`, `cache/`, `runners/`); the path-safety module
   resolves paths, rejects anything outside the roots, mount points and symlink escapes, and
   deletes with directory-descriptor-anchored operations (no check-then-delete race).
 - No secrets leave the laptop (excludes above); CI values in configs are throwaway.
@@ -375,7 +383,7 @@ mulebox/
   client/       snapshot.py  submit.py  tui.py  commands.py
   coordinator/  store.py  queue.py  leases.py  recovery.py  api.py  staging.py
   dashboard/    server.py  streams.py  hub.py  events.py  metrics.py  data.py  static/
-  worker/       agent.py  workspace.py  executor.py  cleaner.py  docker.py
+  worker/       agent.py  project_home.py  workspace.py  executor.py  cleaner.py  docker.py
                 docker_cleanup.py  reclaim.py  compose_file.py  compose_job.py  ports.py
                 toolchains.py
                 runner_hooks.py

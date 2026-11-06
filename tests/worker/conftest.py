@@ -38,5 +38,11 @@ def snapshot(tmp_path):
 
 
 @pytest.fixture
+def ignored_snapshot(snapshot):
+    make_tar(snapshot, {".gitignore": "ignored.txt\n", "README.md": "hello\n"})
+    return snapshot
+
+
+@pytest.fixture
 def fake_link(snapshot):
     return FakeLink(snapshot)

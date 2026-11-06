@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.56.0 - 2026-11-06 - minor
+- A project now has one folder on the build machine, with a git worktree per branch, and jobs run there instead of starting from nothing: ignored files such as `node_modules` stay, and only changed files are written.
+- `setup` is skipped when its text, the toolchain, the env and the lockfiles are unchanged and nothing it may have made was lost. A compose job always runs it.
+- Two jobs of one branch run one after the other, even with a free slot. New optional root `projects`, beside `jobs` when left out.
+
 ## 0.55.2 - 2026-11-06 - patch
 - A stuck job's stop follows the job's own `timeout_min`, not a fixed 30 minutes, so `timeout_min` is the one setting a project needs.
 - A job's result names its commit, so an agent told a result can see what it was for. Roadmap: M18.1 to M18.3, M2.7 and M2.8 closed after real runs.

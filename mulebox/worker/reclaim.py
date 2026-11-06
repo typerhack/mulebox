@@ -70,6 +70,11 @@ def reclaim(docker: Docker, paths: NodePaths, project: str, job_id: str, worker:
     _run(docker, confirm_dir(paths.job_dir(project, job_id), Roots((paths.jobs,))), job_id, worker)
 
 
+def reclaim_tree(docker: Docker, paths: NodePaths, tree: Path, job_id: str, worker: str) -> None:
+    """Make the worker's user own everything in a project's worktree."""
+    _run(docker, confirm_dir(tree, Roots((paths.projects,))), job_id, worker)
+
+
 def reclaim_cache(docker: Docker, paths: NodePaths, project: str, job_id: str,
                   worker: str) -> None:
     """Make the worker's user own everything in this project's package caches."""

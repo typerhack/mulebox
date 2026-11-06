@@ -1,8 +1,7 @@
-"""Job workspaces: `<jobs>/<project>/<job_id>/src` built from the client's snapshot.
+"""Job folders: `<jobs>/<project>/<job_id>`, what one job needs and nothing it keeps, and git.
 
-The snapshot is extracted safely (see archive.py), then turned into a throwaway git
-repository with one commit, so git-based tools (lint-staged, `git diff`, ...) work. Git
-runs with fixed identity, no hooks, no signing and no pager, never through a shell.
+The project's own files live in its home (project_home.py). Git runs with fixed identity, no
+hooks, no signing and no pager, never through a shell.
 """
 
 from __future__ import annotations
@@ -13,12 +12,11 @@ from pathlib import Path
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import ensure_dir, remove_tree
-from mulebox.worker.archive import extract_tar
 from mulebox.worker.paths import NodePaths
 
 LOG = get_logger("worker.workspace")
 GIT_TIMEOUT_S = 300
-_GIT_CONFIG = (
+GIT_CONFIG = (
     "-c", "user.name=mulebox",
     "-c", "user.email=mulebox@localhost",
     "-c", "core.hooksPath=/dev/null",
@@ -32,33 +30,23 @@ class WorkspaceError(MuleboxError):
     """The workspace could not be prepared."""
 
 
-def _git(src: Path, *args: str) -> None:
-    argv = ["git", *_GIT_CONFIG, *args]
+def git(cwd: Path, *args: str) -> bytes:
+    """Run git here with the fixed settings; its stdout."""
+    argv = ["git", *GIT_CONFIG, *args]
     try:
-        proc = subprocess.run(argv, cwd=src, capture_output=True, timeout=GIT_TIMEOUT_S,
+        proc = subprocess.run(argv, cwd=cwd, capture_output=True, timeout=GIT_TIMEOUT_S,
                               stdin=subprocess.DEVNULL)
     except (OSError, subprocess.TimeoutExpired) as exc:
-        raise WorkspaceError(f"git {args[0]} failed in {src}: {exc}") from exc
+        raise WorkspaceError(f"git {args[0]} failed in {cwd}: {exc}") from exc
     if proc.returncode != 0:
         detail = proc.stderr.decode("utf-8", errors="replace").strip()[-500:]
-        raise WorkspaceError(f"git {args[0]} failed in {src} (exit {proc.returncode}): {detail}")
+        raise WorkspaceError(f"git {args[0]} failed in {cwd} (exit {proc.returncode}): {detail}")
+    return proc.stdout
 
 
 def job_dir(paths: NodePaths, project: str, job_id: str) -> Path:
     """Create and return `<jobs>/<project>/<job_id>`."""
     return ensure_dir(paths.job_dir(project, job_id), paths.roots)
-
-
-def prepare(paths: NodePaths, project: str, job_id: str, snapshot: Path) -> Path:
-    """Extract snapshot into the job's `src` folder and commit it; return `src`."""
-    src = job_dir(paths, project, job_id) / "src"
-    if src.exists():
-        raise WorkspaceError(f"{src} already exists; refusing to reuse a workspace")
-    extract_tar(snapshot, src, paths.roots)
-    _git(src, "init", "-q")
-    _git(src, "add", "-A")
-    _git(src, "commit", "-q", "--no-verify", "--allow-empty", "-m", f"mulebox {job_id}")
-    return src
 
 
 def cleanup(paths: NodePaths, project: str, job_id: str) -> None:
