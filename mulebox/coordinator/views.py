@@ -3,7 +3,7 @@
 from typing import Any
 
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import needs, workers
+from mulebox.coordinator import holds, needs, workers
 from mulebox.coordinator.store import ACTIVE_STATES
 
 JOB_FIELDS = (
@@ -33,6 +33,8 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
     """Why a queued agent job cannot start yet (needs.py); None for anything else."""
     if job["state"] != JobState.QUEUED or job["kind"] != "job":
         return None
+    if holds.draining(conn, now):
+        return holds.DRAIN_REASON
     return needs.waiting_for(workers.listing(conn), job["needs"], now)
 
 

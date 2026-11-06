@@ -99,3 +99,45 @@ def test_a_downloaded_mulebox_calls_itself(monkeypatch):
     assert setup._this_mulebox()[1:] == ["-m", "mulebox"]
     monkeypatch.setattr(setup.sys, "frozen", True, raising=False)
     assert setup._this_mulebox() == [setup.sys.executable]
+
+
+def _steps(monkeypatch, drains, order):
+    monkeypatch.setattr(setup, "check_login", lambda target: None)
+    monkeypatch.setattr(setup, "install", lambda target: order.append("install"))
+    monkeypatch.setattr(setup, "find_offers", lambda target, say: None)
+    monkeypatch.setattr(setup, "write_client_config", lambda target, say: None)
+    monkeypatch.setattr(setup, "prove", lambda target, say: order.append("prove"))
+
+    def drain(target, seconds):
+        order.append(seconds)
+        return drains.pop(0) if drains else []
+    monkeypatch.setattr(setup, "_drain", drain)
+    monkeypatch.setattr(setup.time, "sleep", lambda seconds: order.append("slept"))
+
+
+def test_when_idle_waits_then_upgrades_then_lets_jobs_go_before_the_first_job(monkeypatch):
+    order = []
+    _steps(monkeypatch, [["job-1"], []], order)
+    setup.run("build-1", lambda line: None, when_idle=True)
+    assert order == [setup.HOLD_WHILE_WAITING_S, "slept", setup.HOLD_WHILE_WAITING_S,
+                     setup.HOLD_WHILE_INSTALLING_S, "install", 0, "prove"]
+
+
+def test_when_idle_ends_its_hold_if_the_install_fails(monkeypatch):
+    order = []
+    _steps(monkeypatch, [[]], order)
+
+    def fail(target):
+        raise OSError("no")
+    monkeypatch.setattr(setup, "install", fail)
+    with pytest.raises(setup.SetupError):
+        setup.run("build-1", lambda line: None, when_idle=True)
+    assert order[-1] == 0
+
+
+def test_when_idle_falls_back_to_watching_a_machine_that_cannot_hold(monkeypatch):
+    order = []
+    _steps(monkeypatch, [None, None, None], order)
+    jobs = [["job-1"], []]
+    monkeypatch.setattr(setup, "running_jobs", lambda target: jobs.pop(0))
+    assert setup.wait_until_idle("build-1", lambda line: None) is False

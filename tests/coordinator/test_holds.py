@@ -36,3 +36,20 @@ def test_a_running_job_refuses_the_hold(store, staging):
     claimed(store, staging, now=10.0)
     with pytest.raises(Conflict, match="running"):
         holds.take(store, "example-app", 20.0)
+
+
+def test_a_draining_machine_starts_nothing_and_lists_what_runs(store, staging):
+    running = claimed(store, staging, now=10.0)
+    queued(store, staging, now=11.0, project="other-app")
+    assert holds.drain(store, 100.0) == [running["job_id"]]
+    assert claim(store, 20.0) is None
+
+
+def test_a_drain_ends_by_itself_and_on_request(store, staging):
+    job = queued(store, staging, now=10.0)
+    holds.drain(store, 30.0)
+    assert claim(store, 40.0)["job_id"] == job
+    other = queued(store, staging, now=41.0, project="other-app")
+    holds.drain(store, 100.0)
+    holds.undrain(store)
+    assert claim(store, 50.0)["job_id"] == other

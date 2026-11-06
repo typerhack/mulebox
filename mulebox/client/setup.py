@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from collections.abc import Callable
 from importlib import resources
 from pathlib import Path
@@ -28,6 +29,9 @@ LOGIN_TIMEOUT_S = 30
 INSTALL_TIMEOUT_S = 1200
 PROGRAM = ".mulebox/bin/mulebox"
 CHECK_PROJECT = "mulebox-setup-check"
+HOLD_WHILE_WAITING_S = 120
+HOLD_WHILE_INSTALLING_S = 1500  # past INSTALL_TIMEOUT_S; ended as soon as the install is
+POLL_IDLE_S = 10.0
 _UNPACK = 'mkdir -p "$HOME/.mulebox/tmp" && tar xzf - -C "$HOME/.mulebox/tmp"'
 _RESTART = "systemctl --user restart mulebox-worker"
 Say = Callable[[str], None]
@@ -48,12 +52,15 @@ def check_login(target: str) -> None:
             f"your ssh agent.\n({exc})") from exc
 
 
+def _remote(target: str) -> Remote:
+    return Remote(ClientConfig(coordinator=target, remote_bin=f"~/{PROGRAM}",
+                               connect_timeout_s=CONNECT_S))
+
+
 def running_jobs(target: str) -> list[str]:
     """Jobs on the machine now; none if mulebox is not there yet, or is too old to say."""
-    remote = Remote(ClientConfig(coordinator=target, remote_bin=f"~/{PROGRAM}",
-                                 connect_timeout_s=CONNECT_S))
     try:
-        rows = remote.call(request(MessageType.QUEUE)).body.get("jobs") or []
+        rows = _remote(target).call(request(MessageType.QUEUE)).body.get("jobs") or []
     except (MuleboxError, OSError):
         return []
     return [row["job_id"] for row in rows
@@ -143,17 +150,49 @@ def prove(target: str, say: Say) -> None:
                    timeout_s=LOGIN_TIMEOUT_S, connect_timeout_s=CONNECT_S)
 
 
-def run(target: str, say: Say, now: bool = False) -> None:
+def _drain(target: str, seconds: int) -> list[str] | None:
+    """Hold new jobs back; the jobs still running, or None if the machine cannot hold them."""
+    try:
+        return _remote(target).call(request(MessageType.DRAIN, seconds=seconds)).body["running"]
+    except (MuleboxError, OSError):  # not installed yet, or too old
+        return None
+
+
+def wait_until_idle(target: str, say: Say) -> bool:
+    """Hold new jobs back until the running ones end. True if the machine is holding them. The
+    hold is renewed while this waits, so a killed laptop stops nothing for long."""
+    told = None
+    while True:
+        running = _drain(target, HOLD_WHILE_WAITING_S)
+        holding = running is not None
+        jobs = running if holding else running_jobs(target)
+        if not jobs:
+            if holding:
+                _drain(target, HOLD_WHILE_INSTALLING_S)
+            return holding
+        if len(jobs) != told:
+            told = len(jobs)
+            say(f"waiting for {told} running job(s) to end; new jobs wait in line")
+        time.sleep(POLL_IDLE_S)
+
+
+def run(target: str, say: Say, now: bool = False, when_idle: bool = False) -> None:
     say(f"checking the login to {target}")
     check_login(target)
-    if not now and (jobs := running_jobs(target)):
+    holding = False
+    if when_idle:
+        holding = wait_until_idle(target, say)
+    elif not now and (jobs := running_jobs(target)):
         raise SetupError(f"{len(jobs)} job(s) are running on {target}, and an upgrade would stop "
-                         "them. Run this again after them, or add --now.")
+                         "them. Add --when-idle to wait for them, or --now.")
     try:
         say(f"installing mulebox on {target}")
         install(target)
         find_offers(target, say)
         write_client_config(target, say)
+        if holding:
+            _drain(target, 0)
+            holding = False
         say("running a first job")
         prove(target, say)
     except (MuleboxError, OSError, ValueError, subprocess.SubprocessError) as exc:
@@ -161,4 +200,7 @@ def run(target: str, say: Say, now: bool = False) -> None:
             raise
         raise SetupError(f"setup stopped: {exc}. Fix that and run it again; it starts over "
                          "safely") from exc
+    finally:
+        if holding:
+            _drain(target, 0)
     say(f"{target} is ready. In a project: `mulebox init`, then `mulebox check`")

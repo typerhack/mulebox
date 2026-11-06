@@ -125,6 +125,7 @@ def examine() -> tuple[list[Finding], int]:
         return [*findings, Finding(FAIL, "machine", reason)], code or report.EXIT_UNREACHABLE
     findings += doctor.versions(get_version(), facts)
     findings += _about_machines(project, facts) + reached
+    findings += doctor.disks(facts.get("workers") or [])
     findings += doctor.dashboard(facts)
     return findings, code or (EXIT_PROBLEM if doctor.worst(findings) == FAIL else 0)
 

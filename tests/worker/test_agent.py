@@ -84,6 +84,7 @@ def test_passed_job(agent, fake_link, paths):
     assert kinds[-1] is MessageType.RESULT
     assert not (paths.jobs / "example-app" / job_id).exists()
     claim = fake_link.of_type(MessageType.CLAIM)[0].body
+    assert claim.pop("disk_free") > 0
     assert claim == {"worker": "build-1", "capabilities": ["node", *PACKAGE_CACHES], "free_slots": 1,
                      "toolchains": {}, "version": get_version(),
                      "restarted": True}  # the first claim after a start

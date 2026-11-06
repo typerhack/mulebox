@@ -23,8 +23,8 @@ from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
 # 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
-# 7: env order; 8: stop reason and activity (migrate.py)
-SCHEMA_VERSION = 9
+# 7: env order; 8: stop reason and activity; 9: told; 10: disk (migrate.py)
+SCHEMA_VERSION = 10
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -83,7 +83,8 @@ CREATE TABLE IF NOT EXISTS workers (
     last_seen REAL NOT NULL,
     slots INTEGER,
     toolchains TEXT,
-    version TEXT
+    version TEXT,
+    disk_free INTEGER
 );
 """ + migrate.JOB_STEPS
 _JOB_COLUMNS = frozenset(

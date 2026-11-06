@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
+from mulebox.common import disk
 from mulebox.common.config import ProjectConfig
 from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
@@ -130,6 +131,11 @@ def inventory(workers: list[Worker]) -> list[Finding]:
     return [Finding(OK, "machine", f"{w.get('worker')} ({'online' if w.get('online') else 'offline'})"
                     f": {', '.join(w.get('capabilities') or ()) or 'no capabilities'}")
             for w in workers]
+
+
+def disks(workers: list[Worker]) -> list[Finding]:
+    return [Finding(WARN, "disk", disk.warning(str(w.get("worker")), w["disk_free"]))
+            for w in workers if w.get("online") and disk.is_low(w.get("disk_free"))]
 
 
 def skills(copies: list[Copy], schema: int) -> list[Finding]:

@@ -42,7 +42,7 @@ It checks the login, installs mulebox on the machine, finds out whether Docker w
 fills `capabilities` if that list is empty, writes `~/.config/mulebox/client.toml` if you have
 none, and runs a first job through the real queue. Each step that fails says what to do. Run it
 again at any time, also to upgrade: `node.toml` is kept, and it stops if jobs are running unless
-you add `--now`.
+you add `--when-idle`, which waits for them while new jobs wait in line, or `--now`.
 
 To install by hand instead, copy `install.sh`, `node.toml.example` and `systemd/` from
 `mulebox/machine/` and a wheel into one folder on the build machine, and run
@@ -262,7 +262,7 @@ mulebox setup build-1
 
 The installer reinstalls the wheel into the existing venv, updates the unit files and
 restarts the services. A running job is interrupted by the restart (state `interrupted`,
-never replayed), so `mulebox setup` waits for an empty machine unless you add `--now`. `node.toml`
+never replayed), so `mulebox setup` stops if a job is running. `--when-idle` waits instead: new jobs and CI runs wait in line, the running ones finish, the upgrade runs and the line moves on, and a killed laptop holds nothing for more than 2 minutes while waiting. `--now` upgrades at once. `node.toml`
 is kept.
 Upgrade the coordinator and every worker together: a worker's stage rows and toolchain
 reports, and detached jobs, need both to be new. `mulebox doctor` shows the versions.

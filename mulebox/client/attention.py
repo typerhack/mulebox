@@ -22,7 +22,7 @@ from mulebox.common.config import (
 )
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import MessageType
-from mulebox.common import status
+from mulebox.common import disk, status
 from mulebox.common.status import number
 
 WARNING = "warning: "
@@ -124,6 +124,8 @@ def tell(body: dict[str, Any], err: TextIO) -> None:
         report.status(err, question_line(str(job.get("job_id")), job.get("question") or {}, job))
     for job in _dicts(body.get("finished_away")):
         report.status(err, away_line(job))
+    for low in _dicts(body.get("low_disks")):
+        report.status(err, WARNING + disk.warning(str(low.get("worker")), int(low.get("free") or 0)))
 
 
 def _dicts(items: Any) -> list[dict[str, Any]]:

@@ -261,3 +261,11 @@ def test_a_coordinator_too_old_for_this_says_nothing_about_registries(fake, in_p
     compose_project(in_project, fake, unknown_requests=["reach"])
     assert cli.main(["doctor"]) == 0
     assert "registry" not in capsys.readouterr().out
+
+
+def test_a_low_disk_is_a_warning_that_names_the_cleanup():
+    found = doctor.disks([{"worker": "build-1", "online": True, "disk_free": 2_000_000_000},
+                          {"worker": "build-2", "online": True, "disk_free": 90_000_000_000},
+                          {"worker": "build-3", "online": True}])
+    assert [f.level for f in found] == [doctor.WARN]
+    assert "build-1 has 2.0 GB free" in found[0].text and "mulebox project clean" in found[0].text

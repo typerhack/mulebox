@@ -26,7 +26,8 @@ def claim(req: Request) -> Message:
         recovery.release_worker(req.store, worker, req.now)
     job = queue.claim(req.store, worker, capabilities, free_slots, req.cluster_slots,
                       now=req.now, toolchains=v.versions_by_name(req.body, "toolchains"),
-                      version=v.text(req.body, "version", None))
+                      version=v.text(req.body, "version", None),
+                      disk_free=v.integer(req.body, "disk_free", None, low=0))
     if job is None:
         return req.reply(MessageType.CLAIM_NONE, {})
     return req.reply(MessageType.CLAIM_OK, queue.claim_body(job))

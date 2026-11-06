@@ -59,3 +59,11 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 
 `mulebox feedback draft <job-id> --summary "what happened"` writes a report with personal details
 removed and sends nothing. Read it before you share it: [agents.md, section 4](agents.md#4-reporting-what-mulebox-could-not-handle).
+
+## A warning that a machine is low on disk
+
+Each worker reports the free space of the fullest disk holding its folders. Under 10 GB,
+`mulebox doctor` and every command from a project warn. Nothing is removed for you:
+`mulebox project clean` lists the branch folders no job has used for 14 days, and `--yes` removes
+them; `mulebox project reset <project> --caches` also clears a project's package caches. Docker's
+images are not mulebox's to remove, so `docker system df` on the machine shows what it holds.

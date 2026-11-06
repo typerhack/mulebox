@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import compose
+from mulebox.common import compose, disk
 from mulebox.common.config import NodeConfig
 from mulebox.version import get_version
 from mulebox.worker import toolchains
@@ -27,4 +27,5 @@ def by_name(paths: NodePaths) -> dict[str, list[str]]:
 def fields(node: NodeConfig, paths: NodePaths) -> dict[str, Any]:
     """The claim body's facts about this worker."""
     return {"worker": node.name, "capabilities": compose.worker_capabilities(node.capabilities),
-            "toolchains": by_name(paths), "version": get_version()}
+            "toolchains": by_name(paths), "version": get_version(),
+            "disk_free": disk.free_bytes(node.roots.values())}

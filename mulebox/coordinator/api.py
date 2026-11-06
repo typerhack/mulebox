@@ -13,6 +13,7 @@ from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (
     attendance,
+    holds,
     leases,
     needs,
     projects,
@@ -121,7 +122,8 @@ def _news(conn: Any, project: str, now: float) -> dict[str, Any]:
     reuse.told(conn, finished, now)
     return {"questions": [{**job_dict(job), **found} for job in rows
                           if (found := attendance.fields(job, now, limits))],
-            "finished_away": [result_body(job) for job in finished]}
+            "finished_away": [result_body(job) for job in finished],
+            "low_disks": workers.low_disks(conn, now)}
 
 
 def job_ok(req: Request) -> Message:
@@ -197,6 +199,14 @@ def machine_list(req: Request) -> Message:
                                                "dashboard": req.dashboard})
 
 
+def drain(req: Request) -> Message:
+    seconds = v.integer(req.body, "seconds", low=0, high=holds.MAX_DRAIN_S)
+    if seconds == 0:
+        holds.undrain(req.store)
+        return req.reply(MessageType.DRAIN_OK, {"running": []})
+    return req.reply(MessageType.DRAIN_OK, {"running": holds.drain(req.store, req.now + seconds)})
+
+
 def logs(req: Request) -> Message:
     offset = v.integer(req.body, "offset", low=0)
     with req.store.read() as conn:
@@ -227,6 +237,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.PROJECTS: project_list,
     MessageType.REACH: reach,
     MessageType.MACHINES: machine_list,
+    MessageType.DRAIN: drain,
     MessageType.LOGS: logs,
     MessageType.CLAIM: worker_api.claim,
     MessageType.JOB_UPDATE: worker_api.job_update,

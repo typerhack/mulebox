@@ -108,6 +108,8 @@ class MessageType(StrEnum):
     ACQUIRE = "acquire"
     RELEASE = "release"
     RUNNER_JOBS = "runner_jobs"
+    DRAIN = "drain"
+    DRAIN_OK = "drain_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -152,6 +154,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.PROJECTS_OK: frozenset({"projects"}),
     # client -> coordinator: what the machines offer, for `mulebox doctor`.
     MessageType.MACHINES: frozenset(),
+    # client -> coordinator: `seconds` of no new jobs (0 ends it); the reply lists `running`.
+    MessageType.DRAIN: frozenset({"seconds"}),
+    MessageType.DRAIN_OK: frozenset({"running"}),
     MessageType.MACHINES_OK: frozenset({"version", "workers"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),

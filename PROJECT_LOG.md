@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.63.0 - 2026-11-06 - minor
+- `mulebox setup <host> --when-idle` waits for running jobs and upgrades, with new jobs and CI runs waiting in line through a machine-wide hold that ends by itself. New request `drain`.
+- A worker reports the free space of its fullest disk (schema 10). Under 10 GB, `doctor` and every command from a project warn and name `mulebox project clean`.
+
 ## 0.62.3 - 2026-11-06 - patch
 - Roadmap: M11.6 closed by a real reboot with a job running and a detached job queued. No fault found; the dashboard waited for its network address and started by itself 16 s after its first try.
 
