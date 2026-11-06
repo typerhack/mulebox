@@ -100,10 +100,12 @@ def run_job(
                            reuse=isinstance(target, str) and not (again or warm))
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
-        report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
-        report.dashboard_hint(io.err, reply.body, watcher.job_id)
-        attention.tell(reply.body, io.err)
         already = reply.body.get("already")
+        if not isinstance(already, dict):
+            report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
+        if not isinstance(already, dict) or already.get("state") != "finished":
+            report.dashboard_hint(io.err, reply.body, watcher.job_id)
+        attention.tell(reply.body, io.err)
         if isinstance(already, dict):
             report.status(io.err, attention.already_line(already))
             if already.get("state") == "finished":

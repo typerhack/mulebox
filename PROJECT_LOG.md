@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.6 - 2026-11-06 - patch
+- A repeat answered from an earlier result no longer says "submitted" or links the dashboard, as no job started.
+
 ## 0.66.5 - 2026-11-06 - patch
 - `mulebox init` in a git worktree names the project after the repository, so its worktrees share one project on the machine.
 

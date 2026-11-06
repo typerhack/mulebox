@@ -498,7 +498,8 @@ browser download blocked for the machine's network location.
       with the real coordinator code. Open: seen across a real upgrade.
 - [~] M19.2 `mulebox init` in a git worktree names the project after the repository. Built (0.66.5), with a
       real git worktree in a test. Open: an agent using it.
-- [ ] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link.
+- [~] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link. Built
+      (0.66.6), tested with the real coordinator code. Open: seen on a real machine.
 - [ ] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install.
 - [ ] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not
       "switch versions". `status` warns when an install's output reads as a lost connection.

@@ -173,7 +173,9 @@ def test_a_repeat_check_runs_nothing_and_keeps_the_exit_code(local, in_project, 
     thread.join()
     capsys.readouterr()
     assert cli.main(["check", "test"]) == 3
-    assert "already tested" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "already tested" in err
+    assert "submitted" not in err and "dashboard" not in err
 
 
 def test_a_detached_repeat_still_prints_an_id_for_wait(local, in_project, capsys):
