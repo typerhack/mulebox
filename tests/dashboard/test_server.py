@@ -48,6 +48,7 @@ def test_security_headers_on_every_reply(call):
         assert headers["X-Frame-Options"] == "DENY"
         assert headers["X-Content-Type-Options"] == "nosniff"
     assert results[1][1]["Cache-Control"] == "no-store"
+    assert results[0][1]["Cache-Control"] == "no-cache"  # the page must follow an upgrade
 
 
 @pytest.mark.parametrize("method", ["post", "put", "delete", "patch"])

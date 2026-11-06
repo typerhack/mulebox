@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.0 - 2026-11-06 - minor
+- Watching a job to its end, the page goes back to the queue after 10 s, so the next job shows. It offers to stay, and leaves a log being read alone.
+- A job's page says how it went at the top: an icon and a word, with its stage, exit code and end time once it is over.
+- A browser asks for the dashboard's files again after each load, so an upgrade reaches it without a forced reload. Found when Edge kept running the old script.
+- Runs of one job can be told apart: their ids start alike, so the job page and the queue show the id's end, and the job page the branch and start time.
+
 ## 0.65.0 - 2026-11-06 - minor
 - The live job page: a connection that dies with no error is noticed and reopened where it stopped, on the log and on the page's own stream. Both streams send a `beat` event a page can see, which replaces an SSE comment it could not.
 - A job that writes nothing says so: how long it has been quiet and whether it is working. `/api/jobs/{id}` has `activity` while a job runs.

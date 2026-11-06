@@ -61,6 +61,8 @@ async def _headers(request: web.Request, response: web.StreamResponse) -> None:
     headers["X-Frame-Options"] = "DENY"
     if request.path.startswith("/api/"):
         headers.setdefault("Cache-Control", "no-store")
+    else:  # the page's files: asked after every load, or an upgrade would not reach the browser
+        headers.setdefault("Cache-Control", "no-cache")
 
 
 def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = time.time,

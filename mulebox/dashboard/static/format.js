@@ -42,6 +42,11 @@ export function jobName(job) {
   return `${job.project ?? "-"} / ${job.job ?? "-"}`;
 }
 
+// The end of a job's id: ids made close in time start alike, their ends never do.
+export const shortId = (job) => job.job_id.slice(-6);
+
+export const runText = (job) => `${job.branch ?? "-"}, ${shortId(job)}`;
+
 export function jobLink(job) {
   return el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, text: jobName(job) });
 }
@@ -83,26 +88,30 @@ const TONES = {
 };
 
 // State as words plus a shape: colour never carries the meaning alone.
+export const toneOf = (state) => TONES[String(state ?? "unknown")] ?? "plain";
+const words = (state) => String(state ?? "unknown").replaceAll("_", " ");
+export const stateText = (state) => words(state).replace(/^./, (first) => first.toUpperCase());
+
 export function badge(state) {
-  const text = String(state ?? "unknown");
-  return el("span", { class: "badge", "data-tone": TONES[text] ?? "plain",
-                      text: text.replaceAll("_", " ") });
+  return el("span", { class: "badge", "data-tone": toneOf(state), text: words(state) });
 }
 
-// The warning triangle, drawn here because `el` cannot make SVG. Decoration: the word beside
-// it carries the meaning.
-export function warningIcon() {
+// An icon, drawn here because `el` cannot make SVG. Decoration: the word beside it carries
+// the meaning.
+export function drawIcon(path, name) {
   const ns = "http://www.w3.org/2000/svg";
   const icon = document.createElementNS(ns, "svg");
   icon.setAttribute("viewBox", "0 0 16 16");
   icon.setAttribute("aria-hidden", "true");
-  icon.classList.add("warning");
+  icon.classList.add(name);
   const shape = document.createElementNS(ns, "path");
   shape.setAttribute("fill-rule", "evenodd");
-  shape.setAttribute("d", "M8 1 15.5 15H.5ZM7 6v5h2V6Zm0 6v2h2v-2Z");
+  shape.setAttribute("d", path);
   icon.append(shape);
   return icon;
 }
+
+export const warningIcon = () => drawIcon("M8 1 15.5 15H.5ZM7 6v5h2V6Zm0 6v2h2v-2Z", "warning");
 
 export const timeLeft = (seconds) => `${duration(seconds)} left`;
 

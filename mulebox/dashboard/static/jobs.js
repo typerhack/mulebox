@@ -6,7 +6,7 @@
 // results that are one or the other (a released runner slot and a cancelled job are
 // neither, and only Recent and History list them); Recent is the last few finished jobs.
 
-import { badge, clock, duration, el, fill, getJson, jobLink, timeLeft, warningIcon } from "./format.js";
+import { badge, clock, duration, el, fill, getJson, jobLink, timeLeft, warningIcon, runText } from "./format.js";
 import { lanesView } from "./lanes.js";
 
 const FAILED = new Set(["failed", "timed_out", "interrupted"]);
@@ -44,7 +44,7 @@ function row(job, last) {
   const ticking = job.section === "recent" ? null : job.job_id;
   return el("tr", { class: job.section === "running" ? "running" : null },
     el("td", { class: "state" }, state(job)),
-    el("td", {}, jobLink(job), el("span", { class: "branch", text: job.branch ?? "-" })),
+    el("td", {}, jobLink(job), el("span", { class: "branch", text: runText(job) })),
     el("td", { class: "wide", text: last(job) }),
     el("td", { class: "num", "data-elapsed": ticking,
                text: duration(job.elapsed_s ?? job.duration_s) }));

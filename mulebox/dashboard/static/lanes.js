@@ -9,7 +9,7 @@
 // list, and a job no machine fits is shown as stuck with the coordinator's reason.
 // Positions are the real queue positions in every list.
 
-import { badge, clock, duration, el, jobLink, soonest, questionMark } from "./format.js";
+import { badge, clock, duration, el, jobLink, soonest, questionMark, runText } from "./format.js";
 
 const SHARED = { title: "next free machine", sub: "whichever of these is free first" };
 const STUCK = { title: "no machine fits", sub: "nothing offers what they need" };
@@ -47,7 +47,7 @@ function block(job) {
   return el("div", { class: "slot-block", "data-filled": "1" },
     el("div", { class: "slot-head" }, badge(job.shown_state ?? job.state), elapsed(job)),
     jobLink(job),
-    el("span", { class: "branch", text: job.branch ?? "-" }),
+    el("span", { class: "branch", text: runText(job) }),
     questionMark(job));
 }
 
@@ -87,7 +87,7 @@ function waitingEntry(job, allMachines) {
   }
   lines.push(questionMark(job));
   return el("li", { class: "wait" }, place,
-    el("span", {}, jobLink(job), el("span", { class: "branch", text: job.branch ?? "-" })),
+    el("span", {}, jobLink(job), el("span", { class: "branch", text: runText(job) })),
     elapsed(job), ...lines);
 }
 

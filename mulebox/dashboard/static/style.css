@@ -252,7 +252,17 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 .facts dd { margin: 0; overflow-wrap: anywhere; }
 .log-head { display: flex; flex-wrap: wrap; gap: 4px 12px; color: var(--ink-muted); margin: 4px 0 4px; }
 .log-head a { margin-left: auto; }
-.log-latest {
+.job-result { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 0 0 4px; }
+.job-result strong { font-size: 1.25em; }
+.result-icon { flex: none; width: 24px; height: 24px; fill: var(--ink-muted); }
+.job-result[data-tone="good"] strong, .job-result[data-tone="good"] .result-icon { color: var(--good); fill: var(--good); }
+.job-result[data-tone="bad"] strong, .job-result[data-tone="bad"] .result-icon { color: var(--bad); fill: var(--bad); }
+.job-result[data-tone="warn"] strong, .job-result[data-tone="warn"] .result-icon { color: var(--warn); fill: var(--warn); }
+.job-result[data-tone="active"] strong, .job-result[data-tone="active"] .result-icon { color: var(--active); fill: var(--active); }
+.result-icon path { stroke: none; }
+.which-run { margin: 0 0 6px; overflow-wrap: anywhere; }
+.going-back { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 6px; }
+.log-latest, .going-back button {
   padding: 0 6px; border: 1px solid var(--line-soft); border-radius: 3px;
   background: var(--row); color: var(--ink-soft); font: inherit; cursor: pointer;
 }
