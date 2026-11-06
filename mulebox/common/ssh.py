@@ -249,7 +249,8 @@ def _feed(stream: IO[bytes], data: bytes) -> None:
             pass
 
 
-def reap(proc: subprocess.Popen, threads: list[threading.Thread]) -> None:
+def reap(proc: subprocess.Popen, threads: list[threading.Thread],
+         join_s: float = THREAD_JOIN_S) -> None:
     if proc.poll() is None:
         proc.terminate()
         try:
@@ -258,7 +259,7 @@ def reap(proc: subprocess.Popen, threads: list[threading.Thread]) -> None:
             proc.kill()
             proc.wait()
     for thread in threads:
-        thread.join(timeout=THREAD_JOIN_S)
+        thread.join(timeout=join_s)
     # A pipe a reader thread is still blocked on cannot be closed without waiting for that
     # read (the buffer lock), and the read can last as long as anything else holds the
     # pipe's write end (for example an ssh control master). Leave such a pipe to the

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.57.1 - 2026-11-06 - patch
+- A job's result arrives about 5 s sooner: the worker checks every 0.05 s while a job finishes and every 0.5 s otherwise, not every 1 s, and the client no longer waits 2 s on a pipe an ssh control master holds open. Roadmap: M18.5 closed.
+
 ## 0.57.0 - 2026-11-06 - minor
 - `setup` also reruns when a version file or manifest changes (`VERSION`, `go.mod`, `.nvmrc` and the like): the gate caught an install that had stored an old version.
 - A snapshot over 1 MiB sends only the files that changed since the project's last upload: the link to a build machine can do 0.4 MB/s, which made the upload slower than the job's start. The coordinator rebuilds and checks the whole snapshot, and any trouble sends it whole.

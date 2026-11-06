@@ -41,7 +41,8 @@ from mulebox.worker.paths import NodePaths
 from mulebox.worker.ports import PortPool
 
 LOG = get_logger("worker.agent")
-POLL_S = 1.0
+POLL_S = 0.5
+FINISHING_POLL_S = 0.05  # an agent is waiting for this result, on nothing but this loop
 HEARTBEAT_S = 3.0  # also how fast a cancel is noticed; the lease is still 120 s
 LEASE_S = 120.0
 RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
@@ -106,6 +107,10 @@ class Agent:
                 pass
         if not self.finishing and len(self.active) < self.node.slots and self._online(now):
             self._claim(now)
+
+    def wait_s(self) -> float:
+        """How long `serve` waits before the next step."""
+        return FINISHING_POLL_S if self.finishing else POLL_S
 
     def _claim(self, now: float) -> None:
         msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths),

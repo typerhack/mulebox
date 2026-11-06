@@ -9,7 +9,7 @@ from mulebox.common.ids import new_id
 from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
 from mulebox.common.protocol import MessageType
 from mulebox.worker import workspace
-from mulebox.worker.agent import HEARTBEAT_S, Agent
+from mulebox.worker.agent import FINISHING_POLL_S, HEARTBEAT_S, POLL_S, Agent
 from mulebox.worker.executor import RunSpec, SubprocessExecutor, group_alive, unit_name
 
 from mulebox.version import get_version
@@ -341,3 +341,10 @@ def test_the_job_folder_goes_and_the_project_stays(agent, fake_link, paths):
     run_until(agent, lambda: not agent.finishing)
     assert not list((paths.jobs / "example-app").iterdir())
     assert list((paths.projects / "example-app" / "trees").iterdir())
+
+
+def test_a_finishing_job_is_not_kept_waiting(agent, fake_link):
+    assert agent.wait_s() == POLL_S
+    agent.finishing.append(object())
+    assert agent.wait_s() == FINISHING_POLL_S
+    agent.finishing.clear()

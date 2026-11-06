@@ -20,6 +20,8 @@ from typing import IO
 
 from mulebox.common import ssh
 
+CLOSE_JOIN_S = 0.05  # a control master keeps stderr open; an agent is waiting for its result
+
 
 def ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int) -> list[str]:
     """The exact command `common.ssh` runs (validated the same way)."""
@@ -117,4 +119,4 @@ class Duplex:
     def close(self) -> None:
         """Stop the process (if still running) and release every pipe; never raises."""
         self.close_stdin()
-        ssh.reap(self.proc, [self._drain])
+        ssh.reap(self.proc, [self._drain], join_s=CLOSE_JOIN_S)

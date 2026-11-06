@@ -8,7 +8,7 @@ from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.runners.supervise import Supervisor
-from mulebox.worker.agent import POLL_S, Agent
+from mulebox.worker.agent import Agent
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor
 from mulebox.worker.link import CoordinatorLink
@@ -32,5 +32,5 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
             agent.step()
         except (MuleboxError, OSError) as exc:
             LOG.error("worker step failed: %s", exc)
-        stop.wait(POLL_S)
+        stop.wait(agent.wait_s())
     agent.shutdown()
