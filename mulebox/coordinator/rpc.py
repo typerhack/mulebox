@@ -3,6 +3,8 @@
 - `rpc`: reads exactly one request line (cap MAX_LINE_BYTES) and writes one reply line;
   `watch` streams instead (watch.py).
 - `rpc-upload <job_id> <sha256>`: tar.gz bytes on stdin, one reply line on stdout.
+- `rpc-upload-plan <job_id>`: a file list on stdin, one reply line saying what to send.
+- `rpc-upload-delta <job_id> <sha256> <digest>`: tar.gz of those files on stdin, one reply line.
 - `rpc-download <job_id>`: tar.gz bytes on stdout; errors only on stderr.
 
 Nothing here ever prints a traceback on stdout: every failure becomes an `error` reply.
@@ -17,7 +19,7 @@ from typing import Any, BinaryIO, TextIO
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, uploads
+from mulebox.coordinator import api, delta, uploads
 from mulebox.coordinator.context import error_message
 from mulebox.coordinator.errors import BadRequest, CoordinatorError
 from mulebox.coordinator.lineio import note_error, read_line, write_message
@@ -64,14 +66,36 @@ def run_upload(store: Store, staging: Staging, job_id: str, sha256: str, stdin: 
                stdout: BinaryIO, stderr: TextIO | None = None, *,
                clock: Callable[[], float] = time.time) -> int:
     """Receive a snapshot for `job_id`; reply status_ok (state `queued`) or error."""
+    def receive() -> dict[str, Any]:
+        return status_body(*uploads.accept_upload(store, staging, job_id, sha256, stdin, clock()))
+    return _answer(receive, "rpc-upload", stdout, stderr)
+
+
+def run_upload_plan(store: Store, staging: Staging, job_id: str, stdin: BinaryIO,
+                    stdout: BinaryIO, stderr: TextIO | None = None) -> int:
+    """Read the client's file list; reply which files it has to send."""
+    return _answer(lambda: delta.plan(store, staging, job_id, stdin),
+                   "rpc-upload-plan", stdout, stderr, MessageType.UPLOAD_PLAN_OK)
+
+
+def run_upload_delta(store: Store, staging: Staging, job_id: str, sha256: str, digest: str,
+                     stdin: BinaryIO, stdout: BinaryIO, stderr: TextIO | None = None, *,
+                     clock: Callable[[], float] = time.time) -> int:
+    """Receive the changed files for `job_id`; reply as `run_upload` does."""
+    def receive() -> dict[str, Any]:
+        return status_body(*delta.accept(store, staging, job_id, sha256, digest, stdin, clock()))
+    return _answer(receive, "rpc-upload-delta", stdout, stderr)
+
+
+def _answer(work: Callable[[], dict[str, Any]], name: str, stdout: BinaryIO,
+            stderr: TextIO | None, kind: MessageType = MessageType.STATUS_OK) -> int:
     request_id = new_id("req")
     try:
-        job, place = uploads.accept_upload(store, staging, job_id, sha256, stdin, clock())
-        reply = Message(MessageType.STATUS_OK, request_id, status_body(job, place))
+        reply = Message(kind, request_id, work())
     except CoordinatorError as exc:
         reply = error_message(request_id, exc.code, str(exc))
     except Exception as exc:  # noqa: BLE001
-        _log.exception("internal error in rpc-upload")
+        _log.exception("internal error in %s", name)
         reply = error_message(request_id, "internal", f"internal error: {type(exc).__name__}")
     return _send_reply(stdout, stderr, reply)
 

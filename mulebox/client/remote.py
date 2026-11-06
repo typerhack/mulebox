@@ -85,7 +85,15 @@ class Remote:
         return result.stdout.decode("utf-8", errors="replace").strip()
 
     def upload(self, job_id: str, path: Path, sha256: str) -> Message:
-        argv = [self.program, "rpc-upload", job_id, sha256]
+        return self._send_file([self.program, "rpc-upload", job_id, sha256], path)
+
+    def upload_plan(self, job_id: str, path: Path) -> Message:
+        return self._send_file([self.program, "rpc-upload-plan", job_id], path)
+
+    def upload_delta(self, job_id: str, path: Path, sha256: str, digest: str) -> Message:
+        return self._send_file([self.program, "rpc-upload-delta", job_id, sha256, digest], path)
+
+    def _send_file(self, argv: list[str], path: Path) -> Message:
         result = sshio.run_with_file(
             self.target, argv, path, connect_timeout_s=self.connect_timeout_s
         )

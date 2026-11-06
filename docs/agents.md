@@ -238,7 +238,10 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      the user to run the install.
    - `setup` runs before a job in the same shell; keep it to dependency install. It is
      skipped when nothing it depends on changed: its text, the toolchain, the env and the
-     lockfiles at the root or one folder down. Its output must be something git ignores; if it
+     manifests, lockfiles and version files at the root or one folder down (`package.json`,
+     `pnpm-lock.yaml`, `pyproject.toml`, `requirements.txt`, `go.mod`, `VERSION`, `.nvmrc` and the
+     like; the list is `SETUP_INPUTS` in `worker/project_home.py`). If `setup` reads any other
+     file, change its text to make it run again. Its output must be something git ignores; if it
      is not, the next job loses it and `setup` runs again. A compose job always runs `setup`.
    - **A branch keeps its folder.** Jobs of a branch run in one folder on the build machine, with
      the project's ignored files kept between them. Only one job of a branch runs at a time.

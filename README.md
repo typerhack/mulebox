@@ -49,6 +49,8 @@ mulebox queue  --SSH-->        |
 - **A project is set up once**: each project has one folder on the build machine, with a git
   worktree per branch, and installs stay there. A job writes only the files that changed and runs
   `setup` only when what it depends on changed. Compose jobs still run `setup`, in new containers.
+- **Only changes cross the network**: over a slow link, a job sends the files that changed since
+  the last one, not the whole project.
 - **One job per branch at a time**: a second job of the same branch waits for the first.
 - **No repeat runs**: on exactly the same files, `mulebox check` gives the earlier result, or joins
   the same job if it is running, and says so. `--again` forces a run.

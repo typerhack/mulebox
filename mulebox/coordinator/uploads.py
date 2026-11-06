@@ -21,12 +21,14 @@ def accept_upload(store: Store, staging: Staging, job_id: str, sha256: str,
                   stream: BinaryIO, now: float) -> tuple[dict[str, Any], int | None]:
     """Store the snapshot from `stream` and queue the job; return (job, position)."""
     check_job_id(job_id)
-    _require_uploading(store.get_job(job_id), job_id)
+    job = store.get_job(job_id)
+    require_uploading(job, job_id)
     staging.write_upload(job_id, stream, sha256)
+    staging.keep_base(job_id, job["project"])
     try:
         with store.write() as conn:
             job = st.require_job(conn, job_id)
-            _require_uploading(job, job_id)
+            require_uploading(job, job_id)
             job = st.transition(
                 conn, job, JobState.QUEUED, queued_at=now, upload_sha256=sha256,
                 client_lease_until=now + CLIENT_LEASE_S,
@@ -47,7 +49,7 @@ def send_snapshot(store: Store, staging: Staging, job_id: str, out: BinaryIO) ->
     return staging.copy_upload(job_id, out)
 
 
-def _require_uploading(job: dict[str, Any] | None, job_id: str) -> None:
+def require_uploading(job: dict[str, Any] | None, job_id: str) -> None:
     if job is None:
         raise NotFound(f"no job {job_id}")
     if job["state"] != JobState.UPLOADING:

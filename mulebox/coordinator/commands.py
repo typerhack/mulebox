@@ -30,6 +30,18 @@ def register(sub: argparse._SubParsersAction) -> None:
     _node_option(p)
     p.set_defaults(func=_upload)
 
+    p = sub.add_parser("rpc-upload-plan", help="say which files of a snapshot to send")
+    p.add_argument("job_id")
+    _node_option(p)
+    p.set_defaults(func=_upload_plan)
+
+    p = sub.add_parser("rpc-upload-delta", help="receive the changed files of a snapshot")
+    p.add_argument("job_id")
+    p.add_argument("sha256")
+    p.add_argument("digest")
+    _node_option(p)
+    p.set_defaults(func=_upload_delta)
+
     p = sub.add_parser("rpc-download", help="write a job snapshot (tar.gz) to stdout")
     p.add_argument("job_id")
     _node_option(p)
@@ -74,6 +86,17 @@ def _upload(args: argparse.Namespace) -> int:
     return _with_store(args, lambda store, staging: rpc.run_upload(
         store, staging, args.job_id, args.sha256, sys.stdin.buffer, sys.stdout.buffer,
         sys.stderr))
+
+
+def _upload_plan(args: argparse.Namespace) -> int:
+    return _with_store(args, lambda store, staging: rpc.run_upload_plan(
+        store, staging, args.job_id, sys.stdin.buffer, sys.stdout.buffer, sys.stderr))
+
+
+def _upload_delta(args: argparse.Namespace) -> int:
+    return _with_store(args, lambda store, staging: rpc.run_upload_delta(
+        store, staging, args.job_id, args.sha256, args.digest, sys.stdin.buffer,
+        sys.stdout.buffer, sys.stderr))
 
 
 def _download(args: argparse.Namespace) -> int:

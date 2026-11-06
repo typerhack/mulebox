@@ -82,6 +82,7 @@ class MessageType(StrEnum):
     UPLOAD_DONE = "upload_done"
     STATUS = "status"
     STATUS_OK = "status_ok"
+    UPLOAD_PLAN_OK = "upload_plan_ok"
     CANCEL = "cancel"
     JOB_OK = "job_ok"
     HEARTBEAT = "heartbeat"
@@ -126,6 +127,7 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.REACH_OK: frozenset({"hosts"}),
     # `outcome` is added once the state is `finished`.
     MessageType.STATUS_OK: frozenset({"job_id", "state"}),
+    MessageType.UPLOAD_PLAN_OK: frozenset({"need"}),
     MessageType.CANCEL: frozenset({"job_id"}),
     # client or worker -> coordinator: renew a lease (`lease` names which one).
     MessageType.HEARTBEAT: frozenset({"job_id", "lease"}),

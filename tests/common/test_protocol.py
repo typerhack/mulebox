@@ -20,6 +20,7 @@ from mulebox.common.protocol import (
 S = JobState
 
 SAMPLE_VALUES = {
+    "need": None,
     "steps": [],
     "hosts": [],
     "project": "example-app",
@@ -85,7 +86,8 @@ def test_enum_values_match_contract():
         "passed", "failed", "cancelled", "timed_out", "interrupted"]
     assert {t.value for t in MessageType} == {
         "job_ok",
-        "submit", "submit_ok", "upload_done", "status", "status_ok", "cancel", "heartbeat",
+        "submit", "submit_ok", "upload_done", "status", "status_ok", "upload_plan_ok", "cancel",
+        "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "steps", "error",
         "queue", "queue_ok", "projects", "projects_ok", "machines", "machines_ok", "logs", "watch",
         "reach", "reach_ok", "reserve", "acquire", "release", "runner_jobs"}

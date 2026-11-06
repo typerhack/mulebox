@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.57.0 - 2026-11-06 - minor
+- `setup` also reruns when a version file or manifest changes (`VERSION`, `go.mod`, `.nvmrc` and the like): the gate caught an install that had stored an old version.
+- A snapshot over 1 MiB sends only the files that changed since the project's last upload: the link to a build machine can do 0.4 MB/s, which made the upload slower than the job's start. The coordinator rebuilds and checks the whole snapshot, and any trouble sends it whole.
+
 ## 0.56.0 - 2026-11-06 - minor
 - A project now has one folder on the build machine, with a git worktree per branch, and jobs run there instead of starting from nothing: ignored files such as `node_modules` stay, and only changed files are written.
 - `setup` is skipped when its text, the toolchain, the env and the lockfiles are unchanged and nothing it may have made was lost. A compose job always runs it.

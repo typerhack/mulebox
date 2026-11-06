@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import attention, report, summary
+from mulebox.client import attention, delta, report, summary
 from mulebox.client.job_body import job_request, submit_body
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
@@ -52,6 +52,8 @@ class WatchLost(MuleboxError):
 class RemoteLike(Protocol):
     def call(self, msg: Message) -> Message: ...
     def upload(self, job_id: str, path: Path, sha256: str) -> Message: ...
+    def upload_plan(self, job_id: str, path: Path) -> Message: ...
+    def upload_delta(self, job_id: str, path: Path, sha256: str, digest: str) -> Message: ...
     def watch(self, job_id: str, offset: int = 0, lease: bool = True,
               log: bool = True) -> Iterator[Message]: ...
 
@@ -111,7 +113,8 @@ def run_job(
         if detach and reply.body.get("detached") is not True:
             _refuse_detach(remote, watcher.job_id)
         if reply.body.get("state") == "uploading":
-            remote.upload(watcher.job_id, snap.path, snap.sha256)
+            if not delta.send(remote, watcher.job_id, snap, lambda m: report.status(io.err, m)):
+                remote.upload(watcher.job_id, snap.path, snap.sha256)
         snap.discard()
         if detach:
             _left_running(watcher.job_id, io)

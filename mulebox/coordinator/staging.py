@@ -1,7 +1,7 @@
 """Files the coordinator keeps in its staging root: snapshot uploads and job logs.
 
 Layout (docs/interfaces-m1.md): `<staging>/state/mulebox.db`, `<staging>/uploads/
-<job_id>.tar.gz`, `<staging>/logs/<job_id>.log`. Folders are created with
+<job_id>.tar.gz`, `<staging>/bases/<project hash>.tar.gz`, `<staging>/logs/<job_id>.log`. Folders are created with
 `safepath.ensure_dir`, files are removed with `safepath.remove_tree`, and files are opened
 relative to their folder's descriptor without following symlinks.
 
@@ -13,15 +13,18 @@ import hashlib
 import os
 import re
 import secrets
+import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 from typing import BinaryIO
 
+from mulebox.common.log import get_logger
 from mulebox.common.safepath import Roots, ensure_dir, remove_tree
 from mulebox.coordinator.errors import BadRequest, Conflict, NotFound, TooLarge
 from mulebox.coordinator.validate import check_job_id
 
+_log = get_logger(__name__)
 UPLOAD_MAX_BYTES = 1 << 30
 LOG_READ_MAX_BYTES = 128 * 1024  # JSON escaping can grow it ~6x; stays under 1 MiB lines
 _CHUNK = 1 << 20
@@ -41,7 +44,8 @@ class Staging:
         self.state_dir = self.root / "state"
         self.uploads_dir = self.root / "uploads"
         self.logs_dir = self.root / "logs"
-        for folder in (self.state_dir, self.uploads_dir, self.logs_dir):
+        self.bases_dir = self.root / "bases"
+        for folder in (self.state_dir, self.uploads_dir, self.logs_dir, self.bases_dir):
             ensure_dir(folder, roots)
 
     @property
@@ -129,6 +133,48 @@ class Staging:
         for name in os.listdir(self.uploads_dir):
             if name.startswith(prefix) and name.endswith(_PART_SUFFIX):
                 remove_tree(self.uploads_dir / name, self.roots)
+
+    # A project's last snapshot, and files that vanish when closed (coordinator/delta.py)
+
+    def _base_name(self, project: str) -> str:
+        return f"{hashlib.sha256(project.encode()).hexdigest()[:24]}{_UPLOAD_SUFFIX}"
+
+    def keep_base(self, job_id: str, project: str) -> None:
+        """Make the job's upload the project's base: a second name for the same file."""
+        name = self._base_name(project)
+        temp = f".{job_id}{_PART_SUFFIX}"
+        try:
+            with self._folder(self.bases_dir) as dir_fd:
+                os.link(self.upload_path(job_id), temp, dst_dir_fd=dir_fd, follow_symlinks=False)
+                os.replace(temp, name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
+        except OSError as exc:  # the next job sends everything, nothing worse
+            _log.warning("no base kept for %s: %s", project, exc)
+
+    def open_base(self, project: str) -> BinaryIO | None:
+        with self._folder(self.bases_dir) as dir_fd:
+            try:
+                fd = os.open(self._base_name(project), os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC,
+                             dir_fd=dir_fd)
+            except FileNotFoundError:
+                return None
+        return os.fdopen(fd, "rb")
+
+    def scratch(self) -> BinaryIO:
+        return tempfile.TemporaryFile(dir=self.uploads_dir)
+
+    def receive(self, stream: BinaryIO, sha256: str,
+                max_bytes: int = UPLOAD_MAX_BYTES) -> BinaryIO:
+        """`stream` as a scratch file, read from its start, once its hash is right."""
+        file = self.scratch()
+        try:
+            digest = _copy_hashed(stream, file.fileno(), max_bytes)[1]
+            if digest != sha256:
+                raise BadRequest(f"sha256 mismatch: expected {sha256}, received {digest}")
+            file.seek(0)
+        except BaseException:
+            file.close()
+            raise
+        return file
 
     # Logs
 

@@ -34,7 +34,7 @@ from mulebox.client.tree import (
 )
 from mulebox.common.errors import MuleboxError
 
-__all__ = ["Snapshot", "SnapshotError", "current_fingerprint", "make_snapshot"]
+__all__ = ["Snapshot", "SnapshotError", "current_fingerprint", "make_snapshot", "sha256_file"]
 
 MAX_SNAPSHOT_BYTES = 1024**3  # the coordinator's upload cap
 _COMPRESS_LEVEL = 6
@@ -97,7 +97,7 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = ()) -> Snapshot:
                 f"snapshot is {size / 1024**2:.0f} MiB, over the 1 GiB upload limit; add large "
                 "generated folders to `exclude` in .mulebox.yml or to .gitignore"
             )
-        digest = _sha256_file(path)
+        digest = sha256_file(path)
     except BaseException:
         path.unlink(missing_ok=True)
         raise
@@ -141,7 +141,7 @@ def _tar_info(path: str, st: os.stat_result) -> tarfile.TarInfo:
     return info
 
 
-def _sha256_file(path: Path) -> str:
+def sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as file:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):

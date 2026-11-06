@@ -52,6 +52,10 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    `.secret/`, `.env*` (but not a template tracked in git, such as `.env.example`), `secrets/`,
    `.npmrc`, keys, and anything the project config adds.
    The job is queued only when the upload is complete and fingerprinted.
+   Over 1 MiB, only what changed goes: the client sends a list of file hashes, the coordinator
+   compares it with the project's last snapshot and asks for the difference, rebuilds the whole
+   snapshot, and queues the job only if the result matches the list. Any trouble sends the whole
+   snapshot, so a saving never fails a job. One snapshot per project stays in `<staging>/bases`.
 2. **Queue**: one FIFO line. Assignment is atomic: the oldest job a free worker can run.
    Cluster-wide and per-worker slot limits, both default 1.
 3. **Project folder**: the worker fetches and verifies the snapshot, then makes the branch's

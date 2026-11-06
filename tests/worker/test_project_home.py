@@ -186,3 +186,11 @@ def test_setup_state_is_per_branch(send, paths):
     assert not home.setup_is_current(paths, "example-app", "feature", "k")
     home.forget_setup(paths, "example-app", "main")
     assert not home.setup_is_current(paths, "example-app", "main", "k")
+
+
+def test_a_version_file_counts_for_setup(send):
+    tree = send({**FILES, "VERSION": "1.0.0\n"}).tree
+    claim = {"setup": "pip install -e .", "toolchain": {}, "env": {}}
+    before = home.setup_key(tree, claim)
+    (tree / "VERSION").write_text("1.0.1\n")
+    assert home.setup_key(tree, claim) != before
