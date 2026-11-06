@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.64.1 - 2026-11-06 - patch
+- Roadmap: M2.5, M11.2, M15.1, M15.2, M16.1 and M16.3 closed by real jobs; M16.2 built, with the warning itself seen in tests only. Holding no slot during an install was dropped, with the reason.
+
 ## 0.64.0 - 2026-11-06 - minor
 - `install:` in `.mulebox.yml`, a stage of its own: it runs in the project's image, is reused until what it depends on changes, also in a compose job, is tried again on a lost network, and if it fails the job exits 5. Schema 11, contract schema 12.
 - With an `install` or `setup`, a job turns off pnpm's check before each `pnpm run`, also in containers.

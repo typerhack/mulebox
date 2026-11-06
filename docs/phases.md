@@ -62,11 +62,15 @@ queue and returns the same result as running it locally.
       and by the app's own check; the tunnel still works. The password is optional since
       0.14.0, off on the author's machine. Open: a reboot and a Wi-Fi drop with `lan` on. Not a
       priority, the user's call on 2026-11-06. Phone-size view: see M2.7.
-- [~] M2.5 Optional cancel button with its own protection. Built 2026-11-05 (0.53.0): off by default,
+- [x] M2.5 Optional cancel button with its own protection. Built 2026-11-05 (0.53.0): off by default,
       only for a signed-in session on the lan address, through `mulebox rpc` like `mulebox cancel`,
       with Origin and a session token on top of SameSite. In real Edge on localhost with a stand-in
       worker: two-step cancel of a queued and a running job; pages on another port and site changed
-      nothing. Open: a real job at a plain-HTTP lan address with a password, and a phone.
+      nothing. Done 2026-11-06 (0.64.1): at the
+      real LAN address over plain HTTP at 390x844 in headless Edge, a throwaway dashboard with a password
+      and two real jobs, one queued and one running, both cancelled in two steps. No cookie gave 401; a
+      wrong origin and a missing token gave 403. The session was made in its process, as no password may
+      be typed there by an agent; signing in itself was seen in M2.4.
 - [x] M2.6 Machines panel: every worker, online or offline, free slots. Live CPU and memory
       per machine is M5.3. Done 2026-11-04 (0.10.0): in real Chrome on a real machine, a job
       showed busy with nothing free for its whole run; a frozen worker showed offline in 14 s
@@ -286,13 +290,14 @@ it: a real machine.
       with `timeout_min: 1`, a detached job gave a `check_in` each minute in `events` and the same
       warning in `wait`, an attached `check` printed them too, and `status` showed activity and the
       watcher.
-- [~] M11.2 (the stop rule was replaced by M18.1; the activity readings stay) Activity: output, plus the job's own CPU and its services' traffic from control groups,
+- [x] M11.2 (the stop rule was replaced by M18.1; the activity readings stay) Activity: output, plus the job's own CPU and its services' traffic from control groups,
       reported with worker heartbeats. Built 2026-11-04 (0.37.0) on the machine's readings; a real
       drill on 2026-11-05 showed a sleeping job could never be idle that way, so 0.43.0 measures the
       job. 2026-11-05 on a real machine: a sleeping job beside idle Redis containers stopped at 20m
       06s and left nothing; a silent job at 100% of a core ran its 23 minutes. Run 2026-11-05: a
       real MySQL, Postgres and Redis stack read 3.2 to 3.6% of a core, under the 10% line, and its
-      idle count kept rising; it was cancelled before its stop. Open: the stop itself.
+      idle count kept rising; it was cancelled before its stop. Done 2026-11-06 (0.64.1): a job beside idle real MySQL, Postgres and
+      Redis, `timeout_min: 1`, stopped at 2m 05s with exit 76, nothing left behind.
 - [-] M11.3 Replaced by M18.1 on 2026-11-06. Unattended jobs: `wait` and `events` count as watching, 15 minutes idle and 24 hours
       total as `[limits]`, queued jobs included, `stopped: unattended`, exit 76, schema 8 with
       an upgrade test. Built 2026-11-04 (0.37.0). Open: a job really stopped on a machine,
@@ -376,17 +381,32 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       only. Freezing a running job was advised against.
 
 ## M15: Managed environments
-- [ ] M15.1 A job declares what it needs; mulebox builds the environment, reuses it until the
+- [x] M15.1 A job declares what it needs; mulebox builds the environment, reuses it until the
       project, lockfile, toolchain or image changes, and reports its failures apart from code
       failures. Built in the job's own image, with network retries, without holding a build slot.
-      Open question: secrets for private registries.
-- [ ] M15.2 Run pnpm's pre-run dependency check once in the environment stage and turn it off for the
-      job's commands, in containers too, as it can trigger a long silent install.
+      Open question: secrets for private registries. Done 2026-11-06 (0.64.1): `install:`,
+      a stage of its own, run in the job's image. On a real compose project with a committed lock, the
+      next job skipped it, a changed compose file ran it, a bad manifest exited 5 with the reason, and a
+      lost connection was tried again and recovered. Holding no slot was dropped: it would run more than
+      `slots` allows, with the job's containers up (design.md). Secrets for private registries stay
+      what they are today: `env:` and the machine's `[job_env]`.
+- [x] M15.2 Run pnpm's pre-run dependency check once in the environment stage and turn it off for the
+      job's commands, in containers too, as it can trigger a long silent install. Done 2026-11-06 (0.64.1): with
+      `verifyDepsBeforeRun: install` set in a project, a job removed `node_modules` and `pnpm run` installed
+      nothing, while the same job with the check forced on did. Seen set inside a compose service too. It
+      needs an `install` or `setup`, or nothing has settled the packages.
 
 ## M16: Smaller ideas from real use
-- [ ] M16.1 `mulebox warm`: prepare a project's caches and images ahead of a job.
-- [ ] M16.2 Disk warning on a machine, with a confirmed cleanup.
-- [ ] M16.3 Deploy when idle: an upgrade waits until no job is running.
+- [x] M16.1 `mulebox warm`: prepare a project's caches and images ahead of a job. Done 2026-11-06 (0.64.1): `mulebox warm`
+      ran a real compose project up to its command, and does not count as a run of the job.
+- [~] M16.2 Disk warning on a machine, with a confirmed cleanup. Built 2026-11-06 (0.64.1): the worker reports
+      its fullest disk (schema 10), and under 10 GB `doctor` and every command from a project warn and
+      name `mulebox project clean`, which lists first and removes with `--yes`. Seen reported by the real
+      worker; the warning itself only in tests, as filling a real disk is not a drill. Open: a machine
+      really low on disk.
+- [x] M16.3 Deploy when idle: an upgrade waits until no job is running. Done 2026-11-06 (0.64.1): `mulebox setup pc
+      --when-idle` with a job running: the job finished and passed, a job queued meanwhile said why it
+      waited and ran after, and the upgrade passed. CI runs wait too (tests).
 - [-] M16.4 Reuse a passed result: moved to M18.3, the user wants it now.
 
 ## M18: Jobs that respect the agent's time
