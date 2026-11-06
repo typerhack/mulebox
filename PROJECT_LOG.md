@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.4 - 2026-11-06 - patch
+- `check` no longer gives back a failure from an older mulebox: it may have been a fault in mulebox that is gone, as a real trial found after an upgrade. A pass stays a pass. A job records the worker's version (schema 12).
+
 ## 0.66.3 - 2026-11-06 - patch
 - A project's folders on the machine are readable by others, as on any checkout, so a container's own user can read what a project mounts. They were made 750, the mode of mulebox's private folders, and a database's init folder failed with `Permission denied`. Existing folders open on the next job; the project home above them stays closed. Found by the second agent trial.
 

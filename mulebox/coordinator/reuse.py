@@ -5,7 +5,9 @@ covers uncommitted changes) and what it runs with (argv, setup, toolchain, env) 
 Asked with `reuse`, `submit` answers with the same job already running or queued, or with its
 result from the last `REUSE_S`, instead of running it twice. `--again` is the way to a fresh run.
 Only a job that really ran counts: not a cancelled, stopped or interrupted one, and not one
-that never started.
+that never started. A failure counts only from the mulebox running now: after an upgrade it may
+have been a fault in mulebox that is gone, while a pass stays a pass. A job with no recorded
+version counts as older.
 
 A finished job nobody received the result of is told at the project's next command, so an agent
 that went away learns the outcome and need not retest. `told_at` says that was done.
@@ -18,6 +20,7 @@ from typing import Any
 
 from mulebox.common.protocol import JobState, Outcome
 from mulebox.coordinator import store as st
+from mulebox.version import get_version
 
 REUSE_S = 86400.0
 MAX_TOLD = 10
@@ -27,7 +30,8 @@ _OPEN = (JobState.QUEUED, JobState.STARTING, JobState.RUNNING)
 
 def _ran(job: dict[str, Any]) -> bool:
     return job["outcome"] == Outcome.PASSED or (job["outcome"] == Outcome.FAILED
-                                                and job["exit_code"] is not None)
+                                                and job["exit_code"] is not None
+                                                and job["worker_version"] == get_version())
 
 
 def earlier(conn: sqlite3.Connection, fields: dict[str, Any], now: float

@@ -16,6 +16,7 @@ from mulebox.client import report
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.status import NOT_STARTED_NOTE
 from mulebox.coordinator import api, leases, store as st
+from mulebox.version import get_version
 
 JOB_RE = r"job-[0-9A-Z]{26}"
 HOURS_LATER = 6 * 3600.0
@@ -38,7 +39,8 @@ class FakeWorker:
                           cluster_slots=4)
 
     def claim(self):
-        reply = self.send(MessageType.CLAIM, worker="build-1", capabilities=[], free_slots=1)
+        reply = self.send(MessageType.CLAIM, worker="build-1", capabilities=[], free_slots=1,
+                          version=get_version())
         return reply.body if reply.type is MessageType.CLAIM_OK else None
 
     def run(self, claim):

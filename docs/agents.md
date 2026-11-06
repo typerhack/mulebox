@@ -179,7 +179,7 @@ is there or not.
   by your next `mulebox` command in the project, so `--json` output stays clean. Do not retest.
 - **`mulebox check` does not repeat itself.** On the same files, uncommitted changes included,
   and the same settings, it gives the result of the last 24 hours with its exit code, or joins
-  the same job if it is queued or running. A cancelled or stopped job does not count. `--again`
+  the same job if it is queued or running. A cancelled or stopped job does not count, nor does a failure from before a mulebox upgrade, which may have been a fault in mulebox. `--again`
   forces a run.
 - **GitHub runner reservations** are not touched by any of this: GitHub owns those jobs.
 

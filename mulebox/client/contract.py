@@ -159,7 +159,8 @@ RULES = (
     "mulebox cancel",
     "mulebox check does not repeat itself: on the same files and settings it gives the earlier "
     "result of the last 24 hours, or joins the same job if it is running; a result from while "
-    "you were away counts, so do not retest; --again forces a run",
+    "you were away counts, so do not retest; --again forces a run. A failure from before a "
+    "mulebox upgrade does not count and runs again",
     "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
     "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
     "1 if a job would not run, and warnings alone exit 0",

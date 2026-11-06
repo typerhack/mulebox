@@ -488,11 +488,14 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
 
 ## M19: Agent trials
 From `docs/agent-trial.md` on real projects, 2026-11-06. First trial: all steps ran and the agent would
-use mulebox, adding about 15 s to a 3 min 14 s gate. The second project stopped at its first gate, on M19.13.
+use mulebox, adding about 15 s to a 3 min 14 s gate. The second project stopped at its first gate, on M19.13; its rerun on 0.66.3 passed all but a
+browser download blocked for the machine's network location.
 - [x] M19.1 The failure summary keeps every failed part of a gate. Done 2026-11-06 (0.66.1): the real
       failed log of the trial, replayed, showed the type error and both failed parts.
 - [x] M19.13 A container's own user can read what a project mounts. Done 2026-11-06 (0.66.3): a real job with
       `mysql:8.4` mounting an init folder started, ran its seed file and read the row back, in 17 s.
+- [~] M19.14 `check` does not give back a failure from an older mulebox. Built (0.66.4), schema 12: tests
+      with the real coordinator code. Open: seen across a real upgrade.
 - [ ] M19.2 `mulebox init` in a git worktree names the project after the repository, not the folder.
 - [ ] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link.
 - [ ] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install.

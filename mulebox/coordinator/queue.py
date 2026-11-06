@@ -62,6 +62,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,
+                    worker_version=version,
                 )
     return None
 

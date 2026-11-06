@@ -22,6 +22,7 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   an upgrade would report the whole history.
 - 9 -> 10: `workers.disk_free` (bytes on its fullest disk, common/disk.py), NULL until reported.
 - 10 -> 11: `jobs.install`, the job's `install` line (worker/install_step.py).
+- 11 -> 12: `jobs.worker_version`, the mulebox that ran the job (reuse.py); NULL on older jobs.
 """
 
 import sqlite3
@@ -65,6 +66,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
         "UPDATE jobs SET told_at = finished_at WHERE state = 'finished'"),
     9: ("ALTER TABLE workers ADD COLUMN disk_free INTEGER",),
     10: ("ALTER TABLE jobs ADD COLUMN install TEXT",),
+    11: ("ALTER TABLE jobs ADD COLUMN worker_version TEXT",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

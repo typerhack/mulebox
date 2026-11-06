@@ -3,10 +3,13 @@
 import pytest
 
 from mulebox.common.protocol import MessageType
+from mulebox.coordinator import queue
+from mulebox.coordinator import store as st
 from mulebox.coordinator import watch as stream
 from mulebox.coordinator.reuse import REUSE_S
+from mulebox.version import get_version
 
-from .helpers import submit_body
+from .helpers import queued, submit_body
 from .test_attendance import T0, call, running
 
 LATER = T0 + 100.0
@@ -29,10 +32,39 @@ def test_the_same_files_get_the_earlier_result(store, staging):
     assert reply.body["already"]["outcome"] == "passed"
 
 
+def ran_on(store, job, version):
+    with store.write() as conn:
+        st.update_job(conn, job["job_id"], worker_version=version)
+
+
 def test_a_failure_counts_too_with_its_exit_code(store, staging):
     job = running(store, staging)
+    ran_on(store, job, get_version())
     finish(store, staging, job, "failed", 2)
     assert again(store, staging).body["already"]["exit_code"] == 2
+
+
+@pytest.mark.parametrize("version", ["0.0.1", None])
+def test_a_failure_from_another_mulebox_runs_again(store, staging, version):
+    job = running(store, staging)
+    ran_on(store, job, version)
+    finish(store, staging, job, "failed", 2)
+    reply = again(store, staging)
+    assert "already" not in reply.body and reply.body["job_id"] != job["job_id"]
+
+
+def test_a_pass_from_another_mulebox_still_counts(store, staging):
+    job = running(store, staging)
+    ran_on(store, job, "0.0.1")
+    finish(store, staging, job)
+    assert again(store, staging).body["job_id"] == job["job_id"]
+
+
+def test_a_claim_records_the_workers_version(store, staging):
+    queued(store, staging, T0)
+    queue.claim(store, "wrk-a", ["node", "docker"], 1, 10, now=T0, version="1.2.3")
+    with store.read() as conn:
+        assert st.select_jobs(conn)[0]["worker_version"] == "1.2.3"
 
 
 def test_the_same_job_running_is_joined(store, staging):

@@ -127,7 +127,7 @@ minutes and 24 hours. Real use showed that wasted working jobs, so it went.
 
 A job is the same job when the project, the job's name, the exact files, uncommitted changes
 included (`fingerprint`), and argv, setup, toolchain and env are the same. `mulebox check` on the
-same job gets the result of the last 24 hours, or joins it if it is queued or running, and `--again`
+same job gets the result of the last 24 hours (a failure only from the mulebox running now), or joins it if it is queued or running, and `--again`
 forces a run. Only a job that really ran counts. A finished job whose result reached nobody is
 told once, at the project's next command (`jobs.told_at`).
 
