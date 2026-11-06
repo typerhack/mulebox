@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.64.2 - 2026-11-06 - patch
+- `docs/agent-trial.md`: a test plan and report format, so an agent can try mulebox on a real project with no skill installed.
+
 ## 0.64.1 - 2026-11-06 - patch
 - Roadmap: M2.5, M11.2, M15.1, M15.2, M16.1 and M16.3 closed by real jobs; M16.2 built, with the warning itself seen in tests only. Holding no slot during an install was dropped, with the reason.
 

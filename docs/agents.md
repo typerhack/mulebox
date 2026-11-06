@@ -2,6 +2,7 @@
 
 This file is written for AI coding agents. A user may tell you: "read mulebox's
 docs/agents.md and set this project up" or "use mulebox here". Follow it step by step.
+To test mulebox on a project and report back, see [agent-trial.md](agent-trial.md).
 
 mulebox runs a project's builds, type checks, lint and tests on a Linux build machine
 through one queue, instead of on the laptop you are working on. You keep editing, reading,
