@@ -113,6 +113,11 @@ def write_client_config(target: str, say: Say) -> None:
     say(f"wrote {path}")
 
 
+def _this_mulebox() -> list[str]:
+    """How to run the mulebox that is running: a downloaded one has no Python to call."""
+    return [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, "-m", "mulebox"]
+
+
 def _git(folder: str, *args: str) -> None:
     subprocess.run(["git", "-c", "user.name=mulebox", "-c", "user.email=mulebox@example.com",
                     *args], cwd=folder, capture_output=True, check=True)
@@ -129,8 +134,8 @@ def prove(target: str, say: Say) -> None:
         _git(folder, "add", "-A")
         _git(folder, "commit", "-q", "-m", "check")
         env = {**os.environ, "MULEBOX_CONFIG": str(Path(folder, "client.toml"))}
-        done = subprocess.run([sys.executable, "-m", "mulebox.cli", "check", "--again"], cwd=folder,
-                              env=env, capture_output=True, text=True, check=False)
+        done = subprocess.run([*_this_mulebox(), "check", "--again"], cwd=folder, env=env,
+                              capture_output=True, text=True, check=False)
     if done.returncode != 0:
         raise SetupError(f"the first job did not pass (exit {done.returncode}):\n{done.stderr}")
     say("a first job passed")

@@ -4,6 +4,7 @@ This keeps honest edits honest. It cannot stop a hostile pull request, which can
 test too: that protection is having no self-hosted runner at all (docs/releasing.md).
 """
 
+import importlib.util
 import re
 import tomllib
 from pathlib import Path
@@ -33,7 +34,9 @@ def test_only_github_hosted_machines():
     for path in WORKFLOWS:
         assert "self-hosted" not in yaml.safe_dump(load(path)["jobs"]), path
         for job in load(path)["jobs"].values():
-            assert re.fullmatch(r"ubuntu-[\d.]+", job["runs-on"]), path  # no ${{ }} either
+            machines = job.get("strategy", {}).get("matrix", {}).get("os", [job["runs-on"]])
+            for machine in machines:
+                assert re.fullmatch(r"(ubuntu|macos)-[\d.]+", machine), path  # no ${{ }} either
 
 
 def test_no_trigger_gives_a_fork_secrets_or_write_access():
@@ -62,3 +65,21 @@ def test_it_runs_the_gate_on_the_minimum_python():
     assert workflow["jobs"]["test"]["strategy"]["matrix"]["python"][0] == minimum
     commands = " ".join(step.get("run", "") for step in steps(workflow))
     assert "tools/check_line_counts.py" in commands and "pytest" in commands
+
+
+def test_a_release_runs_on_tags_alone_and_gives_only_its_upload_the_token():
+    workflow = load(REPO / ".github" / "workflows" / "release.yml")
+    assert workflow["on"] == {"push": {"tags": ["v*"]}}
+    with_token = [step for step in steps(workflow) if "GH_TOKEN" in step.get("env", {})]
+    assert [step["name"] for step in with_token] == ["Open a draft release",
+                                                     "Upload to the draft release"]
+    assert "--draft" in with_token[0]["run"]
+    assert workflow["jobs"]["build"]["steps"][-1] is with_token[1]
+
+
+def test_a_release_file_is_named_for_its_system():
+    spec = importlib.util.spec_from_file_location("build_binary", REPO / "tools" / "build_binary.py")
+    tool = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(tool)
+    assert tool.archive_name("1.0.0", "Darwin", "arm64") == "mulebox-1.0.0-macos-arm64.tar.gz"
+    assert tool.archive_name("1.0.0", "Linux", "x86_64") == "mulebox-1.0.0-linux-x86_64.tar.gz"

@@ -61,14 +61,20 @@ Only after the user has declared it.
    git push origin v1.0.0
    ```
 
-5. Build the wheel from the tag and attach it to a GitHub release, whose notes come from the log:
+5. The tag starts [.github/workflows/release.yml](../.github/workflows/release.yml), which builds
+   the binaries for macOS on Apple silicon and Linux on x86-64 and puts them on a draft release.
+   Add the wheel, write the notes from the log, and publish it:
 
    ```sh
    python -m pip wheel --no-deps -w dist .
-   gh release create v1.0.0 dist/mulebox-1.0.0-py3-none-any.whl --verify-tag --notes-file notes.md
+   gh release upload v1.0.0 dist/mulebox-1.0.0-py3-none-any.whl
+   gh release edit v1.0.0 --draft=false --notes-file notes.md
    ```
 
-6. Install that wheel on a build machine and run a real project through it:
+   To build a binary yourself: `pip install '.[binary]' && python tools/build_binary.py`. Update
+   the version in the example in [install.md](install.md#2-install-on-the-laptop) with the release.
+
+6. Install a binary on a laptop, run `mulebox setup` from it and run a real project through it:
    [install.md, Upgrade](install.md#upgrade).
 
 A tag is never moved or deleted once pushed. If a release is wrong, fix it in a new version.

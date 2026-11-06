@@ -15,8 +15,9 @@ Behaviour can still change between versions, and what is open is in the
 ## Get started
 
 [docs/getting-started.md](docs/getting-started.md) takes you from nothing to a project whose checks
-run on a build machine. You need a Linux machine with systemd, ssh access to it with a key, and
-Python 3.12 or newer on both sides.
+run on a build machine. You need a Linux machine with systemd and Python 3.12 or newer, and ssh
+access to it with a key. On the laptop, install with pipx, as a binary that needs no Python, or by
+hand: [install.md](docs/install.md#2-install-on-the-laptop).
 
 ## How it works
 

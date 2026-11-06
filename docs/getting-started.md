@@ -10,7 +10,7 @@ the user `alice` and the project `example-app`.
 ## What you need
 
 - A Linux build machine with systemd, Python 3.12 or newer, and a user you can log in as.
-- A macOS or Linux laptop with Python 3.12 or newer, and git.
+- A macOS or Linux laptop with git, and Python 3.12 or newer unless you use the binary.
 - Login from the laptop to the build machine with an ssh key, and no prompts: mulebox never
   answers one. `ssh build-1 true` must print nothing and ask nothing. If your key has a
   passphrase, load it into your ssh agent first.
@@ -21,8 +21,8 @@ root. Use it for projects you trust, on a network you trust.
 
 ## 1. Install
 
-1. Get mulebox on the laptop: `git clone` this repository, `cd` into it, and follow
-   [install.md, section 2](install.md#2-install-on-the-laptop).
+1. Get mulebox on the laptop: with pipx, as a binary, or by hand from a clone
+   ([install.md, section 2](install.md#2-install-on-the-laptop)).
 2. Install the build machine, from the laptop: `mulebox setup build-1`. It installs everything
    there, finds out what the machine offers, writes the laptop's config and runs a first job.
 

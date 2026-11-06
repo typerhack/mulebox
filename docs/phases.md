@@ -439,10 +439,16 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       2026-11-06 (0.61.0): on a real machine a job installed node in 48 s while a job on the other
       slot ran in 14 s, the next job started in under 2 s, a cancel took 2 s, a version that does not
       exist exited 5 with the reason, and pnpm installed once it got the machine's `[job_env]`.
-- [ ] M17.4 The client installs in one line, with no clone. Publishing it is the user's decision.
+- [~] M17.4 The client installs in one line, with no clone: pipx, a binary, or by hand, the user's
+      choice on 2026-11-06. Built 2026-11-06 (0.62.0): on macOS, a pip install and the unpacked binary
+      each ran `mulebox setup` and a job on a real machine, the binary with no Python on its path.
+      Not run: the Linux binary and the release workflow, which need a tag. Open: the repository going public, which is
+      what makes the pipx line and the releases page work.
 - [ ] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures fixed.
 
 ## Parking lot
+- `mulebox init` on a laptop with no node writes a file with no node pinned; on a machine with none
+  of its own the job ends with `npm: command not found`. Found 2026-11-06.
 - Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own
   (`PLAYWRIGHT_DOWNLOAD_HOST`); worth it only if a first download keeps failing after M13.12.
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`

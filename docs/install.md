@@ -24,7 +24,7 @@ Build machine:
 
 Laptop:
 
-- Python 3.12 or newer, a clone of mulebox, and ssh access to the build machine with a key
+- mulebox (section 2), and ssh access to the build machine with a key
   (an entry in `~/.ssh/config` such as `Host build-1` keeps commands short). Log in once by
   hand so the machine's host key is known: mulebox's ssh never prompts, so a key with a
   passphrase must be in your ssh agent.
@@ -135,8 +135,28 @@ reads the queue's database read-only and never changes anything.
 
 ## 2. Install on the laptop
 
-Install the client from the clone into a folder of its own. Plain `pip install --user` is refused
-by most current Python installs, Homebrew's and Ubuntu's among them
+Any of these three. The binary needs no Python on the laptop; the build machine always needs it.
+
+**With pipx** (or `uv tool install`), which also updates easily:
+
+```sh
+pipx install git+https://github.com/example-org/mulebox
+```
+
+**As a binary**, for macOS on Apple silicon and Linux on x86-64. Take the file for your system from
+the [releases page](https://github.com/example-org/mulebox/releases). Download it with `curl` as
+below: the binaries are not signed, so macOS refuses a file a browser fetched. It is a folder,
+because a single file took 10 s to start on macOS:
+
+```sh
+curl -fsSLO https://github.com/example-org/mulebox/releases/download/v1.0.0/mulebox-1.0.0-macos-arm64.tar.gz
+mkdir -p ~/.local/share ~/.local/bin
+tar xzf mulebox-1.0.0-macos-arm64.tar.gz -C ~/.local/share
+ln -sf ~/.local/share/mulebox/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
+```
+
+**By hand**, from a clone. Give it a folder of its own: plain `pip install --user` is refused by
+most current Python installs, Homebrew's and Ubuntu's among them
 (`externally-managed-environment`).
 
 ```sh
@@ -146,8 +166,7 @@ mkdir -p ~/.local/bin
 ln -s ~/.mulebox-client/bin/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
 ```
 
-`uv tool install .` or `pipx install .` do the same job if you use those. Then run `mulebox setup`
-(section 1). It writes `~/.config/mulebox/client.toml`; to change it later, the template is
+Then run `mulebox setup` (section 1). It writes `~/.config/mulebox/client.toml`; to change it later, the template is
 [mulebox/machine/client.toml.example](../mulebox/machine/client.toml.example):
 
 ```toml
@@ -233,10 +252,10 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 
 ## Upgrade
 
-Update the laptop's own client, then send the same version to the machine:
+Update the laptop's own client (`pipx upgrade mulebox`, a new binary, or `git pull` and the same
+`pip install .`), then send the same version to the machine:
 
 ```sh
-git pull && ~/.mulebox-client/bin/python -m pip install .
 mulebox setup build-1
 ```
 

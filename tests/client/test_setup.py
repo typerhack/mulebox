@@ -93,3 +93,9 @@ def test_a_later_step_failing_is_still_advice(monkeypatch):
     monkeypatch.setattr(setup, "install", broken)
     with pytest.raises(setup.SetupError, match="run it again"):
         setup.run("build-1", lambda line: None)
+
+
+def test_a_downloaded_mulebox_calls_itself(monkeypatch):
+    assert setup._this_mulebox()[1:] == ["-m", "mulebox"]
+    monkeypatch.setattr(setup.sys, "frozen", True, raising=False)
+    assert setup._this_mulebox() == [setup.sys.executable]

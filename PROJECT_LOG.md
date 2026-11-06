@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.62.0 - 2026-11-06 - minor
+- Three ways to install the client: pipx, a downloadable binary that needs no Python, or by hand. `tools/build_binary.py` builds the binary as a folder, as a single file took 10 s to start on macOS, and a version tag builds them on GitHub into a draft release. `mulebox setup` works from inside a binary.
+
 ## 0.61.1 - 2026-11-06 - patch
 - Roadmap: what `mulebox init` writes ran as real jobs for an npm and a Python project.
 
