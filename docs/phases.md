@@ -488,10 +488,11 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
 
 ## M19: Agent trials
 From `docs/agent-trial.md` on real projects, 2026-11-06. First trial: all steps ran and the agent would
-use mulebox, adding about 15 s to a 3 min 14 s gate. A second project is still to come; fix the rest
-as one batch after it.
+use mulebox, adding about 15 s to a 3 min 14 s gate. The second project stopped at its first gate, on M19.13.
 - [x] M19.1 The failure summary keeps every failed part of a gate. Done 2026-11-06 (0.66.1): the real
       failed log of the trial, replayed, showed the type error and both failed parts.
+- [x] M19.13 A container's own user can read what a project mounts. Done 2026-11-06 (0.66.3): a real job with
+      `mysql:8.4` mounting an init folder started, ran its seed file and read the row back, in 17 s.
 - [ ] M19.2 `mulebox init` in a git worktree names the project after the repository, not the folder.
 - [ ] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link.
 - [ ] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install.
@@ -501,6 +502,10 @@ as one batch after it.
 - [ ] M19.7 A short way to run one test in a compose project, instead of `mulebox run --` and a long
       `docker compose exec`.
 - [ ] M19.8 `mulebox queue` says why a job waits, as `status` does. Plainer word for `wait`'s "take it back".
+- [ ] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
+      two branches, `--detach`, and a second gate's time with the images built.
+- [ ] M19.11 No alarming `pull access denied` for an image the job then builds itself.
+- [ ] M19.12 `mulebox feedback draft` keeps a whole title (a cut one was seen again).
 - [ ] M19.9 Collapse `Downloading ...: x MB/y MB` in the log; show pnpm's own install apart in `prepare`.
 
 ## Parking lot

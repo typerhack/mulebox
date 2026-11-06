@@ -28,6 +28,7 @@ import json
 import os
 import re
 import shutil
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -43,6 +44,7 @@ from mulebox.worker.paths import NodePaths
 LOG = get_logger("worker.home")
 BASE = "mulebox-base"
 NO_BRANCH = "detached"
+CHECKOUT_DIR = 0o755
 INCOMING = "incoming"
 SETUP, INSTALL = "setup", "install"  # what is known about each, in `state/`
 SETUP_INPUTS = (
@@ -131,19 +133,31 @@ def _put(new: Path, old: Path, paths: NodePaths) -> None:
         shutil.copyfileobj(source, out)
 
 
+def _open_folder(folder: Path, tree: Path, paths: NodePaths, ready: set[Path]) -> None:
+    """Make `folder` as on any checkout, up to the tree. A container's user is rarely the
+    worker's, so a folder a project mounts must be readable by others; what keeps other users
+    of the machine out is the project home above it. A folder a container's root made stays."""
+    ensure_dir(folder, paths.roots)  # refuses a link on the way
+    while folder != tree and folder not in ready:
+        ready.add(folder)
+        info = folder.lstat()
+        if info.st_uid == os.getuid() and stat.S_IMODE(info.st_mode) & CHECKOUT_DIR != CHECKOUT_DIR:
+            folder.chmod(stat.S_IMODE(info.st_mode) | CHECKOUT_DIR)
+        folder = folder.parent
+
+
 def sync(incoming: Path, tree: Path, paths: NodePaths) -> tuple[int, int]:
     """Make the worktree hold the snapshot; (files written, files of a job's lost)."""
     wanted = _wanted(incoming)
     made_here = _listed(tree, "--others", "--exclude-standard")
     for gone in (_listed(tree, "--cached") | made_here) - set(wanted):
         remove_tree(tree / gone, paths.roots)
-    made: set[Path] = set()
+    ready: set[Path] = set()
     changed = 0
     for name in wanted:
         new, old = incoming / name, tree / name
-        if old.parent not in made:
-            ensure_dir(old.parent, paths.roots)  # refuses a link on the way
-            made.add(old.parent)
+        if old.parent not in ready:
+            _open_folder(old.parent, tree, paths, ready)
         if not _same(new, old):
             _put(new, old, paths)
             changed += 1

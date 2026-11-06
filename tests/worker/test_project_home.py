@@ -1,6 +1,7 @@
 """A project's home: set up once, kept between jobs, safe from what a job leaves behind."""
 
 import os
+import stat
 import subprocess
 
 import pytest
@@ -71,6 +72,23 @@ def test_a_file_changed_by_a_job_comes_back(send):
     (tree / "README.md").write_text("broken by a job")
     send()
     assert (tree / "README.md").read_text() == "hello\n"
+
+
+def test_a_container_user_can_read_a_mounted_folder(send):
+    """A real report: a database's init folder gave `Permission denied` in its container."""
+    tree = send({**FILES, "docker/mysql/init/one.sh": "echo"}).tree
+    for folder in ("docker", "docker/mysql", "docker/mysql/init"):
+        assert stat.S_IMODE((tree / folder).stat().st_mode) == 0o755
+
+
+def test_a_folder_made_closed_by_an_older_version_opens_on_the_next_job(send):
+    files = {**FILES, "docker/init/one.sh": "echo"}
+    tree = send(files).tree
+    (tree / "docker/init").chmod(0o750)
+    (tree / "docker").chmod(0o750)
+    send(files)
+    assert stat.S_IMODE((tree / "docker/init").stat().st_mode) == 0o755
+    assert stat.S_IMODE((tree / "docker").stat().st_mode) == 0o755
 
 
 def test_a_folder_can_become_a_file(send):

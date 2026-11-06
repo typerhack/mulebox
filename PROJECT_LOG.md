@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.3 - 2026-11-06 - patch
+- A project's folders on the machine are readable by others, as on any checkout, so a container's own user can read what a project mounts. They were made 750, the mode of mulebox's private folders, and a database's init folder failed with `Permission denied`. Existing folders open on the next job; the project home above them stays closed. Found by the second agent trial.
+
 ## 0.66.2 - 2026-11-06 - patch
 - A job's facts fold away under "Job details", closed by default, so a long command no longer stands between the stages and the log.
 
