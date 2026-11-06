@@ -1,12 +1,11 @@
-"""Shared paths and a helper that calls one function from install/install.sh."""
+"""Shared paths and a helper that calls one function from mulebox/machine/install.sh."""
 
 import subprocess
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-INSTALL_DIR = REPO_ROOT / "install"
+INSTALL_DIR = REPO_ROOT / "mulebox" / "machine"
 INSTALL_SH = INSTALL_DIR / "install.sh"
-DEPLOY_SH = REPO_ROOT / "tools" / "deploy.sh"
 UNIT_DIR = INSTALL_DIR / "systemd"
 
 

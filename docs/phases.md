@@ -429,7 +429,7 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       reader. Built 2026-11-06 (0.55.0): on copies of the manifests of 24 real repositories it
       wrote 18, also for parts in `api/` and `web/`; the 6 it refused have nothing it can run on
       Linux. Open: those files really running as jobs, as the build machine was offline.
-- [ ] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
+- [~] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
       it offers (such as Docker), writes the client config, and proves it with a first job.
 - [ ] M17.3 A job's pinned node and pnpm install themselves on the machine the first time.
 - [ ] M17.4 The client installs in one line, with no clone. Publishing it is the user's decision.

@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.60.0 - 2026-11-06 - minor
+- `mulebox setup <host>` installs or upgrades a build machine in one command: it checks the login, stops if jobs are running, sends a wheel of the running package, finds out what the machine offers, writes the laptop's config and proves it with a first job.
+- The installer files moved into the package (`mulebox/machine/`), so a pip-installed client can install a machine. `tools/deploy.sh` is gone, as `mulebox setup` does its work.
+- The installer turns lingering on itself where the machine allows it, and `mulebox node-offers` fills an empty `capabilities` list.
+
 ## 0.59.0 - 2026-11-06 - minor
 - `mulebox projects` shows each project's folder and size. `mulebox project clean` removes branch folders unused for 14 days, `mulebox project reset` removes a project's or a branch's folder; both only list what would go until `--yes`, and a project is held so no job starts in a folder being removed.
 - Roadmap: M18.6 closed after real jobs on three branches and two compose jobs at once.

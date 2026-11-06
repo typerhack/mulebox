@@ -6,7 +6,7 @@
 # Safe to rerun: an upgrade installs the new wheel and restarts the services.
 # Never uses sudo and never deletes a directory: an old venv is moved into
 # ~/.mulebox/tmp, and only exact, known temp files are removed. node.toml.example and
-# systemd/ must sit next to this script (tools/deploy.sh copies them).
+# systemd/ must sit next to this script (`mulebox setup` sends them).
 # Environment: MULEBOX_PYTHON picks the Python to use (default python3).
 set -euo pipefail
 
@@ -246,7 +246,7 @@ check_linger() {
     local user linger
     user="${USER:-$(id -un)}"
     linger="$(loginctl show-user "$user" -p Linger 2>/dev/null || true)"
-    if [ "${linger#Linger=}" = "no" ]; then
+    if [ "${linger#Linger=}" = "no" ] && ! loginctl --no-ask-password enable-linger "$user" 2>/dev/null; then
         say ""
         say "Lingering is off for $user, so the mulebox services stop when you log out."
         say "To keep them running after logout (and start them at boot), run once:"

@@ -10,6 +10,12 @@ from pathlib import Path
 _VERSION_FILE = Path(__file__).resolve().parent.parent / "VERSION"
 
 
+def source_version() -> str:
+    """The VERSION file of a checkout, which an editable install's metadata can lag behind."""
+    return (_VERSION_FILE.read_text(encoding="utf-8").strip() if _VERSION_FILE.is_file()
+            else get_version())
+
+
 def get_version() -> str:
     try:
         return metadata.version("mulebox")

@@ -31,19 +31,21 @@ Laptop:
 
 ## 1. Install on the build machine
 
-From the mulebox clone on the laptop:
+With mulebox on the laptop (section 2), one command:
 
 ```sh
-python3 -m venv .venv && .venv/bin/python -m pip install -e '.[dev]'   # once
-tools/deploy.sh build-1
+mulebox setup build-1      # or alice@192.168.1.50
 ```
 
-`tools/deploy.sh` builds a wheel, copies it together with `install/install.sh`,
-`install/node.toml.example` and `install/systemd/` into `~/.mulebox/tmp/` on the build
-machine, runs the installer there and prints the installed version.
+It checks the login, installs mulebox on the machine, finds out whether Docker works there and
+fills `capabilities` if that list is empty, writes `~/.config/mulebox/client.toml` if you have
+none, and runs a first job through the real queue. Each step that fails says what to do. Run it
+again at any time, also to upgrade: `node.toml` is kept, and it stops if jobs are running unless
+you add `--now`.
 
-To install by hand instead, copy the same files into one folder on the build machine and
-run `bash install.sh mulebox-<version>-py3-none-any.whl`.
+To install by hand instead, copy `install.sh`, `node.toml.example` and `systemd/` from
+`mulebox/machine/` and a wheel into one folder on the build machine, and run
+`bash install.sh mulebox-<version>-py3-none-any.whl`.
 
 What the installer does (it never uses sudo and never deletes a folder):
 
@@ -62,8 +64,8 @@ use a Python other than `python3`.
 
 ### Keep the services running after logout
 
-Without lingering, systemd stops user services when your last session ends. Enable it once
-(this is the one step that needs sudo, and you run it yourself):
+Without lingering, systemd stops user services when your last session ends. The installer turns
+it on if the machine allows that without a password. If it says it could not, run this once:
 
 ```sh
 sudo loginctl enable-linger alice
@@ -71,7 +73,7 @@ sudo loginctl enable-linger alice
 
 ### Node config
 
-`~/.config/mulebox/node.toml` (template: [install/node.toml.example](../install/node.toml.example)):
+`~/.config/mulebox/node.toml` (template: [mulebox/machine/node.toml.example](../mulebox/machine/node.toml.example)):
 
 - `name`: the short hostname by default.
 - `roles`: `["coordinator", "worker"]`. The installer starts only the services of
@@ -87,6 +89,7 @@ sudo loginctl enable-linger alice
   on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to
   run `compose:` projects, then restart the worker. mulebox fetches one small helper image
   the first time, and never removes images.
+- `mulebox setup` adds `docker` by itself to an empty list; a list you wrote is left alone.
 - Add `playwright` for browser tests, once this has run on the machine, which needs root:
   `sudo npx playwright install-deps chromium` (node comes from any install, for example a
   mulebox toolchain). Browsers themselves are fetched by jobs into
@@ -130,24 +133,22 @@ systemctl --user restart mulebox-coordinator mulebox-worker mulebox-dashboard
 The dashboard (`mulebox-dashboard`) is installed and started with the coordinator. It
 reads the queue's database read-only and never changes anything.
 
-## 2. Configure the laptop
+## 2. Install on the laptop
 
-Install the client from the clone into a folder of its own, and point it at the build machine.
-Plain `pip install --user` is refused by most current Python installs, Homebrew's and Ubuntu's
-among them (`externally-managed-environment`).
+Install the client from the clone into a folder of its own. Plain `pip install --user` is refused
+by most current Python installs, Homebrew's and Ubuntu's among them
+(`externally-managed-environment`).
 
 ```sh
 python3 -m venv ~/.mulebox-client
 ~/.mulebox-client/bin/python -m pip install .
-mkdir -p ~/.local/bin ~/.config/mulebox
+mkdir -p ~/.local/bin
 ln -s ~/.mulebox-client/bin/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
-cp install/client.toml.example ~/.config/mulebox/client.toml
 ```
 
-`uv tool install .` or `pipx install .` do the same job if you use those.
-
-Edit `~/.config/mulebox/client.toml` (template:
-[install/client.toml.example](../install/client.toml.example)):
+`uv tool install .` or `pipx install .` do the same job if you use those. Then run `mulebox setup`
+(section 1). It writes `~/.config/mulebox/client.toml`; to change it later, the template is
+[mulebox/machine/client.toml.example](../mulebox/machine/client.toml.example):
 
 ```toml
 coordinator = "build-1"                  # ssh target: Host alias or alice@192.168.1.50
@@ -155,12 +156,7 @@ remote_bin = "~/.mulebox/bin/mulebox"
 connect_timeout_s = 10
 ```
 
-`$MULEBOX_CONFIG` can name another file. Check the connection:
-
-```sh
-ssh build-1 '~/.mulebox/bin/mulebox --version'
-mulebox queue
-```
+`$MULEBOX_CONFIG` can name another file.
 
 Next: [set up a project](getting-started.md#2-decide-where-the-projects-tools-come-from).
 
@@ -237,16 +233,17 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 
 ## Upgrade
 
-Pull the new version on the laptop, deploy it, and update the laptop's own client:
+Update the laptop's own client, then send the same version to the machine:
 
 ```sh
-git pull && tools/deploy.sh build-1
-~/.mulebox-client/bin/python -m pip install .
+git pull && ~/.mulebox-client/bin/python -m pip install .
+mulebox setup build-1
 ```
 
 The installer reinstalls the wheel into the existing venv, updates the unit files and
 restarts the services. A running job is interrupted by the restart (state `interrupted`,
-never replayed); upgrade when the queue is empty (`mulebox queue`). `node.toml` is kept.
+never replayed), so `mulebox setup` waits for an empty machine unless you add `--now`. `node.toml`
+is kept.
 Upgrade the coordinator and every worker together: a worker's stage rows and toolchain
 reports, and detached jobs, need both to be new. `mulebox doctor` shows the versions.
 When the Python minor version changed, the old venv is moved to

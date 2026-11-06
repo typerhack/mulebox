@@ -9,7 +9,7 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 
 | What you see | What to do |
 | --- | --- |
-| `client.toml: file not found` | The laptop is not set up: [install.md, section 2](install.md#2-configure-the-laptop) |
+| `client.toml: file not found` | The laptop is not set up: [install.md, section 2](install.md#2-install-on-the-laptop) |
 | `build machine unreachable: cannot connect to build-1 over ssh` (exit 3) | Run `ssh build-1 true`. It must succeed and ask nothing. mulebox's ssh never prompts, so log in once by hand to accept the host key, and load a key with a passphrase into your ssh agent. Check `coordinator` in `client.toml` too: the template's `build-1` is an example |
 | `node.toml: file not found` from `mulebox toolchain` on the laptop | That command belongs to the build machine: run it there, [install.md, Toolchains](install.md#toolchains) |
 | `mulebox doctor` warns that client and build machine differ | Upgrade the older side: [install.md, Upgrade](install.md#upgrade) |

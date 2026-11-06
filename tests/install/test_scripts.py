@@ -1,4 +1,4 @@
-"""Static checks on install.sh and deploy.sh. Neither script is ever run for real here."""
+"""Static checks on install.sh. It is never run for real here."""
 
 import os
 import re
@@ -7,9 +7,9 @@ import subprocess
 
 import pytest
 
-from .helpers import DEPLOY_SH, INSTALL_SH, UNIT_DIR, call_install_function
+from .helpers import INSTALL_SH, UNIT_DIR, call_install_function
 
-SCRIPTS = [INSTALL_SH, DEPLOY_SH]
+SCRIPTS = [INSTALL_SH]
 # A command position: line start, or after ; & | ( ` or a shell keyword.
 COMMAND_START = r"(?:^|[;&|(`]|\bthen|\bdo|\belse)\s*"
 
@@ -70,30 +70,6 @@ def test_install_ships_every_unit_it_names():
     text = INSTALL_SH.read_text(encoding="utf-8")
     for unit in UNIT_DIR.glob("*.service"):
         assert unit.name in text
-
-
-@pytest.fixture
-def stub_path(tmp_path):
-    """PATH where ssh and scp only record that they were called."""
-    log = tmp_path / "calls.log"
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir()
-    for tool in ("ssh", "scp"):
-        stub = bin_dir / tool
-        stub.write_text(f'#!/bin/sh\necho "{tool} $*" >> "{log}"\nexit 99\n')
-        stub.chmod(0o755)
-    env = {**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"}
-    return env, log
-
-
-@pytest.mark.parametrize(
-    "args", [[], ["-oProxyCommand=x"], ["-"], ["bad host"], ["host:path"], ["a", "b"]]
-)
-def test_deploy_rejects_bad_targets_before_any_ssh(stub_path, args):
-    env, log = stub_path
-    done = subprocess.run(["bash", str(DEPLOY_SH), *args], env=env, capture_output=True)
-    assert done.returncode != 0
-    assert not log.exists()
 
 
 def test_the_command_is_linked_on_the_path(tmp_path):

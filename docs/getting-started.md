@@ -21,12 +21,10 @@ root. Use it for projects you trust, on a network you trust.
 
 ## 1. Install
 
-1. Get mulebox on the laptop: `git clone` this repository and `cd` into it.
-2. Install the build machine: [install.md, section 1](install.md#1-install-on-the-build-machine).
-   Turn on lingering as it says, or the services stop when you log out.
-3. Install the client on the laptop and point it at the machine:
-   [install.md, section 2](install.md#2-configure-the-laptop).
-4. Check it: `mulebox queue` prints an empty queue and exits 0.
+1. Get mulebox on the laptop: `git clone` this repository, `cd` into it, and follow
+   [install.md, section 2](install.md#2-install-on-the-laptop).
+2. Install the build machine, from the laptop: `mulebox setup build-1`. It installs everything
+   there, finds out what the machine offers, writes the laptop's config and runs a first job.
 
 ## 2. Decide where the project's tools come from
 

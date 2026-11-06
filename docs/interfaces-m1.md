@@ -199,16 +199,18 @@ Stage rows: `steps`, see [interfaces-m4.md](interfaces-m4.md), Job steps.
   Ctrl-C quits; plain table when stdout is not a TTY.
 - `commands.py`: check, run, queue, logs, cancel.
 
-## Install (`install/`, M1.8)
+## Install (`mulebox/machine/`, M1.8)
 
-- `install/install.sh` (run on the build machine): checks Linux, systemd, Python >= 3.12
+- `mulebox/machine/install.sh` (run on the build machine): checks Linux, systemd, Python >= 3.12
   and `python3 -m venv` (prints `sudo apt-get install python3-venv` if missing); creates
   `~/.mulebox/venv`, installs the given wheel, links `~/.mulebox/bin/mulebox`; writes
   `~/.config/mulebox/node.toml` from a template if missing (roots under `~/.mulebox/`);
   creates the roots; installs `mulebox-coordinator.service` and `mulebox-worker.service`
   user units; checks `loginctl show-user` Linger and prints how to enable it; never deletes.
-- `tools/deploy.sh <ssh-target>` (run on the laptop): builds a wheel, copies it and
-  `install.sh` with `scp`, runs the install, prints `mulebox --version` from the machine.
+- `mulebox setup <ssh-target>` (run on the laptop, client/setup.py): builds a wheel from the
+  running package (client/wheel.py), sends it with these files, runs the install, fills empty
+  `capabilities` (`mulebox node-offers`, worker/offers.py), writes `client.toml` if there is none,
+  and runs a first job.
 - `docs/install.md`: user steps.
 
 ## Decisions made during the build (0.5.0)

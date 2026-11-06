@@ -98,7 +98,7 @@ On the build machine (CLI `mulebox runner ...`):
 - `runner list`: name, repo, service state, busy/idle.
 - `runner remove <name>`: removal token on stdin; stops and disables the unit, runs
   `./config.sh remove --token <t>`, removes the runner folder through safepath.
-- Unit template `install/systemd/mulebox-runner@.service`: `ExecStart=%h/.mulebox/runners/
+- Unit template `mulebox/machine/systemd/mulebox-runner@.service`: `ExecStart=%h/.mulebox/runners/
   %i/run.sh`, `WorkingDirectory=%h/.mulebox/runners/%i`, `KillMode=process`,
   `KillSignal=SIGTERM`, `TimeoutStopSec=5min`, `Restart=always`, `RestartSec=10`. install.sh
   copies it with the others (enable is per runner).
@@ -116,7 +116,7 @@ clear error otherwise.
   the call into supervision in `mulebox/worker/agent.py`, CLI `runner-hook`.
 - Agent "manage": `mulebox/runners/manage.py`, `mulebox/runners/github.py`,
   `mulebox/runners/release.py` (download + verify), CLI `runner add|list|remove` and
-  `runner register|unregister`, `install/systemd/mulebox-runner@.service`, the install.sh
+  `runner register|unregister`, `mulebox/machine/systemd/mulebox-runner@.service`, the install.sh
   line that copies it.
 - Both: `mulebox/runners/__init__.py` exists already; each adds its own
   `commands_*.py`; `mulebox/runners/commands.py` (integrator) registers both.
