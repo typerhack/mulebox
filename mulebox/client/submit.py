@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Protocol, TextIO
 
 from mulebox.client import attention, delta, report, summary
-from mulebox.client.job_body import job_request, submit_body
+from mulebox.client.job_body import WARM_ARGV, WARM_JOB_NAME, job_request, submit_body
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
 from mulebox.common.config import ProjectConfig
@@ -74,12 +74,14 @@ def run_job(
     streams: Streams | None = None,
     detach: bool = False,
     again: bool = False,
+    warm: bool = False,
 ) -> int:
     """Run a job on the build machines as if it ran here; return its exit code.
 
-    With `detach`, return 0 once the job is queued, with its id on stdout."""
+    With `detach`, return 0 once the job is queued, with its id on stdout. With `warm`, `target`
+    runs only up to its command: toolchains, images, `install` and `setup`."""
     io = streams or Streams()
-    job, argv = job_request(project, target)
+    job, argv = (WARM_JOB_NAME, WARM_ARGV) if warm else job_request(project, target)
     project, dropped = for_job(project, target if isinstance(target, str) else None)
     if dropped:
         report.status(io.err, left_out(dropped))
@@ -95,7 +97,7 @@ def run_job(
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {report.format_size(snap.size)}")
         body = submit_body(project, job, argv, snap, detach,
-                           reuse=isinstance(target, str) and not again)
+                           reuse=isinstance(target, str) and not (again or warm))
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")

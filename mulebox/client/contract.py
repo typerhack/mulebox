@@ -29,7 +29,8 @@ from mulebox.common.status import STAGES
 #    answer stops, results wait for an absent agent, and `check` does not repeat a tested job
 # 10: jobs of different branches run at once, one branch waits in line, `branch_busy`
 # 11: a job installs its own pinned toolchain
-SCHEMA = 11
+# 12: `project.install`, `mulebox warm`, an `install` stage, and exit 5 when `install` fails
+SCHEMA = 12
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -39,6 +40,7 @@ COMMANDS = {
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
     "leave_running": "mulebox check --detach",
+    "prepare_ahead": "mulebox warm [job]",
     "follow_it": "mulebox events --job <job-id> --json",
     "its_state": "mulebox status <job-id>",
     "its_result": "mulebox wait <job-id>",
@@ -187,7 +189,8 @@ def _settings(config: ProjectConfig) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for name in config.job_options:
         job, _ = for_job(config, name)
-        out[name] = {"setup": job.setup, "compose": bool(job.compose),
+        out[name] = {"setup": job.setup, "install": job.install,
+                     "compose": bool(job.compose),
                      "ports": [port_variable(port) for port in job.host_ports]}
     return out
 
@@ -195,7 +198,8 @@ def _settings(config: ProjectConfig) -> dict[str, dict[str, Any]]:
 def _project(config: ProjectConfig) -> dict[str, Any]:
     return {"name": config.project, "jobs": dict(config.jobs), "full_gate": FULL_GATE,
             "job_settings": _settings(config),
-            "setup": config.setup, "toolchain": dict(config.toolchain),
+            "setup": config.setup, "install": config.install,
+            "toolchain": dict(config.toolchain),
             "needs": list(config.all_needs), "compose": list(config.compose),
             "timeout_min": config.timeout_min}
 
@@ -237,6 +241,8 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
         return ["No .mulebox.yml here: this project is not set up for mulebox yet.",
                 "Setup steps: mulebox's docs/agents.md, section 2."]
     lines = [f"Project: {project['name']} (check-in every {project['timeout_min']} min)"]
+    if project["install"]:
+        lines.append(f"Install, only when what it depends on changed: {project['install']}")
     if project["setup"]:
         lines.append(f"Setup before every job: {project['setup']}")
     lines += ["", "Jobs:"]

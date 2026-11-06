@@ -88,3 +88,14 @@ def test_the_same_port_twice_is_refused(tmp_path):
 def test_mistakes_name_the_field(tmp_path, jobs, field):
     with pytest.raises(ConfigError, match=field):
         load(tmp_path, jobs)
+
+
+def test_a_job_can_turn_off_or_replace_the_install(tmp_path):
+    (tmp_path / ".mulebox.yml").write_text(
+        "project: example-app\ninstall: npm ci\njobs:\n  check: npm test\n"
+        "  lint:\n    run: npm run lint\n    install: false\n"
+        "  e2e:\n    run: npm run e2e\n    install: npm ci --ignore-scripts\n")
+    project = load_project_config(tmp_path / ".mulebox.yml")
+    assert for_job(project, "check")[0].install == "npm ci"
+    assert for_job(project, "lint")[0].install is None
+    assert for_job(project, "e2e")[0].install == "npm ci --ignore-scripts"

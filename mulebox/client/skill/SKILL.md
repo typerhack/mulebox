@@ -27,7 +27,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 11. `mulebox contract` prints the current schema on
+This skill was written for contract schema 12. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
@@ -107,6 +107,10 @@ machine use them by themselves. A container sees a cache only if the compose fil
   build machine: ask, and do not ssh in.
 - The build machine's `job_env` reaches services, and the service's own value wins.
 - Services get 65536 open files unless they set `ulimits.nofile`.
+
+`install:` holds a project's dependency install: it runs in the project's image with `docker compose
+exec`, is skipped until a lockfile, the compose files or the toolchain change, and if it fails the job
+counts as never started, as its code did not run. `mulebox warm [job]` runs a job up to its command, ahead of time.
 
 A job in `.mulebox.yml` can be a mapping with `run`, its own `setup` (or `setup: false`) and
 `compose: false`, so a quick job skips containers it does not use, and `ports: [vite]`, which gives

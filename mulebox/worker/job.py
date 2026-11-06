@@ -35,6 +35,7 @@ class ActiveJob:
     branch: str | None = None
     tree: Any = None  # the Path of the project's worktree this job runs in
     setup_key: str | None = None  # set when this job's `setup` counts once it has passed
+    install_key: str | None = None  # the same for its `install`
 
     @property
     def steps(self) -> StepTracker:

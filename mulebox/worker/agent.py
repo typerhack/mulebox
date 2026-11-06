@@ -27,10 +27,11 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import RemovalDenied, remove_tree
-from mulebox.common.status import COMMAND, ENVIRONMENT, PREPARE
+from mulebox.common.status import ENVIRONMENT, PREPARE
 from mulebox.worker import activity, advert, background, job_meter, runspec
 from mulebox.worker import project_home, reclaim, toolchains, workspace
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
+from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -49,7 +50,7 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
-class Agent(Ending):
+class Agent(Ending, Skipping):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
                  supervisor: Any = None, docker: Docker | None = None) -> None:
@@ -194,7 +195,9 @@ class Agent(Ending):
         src = job.tree = synced.tree
         remove_tree(snapshot, self.paths.roots)
         job.tailer.note(f"mulebox: project folder {src}, {synced.changed} files changed\n")
-        claim = self._with_setup(job, claim, synced)
+        settled = bool(claim.get("install") or claim.get("setup"))
+        claim = {**self._with_install(job, self._with_setup(job, claim, synced), synced),
+                 "deps_settled": settled}
         job.steps.begin(ENVIRONMENT, self.clock())
         bins = toolchains.path_for(self.paths, claim.get("toolchain") or {})
         spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins,
@@ -214,28 +217,6 @@ class Agent(Ending):
         tree = project_home.tree_for(self.paths, job.project, branch)
         reclaim.reclaim_tree(self.docker, self.paths, tree, job.job_id, self.node.name)
         return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
-
-    def _with_setup(self, job: ActiveJob, claim: dict[str, Any], synced: project_home.Synced
-                    ) -> dict[str, Any]:
-        """`claim` without its `setup` when nothing it depends on changed."""
-        if not claim.get("setup") or job.uses_docker:
-            return claim
-        key = project_home.setup_key(synced.tree, claim)
-        if (not synced.lost
-                and project_home.setup_is_current(self.paths, job.project, job.branch, key)):
-            job.tailer.note("mulebox: setup skipped: nothing it depends on changed\n")
-            return {**claim, "setup": None}
-        project_home.forget_setup(self.paths, job.project, job.branch)
-        job.setup_key = key
-        return claim
-
-    def _keep_setup(self, job: ActiveJob) -> None:
-        if job.setup_key is None or not job.steps.reached(COMMAND):
-            return
-        try:
-            project_home.remember_setup(self.paths, job.project, job.branch, job.setup_key)
-        except (MuleboxError, OSError) as exc:  # the next job only runs it again
-            LOG.warning("could not record the setup of %s: %s", job.job_id, exc)
 
     def _tend(self, job: ActiveJob, now: float) -> None:
         self.meter.update(now)

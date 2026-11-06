@@ -5,6 +5,7 @@ import subprocess
 
 import pytest
 
+from mulebox.common.compose import COMPOSE_FILES_KEY
 from mulebox.common.ids import new_id
 from mulebox.common.safepath import UnsafePath
 from mulebox.worker import project_home as home
@@ -181,11 +182,11 @@ def test_source_changes_do_not_touch_the_key(send):
 def test_setup_state_is_per_branch(send, paths):
     send()
     home.remember_setup(paths, "example-app", "main", "k")
-    assert home.setup_is_current(paths, "example-app", "main", "k")
-    assert not home.setup_is_current(paths, "example-app", "main", "other")
-    assert not home.setup_is_current(paths, "example-app", "feature", "k")
+    assert home.is_current(paths, "example-app", "main", "k")
+    assert not home.is_current(paths, "example-app", "main", "other")
+    assert not home.is_current(paths, "example-app", "feature", "k")
     home.forget_setup(paths, "example-app", "main")
-    assert not home.setup_is_current(paths, "example-app", "main", "k")
+    assert not home.is_current(paths, "example-app", "main", "k")
 
 
 def test_a_version_file_counts_for_setup(send):
@@ -194,3 +195,19 @@ def test_a_version_file_counts_for_setup(send):
     before = home.setup_key(tree, claim)
     (tree / "VERSION").write_text("1.0.1\n")
     assert home.setup_key(tree, claim) != before
+
+
+def test_an_install_depends_on_the_compose_files_too(tmp_path):
+    (tmp_path / "compose.yml").write_text("services: {}\n")
+    claim = {"install": "npm ci", "toolchain": {}, "env": {COMPOSE_FILES_KEY: "compose.yml"}}
+    key = home.install_key(tmp_path, claim)
+    assert home.setup_key(tmp_path, claim) != key
+    (tmp_path / "compose.yml").write_text("services: {api: {image: node:24}}\n")
+    assert home.install_key(tmp_path, claim) != key
+
+
+def test_setup_and_install_are_remembered_apart(send, paths):
+    send()
+    home.remember_setup(paths, "example-app", "main", "k", home.INSTALL)
+    assert home.is_current(paths, "example-app", "main", "k", home.INSTALL)
+    assert not home.is_current(paths, "example-app", "main", "k")

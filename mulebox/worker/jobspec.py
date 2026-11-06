@@ -4,6 +4,8 @@ The job runs as one bash script:
 
     set -e
     mulebox_step() ...
+    mulebox_step install
+    <install line from .mulebox.yml, if any and not current (install_step.py)>
     mulebox_step setup
     <setup line from .mulebox.yml, if any>
     mulebox_step command
@@ -25,8 +27,8 @@ from pathlib import Path
 
 from mulebox.common import env_rules
 from mulebox.common.errors import MuleboxError
-from mulebox.common.status import COMMAND, SETUP
-from mulebox.worker import steps
+from mulebox.common.status import COMMAND, INSTALL, SETUP
+from mulebox.worker import install_step, steps
 
 
 class JobSpecError(MuleboxError):
@@ -34,16 +36,18 @@ class JobSpecError(MuleboxError):
 
 
 def build_script(setup: str | None, argv: Sequence[str], first: Sequence[str] = (),
-                 marker: str | None = None) -> str:
+                 marker: str | None = None, install: str | None = None) -> str:
     """`marker` turns on the stage marks; without one the script is the plain lines."""
     if isinstance(argv, str) or not argv or not all(isinstance(a, str) for a in argv):
         raise JobSpecError("job argv must be a non-empty list of strings")
-    if any("\0" in a for a in argv) or (setup and "\0" in setup):
+    if any("\0" in a for a in argv) or "\0" in f"{setup}{install}":
         raise JobSpecError("job command must not contain NUL characters")
     def mark(stage: str) -> list[str]:
         return [f"{steps.SHELL_NAME} {stage}"] if marker else []
 
     lines = ["set -e", *([steps.shell_function(marker)] if marker else []), *first]
+    if install and install.strip():
+        lines += [*mark(INSTALL), *install_step.script_lines(install)]
     if setup and setup.strip():
         lines += [*mark(SETUP), setup]
     lines += [*mark(COMMAND), shlex.join(argv)]
@@ -51,8 +55,8 @@ def build_script(setup: str | None, argv: Sequence[str], first: Sequence[str] = 
 
 
 def build_argv(setup: str | None, argv: Sequence[str], first: Sequence[str] = (),
-               marker: str | None = None) -> tuple[str, ...]:
-    return ("bash", "-c", build_script(setup, argv, first, marker))
+               marker: str | None = None, install: str | None = None) -> tuple[str, ...]:
+    return ("bash", "-c", build_script(setup, argv, first, marker, install))
 
 
 _REF = env_rules.REFERENCE

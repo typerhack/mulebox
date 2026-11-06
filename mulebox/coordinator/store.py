@@ -23,8 +23,8 @@ from mulebox.coordinator import migrate
 from mulebox.coordinator.errors import Conflict, NotFound
 
 # 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
-# 7: env order; 8: stop reason and activity; 9: told; 10: disk (migrate.py)
-SCHEMA_VERSION = 10
+# 7: env order; 8: stop reason and activity; 9: told; 10: disk; 11: install (migrate.py)
+SCHEMA_VERSION = 11
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     client TEXT NOT NULL,
     branch TEXT,
     setup TEXT,
+    install TEXT,
     toolchain TEXT NOT NULL DEFAULT '{}',
     env TEXT NOT NULL DEFAULT '{}',
     needs TEXT NOT NULL DEFAULT '[]',
@@ -89,7 +90,7 @@ CREATE TABLE IF NOT EXISTS workers (
 """ + migrate.JOB_STEPS
 _JOB_COLUMNS = frozenset(
     "job_id idempotency_key project job argv fingerprint base_commit client branch setup "
-    "toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
+    "install toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
     "created_at queued_at started_at finished_at kind pinned_worker runner run_url env "
     "detached env_order stop_reason activity active_at check_in_ok told_at".split()

@@ -86,6 +86,7 @@ class ProjectConfig:
     needs: tuple[str, ...] = ()
     toolchain: dict[str, str] = field(default_factory=dict)
     setup: str | None = None
+    install: str | None = None
     compose: tuple[str, ...] = ()
     timeout_min: int = DEFAULT_TIMEOUT_MIN
     exclude: tuple[str, ...] = ()
@@ -152,6 +153,7 @@ def load_project_config(path: Path) -> ProjectConfig:
         needs=reader.strings("needs"),
         toolchain=reader.string_map("toolchain"),
         setup=reader.text("setup", None),
+        install=reader.text("install", None),
         compose=files,
         jobs=jobs,
         job_options=options,

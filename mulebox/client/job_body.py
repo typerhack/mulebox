@@ -12,6 +12,8 @@ from mulebox.common.config_jobs import HOST_PORTS_KEY, join_ports
 from mulebox.common.ids import new_id
 
 RUN_JOB_NAME = "run"
+WARM_JOB_NAME = "warm"
+WARM_ARGV = ["true"]  # everything a job has before its command, and no command
 
 
 def job_request(project: ProjectConfig, target: str | Sequence[str]) -> tuple[str, list[str]]:
@@ -45,6 +47,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "branch": snap.branch,
         "client": socket.gethostname() or "client",
         "setup": project.setup,
+        "install": project.install,
         "toolchain": dict(project.toolchain),
         "env": job_env(project),
         "env_order": list(project.env),  # JSON objects are sorted on the wire

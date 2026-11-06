@@ -31,6 +31,7 @@ PLAYWRIGHT_SETTINGS = {
     # Its default is 30 s of silence, then a new attempt from zero; a slow link stalls longer.
     "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT": "120000",
 }
+PNPM_NO_CHECK = ("pnpm_config_verify_deps_before_run", "npm_config_verify_deps_before_run")
 COORDINATOR_LIMITS = "coordinator"  # `limits` in claim_ok, coordinator/attendance.py
 
 
@@ -49,6 +50,16 @@ def _capability_env(machine: Machine, needs: Sequence[str]) -> dict[str, str]:
         return {}
     browsers = ensure_dir(machine.paths.browsers_dir(), machine.paths.roots)
     return {"PLAYWRIGHT_BROWSERS_PATH": str(browsers), **PLAYWRIGHT_SETTINGS}
+
+
+def _pnpm_settled(claim: dict[str, Any]) -> dict[str, str]:
+    """pnpm can check a project's packages before each `pnpm run` and start a long, silent install.
+    Once this job's `install` or `setup` has settled them there is nothing left to check."""
+    if not claim.get("deps_settled"):
+        return {}
+    if "pnpm" not in (claim.get("toolchain") or {}) and "cache-pnpm" not in (claim.get("needs") or ()):
+        return {}
+    return dict.fromkeys(PNPM_NO_CHECK, "false")
 
 
 def _check_names(values: Mapping[str, str], for_compose: bool) -> None:
@@ -90,7 +101,8 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     needs = claim.get("needs") or ()
     cached = caches.for_job(machine.paths, claim["project"], needs)
     own = _host_ports(machine, job_id, names)
-    base = {**_capability_env(machine, needs), **cached.env, **own}
+    settled = _pnpm_settled(claim)
+    base = {**_capability_env(machine, needs), **cached.env, **own, **settled}
 
     def environment(extra: dict[str, str]) -> dict[str, str]:
         return jobspec.build_env(job_id, bins, project_env=values, extra={**base, **extra},
@@ -104,11 +116,11 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
             raise ExecutorError("this worker has no Docker to run a compose: project")
         ready = compose_job.prepare(machine.docker, machine.ports, job_id, machine.name, files,
                                     src, values, environment, cached.folders,
-                                    tuple(machine.job_env), scratch)
+                                    (*machine.job_env, *settled), scratch)
         first, extra, notes = ready.script, ready.extra_env, ready.notes
     spec = RunSpec(name=unit_name(job_id),
                    argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first,
-                                           marker or steps.new_marker()),
+                                           marker or steps.new_marker(), claim.get("install")),
                    cwd=src, env=environment(extra), log_path=log_path,
                    timeout_s=_runtime_limit(claim))
     ports = (f"port {port} is ${name}" for name, port in own.items())

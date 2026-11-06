@@ -276,3 +276,10 @@ def test_the_left_out_notice_reads_for_one_entry_and_for_more():
     assert submit.left_out(["A"]) == ("this job leaves out the env: entry A, which uses a port "
                                       "it does not have")
     assert "entries A, B, which use a port" in submit.left_out(["A", "B"])
+
+
+def test_warm_runs_a_job_up_to_its_command_and_never_counts_as_it(make_repo):
+    remote = FakeRemote([[result()]])
+    run_job(PROJECT, "check", make_repo(), remote, streams(), warm=True)
+    body = remote.calls[0].body
+    assert (body["job"], body["argv"]) == ("warm", ["true"]) and "reuse" not in body

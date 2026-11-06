@@ -5,6 +5,7 @@
       lint:
         run: pnpm lint
         setup: false       # or another command; default: the top-level `setup`
+        install: false     # the same for the top-level `install`
         compose: false     # no containers for this job; default: the top-level `compose`
       e2e:
         run: pnpm e2e
@@ -40,6 +41,7 @@ _SEPARATOR = ","
 @dataclass(frozen=True)
 class JobOptions:
     setup: str | None = None  # None: the top-level setup; NO_SETUP: none
+    install: str | None = None  # the same
     compose: bool = True
     ports: tuple[str, ...] = ()
 
@@ -77,10 +79,10 @@ def _ports(entry: Reader) -> tuple[str, ...]:
     return names
 
 
-def _setup(entry: Reader) -> str | None:
-    if entry.get("setup", None) is False:
+def _line(entry: Reader, name: str) -> str | None:
+    if entry.get(name, None) is False:
         return NO_SETUP
-    return entry.text("setup", None)
+    return entry.text(name, None)
 
 
 def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
@@ -96,8 +98,8 @@ def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
             continue
         entry = sub.table(name)
         commands[name] = entry.text("run")
-        options[name] = JobOptions(setup=_setup(entry), compose=entry.boolean("compose", True),
-                                   ports=_ports(entry))
+        options[name] = JobOptions(setup=_line(entry, "setup"), install=_line(entry, "install"),
+                                   compose=entry.boolean("compose", True), ports=_ports(entry))
         entry.finish()
     if "check" not in commands:
         reader.fail("jobs", "must define a 'check' job")
@@ -110,6 +112,7 @@ def for_job(project: Any, name: str | None) -> tuple[Any, list[str]]:
     `ports:`: an entry built on one goes, not the whole job."""
     options = project.job_options.get(name, JobOptions())
     setup = project.setup if options.setup is None else options.setup or None
+    install = project.install if options.install is None else options.install or None
     files = project.compose if options.compose else ()
     own = {port_variable(port) for port in options.ports}
     others = {port_variable(port) for job in project.job_options.values() for port in job.ports}
@@ -121,5 +124,5 @@ def for_job(project: Any, name: str | None) -> tuple[Any, list[str]]:
                                       and used.startswith(PORT_PREFIX))
 
     env, dropped = env_rules.without(project.env, gone)
-    return dataclasses.replace(project, setup=setup, compose=files, env=env,
+    return dataclasses.replace(project, setup=setup, install=install, compose=files, env=env,
                                host_ports=options.ports), dropped

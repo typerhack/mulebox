@@ -132,8 +132,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `queued, position 1; waiting: no build machine for this job is online` is different:
   nothing will start until a person fixes it, so tell the user.
 
-A job goes through stages: `prepare`, `environment`, `images`, `services`, `setup`, `command`,
-`cleanup`. `mulebox status <job-id>` shows them; with `--json`, `steps` has when each started
+A job goes through stages: `prepare`, `environment`, `images`, `services`, `install`, `setup`,
+`command`, `cleanup`. `mulebox status <job-id>` shows them; with `--json`, `steps` has when each started
 and ended, its exit code and the last line of a failed one. The first four need no action
 from a project. `usual` is what earlier passed runs of this job with this command took, whole and per
 stage, or nothing if there is no history yet. Say "usually about 4 min" if that helps. It is
@@ -245,6 +245,19 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      like; the list is `SETUP_INPUTS` in `worker/project_home.py`). If `setup` reads any other
      file, change its text to make it run again. Its output must be something git ignores; if it
      is not, the next job loses it and `setup` runs again. A compose job always runs `setup`.
+   - `install` is for dependencies in any project, with or without containers. It runs after the
+     containers are up and before `setup`, so `docker compose exec -T api composer install` runs
+     in the project's own image, and it is skipped like `setup` is, also in a compose job, as
+     nothing it makes lives in a container. It also depends on the compose files and any
+     `Dockerfile`; an image tag that moves on its registry is not noticed. What reads like a lost
+     network is tried again, up to 3 times. If it fails the job exits 5, as it never ran: fix the
+     lockfile or the network, not the code. Use `setup` for what must happen in every job's fresh
+     containers, such as loading a database.
+   - With an `install` or `setup` and pnpm (a pinned `pnpm` or `cache-pnpm`), a job turns off pnpm's
+     check before each `pnpm run`, also in containers: the packages are settled, and that check can
+     start a long, silent install.
+   - `mulebox warm [job]` runs a job up to its command: toolchains, images, caches, `install` and
+     `setup`. Use it ahead of a long wait or a slow link; it takes a build slot like any job.
    - **A branch keeps its folder.** Jobs of a branch run in one folder on the build machine, with
      the project's ignored files kept between them. Only one job of a branch runs at a time.
      `mulebox projects` shows the folders and sizes. If a job only fails or passes because of what
@@ -316,14 +329,14 @@ project: example-app
 compose: [docker-compose.yml, docker-compose.ci.yml]   # merged in this order; needs docker
 env:
   APP_URL: http://127.0.0.1:${MULEBOX_PORT_API_8000}   # service api, container port 8000
-setup: docker compose exec -T api composer install
+install: docker compose exec -T api composer install
 jobs:
   check: docker compose exec -T api php artisan test --parallel
   migrate: docker compose exec -T api php artisan migrate --seed --force
 timeout_min: 30
 ```
 
-mulebox starts the containers (`docker compose up --detach --wait`) before `setup`, inside
+mulebox starts the containers (`docker compose up --detach --wait`) before `install`, inside
 the job. Every job gets its own containers, networks and volumes. All of them are removed
 when the job ends, however it ends; pulled images and build layers stay as cache. An image
 the project builds gets a tag of this job only, whatever `image:` says, so reach it through

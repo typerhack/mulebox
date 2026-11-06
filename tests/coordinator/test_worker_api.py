@@ -12,7 +12,7 @@ def test_claim_ok_body(store, staging):
     assert reply.type is MessageType.CLAIM_OK
     assert set(reply.body) == {"job_id", "attempt_id", "project", "job", "branch", "argv",
                                "fingerprint",
-                               "base_commit", "timeout_min", "setup", "toolchain", "needs", "env",
+                               "base_commit", "timeout_min", "setup", "install", "toolchain", "needs", "env",
                                "env_order", "limits"}
     assert reply.body["setup"] == "pnpm install" and reply.body["argv"] == ["pnpm", "check"]
 

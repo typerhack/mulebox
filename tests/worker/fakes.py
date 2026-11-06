@@ -65,10 +65,11 @@ class FakeLink:
 
 
 def claim_body(argv, *, timeout_min=1, setup=None, toolchain=None, project="example-app",
-               branch=None):
+               branch=None, install=None):
     return {
         "job_id": new_id("job"), "attempt_id": new_id("att"), "project": project, "branch": branch,
         "argv": list(argv), "fingerprint": "f" * 64, "base_commit": "0" * 40,
-        "timeout_min": timeout_min, "setup": setup, "toolchain": toolchain or {},
+        "timeout_min": timeout_min, "setup": setup, "install": install,
+        "toolchain": toolchain or {},
         "needs": [], "job": "check",
     }

@@ -391,3 +391,27 @@ def test_a_finishing_job_holds_its_slot_and_no_more(agent, fake_link):
     agent.finishing.append(object())
     assert agent._free_slots() == 1
     agent.finishing.clear()
+
+
+INSTALL = "echo x > ignored.txt"
+
+
+def test_an_install_runs_once_and_is_counted_apart(agent, fake_link, ignored_snapshot):
+    first = run_job(agent, fake_link, "bash", "-c", "cat ignored.txt", install=INSTALL)
+    second = run_job(agent, fake_link, "bash", "-c", "cat ignored.txt", install=INSTALL)
+    assert (first["outcome"], second["outcome"]) == ("passed", "passed")
+    assert fake_link.log_text().count("install skipped") == 1
+
+
+def test_a_failed_install_is_not_a_failed_check_and_runs_again(agent, fake_link):
+    first = run_job(agent, fake_link, "true", install="exit 3")
+    assert first["outcome"] == "failed" and first["exit_code"] is None
+    assert "the project's `install` failed" in fake_link.log_text()
+    run_job(agent, fake_link, "true", install="exit 3")
+    assert "install skipped" not in fake_link.log_text()
+
+
+def test_a_failed_check_after_a_good_install_keeps_the_install(agent, fake_link, ignored_snapshot):
+    run_job(agent, fake_link, "false", install="true")
+    third = run_job(agent, fake_link, "true", install="true")
+    assert third["outcome"] == "passed" and fake_link.log_text().count("install skipped") == 1

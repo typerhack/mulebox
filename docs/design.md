@@ -252,6 +252,14 @@ per stage and as a whole. mulebox says what past runs took and leaves it there. 
 would be a guess presented as a measurement, since a cold cache or a new image changes
 what a stage takes.
 
+`install` is the stage for what fills a project's folder. It is the one part of a compose job that
+can be reused, as what it makes outlives the job's containers, so it has its own state beside
+`setup`'s and depends on the compose files too. `setup` keeps running in every compose job, since
+it may load a database into containers that are new each time. An `install` that fails counts as a
+job that never ran, exit 5: an agent should not go looking for a bug in code that did not run.
+It stays inside the job and its slot. Moving it outside would run more work than the machine's
+`slots` allow, with a job's containers already up.
+
 ## Project folders
 
 Everything lives at `<projects>/<project>/`: `repo.git`, `trees/<branch>-<hash>/` and

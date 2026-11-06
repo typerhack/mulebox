@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from mulebox.common import compose
 from mulebox.common.config_jobs import HOST_PORTS_KEY
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import ensure_dir, remove_tree
@@ -43,11 +44,12 @@ LOG = get_logger("worker.home")
 BASE = "mulebox-base"
 NO_BRANCH = "detached"
 INCOMING = "incoming"
+SETUP, INSTALL = "setup", "install"  # what is known about each, in `state/`
 SETUP_INPUTS = (
     "package.json", "pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lock", "composer.json",
     "composer.lock", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt",
     "requirements-dev.txt", "uv.lock", "poetry.lock", "Pipfile.lock", "Cargo.toml", "Cargo.lock",
-    "go.mod", "go.sum", "pubspec.yaml", "pubspec.lock", "Gemfile", "Gemfile.lock", "mix.lock",
+    "Dockerfile", "go.mod", "go.sum", "pubspec.yaml", "pubspec.lock", "Gemfile", "Gemfile.lock", "mix.lock",
     "VERSION", ".nvmrc", ".node-version", ".python-version", ".tool-versions",
 )
 _NOT_A_NAME = re.compile(r"[^A-Za-z0-9._-]+")
@@ -169,33 +171,52 @@ def _inputs(tree: Path) -> list[Path]:
             if (folder / name).is_file() and not (folder / name).is_symlink()]
 
 
+def _compose_files(tree: Path, claim: dict[str, Any]) -> list[Path]:
+    files = (claim.get("env") or {}).get(compose.COMPOSE_FILES_KEY)
+    names = compose.split_files(files) if files else ()
+    return [tree / name for name in names if (tree / name).is_file()
+            and not (tree / name).is_symlink()]
+
+
+def install_key(tree: Path, claim: dict[str, Any]) -> str:
+    """Changes when something an `install` depends on does: an image is named in a compose file
+    or built from a Dockerfile, so those count. A tag that moves on its registry is not seen."""
+    return _key(tree, claim, claim.get("install"), _compose_files(tree, claim))
+
+
 def setup_key(tree: Path, claim: dict[str, Any]) -> str:
     """Changes when something a `setup` depends on does."""
+    return _key(tree, claim, claim.get("setup"), [])
+
+
+def _key(tree: Path, claim: dict[str, Any], line: str | None, more: list[Path]) -> str:
     env = {k: v for k, v in (claim.get("env") or {}).items() if k != HOST_PORTS_KEY}
     digest = hashlib.sha256(json.dumps(
-        [claim.get("setup"), claim.get("toolchain"), env], sort_keys=True).encode())
-    for path in _inputs(tree):
+        [line, claim.get("toolchain"), env], sort_keys=True).encode())
+    for path in [*_inputs(tree), *more]:
         digest.update(str(path.relative_to(tree)).encode())
         digest.update(hashlib.sha256(path.read_bytes()).digest())
     return digest.hexdigest()
 
 
-def _state(paths: NodePaths, project: str, branch: str | None) -> Path:
-    return paths.project_home(project) / "state" / f"{slug(branch)}.setup"
+def _state(paths: NodePaths, project: str, branch: str | None, kind: str) -> Path:
+    return paths.project_home(project) / "state" / f"{slug(branch)}.{kind}"
 
 
-def setup_is_current(paths: NodePaths, project: str, branch: str | None, key: str) -> bool:
-    state = _state(paths, project, branch)
+def is_current(paths: NodePaths, project: str, branch: str | None, key: str,
+               kind: str = SETUP) -> bool:
+    state = _state(paths, project, branch, kind)
     return state.is_file() and not state.is_symlink() and state.read_text() == key
 
 
-def forget_setup(paths: NodePaths, project: str, branch: str | None) -> None:
-    """Before a `setup` runs: one that dies halfway must not count."""
-    remove_tree(_state(paths, project, branch), paths.roots)
+def forget_setup(paths: NodePaths, project: str, branch: str | None, kind: str = SETUP) -> None:
+    """Before a `setup` or `install` runs: one that dies halfway must not count."""
+    remove_tree(_state(paths, project, branch, kind), paths.roots)
 
 
-def remember_setup(paths: NodePaths, project: str, branch: str | None, key: str) -> None:
-    state = _state(paths, project, branch)
+def remember_setup(paths: NodePaths, project: str, branch: str | None, key: str,
+                   kind: str = SETUP) -> None:
+    state = _state(paths, project, branch, kind)
     ensure_dir(state.parent, paths.roots)
     remove_tree(state, paths.roots)
     fd = os.open(state, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)

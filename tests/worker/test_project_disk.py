@@ -59,7 +59,7 @@ def test_a_branch_is_removed_and_comes_back(paths, send):
     home.remember_setup(paths, "example-app", "feature/a", "key")
     disk.remove_worktree(paths, "example-app", other.name, refuse)
     assert not other.exists() and main.is_dir()
-    assert not home.setup_is_current(paths, "example-app", "feature/a", "key")
+    assert not home.is_current(paths, "example-app", "feature/a", "key")
     assert send("feature/a") == other
     assert (other / "README.md").is_file()
 

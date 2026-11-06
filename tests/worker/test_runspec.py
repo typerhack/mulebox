@@ -115,3 +115,23 @@ def test_a_jobs_own_port_is_free_held_and_in_its_env(machine, tmp_path):
 def test_a_port_name_the_client_should_have_refused_is_refused_here(machine, tmp_path):
     with pytest.raises(jobspec.JobSpecError, match="port api_8000"):
         build(machine, tmp_path, env={"MULEBOX_HOST_PORTS": "api_8000"})
+
+
+def _pnpm(machine, tmp_path, **claim):
+    body = {**claim_body(["true"]), "needs": ["cache-pnpm"], "env": {}, **claim}
+    spec, _ = runspec.build(machine, new_id("job"), body, tmp_path, tmp_path / "out.log", [])
+    return spec.env
+
+
+def test_settled_packages_turn_off_pnpm_s_check(machine, tmp_path):
+    env = _pnpm(machine, tmp_path, deps_settled=True)
+    assert all(env[name] == "false" for name in runspec.PNPM_NO_CHECK)
+
+
+def test_with_nothing_to_settle_them_pnpm_keeps_its_check(machine, tmp_path):
+    assert not set(runspec.PNPM_NO_CHECK) & set(_pnpm(machine, tmp_path))
+
+
+def test_a_project_without_pnpm_gets_nothing(machine, tmp_path):
+    env = _pnpm(machine, tmp_path, deps_settled=True, needs=[])
+    assert not set(runspec.PNPM_NO_CHECK) & set(env)

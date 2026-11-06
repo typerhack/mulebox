@@ -52,6 +52,13 @@ def register(sub: argparse._SubParsersAction) -> None:
                        help="run even if these exact files were already tested")
     check.set_defaults(func=guarded(_check))
 
+    warm = sub.add_parser("warm", help="prepare a job ahead of time: toolchains, images, caches, "
+                          "install; no command")
+    warm.add_argument("job", nargs="?", default="check", help="job name (default: check)")
+    warm.add_argument("--detach", action="store_true",
+                      help="print the job id once it is queued and leave it running")
+    warm.set_defaults(func=guarded(_warm, notices=True))
+
     run = sub.add_parser("run", help="run an ad-hoc command on a build machine")
     run.add_argument("--detach", action="store_true",
                      help="print the job id once it is queued and leave it running")
@@ -136,13 +143,23 @@ def _contract(args: argparse.Namespace) -> int:
     return 0
 
 
-def _check(args: argparse.Namespace) -> int:
+def _named_job(name: str) -> tuple[ProjectConfig, Path]:
     project, root = project_here()
-    if args.job not in project.jobs:
+    if name not in project.jobs:
         names = ", ".join(sorted(project.jobs))
-        raise UsageError(f"no job {args.job!r} in .mulebox.yml (jobs: {names})")
+        raise UsageError(f"no job {name!r} in .mulebox.yml (jobs: {names})")
+    return project, root
+
+
+def _check(args: argparse.Namespace) -> int:
+    project, root = _named_job(args.job)
     return run_job(project, args.job, root, connect(), detach=args.detach,
                    again=args.again)
+
+
+def _warm(args: argparse.Namespace) -> int:
+    project, root = _named_job(args.job)
+    return run_job(project, args.job, root, connect(), detach=args.detach, warm=True)
 
 
 def _run(args: argparse.Namespace) -> int:

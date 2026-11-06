@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.64.0 - 2026-11-06 - minor
+- `install:` in `.mulebox.yml`, a stage of its own: it runs in the project's image, is reused until what it depends on changes, also in a compose job, is tried again on a lost network, and if it fails the job exits 5. Schema 11, contract schema 12.
+- With an `install` or `setup`, a job turns off pnpm's check before each `pnpm run`, also in containers.
+- `mulebox warm [job]` runs a job up to its command.
+
 ## 0.63.0 - 2026-11-06 - minor
 - `mulebox setup <host> --when-idle` waits for running jobs and upgrades, with new jobs and CI runs waiting in line through a machine-wide hold that ends by itself. New request `drain`.
 - A worker reports the free space of its fullest disk (schema 10). Under 10 GB, `doctor` and every command from a project warn and name `mulebox project clean`.

@@ -50,10 +50,11 @@ def _remove(path: Path, paths: NodePaths, reclaim: Reclaim) -> None:
 
 
 def remove_worktree(paths: NodePaths, project: str, name: str, reclaim: Reclaim) -> None:
-    """One branch's worktree and what is known about its `setup`."""
+    """One branch's worktree and what is known about its `setup` and `install`."""
     home = paths.project_home(project)
     _remove(home / "trees" / name, paths, reclaim)
-    remove_tree(home / "state" / f"{name}.setup", paths.roots)
+    for kind in (project_home.SETUP, project_home.INSTALL):
+        remove_tree(home / "state" / f"{name}.{kind}", paths.roots)
     repo = home / "repo.git"
     workspace.git(repo, "worktree", "prune")
     workspace.git(repo, "update-ref", "-d", f"refs/heads/tree-{name}")

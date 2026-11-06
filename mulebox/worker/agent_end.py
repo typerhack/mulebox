@@ -6,7 +6,7 @@ Split from agent.py: `Agent` provides the rest (`active`, `finishing`, `executor
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, MessageType, Outcome
 from mulebox.common.status import CLEANUP
-from mulebox.worker import background, pull_failure
+from mulebox.worker import background, install_step, pull_failure
 from mulebox.worker.job import ActiveJob, ended_badly
 from mulebox.worker.link import LinkError, request
 
@@ -22,6 +22,7 @@ class Ending:
         job.duration_s = max(0.0, now - job.started_at)
         job.tailer.finish()
         exit_code = pull_failure.checked(outcome, exit_code, job.tailer)
+        exit_code = install_step.checked(outcome, exit_code, job.tailer)
         job.outcome, job.exit_code = outcome, exit_code
         job.steps.close(exit_code, now, ended_badly(outcome))
         self._keep_setup(job)

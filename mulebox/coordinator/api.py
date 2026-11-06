@@ -76,6 +76,7 @@ def submit(req: Request) -> Message:
         "client": v.text(body, "client"),
         "branch": v.text(body, "branch", None),
         "setup": v.text(body, "setup", None),
+        "install": v.text(body, "install", None),
         "toolchain": v.string_map(body, "toolchain"),
         "env": v.string_map(body, "env"),
         "env_order": v.strings(body, "env_order"),
