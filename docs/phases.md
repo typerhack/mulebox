@@ -174,21 +174,22 @@ Marked `[~]` until checked on a real machine.
 - [x] M8.1 A missing toolchain error lists the versions the machine has. Tested 2026-11-04 (0.25.4)
       by unit tests only. Done 2026-11-05 (0.53.1): a real job asked for a node version the machine
       lacks: exit 5, stage `environment`, and the log listed the versions it has.
-- [~] M8.2 Short failure summary at the end of a failed job, and `mulebox logs <id> --summary`.
+- [x] M8.2 Short failure summary at the end of a failed job, and `mulebox logs <id> --summary`.
       Tested 2026-11-04 (0.26.0) with unit tests and the fake coordinator. The failed stage comes
-      from the job's stage rows since 0.35.0, tested with the real coordinator code. Open: 0.52.2
-      keeps the failure itself in the summary; not yet read on a real failed compose job.
+      from the job's stage rows since 0.35.0, tested with the real coordinator code. 0.52.2 keeps the failure itself in the summary. Done 2026-11-06 (0.62.2): a real failed
+      compose job with a noisy Mongo service, the summary came last and showed the line before the failure.
 - [x] M8.3 `mulebox doctor`, read-only: validates `.mulebox.yml`, reports toolchains and
       capabilities per machine, warns on a version difference. Workers report toolchains and version
       with every claim (schema 4). Tested 2026-11-04 (0.27.0) with the fake coordinator and the real
       coordinator code. Done 2026-11-05 (0.53.1): against a real machine, toolchains, capabilities,
       compose refusals and a version difference reported correctly.
-- [~] M8.4 `mulebox check --detach` and `mulebox wait <id>`. Detached jobs are skipped by the client
+- [x] M8.4 `mulebox check --detach` and `mulebox wait <id>`. Detached jobs are skipped by the client
       lease sweep (schema 5). Tested 2026-11-04 (0.28.0) with the real client and coordinator code
       through a local stand-in for ssh: survives lease expiry queued and running, `wait` matches an
       attached run in output, summary and exit code. Run 2026-11-05: a running detached job outlived
-      its killed clients and the lease, and a later `wait` gave its result. Open: the same while
-      queued, and a failed job through `wait`.
+      its killed clients and the lease, and a later `wait` gave its result. Done 2026-11-06 (0.62.2): a detached job queued behind another with no
+      client left ran, and `wait` gave its failure, summary and exit 7. The 5 min lease expiry itself was
+      not waited for while queued; M18.1 saw a queued job outlive its client.
 - [x] M8.5 `mulebox events --job <id> --json` and `mulebox status <id>`, on the coordinator's
       `watch` stream and the shared status model, open for later `stage` and `check_in` events.
       Tested 2026-11-04 (0.29.0) with the real coordinator code: position changes, machine, outcome,
@@ -201,10 +202,11 @@ Marked `[~]` until checked on a real machine.
       Tested 2026-11-04 (0.30.0) with the fake coordinator and the real store. Done 2026-11-05
       (0.53.1): in a real queue of over 20 jobs, `check` printed its position, the labelled estimate
       and the `--detach` hint. A job at position 1 behind a long job still gets no suggestion.
-- [~] M8.10 `mulebox logs`, `logs --summary` and `wait` say when a job's log has expired, so
+- [x] M8.10 `mulebox logs`, `logs --summary` and `wait` say when a job's log has expired, so
       an empty answer is not read as an empty log. Tested 2026-11-04 (0.34.0) with the real
       coordinator code; since 0.35.0 a test removes the log with the real retention code.
-      Open: seen on a real machine.
+      Done 2026-11-06 (0.62.2): `logs`, `logs --summary` and `wait` through the
+      real CLI against a copy of the machine's history after the real service cleaned it.
 - [~] M8.9 `mulebox doctor` runs the worker's compose policy on the project's files before any
       upload, so an external volume fails at once rather than after the queue. Tested
       2026-11-04 (0.33.0) with unit tests and the fake coordinator, and the steps it copies
@@ -221,19 +223,18 @@ Marked `[~]` until checked on a real machine.
       2026-11-04 (0.31.0) with temporary folders only; the wheel holds SKILL.md. Open: the
       user installs it, and an agent notices a behind skill in a real session (see M7.2).
 
-## M9: Faster and clearer jobs
-Worked out from the first real jobs on a slow connection (2026-11-04). Everything here is
-tested with fakes and a local Docker daemon. Open on all of it: a real job on a build machine.
-- [~] M9.1 Package caches: `needs: [cache-pnpm]`, `[cache-composer]`, one folder per project,
+## M9: Faster and clearer jobs  (done 2026-11-06, 0.62.2)
+Worked out from the first real jobs on a slow connection (2026-11-04).
+- [x] M9.1 Package caches: `needs: [cache-pnpm]`, `[cache-composer]`, one folder per project,
       mounted by the project's own compose file, external volumes still refused. Built 2026-11-04
-      (0.35.0). Run 2026-11-05: pnpm showed `reused 73, downloaded 0` on a second job. Open:
-      Composer.
+      (0.35.0). Run 2026-11-05: pnpm showed `reused 73, downloaded 0` on a second job. Done 2026-11-06 (0.62.2): a job in `composer:2` filled the cache, and a
+      second installed with vendor removed and `COMPOSER_DISABLE_NETWORK=1`.
 - [x] M9.2 `job_env` reaches compose services. Before, it reached only the `docker compose` process;
       a real container showed no `NODE_OPTIONS`. Built 2026-11-04 (0.35.0). Done 2026-11-05
       (0.53.1): a real pnpm install in a container, over a slow connection, saw the machine's
       `NODE_OPTIONS` with none set in the service.
-- [~] M9.3 Services get 65536 open files unless they set their own. Built 2026-11-04 (0.35.0). Open:
-      a real `mongo` test run; the drill died in setup on a network failure.
+- [x] M9.3 Services get 65536 open files unless they set their own. Built 2026-11-04 (0.35.0). Done 2026-11-06 (0.62.2): a real
+      Mongo 8.2 service reported 65536 and took a write.
 - [x] M9.4 Job steps: `job_steps` table with a migration, reported by the worker, read through
       `status` and `common/status.py`, shown by `mulebox status`. The failed stage reaches the
       summary and `events`. The dashboard shows them since 0.50.0. Built 2026-11-04 (0.35.0): a
@@ -247,9 +248,11 @@ tested with fakes and a local Docker daemon. Open on all of it: a real job on a 
       the stage. Built 2026-11-04 (0.35.0): samples from a real Compose 5.6 pull, and a pull through
       the worker on a local Docker daemon. Done 2026-11-05 (0.53.1): a 10 min pull of a 1.49 GB
       image over the slow link left a 17-line log, with 396 MB on the stage.
-- [~] M9.7 Log cleanup: logs go after `log_days` (30), stage rows after `step_days` (365), through
+- [x] M9.7 Log cleanup: logs go after `log_days` (30), stage rows after `step_days` (365), through
       safepath, from the logs folder only. Built 2026-11-04 (0.35.0), with tests in temporary
-      roots. Open: a service running over a real history.
+      roots. Done 2026-11-06 (0.62.2): the real coordinator service on a copy
+      of the machine's store and logs, as rule 7 asks: of 274 jobs, 141 logs and 413 stage rows past short
+      limits went, job rows and a stray file stayed, and the real logs did not change.
 
 ## M10: Reports from real projects
 Fixes from the first real project reports (2026-11-04). Tested with unit tests and the real
@@ -301,16 +304,15 @@ it: a real machine.
       the project. Built 2026-11-04 (0.37.0). Run 2026-11-05: seen by an agent on a queued job
       through `status`, `events`, `wait` and stderr. Open: a take-back while running, and a real
       stop.
-- [ ] M11.6 Mixed versions and restarts on a real machine, none run yet: a job on a worker older than
-      0.37 ends at its hard `timeout_min` with exit 124; an upgrade and a reboot with an open
-      detached job stop nothing wrongly; a job with `ports:` on a worker older than 0.40 is
-      refused at the start with exit 5.
+- [~] M11.6 Restarts on a real machine. Run 2026-11-06 (0.62.2): restarting both services with a job running
+      and a detached job queued gave `interrupted` (exit 75, not replayed), and the queued job ran to its
+      own exit 7, nothing left behind. Open: a real reboot with a job open, which needs the user there
+      for the VPN. Dropped: workers older than 0.37 and 0.40, as none exist and nothing is released.
 
 ## M12: Per-job settings
-- [~] M12.1 A job in `.mulebox.yml` may be a mapping with `run`, `setup` and `compose: false`; plain
+- [x] M12.1 A job in `.mulebox.yml` may be a mapping with `run`, `setup` and `compose: false`; plain
       commands keep the top-level defaults. Built 2026-11-04 (0.39.0), client only, no worker or
-      store change. Run 2026-11-05: a job ran with no containers and its own `setup`. Open: a
-      passing run.
+      store change. Run 2026-11-05: a job ran with no containers and its own `setup`. Done 2026-11-06 (0.62.2): a passing run with its own `setup`.
 - [x] M12.2 `ports:` on a job: a free port for a process of the job, `MULEBOX_PORT_<NAME>`, from the
       pool compose ports use. Built 2026-11-04 (0.40.0). Done 2026-11-05 (0.53.1): a real Vite
       server on its `ports:` port, reached by real Chromium.
@@ -344,8 +346,8 @@ Fixes from the second project tests (2026-11-04).
       Done 2026-11-05 (0.53.1): a real pip install lost its connection; the job counted as failed
       with exit 1 and the summary gave the hint. Other package managers not seen.
 - [x] M13.10 Docs: a cold cache and slow connections. (2026-11-05, 0.48.2)
-- [~] M13.9 `needs: [cache-npm]`, for npm projects. Built 2026-11-05 (0.48.0), with tests. Open: a
-      second job showing the packages reused; the drill was cut short.
+- [x] M13.9 `needs: [cache-npm]`, for npm projects. Built 2026-11-05 (0.48.0), with tests. Done 2026-11-06 (0.62.2): with the project folder
+      removed, `npm ci --offline` installed from the cache in 203 ms.
 - [~] M13.8 `mulebox doctor` says whether the machine can connect to the registries of a project's
       images. A warning, as images it has still work. Built 2026-11-05 (0.47.0): on a build machine
       one registry reached, one unknown host warned. Open: with the VPN really down.
