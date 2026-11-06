@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.1 - 2026-11-06 - patch
+- The failure summary keeps every failed part of a gate: compiler, type and lint errors now read as failures, a line naming a failed part goes before the details, and forty errors in one part cannot hide another. Found by the first agent trial, where a type error was missing from the summary. Roadmap: M19, what the trial found.
+
 ## 0.66.0 - 2026-11-06 - minor
 - Watching a job to its end, the page goes back to the queue after 10 s, so the next job shows. It offers to stay, and leaves a log being read alone.
 - A job's page says how it went at the top: an icon and a word, with its stage, exit code and end time once it is over.

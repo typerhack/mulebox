@@ -56,7 +56,12 @@ _FAILURE = re.compile("|".join((
     r"^\s*[✖✕×]",  # mocha, vitest
     r"^\s*error(\[|:)",  # cargo, TAP's `error: |-`
     r"\b[A-Z]\w*Error\b:",  # TypeError: ...
+    r"\berror TS\d+:",  # tsc
+    r":\d+(:\d+)?: (fatal )?error\b",  # gcc, clang, go vet
+    r"^\s*\d+:\d+\s+error\b",  # eslint
+    r"\bFAILED\b",  # a gate script naming the part that failed
 )))
+_PART = re.compile(r"\bFAILED\b")  # one such line per failed part, so they outrank the details
 
 
 class LogTail:
@@ -108,14 +113,18 @@ def _collapse(lines: list[str]) -> list[str]:
 
 
 def _earlier_failures(lines: list[str]) -> list[str]:
-    """The first lines that read as the failure, with what a `key: |-` header introduces."""
-    picked: list[str] = []
+    """The lines that read as the failure, with what a `key: |-` header introduces. Past
+    MAX_EARLIER, a line naming a failed part goes first, as forty errors in one part must not
+    hide another part; then the earliest. In log order."""
+    picked: list[int] = []
     for index, line in enumerate(lines):
         if _FAILURE.search(line):
-            picked.append(line)
+            picked.append(index)
             if line.endswith("|-") and index + 1 < len(lines):
-                picked.append(lines[index + 1])
-    return picked[:MAX_EARLIER]
+                picked.append(index + 1)
+    picked = list(dict.fromkeys(picked))
+    picked.sort(key=lambda index: (not _PART.search(lines[index]), index))
+    return [lines[index] for index in sorted(picked[:MAX_EARLIER])]
 
 
 def relevant_lines(tail: LogTail, limit: int = MAX_LINES) -> list[str]:

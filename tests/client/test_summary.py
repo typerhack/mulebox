@@ -1,5 +1,7 @@
 """The failure summary: what stays, what is noise, and the end-to-end lines."""
 
+import pytest
+
 from mulebox import cli
 from mulebox.client import summary
 from mulebox.client.summary import LogTail
@@ -37,6 +39,35 @@ def test_earlier_failures_are_capped_at_the_first():
     text += "".join(f"line {chr(97 + i)} of the rest\n" for i in range(26))
     shown = lines_of(text)
     assert shown[0] == "FAIL test a" and len(shown) == summary.MAX_EARLIER + 1 + 20
+
+
+def test_a_gate_with_two_failed_parts_shows_both():
+    """A real gate's shape: a type error first, then hundreds of lines ending in a failed test."""
+    log = ("check: lint passed (5s)\n"
+           "check: types FAILED (75s) - last lines of types.log:\n"
+           "lib/env.ts(109,14): error TS2322: Type 'string' is not assignable to type 'number'.\n"
+           "check: test FAILED (178s) - last lines of test.log:\n"
+           + "".join(f" ok tests/unit/case-{i}-{'x' * (i % 7)}.test.ts\n" for i in range(300))
+           + " FAIL tests/unit/env.test.ts\nAssertionError: expected 2 to be 3\n")
+    lines = lines_of(log)
+    assert any("error TS2322" in line for line in lines)
+    assert sum("FAILED" in line for line in lines) == 2
+
+
+def test_forty_errors_in_one_part_do_not_hide_another_part():
+    errors = "".join(f"src/a{i}.ts(1,1): error TS2322: wrong\n" for i in range(40))
+    log = f"check: types FAILED\n{errors}check: test FAILED\n"
+    log += "".join(f"line {'y' * i}\n" for i in range(30))
+    lines = lines_of(log)
+    assert "check: test FAILED" in lines and "check: types FAILED" in lines
+
+
+@pytest.mark.parametrize("line", [
+    "src/main.c:12:5: error: expected ';'", "  10:5  error  'x' is not defined  no-undef",
+    "a.ts(1,2): error TS1005: ';' expected."])
+def test_compiler_and_lint_errors_read_as_the_failure(line):
+    lines = lines_of(line + "\n" + "".join(f"{'z' * i} done\n" for i in range(30)))
+    assert line in lines
 
 
 def test_a_quiet_log_has_no_earlier_lines():
