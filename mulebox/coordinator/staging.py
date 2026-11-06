@@ -159,6 +159,9 @@ class Staging:
                 return None
         return os.fdopen(fd, "rb")
 
+    def remove_base(self, project: str) -> None:
+        remove_tree(self.bases_dir / self._base_name(project), self.roots)
+
     def scratch(self) -> BinaryIO:
         return tempfile.TemporaryFile(dir=self.uploads_dir)
 

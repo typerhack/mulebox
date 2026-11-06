@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.59.0 - 2026-11-06 - minor
+- `mulebox projects` shows each project's folder and size. `mulebox project clean` removes branch folders unused for 14 days, `mulebox project reset` removes a project's or a branch's folder; both only list what would go until `--yes`, and a project is held so no job starts in a folder being removed.
+- Roadmap: M18.6 closed after real jobs on three branches and two compose jobs at once.
+
 ## 0.58.0 - 2026-11-06 - minor
 - Jobs of different branches run at once: a new install has 2 slots, and a finishing job holds only its own slot. A job waiting for its branch names the job in the way (`branch_busy`, contract schema 10).
 

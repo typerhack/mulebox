@@ -15,6 +15,15 @@ _SQL = ("SELECT project, COUNT(*) AS jobs, MAX(seq), created_at AS last_run, kin
         "outcome FROM jobs GROUP BY project ORDER BY last_run DESC")
 
 
+def branches(conn: sqlite3.Connection) -> dict[str, dict[str | None, float]]:
+    """When each branch of each project last had a job."""
+    found: dict[str, dict[str | None, float]] = {}
+    for row in conn.execute("SELECT project, branch, MAX(created_at) AS last FROM jobs "
+                            "GROUP BY project, branch"):
+        found.setdefault(row["project"], {})[row["branch"]] = row["last"]
+    return found
+
+
 def listing(conn: sqlite3.Connection) -> list[dict[str, Any]]:
     return [{"project": row["project"], "jobs": row["jobs"], "last_run": row["last_run"],
              "kind": row["kind"], "state": row["state"], "outcome": row["outcome"]}

@@ -252,6 +252,22 @@ per stage and as a whole. mulebox says what past runs took and leaves it there. 
 would be a guess presented as a measurement, since a cold cache or a new image changes
 what a stage takes.
 
+## Project folders
+
+Everything lives at `<projects>/<project>/`: `repo.git`, `trees/<branch>-<hash>/` and
+`state/`. `mulebox projects` shows each folder and its size. All of it can be made again by a
+job, so removing it costs time, not data.
+
+- `mulebox project clean` removes branch folders with no job for 14 days (`--days`), keeping each
+  project's newest.
+- `mulebox project reset <project>` removes the whole folder and the project's last snapshot, or
+  one branch's with `--branch`, and the package caches with `--caches`. Use it when a job only
+  fails or only passes because of what an earlier job left in an ignored folder.
+- Both only list what would go until `--yes`. A project with a job on a machine is refused. While
+  a folder goes the project is held (`coordinator/holds.py`, a row in `meta` that `claim` reads in
+  its own transaction), so no job can start in it; a hold ends by itself after 15 minutes.
+- They run on the coordinator's machine, the only one with workers until M5.
+
 ## Package caches
 
 A new project folder, a lockfile change or a compose job's fresh containers still mean an

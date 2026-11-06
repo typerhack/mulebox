@@ -33,6 +33,9 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 | `<cache>/toolchains/<name>/<version>/bin` | worker | pinned toolchains, prepended to PATH |
 | `<cache>/packages/<project>/<tool>` | jobs that ask | package caches (interfaces-m4.md) |
 
+`mulebox project-home list|clean|reset` (worker/project_commands.py) is what the client's
+`mulebox projects` and `mulebox project` call over ssh.
+
 All creation through `safepath.ensure_dir`, all deletion through `safepath.remove_tree`.
 
 ## CLI (registered by each package; `mulebox/cli.py` only dispatches)

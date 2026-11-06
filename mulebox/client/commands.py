@@ -174,10 +174,23 @@ def _queue(args: argparse.Namespace) -> int:
     return 0
 
 
+def _with_folders(remote: Remote, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """`rows` with each project's folder and size; the job history alone from an older machine."""
+    try:
+        folders = json.loads(remote.project_home("list", "--json").stdout)
+    except (MuleboxError, ValueError):
+        return rows
+    known = {row["project"]: row for row in folders}
+    return [{**row, **{k: v for k, v in known.get(row["project"], {}).items() if k != "project"}}
+            for row in rows]
+
+
 def _projects(args: argparse.Namespace) -> int:
-    rows = connect().call(request(MessageType.PROJECTS)).body.get("projects")
+    remote = connect()
+    rows = remote.call(request(MessageType.PROJECTS)).body.get("projects")
     if not isinstance(rows, list):
         raise CoordinatorError("the projects reply has no project list")
+    rows = _with_folders(remote, rows)
     if args.json:
         sys.stdout.write(json.dumps(rows, indent=2) + "\n")
     else:

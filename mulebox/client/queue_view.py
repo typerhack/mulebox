@@ -15,7 +15,7 @@ from mulebox.client.report import format_duration, short_id
 from mulebox.common.status import elapsed_s, queue_position, sections, shown_state
 
 COLUMNS = ("ID", "PROJECT", "JOB", "BRANCH", "STATE", "ELAPSED", "POS")
-PROJECT_COLUMNS = ("PROJECT", "JOBS", "LAST RUN", "LAST RESULT")
+PROJECT_COLUMNS = ("PROJECT", "JOBS", "LAST RUN", "LAST RESULT", "SIZE", "FOLDER")
 _MAX_CELL = {"PROJECT": 20, "JOB": 16, "BRANCH": 28}
 _TITLES = {"running": "Running", "queued": "Queued", "recent": "Recent"}
 MARK = "!"
@@ -48,13 +48,18 @@ def job_row(job: dict[str, Any], now: float, full_ids: bool = False) -> list[str
     return [_cell(values[c], _MAX_CELL.get(c)) for c in COLUMNS]
 
 
+def _megabytes(size: Any) -> str:
+    return f"{size / 1e6:.1f} MB" if isinstance(size, (int, float)) else "-"
+
+
 def render_projects(projects: list[dict[str, Any]]) -> list[str]:
     """Lines of the `mulebox projects` table, newest first as the coordinator sent them."""
     if not projects:
         return ["No projects have run on this coordinator yet."]
     rows = [[_cell(p.get("project"), None), str(p.get("jobs", "-")),
              time.strftime("%Y-%m-%d %H:%M", time.localtime(p.get("last_run") or 0)),
-             _cell(shown_state(p), None)] for p in projects]
+             _cell(shown_state(p), None), _megabytes(p.get("size")),
+             _cell(p.get("folder"), None)] for p in projects]
     widths = [max(len(line[i]) for line in [list(PROJECT_COLUMNS), *rows])
               for i in range(len(PROJECT_COLUMNS))]
     return ["  ".join(cell.ljust(width) for cell, width in zip(line, widths)).rstrip()

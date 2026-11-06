@@ -247,6 +247,9 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      is not, the next job loses it and `setup` runs again. A compose job always runs `setup`.
    - **A branch keeps its folder.** Jobs of a branch run in one folder on the build machine, with
      the project's ignored files kept between them. Only one job of a branch runs at a time.
+     `mulebox projects` shows the folders and sizes. If a job only fails or passes because of what
+     an earlier job left there, `mulebox project reset <project> --branch <name> --yes` starts that
+     branch clean. Leave `mulebox project clean` to the user.
    - **A job can differ from the defaults.** Instead of a command, give it a mapping; a job
      left as a plain command keeps the top-level `setup` and `compose:`.
 

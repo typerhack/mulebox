@@ -15,8 +15,8 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
+from mulebox.coordinator import holds, workers
 from mulebox.coordinator import store as st
-from mulebox.coordinator import workers
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
 from mulebox.coordinator.store import ACTIVE_STATES, Store
@@ -49,13 +49,15 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         if free < 1 or active_count(conn) >= cluster_slots:
             return None
         blocker = oldest_reservation(conn, worker)
+        on_hold = holds.held(conn, now)
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         for job in st.select_jobs(conn, "state = ? AND kind = ?",
                                   (JobState.QUEUED.value, JOB_KIND), _QUEUE_ORDER):
             if blocker is not None and _key(blocker) < _key(job):
                 return None  # FIFO: the older reservation goes first
-            if set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy:
+            if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
+                    and job["project"] not in on_hold):
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,

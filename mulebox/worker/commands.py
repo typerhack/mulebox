@@ -5,6 +5,8 @@
     mulebox toolchain list
     mulebox cache list
     mulebox cache clear <project>
+
+`mulebox project-home`: project_commands.py.
 """
 
 from __future__ import annotations
@@ -18,12 +20,14 @@ from typing import Any
 from mulebox.common.config import DEFAULT_REMOTE_BIN, NodeConfig, load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
+from mulebox.worker import project_commands
 from mulebox.worker.docker import Docker
 from mulebox.worker.paths import NodePaths
 
 
 def register(sub: argparse._SubParsersAction) -> None:
     """Add this package's subcommands. Each sets func=handler(args) -> int."""
+    project_commands.register(sub)
     worker = sub.add_parser("worker", help="run the worker on a build machine")
     worker_sub = worker.add_subparsers(dest="worker_command", metavar="<action>", required=True)
     serve = worker_sub.add_parser("serve", help="claim and run jobs (recovery first)")

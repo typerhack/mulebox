@@ -49,6 +49,8 @@ mulebox queue  --SSH-->        |
 - **A project is set up once**: each project has one folder on the build machine, with a git
   worktree per branch, and installs stay there. A job writes only the files that changed and runs
   `setup` only when what it depends on changed. Compose jobs still run `setup`, in new containers.
+- **Folders you can find and clean**: `mulebox projects` shows where each project is and its size;
+  `mulebox project clean` and `mulebox project reset` remove what is not needed.
 - **Only changes cross the network**: over a slow link, a job sends the files that changed since
   the last one, not the whole project.
 - **Branches run side by side**: different branches run at once, and a second job on the same

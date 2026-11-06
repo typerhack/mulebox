@@ -86,7 +86,7 @@ def give_back(docker: Docker, paths: NodePaths, project: str, job_id: str, worke
         reclaim.reclaim_cache(docker, paths, project, job_id, worker)
 
 
-def _size(folder: Path) -> int:
+def size_of(folder: Path) -> int:
     total = 0
     for base, _, files in os.walk(folder):  # does not follow symlinks
         for name in files:
@@ -107,7 +107,7 @@ def listing(paths: NodePaths) -> list[tuple[str, str, int]]:
             continue
         for entry in sorted(project.iterdir()):
             if entry.name in known and entry.is_dir() and not entry.is_symlink():
-                found.append((project.name, entry.name, _size(entry)))
+                found.append((project.name, entry.name, size_of(entry)))
     return found
 
 

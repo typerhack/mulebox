@@ -410,10 +410,16 @@ Measured by that comparison on real jobs.
       mulebox from the laptop and 25.2 s run directly on the machine. A compose job's own time went
       from 20 s to 2 s, with `npm install` at 323 ms; one changed file of 2001 sent 0.2 KiB of
       7.7 MiB; an older machine got the whole snapshot, and the job passed.
-- [~] M18.6 Different branches run at once, two jobs on one branch wait in line. Built 2026-11-06
-      (0.58.0): a new install has 2 slots, and a waiting job names the job on its branch.
-- [ ] M18.7 `mulebox projects` shows each project's folder and size; `project clean` and `project
-      reset`.
+- [x] M18.6 Different branches run at once, two jobs on one branch wait in line. Done 2026-11-06
+      (0.59.0, built 0.58.0): a new install has 2 slots. On a real machine with 2, four 12 s jobs on
+      three branches took 28 s, the second job of a branch waited and named the first, and two
+      compose jobs asking for one host port got their own, served traffic and left nothing. Seen
+      in real Edge: both jobs in the lane, 0 of 2 slots free, no console errors.
+- [x] M18.7 `mulebox projects` shows each project's folder and size; `project clean` and `project
+      reset`. Done 2026-11-06 (0.59.0): on a real machine, sizes and folders listed; `reset` of a
+      branch left the others; `reset` while a job ran was refused; a full `reset` went, and the next
+      job built it again. `clean --yes` ran in test roots only, as AGENTS.md rule 7 asks; on the real
+      machine its dry run listed only what it should.
 
 ## M17: Easy for anyone
 Decided by the user on 2026-11-06, after M18: heavy work leaves the laptop, and anyone can set

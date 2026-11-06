@@ -33,6 +33,7 @@ from mulebox.common.protocol import (
 
 HEARTBEAT_S = 20.0
 CALL_TIMEOUT_S = 120.0
+PROJECT_TIMEOUT_S = 600.0
 _READ_LIMIT = MAX_LINE_BYTES + 3  # one byte over the cap (plus CRLF) is enough to tell
 
 
@@ -92,6 +93,14 @@ class Remote:
 
     def upload_delta(self, job_id: str, path: Path, sha256: str, digest: str) -> Message:
         return self._send_file([self.program, "rpc-upload-delta", job_id, sha256, digest], path)
+
+    def project_home(self, *args: str) -> ssh.RemoteResult:
+        """`mulebox project-home` on the machine; removing a folder can take minutes."""
+        argv = [self.program, "project-home", *args]
+        result = ssh.run_remote(self.target, argv, timeout_s=PROJECT_TIMEOUT_S,
+                                connect_timeout_s=self.connect_timeout_s, check=False)
+        sshio.check_exit(self.target, argv, result.exit_code, result.stderr)
+        return result
 
     def _send_file(self, argv: list[str], path: Path) -> Message:
         result = sshio.run_with_file(
