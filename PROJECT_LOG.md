@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.61.1 - 2026-11-06 - patch
+- Roadmap: what `mulebox init` writes ran as real jobs for an npm and a Python project.
+
 ## 0.61.0 - 2026-11-06 - minor
 - A job's pinned node or pnpm installs itself the first time, in the background, so the other slot, heartbeats and cancel go on. A version that will not install exits 5 with the reason and what the machine has. `mulebox doctor` no longer calls it a failure. Installs get the machine's `[job_env]`, as a real pnpm install timed out without its `NODE_OPTIONS`. Contract schema 11.
 

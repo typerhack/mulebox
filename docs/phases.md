@@ -428,7 +428,9 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
 - [~] M17.1 `mulebox init` writes `.mulebox.yml` from a project's files, checked by the real config
       reader. Built 2026-11-06 (0.55.0): on copies of the manifests of 24 real repositories it
       wrote 18, also for parts in `api/` and `web/`; the 6 it refused have nothing it can run on
-      Linux. Open: those files really running as jobs, as the build machine was offline.
+      Linux. Run 2026-11-06 (0.61.1): what it wrote for a small npm and a small Python project
+      passed as real jobs on a real machine, with no edits. Open: a real project of a stranger's,
+      which M6.2 covers.
 - [~] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
       it offers (such as Docker), writes the client config, and proves it with a first job.
       Built 2026-11-06 (0.60.0): on a real machine an upgrade and its first job passed, a bad host
