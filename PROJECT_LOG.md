@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.62.3 - 2026-11-06 - patch
+- Roadmap: M11.6 closed by a real reboot with a job running and a detached job queued. No fault found; the dashboard waited for its network address and started by itself 16 s after its first try.
+
 ## 0.62.2 - 2026-11-06 - patch
 - Roadmap: eight open items closed by short real jobs: failure summary on a compose job, `wait` on a queued and a failed job, expired logs, Composer and npm caches, Mongo's open files, log cleanup on a copy of real history, a passing per-job `setup`. No fault found.
 - M11.6 narrowed: a restart with jobs open passed, a real reboot stays open, and workers older than 0.37 and 0.40 are dropped, as none exist.

@@ -304,10 +304,12 @@ it: a real machine.
       the project. Built 2026-11-04 (0.37.0). Run 2026-11-05: seen by an agent on a queued job
       through `status`, `events`, `wait` and stderr. Open: a take-back while running, and a real
       stop.
-- [~] M11.6 Restarts on a real machine. Run 2026-11-06 (0.62.2): restarting both services with a job running
-      and a detached job queued gave `interrupted` (exit 75, not replayed), and the queued job ran to its
-      own exit 7, nothing left behind. Open: a real reboot with a job open, which needs the user there
-      for the VPN. Dropped: workers older than 0.37 and 0.40, as none exist and nothing is released.
+- [x] M11.6 Restarts on a real machine. Done 2026-11-06 (0.62.3): a restart of both services, then a
+      real reboot, each with a job running and a detached job queued: the running job gave `interrupted`
+      (exit 75, not replayed), the queued job ran to its own exit 7, and nothing was left behind. Back
+      over ssh in 93 s with services up and nobody at the machine; the VPN returned by itself. An upgrade
+      with a job running is refused (M17.2). Dropped: workers older than 0.37 and 0.40, as none exist
+      and nothing is released. Not covered: sudden power loss.
 
 ## M12: Per-job settings
 - [x] M12.1 A job in `.mulebox.yml` may be a mapping with `run`, `setup` and `compose: false`; plain
