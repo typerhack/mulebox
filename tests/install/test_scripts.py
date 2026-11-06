@@ -59,9 +59,10 @@ def test_install_rm_only_on_exact_files():
             assert re.fullmatch(r' -f "\$[a-z_]+"', match.group(1)), f"line {number}: {line}"
 
 
-def test_install_prints_venv_and_linger_hints():
+def test_install_prints_git_venv_and_linger_hints():
     text = INSTALL_SH.read_text(encoding="utf-8")
     assert "sudo apt-get install python3-venv" in text
+    assert "sudo apt-get install git" in text
     assert "sudo loginctl enable-linger" in text
     assert 'loginctl show-user "$user" -p Linger' in text
 

@@ -9,7 +9,7 @@ the user `alice` and the project `example-app`.
 
 ## What you need
 
-- A Linux build machine with systemd, Python 3.12 or newer, and a user you can log in as.
+- A Linux build machine with systemd, git, Python 3.12 or newer, and a user you can log in as.
 - A macOS or Linux laptop with git, and Python 3.12 or newer unless you use the binary.
 - Login from the laptop to the build machine with an ssh key, and no prompts: mulebox never
   answers one. `ssh build-1 true` must print nothing and ask nothing. If your key has a

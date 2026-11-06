@@ -35,6 +35,8 @@ check_platform() {
     command -v systemctl >/dev/null 2>&1 || die "systemd is required (systemctl not found)"
     systemctl --user show-environment >/dev/null 2>&1 \
         || die "'systemctl --user' does not work; log in through ssh or a desktop session, not su"
+    command -v git >/dev/null 2>&1 \
+        || die "git is required, as jobs run from a project's repository here; on Ubuntu or Debian: sudo apt-get install git"
 }
 
 check_python() {

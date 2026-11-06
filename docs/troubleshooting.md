@@ -42,6 +42,7 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 
 | Problem | What to do |
 | --- | --- |
+| `git is required` | `sudo apt-get install git` on the machine, then run the same `mulebox setup` again |
 | `Python cannot create virtual environments here` | `sudo apt-get install python3-venv` (or `python3.12-venv`), then rerun the installer |
 | `Python 3.12 or newer is required` | install a newer Python and set `MULEBOX_PYTHON`, e.g. `MULEBOX_PYTHON=python3.12` |
 | `'systemctl --user' does not work` | log in as the user over ssh or a desktop session; `su`/`sudo -u` sessions have no user manager |

@@ -431,10 +431,11 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       Linux. Run 2026-11-06 (0.61.1): what it wrote for a small npm and a small Python project
       passed as real jobs on a real machine, with no edits. Open: a real project of a stranger's,
       which M6.2 covers.
-- [~] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
+- [x] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
       it offers (such as Docker), writes the client config, and proves it with a first job.
       Built 2026-11-06 (0.60.0): on a real machine an upgrade and its first job passed, a bad host
-      gave advice, running jobs stopped it. Open: a machine with no mulebox on it (M17.5).
+      gave advice, running jobs stopped it. Done 2026-11-06 (0.62.1): on a machine with no mulebox
+      on it, in M17.5.
 - [x] M17.3 A job's pinned node and pnpm install themselves on the machine the first time. Done
       2026-11-06 (0.61.0): on a real machine a job installed node in 48 s while a job on the other
       slot ran in 14 s, the next job started in under 2 s, a cancel took 2 s, a version that does not
@@ -442,9 +443,16 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
 - [~] M17.4 The client installs in one line, with no clone: pipx, a binary, or by hand, the user's
       choice on 2026-11-06. Built 2026-11-06 (0.62.0): on macOS, a pip install and the unpacked binary
       each ran `mulebox setup` and a job on a real machine, the binary with no Python on its path.
-      Not run: the Linux binary and the release workflow, which need a tag. Open: the repository going public, which is
-      what makes the pipx line and the releases page work.
-- [ ] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures fixed.
+      The Linux binary ran in M17.5. Not run: pipx itself and the release workflow, which needs a
+      tag. Open: the repository going public, which is what makes the pipx line and the releases
+      page work; not yet, the user's call on 2026-11-06.
+- [x] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures
+      fixed. Done 2026-11-06 (0.62.1), with no spare machine, the user's choice: two throwaway
+      containers, a blank Ubuntu with systemd and sshd as the build machine, and a laptop with no
+      Python running the Linux binary. Found and fixed: jobs need git there, which nothing said.
+      Then, from blank, setup named what was missing, and a new project went from `init` to a
+      passing check with node installed in 36 s; a repeat, a broken commit (exit 1) and a revert
+      all answered correctly. Docker was not on it, so compose did not run from blank.
 
 ## Parking lot
 - `mulebox init` on a laptop with no node writes a file with no node pinned; on a machine with none

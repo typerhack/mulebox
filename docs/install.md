@@ -18,6 +18,7 @@ Build machine:
 
 - Linux with systemd; `systemctl --user` must work for the user (log in over ssh or a
   desktop session; `su` does not start a user manager).
+- git. On Ubuntu/Debian: `sudo apt-get install git`.
 - Python 3.12 or newer with `venv` support. On Ubuntu/Debian: `sudo apt-get install
   python3-venv` if the installer asks for it.
 - Network access to PyPI for mulebox's dependencies.
@@ -51,7 +52,7 @@ What the installer does (it never uses sudo and never deletes a folder):
 
 | Step | Result |
 | --- | --- |
-| Checks | Linux, `systemctl --user`, Python >= 3.12, a working `python3 -m venv` |
+| Checks | Linux, `systemctl --user`, git, Python >= 3.12, a working `python3 -m venv` |
 | venv | `~/.mulebox/venv`, rebuilt only when the Python minor version changed |
 | Command | `~/.mulebox/bin/mulebox` (symlink into the venv), and `~/.local/bin/mulebox` so plain `mulebox` works in a login shell; a real file of that name is left alone |
 | Node config | `~/.config/mulebox/node.toml`, written once from the template, then validated |
