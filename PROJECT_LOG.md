@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.58.0 - 2026-11-06 - minor
+- Jobs of different branches run at once: a new install has 2 slots, and a finishing job holds only its own slot. A job waiting for its branch names the job in the way (`branch_busy`, contract schema 10).
+
 ## 0.57.1 - 2026-11-06 - patch
 - A job's result arrives about 5 s sooner: the worker checks every 0.05 s while a job finishes and every 0.5 s otherwise, not every 1 s, and the client no longer waits 2 s on a pipe an ssh control master holds open. Roadmap: M18.5 closed.
 

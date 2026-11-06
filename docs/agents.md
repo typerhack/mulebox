@@ -107,6 +107,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 {"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "stop_reason": null, "v": 1}
 ```
 
+  `branch_busy` names the job holding this job's branch: a branch runs one job at a time, and
+  other branches run beside it, so use a branch per task to work in parallel.
   `waiting_for` is set only when nothing can run the job; a job simply in line has `running_ahead`, the jobs on the machines now. `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
   is where a job that ended badly failed, null when that is not known. `exit_code` is the code
   the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,

@@ -123,7 +123,8 @@ def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
     if state in WAITING:
         return {**event, "event": "queued", "position": queue_position(job),
                 "waiting_for": job.get("waiting_for"), "estimate_s": job.get("estimate_s"),
-                "running_ahead": job.get("running_ahead")}
+                "running_ahead": job.get("running_ahead"),
+                "branch_busy": job.get("branch_busy")}
     return None
 
 

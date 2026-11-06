@@ -10,8 +10,9 @@ name = "@NAME@"
 # Both roles run on one machine, as two systemd user services.
 roles = ["coordinator", "worker"]
 
-# Jobs this node runs at the same time.
-slots = 1
+# Jobs this node runs at the same time. Jobs of one branch always run one after the other.
+# Lower it to 1 on a small machine, raise it if yours stays idle during two jobs.
+slots = 2
 
 # What this node offers to jobs (`needs` in a project's .mulebox.yml), e.g. ["docker"].
 capabilities = []

@@ -57,7 +57,9 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    snapshot, and queues the job only if the result matches the list. Any trouble sends the whole
    snapshot, so a saving never fails a job. One snapshot per project stays in `<staging>/bases`.
 2. **Queue**: one FIFO line. Assignment is atomic: the oldest job a free worker can run.
-   Cluster-wide and per-worker slot limits, both default 1.
+   Cluster-wide and per-worker slot limits, both default 1 and 2 in the installed `node.toml`.
+   Jobs of different branches run at once; a job whose branch is busy waits for it, and younger
+   jobs of other branches may pass it (`branch_busy` says so).
 3. **Project folder**: the worker fetches and verifies the snapshot, then makes the branch's
    git worktree hold it: `projects/<project>/trees/<branch>/`, one repository per project.
    Only files that differ are written, so timestamps stay and build tools stay incremental.

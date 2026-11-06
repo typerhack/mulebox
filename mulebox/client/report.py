@@ -127,6 +127,8 @@ def state_line(body: dict[str, Any]) -> str | None:
         estimate = _estimate(body)
         line = f"{line}; {estimate}" if estimate else line
         reason = body.get("waiting_for")
+        if not reason and body.get("branch_busy"):
+            reason = f"{body['branch_busy']} is running on this branch"
         return f"{line}; waiting: {reason}" if reason else line
     if state in ("starting", "running"):
         worker = body.get("worker")

@@ -79,7 +79,10 @@ sudo loginctl enable-linger alice
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
   absolute, and not a system folder or your home folder itself. `projects` is optional: left
   out, as in a `node.toml` from before 0.56.0, it is `projects` beside `jobs`.
-- `slots`, `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
+- `slots`: jobs at the same time, 2 in a new install (1 if left out). Two heavy jobs share the
+  machine's CPU and memory, so 1 suits a small machine. A job with a fixed port of its own needs
+  `ports:` to run beside another; compose ports are moved already.
+- `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
   in `capabilities` of some worker, or its jobs are refused with that message. Add `docker`
   on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to
   run `compose:` projects, then restart the worker. mulebox fetches one small helper image

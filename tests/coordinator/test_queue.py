@@ -1,11 +1,11 @@
 import threading
 
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import queue
+from mulebox.coordinator import queue, views
 from mulebox.coordinator import store as st
 from mulebox.coordinator.store import Store
 
-from .helpers import queued, submit
+from .helpers import claimed, queued, submit
 
 
 def test_claim_oldest_first(store, staging):
@@ -92,3 +92,13 @@ def test_a_branch_runs_one_job_at_a_time(store, staging):
     assert got == [first, other, elsewhere]
     assert queue.claim(store, "wrk-a", ["node"], 1, 4) is None
     assert store.get_job(waits)["state"] == "queued"
+
+
+def test_a_queued_job_names_the_job_on_its_branch(store, staging):
+    first = claimed(store, staging, branch="main")["job_id"]
+    other = queued(store, staging, branch="feature/a")
+    behind = queued(store, staging, branch="main")
+    waiting, free = store.get_job(behind), store.get_job(other)
+    with store.read() as conn:
+        assert views.running_ahead(conn, waiting)["branch_busy"] == first
+        assert "branch_busy" not in views.running_ahead(conn, free)

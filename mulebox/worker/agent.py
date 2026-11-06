@@ -105,8 +105,12 @@ class Agent:
                 self.supervisor.tick(now, self._sender(now))
             except LinkError:
                 pass
-        if not self.finishing and len(self.active) < self.node.slots and self._online(now):
+        if self._free_slots() > 0 and self._online(now):
             self._claim(now)
+
+    def _free_slots(self) -> int:
+        """A slot is free only after its job's cleanup and result."""
+        return self.node.slots - len(self.active) - len(self.finishing)
 
     def wait_s(self) -> float:
         """How long `serve` waits before the next step."""
@@ -114,7 +118,7 @@ class Agent:
 
     def _claim(self, now: float) -> None:
         msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths),
-                      free_slots=self.node.slots - len(self.active), restarted=self.fresh)
+                      free_slots=self._free_slots(), restarted=self.fresh)
         try:
             reply = self._call(msg, now)
         except LinkError:

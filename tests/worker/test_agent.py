@@ -348,3 +348,11 @@ def test_a_finishing_job_is_not_kept_waiting(agent, fake_link):
     agent.finishing.append(object())
     assert agent.wait_s() == FINISHING_POLL_S
     agent.finishing.clear()
+
+
+def test_a_finishing_job_holds_its_slot_and_no_more(agent, fake_link):
+    agent.node = replace(agent.node, slots=2)
+    assert agent._free_slots() == 2
+    agent.finishing.append(object())
+    assert agent._free_slots() == 1
+    agent.finishing.clear()

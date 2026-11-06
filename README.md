@@ -51,7 +51,8 @@ mulebox queue  --SSH-->        |
   `setup` only when what it depends on changed. Compose jobs still run `setup`, in new containers.
 - **Only changes cross the network**: over a slow link, a job sends the files that changed since
   the last one, not the whole project.
-- **One job per branch at a time**: a second job of the same branch waits for the first.
+- **Branches run side by side**: different branches run at once, and a second job on the same
+  branch waits for the first.
 - **No repeat runs**: on exactly the same files, `mulebox check` gives the earlier result, or joins
   the same job if it is running, and says so. `--again` forces a run.
 

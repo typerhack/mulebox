@@ -27,7 +27,8 @@ from mulebox.common.status import STAGES
 # 8: `cache-npm`, `cache-pip`, `stage` events, `last_line`, `running_ahead`, activity is the job's own
 # 9: no unattended rule: a check_in is a question, `mulebox ok` answers it, a stuck job with no
 #    answer stops, results wait for an absent agent, and `check` does not repeat a tested job
-SCHEMA = 9
+# 10: jobs of different branches run at once, one branch waits in line, `branch_busy`
+SCHEMA = 10
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -106,7 +107,8 @@ EVENTS = (
     "mulebox events prints one JSON line per state change and no log; it exits when the job "
     "ends, with the job's exit code, and survives a dropped connection",
     "every line has v, event, job_id and state; ignore events and keys you do not know",
-    "queued has position, waiting_for, running_ahead (the jobs on the machines now) and "
+    "queued has position, waiting_for, running_ahead (the jobs on the machines now), "
+    "branch_busy (the job holding this branch, which it waits for even with a free slot) and "
     "estimate_s (how long this job usually runs, from "
     "its past runs; null when unknown; an estimate, not a promise, and not the time in line); "
     "started has machine; finished has outcome, exit_code and duration_s",

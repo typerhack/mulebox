@@ -38,13 +38,18 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
 
 def running_ahead(conn: Any, job: dict[str, Any]) -> dict[str, Any]:
     """The jobs on the machines now, for a queued job: why it has not started when nothing is
-    wrong, which `waiting_for` does not say. Nothing for a job in any other state."""
+    wrong, which `waiting_for` does not say, and `branch_busy`, the one holding this job's
+    branch, which it waits for even with a free slot. Nothing for a job in any other state."""
     if job["state"] != JobState.QUEUED:
         return {}
     marks = ", ".join("?" for _ in ACTIVE_STATES)
-    rows = conn.execute(f"SELECT job_id FROM jobs WHERE state IN ({marks}) ORDER BY seq",
-                        [state.value for state in ACTIVE_STATES])
-    return {"running_ahead": [row[0] for row in rows]}
+    rows = conn.execute(f"SELECT job_id, project, branch, kind FROM jobs WHERE state IN ({marks}) "
+                        "ORDER BY seq", [state.value for state in ACTIVE_STATES]).fetchall()
+    ahead: dict[str, Any] = {"running_ahead": [row["job_id"] for row in rows]}
+    for row in rows:
+        if (row["kind"], row["project"], row["branch"]) == ("job", job["project"], job["branch"]):
+            ahead["branch_busy"] = row["job_id"]
+    return ahead
 
 
 def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> dict[str, Any]:

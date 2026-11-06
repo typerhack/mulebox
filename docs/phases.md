@@ -410,8 +410,8 @@ Measured by that comparison on real jobs.
       mulebox from the laptop and 25.2 s run directly on the machine. A compose job's own time went
       from 20 s to 2 s, with `npm install` at 323 ms; one changed file of 2001 sent 0.2 KiB of
       7.7 MiB; an older machine got the whole snapshot, and the job passed.
-- [ ] M18.6 Different branches run at once, two jobs on one branch wait in line. Needs more than one
-      slot on a machine, which is a default of one today.
+- [~] M18.6 Different branches run at once, two jobs on one branch wait in line. Built 2026-11-06
+      (0.58.0): a new install has 2 slots, and a waiting job names the job on its branch.
 - [ ] M18.7 `mulebox projects` shows each project's folder and size; `project clean` and `project
       reset`.
 
@@ -435,5 +435,5 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)
 - MCP wrapper over the client commands
-- More than one slot per worker, or job weights, once measurements justify it
+- Job weights, once measurements justify them
 - macOS or Windows workers
