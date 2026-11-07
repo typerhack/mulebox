@@ -498,10 +498,10 @@ browser download blocked for the machine's network location.
       with the real coordinator code. Open: seen across a real upgrade.
 - [~] M19.2 `mulebox init` in a git worktree names the project after the repository. Built (0.66.5), with a
       real git worktree in a test. Open: an agent using it.
-- [~] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link. Built
-      (0.66.6), tested with the real coordinator code. Open: seen on a real machine.
-- [~] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install. Built (0.66.7), with
-      tests. Open: seen on a real machine.
+- [x] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link. Done
+      2026-11-07 (0.66.8): real repeats of a passed and a failed job on the machine.
+- [x] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install. Done 2026-11-07
+      (0.66.8): against the real machine with a node version it lacks.
 - [ ] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not
       "switch versions". `status` warns when an install's output reads as a lost connection.
 - [ ] M19.6 A way to keep a run hurt by an outage out of `usual`, and `usual` less skewed by one bad run.
@@ -511,7 +511,8 @@ browser download blocked for the machine's network location.
 - [ ] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
       two branches, `--detach`, and a second gate's time with the images built.
 - [ ] M19.11 No alarming `pull access denied` for an image the job then builds itself.
-- [ ] M19.12 `mulebox feedback draft` keeps a whole title (a cut one was seen again).
+- [x] M19.12 `mulebox feedback draft` keeps a whole title (a cut one was seen again). The cut came at 100
+      characters; only GitHub's own limit cuts now. Done 2026-11-07 (0.66.8), through the real CLI.
 - [ ] M19.9 Collapse `Downloading ...: x MB/y MB` in the log; show pnpm's own install apart in `prepare`.
 
 ## Parking lot

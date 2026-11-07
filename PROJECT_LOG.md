@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.8 - 2026-11-07 - patch
+- `mulebox feedback draft` keeps a whole title: only GitHub's own limit cuts one now, not 100 characters.
+
 ## 0.66.7 - 2026-11-07 - patch
 - `doctor` no longer says a machine offers a toolchain it has yet to install; the next line says the first job installs it.
 

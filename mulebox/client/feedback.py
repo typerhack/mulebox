@@ -22,7 +22,7 @@ from mulebox.common.anonymize import Anonymizer
 from mulebox.common.config import ClientConfig, ProjectConfig
 from mulebox.common.errors import MuleboxError
 
-TITLE_CHARS = 100
+TITLE_CHARS = 240  # GitHub takes 256; a title is cut only when it would be refused
 LOG_LINES = 40
 LOG_CHARS = 4000
 NAME_FIELDS = ("project", "branch", "client", "worker")

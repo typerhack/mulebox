@@ -152,7 +152,7 @@ def test_a_title_keeps_its_semicolons():
 
 
 def test_a_long_title_is_cut_at_a_word_and_the_summary_stays_whole():
-    summary = "word; " * 40
+    summary = "word; " * 60
     text = feedback.draft(summary, "1", SCRUB)
     title = feedback.title_of(text)
     assert len(title) <= feedback.TITLE_CHARS and title.endswith("word")
