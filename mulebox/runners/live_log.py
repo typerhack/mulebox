@@ -3,10 +3,11 @@
 A runner reservation only holds a build slot: the job runs inside GitHub's runner, which sends its
 output to GitHub. The runner also writes two things on this machine, in `<runner>/_diag/`:
 
-- `Worker_<time>.log`, its own diary, written as it goes: `Processing step: DisplayName='...'`
+- `Worker_<time>.log`, its own diary, written as it goes: the job's message with its `planId`
+  first, then `Processing step: DisplayName='...'`
   as each step starts, `Step result: Failed` when one fails, and `... web console lines for
   record '<id>'` while a step prints, which ties that step's record id to its name.
-- `pages/<github job id>_<record id>_<n>.log`, a step's output. It is written in blocks of about
+- `pages/<plan id>_<record id>_<n>.log`, a step's output. It is written in blocks of about
   4 KB or when the step ends, then deleted once GitHub has it, seconds later.
 
 So the log here has every step as it starts, live, and a step's output once the runner writes
@@ -31,7 +32,7 @@ MAX_OPEN = 64  # pages held open at once; a job has one per step
 _STEP = re.compile(r"Processing step: DisplayName='(.*)'\s*$")
 _FAILED = re.compile(r"Step result: (Failed|Cancelled)\b")
 _RECORD = re.compile(r"web console lines for record '([0-9a-f-]{36})'")
-_JOB = re.compile(r"\bJob ID ([0-9a-f-]{36})\b")
+_PLAN = re.compile(r'"planId":\s*"([0-9a-f-]{36})"')
 _STAMP = re.compile(r"^﻿?\d{4}-\d\d-\d\dT[\d:.]+Z ?")
 _GROUP, _END_GROUP = "##[group]", "##[endgroup]"
 
@@ -59,7 +60,7 @@ class RunnerLog:
         self._worker_log: Path | None = None
         self._worker_pos = 0
         self._worker_partial = ""
-        self._gh_job: str | None = None
+        self._plan: str | None = None
         self._step: str | None = None
         self._records: dict[str, str] = {}  # record id -> step name
         self._pages: dict[str, _Page] = {}
@@ -73,7 +74,7 @@ class RunnerLog:
             self._worker_log = self._find_worker_log(started_after)
         if self._worker_log is not None:
             self._read_worker_log()
-        if self._gh_job is not None:
+        if self._plan is not None:
             self._read_pages()
 
     def send(self, send: Send) -> None:
@@ -110,8 +111,8 @@ class RunnerLog:
             self._diary_line(line)
 
     def _diary_line(self, line: str) -> None:
-        if self._gh_job is None and (job := _JOB.search(line)):
-            self._gh_job = job[1]
+        if self._plan is None and (plan := _PLAN.search(line)):
+            self._plan = plan[1]
         elif step := _STEP.search(line):
             self._step = step[1]
             self.tailer.note(f"mulebox: step: {self._step}\n")
@@ -122,7 +123,7 @@ class RunnerLog:
 
     def _read_pages(self) -> None:
         try:
-            names = sorted(p.name for p in (self.diag / "pages").glob(f"{self._gh_job}_*.log"))
+            names = sorted(p.name for p in (self.diag / "pages").glob(f"{self._plan}_*.log"))
         except OSError:
             names = []
         for name in names:

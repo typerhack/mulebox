@@ -4,7 +4,7 @@ from mulebox.common.protocol import Message, MessageType
 from mulebox.runners.live_log import RunnerLog
 from mulebox.worker.link import request as make
 
-GH_JOB = "d20691f6-9c82-5b6a-b39b-8cea59a72f41"
+PLAN = "d20691f6-9c82-5b6a-b39b-8cea59a72f41"
 RECORD = "1d474f7c-0a18-43e9-9ad8-57d8d0598a92"
 STAMP = "[2026-11-07 09:32:11Z INFO StepsRunner]"
 
@@ -24,9 +24,9 @@ def runner(tmp_path):
 def test_steps_live_and_a_step_output_under_its_name_even_after_the_page_is_deleted(tmp_path):
     folder, diag = runner(tmp_path)
     diary = diag / "Worker_20261107-093210-utc.log"
-    diary.write_text(f"[x INFO JobRunner] Job ID {GH_JOB}\n"
+    diary.write_text(f'    "planId": "{PLAN}",\n'
                      f"{STAMP} Processing step: DisplayName='First step'\n")
-    page = diag / "pages" / f"{GH_JOB}_{RECORD}_1.log"
+    page = diag / "pages" / f"{PLAN}_{RECORD}_1.log"
     page.write_bytes(b"")
     log = RunnerLog("job-1", folder, make)
     log.poll(0)
