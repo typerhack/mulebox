@@ -9,6 +9,7 @@
 // list, and a job no machine fits is shown as stuck with the coordinator's reason.
 // Positions are the real queue positions in every list.
 
+import { doingLine } from "./doing.js";
 import { badge, clock, duration, el, jobLink, soonest, questionMark, runText } from "./format.js";
 
 const SHARED = { title: "next free machine", sub: "whichever of these is free first" };
@@ -46,16 +47,17 @@ function elapsed(job) {
     job.usual_s ? el("span", { class: "usual", text: `of usually ${duration(job.usual_s)}` }) : null);
 }
 
-function block(job) {
+function block(job, cores) {
   return el("div", { class: "slot-block", "data-filled": "1" },
     el("div", { class: "slot-head" }, badge(job.shown_state ?? job.state), elapsed(job)),
     jobLink(job),
     el("span", { class: "branch", text: runText(job) }),
+    doingLine(job, cores),
     questionMark(job));
 }
 
 function blocks(entry) {
-  if (entry.running.length) return entry.running.map(block);
+  if (entry.running.length) return entry.running.map((job) => block(job, entry.machine?.cores));
   const idle = entry.machine?.state === "offline" ? "offline" : "idle";
   return [el("p", { class: "empty", text: idle })];
 }

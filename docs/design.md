@@ -344,6 +344,11 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   per browser. System is the default; the sign-in page always follows the system.
 - Honest about the queue: a waiting job is not assigned until a worker claims it, so the
   lanes only ever say where a job can go, never where it will.
+- What a running job does, on its card: its stage in words (a CI job's GitHub step) and a meter
+  of the cores the job alone uses, which pulses only at half a core or more, so the busy job
+  stands out. An agent job is read from its unit and containers, a CI job from its runner's
+  service (containers a workflow starts itself are not counted). Downloads are told by the stage
+  only: per-job network is not measured.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by

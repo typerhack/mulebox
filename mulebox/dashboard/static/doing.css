@@ -1,0 +1,14 @@
+/* A running card's activity line (doing.js): word, meter, cores. Only a busy job pulses. */
+.slot-block .doing {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(40px, 72px) max-content;
+  gap: 6px; align-items: center; margin: 3px 0 0; font-weight: 400;
+}
+.slot-block .doing-word { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-muted); }
+.slot-block .doing-cores { color: var(--ink-muted); text-align: right; }
+.slot-block .doing:not(:has(.meter)) { grid-template-columns: minmax(0, 1fr) max-content; }
+.slot-block .doing[data-busy] .doing-word, .slot-block .doing[data-busy] .doing-cores { color: var(--ink); }
+.slot-block .doing[data-busy] .meter { animation: doing-pulse 1.6s ease-in-out infinite; }
+@keyframes doing-pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .slot-block .doing[data-busy] .meter { animation: none; outline: 1px solid var(--active); outline-offset: 1px; }
+}

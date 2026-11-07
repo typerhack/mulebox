@@ -81,6 +81,11 @@ class RunnerLog:
         if self._plan is not None:
             self._read_pages()
 
+    @property
+    def step(self) -> str | None:
+        """The step the runner is on, as GitHub names it."""
+        return self._step
+
     def send(self, send: Send) -> None:
         self.tailer.send(send)
 

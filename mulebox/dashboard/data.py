@@ -15,7 +15,7 @@ from typing import Any
 
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
-from mulebox.common.status import STOP_TEXT, shown_state, snapshot
+from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
 from mulebox.coordinator import api, attendance, queue, steps, usual, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
@@ -46,9 +46,12 @@ class DashboardData:
             limits = attendance.read_limits(conn)
             typical = {job["job_id"]: usual.job_seconds(conn, job) for job, _ in rows
                        if job["state"] != JobState.FINISHED}
+            doing = {job["job_id"]: _doing(job, steps.for_job(conn, job["job_id"]))
+                     for job, _ in rows if job["state"] in ACTIVE}
         return [{**reservation_dict(job, pos), **placement(fleet, job, now),
                  **attendance.fields(job, now, limits),
-                 **({"usual_s": typical[job["job_id"]]} if typical.get(job["job_id"]) else {})}
+                 **({"usual_s": typical[job["job_id"]]} if typical.get(job["job_id"]) else {}),
+                 **({"doing": doing[job["job_id"]]} if job["job_id"] in doing else {})}
                 for job, pos in rows]
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:
@@ -121,3 +124,15 @@ class DashboardData:
         with self.store.read() as conn:
             job = st.fetch_job(conn, job_id)
             return (job, queue.position(conn, job)) if job is not None else None
+
+
+
+def _doing(job: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """What a job in a slot is doing now, for its card: its stage (a runner job's GitHub step)
+    and the CPU of the job alone in percent of one core, null when not measured."""
+    report = job.get("activity") or {}
+    cpu = report.get("job_cpu_pct")
+    step = report.get("step")
+    return {"stage": current_stage(job, rows),
+            "step": step if isinstance(step, str) else None,
+            "cpu_pct": cpu if isinstance(cpu, (int, float)) else None}

@@ -62,9 +62,10 @@ def test_rows_carry_no_readings_until_something_measures_them():
 
 def test_readings_come_from_a_metrics_sample_or_stay_null():
     sample = {"cpu": [10.0, 30.0], "memory": {"total": 200, "available": 50, "used": 150}}
-    assert machines.readings(sample) == {"cpu_pct": 20.0, "mem_pct": 75.0}
-    assert machines.readings({"cpu": None, "memory": None}) == {"cpu_pct": None, "mem_pct": None}
-    assert machines.readings(None) == {"cpu_pct": None, "mem_pct": None}
+    assert machines.readings(sample) == {"cpu_pct": 20.0, "mem_pct": 75.0, "cores": 2}
+    none = {"cpu_pct": None, "mem_pct": None, "cores": None}
+    assert machines.readings({"cpu": None, "memory": None}) == none
+    assert machines.readings(None) == none
 
 
 def test_only_the_named_machine_gets_the_dashboard_hosts_readings():

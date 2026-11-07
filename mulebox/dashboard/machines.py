@@ -36,7 +36,7 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> d
     state = OFFLINE if not online else AVAILABLE if free else BUSY
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
-            "cpu_pct": None, "mem_pct": None,
+            "cpu_pct": None, "mem_pct": None, "cores": None,
             "jobs": [_job(job) for job in jobs]}
 
 
@@ -45,6 +45,7 @@ def readings(sample: dict[str, Any] | None) -> dict[str, float | None]:
     cpu, memory = (sample or {}).get("cpu"), (sample or {}).get("memory")
     return {
         "cpu_pct": round(sum(cpu) / len(cpu), 1) if cpu else None,
+        "cores": len(cpu) if cpu else None,
         "mem_pct": round(memory["used"] / memory["total"] * 100, 1)
         if memory and memory.get("total") else None,
     }

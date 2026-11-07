@@ -3,7 +3,8 @@
 A crashed runner never calls its job-completed hook, so the worker watches its own
 reservations: every 10 s it asks the coordinator for them (`runner_jobs`). While the
 runner's job process (`Runner.Worker`, found through /proc) is alive, a granted
-reservation gets a worker heartbeat, which renews its lease. Once the process has been
+reservation gets a worker heartbeat, which renews its lease and carries what the job does: its
+CPU (runner_meter.py) and the step it is on, for its card on the dashboard. Once the process has been
 gone for 60 s the reservation is released as `interrupted`. A granted reservation's steps and
 output also go into its log from the runner's own files, every second (live_log.py).
 
@@ -24,6 +25,7 @@ from mulebox.common.mounts import is_within
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.redact import StreamRedactor
 from mulebox.runners.live_log import RunnerLog
+from mulebox.runners.runner_meter import RunnerMeter
 from mulebox.worker.link import request
 
 LOG = get_logger("runners.supervise")
@@ -73,7 +75,8 @@ class Supervisor:
     def __init__(self, worker: str, runners_root: Path,
                  alive: Callable[[Path], bool] = runner_alive,
                  interval_s: float = SUPERVISE_S, gone_s: float = GONE_S,
-                 redactor: Callable[[], StreamRedactor] = StreamRedactor) -> None:
+                 redactor: Callable[[], StreamRedactor] = StreamRedactor,
+                 meter: RunnerMeter | None = None) -> None:
         self.worker = worker
         self.runners_root = Path(runners_root)
         self.alive = alive
@@ -84,6 +87,7 @@ class Supervisor:
         self.redactor = redactor
         self.logs: dict[str, tuple[RunnerLog, float]] = {}  # job id -> its log, started after
         self.next_follow = 0.0
+        self.meter = meter if meter is not None else RunnerMeter()
 
     def tick(self, now: float, send: Callable[[Message], Message]) -> None:
         """One supervision round when due. Link errors propagate to the caller."""
@@ -100,6 +104,7 @@ class Supervisor:
             if job_id not in current:
                 del self.missing[job_id]
         self._track_logs(jobs, current, send)
+        self.meter.forget(current)
         for job in jobs:
             self._check(job, now, send)
 
@@ -135,7 +140,8 @@ class Supervisor:
                 self.alive(self.runners_root / runner):
             self.missing.pop(job_id, None)
             if job.get("state") != JobState.QUEUED:
-                send(request(MessageType.HEARTBEAT, job_id=job_id, lease="worker"))
+                send(request(MessageType.HEARTBEAT, job_id=job_id, lease="worker",
+                             activity=self._activity(job_id, runner, now)))
             return
         since = self.missing.setdefault(job_id, now)
         if now - since < self.gone_s:
@@ -146,3 +152,8 @@ class Supervisor:
                              outcome=Outcome.INTERRUPTED.value))
         if reply.type is not MessageType.ERROR:
             self.missing.pop(job_id, None)
+
+    def _activity(self, job_id: str, runner: str, now: float) -> dict[str, Any]:
+        follower = self.logs.get(job_id)
+        return {"job_cpu_pct": self.meter.cpu_pct(job_id, runner, now),
+                "step": follower[0].step if follower else None}

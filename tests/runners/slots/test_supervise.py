@@ -167,3 +167,19 @@ def test_a_released_slot_gets_its_runner_log_read_to_the_end(gh_env, link, paths
     assert supervisor.logs == {}
     assert link.staging.log_path(job_id).read_text() == (
         "mulebox: step: Tests\nmulebox: step: Last step\n")
+
+
+def test_a_heartbeat_carries_the_runner_jobs_cpu_and_step(gh_env, link, paths, store):
+    from mulebox.runners.runner_meter import RunnerMeter
+    job_id = grant(gh_env, link, paths)
+    diag = paths.runners / RUNNER / "_diag"
+    diag.mkdir(parents=True)
+    (diag / "Worker_20261107-100431-utc.log").write_text(
+        "[x INFO StepsRunner] Processing step: DisplayName='Run pnpm check'\n")
+    used = iter([5.0, 25.0])
+    supervisor = Supervisor("build-1", paths.runners, alive=lambda folder: True,
+                            meter=RunnerMeter(read=lambda runner: next(used)))
+    supervisor.tick(T0, link.call)
+    supervisor.tick(T0 + SUPERVISE_S, link.call)
+    activity = store.get_job(job_id)["activity"]
+    assert activity == {"job_cpu_pct": 200.0, "step": "Run pnpm check"}

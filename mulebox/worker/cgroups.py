@@ -61,3 +61,15 @@ def group_net_bytes(group: Path, proc: Path = PROC) -> int | None:
         return net_bytes((proc / pids[0] / "net" / "dev").read_text(encoding="ascii"))
     except (OSError, ValueError, IndexError):
         return None
+
+
+def runner_group(runner: str, root: Path = ROOT) -> Path | None:
+    """A GitHub runner's service, `mulebox-runner@<name>.service`, in the user manager. systemd
+    puts a template's instances in a slice of their own, so both places are looked at."""
+    uid = os.getuid()
+    apps = root / f"user.slice/user-{uid}.slice/user@{uid}.service/app.slice"
+    unit = f"mulebox-runner@{runner}.service"
+    for group in (apps / "app-mulebox\\x2drunner.slice" / unit, apps / unit):
+        if group.is_dir():
+            return group
+    return None
