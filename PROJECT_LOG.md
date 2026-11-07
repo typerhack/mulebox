@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.75.4 - 2026-11-07 - patch
+- Roadmap: M5.2 marked done (its check passed in 0.74.1).
+
 ## 0.75.3 - 2026-11-07 - patch
 - mulebox init on a plain Python project: pytest found from test_*.py or the requirements, a --check given as python or pytest runs from setup's venv, and a note when .venv is not git-ignored; from a newcomer agent's trial on a blank machine.
 - Setup's login error says how to make a key, copy it as another user and accept the host key, without a double period; getting-started.md lists what to ask a person for once; the contract no longer says setup runs before every job.
