@@ -149,11 +149,15 @@ queue and returns the same result as running it locally.
       docs/install.md. Done 2026-11-07 (0.74.1): the build machine drained, a job sent then waited
       and `status` said every machine for it was draining, the user saw "draining" on the dashboard,
       and after `resume` the job ran and passed. The stopped drill worker of M5.1 was removed; an
-      online one was refused. Its key was already gone, so taking a key off ran in tests only.
+      online one was refused. Then a second drill worker was drained, stopped and removed: its key
+      was taken off the coordinator and refused from then on.
       Moving the coordinator is written down, not done.
 - [~] M5.3 Workers report CPU and memory; the dashboard shows them per machine. Built 2026-11-07
       (0.75.0): with every claim and heartbeat (schema 16), on the dashboard and in `mulebox machine
-      list`. Done when: a second machine's readings move on the real dashboard during a job.
+      list`. Run 2026-11-07 (0.75.0): a second drill worker running busy jobs reported 70% CPU
+      beside the build machine's 73% in `mulebox machine list`, from the same stored readings the
+      dashboard shows; it was a container, so its numbers were the build machine's own. Open: the
+      readings seen on the dashboard in a browser (Edge through the extension showed an error page).
 
 ## M6: Open-source readiness
 - [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)
