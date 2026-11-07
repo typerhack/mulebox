@@ -68,9 +68,16 @@ const GITHUB = "M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.1
 const LAPTOP = "M2.5 3h11v7.5h-11ZM3.75 4.25v5h8.5v-5ZM.5 11.5h15v.75c0 .7-.55 1.25-1.25 " +
   "1.25H1.75C1.05 13.5.5 12.95.5 12.25Z";
 
+// A size on the icon itself, so a stylesheet that is late or older cannot squash it.
+function sized(icon, px) {
+  icon.setAttribute("width", px);
+  icon.setAttribute("height", px);
+  return icon;
+}
+
 export function jobLink(job) {
   return el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, class: "job-link" },
-    drawIcon(isCI(job) ? GITHUB : LAPTOP, "origin"), el("span", { text: jobName(job) }));
+    sized(drawIcon(isCI(job) ? GITHUB : LAPTOP, "origin"), 15), el("span", { text: jobName(job) }));
 }
 
 // Build a DOM element. Text always goes through textContent, so nothing is parsed as HTML.

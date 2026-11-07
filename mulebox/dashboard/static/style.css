@@ -199,8 +199,8 @@ button.icon:hover { color: var(--ink); }
 .slot-block .branch { display: block; margin: 0; font-weight: 400; }
 .slot-block .time { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 6px; text-align: right; }
 .slot-block .usual { color: var(--ink-muted); font-weight: 400; font-size: 0.92em; }
-.job-link { display: inline-flex; align-items: baseline; gap: 5px; }
-.job-link .origin { flex: none; width: 12px; height: 12px; fill: currentColor; align-self: center; opacity: 0.8; }
+.job-link { display: inline-flex; align-items: center; gap: 6px; }
+.job-link .origin { flex: none; width: 15px; height: 15px; fill: currentColor; }
 .waits { list-style: none; margin: 0; padding: 0; }
 .wait { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; gap: 0 10px; align-items: baseline; padding: 2px 0; }
 .wait + .wait { border-top: 1px solid var(--line-soft); }

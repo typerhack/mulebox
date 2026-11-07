@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.68.2 - 2026-11-07 - patch
+- Dashboard: the GitHub and laptop icons are 15 px at full strength, sized on the icon itself; at 12 px and 80% they were hard to see.
+
 ## 0.68.1 - 2026-11-07 - patch
 - Dashboard: a card's usual time sits on the line of its timer, so cards with and without one stay the same height.
 
