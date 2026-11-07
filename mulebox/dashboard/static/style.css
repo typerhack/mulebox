@@ -197,7 +197,7 @@ button.icon:hover { color: var(--ink); }
 .slot-block[data-filled] .badge { color: var(--active); }
 .slot-block .slot-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 1px; }
 .slot-block .branch { display: block; margin: 0; font-weight: 400; }
-.slot-block .time { display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.slot-block .time { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0 6px; text-align: right; }
 .slot-block .usual { color: var(--ink-muted); font-weight: 400; font-size: 0.92em; }
 .job-link { display: inline-flex; align-items: baseline; gap: 5px; }
 .job-link .origin { flex: none; width: 12px; height: 12px; fill: currentColor; align-self: center; opacity: 0.8; }

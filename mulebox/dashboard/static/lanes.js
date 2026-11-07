@@ -43,7 +43,7 @@ export function groupLanes(snapshot, machines) {
 function elapsed(job) {
   return el("span", { class: "time" },
     el("span", { class: "num", "data-elapsed": job.job_id, text: duration(job.elapsed_s) }),
-    job.usual_s ? el("span", { class: "usual", text: `usually ${duration(job.usual_s)}` }) : null);
+    job.usual_s ? el("span", { class: "usual", text: `of usually ${duration(job.usual_s)}` }) : null);
 }
 
 function block(job) {
