@@ -116,6 +116,19 @@ def expired_line(job_id: str) -> str:
             f"{DEFAULT_LOG_DAYS} days by default). `mulebox status {job_id}` still has the result")
 
 
+def waiting_reason(body: dict[str, Any]) -> str | None:
+    """Why a queued job has not started: nothing can run it, its branch is taken, or the
+    machines are busy. None: nothing holds it, and a worker is about to take it."""
+    if body.get("waiting_for"):
+        return str(body["waiting_for"])
+    if body.get("branch_busy"):
+        return f"{short_id(body['branch_busy'])} is running on this branch"
+    ahead = body.get("running_ahead") or []
+    if ahead:
+        return f"the machines are busy with {len(ahead)} job{'s' if len(ahead) > 1 else ''}"
+    return None
+
+
 def state_line(body: dict[str, Any]) -> str | None:
     """Status line for a state change seen on the watch stream (None: nothing to say)."""
     state = body.get("state")
@@ -126,9 +139,7 @@ def state_line(body: dict[str, Any]) -> str | None:
         line = f"queued, position {position}" if position is not None else "queued"
         estimate = _estimate(body)
         line = f"{line}; {estimate}" if estimate else line
-        reason = body.get("waiting_for")
-        if not reason and body.get("branch_busy"):
-            reason = f"{body['branch_busy']} is running on this branch"
+        reason = waiting_reason(body)
         return f"{line}; waiting: {reason}" if reason else line
     if state in ("starting", "running"):
         worker = body.get("worker")

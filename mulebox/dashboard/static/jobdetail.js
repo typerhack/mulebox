@@ -31,7 +31,7 @@ function aloneNote(job) {
   if (!job.question) return null;
   return el("div", { class: "alone-note", "data-alone": job.job_id }, questionMark(job),
     el("p", { text: `The agent was asked if all is well. If the job stays stuck it stops: ${job.question.reason}.` }),
-    el("p", {}, "Take it back: ", el("code", { text: `mulebox wait ${job.job_id}` })),
+    el("p", {}, "It is fine, let it go on: ", el("code", { text: `mulebox ok ${job.job_id}` })),
     el("p", {}, "Or end it: ", el("code", { text: `mulebox cancel ${job.job_id}` })));
 }
 

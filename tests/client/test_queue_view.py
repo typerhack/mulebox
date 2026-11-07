@@ -156,3 +156,14 @@ def test_projects_table_uses_the_shared_state_and_stays_aligned():
 
 def test_projects_table_when_empty():
     assert "No projects" in render_projects([])[0]
+
+
+def test_a_queued_job_says_why_it_waits():
+    now = 1000.0
+    behind_branch = job(2, "queued", position=1, branch_busy="job-01ABCDEFGHJK")
+    behind_others = job(3, "queued", position=2, running_ahead=["a", "b"])
+    free = job(4, "queued", position=3)
+    lines = render_table([behind_branch, behind_others, free], now)
+    assert any("on this branch" in line for line in lines)
+    assert any("the machines are busy with 2 jobs" in line for line in lines)
+    assert sum("waiting:" in line for line in lines) == 2

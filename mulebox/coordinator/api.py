@@ -178,7 +178,7 @@ def queue_list(req: Request) -> Message:
     with req.store.read() as conn:
         limits = attendance.read_limits(conn)
         rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now)),
-                 **attendance.fields(job, req.now, limits)}
+                 **running_ahead(conn, job), **attendance.fields(job, req.now, limits)}
                 for job, pos in queue.listing(conn, limit)]
     news: dict[str, Any] = {}
     if project:

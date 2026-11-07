@@ -30,7 +30,8 @@ from mulebox.common.status import STAGES
 # 10: jobs of different branches run at once, one branch waits in line, `branch_busy`
 # 11: a job installs its own pinned toolchain
 # 12: `project.install`, `mulebox warm`, an `install` stage, and exit 5 when `install` fails
-SCHEMA = 12
+# 13: `take_it_back` is gone: it was `its_result` under a second name
+SCHEMA = 13
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -44,7 +45,6 @@ COMMANDS = {
     "follow_it": "mulebox events --job <job-id> --json",
     "its_state": "mulebox status <job-id>",
     "its_result": "mulebox wait <job-id>",
-    "take_it_back": "mulebox wait <job-id>",
     "queue": "mulebox queue",
     "all_projects": "mulebox projects",
     "read_log": "mulebox logs <job-id>",

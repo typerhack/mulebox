@@ -27,7 +27,7 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 12. `mulebox contract` prints the current schema on
+This skill was written for contract schema 13. `mulebox contract` prints the current schema on
 its first line. If that number is higher, this skill is behind: tell the user that
 `mulebox skill update` fixes it, and go on following the contract. Never update this skill
 yourself.
