@@ -52,7 +52,7 @@ def check_login(target: str) -> None:
             f"your ssh agent.\n({exc})") from exc
 
 
-def _remote(target: str) -> Remote:
+def remote_for(target: str) -> Remote:
     return Remote(ClientConfig(coordinator=target, remote_bin=f"~/{PROGRAM}",
                                connect_timeout_s=CONNECT_S))
 
@@ -60,7 +60,7 @@ def _remote(target: str) -> Remote:
 def running_jobs(target: str) -> list[str]:
     """Jobs on the machine now; none if mulebox is not there yet, or is too old to say."""
     try:
-        rows = _remote(target).call(request(MessageType.QUEUE)).body.get("jobs") or []
+        rows = remote_for(target).call(request(MessageType.QUEUE)).body.get("jobs") or []
     except (MuleboxError, OSError):
         return []
     return [row["job_id"] for row in rows
@@ -79,13 +79,16 @@ def _pack(folder: Path) -> tuple[Path, str]:
     return bundle, built.name
 
 
-def install(target: str) -> None:
+def install(target: str, env: dict[str, str] | None = None) -> None:
+    """Install or upgrade mulebox on `target`; `env` goes to install.sh (MULEBOX_COORDINATOR)."""
     with tempfile.TemporaryDirectory(prefix="mulebox-setup-") as folder:
         bundle, name = _pack(Path(folder))
         sent = sshio.run_with_file(target, ["sh", "-c", _UNPACK], bundle,
                                    connect_timeout_s=CONNECT_S)
     sshio.check_exit(target, ["tar"], sent.exit_code, sent.stderr)
-    script = (f'exec bash "$HOME/.mulebox/tmp/install.sh" '
+    exports = "".join(f"export {name}={shlex.quote(value)}; "
+                      for name, value in (env or {}).items())
+    script = (f'{exports}exec bash "$HOME/.mulebox/tmp/install.sh" '
               f'"$HOME/.mulebox/tmp/"{shlex.quote(name)}')
     done = subprocess.run(ssh.ssh_command(target, ["sh", "-c", script], CONNECT_S),
                           timeout=INSTALL_TIMEOUT_S, stdin=subprocess.DEVNULL, check=False)
@@ -153,7 +156,7 @@ def prove(target: str, say: Say) -> None:
 def _drain(target: str, seconds: int) -> list[str] | None:
     """Hold new jobs back; the jobs still running, or None if the machine cannot hold them."""
     try:
-        return _remote(target).call(request(MessageType.DRAIN, seconds=seconds)).body["running"]
+        return remote_for(target).call(request(MessageType.DRAIN, seconds=seconds)).body["running"]
     except (MuleboxError, OSError):  # not installed yet, or too old
         return None
 

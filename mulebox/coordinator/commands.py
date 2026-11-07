@@ -2,9 +2,11 @@
 
 `rpc`, `rpc-upload`, `rpc-download` and `coordinator serve`. They load the node config
 (`--node-config` overrides the default path) and open the store under the staging root.
+`ssh-gate` and `authorize-worker` are for workers on other machines (worker_keys.py).
 """
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -12,7 +14,7 @@ from mulebox.common import dashboard_address
 from mulebox.common.config import load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
-from mulebox.coordinator import daemon, rpc
+from mulebox.coordinator import daemon, rpc, worker_keys
 from mulebox.coordinator.node import open_local
 
 EXIT_CONFIG = 2
@@ -47,6 +49,15 @@ def register(sub: argparse._SubParsersAction) -> None:
     _node_option(p)
     p.set_defaults(func=_download)
 
+    p = sub.add_parser("ssh-gate", help=argparse.SUPPRESS)  # forced by a worker key
+    _node_option(p)
+    p.set_defaults(func=_gate)
+
+    p = sub.add_parser("authorize-worker",
+                       help="let a worker's key (on stdin) reach this coordinator, for rpc only")
+    p.add_argument("name", help="the worker's name")
+    p.set_defaults(func=_authorize)
+
     p = sub.add_parser("coordinator", help="coordinator service")
     coord = p.add_subparsers(dest="coordinator_command", metavar="<command>", required=True)
     serve = coord.add_parser("serve", help="run lease sweeps (recovery first)")
@@ -63,7 +74,7 @@ def _with_store(args: argparse.Namespace, action) -> int:
     setup_logging("WARNING")  # stdout carries the protocol; logs go to stderr
     try:
         node = load_node_config(args.node_config)
-        # M1 has one node: the cluster-wide slot limit is that node's slot count.
+        # the least the cluster holds; more workers add their slots (workers.cluster_limit)
         args.cluster_slots = node.slots
         args.dashboard = dashboard_address.where(node.dashboard)
         store, staging = open_local(node)
@@ -102,6 +113,32 @@ def _upload_delta(args: argparse.Namespace) -> int:
 def _download(args: argparse.Namespace) -> int:
     return _with_store(args, lambda store, staging: rpc.run_download(
         store, staging, args.job_id, sys.stdout.buffer, sys.stderr))
+
+
+def _gate(args: argparse.Namespace) -> int:
+    try:
+        command, job_id = worker_keys.gate_command(os.environ.get("SSH_ORIGINAL_COMMAND"))
+    except worker_keys.GateRefused as exc:
+        print(f"mulebox: {exc}", file=sys.stderr)
+        return EXIT_CONFIG
+    if command == "rpc-download":
+        args.job_id = job_id
+        return _download(args)
+    return _with_store(args, lambda store, staging: rpc.run_rpc(
+        store, staging, sys.stdin.buffer, sys.stdout.buffer, sys.stderr,
+        cluster_slots=args.cluster_slots, dashboard=args.dashboard,
+        allowed=worker_keys.WORKER_MESSAGES))
+
+
+def _authorize(args: argparse.Namespace) -> int:
+    try:
+        path = worker_keys.authorize(args.name, sys.stdin.read(), Path.home())
+    except (worker_keys.GateRefused, OSError) as exc:
+        print(f"mulebox: {exc}", file=sys.stderr)
+        return EXIT_CONFIG
+    print(f"mulebox: {args.name} may now reach this coordinator, for rpc only ({path})",
+          file=sys.stderr)
+    return 0
 
 
 def _serve(args: argparse.Namespace) -> int:

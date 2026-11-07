@@ -123,7 +123,7 @@ def open_link(node: NodeConfig, paths: NodePaths) -> Any:
     from mulebox.worker.link import LocalLink, SSHLink
 
     if node.coordinator is not None:
-        return SSHLink(node.coordinator, DEFAULT_REMOTE_BIN)
+        return SSHLink(node.coordinator, DEFAULT_REMOTE_BIN, key=node.coordinator_key)
     from mulebox.coordinator.node import open_local
 
     store, staging = open_local(node)

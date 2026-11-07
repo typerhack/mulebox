@@ -36,8 +36,10 @@ EXIT_PROTOCOL = 4
 def run_rpc(store: Store, staging: Staging, stdin: BinaryIO, stdout: BinaryIO,
             stderr: TextIO | None = None, *, clock: Callable[[], float] = time.time,
             sleep: Callable[[float], None] = time.sleep, poll_s: float = POLL_S,
-            cluster_slots: int = 1, dashboard: dict[str, Any] | None = None) -> int:
-    """Answer one request from `stdin` on `stdout`; return the exit code."""
+            cluster_slots: int = 1, dashboard: dict[str, Any] | None = None,
+            allowed: frozenset[MessageType] | None = None) -> int:
+    """Answer one request from `stdin` on `stdout`; return the exit code. With `allowed` (a
+    worker key, coordinator/worker_keys.py), any other request type is refused."""
     request_id = "unknown"
     try:
         line = read_line(stdin)
@@ -45,6 +47,8 @@ def run_rpc(store: Store, staging: Staging, stdin: BinaryIO, stdout: BinaryIO,
             raise BadRequest("no request line on stdin")
         msg = decode(line)
         request_id = msg.request_id
+        if allowed is not None and msg.type not in allowed:
+            raise BadRequest(f"a worker key may not send {msg.type}")
         if msg.type is MessageType.WATCH:
             return watch(store, staging, msg, stdin, stdout, clock=clock, sleep=sleep,
                          poll_s=poll_s)

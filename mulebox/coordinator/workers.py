@@ -45,6 +45,13 @@ def is_online(worker: dict[str, Any], now: float) -> bool:
     return now - worker["last_seen"] <= OFFLINE_AFTER_S
 
 
+def cluster_limit(conn: sqlite3.Connection, now: float, at_least: int) -> int:
+    """Jobs the whole cluster may hold at once: the slots of every online worker, as they last
+    reported them, and never fewer than `at_least` (the coordinator machine's own `slots`)."""
+    reported = sum(w["slots"] for w in listing(conn) if w["slots"] and is_online(w, now))
+    return max(at_least, reported)
+
+
 def _decoded(row: sqlite3.Row) -> dict[str, Any]:
     data = dict(row)
     data["capabilities"] = json.loads(data["capabilities"])

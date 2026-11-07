@@ -76,6 +76,12 @@ class Reader:
             self.fail(key, "must be an ssh target without spaces, not starting with '-'")
         return value
 
+    def absolute_path(self, key: str) -> str | None:
+        value = self.text(key, None)
+        if value is not None and not value.startswith("/"):
+            self.fail(key, "must be an absolute path")
+        return value
+
     def integer(self, key: str, default: int, low: int, high: int | None = None) -> int:
         value = self.get(key, default)
         if not isinstance(value, int) or isinstance(value, bool):

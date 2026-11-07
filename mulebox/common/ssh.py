@@ -56,7 +56,16 @@ class RemoteResult:
     stderr: bytes
 
 
-def ssh_base_argv(target: str, connect_timeout_s: int = 10) -> list[str]:
+def key_options(key: str | None) -> list[str]:
+    """ssh options for a key of mulebox's own, such as a worker's key for its coordinator: only
+    that key, and the machine's host key trusted the first time (setup makes that connection)."""
+    if key is None:
+        return []
+    return ["-i", key, "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new"]
+
+
+def ssh_base_argv(target: str, connect_timeout_s: int = 10,
+                  options: Sequence[str] = ()) -> list[str]:
     """Return the ssh argv up to and including the target (no remote command)."""
     _check_target(target)
     if isinstance(connect_timeout_s, bool) or not isinstance(connect_timeout_s, int):
@@ -67,6 +76,7 @@ def ssh_base_argv(target: str, connect_timeout_s: int = 10) -> list[str]:
         SSH_BINARY, "-T",
         "-o", "BatchMode=yes",
         "-o", f"ConnectTimeout={connect_timeout_s}",
+        *options,
         target,
     ]
 
@@ -100,6 +110,7 @@ def run_remote(
     timeout_s: float | None = None,
     connect_timeout_s: int = 10,
     check: bool = True,
+    options: Sequence[str] = (),
 ) -> RemoteResult:
     """Run argv on target and collect its output.
 
@@ -107,7 +118,7 @@ def run_remote(
     and RemoteError on another non-zero exit unless check is False (then the result is
     returned with its exit code).
     """
-    command = ssh_command(target, argv, connect_timeout_s)
+    command = ssh_command(target, argv, connect_timeout_s, options)
     io_kwargs: dict = {"input": stdin} if stdin is not None else {"stdin": subprocess.DEVNULL}
     try:
         proc = subprocess.run(command, capture_output=True, timeout=timeout_s, **io_kwargs)
@@ -168,7 +179,8 @@ def _stream(
         raise_for_exit(target, argv, proc.returncode, bytes(stderr_buf))
 
 
-def ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int) -> list[str]:
+def ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int,
+                options: Sequence[str] = ()) -> list[str]:
     if isinstance(argv, (str, bytes)):
         raise SSHError("remote argv must be a sequence of strings, not a single string")
     argv = list(argv)
@@ -179,7 +191,7 @@ def ssh_command(target: str, argv: Sequence[str], connect_timeout_s: int) -> lis
     if any("\0" in arg for arg in argv):
         raise SSHError("remote argv must not contain NUL characters")
     # "--" ends ssh's option parsing, so the command can never be read as an ssh option.
-    return ssh_base_argv(target, connect_timeout_s) + ["--", shlex.join(argv)]
+    return ssh_base_argv(target, connect_timeout_s, options) + ["--", shlex.join(argv)]
 
 
 def _check_target(target: str) -> None:

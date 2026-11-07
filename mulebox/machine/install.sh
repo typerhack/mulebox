@@ -7,7 +7,9 @@
 # Never uses sudo and never deletes a directory: an old venv is moved into
 # ~/.mulebox/tmp, and only exact, known temp files are removed. node.toml.example and
 # systemd/ must sit next to this script (`mulebox setup` sends them).
-# Environment: MULEBOX_PYTHON picks the Python to use (default python3).
+# Environment: MULEBOX_PYTHON picks the Python to use (default python3). MULEBOX_COORDINATOR
+# (an ssh target) and MULEBOX_COORDINATOR_KEY (an absolute key path) make a new node.toml a
+# worker of that coordinator, with no coordinator or dashboard of its own (`setup --worker-of`).
 set -euo pipefail
 
 MB_HOME="$HOME/.mulebox"
@@ -131,6 +133,17 @@ render_node_config() {  # template name home -> TOML on stdout
     text="$(<"$1")"
     text="${text//@NAME@/$2}"
     text="${text//@HOME@/$3}"
+    if [ -n "${MULEBOX_COORDINATOR:-}" ]; then
+        case "$MULEBOX_COORDINATOR${MULEBOX_COORDINATOR_KEY:-}" in
+            *\"*|*\\*) die "the coordinator address or key path holds a quote or backslash" ;;
+        esac
+        local worker
+        worker="roles = [\"worker\"]"$'\n'"coordinator = \"$MULEBOX_COORDINATOR\""
+        [ -n "${MULEBOX_COORDINATOR_KEY:-}" ] && \
+            worker+=$'\n'"coordinator_key = \"$MULEBOX_COORDINATOR_KEY\""
+        text="${text//roles = \[\"coordinator\", \"worker\"\]/$worker}"
+        text="${text//mode = \"local\"/mode = \"off\"}"
+    fi
     printf '%s\n' "$text"
 }
 

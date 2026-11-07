@@ -1,4 +1,4 @@
-"""Claims from several processes at once: no job twice, cluster_slots holds."""
+"""Claims from several processes at once: no job twice, the cluster limit holds."""
 
 import multiprocessing
 
@@ -45,7 +45,8 @@ def _run(path, cluster_slots):
     return claimed
 
 
-@pytest.mark.parametrize("cluster_slots, expected", [(100, 24), (3, 3)])
+# six one-slot workers: the cluster holds their six slots even when the coordinator's own is 3
+@pytest.mark.parametrize("cluster_slots, expected", [(100, 24), (3, PROCESSES)])
 def test_processes_claim_atomically(store, staging, cluster_slots, expected):
     for t in range(24):
         queued(store, staging, now=float(t))

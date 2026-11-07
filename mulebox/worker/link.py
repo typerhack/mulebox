@@ -20,7 +20,7 @@ from mulebox.common import protocol
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import Message, MessageType
-from mulebox.common.ssh import RemoteError, SSHError, run_remote
+from mulebox.common.ssh import RemoteError, SSHError, key_options, run_remote
 
 RPC_TIMEOUT_S = 60.0
 DOWNLOAD_TIMEOUT_S = 1800.0
@@ -71,15 +71,18 @@ class LocalLink:
 
 
 class SSHLink:
-    def __init__(self, target: str, remote_bin: str, connect_timeout_s: int = 10) -> None:
+    def __init__(self, target: str, remote_bin: str, connect_timeout_s: int = 10,
+                 key: str | None = None) -> None:
         self.target = target
+        self.options = key_options(key)
         self.remote_bin = remote_command(remote_bin)
         self.connect_timeout_s = connect_timeout_s
 
     def _run(self, args: list[str], stdin: bytes | None, timeout_s: float) -> bytes:
         try:
             result = run_remote(self.target, [self.remote_bin, *args], stdin=stdin,
-                                timeout_s=timeout_s, connect_timeout_s=self.connect_timeout_s)
+                                timeout_s=timeout_s, connect_timeout_s=self.connect_timeout_s,
+                                options=self.options)
         except RemoteError as exc:
             raise LinkError(f"`mulebox {args[0]}` on {self.target} failed: {exc}") from exc
         except SSHError as exc:

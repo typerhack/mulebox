@@ -135,3 +135,16 @@ def test_install_copies_but_does_not_enable_the_runner_template():
 def test_only_a_coordinator_machine_runs_the_dashboard():
     script = 'ROLES=(worker); wanted_units'
     assert call_install_function(script).split() == ["mulebox-worker.service"]
+
+
+def test_a_worker_of_another_coordinator_renders_and_validates(tmp_path):
+    env = {**os.environ, "MULEBOX_COORDINATOR": "ssh://alice@192.168.1.50:22",
+           "MULEBOX_COORDINATOR_KEY": "/home/alice/.config/mulebox/coordinator_key"}
+    text = call_install_function("render_node_config", str(INSTALL_DIR / "node.toml.example"),
+                                 "build-2", "/home/alice", env=env)
+    path = tmp_path / "node.toml"
+    path.write_text(text, encoding="utf-8")
+    node = load_node_config(path)
+    assert node.roles == ("worker",) and node.coordinator == "ssh://alice@192.168.1.50:22"
+    assert node.coordinator_key == "/home/alice/.config/mulebox/coordinator_key"
+    assert node.dashboard["mode"] == "off"

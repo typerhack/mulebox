@@ -234,6 +234,34 @@ pull request, and its workflow file comes from that pull request, so it can ask 
 whatever your own workflow says, and run its code on your build machine.
 What a job can reach: [Security model](#security-model).
 
+## More machines
+
+One machine runs the coordinator; any number of others can be workers of it. Set the first one
+up as above, then, from the laptop, with `ssh <host> true` working for both:
+
+```sh
+mulebox setup build-2 --worker-of build-1
+```
+
+It makes a key on `build-2` (`~/.config/mulebox/coordinator_key`), adds it to `build-1`'s
+`~/.ssh/authorized_keys` for mulebox requests only, installs mulebox on `build-2` with a
+`node.toml` that names `build-1` as its coordinator and runs no coordinator or dashboard, and
+waits until `build-1` lists it online. `build-2` reaches `build-1` at the address this laptop
+uses (`ssh -G build-1`); if it needs another one, add `--coordinator-address alice@192.168.1.50`.
+The first time, `build-2` trusts `build-1`'s host key as it finds it.
+
+Run it again to upgrade `build-2`; running jobs there stop it unless `--now`. The client keeps
+talking to `build-1` only. A new node.toml written by the installer carries:
+
+```toml
+roles = ["worker"]
+coordinator = "ssh://alice@192.168.1.50:22"
+coordinator_key = "/home/alice/.config/mulebox/coordinator_key"
+```
+
+Not yet: draining and removing a worker (M5.2), its CPU and memory on the dashboard (M5.3), and
+`mulebox project clean` or `reset` on its folders.
+
 ## Security model
 
 mulebox is for one owner and the projects that owner trusts. It is not a sandbox.
@@ -247,6 +275,12 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 - So a machine used as a desktop shares all of that with every job. A dedicated user keeps the
   desktop's files out of reach only without the `docker` group, and mulebox's Docker jobs need
   that group. For a real boundary, use a machine that holds nothing else.
+- A worker on another machine reaches the coordinator with a key of its own. Its line in
+  `authorized_keys` has `restrict` (no forwarding, no terminal) and a forced command,
+  `mulebox ssh-gate`, which runs only `mulebox rpc` and `rpc-download <job>`, and over `rpc`
+  only a worker's requests: claims, job reports, logs and runner slots. So that key cannot open a
+  shell or submit work, but it can take and report jobs, and read any job's snapshot. A job on
+  the worker can read that key, like everything else of its user.
 - The compose checks stop a CI file's assumptions from reaching past the job, not an attacker.
 - Redaction is a safety net built on patterns and on `[job_env]` values with a secret-looking
   name. Keep real secrets out of jobs: a value printed in another form is not found.

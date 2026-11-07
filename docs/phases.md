@@ -136,7 +136,10 @@ queue and returns the same result as running it locally.
       fetching one itself has not run.
 
 ## M5: More machines
-- [ ] M5.1 Separate worker install; register, capabilities, warm-up
+- [~] M5.1 Separate worker install; register, capabilities, warm-up. Built 2026-11-07 (0.73.0):
+      `mulebox setup <worker> --worker-of <coordinator>`, a worker key limited to worker requests,
+      the cluster limit from every online worker's slots; warm-up is the first job's own (design.md).
+      Done when: a second, blank machine set up that way takes a job while the first is busy.
 - [ ] M5.2 Draining and removing workers; moving the coordinator (documented)
 - [ ] M5.3 Workers report CPU and memory; the dashboard shows them per machine
 

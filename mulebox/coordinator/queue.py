@@ -35,7 +35,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
           disk_free: int | None = None) -> dict[str, Any] | None:
     """Give `worker` the oldest queued job whose needs it meets, or None.
 
-    None when the worker has no free slot, when `cluster_slots` jobs are already in
+    None when the worker has no free slot, when the cluster's slots (workers.cluster_limit, at
+    least `cluster_slots`) are all held by jobs in
     `starting|running|cleaning`, or when no queued job fits. The claimed job moves to
     `starting` with a fresh attempt id and worker lease.
     """
@@ -47,7 +48,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                        slots=free_slots + held, toolchains=toolchains, version=version,
                        disk_free=disk_free)
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
-        if free < 1 or active_count(conn) >= cluster_slots or holds.draining(conn, now):
+        if (free < 1 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
+                or holds.draining(conn, now)):
             return None
         blocker = oldest_reservation(conn, worker)
         on_hold = holds.held(conn, now)

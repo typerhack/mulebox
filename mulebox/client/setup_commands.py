@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from mulebox.client import setup
+from mulebox.client import setup, setup_worker
 from mulebox.client.commands import guarded
 
 
@@ -15,6 +15,10 @@ def register(sub: argparse._SubParsersAction) -> None:
     parser.add_argument("--now", action="store_true", help="stop running jobs and upgrade now")
     parser.add_argument("--when-idle", action="store_true",
                         help="wait for running jobs to end; new jobs wait in line meanwhile")
+    parser.add_argument("--worker-of", metavar="COORDINATOR",
+                        help="make the host one more worker of this coordinator machine")
+    parser.add_argument("--coordinator-address", metavar="TARGET",
+                        help="how the worker reaches the coordinator, if not as this laptop does")
     parser.set_defaults(func=guarded(_setup))
 
 
@@ -24,7 +28,11 @@ def _say(line: str) -> None:
 
 def _setup(args: argparse.Namespace) -> int:
     try:
-        setup.run(args.host, _say, now=args.now, when_idle=args.when_idle)
+        if args.worker_of:
+            setup_worker.run(args.host, args.worker_of, _say, args.coordinator_address,
+                             now=args.now)
+        else:
+            setup.run(args.host, _say, now=args.now, when_idle=args.when_idle)
     except setup.SetupError as exc:
         _say(f"error: {exc}")
         return 1

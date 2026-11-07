@@ -1,7 +1,7 @@
 import threading
 
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import queue, views
+from mulebox.coordinator import queue, views, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.store import Store
 
@@ -31,7 +31,18 @@ def test_claim_respects_cluster_slots_and_free_slots(store, staging):
     queued(store, staging)
     assert queue.claim(store, "wrk-a", [], 0, 5, now=1.0) is None
     assert queue.claim(store, "wrk-a", [], 1, 1, now=1.0) is not None
-    assert queue.claim(store, "wrk-a", [], 1, 1, now=1.0) is None  # one active already
+    assert queue.claim(store, "wrk-a", [], 0, 1, now=1.0) is None  # its one slot is taken
+
+
+def test_cluster_limit_counts_every_online_worker(store, staging):
+    for _ in range(3):
+        queued(store, staging)
+    assert queue.claim(store, "wrk-a", [], 1, 1, now=1.0) is not None
+    assert queue.claim(store, "wrk-b", [], 1, 1, now=1.0) is not None  # a second machine adds its slot
+    with store.read() as conn:
+        assert workers.cluster_limit(conn, 1.0, 1) == 2
+        assert workers.cluster_limit(conn, 1.0 + workers.OFFLINE_AFTER_S + 1, 1) == 1
+        assert workers.cluster_limit(conn, 1.0, 5) == 5
 
 
 def test_claim_skips_uploading(store, staging):

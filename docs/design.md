@@ -275,7 +275,8 @@ job, so removing it costs time, not data.
 - Both only list what would go until `--yes`. A project with a job on a machine is refused. While
   a folder goes the project is held (`coordinator/holds.py`, a row in `meta` that `claim` reads in
   its own transaction), so no job can start in it; a hold ends by itself after 15 minutes.
-- They run on the coordinator's machine, the only one with workers until M5.
+- They run on the coordinator's machine. Another worker's project folders are its own, and these
+  commands do not reach them yet (M5.2).
 
 ## Package caches
 
@@ -374,7 +375,14 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   oldest compatible job. No speed scores or weights yet.
 - A job whose `needs` no known worker offers is refused at submit, with what to change. A
   queued job whose capable workers are all offline stays queued and says so.
-- Add a machine: run the worker setup on it; it registers and warms caches.
+- Add a machine: `mulebox setup <worker> --worker-of <coordinator>` (docs/install.md, More
+  machines). The worker gets a key of its own, which the coordinator lets run `mulebox rpc` and
+  `rpc-download` only, and over `rpc` only a worker's requests (`coordinator/worker_keys.py`).
+  It registers with its first claim, with its slots, capabilities and toolchains. There is no
+  warm-up step: toolchains install themselves on a first job (M17.3), and `mulebox warm` fills a
+  project's caches on whichever machine takes it.
+- The cluster holds as many jobs at once as its online workers have slots, and never fewer than
+  the coordinator machine's own `slots` (`workers.cluster_limit`); each worker keeps to its own.
 - Replace a machine: mark the worker `draining` (finishes current work, takes no new
   jobs), then remove it. Moving the coordinator is a documented manual step.
 

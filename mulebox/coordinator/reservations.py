@@ -98,7 +98,7 @@ def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
     if job["state"] != JobState.QUEUED or ahead(conn, job) > 0 or holds.draining(conn, now):
         return job
     worker = job["pinned_worker"]
-    if queue.active_count(conn) >= cluster_slots:
+    if queue.active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots):
         return job
     if queue.active_on(conn, worker) >= worker_slots(conn, worker, cluster_slots):
         return job

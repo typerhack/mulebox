@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.73.0 - 2026-11-07 - minor
+- mulebox setup <worker> --worker-of <coordinator> adds a build machine: a key made on the worker, let in on the coordinator only for a worker's requests (ssh-gate, authorize-worker), and a worker-only node.toml from the installer (M5.1).
+- The cluster holds as many jobs as its online workers have slots, never fewer than the coordinator's own slots; before, a second machine would get no work while the first was busy.
+
 ## 0.72.1 - 2026-11-07 - patch
 - Roadmap: M8.9, M13.1, M18.4 and M19.10 done, from two real projects' jobs and files.
 

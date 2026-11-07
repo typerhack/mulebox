@@ -117,6 +117,7 @@ class NodeConfig:
     slots: int = 1
     capabilities: tuple[str, ...] = ()
     coordinator: str | None = None
+    coordinator_key: str | None = None  # a worker's own key for it (`mulebox setup --worker-of`)
     dashboard: dict[str, Any] = field(default_factory=dict)
     job_env: dict[str, str] = field(default_factory=dict)
     retention: dict[str, int] = field(default_factory=dict)
@@ -281,6 +282,7 @@ def load_node_config(path: Path | None = None) -> NodeConfig:
         slots=reader.integer("slots", 1, 1),
         capabilities=reader.strings("capabilities"),
         coordinator=reader.ssh_target("coordinator", None),
+        coordinator_key=reader.absolute_path("coordinator_key"),
         dashboard=_dashboard(reader),
         job_env=config_project.job_env(reader),
         retention=config_project.retention(reader, DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS),
