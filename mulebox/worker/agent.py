@@ -27,7 +27,7 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import RemovalDenied, remove_tree
-from mulebox.common.status import ENVIRONMENT, PREPARE
+from mulebox.common.status import ENVIRONMENT, PREPARE, TOOLCHAIN
 from mulebox.worker import activity, advert, background, job_meter, runspec
 from mulebox.worker import project_home, reclaim, toolchains, workspace
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
@@ -153,6 +153,7 @@ class Agent(Ending, Skipping):
         if not gaps:
             job.launch(now)
             return
+        job.steps.begin(TOOLCHAIN, now)
         names = ", ".join(" ".join(gap) for gap in gaps)
         tailer.note(f"mulebox: installing {names} on this machine, once for every job after it\n")
         job.install = background.start_thread(
@@ -181,9 +182,9 @@ class Agent(Ending, Skipping):
     def _after_install(self, job: ActiveJob, now: float) -> None:
         task, job.install = job.install, None
         if task.error is not None:
-            job.steps.begin(ENVIRONMENT, now)
             self._not_started(job, task.error, now)
         else:
+            job.steps.begin(PREPARE, now)
             job.launch(now)
 
     def _prepare(self, job: ActiveJob, claim: dict[str, Any], log_path: Path) -> RunSpec:

@@ -134,7 +134,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `queued, position 1; waiting: no build machine for this job is online` is different:
   nothing will start until a person fixes it, so tell the user.
 
-A job goes through stages: `prepare`, `environment`, `images`, `services`, `install`, `setup`,
+A job goes through stages: `toolchain` (only when it installs a pinned one), `prepare`, `environment`, `images`, `services`, `install`, `setup`,
 `command`, `cleanup`. `mulebox status <job-id>` shows them; with `--json`, `steps` has when each started
 and ended, its exit code and the last line of a failed one. The first four need no action
 from a project. `usual` is what earlier passed runs of this job with this command took, whole and per

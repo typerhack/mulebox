@@ -20,6 +20,10 @@ the size of what is still to come is not known. `--progress json` has a `total` 
 (Compose 5), but only once a layer has started, and asking for it would break older
 versions.
 
+pnpm has the same habit for a large package, `Downloading next@16.4.3: 48.31 kB/43.60 MB`, a line
+each time a few KB arrive. Those go too, and its last line, which ends `, done`, stays. They do not
+count as image layers.
+
 Text arrives redacted, whole lines at a time (logtail.py), and nothing here changes a line.
 """
 
@@ -35,6 +39,7 @@ _LAYER = re.compile(
 _BUILD_LAYER = re.compile(
     rf"^#\d+\s+sha256:([0-9a-f]{{12}})[0-9a-f]{{52}}\s+{_SIZE}\s*/\s*{_SIZE}\s+[\d.]+s(?:\s+done)?\s*$")
 _BUILD_EXTRACT = re.compile(r"^#\d+\s+extracting\s+sha256:[0-9a-f]{64}\s+[\d.]+s\s*$")
+_PACKAGE = re.compile(rf"^Downloading \S+: {_SIZE}\s*/\s*{_SIZE}\s*$")
 _AMOUNT = re.compile(rf"{_SIZE}(?:\s*/\s*{_SIZE})?")
 
 
@@ -72,6 +77,8 @@ class PullNoise:
 
     def _layer_line(self, text: str) -> bool:
         """True if `text` is progress of a layer; what it says is counted."""
+        if _PACKAGE.match(text):
+            return True
         built = _BUILD_LAYER.match(text)
         if built:
             self._seen(built[1], _bytes(built[2], built[3]), _bytes(built[4], built[5]))

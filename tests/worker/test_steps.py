@@ -233,7 +233,7 @@ def test_a_failed_command_says_where_and_why(agent, fake_link):
     assert failed["failing_line"] == "boom"
 
 
-def test_a_job_that_cannot_start_fails_in_environment(agent, fake_link):
+def test_a_toolchain_that_cannot_install_fails_in_its_stage(agent, fake_link):
     def offline(paths, name, version):
         raise OSError("no route")
 
@@ -241,7 +241,7 @@ def test_a_job_that_cannot_start_fails_in_environment(agent, fake_link):
     submit(fake_link, "true", toolchain={"node": "1.2.3"})
     run_until(agent, lambda: fake_link.of_type(MessageType.RESULT))
     failed = status.failed_step(stages(fake_link))
-    assert failed["stage"] == "environment" and "not installed" in failed["failing_line"]
+    assert failed["stage"] == "toolchain" and "not installed" in failed["failing_line"]
 
 
 def test_a_compose_job_has_images_and_services(compose_agent, fake_link):

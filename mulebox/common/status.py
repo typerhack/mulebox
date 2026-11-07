@@ -37,9 +37,10 @@ EVENT_VERSION = 1  # of `job_event` lines; raised only when a key changes meanin
 # Lines the worker writes into a job's log; the client's failure summary looks for them.
 CONTAINER_LOGS_NOTE = "mulebox: the job failed; the state and last log lines of its containers:"
 NOT_STARTED_NOTE = "mulebox: the job could not start:"
-PREPARE, ENVIRONMENT, IMAGES, SERVICES = "prepare", "environment", "images", "services"
+TOOLCHAIN, PREPARE, ENVIRONMENT = "toolchain", "prepare", "environment"
+IMAGES, SERVICES = "images", "services"
 INSTALL, SETUP, COMMAND, CLEANUP = "install", "setup", "command", "cleanup"
-STAGES = (PREPARE, ENVIRONMENT, IMAGES, SERVICES, INSTALL, SETUP, COMMAND, CLEANUP)
+STAGES = (TOOLCHAIN, PREPARE, ENVIRONMENT, IMAGES, SERVICES, INSTALL, SETUP, COMMAND, CLEANUP)
 MAX_FAILING_LINE = 500
 STOPPED = "stopped"
 SHOWN_STOPPED = "stopped: stuck"

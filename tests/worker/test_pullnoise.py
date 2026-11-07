@@ -168,3 +168,13 @@ def test_layer_lines_are_never_a_failing_line(tmp_path):
     run(tmp_path, "real problem\n 0123456789ab Waiting \n", tracker)
     tracker.close(1, 2.0, failed=True)
     assert tracker.pending()[0]["failing_line"] == "real problem"
+
+
+def test_a_package_download_leaves_only_its_last_line():
+    noise = PullNoise()
+    kept = [noise.line("Downloading next@16.4.3: 48.31 kB/43.60 MB\n"),
+            noise.line("Downloading next@16.4.3: 43.60 MB/43.60 MB, done\n"),
+            noise.line("Downloading the pnpm 12.16.1 binary for linux-x64...\n")]
+    assert kept == [[], ["Downloading next@16.4.3: 43.60 MB/43.60 MB, done\n"],
+                    ["Downloading the pnpm 12.16.1 binary for linux-x64...\n"]]
+    assert noise.total == 0

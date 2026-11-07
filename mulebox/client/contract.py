@@ -32,7 +32,8 @@ from mulebox.common.status import STAGES
 # 12: `project.install`, `mulebox warm`, an `install` stage, and exit 5 when `install` fails
 # 13: `take_it_back` is gone: it was `its_result` under a second name
 # 14: `mulebox run --in <service>`
-SCHEMA = 14
+# 15: a `toolchain` stage, only when a job installs a pinned one
+SCHEMA = 15
 FULL_GATE = "check"
 Contract = dict[str, Any]
 

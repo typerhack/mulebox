@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.12 - 2026-11-07 - patch
+- pnpm's `Downloading x: a MB/b MB` lines go from logs, keeping its `, done` line; one real log had 589 of them.
+- Installing a pinned toolchain is a stage of its own, `toolchain` (contract schema 15), not hidden in `prepare`.
+
 ## 0.66.11 - 2026-11-07 - patch
 - A service a job builds has `pull_policy: build`: its tag is the job's own, so the pull Compose tried could only print `pull access denied`.
 
