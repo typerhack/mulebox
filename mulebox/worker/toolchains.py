@@ -6,7 +6,9 @@
   installed node toolchain (the newest one).
 
 Installs go to a temporary folder next to the final one and are renamed into place, so a
-half-finished install is never picked up. Temporary folders are removed through safepath.
+half-finished install is never picked up. Temporary folders are removed through safepath. A lost
+network is tried again from the start, as the install has nothing to do with the project, and if
+it stays lost the error says so instead of offering another version.
 """
 
 from __future__ import annotations
@@ -14,12 +16,14 @@ from __future__ import annotations
 import os
 import re
 import subprocess
+import time
 from collections.abc import Callable, Mapping
 from pathlib import Path
 
 from mulebox.common import download
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_ulid
+from mulebox.common.network_errors import REGISTRY
 from mulebox.common.safepath import ensure_dir, remove_tree
 from mulebox.worker.archive import extract_tar
 from mulebox.worker.paths import NodePaths
@@ -27,6 +31,8 @@ from mulebox.worker.paths import NodePaths
 NODE_DIST = "https://nodejs.org/dist"
 KNOWN = ("node", "pnpm")
 NPM_TIMEOUT_S = 900
+TRIES = 3
+WAIT_S = 5  # times the try: 5 s, then 10 s
 _VERSION_RE = re.compile(r"\d{1,4}\.\d{1,4}\.\d{1,4}")
 
 Fetch = Callable[[str, Path], None]  # download url into a new file
@@ -37,9 +43,15 @@ class ToolchainError(MuleboxError):
     """A toolchain is missing, unknown, or could not be installed."""
 
 
+class ToolchainNetwork(ToolchainError):
+    """The install lost its network; the same install can work later."""
+
+
 def http_fetch(url: str, dest: Path) -> None:
     try:
         download.fetch_file(url, dest)
+    except download.NetworkLost as exc:
+        raise ToolchainNetwork(str(exc)) from exc
     except download.DownloadError as exc:
         raise ToolchainError(str(exc)) from exc
 
@@ -149,7 +161,9 @@ def _install_pnpm(paths: NodePaths, version: str, tmp: Path, run: Run,
     argv = [str(node_bin / "npm"), "install", "-g", "--prefix", str(tree), f"pnpm@{version}"]
     proc = run(argv, env)
     if proc.returncode != 0:
-        raise ToolchainError(f"npm install pnpm@{version} failed: {(proc.stderr or '')[-500:]}")
+        reason = (proc.stderr or "")[-500:]
+        kind = ToolchainNetwork if REGISTRY.search(reason) else ToolchainError
+        raise kind(f"npm install pnpm@{version} failed: {reason}")
     if not (tree / "bin").is_dir():
         raise ToolchainError(f"npm install pnpm@{version} did not create {tree / 'bin'}")
     return tree
@@ -161,6 +175,11 @@ def install_missing(paths: NodePaths, gaps: list[tuple[str, str]],
     for name, version in gaps:
         try:
             install_one(paths, name, version)
+        except ToolchainNetwork as exc:
+            raise ToolchainNetwork(f"could not install {name} {version}: the machine lost its "
+                                   f"network, {TRIES} tries ({exc}). Nothing is wrong with the "
+                                   "project or the version; run the job again once the network "
+                                   "is back") from exc
         except (MuleboxError, OSError) as exc:
             raise ToolchainError(f"could not install {name} {version}: {exc}. "
                                  f"{_not_installed(paths, name, version)}") from exc
@@ -168,10 +187,23 @@ def install_missing(paths: NodePaths, gaps: list[tuple[str, str]],
 
 def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fetch,
             run: Run = run_command, arch: str | None = None,
-            machine_env: Mapping[str, str] | None = None) -> Path:
+            machine_env: Mapping[str, str] | None = None,
+            sleep: Callable[[float], None] = time.sleep) -> Path:
     """Install a toolchain; return its folder. Already installed: return it unchanged.
     `machine_env`: node.toml's `[job_env]`, as what a machine's network needs, such as
     `NODE_OPTIONS`, a job's installs need as well."""
+    for attempt in range(1, TRIES + 1):
+        try:
+            return _install_once(paths, name, version, fetch, run, arch, machine_env)
+        except ToolchainNetwork:
+            if attempt == TRIES:
+                raise
+            sleep(attempt * WAIT_S)
+    raise AssertionError("unreachable")
+
+
+def _install_once(paths: NodePaths, name: str, version: str, fetch: Fetch, run: Run,
+                  arch: str | None, machine_env: Mapping[str, str] | None) -> Path:
     final = toolchain_dir(paths, name, version)
     if (final / "bin").is_dir():
         return final

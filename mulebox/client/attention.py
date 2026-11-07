@@ -21,9 +21,10 @@ from mulebox.common.config import (
     load_project_config,
 )
 from mulebox.common.errors import MuleboxError
+from mulebox.common.network_errors import LOST
 from mulebox.common.protocol import MessageType
 from mulebox.common import disk, status
-from mulebox.common.status import number
+from mulebox.common.status import FETCHING, number
 
 WARNING = "warning: "
 QUEUE_NOTHING_FINISHED = 0
@@ -105,6 +106,13 @@ def notice(job_id: str, body: dict[str, Any]) -> tuple[Any, str] | None:
     return None
 
 
+def network_trouble(activity: dict[str, Any]) -> bool:
+    """Whether a job that is fetching things printed a lost connection last. Not in `command`:
+    a project's own tests can print that on purpose."""
+    line = activity.get("last_line")
+    return activity.get("stage") in FETCHING and bool(line and LOST.search(str(line)))
+
+
 def status_lines(body: dict[str, Any]) -> list[str]:
     """`mulebox status`: what the job is doing and what it is waiting to hear."""
     job_id, lines = str(body.get("job_id")), []
@@ -112,6 +120,9 @@ def status_lines(body: dict[str, Any]) -> list[str]:
     if isinstance(activity, dict):
         took = format_duration(number(activity.get("elapsed_s")))
         lines.append(f"  activity: running {took}, {activity_text(activity)}")
+        if network_trouble(activity):
+            lines.append("  warning: its last line reads as a lost connection; downloads may be "
+                         "retrying, and this is the machine's network, not the project")
     if isinstance(view, dict):
         lines.append(f"  question: is everything OK? It {stops_in(view)}. "
                      f"Yes: mulebox ok {job_id}. No: mulebox cancel {job_id}")

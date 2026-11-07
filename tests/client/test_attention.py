@@ -196,3 +196,11 @@ def test_ok_answers_a_job_question(local, in_project, capsys):
 def test_a_check_in_names_the_last_line():
     line = attention.check_in_line("job-1", {"elapsed_s": 60, "last_line": "tests: 40 of 90"})
     assert "last line: tests: 40 of 90" in line
+
+
+def test_status_warns_of_a_lost_connection_only_while_fetching():
+    line = "npm ERR! network read ECONNRESET"
+    fetching = attention.status_lines({"job_id": "j", "activity": {"stage": "install", "last_line": line}})
+    testing = attention.status_lines({"job_id": "j", "activity": {"stage": "command", "last_line": line}})
+    assert any("lost connection" in text for text in fetching)
+    assert not any("lost connection" in text for text in testing)

@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.13 - 2026-11-07 - patch
+- Installing a pinned toolchain tries a lost network 3 times, and if it stays lost the error says so instead of suggesting another version; a 404 is not retried.
+- `mulebox status` warns when a job fetching things printed a lost connection last.
+
 ## 0.66.12 - 2026-11-07 - patch
 - pnpm's `Downloading x: a MB/b MB` lines go from logs, keeping its `, done` line; one real log had 589 of them.
 - Installing a pinned toolchain is a stage of its own, `toolchain` (contract schema 15), not hidden in `prepare`.

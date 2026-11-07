@@ -41,6 +41,7 @@ TOOLCHAIN, PREPARE, ENVIRONMENT = "toolchain", "prepare", "environment"
 IMAGES, SERVICES = "images", "services"
 INSTALL, SETUP, COMMAND, CLEANUP = "install", "setup", "command", "cleanup"
 STAGES = (TOOLCHAIN, PREPARE, ENVIRONMENT, IMAGES, SERVICES, INSTALL, SETUP, COMMAND, CLEANUP)
+FETCHING = (IMAGES, INSTALL, SETUP)  # where a lost connection is the machine's, not the project's
 MAX_FAILING_LINE = 500
 STOPPED = "stopped"
 SHOWN_STOPPED = "stopped: stuck"

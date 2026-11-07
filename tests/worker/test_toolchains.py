@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from mulebox.worker import toolchains
-from mulebox.worker.toolchains import ToolchainError
+from mulebox.worker.toolchains import ToolchainError, ToolchainNetwork
 
 from .fakes import make_tar
 
@@ -157,3 +157,41 @@ def test_a_machines_job_env_reaches_the_install(paths):
         toolchains.install(paths, "pnpm", "11.22.0", run=run,
                            machine_env={"NODE_OPTIONS": "--example"})
     assert seen["NODE_OPTIONS"] == "--example"
+
+
+def test_a_lost_network_is_tried_again(paths, node_dist):
+    waits, lost = [], ["a", "b"]
+
+    def flaky(url, dest):
+        if lost:
+            lost.pop()
+            raise ToolchainNetwork("connection reset")
+        node_dist(url, dest)
+
+    final = toolchains.install(paths, "node", VERSION, fetch=flaky, arch="x64", sleep=waits.append)
+    assert (final / "bin").is_dir() and waits == [5, 10]
+
+
+def test_a_network_that_stays_lost_says_so_and_offers_no_other_version(paths):
+    def down(url, dest):
+        raise ToolchainNetwork("connection reset")
+
+    def install_one(paths, name, version):
+        return toolchains.install(paths, name, version, fetch=down, arch="x64", sleep=lambda _: None)
+
+    with pytest.raises(ToolchainNetwork) as found:
+        toolchains.install_missing(paths, [("node", VERSION)], install_one)
+    assert "lost its network" in str(found.value) and "use one of them" not in str(found.value)
+    assert not (paths.toolchains_dir() / "node" / VERSION).exists()
+
+
+def test_a_version_that_does_not_exist_is_not_tried_again(paths):
+    calls = []
+
+    def missing(url, dest):
+        calls.append(url)
+        raise ToolchainError("HTTP Error 404")
+
+    with pytest.raises(ToolchainError):
+        toolchains.install(paths, "node", VERSION, fetch=missing, arch="x64", sleep=calls.append)
+    assert len(calls) == 1
