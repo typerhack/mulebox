@@ -58,14 +58,20 @@ def state(row: dict) -> str:
     return "online" if row.get("online") else "offline"
 
 
+def percent(value: float | None) -> str:
+    return "-" if value is None else f"{value:.0f}%"
+
+
 def _list(args: argparse.Namespace) -> int:
     rows = connect().call(request(MessageType.MACHINES)).body.get("workers", [])
     if not rows:
         print("no machines yet")
         return 0
-    print(f"{'NAME':<20} {'STATE':<17} {'SLOTS':>5}  {'VERSION':<9} OFFERS")
+    print(f"{'NAME':<20} {'STATE':<17} {'SLOTS':>5} {'CPU':>5} {'MEM':>5}  {'VERSION':<9} OFFERS")
     for row in rows:
-        print(f"{row['worker']:<20} {state(row):<17} {row.get('slots') or '-':>5}  "
+        load = row.get("load") or {}
+        print(f"{row['worker']:<20} {state(row):<17} {row.get('slots') or '-':>5} "
+              f"{percent(load.get('cpu_pct')):>5} {percent(load.get('mem_pct')):>5}  "
               f"{row.get('version') or '-':<9} {', '.join(row.get('capabilities') or []) or '-'}")
     return 0
 

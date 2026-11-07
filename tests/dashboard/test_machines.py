@@ -177,3 +177,11 @@ def test_route_and_event_stream_snapshot(call, run_job):
     body, text = call(go)
     assert body["total"] == 1 and body["machines"][0]["name"] == "wrk-a"
     assert "event: machines" in text
+
+
+def test_a_reported_load_shows_while_online_only():
+    load = {"cpu_pct": 30.0, "mem_pct": 50.0, "cores": 4}
+    row = machines.machine({**worker(), "load": load}, [], NOW)
+    assert (row["cpu_pct"], row["mem_pct"], row["cores"]) == (30.0, 50.0, 4)
+    quiet = machines.machine({**worker(seen=NOW - OFFLINE_AFTER_S - 1), "load": load}, [], NOW)
+    assert quiet["cpu_pct"] is None and quiet["cores"] is None

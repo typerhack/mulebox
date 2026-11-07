@@ -32,7 +32,8 @@ RUNNER_KIND = "runner"
 def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
           free_slots: int, cluster_slots: int = 1, *, now: float | None = None,
           toolchains: dict[str, list[str]] | None = None, version: str | None = None,
-          disk_free: int | None = None) -> dict[str, Any] | None:
+          disk_free: int | None = None,
+          load: dict[str, Any] | None = None) -> dict[str, Any] | None:
     """Give `worker` the oldest queued job whose needs it meets, or None.
 
     None when the worker has no free slot, when the cluster's slots (workers.cluster_limit, at
@@ -46,7 +47,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         held = active_on(conn, worker, JOB_KIND)
         workers.upsert(conn, worker, list(capabilities), free_slots, now,
                        slots=free_slots + held, toolchains=toolchains, version=version,
-                       disk_free=disk_free)
+                       disk_free=disk_free, load=load)
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
         if (free < 1 or workers.is_draining(conn, worker)
                 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)

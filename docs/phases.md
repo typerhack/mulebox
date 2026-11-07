@@ -151,7 +151,9 @@ queue and returns the same result as running it locally.
       and after `resume` the job ran and passed. The stopped drill worker of M5.1 was removed; an
       online one was refused. Its key was already gone, so taking a key off ran in tests only.
       Moving the coordinator is written down, not done.
-- [ ] M5.3 Workers report CPU and memory; the dashboard shows them per machine
+- [~] M5.3 Workers report CPU and memory; the dashboard shows them per machine. Built 2026-11-07
+      (0.75.0): with every claim and heartbeat (schema 16), on the dashboard and in `mulebox machine
+      list`. Done when: a second machine's readings move on the real dashboard during a job.
 
 ## M6: Open-source readiness
 - [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)

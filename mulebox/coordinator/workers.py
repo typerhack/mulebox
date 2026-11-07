@@ -18,27 +18,35 @@ OFFLINE_AFTER_S = 15.0  # workers poll every 1 s, or heartbeat every 3 s while b
 def upsert(conn: sqlite3.Connection, worker: str, capabilities: list[str],
            free_slots: int, now: float, slots: int | None = None,
            toolchains: dict[str, list[str]] | None = None, version: str | None = None,
-           disk_free: int | None = None) -> None:
-    """Record a worker seen at `now`, and what it told of `slots`, `toolchains`, `version` and
-    `disk_free`."""
+           disk_free: int | None = None, load: dict[str, Any] | None = None) -> None:
+    """Record a worker seen at `now`, and what it told of `slots`, `toolchains`, `version`,
+    `disk_free` and `load`."""
     conn.execute(
         "INSERT INTO workers (worker, capabilities, free_slots, last_seen, slots, toolchains, "
-        "version, disk_free) VALUES (?, ?, ?, ?, ?, ?, ?, ?) "
+        "version, disk_free, load) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "
         "ON CONFLICT (worker) DO UPDATE SET capabilities = excluded.capabilities, "
         "free_slots = excluded.free_slots, last_seen = excluded.last_seen, "
         "slots = COALESCE(excluded.slots, workers.slots), "
         "toolchains = COALESCE(excluded.toolchains, workers.toolchains), "
         "version = COALESCE(excluded.version, workers.version), "
-        "disk_free = COALESCE(excluded.disk_free, workers.disk_free)",
+        "disk_free = COALESCE(excluded.disk_free, workers.disk_free), "
+        "load = COALESCE(excluded.load, workers.load)",
         (worker, json.dumps(sorted(capabilities)), free_slots, now, slots,
          None if toolchains is None else json.dumps(toolchains, sort_keys=True), version,
-         disk_free),
+         disk_free, _json(load)),
     )
 
 
-def touch(conn: sqlite3.Connection, worker: str | None, now: float) -> None:
-    """Note that `worker` is alive; a name the store does not know changes nothing."""
-    conn.execute("UPDATE workers SET last_seen = ? WHERE worker = ?", (now, worker))
+def _json(load: dict[str, Any] | None) -> str | None:
+    return None if load is None else json.dumps(load, sort_keys=True)
+
+
+def touch(conn: sqlite3.Connection, worker: str | None, now: float,
+          load: dict[str, Any] | None = None) -> None:
+    """Note that `worker` is alive, with its `load`; a name the store does not know changes
+    nothing."""
+    conn.execute("UPDATE workers SET last_seen = ?, load = COALESCE(?, load) WHERE worker = ?",
+                 (now, _json(load), worker))
 
 
 def is_online(worker: dict[str, Any], now: float) -> bool:
@@ -57,6 +65,8 @@ def _decoded(row: sqlite3.Row) -> dict[str, Any]:
     data["capabilities"] = json.loads(data["capabilities"])
     tools = data.get("toolchains")  # absent in a read-only view of a store not yet upgraded
     data["toolchains"] = json.loads(tools) if tools else None
+    load = data.get("load")
+    data["load"] = json.loads(load) if load else None
     return data
 
 
@@ -75,7 +85,8 @@ def report(worker: dict[str, Any], now: float) -> dict[str, Any]:
     return {"worker": worker["worker"], "online": is_online(worker, now),
             "capabilities": worker["capabilities"], "toolchains": worker["toolchains"],
             "version": worker.get("version"), "slots": worker["slots"],
-            "disk_free": worker.get("disk_free"), "draining": bool(worker.get("draining"))}
+            "disk_free": worker.get("disk_free"), "draining": bool(worker.get("draining")),
+            "load": worker.get("load") if is_online(worker, now) else None}
 
 
 def low_disks(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:

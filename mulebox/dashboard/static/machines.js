@@ -3,8 +3,8 @@
 // memory on the same load ramp as the big graphs.
 //
 // A reading is only shown when the server measured it (`cpu_pct`, `mem_pct` on the row).
-// Today that is the machine the dashboard runs on; other machines say "no live data" until
-// their workers report (M5.3), and nothing here will need to change when they do.
+// Every worker reports its machine's load (M5.3); one that is offline or has not reported yet
+// says "no live data".
 
 import { badge, clock, el, fill, jobLink, meter, soonest, questionMark } from "./format.js";
 

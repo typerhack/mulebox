@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.75.0 - 2026-11-07 - minor
+- Workers report their machine's CPU and memory with every claim and heartbeat (schema 16); the dashboard shows them for every online machine, and mulebox machine list too (M5.3). The /proc readers moved to common/proc.py.
+
 ## 0.74.1 - 2026-11-07 - patch
 - status and events say when every machine that can run a queued job is draining, and how to resume one; roadmap M5.2 done.
 

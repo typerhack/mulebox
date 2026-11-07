@@ -334,8 +334,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
   log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
 - Shows: every machine with whether it is online, its free slots, capabilities, what it
-  runs and a small CPU and memory reading (only where measured: today the dashboard's own
-  machine, the rest say so until workers report, M5.3); the queue by machine (one lane per
+  runs and a small CPU and memory reading, as each worker reports it with its claims and
+  heartbeats (M5.3); the queue by machine (one lane per
   machine with what runs and what waits for it; jobs several machines could take in one
   shared list, jobs no machine fits marked stuck), failed, passed and recent jobs behind
   tabs, live log, history, and CPU per core, memory, disk and Docker containers for the

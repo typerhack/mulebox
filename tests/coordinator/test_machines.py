@@ -27,7 +27,7 @@ def test_a_claim_records_toolchains_and_version(store, staging):
     assert body["version"] == get_version()
     assert body["workers"] == [{"worker": "build-1", "online": True, "capabilities": ["docker"],
                                 "toolchains": {"node": ["22.22.3"]}, "version": "1.2.3",
-                                "slots": 1, "disk_free": None, "draining": False}]
+                                "slots": 1, "disk_free": None, "draining": False, "load": None}]
 
 
 def test_an_older_worker_reports_nothing_and_keeps_what_it_said(store, staging):
@@ -73,3 +73,22 @@ def test_a_low_disk_reaches_a_project_s_next_command(store, staging):
     with store.read() as conn:
         assert workers.low_disks(conn, 101.0) == [{"worker": "build-1", "free": 2_000_000_000}]
         assert workers.low_disks(conn, 1000.0) == []  # offline: no job goes there
+
+
+def test_a_claim_and_a_heartbeat_record_the_machine_load(store, staging):
+    from mulebox.coordinator import api, queue, workers
+
+    from .helpers import queued, request
+    queued(store, staging)
+    job = queue.claim(store, "build-1", [], 1, 5, now=1.0,
+                      load={"cpu_pct": 12.5, "cores": 8, "mem_pct": 40.0})
+    with store.read() as conn:
+        assert workers.get(conn, "build-1")["load"]["cpu_pct"] == 12.5
+    api.handle(store, staging, request("heartbeat", job_id=job["job_id"], lease="worker",
+                                       attempt_id=job["attempt_id"],
+                                       load={"cpu_pct": 300, "cores": 8, "mem_pct": "x"}), 2.0)
+    with store.read() as conn:
+        row = workers.get(conn, "build-1")
+        assert row["load"] == {"cpu_pct": None, "cores": 8, "mem_pct": None}
+        assert workers.report(row, 2.0)["load"]["cores"] == 8
+        assert workers.report(row, 100.0)["load"] is None  # offline: no stale reading

@@ -26,6 +26,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 12 -> 13: `job_steps.network_lost`, a stage that printed a lost connection (usual.py).
 - 13 -> 14: `jobs.client_os`, the laptop's system, for the dashboard; NULL on older jobs and CI.
 - 14 -> 15: `workers.draining` (default 0): a draining worker claims no new job (machine_api.py).
+- 15 -> 16: `workers.load`, JSON of the machine's `cpu_pct`, `cores` and `mem_pct` as the worker
+  last reported them (common/proc.py HostLoad); NULL until it does.
 """
 
 import sqlite3
@@ -73,6 +75,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     12: ("ALTER TABLE job_steps ADD COLUMN network_lost INTEGER NOT NULL DEFAULT 0",),
     13: ("ALTER TABLE jobs ADD COLUMN client_os TEXT",),
     14: ("ALTER TABLE workers ADD COLUMN draining INTEGER NOT NULL DEFAULT 0",),
+    15: ("ALTER TABLE workers ADD COLUMN load TEXT",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

@@ -106,3 +106,24 @@ def check_job_id(value: Any) -> str:
     if not isinstance(value, str) or not is_valid_id(value, "job"):
         raise BadRequest(f"not a valid job id: {value!r}")
     return value
+
+
+LOAD_FIELDS = ("cpu_pct", "mem_pct", "cores")
+
+
+def load(body: dict[str, Any], name: str = "load") -> dict[str, Any] | None:
+    """A worker's machine load: `cpu_pct` and `mem_pct` (0 to 100) and `cores`, each or null.
+    Anything else in it, or a value out of range, is dropped: a reading must not fail a claim."""
+    value = body.get(name)
+    if not isinstance(value, dict):
+        return None
+    out: dict[str, Any] = {}
+    for key in LOAD_FIELDS:
+        item = value.get(key)
+        if isinstance(item, bool) or not isinstance(item, (int, float)):
+            out[key] = None
+        elif key == "cores":
+            out[key] = int(item) if 1 <= item <= 4096 else None
+        else:
+            out[key] = float(item) if 0 <= item <= 100 else None
+    return out

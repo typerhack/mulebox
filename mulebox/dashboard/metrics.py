@@ -24,52 +24,10 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.common.proc import IDLE, IOWAIT, PROC, core_times
+from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, read
 
 DiskUsage = Callable[[str], Any]
-
-
-def _read(path: Path) -> str | None:
-    try:
-        return path.read_text(encoding="ascii", errors="replace")
-    except OSError:
-        return None
-
-
-def parse_cpu(text: str) -> list[tuple[int, int]]:
-    """(busy, total) jiffies per core from /proc/stat, in core order."""
-    cores = []
-    for values in core_times(text):
-        total = sum(values)
-        cores.append((total - values[IDLE] - values[IOWAIT], total))
-    return cores
-
-
-def cpu_percent(before: list[tuple[int, int]], after: list[tuple[int, int]]
-                ) -> list[float] | None:
-    """Busy percent per core between two parse_cpu results; None if they do not match."""
-    if not before or len(before) != len(after):
-        return None
-    out = []
-    for (busy0, total0), (busy1, total1) in zip(before, after):
-        span = total1 - total0
-        share = (busy1 - busy0) / span if span > 0 else 0.0
-        out.append(round(max(0.0, min(1.0, share)) * 100, 1))
-    return out
-
-
-def parse_memory(text: str) -> dict[str, int] | None:
-    """total, available and used bytes from /proc/meminfo; None if a field is missing."""
-    fields = {}
-    for line in text.splitlines():
-        name, _, rest = line.partition(":")
-        parts = rest.split()
-        if name in ("MemTotal", "MemAvailable") and parts and parts[0].isdigit():
-            fields[name] = int(parts[0]) * 1024
-    if len(fields) != 2:
-        return None
-    total, available = fields["MemTotal"], fields["MemAvailable"]
-    return {"total": total, "available": available, "used": max(0, total - available)}
+__all__ = ["Sampler", "cpu_percent", "disk_usage", "parse_cpu", "parse_memory"]
 
 
 def disk_usage(roots: dict[str, str], usage: DiskUsage = shutil.disk_usage
@@ -100,14 +58,14 @@ class Sampler:
         self._self = (wall(), cpu_time())
 
     def cpu(self) -> list[float] | None:
-        text = _read(self.proc / "stat")
+        text = read(self.proc / "stat")
         now = parse_cpu(text) if text else []
         result = cpu_percent(self._cpu, now)
         self._cpu = now
         return result
 
     def memory(self) -> dict[str, int] | None:
-        text = _read(self.proc / "meminfo")
+        text = read(self.proc / "meminfo")
         return parse_memory(text) if text else None
 
     def own(self) -> dict[str, float | int | None]:
@@ -119,7 +77,7 @@ class Sampler:
         return {"cpu": round(share, 2), "rss": self._rss()}
 
     def _rss(self) -> int | None:
-        text = _read(self.proc / "self" / "statm")
+        text = read(self.proc / "self" / "statm")
         parts = text.split() if text else []
         if len(parts) > 1 and parts[1].isdigit():
             return int(parts[1]) * os.sysconf("SC_PAGE_SIZE")

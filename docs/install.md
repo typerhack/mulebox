@@ -289,8 +289,8 @@ Moving the coordinator to another machine is done by hand, as it holds the queue
    the new coordinator. A kept worker `node.toml` still names the old one: edit `coordinator`
    there, or remove that file before setup writes a new one.
 
-Not yet: a worker's CPU and memory on the dashboard (M5.3), and `mulebox project clean` or `reset`
-on another worker's folders.
+Each machine's CPU and memory show on the dashboard and in `mulebox machine list`, as its worker
+reports them. Not yet: `mulebox project clean` or `reset` on another worker's folders.
 
 ## Security model
 

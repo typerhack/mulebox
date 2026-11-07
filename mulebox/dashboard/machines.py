@@ -28,9 +28,9 @@ def _job(job: dict[str, Any]) -> dict[str, Any]:
 
 
 def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
-    """A row. `cpu_pct` and `mem_pct` are null until something measures the machine: today
-    only the machine the dashboard runs on (`with_readings`); other workers report theirs
-    in M5.3, and the page needs no change for that."""
+    """A row. `cpu_pct`, `mem_pct` and `cores` are what the worker last reported with a claim
+    or heartbeat (`workers.load`, M5.3), null while it is offline or has not said; the
+    dashboard's own machine gets its finer live sample on top (`with_readings`)."""
     slots = worker["slots"] if worker["slots"] is not None else max(len(jobs), 1)
     online = is_online(worker, now)
     draining = bool(worker.get("draining"))  # absent in a store not yet upgraded
@@ -38,8 +38,12 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> d
     state = (OFFLINE if not online else DRAINING if draining else AVAILABLE if free else BUSY)
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
-            "cpu_pct": None, "mem_pct": None, "cores": None,
+            **_load(worker.get("load") if online else None),
             "jobs": [_job(job) for job in jobs]}
+
+
+def _load(load: dict[str, Any] | None) -> dict[str, Any]:
+    return {key: (load or {}).get(key) for key in ("cpu_pct", "mem_pct", "cores")}
 
 
 def readings(sample: dict[str, Any] | None) -> dict[str, float | None]:

@@ -21,6 +21,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from mulebox.common.proc import HostLoad
 from mulebox.common import compose, status
 from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
@@ -61,6 +62,7 @@ class Agent(Ending, Skipping):
         self.cleaner = Cleaner(paths, node.name, docker)
         self.ports = PortPool()
         self.meter = activity.MachineMeter()
+        self.host = HostLoad()  # the machine's CPU and memory, sent with claims and heartbeats
         self.machine = runspec.Machine(node.name, paths, docker, self.ports, node.job_env)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
@@ -120,7 +122,7 @@ class Agent(Ending, Skipping):
         return FINISHING_POLL_S if self.finishing else POLL_S
 
     def _claim(self, now: float) -> None:
-        msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths),
+        msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths, self.host),
                       free_slots=self._free_slots(), restarted=self.fresh)
         try:
             reply = self._call(msg, now)
@@ -247,7 +249,7 @@ class Agent(Ending, Skipping):
     def _ping(self, job: ActiveJob, now: float) -> Message | None:
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
-                      attempt_id=job.attempt_id, activity=activity.report(
+                      attempt_id=job.attempt_id, load=self.host.sample(), activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
                           job.steps.stage, job.steps.last_line, now))
         try:

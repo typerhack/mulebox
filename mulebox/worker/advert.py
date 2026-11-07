@@ -11,6 +11,7 @@ from typing import Any
 
 from mulebox.common import compose, disk
 from mulebox.common.config import NodeConfig
+from mulebox.common.proc import HostLoad
 from mulebox.version import get_version
 from mulebox.worker import toolchains
 from mulebox.worker.paths import NodePaths
@@ -24,8 +25,9 @@ def by_name(paths: NodePaths) -> dict[str, list[str]]:
     return found
 
 
-def fields(node: NodeConfig, paths: NodePaths) -> dict[str, Any]:
-    """The claim body's facts about this worker."""
+def fields(node: NodeConfig, paths: NodePaths, load: HostLoad | None = None) -> dict[str, Any]:
+    """The claim body's facts about this worker; `load` its machine's CPU and memory (M5.3)."""
     return {"worker": node.name, "capabilities": compose.worker_capabilities(node.capabilities),
             "toolchains": by_name(paths), "version": get_version(),
-            "disk_free": disk.free_bytes(node.roots.values())}
+            "disk_free": disk.free_bytes(node.roots.values()),
+            **({"load": load.sample()} if load is not None else {})}

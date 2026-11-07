@@ -90,12 +90,11 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
 - A row per worker in the coordinator's `workers` table: `name`, `state`, `slots`,
   `free_slots`, `capabilities`, `last_seen`, `jobs`, `cpu_pct`, `mem_pct`. Plus `total`,
   `online` and `free_slots` for the cluster.
-- **Readings.** `cpu_pct` (average over the cores) and `mem_pct` are null until something
-  measures the machine. Today only the machine the dashboard runs on is measured (the
-  hub's own sampler, put on the row named after `node.toml`'s `name`); every other row
-  reads `no live data` in the box, never a guess. Workers reporting their own load is
-  M5.3, and the page needs no change for it: it shows a small meter wherever a reading is
-  present. A `machines` event is published when a reading moves a whole percent.
+- **Readings.** `cpu_pct` (average over the cores), `mem_pct` and `cores` are what each worker
+  last reported with a claim or heartbeat (`workers.load`, M5.3), at most every 2 s; null while
+  it is offline or has not reported, and then the box reads `no live data`, never a guess. The
+  machine the dashboard runs on gets the hub's own finer sample on top (the row named after
+  `node.toml`'s `name`). A `machines` event is published when a reading moves a whole percent.
 - `state`: `offline` when not seen for 15 s, else `busy` with nothing free, else `available`.
 - **Seen.** Claims stop while a worker has no free slot, so a job's heartbeats, every 3 s,
   also refresh `last_seen`. The worker lease cannot do this job: at 120 s it would keep a
