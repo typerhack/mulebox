@@ -49,7 +49,8 @@ def build_script(setup: str | None, argv: Sequence[str], first: Sequence[str] = 
     if install and install.strip():
         lines += [*mark(INSTALL), *install_step.script_lines(install)]
     if setup and setup.strip():
-        lines += [*mark(SETUP), setup]
+        # the same shell, so what setup exports reaches the command; a `cd` in it does not
+        lines += ['mulebox_dir="$PWD"', *mark(SETUP), setup, 'cd -- "$mulebox_dir"']
     lines += [*mark(COMMAND), shlex.join(argv)]
     return "\n".join(lines) + "\n"
 

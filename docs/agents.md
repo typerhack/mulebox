@@ -240,7 +240,9 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      installs it, once, which can take minutes on a slow network, and the job's log says so. If
      that fails, the job exits 5 with the reason and the versions the machine has. Switch to a
      listed version only if it matches the project; otherwise tell the user.
-   - `setup` runs before a job in the same shell; keep it to dependency install. It is
+   - `setup` runs before a job in the same shell, so what it exports reaches the job; a `cd`
+     in it does not, the job's command starts in the project's folder. Keep it to dependency
+     install. It is
      skipped when nothing it depends on changed: its text, the toolchain, the env and the
      manifests, lockfiles and version files at the root or one folder down (`package.json`,
      `pnpm-lock.yaml`, `pyproject.toml`, `requirements.txt`, `go.mod`, `VERSION`, `.nvmrc` and the
@@ -274,6 +276,7 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
        lint:
          run: pnpm lint
          setup: pnpm install --frozen-lockfile --ignore-scripts  # or false for no setup
+         install: false                  # the top-level install runs in a service
          compose: false                  # no containers for this job
        e2e:
          run: pnpm exec vite --port "$MULEBOX_PORT_VITE" & pnpm exec playwright test
@@ -286,7 +289,8 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      name may not end in a number, and the port is the job's until it is cleaned up. Another
      job has no such variable, so `env:` entries built on it are left out there.
 
-     With `compose: false` the job needs no Docker on its machine. `env:` entries built on
+     With `compose: false` the job needs no Docker on its machine. It keeps the top-level `install`
+     and `setup` unless it says otherwise: one that runs in a service needs `install: false`. `env:` entries built on
      `MULEBOX_PORT_...`, directly or through an earlier entry, are left out for that job, and
      `check` says which. `mulebox run` always uses the top-level values.
      `ports:` needs a build machine on 0.40 or later: an older worker refuses the job at
@@ -378,6 +382,11 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
   A service that exits on purpose should be a `depends_on` with
   `condition: service_completed_successfully`, or moved into a job command. A healthcheck
   that depends on `setup` having run cannot pass, because setup comes after.
+- **A healthcheck must test the real server.** On a fresh volume the MySQL and MariaDB images
+  first run a temporary server for their init scripts, then restart it, and `mysqladmin ping`
+  on the socket passes during that first one. Ping over TCP, which the temporary server does not
+  listen on: `test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--protocol=TCP"]`. Then
+  `setup` meets the real server, with no retry loop.
 - When a job fails, its log ends with the state and last lines of its containers.
 - Images are pulled and built by `docker compose up --no-start`, then `up --detach --wait`
   starts them, so a job's stages can tell the two apart. Layer-by-layer pull progress is left
@@ -577,6 +586,12 @@ jobs:
      Ask the user to install such packages on the build machine once.
    - Use per-run database names, as in section 2.
    - Do not hardcode the build machine's paths or host name in the workflow.
+   - **A GitHub job does not get the machine's `[job_env]`**, which mulebox gives its own jobs
+     (on a slow link it often holds `NODE_OPTIONS`, for example
+     `--network-family-autoselection-attempt-timeout=5000`). A step that passes in `mulebox run`
+     and times out in the runner may need that: set it in the workflow's `env:`. To read a CI
+     job's steps and output use `mulebox logs <its job id>` (the dashboard has it too) or
+     `gh run view --log`; do not read the runner's folders through a job.
    - **Containers a workflow starts itself** (`docker run`, its own `docker compose`) get Docker
      Engine's default limit of 1024 open files, not the 65536 mulebox gives a job's `compose:`
      services, and Docker Desktop's higher default hides this on a Mac. A database runs out and

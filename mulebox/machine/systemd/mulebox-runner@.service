@@ -14,6 +14,10 @@ KillSignal=SIGTERM
 TimeoutStopSec=5min
 Restart=always
 RestartSec=10
+# The same share as a mulebox job's unit (worker/systemd.py): CI and agents' jobs are equals,
+# and both yield to the machine's own use.
+CPUWeight=50
+IOWeight=50
 
 [Install]
 WantedBy=default.target

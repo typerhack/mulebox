@@ -199,6 +199,8 @@ version will not install does not start: it exits 5 with the reason and what is 
 
 A build machine can host self-hosted GitHub Actions runners, one user service each
 (`mulebox-runner@<name>.service`; the installer copies the template but enables nothing).
+A runner gets the same CPU and disk share as a mulebox job (`CPUWeight=50`), so CI and
+agents' jobs share the machine evenly and both give way to its own use.
 Each GitHub job then waits for a mulebox build slot, so runner jobs and agent jobs share one
 queue. From the laptop, with `gh` logged in as a user with admin rights on the repository:
 

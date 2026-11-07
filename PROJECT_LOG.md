@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.71.0 - 2026-11-07 - minor
+- From a project's report: a cd in setup no longer carries into the job's command (exports still do); GitHub runners get the same CPU share as mulebox jobs, set in place on running ones; docs for install: false with compose: false, a MySQL healthcheck over TCP, and runner jobs without the machine's job_env.
+
 ## 0.70.3 - 2026-11-07 - patch
 - Docs, from a project's report: containers a CI workflow starts itself get Docker's 1024 open files, corepack over pnpm/action-setup on a slow link, and why a CI job can take longer than mulebox check.
 

@@ -539,6 +539,9 @@ browser download blocked for the machine's network location.
       2026-11-07 (0.67.1): a real job showed `toolchain` 40 s, and the real log of 2224 lines kept one of its 589 download lines.
 
 ## Parking lot
+- `mulebox init` on a Laravel project in Docker (reported 2026-11-07): it ran composer on the host
+  instead of in the project's image, left out a CI compose overlay, and pinned node 22 where the
+  project uses 24. Wait for the project's feedback issue for the files it read.
 - `mulebox init` on a laptop with no node writes a file with no node pinned; on a machine with none
   of its own the job ends with `npm: command not found`. Found 2026-11-06.
 - Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own
