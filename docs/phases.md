@@ -136,10 +136,14 @@ queue and returns the same result as running it locally.
       fetching one itself has not run.
 
 ## M5: More machines
-- [~] M5.1 Separate worker install; register, capabilities, warm-up. Built 2026-11-07 (0.73.0):
+- [x] M5.1 Separate worker install; register, capabilities, warm-up. Built 2026-11-07 (0.73.0):
       `mulebox setup <worker> --worker-of <coordinator>`, a worker key limited to worker requests,
       the cluster limit from every online worker's slots; warm-up is the first job's own (design.md).
-      Done when: a second, blank machine set up that way takes a job while the first is busy.
+      Done 2026-11-07 (0.73.1): a blank Ubuntu container on the build machine, set up from the laptop
+      in 44 s, was listed online with 2 slots; of three jobs sent at once beside a real CI job, it
+      ran two and the build machine one, all passed. Its key got no shell, no port forward and no
+      cancel. No Docker on it, so compose did not run there; the user chose a container over a
+      second real machine.
 - [ ] M5.2 Draining and removing workers; moving the coordinator (documented)
 - [ ] M5.3 Workers report CPU and memory; the dashboard shows them per machine
 
