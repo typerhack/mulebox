@@ -511,7 +511,8 @@ browser download blocked for the machine's network location.
       the contract's second name for `its_result` went, and the dashboard names `mulebox ok`. Built (0.66.9). Open: seen in a real queue.
 - [ ] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
       two branches, `--detach`, and a second gate's time with the images built.
-- [ ] M19.11 No alarming `pull access denied` for an image the job then builds itself.
+- [~] M19.11 No alarming `pull access denied` for an image the job then builds itself. mulebox's own tag
+      made Compose try a pull; a built service now has `pull_policy: build`. Built (0.66.11). Open: seen on the machine.
 - [x] M19.12 `mulebox feedback draft` keeps a whole title (a cut one was seen again). The cut came at 100
       characters; only GitHub's own limit cuts now. Done 2026-11-07 (0.66.8), through the real CLI.
 - [ ] M19.9 Collapse `Downloading ...: x MB/y MB` in the log; show pnpm's own install apart in `prepare`.

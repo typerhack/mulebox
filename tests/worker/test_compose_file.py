@@ -230,3 +230,12 @@ def test_the_prefix_matches_jobspec():
     from mulebox.worker import jobspec
 
     assert compose_file.PORT_PREFIX == jobspec._PORT_PREFIX
+
+
+def test_a_built_service_is_not_pulled_first():
+    """Its tag is only this job's, so a pull can only fail, loudly, in the log."""
+    model = {"name": "x", "services": {"app": {"build": {"context": "/jobs/app/job/src"}, "image": "a:1"},
+                                       "db": {"image": "mysql:8.4"}}}
+    done, _ = run(model)
+    assert done["services"]["app"]["pull_policy"] == "build"
+    assert "pull_policy" not in done["services"]["db"]

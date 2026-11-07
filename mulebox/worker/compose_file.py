@@ -144,6 +144,7 @@ def _own_images(services: dict[str, Model], job_id: str, notes: list[str]) -> No
         known = (owned[_plain(image)] for image in given if _plain(image) in owned)
         tag = next(known, None) or compose.image_name(job_id, index, name)
         spec["image"] = tag
+        spec["pull_policy"] = "build"  # the tag is new, so a pull could only print a scary refusal
         for image in given:
             owned.setdefault(_plain(image), tag)
             notes.append(f"the image {image} of service {name} is built as {tag}, so jobs "

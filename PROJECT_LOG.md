@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.11 - 2026-11-07 - patch
+- A service a job builds has `pull_policy: build`: its tag is the job's own, so the pull Compose tried could only print `pull access denied`.
+
 ## 0.66.10 - 2026-11-07 - patch
 - `mulebox run --in <service> -- <cmd>` runs a one-off command inside a compose service (contract schema 14).
 
