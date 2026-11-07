@@ -126,3 +126,12 @@ def test_the_store_has_the_index_for_this(store):
         names = {row["name"] for row in conn.execute(
             "SELECT name FROM sqlite_master WHERE type = 'index'")}
     assert "jobs_project" in names
+
+
+def test_a_run_that_lost_its_network_does_not_count(store, staging):
+    run(store, staging, [("install", 10)])
+    hurt = run(store, staging, [("install", 500)])
+    with store.write() as conn:
+        conn.execute("UPDATE job_steps SET network_lost = 1 WHERE job_id = ?", (hurt,))
+    found = read(store)
+    assert found["runs"] == 1 and found["stages"]["install"] == 10

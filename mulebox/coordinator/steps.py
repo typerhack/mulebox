@@ -16,7 +16,7 @@ from mulebox.coordinator.errors import BadRequest
 
 MAX_ROWS = 64  # in one report; far more than a job has stages
 COLUMNS = ("seq", "stage", "started_at", "finished_at", "exit_code", "bytes_downloaded",
-           "failing_line")
+           "failing_line", "network_lost")
 
 
 def _row(raw: Any) -> dict[str, Any]:
@@ -33,6 +33,7 @@ def _row(raw: Any) -> dict[str, Any]:
         "exit_code": v.integer(raw, "exit_code", None),
         "bytes_downloaded": v.integer(raw, "bytes_downloaded", None, 0),
         "failing_line": line[:MAX_FAILING_LINE] if line else None,
+        "network_lost": 1 if raw.get("network_lost") else 0,
     }
 
 
@@ -48,7 +49,7 @@ def save(conn: sqlite3.Connection, job_id: str, rows: list[dict[str, Any]]) -> N
     names = ", ".join(COLUMNS)
     marks = ", ".join("?" for _ in COLUMNS)
     conn.executemany(f"INSERT OR REPLACE INTO job_steps (job_id, {names}) VALUES (?, {marks})",
-                     [(job_id, *(row[name] for name in COLUMNS)) for row in rows])
+                     [(job_id, *({"network_lost": 0, **row}[name] for name in COLUMNS)) for row in rows])
 
 
 def for_job(conn: sqlite3.Connection, job_id: str) -> list[dict[str, Any]]:

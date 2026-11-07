@@ -25,7 +25,8 @@ from mulebox.coordinator.errors import Conflict, NotFound
 # 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
 # 7: env order; 8: stop reason and activity; 9: told; 10: disk; 11: install;
 # 12: worker version (migrate.py)
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
+BASE_SCHEMA = 12  # what _SCHEMA builds, as it runs at every open; later columns are migrate steps
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
@@ -133,7 +134,7 @@ class Store:
                         tx.execute(statement)
                 tx.execute(
                     "INSERT OR IGNORE INTO meta (key, value) VALUES ('schema_version', ?)",
-                    (str(SCHEMA_VERSION),),
+                    (str(BASE_SCHEMA),),
                 )
                 migrate.upgrade(tx, SCHEMA_VERSION)
         except BaseException:

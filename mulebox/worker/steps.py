@@ -21,7 +21,8 @@ import re
 import secrets
 from typing import Any
 
-from mulebox.common.status import CLEANUP, MAX_FAILING_LINE, STAGES
+from mulebox.common.network_errors import LOST
+from mulebox.common.status import CLEANUP, FETCHING, MAX_FAILING_LINE, STAGES
 
 END = "end"
 SHELL_NAME = "mulebox_step"
@@ -58,7 +59,7 @@ class StepTracker:
         self.close(0, at, failed=False)
         self._rows.append({"seq": len(self._rows), "stage": stage, "started_at": at,
                            "finished_at": None, "exit_code": None, "bytes_downloaded": None,
-                           "failing_line": None})
+                           "failing_line": None, "network_lost": 0})
         self._changed.add(len(self._rows) - 1)
         self._last_line, self._ended_at = None, None
 
@@ -91,6 +92,10 @@ class StepTracker:
         stripped = text.strip()
         if stripped and self._ended_at is None:
             self._last_line = stripped[:MAX_FAILING_LINE]
+            row = self._open
+            if row and not row["network_lost"] and row["stage"] in FETCHING and LOST.search(stripped):
+                row["network_lost"] = 1  # the run says little about how long this job takes
+                self._changed.add(row["seq"])
 
     def add_bytes(self, count: int) -> None:
         """Downloaded while the open stage ran."""

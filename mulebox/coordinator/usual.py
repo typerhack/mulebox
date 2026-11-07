@@ -3,8 +3,9 @@
 The median of its last passed runs, for the whole job and for each stage. Only passed runs
 count, because a run that failed stopped early and says nothing about the full length. A
 median, because a first run that downloads everything should not move what is usual once
-caches are warm; of two middle runs the lower, so the figure is one a real run took. No history
-gives None, and this never turns into a percentage: how far a running job has come is not
+caches are warm; of two middle runs the lower, so the figure is one a real run took. A run that
+lost its connection while fetching (worker/steps.py) does not count: it passed, but an outage is
+not how long the job takes. No history gives None, and this never turns into a percentage: how far a running job has come is not
 something past runs can tell.
 
 For one job (`for_job`) the command counts too, so a changed job and the ad-hoc `mulebox run`
@@ -30,6 +31,8 @@ MIN_RUNS = 3  # fewer say too little to tell someone in the queue
 _RECENT = ("SELECT j.job_id FROM jobs j WHERE j.project = ? AND j.job = ? AND j.kind = 'job' "
            "AND j.outcome = 'passed' AND (? IS NULL OR j.argv = ?) AND (? IS NULL OR j.seq < ?) "
            "AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id) "
+           "AND NOT EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id "
+           "AND s.network_lost = 1) "
            "ORDER BY j.seq DESC LIMIT ?")
 
 

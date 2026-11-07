@@ -247,7 +247,8 @@ apart from a project's `setup` and commands: the direction is that a job declare
 needs and mulebox prepares it. A report never holds up a job, and its rows are not a
 source of truth for how a job ended. That stays `outcome` on the job.
 
-The rows also give what is usual for a project and job: the median of its last passed runs,
+The rows also give what is usual for a project and job: the median of its last passed runs, leaving
+out any that lost a connection while fetching images or packages,
 per stage and as a whole. mulebox says what past runs took and leaves it there. A percentage
 would be a guess presented as a measurement, since a cold cache or a new image changes
 what a stage takes.

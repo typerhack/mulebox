@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.67.0 - 2026-11-07 - minor
+- A run that lost a connection while fetching images or packages no longer counts in `usual` (store schema 13).
+
 ## 0.66.13 - 2026-11-07 - patch
 - Installing a pinned toolchain tries a lost network 3 times, and if it stays lost the error says so instead of suggesting another version; a 404 is not retried.
 - `mulebox status` warns when a job fetching things printed a lost connection last.

@@ -505,7 +505,9 @@ browser download blocked for the machine's network location.
 - [~] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not
       "switch versions". `status` warns when an install's output reads as a lost connection. Built (0.66.13),
       with tests, and real requests told a 404 from an unknown host. Open: a real outage during an install.
-- [ ] M19.6 A way to keep a run hurt by an outage out of `usual`, and `usual` less skewed by one bad run.
+- [~] M19.6 A way to keep a run hurt by an outage out of `usual`, and `usual` less skewed by one bad run:
+      a stage that printed a lost connection while fetching marks its run, which then does not count; one
+      bad run left alone was already held off by the median. Built (0.67.0). Open: seen on a real outage.
 - [x] M19.7 A short way to run one test in a compose project, instead of `mulebox run --` and a long
       `docker compose exec`: `mulebox run --in <service> -- <cmd>`. Done 2026-11-07 (0.66.10): a real compose job.
 - [~] M19.8 `mulebox queue` says why a job waits, as `status` does. Plainer word for `wait`'s "take it back":

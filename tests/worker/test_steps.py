@@ -267,3 +267,12 @@ def test_outcomes_that_keep_a_failing_line():
 
     assert ended_badly(Outcome.TIMED_OUT) and ended_badly(Outcome.FAILED)
     assert not ended_badly(Outcome.CANCELLED) and not ended_badly(Outcome.INTERRUPTED)
+
+
+def test_a_lost_connection_marks_a_stage_that_fetches():
+    steps = StepTracker()
+    steps.begin("install", 1.0)
+    steps.line("ERR_PNPM_META_FETCH_FAIL read ECONNRESET\n")
+    steps.begin("command", 2.0)
+    steps.line("connection reset, as this test expects\n")
+    assert [row["network_lost"] for row in steps.pending()] == [1, 0]
