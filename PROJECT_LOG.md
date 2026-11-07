@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.69.5 - 2026-11-07 - patch
+- A source checkout reports the version in its VERSION file: an editable install's metadata kept the version it was installed at, so the laptop read 0.68.0 on 0.69.4 and agents were warned of a difference with the build machine.
+
 ## 0.69.4 - 2026-11-07 - patch
 - Roadmap: M14.6 done, checked in real Edge on the real dashboard.
 
