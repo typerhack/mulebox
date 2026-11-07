@@ -146,8 +146,11 @@ queue and returns the same result as running it locally.
       second real machine.
 - [~] M5.2 Draining and removing workers; moving the coordinator (documented). Built 2026-11-07
       (0.74.0): `mulebox machine list|drain|resume|remove`, schema 15; moving the coordinator in
-      docs/install.md. Done when: a real machine drained and resumed with a job waiting, and a
-      stopped one removed with its key.
+      docs/install.md. Done 2026-11-07 (0.74.1): the build machine drained, a job sent then waited
+      and `status` said every machine for it was draining, the user saw "draining" on the dashboard,
+      and after `resume` the job ran and passed. The stopped drill worker of M5.1 was removed; an
+      online one was refused. Its key was already gone, so taking a key off ran in tests only.
+      Moving the coordinator is written down, not done.
 - [ ] M5.3 Workers report CPU and memory; the dashboard shows them per machine
 
 ## M6: Open-source readiness

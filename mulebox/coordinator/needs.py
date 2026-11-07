@@ -85,7 +85,12 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | No
     fitting = capable(workers, needs)
     if not fitting:
         return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
-    if any(is_online(w, now) for w in fitting):
+    online = [w for w in fitting if is_online(w, now)]
+    if any(not w.get("draining") for w in online):
         return None
+    if online:
+        names = ", ".join(w["worker"] for w in online)
+        return (f"every build machine for this job is draining ({names}); "
+                f"`mulebox machine resume <name>` lets one take it")
     names = ", ".join(w["worker"] for w in fitting)
     return f"no build machine for this job is online (offline: {names})"

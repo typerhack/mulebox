@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.74.1 - 2026-11-07 - patch
+- status and events say when every machine that can run a queued job is draining, and how to resume one; roadmap M5.2 done.
+
 ## 0.74.0 - 2026-11-07 - minor
 - mulebox machine list, drain, resume and remove: a drained machine finishes its jobs and takes no new ones, a stopped one can be forgotten with its key taken off the coordinator; the dashboard shows draining (schema 15, M5.2).
 - docs/install.md: how to take a machine away and how to move the coordinator.

@@ -193,3 +193,20 @@ def test_with_no_worker_seen_a_stored_job_still_needs_it(store, staging):
     api.handle(store, staging, request("submit", **submit_body(**OLD_CLIENT)), NOW)
     with store.read() as conn:
         assert "compose-v1" in conn.execute("SELECT needs FROM jobs").fetchone()[0]
+
+
+def test_every_capable_worker_draining_is_a_reason():
+    draining = {**worker("a"), "draining": 1}
+    assert "draining (a)" in needs.waiting_for([draining], [], NOW)
+    assert needs.waiting_for([draining, worker("b")], [], NOW) is None
+
+
+def test_a_job_on_a_drained_machine_says_why_in_status(store, staging):
+    from mulebox.coordinator import api
+
+    from .helpers import queued, request
+    seen(store, "build-1")
+    api.handle(store, staging, request("machine", worker="build-1", action="drain"), NOW)
+    job_id = queued(store, staging, now=NOW)
+    body = api.handle(store, staging, request("status", job_id=job_id), NOW).body
+    assert "draining" in body.get("waiting_for", "")
