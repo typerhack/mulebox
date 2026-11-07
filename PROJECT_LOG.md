@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.7 - 2026-11-07 - patch
+- `doctor` no longer says a machine offers a toolchain it has yet to install; the next line says the first job installs it.
+
 ## 0.66.6 - 2026-11-06 - patch
 - A repeat answered from an earlier result no longer says "submitted" or links the dashboard, as no job started.
 

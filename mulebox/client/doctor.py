@@ -6,6 +6,7 @@ is too old to report its toolchains is a warning, not a failure: doctor does not
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -88,9 +89,12 @@ def _toolchain_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
     return gaps
 
 
-def _wanted(project: ProjectConfig) -> str:
+def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
+    """What the project needs, without what is only to be installed (`leaving`, as _toolchain_gaps
+    words it): a machine does not offer what a first job has yet to fetch."""
     wanted = [*project.all_needs, *(f"{n} {v}" for n, v in project.toolchain.items())]
-    return ", ".join(wanted) or "nothing special"
+    kept = [item for item in wanted if not any(gap.startswith(f"{item} (") for gap in leaving)]
+    return ", ".join(kept) or "nothing special"
 
 
 def _fix(project: ProjectConfig) -> str:
@@ -119,7 +123,9 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
         return [Finding(WARN, "machine", f"{', '.join(unsure)} did not report its toolchains (its "
                         f"mulebox is older), so {_wanted(project)} is unconfirmed")]
     names = ", ".join(str(w.get("worker")) for w in usable)
-    found = [Finding(OK, "machine", f"{names} offers what this project needs: {_wanted(project)}")]
+    ready = any(not _toolchain_gaps(w, project) for w in usable)
+    found = [Finding(OK, "machine", f"{names} offers what this project needs: "
+                     f"{_wanted(project, () if ready else to_install)}")]
     if to_install:
         found.append(Finding(OK, "machine", f"{'; '.join(to_install)}: the first job installs it, "
                              "once, which can take minutes"))

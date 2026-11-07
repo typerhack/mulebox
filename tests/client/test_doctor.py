@@ -42,6 +42,13 @@ def test_a_missing_toolchain_is_for_the_first_job_to_install():
     assert "node 22.22.3 (has 20.18.1)" in found[1].text and "first job" in found[1].text
 
 
+def test_a_machine_does_not_offer_what_it_has_yet_to_install():
+    found = doctor.machines(PROJECT, [worker(toolchains={"node": ["20.18.1"]})])
+    assert "node 22.22.3" not in found[0].text and "docker" in found[0].text
+    assert "first job installs it" in found[1].text
+    assert "node 22.22.3" in doctor.machines(PROJECT, [GOOD])[0].text
+
+
 def test_the_dashboard_is_named_when_the_machine_says_where():
     found = doctor.dashboard({"dashboard": {"url": "http://192.168.1.50:8090"}})
     assert [(f.level, f.text) for f in found] == [("ok", "http://192.168.1.50:8090")]

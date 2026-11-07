@@ -500,7 +500,8 @@ browser download blocked for the machine's network location.
       real git worktree in a test. Open: an agent using it.
 - [~] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link. Built
       (0.66.6), tested with the real coordinator code. Open: seen on a real machine.
-- [ ] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install.
+- [~] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install. Built (0.66.7), with
+      tests. Open: seen on a real machine.
 - [ ] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not
       "switch versions". `status` warns when an install's output reads as a lost connection.
 - [ ] M19.6 A way to keep a run hurt by an outage out of `usual`, and `usual` less skewed by one bad run.
