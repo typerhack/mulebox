@@ -211,12 +211,14 @@ Marked `[~]` until checked on a real machine.
       coordinator code; since 0.35.0 a test removes the log with the real retention code.
       Done 2026-11-06 (0.62.2): `logs`, `logs --summary` and `wait` through the
       real CLI against a copy of the machine's history after the real service cleaned it.
-- [~] M8.9 `mulebox doctor` runs the worker's compose policy on the project's files before any
+- [x] M8.9 `mulebox doctor` runs the worker's compose policy on the project's files before any
       upload, so an external volume fails at once rather than after the queue. Tested
       2026-11-04 (0.33.0) with unit tests and the fake coordinator, and the steps it copies
       from `docker compose config` (profiles, unused resources, relative paths) were read off
       a local Docker client. Open: a real project's compose files. It does not read `include`
       or `extends` files, or values with variables.
+      Done 2026-11-07 (0.72.0): on a real Laravel project's four compose files, `doctor` found nothing to
+      refuse, and the worker took the same files in real passing jobs.
 - [x] M8.8 A job that could not start exits 5, not 1, so it does not read as a failed check. Tested
       2026-11-04 (0.32.0) with unit tests and the real coordinator code. Done 2026-11-05 (0.53.1): a
       job with a missing toolchain and one with a refused compose file each exited 5, with the
@@ -326,10 +328,12 @@ it: a real machine.
 
 ## M13: Second reports from real projects
 Fixes from the second project tests (2026-11-04).
-- [~] M13.1 `mulebox doctor` reads Compose's `!reset` and `!override` tags, so the refusal check
+- [x] M13.1 `mulebox doctor` reads Compose's `!reset` and `!override` tags, so the refusal check
       runs for projects using them; before, it gave up with a warning. Built 2026-11-05 (0.40.7):
       the rules read off Compose 5.6, a test against `docker compose config`, and real `doctor`
       runs on such files, one refused, one clean. Open: a real project's compose files.
+      Done 2026-11-07 (0.72.0): a real project's compose files with `!reset` and `!override`, read by
+      `doctor`, and the same files accepted by the worker in passing jobs.
 - [x] M13.2 Images out of reach on the network: the job counts as never started, exit 5, with the
       reason in the log and the summary. A build that fails or an image that does not exist stays
       a failed job. Built 2026-11-05 (0.40.8): error texts from real pulls on a local Docker daemon,
@@ -443,8 +447,10 @@ Measured by that comparison on real jobs.
       running job, and `--again` forces a run. Replaces M16.4. Done 2026-11-06
       (0.55.2): real jobs, a repeat in 0.7 s, a failure kept exit 7, `--again` and a changed file ran,
       and a second agent joined the running job.
-- [~] M18.4 Agents choose how to wait: follow, be pinged, or check later. In the docs, the contract
+- [x] M18.4 Agents choose how to wait: follow, be pinged, or check later. In the docs, the contract
       and the skill 2026-11-06 (0.55.0). Open: an agent using them in a real session.
+      Done 2026-11-07: two real projects' agents chose for themselves: one sent 12 of its jobs with
+      `--detach`, the other 7, and one used `mulebox warm`.
 - [x] M18.5 Project homes in git: one repository per project on the machine, one worktree per
       branch at `~/.mulebox/projects/<project>/`, set up once and kept. A job sends only what changed
       and installs only when the lockfile or setup changes. Measured: worktree add 0.2 s and a
@@ -529,10 +535,12 @@ browser download blocked for the machine's network location.
       `docker compose exec`: `mulebox run --in <service> -- <cmd>`. Done 2026-11-07 (0.66.10): a real compose job.
 - [x] M19.8 `mulebox queue` says why a job waits, as `status` does. Plainer word for `wait`'s "take it back":
       the contract's second name for `its_result` went, and the dashboard names `mulebox ok`. Done 2026-11-07 (0.67.1): a real queue named the job holding the branch.
-- [~] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
+- [x] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
       two branches, `--detach`, and a second gate's time with the images built. All seen in its job history on
       0.66.3: images 16 s against 554 s, install skipped on repeats, two branches at once, 164 s a gate. Open: one
       full `check` with browsers, from the project's own session.
+      Done 2026-11-07: the second project's own session ran its gate and its browser job through
+      mulebox, real Chromium against the job's containers, passing twice.
 - [x] M19.11 No alarming `pull access denied` for an image the job then builds itself. mulebox's own tag
       made Compose try a pull; a built service now has `pull_policy: build`. Done 2026-11-07 (0.67.1): a real job built its image with no such line.
 - [x] M19.12 `mulebox feedback draft` keeps a whole title (a cut one was seen again). The cut came at 100
