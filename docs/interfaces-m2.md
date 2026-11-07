@@ -16,7 +16,9 @@ Input is a public job dict; every function tolerates missing or malformed fields
 - Elapsed: waiting time when queued, running time when active, run time when finished.
 - `fingerprint(jobs)`: what changes when a view must redraw. Elapsed time is left out, so a
   ticking clock never causes an event. Where a waiting job may go (below) is in, so a
-  capable machine going offline redraws the queue.
+  capable machine going offline redraws the queue. So is a card's activity (`doing`: stage,
+  step, CPU in steps of 10% of a core): before 0.75.2 it was not, and a long job's card kept
+  what it showed at its start until something else in the queue changed or the page reloaded.
 
 ## Where a waiting job may go (`coordinator/views.py` `placement`)
 

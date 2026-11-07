@@ -204,17 +204,31 @@ def failed_step(steps: list[dict[str, Any]]) -> dict[str, Any] | None:
 
 def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     """What changes when a view must redraw: ids, states, outcomes, positions, for a
-    waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), and
-    a waiting question's reason and whole minutes left.
+    waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), a
+    waiting question's reason and whole minutes left, and what a job in a slot is doing
+    (`doing_mark`), or its card would keep what it showed when the job started.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
     return tuple(
         (j.get("job_id"), j.get("state"), j.get("outcome"), j.get("position"),
          j.get("worker"), j.get("started_at"), j.get("finished_at"),
-         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j))
+         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j), doing_mark(j))
         for j in jobs
     )
+
+
+DOING_CPU_STEP = 10.0  # percent of one core; a finer change is not worth an event
+
+
+def doing_mark(job: dict[str, Any]) -> tuple[Any, Any, int | None] | None:
+    """A card's stage, step and CPU in steps of DOING_CPU_STEP, for a view's fingerprint."""
+    doing = job.get("doing")
+    if not isinstance(doing, dict):
+        return None
+    cpu = number(doing.get("cpu_pct"))
+    return (doing.get("stage"), doing.get("step"),
+            None if cpu is None else int(cpu // DOING_CPU_STEP))
 
 
 def left_mark(job: dict[str, Any]) -> tuple[Any, int] | None:

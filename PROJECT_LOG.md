@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.75.2 - 2026-11-07 - patch
+- Dashboard: a running job's card follows its stage, step and CPU live; the queue event fired only on state changes, so a long job's card kept what it showed at its start until a reload.
+
 ## 0.75.1 - 2026-11-07 - patch
 - Roadmap: M5.2 key removal seen for real; M5.3 readings seen from a second worker.
 
