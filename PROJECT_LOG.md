@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.69.3 - 2026-11-07 - patch
+- Roadmap: M14.7 done, checked on a real CI run.
+
 ## 0.69.2 - 2026-11-07 - patch
 - A CI job's page no longer repeats every step from the job's own record, and gets its last step: a released slot takes its runner log for a minute more.
 
