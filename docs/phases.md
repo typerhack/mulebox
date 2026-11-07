@@ -377,10 +377,12 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       dashboard in Edge.
 - [ ] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
       VPN tunnel once.
-- [~] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
+- [x] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
       slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
       time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its
-      output and shows no empty log. Built (0.68.0). Open: seen in Edge on the real dashboard.
+      output and shows no empty log. Done 2026-11-07 (0.69.2): in real Edge on the real dashboard, a job
+      from this laptop showed the laptop mark and "macOS", a CI slot GitHub's mark and "CI", each with
+      "of usually" beside its timer; the CI page linked to GitHub in a new tab.
 - [x] M14.7 A CI job's page shows its steps live and each step's output once the runner writes it, read from
       the runner's own files on the machine (the user's choice on 2026-11-07, knowing the runner writes a step's
       output in 4 KB blocks or at its end). Done 2026-11-07 (0.69.2): a real CI run on the machine's runner,

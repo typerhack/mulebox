@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.69.4 - 2026-11-07 - patch
+- Roadmap: M14.6 done, checked in real Edge on the real dashboard.
+
 ## 0.69.3 - 2026-11-07 - patch
 - Roadmap: M14.7 done, checked on a real CI run.
 
