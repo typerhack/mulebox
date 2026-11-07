@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.70.2 - 2026-11-07 - patch
+- A card's word for a job's command stage is 'running', short enough for a narrow card.
+
 ## 0.70.1 - 2026-11-07 - patch
 - A job's CPU is sampled every 10 s, not 30, so its card follows what it does now; a card with no stage yet says starting; a waiting row's usual time has its space back.
 

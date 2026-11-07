@@ -11,7 +11,7 @@ export const BUSY_PCT = 50;  // of one core
 const WORDS = {
   toolchain: "installing tools", prepare: "preparing", environment: "preparing",
   images: "fetching images", services: "starting services", install: "installing packages",
-  setup: "setting up", command: "running its command", cleanup: "cleaning up",
+  setup: "setting up", command: "running", cleanup: "cleaning up",
 };
 
 export function doingWord(doing) {
