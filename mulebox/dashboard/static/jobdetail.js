@@ -1,7 +1,8 @@
 // One job's detail, with its stages and live log (joblog.js).
 
 import { cancelControl } from "./canceljob.js";
-import { badge, clock, duration, el, fill, getJson, safeUrl, questionMark, shortId } from "./format.js";
+import { badge, clock, duration, el, fill, getJson, jobName, repository, safeUrl, questionMark,
+         shortId } from "./format.js";
 import { atBottom, followLog, latestButton, quietText } from "./joblog.js";
 import { resultLine } from "./jobresult.js";
 import { timeline } from "./timeline.js";
@@ -108,23 +109,28 @@ export function jobView(box, jobId) {
     const note = el("span", { class: "muted", role: "status" });
     const backSlot = el("div", {});
     const latestOut = latestButton(pre);
+    const ci = job.kind === "runner";
+    pre.hidden = ci;  // still followed, to see the slot end: GitHub has the output
     const parts = [
       control ? el("div", { class: "job-bar" }, back(), control.node) : back(),
       result,
       whichRun(job),
       backSlot,
-      job.kind === "runner"
-        ? el("p", { class: "muted note-text", text: "This entry only held a build slot for a " +
-                    "GitHub runner. The job's result and log are on GitHub." })
+      ci
+        ? el("p", { class: "muted note-text", text: `GitHub Actions runs this job of ${repository(job)} ` +
+                    "on this machine and holds one of its build slots while it does. Its steps, live " +
+                    "output and result are on GitHub, not here." })
         : null,
-      run ? el("p", {}, el("a", { href: run, rel: "noreferrer", text: "Open the GitHub run" })) : null,
+      run ? el("p", {}, el("a", { href: run, target: "_blank", rel: "noopener noreferrer",
+                                  text: ci ? "Follow it live on GitHub" : "Open the GitHub run" })) : null,
       aloneNote(job),
       stages,
       el("details", { class: "job-facts" }, el("summary", { text: "Job details" }), info),
-      el("div", { class: "log-head" }, el("span", { text: "log" }), note, quiet, latestOut, link),
+      ci ? null : el("div", { class: "log-head" }, el("span", { text: "log" }), note, quiet, latestOut, link),
       pre,
     ].filter(Boolean);
-    fill(box, `Job ${job.project ?? "-"} / ${job.job ?? "-"}`, stateSlot, ...parts);
+    fill(box, ci ? `CI ${repository(job)} / ${job.job ?? "-"}` : `Job ${jobName(job)}`, stateSlot,
+         ...parts);
     stopLog = followLog(pre, stateSlot, note, latestOut, (final) => {
       ended = true;
       stateSlot.replaceChildren(badge(final.shown_state ?? final.outcome ?? final.state));

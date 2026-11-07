@@ -8,7 +8,7 @@ from mulebox.coordinator.store import ACTIVE_STATES
 
 JOB_FIELDS = (
     "job_id", "project", "job", "branch", "client", "state", "outcome", "exit_code",
-    "worker", "created_at", "started_at", "finished_at", "kind", "detached",
+    "worker", "created_at", "started_at", "finished_at", "kind", "detached", "client_os",
 )
 
 

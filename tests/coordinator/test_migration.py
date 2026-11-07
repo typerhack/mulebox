@@ -55,7 +55,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 13
+        assert store.schema_version() == st.SCHEMA_VERSION == 14
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url", "detached"} <= columns(
                 conn, "jobs")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import platform
 import socket
 from collections.abc import Sequence
 
@@ -35,6 +36,15 @@ def job_env(project: ProjectConfig) -> dict[str, str]:
     return env
 
 
+_OS_NAMES = {"Darwin": "macOS"}
+
+
+def client_os() -> str:
+    """The laptop's system as people name it, for the dashboard: macOS, Linux, Windows."""
+    system = platform.system() or "unknown"
+    return _OS_NAMES.get(system, system)
+
+
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
                 detach: bool = False, reuse: bool = False) -> dict:
     return {
@@ -46,6 +56,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "base_commit": snap.base_commit,
         "branch": snap.branch,
         "client": socket.gethostname() or "client",
+        "client_os": client_os(),
         "setup": project.setup,
         "install": project.install,
         "toolchain": dict(project.toolchain),

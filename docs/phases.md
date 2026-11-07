@@ -377,6 +377,10 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       dashboard in Edge.
 - [ ] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
       VPN tunnel once.
+- [~] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
+      slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
+      time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its
+      output and shows no empty log. Built (0.68.0). Open: seen in Edge on the real dashboard.
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 

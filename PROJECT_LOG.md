@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.68.0 - 2026-11-07 - minor
+- Dashboard: a job card shows where the job came from (GitHub's mark for CI, a laptop and its system for an agent), a CI repository without its owner, and how long such a job usually takes beside its time.
+- A CI job's page says its output is on GitHub instead of showing an empty log. Its GitHub link opens in a new tab. The client sends its system with a job (store schema 14).
+
 ## 0.67.1 - 2026-11-07 - patch
 - M19 checked on the real machine; `docs/agents.md` says how to copy a browser a machine cannot download.
 

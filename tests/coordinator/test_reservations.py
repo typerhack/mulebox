@@ -204,3 +204,15 @@ def test_worker_restart_keeps_reservations(store, staging):
                  restarted=True)
     assert reply.type is MessageType.CLAIM_NONE
     assert store.get_job(res)["state"] == JobState.RUNNING
+
+
+def test_a_ci_slot_usually_takes_what_past_slots_of_its_repository_took(store, staging):
+    from mulebox.coordinator import usual
+    for run_id, held in (("1", 100), ("2", 300), ("3", 200)):
+        res = reserve(store, staging, run_id=run_id)
+        acquire(store, staging, res)
+        call(store, staging, "release", now=T0 + held, job_id=res, outcome="passed")
+    waiting = reserve(store, staging, run_id="4")
+    job = store.get_job(waiting)
+    with store.read() as conn:
+        assert usual.job_seconds(conn, job) == 200

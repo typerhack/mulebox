@@ -74,6 +74,7 @@ def submit(req: Request) -> Message:
         "fingerprint": v.text(body, "fingerprint"),
         "base_commit": v.text(body, "base_commit"),
         "client": v.text(body, "client"),
+        "client_os": (v.text(body, "client_os", None) or "")[:20] or None,
         "branch": v.text(body, "branch", None),
         "setup": v.text(body, "setup", None),
         "install": v.text(body, "install", None),

@@ -183,3 +183,10 @@ def test_logs_and_cancel(fake, capsys):
     assert watch["body"]["lease"] is False
     assert cli.main(["cancel", JOB]) == 0
     assert f"cancel requested for job {JOB}" in capsys.readouterr().err
+
+
+def test_a_job_says_which_system_sent_it(fake, in_repo, capsys, monkeypatch):
+    monkeypatch.setattr("platform.system", lambda: "Darwin")
+    fake.scenario(log=["t\n"])
+    assert cli.main(["run", "--", "true"]) == 0
+    assert fake.requests()[0]["body"]["client_os"] == "macOS"

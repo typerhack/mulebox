@@ -44,8 +44,12 @@ class DashboardData:
             rows = queue.listing(conn, finished_limit)
             fleet = workers.listing(conn)
             limits = attendance.read_limits(conn)
+            typical = {job["job_id"]: usual.job_seconds(conn, job) for job, _ in rows
+                       if job["state"] != JobState.FINISHED}
         return [{**reservation_dict(job, pos), **placement(fleet, job, now),
-                 **attendance.fields(job, now, limits)} for job, pos in rows]
+                 **attendance.fields(job, now, limits),
+                 **({"usual_s": typical[job["job_id"]]} if typical.get(job["job_id"]) else {})}
+                for job, pos in rows]
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:
         return snapshot(self.queue_jobs(now), now)

@@ -38,9 +38,12 @@ export function groupLanes(snapshot, machines) {
   return { lanes: [...lanes.values()], shared, stuck };
 }
 
+// The time so far, and what a job like it usually takes. Never a time left or a percentage:
+// past runs do not say how far this one has come (coordinator/usual.py).
 function elapsed(job) {
-  return el("span", { class: "num", "data-elapsed": job.job_id,
-                      text: duration(job.elapsed_s) });
+  return el("span", { class: "time" },
+    el("span", { class: "num", "data-elapsed": job.job_id, text: duration(job.elapsed_s) }),
+    job.usual_s ? el("span", { class: "usual", text: `usually ${duration(job.usual_s)}` }) : null);
 }
 
 function block(job) {

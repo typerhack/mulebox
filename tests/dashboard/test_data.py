@@ -165,3 +165,10 @@ def test_detail_names_the_stage_a_job_failed_in(data, store, run_job, finish_job
         steps.save(conn, job_id, [row])
     finish_job(ids, outcome, exit_code)
     assert data.job(job_id)["failed_stage"] == stage
+
+
+def test_a_queued_job_carries_what_it_usually_takes_and_where_it_came_from(data, store, staging):
+    queued(store, staging, client_os="macOS")
+    rows = data.queue_jobs(NOW)
+    assert rows[0]["client_os"] == "macOS"
+    assert "usual_s" not in rows[0]  # no history yet, so nothing is shown

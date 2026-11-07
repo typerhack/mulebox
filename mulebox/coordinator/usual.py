@@ -76,6 +76,22 @@ def for_job(conn: sqlite3.Connection, job: dict[str, Any]) -> dict[str, Any] | N
     return usual(conn, job["project"], job["job"], job["argv"], job["seq"])
 
 
+_RUNNER_RECENT = ("SELECT duration_s FROM jobs WHERE project = ? AND job = ? AND kind = 'runner' "
+                  "AND outcome = 'passed' AND duration_s IS NOT NULL AND seq < ? "
+                  "ORDER BY seq DESC LIMIT ?")
+
+
+def job_seconds(conn: sqlite3.Connection, job: dict[str, Any]) -> float | None:
+    """What a job like this one usually takes, whole, for a card on the dashboard. A CI slot has
+    no stages, so its figure is how long past slots of that repository and job were held."""
+    if job["kind"] != "job":
+        held = [row[0] for row in conn.execute(
+            _RUNNER_RECENT, (job["project"], job["job"], job["seq"], RUNS))]
+        return round(median_low(held), 1) if held else None
+    typical = for_job(conn, job)
+    return typical["job_s"] if typical else None
+
+
 def estimate(job: dict[str, Any], typical: dict[str, Any] | None) -> dict[str, Any]:
     """`estimate_s` and `estimate_runs` for a queued job, or nothing; `typical` is `for_job`."""
     if job["state"] != JobState.QUEUED or job["kind"] != "job":
