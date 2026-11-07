@@ -50,7 +50,9 @@ mulebox init
 
 It writes `.mulebox.yml`, and prints what you should look at: the versions it pinned, and the
 tools the machine must have. Node, pnpm, npm, yarn, PHP with Composer, Python, Flutter, Go and
-Rust are recognised, also one folder down, such as `api/` and `web/`. If it cannot tell how the
+Rust are recognised, also one folder down, such as `api/` and `web/`. What the project's CI uses
+comes first: its compose files and its Node version. A Node version that is only a major, such as
+`24`, is pinned as the newest 24.x from nodejs.org, or this computer's own if it has that major. If it cannot tell how the
 project is tested, say it yourself: `mulebox init --check "your test command"`. `--print` shows
 the file without writing it.
 

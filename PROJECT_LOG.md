@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.72.0 - 2026-11-07 - minor
+- mulebox init follows the project's CI: its compose files (COMPOSE_FILE or -f in .github/workflows, else CI and test overlays by name) and its Node version, a major pinned as the newest release of it; Composer and PHP tests run in the compose service built from their folder; split into init_ci, init_files and init_langs (issue #1).
+
 ## 0.71.0 - 2026-11-07 - minor
 - From a project's report: a cd in setup no longer carries into the job's command (exports still do); GitHub runners get the same CPU share as mulebox jobs, set in place on running ones; docs for install: false with compose: false, a MySQL healthcheck over TCP, and runner jobs without the machine's job_env.
 

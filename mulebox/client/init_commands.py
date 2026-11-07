@@ -39,6 +39,8 @@ def render(found: Detected, gate: str) -> str:
     if found.compose:
         data["compose"] = found.compose
     data["env"] = {"CI": "1"}
+    if found.install:
+        data["install"] = " && ".join(found.install)
     if found.setup:
         data["setup"] = " && ".join(found.setup)
     data["jobs"] = {"check": gate, **{name: command for name, command in found.jobs.items()

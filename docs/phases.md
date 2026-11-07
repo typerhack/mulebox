@@ -475,6 +475,9 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       Linux. Run 2026-11-06 (0.61.1): what it wrote for a small npm and a small Python project
       passed as real jobs on a real machine, with no edits. Open: a real project of a stranger's,
       which M6.2 covers.
+      Fixed 2026-11-07 (0.72.0), from issue #1 of a Laravel project in Docker: init takes CI's compose
+      files and Node version, and runs Composer and the tests in the service built from that folder;
+      on that project's own files it wrote what its agent had written by hand.
 - [x] M17.2 `mulebox setup <host>`: one command on the laptop installs the build machine, finds what
       it offers (such as Docker), writes the client config, and proves it with a first job.
       Built 2026-11-06 (0.60.0): on a real machine an upgrade and its first job passed, a bad host
@@ -539,10 +542,7 @@ browser download blocked for the machine's network location.
       2026-11-07 (0.67.1): a real job showed `toolchain` 40 s, and the real log of 2224 lines kept one of its 589 download lines.
 
 ## Parking lot
-- `mulebox init` on a Laravel project in Docker (reported 2026-11-07): it ran composer on the host
-  instead of in the project's image, left out a CI compose overlay, and pinned node 22 where the
-  project uses 24. Wait for the project's feedback issue for the files it read.
-- `mulebox init` on a laptop with no node writes a file with no node pinned; on a machine with none
+- `mulebox init` on a laptop with no node, for a project that names no Node version anywhere, writes a file with no node pinned; on a machine with none
   of its own the job ends with `npm: command not found`. Found 2026-11-06.
 - Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own
   (`PLAYWRIGHT_DOWNLOAD_HOST`); worth it only if a first download keeps failing after M13.12.

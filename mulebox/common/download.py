@@ -58,10 +58,11 @@ def fetch_file(url: str, dest: Path, headers: dict[str, str] | None = None) -> N
         raise _failure(f"download of {url}", exc) from exc
 
 
-def fetch_json(url: str, headers: dict[str, str] | None = None) -> Any:
+def fetch_json(url: str, headers: dict[str, str] | None = None,
+               timeout_s: float = HTTP_TIMEOUT_S) -> Any:
     """Fetch and parse a JSON document of at most JSON_MAX_BYTES."""
     try:
-        with urllib.request.urlopen(_request(url, headers), timeout=HTTP_TIMEOUT_S) as resp:
+        with urllib.request.urlopen(_request(url, headers), timeout=timeout_s) as resp:
             data = resp.read(JSON_MAX_BYTES + 1)
     except (OSError, http.client.HTTPException) as exc:
         raise _failure(f"request to {url}", exc) from exc

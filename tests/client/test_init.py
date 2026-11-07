@@ -6,7 +6,7 @@ import subprocess
 import pytest
 
 from mulebox import cli
-from mulebox.client import init_detect
+from mulebox.client import init_ci, init_detect
 from mulebox.common.config import PROJECT_FILE, load_project_config
 
 
@@ -16,6 +16,7 @@ def project(tmp_path, monkeypatch):
     root.mkdir()
     monkeypatch.chdir(root)
     monkeypatch.setattr(init_detect, "local_version", lambda tool: None)
+    monkeypatch.setattr(init_ci, "newest_node", lambda major: None)  # no network in tests
     return root
 
 
@@ -192,3 +193,66 @@ def test_a_worktree_is_named_after_its_repository(tmp_path, monkeypatch):
     assert init_detect.project_name(main) == "example-app"
     (main / "api").mkdir()
     assert init_detect.project_name(main / "api") == "api"
+
+
+COMPOSE = """services:
+  mysql:
+    image: mysql:8.4
+  api:
+    build:
+      context: ./api
+  worker:
+    build:
+      context: ./api
+"""
+
+
+def _laravel_and_web(root):
+    (root / "docker-compose.yml").write_text(COMPOSE)
+    (root / "docker-compose.ci.yml").write_text("services:\n  mysql:\n    tmpfs: [/var/lib/mysql]\n")
+    (root / "api").mkdir()
+    (root / "api" / "composer.json").write_text(json.dumps({"require-dev": {"phpunit/phpunit": "^11"}}))
+    (root / "api" / "artisan").write_text("<?php\n")
+    (root / "web").mkdir()
+    (root / "web" / "package.json").write_text(json.dumps({"scripts": {"test": "vitest run"}}))
+    (root / "web" / "package-lock.json").write_text("{}")
+
+
+def _workflow(root, text):
+    (root / ".github" / "workflows").mkdir(parents=True)
+    (root / ".github" / "workflows" / "ci.yml").write_text(text)
+
+
+def test_php_built_by_a_service_installs_and_tests_in_it(project):
+    _laravel_and_web(project)
+    config = _init(project)
+    assert config.install == "docker compose exec -T api composer install --no-interaction --prefer-dist"
+    gate = config.jobs["check"]
+    assert "docker compose exec -T api php artisan test" in gate and "cd api" not in gate
+    assert "(cd web && npm run test)" in gate
+    assert list(config.compose) == ["docker-compose.yml", "docker-compose.ci.yml"]  # overlay by name
+
+
+def test_the_compose_files_ci_uses_win(project):
+    _laravel_and_web(project)
+    (project / "docker-compose.e2e.yml").write_text("services: {}\n")
+    _workflow(project, "env:\n  COMPOSE_FILE: docker-compose.yml:docker-compose.e2e.yml\n"
+                       "jobs: {}\n# COMPOSE_FILE: docker-compose.yml:missing.yml\n")
+    assert list(_init(project).compose) == ["docker-compose.yml", "docker-compose.e2e.yml"]
+
+
+@pytest.mark.parametrize(("local", "newest", "pinned"), [
+    ("22.9.0", "24.22.2", "24.22.2"),   # this computer has another major: CI's newest
+    ("24.1.0", "24.22.2", "24.1.0"),    # this computer has CI's major: that one
+    ("22.9.0", None, None),             # offline: nothing pinned, the note says what to pin
+])
+def test_node_follows_ci_major(project, monkeypatch, capsys, local, newest, pinned):
+    _package(project, scripts={"test": "vitest run"})
+    (project / "package-lock.json").write_text("{}")
+    _workflow(project, "steps:\n  - uses: actions/setup-node@v4\n    with:\n      node-version: '24'\n")
+    monkeypatch.setattr(init_detect, "local_version", lambda tool: local)
+    monkeypatch.setattr(init_ci, "newest_node", lambda major: newest if major == 24 else None)
+    config = _init(project)
+    assert dict(config.toolchain).get("node") == pinned
+    if pinned is None:
+        assert "pin an exact 24.x version" in capsys.readouterr().out

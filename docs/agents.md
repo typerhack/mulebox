@@ -196,7 +196,9 @@ and pull requests.
    Docker), and the environment variables CI sets.
 2. **Write `.mulebox.yml`** in the repository root. `mulebox init` writes a first version from
    the project's files, and `mulebox init --print` shows it without writing; then correct it
-   with what step 1 found. It cannot know a CI workflow's services or environment. The fields:
+   with what step 1 found. It takes the compose files and the Node version the project's CI uses
+   (`.github/workflows/`), and runs Composer and PHP tests in the compose service built from that
+   folder. It cannot know CI's environment variables. The fields:
 
 ```yaml
 project: example-app            # letters, digits, '.', '_', '-'
