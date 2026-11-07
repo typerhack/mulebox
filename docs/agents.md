@@ -577,6 +577,22 @@ jobs:
      Ask the user to install such packages on the build machine once.
    - Use per-run database names, as in section 2.
    - Do not hardcode the build machine's paths or host name in the workflow.
+   - **Containers a workflow starts itself** (`docker run`, its own `docker compose`) get Docker
+     Engine's default limit of 1024 open files, not the 65536 mulebox gives a job's `compose:`
+     services, and Docker Desktop's higher default hides this on a Mac. A database runs out and
+     crashes mid-test (MongoDB: `Too many open files`, then exit 139). Set it on the container:
+     `docker run --ulimit nofile=64000:64000 ...`, or `ulimits: nofile:` in that compose file.
+     mulebox does not change Docker's own settings on the machine.
+   - **pnpm on a slow connection:** use corepack (`corepack enable` after `actions/setup-node`,
+     with `COREPACK_ENABLE_DOWNLOAD_PROMPT=0`) rather than `pnpm/action-setup`. Corepack takes
+     the version and hash from `packageManager`, and on a self-hosted runner its cache in
+     `~/.cache/node/corepack` stays between runs, so pnpm is fetched once. `pnpm/action-setup`
+     downloads on every run, and can fetch a different version than `packageManager` pins.
+   - **A CI job can take longer than `mulebox check`** on the same tree: it shares the machine
+     with whatever holds the other slots (another CI job or an agent's), and `actions/checkout`
+     starts from a clean folder, so tool caches kept in the tree (ESLint, TypeScript build
+     info) start cold unless the workflow restores them. A `mulebox check` keeps its project
+     home between jobs.
 4. **Verify** with a pull request: the job is picked up by the mulebox runner (its log
    starts with `mulebox: waiting for a build slot` or goes straight on), passes, and a
    deliberately failing commit fails.
