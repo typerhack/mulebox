@@ -85,7 +85,7 @@ def log_chunk(req: Request) -> Message:
     if not isinstance(data, str):
         raise BadRequest("field 'data' must be a string")
     with req.store.write() as conn:
-        job = _current_job(conn, req)
+        job = _current_job(conn, req, reservations=True)  # a runner's steps (runners/live_log.py)
         if job["state"] not in st.ACTIVE_STATES:
             raise Conflict(f"job {job['job_id']} is {job['state']}; log chunks are not accepted")
         size = req.staging.append_log(job["job_id"], offset, data.encode("utf-8"))

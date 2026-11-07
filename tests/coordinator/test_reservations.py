@@ -216,3 +216,14 @@ def test_a_ci_slot_usually_takes_what_past_slots_of_its_repository_took(store, s
     job = store.get_job(waiting)
     with store.read() as conn:
         assert usual.job_seconds(conn, job) == 200
+
+
+def test_a_granted_slot_takes_its_runner_log_until_it_is_released(store, staging):
+    res = reserve(store, staging)
+    acquire(store, staging, res)
+    reply = call(store, staging, "log_chunk", job_id=res, offset=0, data="mulebox: step: Tests\n")
+    assert reply.type is MessageType.STATUS_OK, reply.body
+    assert staging.log_size(res) == len("mulebox: step: Tests\n")
+    call(store, staging, "release", now=T0 + 5, job_id=res, outcome="passed")
+    late = call(store, staging, "log_chunk", job_id=res, offset=21, data="late\n")
+    assert late.type is MessageType.ERROR

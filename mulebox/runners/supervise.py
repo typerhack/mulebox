@@ -4,7 +4,8 @@ A crashed runner never calls its job-completed hook, so the worker watches its o
 reservations: every 10 s it asks the coordinator for them (`runner_jobs`). While the
 runner's job process (`Runner.Worker`, found through /proc) is alive, a granted
 reservation gets a worker heartbeat, which renews its lease. Once the process has been
-gone for 60 s the reservation is released as `interrupted`.
+gone for 60 s the reservation is released as `interrupted`. A granted reservation's steps and
+output also go into its log from the runner's own files, every second (live_log.py).
 
 `runner_alive` reads `/proc/<pid>/cmdline` and `/proc/<pid>/cwd`; the proc root and the
 whole check are injectable, so this runs in tests on any system.
@@ -21,11 +22,15 @@ from mulebox.common.config_reader import NAME_RE
 from mulebox.common.log import get_logger
 from mulebox.common.mounts import is_within
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
+from mulebox.common.redact import StreamRedactor
+from mulebox.runners.live_log import RunnerLog
 from mulebox.worker.link import request
 
 LOG = get_logger("runners.supervise")
 SUPERVISE_S = 10.0
 GONE_S = 60.0
+FOLLOW_S = 1.0
+CLOCK_SLACK_S = 120.0  # the coordinator's clock may differ from this machine's
 PROC_ROOT = Path("/proc")
 WORKER_NAMES = frozenset({"Runner.Worker", "Runner.Worker.dll"})
 
@@ -67,7 +72,8 @@ class Supervisor:
 
     def __init__(self, worker: str, runners_root: Path,
                  alive: Callable[[Path], bool] = runner_alive,
-                 interval_s: float = SUPERVISE_S, gone_s: float = GONE_S) -> None:
+                 interval_s: float = SUPERVISE_S, gone_s: float = GONE_S,
+                 redactor: Callable[[], StreamRedactor] = StreamRedactor) -> None:
         self.worker = worker
         self.runners_root = Path(runners_root)
         self.alive = alive
@@ -75,9 +81,13 @@ class Supervisor:
         self.gone_s = gone_s
         self.next_at = 0.0
         self.missing: dict[str, float] = {}  # job id -> time its runner was first missed
+        self.redactor = redactor
+        self.logs: dict[str, tuple[RunnerLog, float]] = {}  # job id -> its log, started after
+        self.next_follow = 0.0
 
     def tick(self, now: float, send: Callable[[Message], Message]) -> None:
         """One supervision round when due. Link errors propagate to the caller."""
+        self._follow(now, send)
         if now < self.next_at:
             return
         self.next_at = now + self.interval_s
@@ -89,8 +99,28 @@ class Supervisor:
         for job_id in list(self.missing):
             if job_id not in current:
                 del self.missing[job_id]
+        self._track_logs(jobs, current)
         for job in jobs:
             self._check(job, now, send)
+
+    def _track_logs(self, jobs: list[dict[str, Any]], current: set[Any]) -> None:
+        for job_id in [job_id for job_id in self.logs if job_id not in current]:
+            self.logs.pop(job_id)[0].close()
+        for job in jobs:
+            job_id, runner, started = job.get("job_id"), job.get("runner"), job.get("started_at")
+            if (job_id not in self.logs and job.get("state") != JobState.QUEUED
+                    and isinstance(runner, str) and NAME_RE.fullmatch(runner)
+                    and isinstance(started, (int, float))):
+                follower = RunnerLog(job_id, self.runners_root / runner, request, self.redactor())
+                self.logs[job_id] = (follower, started - CLOCK_SLACK_S)
+
+    def _follow(self, now: float, send: Callable[[Message], Message]) -> None:
+        if now < self.next_follow or not self.logs:
+            return
+        self.next_follow = now + FOLLOW_S
+        for follower, after in self.logs.values():
+            follower.poll(after)
+            follower.send(send)
 
     def _check(self, job: dict[str, Any], now: float,
                send: Callable[[Message], Message]) -> None:

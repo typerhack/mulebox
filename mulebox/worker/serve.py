@@ -7,6 +7,7 @@ import threading
 from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
+from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.runners.supervise import Supervisor
 from mulebox.worker.agent import Agent
 from mulebox.worker.docker import Docker
@@ -24,7 +25,8 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
     paths = paths or NodePaths.from_config(node.roots)
     stop = stop or threading.Event()
     agent = Agent(node, link, executor, paths, docker=docker,
-                  supervisor=Supervisor(node.name, paths.runners))
+                  supervisor=Supervisor(node.name, paths.runners, redactor=lambda: StreamRedactor(
+                      secret_values(node.job_env))))
     agent.recover()
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)
     while not stop.is_set():

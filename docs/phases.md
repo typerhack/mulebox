@@ -381,6 +381,9 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
       time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its
       output and shows no empty log. Built (0.68.0). Open: seen in Edge on the real dashboard.
+- [~] M14.7 A CI job's page shows its steps live and each step's output once the runner writes it, read from
+      the runner's own files on the machine (the user's choice on 2026-11-07, knowing the runner writes a step's
+      output in 4 KB blocks or at its end). Built (0.69.0). Open: a real CI run followed on the dashboard.
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 

@@ -110,7 +110,6 @@ export function jobView(box, jobId) {
     const backSlot = el("div", {});
     const latestOut = latestButton(pre);
     const ci = job.kind === "runner";
-    pre.hidden = ci;  // still followed, to see the slot end: GitHub has the output
     const parts = [
       control ? el("div", { class: "job-bar" }, back(), control.node) : back(),
       result,
@@ -118,15 +117,17 @@ export function jobView(box, jobId) {
       backSlot,
       ci
         ? el("p", { class: "muted note-text", text: `GitHub Actions runs this job of ${repository(job)} ` +
-                    "on this machine and holds one of its build slots while it does. Its steps, live " +
-                    "output and result are on GitHub, not here." })
+                    "on this machine and holds one of its build slots while it does. The log below has " +
+                    "each step as it starts, and a step's output once the runner writes it, often " +
+                    "only when the step ends. GitHub has it second by second, and the result." })
         : null,
       run ? el("p", {}, el("a", { href: run, target: "_blank", rel: "noopener noreferrer",
                                   text: ci ? "Follow it live on GitHub" : "Open the GitHub run" })) : null,
       aloneNote(job),
       stages,
       el("details", { class: "job-facts" }, el("summary", { text: "Job details" }), info),
-      ci ? null : el("div", { class: "log-head" }, el("span", { text: "log" }), note, quiet, latestOut, link),
+      el("div", { class: "log-head" }, el("span", { text: ci ? "steps and output" : "log" }), note,
+         ci ? null : quiet, latestOut, link),
       pre,
     ].filter(Boolean);
     fill(box, ci ? `CI ${repository(job)} / ${job.job ?? "-"}` : `Job ${jobName(job)}`, stateSlot,

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.69.0 - 2026-11-07 - minor
+- A CI job's page shows its steps live and each step's output once the runner writes it, read from the runner's own files by the worker and redacted like any log.
+
 ## 0.68.2 - 2026-11-07 - patch
 - Dashboard: the GitHub and laptop icons are 15 px at full strength, sized on the icon itself; at 12 px and 80% they were hard to see.
 

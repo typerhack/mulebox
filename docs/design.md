@@ -381,6 +381,9 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   is granted; the job-completed hook releases it. Hooks get their own timeout and the
   worker supervises runner jobs, because a completion hook is skipped on crashes.
 - One admission queue shared with agent jobs; no custom GitHub scheduler.
+- A reservation's log is the runner job's steps as they start and each step's output once the
+  runner writes it to its own files (in 4 KB blocks or at the step's end), read, never changed, by
+  the worker. GitHub keeps the whole log and the result.
 
 ## Safety
 

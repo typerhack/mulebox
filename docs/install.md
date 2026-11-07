@@ -249,7 +249,8 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 - Redaction is a safety net built on patterns and on `[job_env]` values with a secret-looking
   name. Keep real secrets out of jobs: a value printed in another form is not found.
 - With `mode = "lan"` and `lan_tls` off, the password and the session travel in the clear. With
-  `lan_password = false`, every device in `lan_range` can read all queues and job logs.
+  `lan_password = false`, every device in `lan_range` can read all queues and job logs, CI output
+  from the machine's GitHub runners included.
 
 ## Upgrade
 
