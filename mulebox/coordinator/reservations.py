@@ -120,6 +120,17 @@ def release(conn: sqlite3.Connection, job: dict[str, Any], outcome: Outcome,
     return st.finish(conn, job, outcome, now, duration_s=duration)
 
 
+LATE_LOG_S = 60.0  # a released slot still takes its runner log's last lines this long
+
+
+def takes_late_log(job: dict[str, Any], now: float) -> bool:
+    """True for a reservation released less than LATE_LOG_S ago: the runner's last step is
+    read after its completed hook released the slot (runners/live_log.py)."""
+    finished = job.get("finished_at")
+    return (job.get("kind") == RUNNER_KIND and job["state"] == JobState.FINISHED
+            and isinstance(finished, (int, float)) and now - finished < LATE_LOG_S)
+
+
 def unfinished(conn: sqlite3.Connection, worker: str) -> list[dict[str, Any]]:
     """Reservations pinned to `worker` that are not finished, oldest first."""
     return st.select_jobs(conn, "kind = ? AND pinned_worker = ? AND state != ?",

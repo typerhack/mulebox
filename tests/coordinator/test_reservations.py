@@ -218,12 +218,17 @@ def test_a_ci_slot_usually_takes_what_past_slots_of_its_repository_took(store, s
         assert usual.job_seconds(conn, job) == 200
 
 
-def test_a_granted_slot_takes_its_runner_log_until_it_is_released(store, staging):
+def test_a_granted_slot_takes_its_runner_log_until_a_minute_after_its_release(store, staging):
+    from mulebox.coordinator.reservations import LATE_LOG_S
     res = reserve(store, staging)
     acquire(store, staging, res)
     reply = call(store, staging, "log_chunk", job_id=res, offset=0, data="mulebox: step: Tests\n")
     assert reply.type is MessageType.STATUS_OK, reply.body
     assert staging.log_size(res) == len("mulebox: step: Tests\n")
     call(store, staging, "release", now=T0 + 5, job_id=res, outcome="passed")
-    late = call(store, staging, "log_chunk", job_id=res, offset=21, data="late\n")
+    last = call(store, staging, "log_chunk", now=T0 + 15, job_id=res, offset=21, data="last\n")
+    assert last.type is MessageType.STATUS_OK, last.body  # the last step, read after the hook
+    late = call(store, staging, "log_chunk", now=T0 + 5 + LATE_LOG_S, job_id=res, offset=26,
+                data="late\n")
     assert late.type is MessageType.ERROR
+    assert store.get_job(res)["state"] == JobState.FINISHED

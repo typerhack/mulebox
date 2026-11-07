@@ -99,13 +99,19 @@ class Supervisor:
         for job_id in list(self.missing):
             if job_id not in current:
                 del self.missing[job_id]
-        self._track_logs(jobs, current)
+        self._track_logs(jobs, current, send)
         for job in jobs:
             self._check(job, now, send)
 
-    def _track_logs(self, jobs: list[dict[str, Any]], current: set[Any]) -> None:
+    def _track_logs(self, jobs: list[dict[str, Any]], current: set[Any],
+                    send: Callable[[Message], Message]) -> None:
         for job_id in [job_id for job_id in self.logs if job_id not in current]:
-            self.logs.pop(job_id)[0].close()
+            follower, after = self.logs.pop(job_id)
+            try:  # its last step: the completed hook released the slot as the runner ended
+                follower.poll(after)
+                follower.send(send)
+            finally:  # a link error propagates, like the rest of a round
+                follower.close()
         for job in jobs:
             job_id, runner, started = job.get("job_id"), job.get("runner"), job.get("started_at")
             if (job_id not in self.logs and job.get("state") != JobState.QUEUED

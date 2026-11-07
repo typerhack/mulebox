@@ -9,7 +9,7 @@ renews their worker lease); they end through `release` (runner_api.py). A valid 
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import leases, queue, recovery, steps, workers
+from mulebox.coordinator import leases, queue, recovery, reservations, steps, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -86,11 +86,14 @@ def log_chunk(req: Request) -> Message:
         raise BadRequest("field 'data' must be a string")
     with req.store.write() as conn:
         job = _current_job(conn, req, reservations=True)  # a runner's steps (runners/live_log.py)
-        if job["state"] not in st.ACTIVE_STATES:
+        late = reservations.takes_late_log(job, req.now)
+        if job["state"] not in st.ACTIVE_STATES and not late:
             raise Conflict(f"job {job['job_id']} is {job['state']}; log chunks are not accepted")
         size = req.staging.append_log(job["job_id"], offset, data.encode("utf-8"))
         st.update_job(conn, job["job_id"], log_size=size)
-        job = leases.renew_worker_in(conn, st.require_job(conn, job["job_id"]), req.now)
+        job = st.require_job(conn, job["job_id"])
+        if not late:
+            job = leases.renew_worker_in(conn, job, req.now)
     return _status(req, job, log_size=size)
 
 

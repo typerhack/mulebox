@@ -9,11 +9,13 @@ output to GitHub. The runner also writes two things on this machine, in `<runner
   record '<id>'` while a step prints, which ties that step's record id to its name.
 - `pages/<plan id>_<record id>_<n>.log`, a step's output. It is written in blocks of about
   4 KB or when the step ends, then deleted once GitHub has it, seconds later.
+  The job's own record has a page too, repeating every step; it is skipped.
 
 So the log here has every step as it starts, live, and a step's output once the runner writes
 it: a busy step in pieces, a quiet one when it ends. A page is kept open from when it appears,
 because on Linux an open file can still be read after it is deleted. A step shorter than one
-poll can be missed; GitHub has everything. Only reading happens here, nothing in the runner's
+poll can be missed; GitHub has everything. The last step is read once more after the slot is
+released, as its completed hook ends the reservation (reservations.LATE_LOG_S). Only reading happens here, nothing in the runner's
 folder is changed. Output goes through LogTailer, so it is redacted like any job's log.
 """
 
@@ -32,6 +34,7 @@ MAX_OPEN = 64  # pages held open at once; a job has one per step
 _STEP = re.compile(r"Processing step: DisplayName='(.*)'\s*$")
 _FAILED = re.compile(r"Step result: (Failed|Cancelled)\b")
 _RECORD = re.compile(r"web console lines for record '([0-9a-f-]{36})'")
+_JOB = re.compile(r"\bJob ID ([0-9a-f-]{36})\b")  # its own page repeats every step: skipped
 _PLAN = re.compile(r'"planId":\s*"([0-9a-f-]{36})"')
 _STAMP = re.compile(r"^﻿?\d{4}-\d\d-\d\dT[\d:.]+Z ?")
 _GROUP, _END_GROUP = "##[group]", "##[endgroup]"
@@ -61,6 +64,7 @@ class RunnerLog:
         self._worker_pos = 0
         self._worker_partial = ""
         self._plan: str | None = None
+        self._job: str | None = None
         self._step: str | None = None
         self._records: dict[str, str] = {}  # record id -> step name
         self._pages: dict[str, _Page] = {}
@@ -113,6 +117,8 @@ class RunnerLog:
     def _diary_line(self, line: str) -> None:
         if self._plan is None and (plan := _PLAN.search(line)):
             self._plan = plan[1]
+        elif self._job is None and (job := _JOB.search(line)):
+            self._job = job[1]
         elif step := _STEP.search(line):
             self._step = step[1]
             self.tailer.note(f"mulebox: step: {self._step}\n")
@@ -127,12 +133,15 @@ class RunnerLog:
         except OSError:
             names = []
         for name in names:
+            record = name.split("_")[1] if name.count("_") >= 2 else ""
+            if record == self._job:
+                continue
             if name not in self._pages and name not in self._done and len(self._pages) < MAX_OPEN:
                 try:
                     fh = open(self.diag / "pages" / name, "rb")
                 except OSError:
                     continue
-                self._pages[name] = _Page(fh, name.split("_")[1] if name.count("_") >= 2 else "")
+                self._pages[name] = _Page(fh, record)
         for name, page in list(self._pages.items()):
             if self._read_page(page):
                 page.fh.close()

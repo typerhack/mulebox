@@ -383,7 +383,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - One admission queue shared with agent jobs; no custom GitHub scheduler.
 - A reservation's log is the runner job's steps as they start and each step's output once the
   runner writes it to its own files (in 4 KB blocks or at the step's end), read, never changed, by
-  the worker. GitHub keeps the whole log and the result.
+  the worker. The last step's output can come up to a minute after the slot is released.
+  GitHub keeps the whole log and the result.
 
 ## Safety
 

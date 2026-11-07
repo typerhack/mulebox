@@ -149,3 +149,21 @@ def test_agent_step_runs_supervision(node, paths):
     agent.step()  # the link error is absorbed; the agent backs off
     assert link.sent == [MessageType.RUNNER_JOBS]
     assert supervisor.next_at == T0 + SUPERVISE_S
+
+
+def test_a_released_slot_gets_its_runner_log_read_to_the_end(gh_env, link, paths, store):
+    job_id = grant(gh_env, link, paths)
+    diag = paths.runners / RUNNER / "_diag"
+    diag.mkdir(parents=True)
+    diary = diag / "Worker_20261107-100431-utc.log"
+    diary.write_text("[x INFO StepsRunner] Processing step: DisplayName='Tests'\n")
+    supervisor = Supervisor("build-1", paths.runners, alive=lambda folder: True)
+    supervisor.tick(T0, link.call)  # starts following the slot
+    with open(diary, "a") as fh:
+        fh.write("[x INFO StepsRunner] Processing step: DisplayName='Last step'\n")
+    link.call(request(MessageType.RELEASE, job_id=job_id, outcome="passed"))
+    supervisor.next_follow = T0 + 10 * SUPERVISE_S  # no regular read before the round
+    supervisor.tick(T0 + SUPERVISE_S, link.call)
+    assert supervisor.logs == {}
+    assert link.staging.log_path(job_id).read_text() == (
+        "mulebox: step: Tests\nmulebox: step: Last step\n")
