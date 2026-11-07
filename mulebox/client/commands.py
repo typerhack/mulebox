@@ -62,6 +62,8 @@ def register(sub: argparse._SubParsersAction) -> None:
     run = sub.add_parser("run", help="run an ad-hoc command on a build machine")
     run.add_argument("--detach", action="store_true",
                      help="print the job id once it is queued and leave it running")
+    run.add_argument("--in", dest="service", metavar="SERVICE",
+                     help="run it inside this compose service")
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -169,6 +171,10 @@ def _run(args: argparse.Namespace) -> int:
     if not argv:
         raise UsageError("nothing to run; use `mulebox run -- <command> [args...]`")
     project, root = project_here()
+    if args.service:
+        if not project.compose:
+            raise UsageError("--in needs `compose:` in .mulebox.yml")
+        argv = ["docker", "compose", "exec", "-T", args.service, *argv]
     return run_job(project, argv, root, connect(), detach=args.detach)
 
 

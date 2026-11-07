@@ -31,7 +31,8 @@ from mulebox.common.status import STAGES
 # 11: a job installs its own pinned toolchain
 # 12: `project.install`, `mulebox warm`, an `install` stage, and exit 5 when `install` fails
 # 13: `take_it_back` is gone: it was `its_result` under a second name
-SCHEMA = 13
+# 14: `mulebox run --in <service>`
+SCHEMA = 14
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -40,6 +41,7 @@ COMMANDS = {
     "full_gate": "mulebox check",
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
+    "one_off_in_a_service": "mulebox run --in <service> -- <cmd> <args...>",
     "leave_running": "mulebox check --detach",
     "prepare_ahead": "mulebox warm [job]",
     "follow_it": "mulebox events --job <job-id> --json",

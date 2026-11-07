@@ -134,6 +134,21 @@ def test_run_sends_argv(fake, in_repo, capsys):
     assert fake.requests()[0]["body"]["argv"] == ["pytest", "-k", "a b"]
 
 
+def test_run_in_a_service_runs_it_there(fake, in_repo, capsys):
+    (in_repo / ".mulebox.yml").write_text(
+        "project: example-app\ncompose: [compose.yml]\njobs:\n  check: 'true'\n")
+    (in_repo / "compose.yml").write_text("services:\n  api:\n    image: example:1\n")
+    fake.scenario(log=["t\n"])
+    assert cli.main(["run", "--in", "api", "--", "pytest", "-k", "a b"]) == 0
+    assert fake.requests()[0]["body"]["argv"] == [
+        "docker", "compose", "exec", "-T", "api", "pytest", "-k", "a b"]
+
+
+def test_run_in_a_service_needs_compose(fake, in_repo, capsys):
+    assert cli.main(["run", "--in", "api", "--", "pytest"]) == 2
+    assert "--in needs" in capsys.readouterr().err
+
+
 def test_no_project_config_exits_2(fake, tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
     assert cli.main(["check"]) == 2

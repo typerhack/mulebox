@@ -18,7 +18,7 @@ AGENTS_DOC = Path(__file__).resolve().parents[2] / "docs" / "agents.md"
 CONFIG = ProjectConfig(project="example-app", jobs={"check": "pnpm check", "test": "pnpm test"},
                        toolchain={"node": "22.22.3"}, setup="pnpm install", timeout_min=30,
                        exclude=("reports/",), env={"API_KEY": "must-not-appear"})
-FILLED = {"<job-id>": "x", "<text>": "x"}
+FILLED = {"<service>": "api", "<job-id>": "x", "<text>": "x"}
 YML = "project: example-app\ntimeout_min: 30\njobs:\n  check: pnpm check\n  test: pnpm test\n"
 
 

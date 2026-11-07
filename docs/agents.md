@@ -56,6 +56,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | see one job's state once | `mulebox status <job-id>` (add `--json`) |
 | get a detached job's result | `mulebox wait <job-id>` |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
+| the same inside a compose service | `mulebox run --in <service> -- <cmd> <args...>` |
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
@@ -344,7 +345,8 @@ the project builds gets a tag of this job only, whatever `image:` says, so reach
 the service name (`docker compose exec`), not by a tag in `docker run`.
 
 - **`docker compose exec -T <service> ...`** works as it is, from any folder. Use `-T`: a job
-  has no terminal. Do not add `-f` or `-p`, and do not run `up` or `down`.
+  has no terminal. Do not add `-f` or `-p`, and do not run `up` or `down`. For one test,
+  `mulebox run --in api -- php artisan test --filter Login` is the same thing, shorter.
 - **Ports always move.** Each published port is bound to `127.0.0.1` on a port chosen for the
   job, whatever the compose file says, and the log names it. Use the variable
   `MULEBOX_PORT_<SERVICE>_<PORT>` in `env:` or in commands, never a number from the compose

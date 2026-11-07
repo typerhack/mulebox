@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.66.10 - 2026-11-07 - patch
+- `mulebox run --in <service> -- <cmd>` runs a one-off command inside a compose service (contract schema 14).
+
 ## 0.66.9 - 2026-11-07 - patch
 - `mulebox queue` says why a queued job waits, as `status` does: a branch taken, or the machines busy.
 - The contract drops `take_it_back`, a second name for `its_result` (contract schema 13); the dashboard's question names `mulebox ok`.
