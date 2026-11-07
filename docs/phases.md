@@ -494,33 +494,37 @@ browser download blocked for the machine's network location.
       failed log of the trial, replayed, showed the type error and both failed parts.
 - [x] M19.13 A container's own user can read what a project mounts. Done 2026-11-06 (0.66.3): a real job with
       `mysql:8.4` mounting an init folder started, ran its seed file and read the row back, in 17 s.
-- [~] M19.14 `check` does not give back a failure from an older mulebox. Built (0.66.4), schema 12: tests
-      with the real coordinator code. Open: seen across a real upgrade.
+- [x] M19.14 `check` does not give back a failure from an older mulebox. Done 2026-11-07 (0.67.1): after a real
+      upgrade from 0.66.7, a failure on the same files ran again rather than being given back.
 - [~] M19.2 `mulebox init` in a git worktree names the project after the repository. Built (0.66.5), with a
       real git worktree in a test. Open: an agent using it.
 - [x] M19.3 A repeat answered from an earlier result does not print "submitted" and a dashboard link. Done
       2026-11-07 (0.66.8): real repeats of a passed and a failed job on the machine.
 - [x] M19.4 `doctor` does not say a machine offers a toolchain it has yet to install. Done 2026-11-07
       (0.66.8): against the real machine with a node version it lacks.
-- [~] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not
-      "switch versions". `status` warns when an install's output reads as a lost connection. Built (0.66.13),
-      with tests, and real requests told a 404 from an unknown host. Open: a real outage during an install.
-- [~] M19.6 A way to keep a run hurt by an outage out of `usual`, and `usual` less skewed by one bad run:
+- [x] M19.5 Installing a pinned toolchain retries a lost network, and its error says network, not
+      "switch versions". `status` warns when an install's output reads as a lost connection. Done 2026-11-07 (0.67.1):
+      on the machine an unknown host took 3 tries and said network, a 404 took one and exit 5, and `status` warned in a
+      real job. Not seen: a real outage, which cannot be staged safely.
+- [x] M19.6 A way to keep a run hurt by an outage out of `usual`, and `usual` less skewed by one bad run:
       a stage that printed a lost connection while fetching marks its run, which then does not count; one
-      bad run left alone was already held off by the median. Built (0.67.0). Open: seen on a real outage.
+      bad run left alone was already held off by the median. Done 2026-11-07 (0.67.1): a real job that printed
+      a lost connection in `setup` was marked; tests show `usual` skips it.
 - [x] M19.7 A short way to run one test in a compose project, instead of `mulebox run --` and a long
       `docker compose exec`: `mulebox run --in <service> -- <cmd>`. Done 2026-11-07 (0.66.10): a real compose job.
-- [~] M19.8 `mulebox queue` says why a job waits, as `status` does. Plainer word for `wait`'s "take it back":
-      the contract's second name for `its_result` went, and the dashboard names `mulebox ok`. Built (0.66.9). Open: seen in a real queue.
-- [ ] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
-      two branches, `--detach`, and a second gate's time with the images built.
-- [~] M19.11 No alarming `pull access denied` for an image the job then builds itself. mulebox's own tag
-      made Compose try a pull; a built service now has `pull_policy: build`. Built (0.66.11). Open: seen on the machine.
+- [x] M19.8 `mulebox queue` says why a job waits, as `status` does. Plainer word for `wait`'s "take it back":
+      the contract's second name for `its_result` went, and the dashboard names `mulebox ok`. Done 2026-11-07 (0.67.1): a real queue named the job holding the branch.
+- [~] M19.10 A rerun of the second trial, past the step where it stopped: small upload, install skipped,
+      two branches, `--detach`, and a second gate's time with the images built. All seen in its job history on
+      0.66.3: images 16 s against 554 s, install skipped on repeats, two branches at once, 164 s a gate. Open: one
+      full `check` with browsers, from the project's own session.
+- [x] M19.11 No alarming `pull access denied` for an image the job then builds itself. mulebox's own tag
+      made Compose try a pull; a built service now has `pull_policy: build`. Done 2026-11-07 (0.67.1): a real job built its image with no such line.
 - [x] M19.12 `mulebox feedback draft` keeps a whole title (a cut one was seen again). The cut came at 100
       characters; only GitHub's own limit cuts now. Done 2026-11-07 (0.66.8), through the real CLI.
-- [~] M19.9 Collapse `Downloading ...: x MB/y MB` in the log; show pnpm's own install apart in `prepare`: a
-      stage `toolchain`, as installing pinned tools was hidden in `prepare` (167 s on one real job). Built
-      (0.66.12). Open: seen on the machine.
+- [x] M19.9 Collapse `Downloading ...: x MB/y MB` in the log; show pnpm's own install apart in `prepare`: a
+      stage `toolchain`, as installing pinned tools was hidden in `prepare` (167 s on one real job). Done
+      2026-11-07 (0.67.1): a real job showed `toolchain` 40 s, and the real log of 2224 lines kept one of its 589 download lines.
 
 ## Parking lot
 - `mulebox init` on a laptop with no node writes a file with no node pinned; on a machine with none

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.67.1 - 2026-11-07 - patch
+- M19 checked on the real machine; `docs/agents.md` says how to copy a browser a machine cannot download.
+
 ## 0.67.0 - 2026-11-07 - minor
 - A run that lost a connection while fetching images or packages no longer counts in `usual` (store schema 13).
 

@@ -525,7 +525,10 @@ jobs:
   e2e: pnpm exec playwright install chromium && pnpm exec playwright test
 ```
 
-`playwright install chromium` does nothing once that version is there, and browsers of other
+`playwright install chromium` does nothing once that version is there. A machine that cannot
+reach the browser download (a VPN exit can be refused) needs that version copied into the shared
+folder `~/.mulebox/cache/playwright/`, with its `INSTALLATION_COMPLETE` file, from a machine that
+can. Browsers of other
 versions stay, so keep it in the job: it is what keeps the version in step with the project's lockfile. Do not use
 `install --with-deps`: it needs root, which a job does not have. That goes for a project's own
 install script too: if `pnpm test:e2e:install` or a CI step says `--with-deps`, call
