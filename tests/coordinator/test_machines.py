@@ -27,7 +27,7 @@ def test_a_claim_records_toolchains_and_version(store, staging):
     assert body["version"] == get_version()
     assert body["workers"] == [{"worker": "build-1", "online": True, "capabilities": ["docker"],
                                 "toolchains": {"node": ["22.22.3"]}, "version": "1.2.3",
-                                "slots": 1, "disk_free": None}]
+                                "slots": 1, "disk_free": None, "draining": False}]
 
 
 def test_an_older_worker_reports_nothing_and_keeps_what_it_said(store, staging):

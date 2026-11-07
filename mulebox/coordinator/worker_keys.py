@@ -73,18 +73,36 @@ def authorize(name: str, public_key: str, home: Path) -> Path:
     folder = home / ".ssh"
     folder.mkdir(mode=0o700, exist_ok=True)
     path = folder / "authorized_keys"
+    kept = [old for old in _lines(path) if not old.endswith(f" {MARKER}{name}")]
+    _write(path, [*kept, line])
+    return path
+
+
+def _lines(path: Path) -> list[str]:
     try:
-        kept = [old for old in path.read_text(encoding="utf-8").splitlines()
-                if not old.endswith(f" {MARKER}{name}")]
+        return path.read_text(encoding="utf-8").splitlines()
     except FileNotFoundError:
-        kept = []
-    fd, temp = tempfile.mkstemp(dir=folder, prefix=".authorized_keys.")
+        return []
+
+
+def _write(path: Path, lines: list[str]) -> None:
+    fd, temp = tempfile.mkstemp(dir=path.parent, prefix=".authorized_keys.")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as out:
-            out.write("\n".join([*kept, line]) + "\n")
+            out.write("".join(f"{line}\n" for line in lines))
         os.chmod(temp, 0o600)
         os.replace(temp, path)
     except BaseException:
         Path(temp).unlink(missing_ok=True)
         raise
-    return path
+
+
+def deauthorize(name: str, home: Path) -> bool:
+    """Take the worker's key off; False if it had none here."""
+    path = home / ".ssh" / "authorized_keys"
+    lines = _lines(path)
+    kept = [line for line in lines if not line.endswith(f" {MARKER}{name}")]
+    if len(kept) == len(lines):
+        return False
+    _write(path, kept)
+    return True

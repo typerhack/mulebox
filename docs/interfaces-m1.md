@@ -92,7 +92,8 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
 | watch | job_id, offset, + `lease: bool`, `log: bool` (default true) | stream: log_chunk (none with `log: false`) / status_ok lines, final `result` |
 | claim | worker, capabilities, free_slots, + `toolchains` (name to versions), `version` | claim_ok or claim_none |
-| machines | - | machines_ok (`version` of the coordinator; `workers`: worker, online, capabilities, toolchains or null, version or null, slots) |
+| machines | - | machines_ok (`version` of the coordinator; `workers`: worker, online, capabilities, toolchains or null, version or null, slots, disk_free, draining) |
+| machine | worker, action (`drain`, `resume`, `remove`) | machine_ok (worker, action, `running`: its unfinished jobs and CI jobs waiting for it); `remove` is a conflict while the worker is online or has jobs |
 | job_update | job_id, state, + attempt_id | status_ok |
 | log_chunk (worker) | job_id, offset, data, + attempt_id | status_ok |
 | result (worker) | job_id, outcome, exit_code, duration_s, + attempt_id | status_ok |

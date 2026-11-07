@@ -11,11 +11,14 @@ import { badge, clock, el, fill, jobLink, meter, soonest, questionMark } from ".
 const READINGS = [["cpu", "cpu_pct"], ["mem", "mem_pct"]];
 
 function slots(row) {
-  const used = row.state === "offline" ? 0 : Math.max(0, row.slots - row.free_slots);
+  const used = row.state === "offline" ? 0
+    : row.state === "draining" ? row.jobs.length : Math.max(0, row.slots - row.free_slots);
   const squares = Array.from({ length: row.slots }, (_, i) =>
     el("span", { class: "slot", "data-used": i < used ? "1" : null }));
   const text = row.state === "offline"
     ? `last seen ${clock(row.last_seen)}`
+    : row.state === "draining"
+    ? `takes no new jobs, ${row.jobs.length} running`
     : `${row.free_slots} of ${row.slots} ${row.slots === 1 ? "slot" : "slots"} free`;
   return el("p", { class: "slots" }, el("span", { class: "boxes", "aria-hidden": "true" }, ...squares),
             el("span", { text }));

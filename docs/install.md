@@ -259,8 +259,38 @@ coordinator = "ssh://alice@192.168.1.50:22"
 coordinator_key = "/home/alice/.config/mulebox/coordinator_key"
 ```
 
-Not yet: draining and removing a worker (M5.2), its CPU and memory on the dashboard (M5.3), and
-`mulebox project clean` or `reset` on its folders.
+### Draining, removing and moving machines
+
+```sh
+mulebox machine list               # every machine: online, offline or draining, slots, version
+mulebox machine drain build-2      # finish its jobs, take no new ones; --wait until they end
+mulebox machine resume build-2     # take jobs again
+mulebox machine remove build-2     # forget a stopped machine and take its key off
+```
+
+A drained machine still runs its GitHub runners, which take CI jobs from GitHub on their own:
+stop them too (`mulebox runner remove` there) before taking the machine away. To take one away:
+
+1. `mulebox machine drain build-2 --wait`.
+2. On `build-2`: `systemctl --user disable --now mulebox-worker`.
+3. `mulebox machine remove build-2`. It is refused while the machine is online or has jobs.
+
+A removed machine whose worker starts again joins again with its next claim, unless its key is
+gone, as it is after `remove` for a machine set up with `--worker-of`.
+
+Moving the coordinator to another machine is done by hand, as it holds the queue's history:
+
+1. On the old one, wait for no running job (`mulebox machine drain <name> --wait` for each), then
+   `systemctl --user stop mulebox-coordinator mulebox-dashboard mulebox-worker`.
+2. Copy `~/.mulebox/staging` (the store, logs and snapshots) to the same path on the new one, with
+   the services stopped there, after `mulebox setup <new>` installed it.
+3. Start the new one's services, point the laptop's `client.toml` `coordinator` at it, and run
+   `mulebox setup <worker> --worker-of <new>` for each other machine, which writes their key on
+   the new coordinator. A kept worker `node.toml` still names the old one: edit `coordinator`
+   there, or remove that file before setup writes a new one.
+
+Not yet: a worker's CPU and memory on the dashboard (M5.3), and `mulebox project clean` or `reset`
+on another worker's folders.
 
 ## Security model
 

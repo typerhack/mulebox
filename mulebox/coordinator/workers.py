@@ -75,10 +75,25 @@ def report(worker: dict[str, Any], now: float) -> dict[str, Any]:
     return {"worker": worker["worker"], "online": is_online(worker, now),
             "capabilities": worker["capabilities"], "toolchains": worker["toolchains"],
             "version": worker.get("version"), "slots": worker["slots"],
-            "disk_free": worker.get("disk_free")}
+            "disk_free": worker.get("disk_free"), "draining": bool(worker.get("draining"))}
 
 
 def low_disks(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
     """Online workers short of space, for whoever is about to give them work."""
     return [{"worker": row["worker"], "free": row.get("disk_free")} for row in listing(conn)
             if is_online(row, now) and disk.is_low(row.get("disk_free"))]
+
+
+def is_draining(conn: sqlite3.Connection, worker: str) -> bool:
+    row = conn.execute("SELECT draining FROM workers WHERE worker = ?", (worker,)).fetchone()
+    return bool(row and row[0])
+
+
+def set_draining(conn: sqlite3.Connection, worker: str, on: bool) -> bool:
+    """Drain or resume `worker`; False if the store does not know it."""
+    done = conn.execute("UPDATE workers SET draining = ? WHERE worker = ?", (int(on), worker))
+    return done.rowcount == 1
+
+
+def forget(conn: sqlite3.Connection, worker: str) -> None:
+    conn.execute("DELETE FROM workers WHERE worker = ?", (worker,))

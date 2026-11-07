@@ -56,6 +56,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser("authorize-worker",
                        help="let a worker's key (on stdin) reach this coordinator, for rpc only")
     p.add_argument("name", help="the worker's name")
+    p.add_argument("--remove", action="store_true", help="take its key off instead")
     p.set_defaults(func=_authorize)
 
     p = sub.add_parser("coordinator", help="coordinator service")
@@ -131,6 +132,11 @@ def _gate(args: argparse.Namespace) -> int:
 
 
 def _authorize(args: argparse.Namespace) -> int:
+    if args.remove:
+        gone = worker_keys.deauthorize(args.name, Path.home())
+        print(f"mulebox: {'took off' if gone else 'there was no'} key of {args.name}",
+              file=sys.stderr)
+        return 0
     try:
         path = worker_keys.authorize(args.name, sys.stdin.read(), Path.home())
     except (worker_keys.GateRefused, OSError) as exc:

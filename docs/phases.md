@@ -144,7 +144,10 @@ queue and returns the same result as running it locally.
       ran two and the build machine one, all passed. Its key got no shell, no port forward and no
       cancel. No Docker on it, so compose did not run there; the user chose a container over a
       second real machine.
-- [ ] M5.2 Draining and removing workers; moving the coordinator (documented)
+- [~] M5.2 Draining and removing workers; moving the coordinator (documented). Built 2026-11-07
+      (0.74.0): `mulebox machine list|drain|resume|remove`, schema 15; moving the coordinator in
+      docs/install.md. Done when: a real machine drained and resumed with a job waiting, and a
+      stopped one removed with its key.
 - [ ] M5.3 Workers report CPU and memory; the dashboard shows them per machine
 
 ## M6: Open-source readiness

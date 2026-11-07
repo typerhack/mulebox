@@ -110,6 +110,8 @@ class MessageType(StrEnum):
     RUNNER_JOBS = "runner_jobs"
     DRAIN = "drain"
     DRAIN_OK = "drain_ok"
+    MACHINE = "machine"
+    MACHINE_OK = "machine_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -158,6 +160,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.DRAIN: frozenset({"seconds"}),
     MessageType.DRAIN_OK: frozenset({"running"}),
     MessageType.MACHINES_OK: frozenset({"version", "workers"}),
+    # client -> coordinator: `action` drain, resume or remove one worker (machine_api.py).
+    MessageType.MACHINE: frozenset({"worker", "action"}),
+    MessageType.MACHINE_OK: frozenset({"worker", "action", "running"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

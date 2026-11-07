@@ -48,7 +48,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                        slots=free_slots + held, toolchains=toolchains, version=version,
                        disk_free=disk_free)
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
-        if (free < 1 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
+        if (free < 1 or workers.is_draining(conn, worker)
+                or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
                 or holds.draining(conn, now)):
             return None
         blocker = oldest_reservation(conn, worker)

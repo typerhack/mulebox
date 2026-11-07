@@ -25,6 +25,7 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 11 -> 12: `jobs.worker_version`, the mulebox that ran the job (reuse.py); NULL on older jobs.
 - 12 -> 13: `job_steps.network_lost`, a stage that printed a lost connection (usual.py).
 - 13 -> 14: `jobs.client_os`, the laptop's system, for the dashboard; NULL on older jobs and CI.
+- 14 -> 15: `workers.draining` (default 0): a draining worker claims no new job (machine_api.py).
 """
 
 import sqlite3
@@ -71,6 +72,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     11: ("ALTER TABLE jobs ADD COLUMN worker_version TEXT",),
     12: ("ALTER TABLE job_steps ADD COLUMN network_lost INTEGER NOT NULL DEFAULT 0",),
     13: ("ALTER TABLE jobs ADD COLUMN client_os TEXT",),
+    14: ("ALTER TABLE workers ADD COLUMN draining INTEGER NOT NULL DEFAULT 0",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

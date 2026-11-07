@@ -2,7 +2,8 @@
 
 `free_slots` in the workers table is what the worker last said in a claim, and a busy
 worker does not claim, so that value goes stale; free slots are counted from the jobs
-that hold a slot instead. An offline machine offers nothing, whatever it last reported.
+that hold a slot instead. An offline machine offers nothing, whatever it last reported, and a
+draining one (`mulebox machine drain`) nothing new.
 """
 
 from __future__ import annotations
@@ -12,10 +13,10 @@ from typing import Any
 from mulebox.common.status import left_mark
 from mulebox.coordinator.workers import OFFLINE_AFTER_S, is_online
 
-__all__ = ["AVAILABLE", "BUSY", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "machine",
+__all__ = ["AVAILABLE", "BUSY", "DRAINING", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "machine",
            "readings", "snapshot", "with_readings"]
 
-AVAILABLE, BUSY, OFFLINE = "available", "busy", "offline"
+AVAILABLE, BUSY, DRAINING, OFFLINE = "available", "busy", "draining", "offline"
 JOB_FIELDS = ("job_id", "project", "job", "kind")
 READINGS = ("cpu_pct", "mem_pct")
 
@@ -32,8 +33,9 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> d
     in M5.3, and the page needs no change for that."""
     slots = worker["slots"] if worker["slots"] is not None else max(len(jobs), 1)
     online = is_online(worker, now)
-    free = max(0, slots - len(jobs)) if online else 0
-    state = OFFLINE if not online else AVAILABLE if free else BUSY
+    draining = bool(worker.get("draining"))  # absent in a store not yet upgraded
+    free = max(0, slots - len(jobs)) if online and not draining else 0
+    state = (OFFLINE if not online else DRAINING if draining else AVAILABLE if free else BUSY)
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
             "cpu_pct": None, "mem_pct": None, "cores": None,

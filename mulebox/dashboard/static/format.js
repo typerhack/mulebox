@@ -113,7 +113,7 @@ const TONES = {
   passed: "good", failed: "bad", timed_out: "warn", interrupted: "warn",
   "stopped: stuck": "warn",
   running: "active", starting: "active", cleaning: "active",
-  available: "good", busy: "active", offline: "bad", stuck: "bad",
+  available: "good", busy: "active", offline: "bad", stuck: "bad", draining: "warn",
 };
 
 // State as words plus a shape: colour never carries the meaning alone.

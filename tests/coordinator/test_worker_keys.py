@@ -76,3 +76,15 @@ def test_authorize_replaces_only_its_own_line(tmp_path):
 def test_authorize_makes_a_private_ssh_folder(tmp_path):
     authorize("build-2", KEY, tmp_path)
     assert os.stat(tmp_path / ".ssh").st_mode & 0o777 == 0o700
+
+
+def test_deauthorize_takes_off_only_that_worker(tmp_path):
+    folder = tmp_path / ".ssh"
+    folder.mkdir()
+    (folder / "authorized_keys").write_text("ssh-ed25519 AAAAmine alice@laptop\n")
+    authorize("build-2", KEY, tmp_path)
+    authorize("build-3", KEY, tmp_path)
+    assert worker_keys.deauthorize("build-2", tmp_path) is True
+    lines = (folder / "authorized_keys").read_text().splitlines()
+    assert lines[0] == "ssh-ed25519 AAAAmine alice@laptop" and lines[1].endswith(":build-3")
+    assert len(lines) == 2 and worker_keys.deauthorize("build-2", tmp_path) is False

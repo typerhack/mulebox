@@ -37,6 +37,11 @@ def test_quiet_machine_is_offline_and_offers_nothing():
     assert machines.machine(worker(seen=NOW - OFFLINE_AFTER_S), [], NOW)["state"] == AVAILABLE
 
 
+def test_draining_machine_offers_nothing_new():
+    row = machines.machine({**worker(), "draining": 1}, [job()], NOW)
+    assert row["state"] == machines.DRAINING and row["free_slots"] == 0
+
+
 def test_slots_unknown_from_an_old_row_still_gives_a_sane_answer():
     assert machines.machine(worker(slots=None), [], NOW)["slots"] == 1
     assert machines.machine(worker(slots=None), [job()], NOW)["free_slots"] == 0

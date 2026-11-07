@@ -383,8 +383,11 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   project's caches on whichever machine takes it.
 - The cluster holds as many jobs at once as its online workers have slots, and never fewer than
   the coordinator machine's own `slots` (`workers.cluster_limit`); each worker keeps to its own.
-- Replace a machine: mark the worker `draining` (finishes current work, takes no new
-  jobs), then remove it. Moving the coordinator is a documented manual step.
+- Replace a machine: `mulebox machine drain` (finishes current work, takes no new jobs; a
+  `workers.draining` column, schema 15), stop it, then `mulebox machine remove`, refused while
+  it is online or has jobs, as its next claim would bring it back. A drain leaves its GitHub
+  runners alone: GitHub hands them jobs, and a reservation refused would leave a CI run hanging.
+  Moving the coordinator is a documented manual step (docs/install.md).
 
 ## GitHub Actions
 
