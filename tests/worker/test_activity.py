@@ -47,7 +47,7 @@ def job_with(*readings):
 
 
 def test_machine_readings_are_kept_and_decide_nothing():
-    machine = MachineMeter(scripted((0.0, 0), (30.0, 3 * 1024 * 1024)))
+    machine = MachineMeter(scripted((0.0, 0), (SAMPLE_S, SAMPLE_S * 1024 * 102.4)))
     machine.update(0.0)
     machine.update(SAMPLE_S)
     job = job_with({"unit": 0.0}, {"unit": 0.0})

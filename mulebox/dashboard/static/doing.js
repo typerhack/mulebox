@@ -17,7 +17,7 @@ const WORDS = {
 export function doingWord(doing) {
   if (doing?.step) return doing.step;
   if (doing?.stage) return WORDS[doing.stage] ?? doing.stage;
-  return "working";
+  return "starting";
 }
 
 export const coresText = (pct) => (typeof pct === "number" ? `${(pct / 100).toFixed(1)} cores` : "measuring");

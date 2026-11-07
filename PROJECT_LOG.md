@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.70.1 - 2026-11-07 - patch
+- A job's CPU is sampled every 10 s, not 30, so its card follows what it does now; a card with no stage yet says starting; a waiting row's usual time has its space back.
+
 ## 0.70.0 - 2026-11-07 - minor
 - A running job's card says what it is doing: its stage in words (a CI job's GitHub step) and a meter of the cores the job alone uses, pulsing only while it uses half a core or more; CI jobs get their CPU from the runner's service.
 

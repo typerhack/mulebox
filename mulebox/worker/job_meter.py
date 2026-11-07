@@ -23,7 +23,7 @@ from mulebox.worker import background, cgroups
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import unit_name
 
-SAMPLE_S = 30.0
+SAMPLE_S = 10.0  # also how current a job's card is on the dashboard (dashboard/static/doing.js)
 UNIT_CPU_SHARE = 0.01  # of one core
 SERVICE_CPU_SHARE = 0.10  # of one core: idle databases in containers stay below this
 NET_ACTIVE_KIB_S = 4.0  # about 256 KiB a minute

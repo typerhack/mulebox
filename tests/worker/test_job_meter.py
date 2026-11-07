@@ -30,16 +30,18 @@ def test_a_percent_of_a_core_in_the_job_itself_is_activity():
 
 
 def test_an_idle_database_is_no_activity():
-    assert not is_busy({"unit": 0.0, "service:a": 5.0}, {"unit": 0.0, "service:a": 7.0})
+    assert not is_busy({"unit": 0.0, "service:a": 5.0},
+                       {"unit": 0.0, "service:a": 5.0 + SAMPLE_S * 0.07})  # 7% of a core
 
 
 def test_a_busy_service_is_activity():
-    assert is_busy({"unit": 0.0, "service:a": 0.0}, {"unit": 0.0, "service:a": 15.0})
+    assert is_busy({"unit": 0.0, "service:a": 0.0}, {"unit": 0.0, "service:a": SAMPLE_S * 0.5})
 
 
 def test_services_add_up():
     before = {"unit": 0.0, "service:a": 0.0, "service:b": 0.0}
-    assert is_busy(before, {"unit": 0.0, "service:a": 2.0, "service:b": 2.0})
+    assert is_busy(before, {"unit": 0.0, "service:a": SAMPLE_S * 0.06,
+                              "service:b": SAMPLE_S * 0.06})
 
 
 def test_a_services_traffic_is_activity():
@@ -52,7 +54,7 @@ def test_a_service_that_appears_started_at_zero_and_one_that_left_counts_nothing
 
 
 def test_job_cpu_is_reported_as_share_of_a_core():
-    assert judged({"unit": 0.0}, {"unit": 15.0}).cpu_pct == 50.0
+    assert judged({"unit": 0.0}, {"unit": SAMPLE_S * 0.5}).cpu_pct == 50.0
 
 
 def test_a_failed_read_forgets_what_was_known():
