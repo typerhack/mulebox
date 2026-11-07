@@ -47,9 +47,13 @@ def check_login(target: str) -> None:
     except ssh.SSHError as exc:
         raise SetupError(
             f"cannot log in to {target} without a prompt, and mulebox never answers one.\n"
-            f"Make `ssh {target} true` work: log in once by hand so its host key is known, "
-            f"copy your key with `ssh-copy-id {target}`, and load a key with a passphrase into "
-            f"your ssh agent.\n({exc})") from exc
+            f"Make `ssh {target} true` work. With no key on this laptop yet, make one: "
+            "`ssh-keygen -t ed25519`. Copy it with `ssh-copy-id`, which asks for the password "
+            f"there once, so a person runs it: `ssh-copy-id {target}` if your user name there is "
+            f"the same as here, else `ssh-copy-id <user>@{target}`, or put `User <user>` under "
+            f"`Host {target}` in ~/.ssh/config. Then `ssh {target} true` once, to accept its "
+            "host key. A key with a passphrase must be loaded into your ssh agent "
+            f"(docs/getting-started.md, What you need).\n({exc})") from exc
 
 
 def remote_for(target: str) -> Remote:

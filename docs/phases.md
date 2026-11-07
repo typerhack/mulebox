@@ -162,7 +162,10 @@ queue and returns the same result as running it locally.
 ## M6: Open-source readiness
 - [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)
 - [~] M6.2 User docs: install, configure a project, agent rules snippet, troubleshooting. Written
-      2026-11-05 (0.52.1). Open: a stranger's first passing `mulebox check` from them alone.
+      2026-11-05 (0.52.1). Run 2026-11-07 (0.75.3): a fresh agent with the docs and skill alone, a
+      blank Ubuntu machine and a blank laptop, got a Python project passing through `mulebox check`,
+      after one request to a person (ssh key, git and python3-venv, linger). It found init's check
+      for plain Python broken and the from-nothing steps scattered; both fixed. Open: a stranger.
 - [x] M6.3 Repository CI for mulebox itself; release process (tag on MAJOR releases). Done 2026-11-05
       (0.52.1): passed on GitHub-hosted machines on Python 3.12 and 3.13; docs/releasing.md.
 - [~] M6.4 Security review; scan history for personal data before going public. Reviewed

@@ -204,7 +204,7 @@ def _check_target(target: str) -> None:
 
 
 def raise_for_exit(target: str, argv: Sequence[str], code: int, stderr: bytes) -> None:
-    detail = _stderr_excerpt(stderr)
+    detail = _stderr_excerpt(stderr).rstrip(".")  # ssh ends its own lines with one
     suffix = f": {detail}" if detail else ""
     if code == 255:
         raise SSHUnavailable(

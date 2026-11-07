@@ -20,7 +20,7 @@ Build machine:
   desktop session; `su` does not start a user manager).
 - git. On Ubuntu/Debian: `sudo apt-get install git`.
 - Python 3.12 or newer with `venv` support. On Ubuntu/Debian: `sudo apt-get install
-  python3-venv` if the installer asks for it.
+  python3-venv`; a fresh Ubuntu does not have it.
 - Network access to PyPI for mulebox's dependencies.
 
 Laptop:

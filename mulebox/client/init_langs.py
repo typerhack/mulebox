@@ -3,11 +3,16 @@ the rest). A PHP folder a compose service is built from runs composer and its te
 
 from __future__ import annotations
 
+import re
+import subprocess
 import tomllib
 from pathlib import Path
 
 from mulebox.client.init_files import IN_SERVICE, Detected, json_file, mapping, text
 from mulebox.common import package_cache
+
+VENV = ".venv"
+PYTHON_FILES = ("pyproject.toml", "requirements.txt", "requirements-dev.txt")
 
 
 def _python_install(root: Path) -> str | None:
@@ -31,14 +36,50 @@ def python(root: Path, found: Detected) -> None:
         found.notes.append("python: no [project] table or requirements file, so nothing is "
                            "installed; add the install step to setup")
         return
-    found.setup.append("python3 -m venv .venv && "
-                       f".venv/bin/pip install -q --disable-pip-version-check {install}")
+    found.setup.append(f"python3 -m venv {VENV} && "
+                       f"{VENV}/bin/pip install -q --disable-pip-version-check {install}")
+    found.venv = VENV
     found.needs.append(package_cache.PIP)
     found.notes.append("python: the machine's python3 is used, as mulebox has no Python "
                        "toolchain")
+    if _uses_pytest(root):
+        found.jobs.setdefault("test", f"{VENV}/bin/python -m pytest")
+        found.checks.append(f"{VENV}/bin/python -m pytest")
+    if not _ignored(root, VENV):
+        found.notes.append(f"python: add `{VENV}/` to .gitignore; setup makes it, and a folder "
+                           "git does not ignore is lost between jobs, so setup runs every time")
+
+
+def _uses_pytest(root: Path) -> bool:
     if (root / "tests").is_dir() or (root / "test").is_dir():
-        found.jobs.setdefault("test", ".venv/bin/python -m pytest")
-        found.checks.append(".venv/bin/python -m pytest")
+        return True
+    if any(root.glob("test_*.py")) or any(root.glob("*_test.py")):
+        return True
+    return any(re.search(r"(?m)\bpytest\b", text(root / name)) for name in PYTHON_FILES
+               if (root / name).is_file())
+
+
+def _ignored(root: Path, folder: str) -> bool:
+    """Whether git ignores `folder`; True when git cannot say, so no false warning."""
+    try:
+        done = subprocess.run(["git", "check-ignore", "-q", f"{folder}/"], cwd=root,
+                              capture_output=True, check=False, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return done.returncode != 1
+
+
+_IN_VENV = {"python": "python", "python3": "python", "pytest": "pytest", "pip": "pip",
+            "pip3": "pip"}
+
+
+def in_venv(command: str, venv: str | None) -> str:
+    """A command given with `--check`, its first word called from setup's venv: a venv that
+    is made but never activated is not on PATH, and Ubuntu has no `python` at all."""
+    first, _, rest = command.strip().partition(" ")
+    if venv is None or first not in _IN_VENV:
+        return command
+    return f"{venv}/bin/{_IN_VENV[first]}" + (f" {rest}" if rest else "")
 
 
 def composer(root: Path, found: Detected) -> None:

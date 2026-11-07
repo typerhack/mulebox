@@ -158,6 +158,41 @@ def test_compose_file_is_listed(project):
     assert _init(project).compose == ("docker-compose.yml",)
 
 
+def test_plain_python_project_with_root_tests(project, capsys):
+    """The agent trial's project: requirements.txt and test_*.py, no tests/ folder."""
+    subprocess.run(["git", "init", "-q"], cwd=project, check=True)
+    (project / "requirements.txt").write_text("pytest==8.3.3\n")
+    (project / "test_calc.py").write_text("def test_add():\n    assert 1 + 1 == 2\n")
+    config = _init(project)
+    assert config.jobs["check"] == ".venv/bin/python -m pytest"
+    assert "add `.venv/` to .gitignore" in capsys.readouterr().out
+
+
+def test_pytest_named_in_requirements_is_found(project):
+    (project / "requirements-dev.txt").write_text("pytest>=8\n")
+    assert _init(project).jobs["check"] == ".venv/bin/python -m pytest"
+
+
+def test_an_ignored_venv_gives_no_warning(project, capsys):
+    subprocess.run(["git", "init", "-q"], cwd=project, check=True)
+    (project / ".gitignore").write_text(".venv/\n")
+    (project / "requirements.txt").write_text("pytest\n")
+    (project / "test_x.py").write_text("")
+    _init(project)
+    assert ".gitignore" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("given, expected", [
+    ("python -m pytest", ".venv/bin/python -m pytest"),
+    ("python3 -m pytest -q", ".venv/bin/python -m pytest -q"),
+    ("pytest", ".venv/bin/pytest"),
+    ("make test", "make test"),
+])
+def test_a_given_check_calls_the_venv_setup_makes(project, given, expected):
+    (project / "requirements.txt").write_text("requests\n")
+    assert _init(project, "--check", given).jobs["check"] == expected
+
+
 def test_nothing_found_writes_nothing_and_says_what_to_do(project, capsys):
     assert cli.main(["init"]) == 2
     assert "--check" in capsys.readouterr().err

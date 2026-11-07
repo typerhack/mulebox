@@ -16,6 +16,29 @@ the user `alice` and the project `example-app`.
   passphrase, load it into your ssh agent first.
 - A project in a git repository with at least one commit.
 
+### From nothing: what to ask a person for, once
+
+An agent can do everything here except what needs a password or sudo. On a laptop with no ssh
+key and a blank Ubuntu machine, the agent first makes a key (`ssh-keygen -t ed25519 -N ""` for a
+key with no passphrase) and, if the user name on the machine differs from the laptop's, adds to
+`~/.ssh/config`:
+
+```
+Host build-1
+    User alice
+```
+
+Then it asks a person for these, in one message:
+
+1. `ssh-copy-id build-1` from the laptop (it asks for alice's password once), then
+   `ssh build-1 true` once, answering yes to the host key after checking its fingerprint.
+2. On the machine, with sudo: `sudo apt-get install -y git python3-venv` (Ubuntu ships Python
+   without `venv`; Docker too, if projects use `compose:`).
+3. `sudo loginctl enable-linger alice`, so the services keep running after logout.
+
+Nothing else needs a person: `mulebox setup build-1` does the rest, and says what is missing if
+something is.
+
 A build machine runs whatever its projects' jobs say, and Docker access there is as good as
 root. Use it for projects you trust, on a network you trust.
 
@@ -23,7 +46,8 @@ root. Use it for projects you trust, on a network you trust.
 
 1. Get mulebox on the laptop: with pipx, as a binary, or by hand from a clone
    ([install.md, section 2](install.md#2-install-on-the-laptop)).
-2. Install the build machine, from the laptop: `mulebox setup build-1`. It installs everything
+2. Install the build machine, from the laptop: `mulebox setup build-1` (`alice@build-1` works
+   too, without the ssh config entry). It installs everything
    there, finds out what the machine offers, writes the laptop's config and runs a first job.
 
 ## 2. Decide where the project's tools come from

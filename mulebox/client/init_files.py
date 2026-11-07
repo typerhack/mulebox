@@ -22,6 +22,7 @@ class Detected:
     jobs: dict[str, str] = field(default_factory=dict)
     notes: list[str] = field(default_factory=list)
     services: dict[Path, str] = field(default_factory=dict)  # folder -> service built from it
+    venv: str | None = None  # a folder setup makes for Python; commands must call into it
 
 
 def text(path: Path) -> str:

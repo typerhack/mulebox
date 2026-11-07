@@ -20,7 +20,7 @@ from typing import Any
 
 from mulebox.client import gitinfo, init_ci
 from mulebox.client.init_files import IN_SERVICE, Detected, json_file, mapping, text
-from mulebox.client.init_langs import composer, flutter, python
+from mulebox.client.init_langs import PYTHON_FILES, composer, flutter, python
 from mulebox.common import package_cache
 
 LOCKFILES = (("pnpm-lock.yaml", "pnpm"), ("yarn.lock", "yarn"), ("package-lock.json", "npm"))
@@ -148,7 +148,7 @@ def _make_target(root: Path) -> str | None:
 def _languages(root: Path, found: Detected, top: Path) -> None:
     if (root / "composer.json").is_file():
         composer(root, found)
-    if (root / "pyproject.toml").is_file() or (root / "requirements.txt").is_file():
+    if any((root / name).is_file() for name in PYTHON_FILES):
         python(root, found)
     if (root / "package.json").is_file():
         _node(root, found, top)

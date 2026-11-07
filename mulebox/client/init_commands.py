@@ -16,6 +16,7 @@ import yaml
 
 from mulebox.client.commands import UsageError, guarded
 from mulebox.client.init_detect import Detected, detect
+from mulebox.client.init_langs import in_venv
 from mulebox.common.config import PROJECT_FILE, load_project_config
 
 
@@ -68,7 +69,10 @@ def _init(args: argparse.Namespace) -> int:
     if target.exists() and not (args.force or args.print_only):
         raise UsageError(f"{PROJECT_FILE} already exists; --force replaces it")
     found = detect(root)
-    gate = args.check or " && ".join(dict.fromkeys(found.checks))
+    gate = (in_venv(args.check, found.venv) if args.check
+            else " && ".join(dict.fromkeys(found.checks)))
+    if args.check and gate != args.check:
+        found.notes.append(f"`{args.check}` runs as `{gate}`, in the venv setup makes")
     if not gate:
         raise UsageError("could not work out how this project is tested; say it with "
                          "`mulebox init --check \"your test command\"`")

@@ -248,7 +248,8 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
     if project["install"]:
         lines.append(f"Install, only when what it depends on changed: {project['install']}")
     if project["setup"]:
-        lines.append(f"Setup before every job: {project['setup']}")
+        lines.append(f"Setup before a job, skipped while nothing it depends on changed: "
+                     f"{project['setup']}")
     lines += ["", "Jobs:"]
     for name, command in project["jobs"].items():
         run = "mulebox check" if name == FULL_GATE else f"mulebox check {name}"
