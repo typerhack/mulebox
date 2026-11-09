@@ -59,7 +59,8 @@ def release(req: Request) -> Message:
     except ValueError:
         raise BadRequest("field 'outcome' is not a known outcome") from None
     with req.store.write() as conn:
-        job = rs.release(conn, rs.require(conn, v.job_id(req.body)), outcome, req.now)
+        job = rs.release(conn, rs.require(conn, v.job_id(req.body)), outcome, req.now,
+                         v.ci_result(req.body))
     return req.reply(MessageType.STATUS_OK, status_body(job))
 
 

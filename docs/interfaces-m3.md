@@ -38,13 +38,16 @@ gone for 60 s the worker releases it.
 | --- | --- | --- |
 | `reserve` | `worker`, `repository`, `job`, `run_id`, `run_attempt`, `runner`, + `branch`, `run_url`, `idempotency_key` | `submit_ok` (job_id, state) |
 | `acquire` | `job_id` | `status_ok` (state `running` when granted, else `queued` + `position`) |
-| `release` | `job_id`, `outcome` (`passed`/`failed`/`cancelled`/`interrupted`) | `status_ok` |
+| `release` | `job_id`, `outcome` (`passed`/`failed`/`cancelled`/`interrupted`), + `ci_result` | `status_ok` |
 | `runner_jobs` | `worker` | `queue_ok` (active reservations pinned to that worker) |
 
 `idempotency_key` defaults to `gh-<repository>-<run_id>-<run_attempt>-<job>-<runner>`, so a
 hook retried by GitHub never creates two reservations. `heartbeat` with `lease: "worker"`
 and no `attempt_id` renews a reservation's worker lease. Reservations ignore the client
-lease. A release on a finished reservation is a no-op `status_ok`.
+lease. A release on a finished reservation is a no-op `status_ok`. `ci_result` is how the GitHub
+job went, as the completed hook read it: `outcome`, and for a failure `step` (the first step that
+failed) and `message` (what GitHub says on it), strings cut to 32, 200 and 500 characters,
+anything else dropped. Stored as `jobs.ci_result` (schema 17); empty means not known.
 
 ## Runner recovery (measured)
 
@@ -68,7 +71,13 @@ lease. A release on a finished reservation is a no-op `status_ok`.
   coordinator through the worker's `open_link` (local link in M1-style single node).
 - `mulebox runner-hook completed`: reads the reservation file, sends `release` with outcome
   from `GITHUB_JOB_STATUS` if present (`success` -> passed, `cancelled` -> cancelled, else
-  failed), removes the file (safepath, runners root). Always exits 0 (a failed release is
+  failed). GitHub does not set it for hooks (all 129 reservations before 0.76.0 were stored
+  as passed), so otherwise the result comes from the runner's newest diary,
+  `<runner>/_diag/Worker_*.log` (runners/diary.py): the last `job state = '<state>'` or `Update
+  job result with current step result '<state>'` before the hook, the first `Step result:
+  Failed` step and its telemetry's `errorMessages`. Checked on 124 real runs against the
+  runner's final `Job result after all job steps finish`: all agreed. Nothing found: passed,
+  with no `ci_result`. Removes the file (safepath, runners root). Always exits 0 (a failed release is
   logged; supervision cleans up).
 - Hook scripts installed per runner: `<runners>/<runner>/mulebox-hooks/started.sh` and
   `completed.sh`, each `exec ~/.mulebox/bin/mulebox runner-hook <started|completed>`.
@@ -134,8 +143,8 @@ Slots:
   is released after 60 s instead of blocking the queue. Heartbeats go to granted ones only.
 - The started hook writes the reservation file right after `reserve` and, when it gives
   up, releases the reservation as cancelled.
-- `GITHUB_JOB_STATUS` unset -> `passed` (GitHub may not set it for hooks; the GitHub run is
-  the authority for the job's real result).
+- `GITHUB_JOB_STATUS` unset -> the runner's diary; with nothing there either, `passed` and no
+  `ci_result`, which the views show as `released`. The GitHub run stays the authority.
 - `mulebox cancel` on a running reservation only marks it; mulebox cannot stop a GitHub job.
 
 Runner management:

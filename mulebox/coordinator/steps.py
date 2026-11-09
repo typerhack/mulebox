@@ -65,5 +65,8 @@ def failed_stage(conn: sqlite3.Connection, job: dict[str, Any]) -> dict[str, Any
     cancelled job also has a stage with a non-zero exit code, but nothing failed there."""
     if job["outcome"] not in ENDED_BADLY:
         return {}
+    step = (job.get("ci_result") or {}).get("step")  # a GitHub job's own step (runners/diary.py)
+    if step:
+        return {"stage": step}
     failed = failed_step(for_job(conn, job["job_id"]))
     return {"stage": failed["stage"]} if failed else {}

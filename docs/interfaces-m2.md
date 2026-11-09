@@ -11,8 +11,13 @@ Input is a public job dict; every function tolerates missing or malformed fields
 - Sections: `running` (starting, running, cleaning), `queued` (uploading, queued, by
   position) and `recent` (finished, newest first).
 - Shown state: the outcome of a finished job, else its state. A finished runner
-  reservation that passed or failed shows `released`: it only held a slot, the real result
-  is on GitHub. `interrupted` and `cancelled` reservations keep their outcome.
+  reservation shows the GitHub job's own result (`passed`, `failed`, `cancelled`) when its
+  completed hook read it from the runner (`ci_result`, docs/interfaces-m3.md). One released by
+  a mulebox before 0.76.0 has no `ci_result` and, if it passed or failed, shows `released`: it
+  only says the slot was given back. `interrupted` reservations keep their outcome.
+- A finished job's state carries its mark in every view: a check for passed, a cross for
+  failed, a warning for timed out, interrupted or stopped, a stop sign for cancelled. A failed
+  GitHub job's row also says the step that failed and GitHub's message on it.
 - Elapsed: waiting time when queued, running time when active, run time when finished.
 - `fingerprint(jobs)`: what changes when a view must redraw. Elapsed time is left out, so a
   ticking clock never causes an event. Where a waiting job may go (below) is in, so a
@@ -32,8 +37,9 @@ job. A running job has its `worker`; a runner reservation its `pinned_worker`.
 
 Tabs, each with a live count, remembered per browser, each showing one thing: `Queue`
 (default, what is happening now), `Failed` (failed, timed out or interrupted) and `Passed`
-among the finished jobs the queue keeps, and `Recent` (all of those, so also released
-runner slots and cancelled jobs, which are neither a pass nor a failure). Ticking times are
+among the finished jobs the queue keeps, GitHub jobs included, and `Recent` (all of those, so
+also cancelled jobs and runner slots released before 0.76.0, which are neither a pass nor a
+failure). Ticking times are
 keyed by job id, whatever order a tab puts them in. A viewer's first `queue` snapshot is
 built when it connects, never taken from the last published event, whose elapsed times
 would be stale.

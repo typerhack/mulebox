@@ -109,6 +109,18 @@ def check_job_id(value: Any) -> str:
 
 
 LOAD_FIELDS = ("cpu_pct", "mem_pct", "cores")
+CI_RESULT_FIELDS = {"outcome": 32, "step": 200, "message": 500}  # name -> longest kept
+
+
+def ci_result(body: dict[str, Any], name: str = "ci_result") -> dict[str, str]:
+    """How a GitHub job went, as a runner's completed hook read it (runners/diary.py): its
+    `outcome`, and the `step` that failed with GitHub's `message`. Only non-empty strings are kept,
+    cut to a length; anything else is dropped, so an odd value never fails a release."""
+    value = body.get(name)
+    if not isinstance(value, dict):
+        return {}
+    return {key: item[:limit] for key, limit in CI_RESULT_FIELDS.items()
+            if isinstance(item := value.get(key), str) and item}
 
 
 def load(body: dict[str, Any], name: str = "load") -> dict[str, Any] | None:

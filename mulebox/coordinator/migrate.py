@@ -28,6 +28,9 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 14 -> 15: `workers.draining` (default 0): a draining worker claims no new job (machine_api.py).
 - 15 -> 16: `workers.load`, JSON of the machine's `cpu_pct`, `cores` and `mem_pct` as the worker
   last reported them (common/proc.py HostLoad); NULL until it does.
+- 16 -> 17: `jobs.ci_result` (JSON, default '{}'): how a GitHub job went, read by the runner's
+  completed hook (runners/diary.py). Empty on agent jobs and on reservations released before it,
+  whose `passed` only meant the slot was given back.
 """
 
 import sqlite3
@@ -76,6 +79,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     13: ("ALTER TABLE jobs ADD COLUMN client_os TEXT",),
     14: ("ALTER TABLE workers ADD COLUMN draining INTEGER NOT NULL DEFAULT 0",),
     15: ("ALTER TABLE workers ADD COLUMN load TEXT",),
+    16: ("ALTER TABLE jobs ADD COLUMN ci_result TEXT NOT NULL DEFAULT '{}'",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

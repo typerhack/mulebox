@@ -26,6 +26,8 @@ def job_dict(job: dict[str, Any], position: int | None = None,
         data["waiting_for"] = waiting
     if job["stop_reason"]:
         data["stop_reason"] = job["stop_reason"]
+    if job.get("ci_result"):  # how a GitHub job went, as its runner said (runners/diary.py)
+        data["ci_result"] = job["ci_result"]
     return data
 
 

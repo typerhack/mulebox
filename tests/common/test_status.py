@@ -22,6 +22,13 @@ def test_finished_runner_slot_shows_released_but_keeps_abnormal_outcomes():
     assert status.shown_state(job("finished", outcome="passed", kind="runner")) == "released"
     assert status.shown_state(job("finished", outcome="failed", kind="runner")) == "released"
     assert status.shown_state(job("finished", outcome="interrupted", kind="runner")) == "interrupted"
+    assert status.shown_state(job("finished", outcome="failed", kind="runner", ci_result={})) == "released"
+
+
+def test_a_runner_slot_whose_hook_read_the_github_result_shows_it():
+    for outcome in ("passed", "failed", "cancelled"):
+        found = job("finished", outcome=outcome, kind="runner", ci_result={"outcome": outcome})
+        assert status.shown_state(found) == outcome
 
 
 def test_elapsed_by_state():

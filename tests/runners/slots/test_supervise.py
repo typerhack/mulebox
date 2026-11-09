@@ -176,7 +176,7 @@ def test_a_heartbeat_carries_the_runner_jobs_cpu_and_step(gh_env, link, paths, s
     diag.mkdir(parents=True)
     (diag / "Worker_20261107-100431-utc.log").write_text(
         "[x INFO StepsRunner] Processing step: DisplayName='Run pnpm check'\n")
-    used = iter([5.0, 25.0])
+    used = iter([{"runner": 5.0}, {"runner": 25.0}])
     supervisor = Supervisor("build-1", paths.runners, alive=lambda folder: True,
                             meter=RunnerMeter(read=lambda runner: next(used)))
     supervisor.tick(T0, link.call)

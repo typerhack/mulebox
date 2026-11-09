@@ -2,40 +2,111 @@
 
 A runner job does not run in a mulebox unit, so its CPU is read from the runner's own service
 group (cgroups.runner_group): the listener's share there is near nothing, so the rest is the
-job. Containers the workflow starts itself run outside it and are not counted. A first reading,
-or a group that cannot be read, gives None: unknown, never zero.
+job. The containers a workflow starts with Docker Compose run outside that group, in Docker's
+scopes, and a step such as `docker compose exec api php artisan test --parallel` does all its
+work there: a real CI job kept 8 cores busy while its card read 0.0 cores. So the containers
+whose Compose working folder (the label Compose puts on each) is inside the runner's `_work`
+folder count too. Docker is asked beside the worker loop (background.Polled), once a round.
+
+Not counted: a container started with plain `docker run`, which says nothing of where it came
+from. A container counts from its second reading, so one that just appeared never adds the CPU
+it used before it was seen. A first reading, or a runner group that cannot be read, gives None:
+unknown, never zero.
 """
 
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
+from pathlib import Path
 
+from mulebox.common.mounts import is_within
 from mulebox.worker import cgroups
+from mulebox.worker.background import Polled
+from mulebox.worker.docker import Docker
 
-CpuReader = Callable[[str], "float | None"]  # runner name -> CPU seconds so far
+WORKDIR_LABEL = "com.docker.compose.project.working_dir"
+_RUNNER = "runner"
+
+Reading = dict[str, float]  # CPU seconds by source: the runner, and each of its containers
+Reader = Callable[[str], "Reading | None"]  # runner name -> reading
 
 
-def runner_cpu_seconds(runner: str) -> float | None:
+def runner_containers(lines: list[str], runners_root: Path) -> dict[str, list[str]]:
+    """`docker ps` lines of `<id>\\t<working folder>` -> runner name -> its containers' ids."""
+    root = Path(os.path.normpath(runners_root))
+    found: dict[str, list[str]] = {}
+    for line in lines:
+        container, _, folder = line.partition("\t")
+        if not container or not folder.startswith("/"):
+            continue
+        path = Path(os.path.normpath(folder))
+        if not is_within(path, root) or path == root:
+            continue
+        parts = path.relative_to(root).parts
+        if len(parts) >= 2 and parts[1] == "_work":
+            found.setdefault(parts[0], []).append(container)
+    return found
+
+
+class CiContainers:
+    """Each runner's containers, from one `docker ps` a round. The last answer is kept while a
+    new one is late, so a slow daemon does not make the reading jump."""
+
+    def __init__(self, runners_root: Path, docker: Docker | None = None) -> None:
+        docker = docker or Docker()
+        self._polled = Polled(lambda: runner_containers(docker.lines(
+            "ps", "--no-trunc", "--format", f'{{{{.ID}}}}\t{{{{.Label "{WORKDIR_LABEL}"}}}}'),
+            Path(runners_root)))
+        self._known: dict[str, list[str]] = {}
+
+    def refresh(self) -> None:
+        answer = self._polled.value()
+        if answer is not None:
+            self._known = answer
+
+    def of(self, runner: str) -> list[str]:
+        return self._known.get(runner, [])
+
+
+def runner_reading(runner: str, containers: CiContainers | None = None) -> Reading | None:
     group = cgroups.runner_group(runner)
-    return cgroups.cpu_seconds(group) if group is not None else None
+    used = cgroups.cpu_seconds(group) if group is not None else None
+    if used is None:
+        return None
+    reading = {_RUNNER: used}
+    for container in containers.of(runner) if containers is not None else []:
+        found = cgroups.container_group(container)
+        cpu = cgroups.cpu_seconds(found) if found is not None else None
+        if cpu is not None:
+            reading[container] = cpu
+    return reading
 
 
 class RunnerMeter:
-    def __init__(self, read: CpuReader = runner_cpu_seconds) -> None:
-        self.read = read
-        self._last: dict[str, tuple[float, float]] = {}  # job id -> (CPU seconds, at)
+    def __init__(self, read: Reader | None = None, containers: CiContainers | None = None) -> None:
+        self.containers = containers
+        self.read = read or (lambda runner: runner_reading(runner, self.containers))
+        self._last: dict[str, tuple[Reading, float]] = {}  # job id -> (reading, at)
+
+    def new_round(self) -> None:
+        """Called once a supervision round, before the cards are read."""
+        if self.containers is not None:
+            self.containers.refresh()
 
     def cpu_pct(self, job_id: str, runner: str, now: float) -> float | None:
-        """Percent of one core the runner used since the last reading of this job."""
-        used = self.read(runner)
+        """Percent of one core the job used since the last reading of it."""
+        reading = self.read(runner)
         last = self._last.get(job_id)
-        if used is None:
+        if reading is None:
             self._last.pop(job_id, None)
             return None
-        self._last[job_id] = (used, now)
+        self._last[job_id] = (reading, now)
         if last is None or now <= last[1]:
             return None
-        return round(max(0.0, used - last[0]) / (now - last[1]) * 100.0, 1)
+        before, at = last
+        used = sum(max(0.0, value - before[key]) for key, value in reading.items() if key in before)
+        return round(used / (now - at) * 100.0, 1)
 
     def forget(self, keep: set) -> None:
         for job_id in [job_id for job_id in self._last if job_id not in keep]:

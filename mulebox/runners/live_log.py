@@ -27,12 +27,12 @@ from pathlib import Path
 from typing import BinaryIO
 
 from mulebox.common.redact import StreamRedactor
+from mulebox.runners import diary
+from mulebox.runners.diary import FAILED, STEP
 from mulebox.worker.logtail import LogTailer, MakeRequest, Send
 
 READ_BYTES = 256 * 1024
 MAX_OPEN = 64  # pages held open at once; a job has one per step
-_STEP = re.compile(r"Processing step: DisplayName='(.*)'\s*$")
-_FAILED = re.compile(r"Step result: (Failed|Cancelled)\b")
 _RECORD = re.compile(r"web console lines for record '([0-9a-f-]{36})'")
 _JOB = re.compile(r"\bJob ID ([0-9a-f-]{36})\b")  # its own page repeats every step: skipped
 _PLAN = re.compile(r'"planId":\s*"([0-9a-f-]{36})"')
@@ -95,11 +95,7 @@ class RunnerLog:
         self._pages.clear()
 
     def _find_worker_log(self, started_after: float) -> Path | None:
-        try:
-            found = sorted(self.diag.glob("Worker_*.log"))
-        except OSError:
-            return None
-        newest = found[-1] if found else None
+        newest = diary.newest(self.diag.parent)
         try:
             return newest if newest and newest.stat().st_mtime >= started_after else None
         except OSError:
@@ -124,12 +120,12 @@ class RunnerLog:
             self._plan = plan[1]
         elif self._job is None and (job := _JOB.search(line)):
             self._job = job[1]
-        elif step := _STEP.search(line):
+        elif step := STEP.search(line):
             self._step = step[1]
             self.tailer.note(f"mulebox: step: {self._step}\n")
         elif self._step and (record := _RECORD.search(line)):
             self._records.setdefault(record[1], self._step)
-        elif self._step and (failed := _FAILED.search(line)):
+        elif self._step and (failed := FAILED.search(line)):
             self.tailer.note(f"mulebox: step {failed[1].lower()}: {self._step}\n")
 
     def _read_pages(self) -> None:

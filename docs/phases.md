@@ -415,6 +415,13 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       followed on the dashboard: every step as it started, a quiet step's 10 lines at its end, a busy step's 300
       lines in pieces and to the last one after the slot was released, no step repeated. A step of a second or
       less can be missed; GitHub has it.
+- [~] M14.8 GitHub jobs with their real result: passed, failed or cancelled from the runner's own diary,
+      the failed step and GitHub's message, in the Failed and Passed tabs; a mark on every finished
+      job's state; a CI card's CPU counts the job's Compose containers. Asked by the user on 2026-11-09,
+      after a CI backend test step used all 8 cores while its card read 0.0. Built 2026-11-09 (0.76.0):
+      the diary reader agreed with the runner's final result on all 124 real runs on the machine.
+      Done when: a real CI run that fails and one that passes show on the deployed dashboard in Edge
+      with their marks, the failed step, and a CI card's cores during a container-heavy step.
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 

@@ -108,8 +108,9 @@ def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
 
 
 def release(conn: sqlite3.Connection, job: dict[str, Any], outcome: Outcome,
-            now: float) -> dict[str, Any]:
-    """End a reservation with `outcome`; a finished one is returned unchanged."""
+            now: float, ci_result: dict[str, str] | None = None) -> dict[str, Any]:
+    """End a reservation with `outcome`; a finished one is returned unchanged. `ci_result` is
+    the GitHub job's own result when the hook could read it; empty means not known."""
     if outcome not in RELEASE_OUTCOMES:
         allowed = ", ".join(sorted(o.value for o in RELEASE_OUTCOMES))
         raise BadRequest(f"field 'outcome' must be one of {allowed}")
@@ -117,7 +118,7 @@ def release(conn: sqlite3.Connection, job: dict[str, Any], outcome: Outcome,
         return job
     started = job["started_at"]
     duration = round(max(0.0, now - started), 3) if started is not None else None
-    return st.finish(conn, job, outcome, now, duration_s=duration)
+    return st.finish(conn, job, outcome, now, duration_s=duration, ci_result=ci_result or {})
 
 
 LATE_LOG_S = 60.0  # a released slot still takes its runner log's last lines this long

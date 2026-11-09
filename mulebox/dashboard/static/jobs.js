@@ -3,8 +3,9 @@
 // order and shown state match `mulebox queue`; the machines come from the machines panel.
 //
 // Each tab shows one thing. Queue is what is happening now; Failed and Passed are the
-// results that are one or the other (a released runner slot and a cancelled job are
-// neither, and only Recent and History list them); Recent is the last few finished jobs.
+// results that are one or the other, GitHub jobs included once their runner said how they went
+// (a cancelled job, and a runner slot released by an older mulebox, are neither: only Recent and
+// History list them); Recent is the last few finished jobs.
 
 import { badge, clock, duration, el, fill, getJson, jobLink, timeLeft, warningIcon, runText } from "./format.js";
 import { lanesView } from "./lanes.js";
@@ -38,13 +39,21 @@ function where(job) {
   return job.worker ?? "-";
 }
 
+// Where a GitHub job failed, as its completed hook read it from the runner (runners/diary.py).
+function why(job) {
+  const ci = job.ci_result;
+  if (!ci?.step || !FAILED.has(job.shown_state) && job.shown_state !== "cancelled") return null;
+  const said = ci.message ? `: ${ci.message.replace(/\.$/, "")}` : "";
+  return el("span", { class: "why", text: `in ${ci.step}${said}` });
+}
+
 // Columns: state, job (with branch), machine, time. Running rows are the brightest. A
 // ticking cell is keyed by job id, so a tick can never land on another row.
 function row(job, last) {
   const ticking = job.section === "recent" ? null : job.job_id;
   return el("tr", { class: job.section === "running" ? "running" : null },
     el("td", { class: "state" }, state(job)),
-    el("td", {}, jobLink(job), el("span", { class: "branch", text: runText(job) })),
+    el("td", {}, jobLink(job), el("span", { class: "branch", text: runText(job) }), why(job)),
     el("td", { class: "wide", text: last(job) }),
     el("td", { class: "num", "data-elapsed": ticking,
                text: duration(job.elapsed_s ?? job.duration_s) }));

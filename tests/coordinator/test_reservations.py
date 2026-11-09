@@ -141,6 +141,22 @@ def test_release_and_release_when_finished(store, staging):
     assert store.get_job(res)["finished_at"] == T0 + 31
 
 
+def test_a_release_keeps_how_the_github_job_went_and_drops_what_it_does_not_know(store, staging):
+    res = reserve(store, staging)
+    acquire(store, staging, res, now=T0 + 1)
+    said = {"outcome": "failed", "step": "Full backend test suite", "message": "x" * 900,
+            "extra": "dropped", "exit": 1}
+    call(store, staging, "release", now=T0 + 31, job_id=res, outcome="failed", ci_result=said)
+    stored = store.get_job(res)["ci_result"]
+    assert stored == {"outcome": "failed", "step": "Full backend test suite", "message": "x" * 500}
+    old = reserve(store, staging, run_id="101")
+    call(store, staging, "release", job_id=old, outcome="passed", ci_result="not a mapping")
+    assert store.get_job(old)["ci_result"] == {}  # unknown, as from an older hook
+    reply = call(store, staging, "queue")
+    shown = {j["job_id"]: j.get("ci_result") for j in reply.body["jobs"]}
+    assert shown[res]["step"] == "Full backend test suite"
+
+
 def test_release_of_a_queued_reservation(store, staging):
     res = reserve(store, staging)
     reply = call(store, staging, "release", job_id=res, outcome="cancelled")

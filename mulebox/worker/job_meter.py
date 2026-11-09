@@ -33,28 +33,15 @@ Reading = dict[str, float]  # counters by source; a source may come and go
 Reader = Callable[[], Reading | None]
 
 
-class ContainerList:
-    """The job's containers, asked of Docker beside the loop: a stuck daemon must not stop it.
-    `ids()` gives the last answer; None until there is one, or while the next one is late."""
+class ContainerList(background.Polled[list[str]]):
+    """The job's containers, by label, asked of Docker beside the loop (background.Polled)."""
 
     def __init__(self, docker: Docker, job_id: str) -> None:
-        self._docker = docker
-        self._job_id = job_id
-        self._task: background.Task | None = None
-        self._found: list[str] | None = None
-
-    def _ask(self) -> None:
-        self._found = None
-        self._found = self._docker.lines(
-            "ps", "--quiet", "--no-trunc", "--filter", f"label={compose.LABEL_JOB}={self._job_id}")
+        super().__init__(lambda: docker.lines(
+            "ps", "--quiet", "--no-trunc", "--filter", f"label={compose.LABEL_JOB}={job_id}"))
 
     def ids(self) -> list[str] | None:
-        task = self._task
-        if task is not None and not task.done:
-            return None
-        found = self._found if task is not None else None
-        self._task = background.start_thread(self._ask)
-        return found
+        return self.value()
 
 
 def read_job(job_id: str, containers: ContainerList | None) -> Reading | None:

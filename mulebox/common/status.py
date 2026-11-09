@@ -8,8 +8,9 @@ tolerant of missing or malformed fields, because the client reads them off the w
 - Sections: `running` (starting, running, cleaning), `queued` (uploading, queued, in
   queue position order) and `recent` (finished, newest first).
 - Shown state: the outcome for a finished job, else the state. A finished runner
-  reservation (`kind = runner`) that passed or failed shows `released`: it only held a
-  slot, the job's real result is on GitHub.
+  reservation (`kind = runner`) shows the GitHub job's own result when its completed hook read
+  it (`ci_result`, runners/diary.py). One without it, released by an older mulebox, shows
+  `released` if it passed or failed: then it only says the slot was given back.
 - Elapsed: waiting time for queued jobs, running time for active ones and the run time
   (`duration_s`, else finished_at - started_at) for finished ones.
 - Stopped: a job nobody watched was stopped by the time limits. On the wire and in the store it
@@ -95,7 +96,7 @@ def shown_state(job: dict[str, Any]) -> Any:
     if stopped(job):
         return SHOWN_STOPPED
     state = job.get("outcome") if job.get("state") == FINISHED else job.get("state")
-    if job.get("kind") == RUNNER_KIND and state in ("passed", "failed"):
+    if job.get("kind") == RUNNER_KIND and state in ("passed", "failed") and not job.get("ci_result"):
         return RELEASED
     return state
 

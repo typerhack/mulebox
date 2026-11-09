@@ -121,8 +121,27 @@ export const toneOf = (state) => TONES[String(state ?? "unknown")] ?? "plain";
 const words = (state) => String(state ?? "unknown").replaceAll("_", " ");
 export const stateText = (state) => words(state).replace(/^./, (first) => first.toUpperCase());
 
+// Shapes for how a job ended, and for a live one: a check, a cross, a warning, a stop.
+export const ICONS = {
+  good: "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM11.6 4.6 6.9 9.3 4.4 6.8 3 8.2l3.9 3.9 6.1-6.1Z",
+  bad: "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM5.6 4.2 8 6.6l2.4-2.4 1.4 1.4L9.4 8l2.4 2.4-1.4 1.4L8 9.4l-2.4 2.4-1.4-1.4L6.6 8 4.2 5.6Z",
+  warn: "M8 1 15.5 15H.5ZM7 6v5h2V6Zm0 6v2h2v-2Z",
+  active: "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1Zm0 2a5 5 0 1 1 0 10A5 5 0 0 1 8 3Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z",
+  stop: "M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1ZM4 7h8v2H4Z",
+  plain: "M2 2h12v12H2Zm2 2v8h8V4Z",
+};
+
+// A finished job's state gets its mark in every view (tables, lanes, history, its page); a
+// machine's state and a live job keep the small shape of the stylesheet.
+const ENDED = new Set(["passed", "failed", "timed_out", "interrupted", "cancelled",
+                       "stopped: stuck", "released"]);
+export const markOf = (state) => (state === "cancelled" ? ICONS.stop : ICONS[toneOf(state)] ?? ICONS.plain);
+
 export function badge(state) {
-  return el("span", { class: "badge", "data-tone": toneOf(state), text: words(state) });
+  const tone = toneOf(state);
+  if (!ENDED.has(String(state))) return el("span", { class: "badge", "data-tone": tone, text: words(state) });
+  return el("span", { class: "badge", "data-tone": tone, "data-mark": "" },
+    drawIcon(markOf(state), "mark"), el("span", { text: words(state) }));
 }
 
 // An icon, drawn here because `el` cannot make SVG. Decoration: the word beside it carries

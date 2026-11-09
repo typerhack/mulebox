@@ -5,7 +5,9 @@ runner folder, then sends `acquire` every 2 s until the slot is granted, printin
 queue position at most every 30 s. It gives up after MULEBOX_HOOK_TIMEOUT_MIN minutes
 (default 120): it cancels the reservation and exits 1, which fails the GitHub job.
 
-`completed` (ACTIONS_RUNNER_HOOK_JOB_COMPLETED) sends `release` and removes the file. It
+`completed` (ACTIONS_RUNNER_HOOK_JOB_COMPLETED) sends `release` with the job's result and removes
+the file. GitHub does not give the hook that result, so it is read from the runner's diary
+(diary.py), with the step that failed and GitHub's message on it as `ci_result`. It
 always exits 0: a release that did not get through is cleaned up by the worker's
 supervision (supervise.py).
 
@@ -24,7 +26,8 @@ from typing import TextIO
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.runners import reservation_file
+from mulebox.runners import diary, reservation_file
+from mulebox.runners.diary import JobResult
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.worker.paths import NodePaths
 
@@ -85,6 +88,17 @@ def outcome_from_status(status: str | None) -> Outcome:
     if not status:
         return Outcome.PASSED
     return _STATUS_OUTCOMES.get(status.strip().lower(), Outcome.FAILED)
+
+
+def job_result(env: Mapping[str, str], paths: NodePaths, runner: str) -> JobResult | None:
+    """The job's result: GITHUB_JOB_STATUS if GitHub ever sets it, else the runner's diary;
+    None when neither says (the release then says passed, as it always did)."""
+    if env.get("GITHUB_JOB_STATUS"):
+        return JobResult(outcome_from_status(env["GITHUB_JOB_STATUS"]))
+    try:
+        return diary.read_result(reservation_file.runner_dir(paths, runner))
+    except MuleboxError:
+        return None
 
 
 def _say(out: TextIO, text: str) -> None:
@@ -180,9 +194,12 @@ def completed(env: Mapping[str, str], link: CoordinatorLink, paths: NodePaths, *
     if job_id is None:
         _say(out, "no build slot reservation to release")
         return 0
-    outcome = outcome_from_status(env.get("GITHUB_JOB_STATUS"))
+    result = job_result(env, paths, runner)
+    outcome = result.outcome if result else Outcome.PASSED
+    known = {"ci_result": result.fields()} if result else {}
     try:
-        reply = link.call(request(MessageType.RELEASE, job_id=job_id, outcome=outcome.value))
+        reply = link.call(request(MessageType.RELEASE, job_id=job_id, outcome=outcome.value,
+                                  **known))
         if _refused(reply):
             LOG.warning("release of %s refused: %s", job_id, reply.body.get("message"))
         else:

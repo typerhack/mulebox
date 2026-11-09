@@ -115,6 +115,27 @@ def test_completed_maps_job_status(gh_env, link, paths, store, status, outcome):
     assert store.get_job(job_id)["outcome"] == outcome
 
 
+def test_completed_reads_the_result_github_does_not_give_it_from_the_runners_diary(
+        gh_env, link, paths, store):
+    started(gh_env, link, paths)
+    job_id = reservation_file.read(paths, RUNNER)
+    diag = paths.runners / RUNNER / "_diag"
+    diag.mkdir()
+    stamp = "[2026-11-09 15:01:03Z INFO StepsRunner]"
+    (diag / "Worker_20261109-145920-utc.log").write_text("\n".join([
+        f"{stamp} Processing step: DisplayName='Full backend test suite'",
+        f"{stamp} Step result: Failed", '  "errorMessages": [',
+        '    "Process completed with exit code 1."', "  ],",
+        f"{stamp} Update job result with current step result 'Failed'.",
+        f"{stamp} Processing step: DisplayName='Complete runner'"]))
+    out = io.StringIO()
+    assert hooks.completed(gh_env, link, paths, out=out) == 0
+    job = store.get_job(job_id)
+    assert job["outcome"] == Outcome.FAILED and "failed" in out.getvalue()
+    assert job["ci_result"] == {"outcome": "failed", "step": "Full backend test suite",
+                                "message": "Process completed with exit code 1."}
+
+
 def test_completed_without_reservation_or_coordinator(gh_env, link, paths, store):
     out = io.StringIO()
     assert hooks.completed(gh_env, link, paths, out=out) == 0

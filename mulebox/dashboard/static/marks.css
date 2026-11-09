@@ -1,0 +1,10 @@
+/* How a job ended, on its state everywhere (format.js badge): a check, a cross, a warning or a
+   stop in the state's colour, beside the word. A machine and a live job keep the small shape. */
+.badge[data-mark]::before { content: none; }
+.badge .mark { flex: none; width: 14px; height: 14px; fill: var(--ink-muted); }
+.badge[data-tone="good"] .mark { fill: var(--good); }
+.badge[data-tone="bad"] .mark { fill: var(--bad); }
+.badge[data-tone="warn"] .mark { fill: var(--warn); }
+.mark path { stroke: none; }
+/* Where a GitHub job failed, under its name in a table: the step and what GitHub says on it. */
+.why { display: block; color: var(--bad); overflow-wrap: anywhere; }

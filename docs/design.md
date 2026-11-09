@@ -348,7 +348,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - What a running job does, on its card: its stage in words (a CI job's GitHub step) and a meter
   of the cores the job alone uses, which pulses only at half a core or more, so the busy job
   stands out. An agent job is read from its unit and containers, a CI job from its runner's
-  service (containers a workflow starts itself are not counted). Downloads are told by the stage
+  service and the Compose containers started from the runner's work folder (a plain
+  `docker run` of a workflow says nothing of where it came from and is not counted). Downloads are told by the stage
   only: per-job network is not measured.
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
@@ -400,7 +401,9 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - A reservation's log is the runner job's steps as they start and each step's output once the
   runner writes it to its own files (in 4 KB blocks or at the step's end), read, never changed, by
   the worker. The last step's output can come up to a minute after the slot is released.
-  GitHub keeps the whole log and the result.
+  GitHub keeps the whole log. The result is GitHub's too, but GitHub does not hand it to the
+  completed hook, so the hook reads it from the runner's own diary: passed, failed or
+  cancelled, the first failed step and GitHub's message on it.
 
 ## Safety
 

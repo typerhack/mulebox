@@ -10,6 +10,9 @@ from __future__ import annotations
 
 import threading
 from collections.abc import Callable
+from typing import Generic, TypeVar
+
+T = TypeVar("T")
 
 
 class Task:
@@ -32,6 +35,29 @@ class Task:
 
     def wait(self, timeout_s: float) -> bool:
         return self._finished.wait(timeout_s)
+
+
+class Polled(Generic[T]):
+    """An answer asked for beside the loop: a stuck daemon must not stop it. `value()` gives the
+    last answer and asks again; None until there is one, while the next one is late, or when
+    asking failed."""
+
+    def __init__(self, ask: Callable[[], T]) -> None:
+        self._ask = ask
+        self._task: Task | None = None
+        self._found: T | None = None
+
+    def _run(self) -> None:
+        self._found = None
+        self._found = self._ask()
+
+    def value(self) -> T | None:
+        task = self._task
+        if task is not None and not task.done:
+            return None
+        found = self._found if task is not None else None
+        self._task = start_thread(self._run)
+        return found
 
 
 def start_thread(work: Callable[[], None]) -> Task:

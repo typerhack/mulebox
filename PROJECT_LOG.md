@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.76.0 - 2026-11-09 - minor
+- GitHub jobs get their real result: GitHub does not give the completed hook the job's status, so all 129 earlier reservations were stored as passed. The hook now reads it from the runner's own diary (runners/diary.py), with the first failed step and GitHub's message on it, stored as jobs.ci_result (schema 17). Checked against 124 real runs. Older reservations still show released.
+- Dashboard: CI jobs appear in the Failed and Passed tabs; a failed one says which step failed and why; every finished job's state has a mark (check, cross, warning, stop) in tables, history and on its page (marks.css).
+- A CI card's CPU counts the Compose containers started from the runner's work folder: a real backend test step in a container used all 8 cores while its card read 0.0. Background polling for Docker is shared with the agent job meter (background.Polled).
+
 ## 0.75.4 - 2026-11-07 - patch
 - Roadmap: M5.2 marked done (its check passed in 0.74.1).
 

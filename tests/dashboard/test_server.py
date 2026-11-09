@@ -184,7 +184,8 @@ def test_the_shipped_page_works_under_the_policy():
     assert not re.search(r"<script(?![^>]*\bsrc=)", page)  # no inline script
     assert "http://" not in page and "https://" not in page  # no CDN
     for name in ("app.js", "style.css", "charts.js", "jobs.js", "lanes.js", "jobdetail.js",
-                 "machine.js", "machines.js", "format.js", "canceljob.js", "canceljob.css", "doing.js", "doing.css"):
+                 "machine.js", "machines.js", "format.js", "canceljob.js", "canceljob.css", "doing.js", "doing.css",
+                 "marks.css"):
         assert (STATIC_DIR / name).is_file()
     # Filter lists block some names outright, and one blocked module blanks the page.
     assert not (STATIC_DIR / "logview.js").exists()

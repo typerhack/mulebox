@@ -4,7 +4,7 @@ A crashed runner never calls its job-completed hook, so the worker watches its o
 reservations: every 10 s it asks the coordinator for them (`runner_jobs`). While the
 runner's job process (`Runner.Worker`, found through /proc) is alive, a granted
 reservation gets a worker heartbeat, which renews its lease and carries what the job does: its
-CPU (runner_meter.py) and the step it is on, for its card on the dashboard. Once the process has been
+CPU, its compose containers' included (runner_meter.py), and the step it is on, for its card on the dashboard. Once the process has been
 gone for 60 s the reservation is released as `interrupted`. A granted reservation's steps and
 output also go into its log from the runner's own files, every second (live_log.py).
 
@@ -105,6 +105,7 @@ class Supervisor:
                 del self.missing[job_id]
         self._track_logs(jobs, current, send)
         self.meter.forget(current)
+        self.meter.new_round()
         for job in jobs:
             self._check(job, now, send)
 
