@@ -99,3 +99,22 @@ def test_a_job_can_turn_off_or_replace_the_install(tmp_path):
     assert for_job(project, "check")[0].install == "npm ci"
     assert for_job(project, "lint")[0].install is None
     assert for_job(project, "e2e")[0].install == "npm ci --ignore-scripts"
+
+
+@pytest.mark.parametrize("install, kept", [
+    ("docker compose exec -T api composer install", False),
+    ("docker-compose exec api composer install", False),
+    ("docker exec app npm ci", False),
+    ("npm ci", True),
+    ("bash scripts/docker-free-install.sh", True),
+])
+def test_a_job_without_containers_does_not_inherit_an_install_that_needs_them(tmp_path, install, kept):
+    (tmp_path / "docker-compose.yml").write_text("services: {}\n")
+    (tmp_path / ".mulebox.yml").write_text(
+        f"project: example-app\ncompose: [docker-compose.yml]\ninstall: {install}\njobs:\n"
+        "  check: npm test\n  lint:\n    run: npm run lint\n    compose: false\n"
+        "  own:\n    run: npm run lint\n    compose: false\n    install: npm ci\n")
+    project = load_project_config(tmp_path / ".mulebox.yml")
+    assert for_job(project, "check")[0].install == install
+    assert for_job(project, "lint")[0].install == (install if kept else None)
+    assert for_job(project, "own")[0].install == "npm ci"

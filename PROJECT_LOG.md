@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.77.1 - 2026-11-09 - patch
+- The notice about env: entries a job goes without is printed only for a job with containers or ports of its own, and says what it means; a lint job with neither printed it every run (issues #6, #9).
+- A compose: false job no longer inherits a top-level install that runs docker compose, docker exec or docker run, which could not work without containers; docs say the order install, setup, command, and that a cd in setup stays there, fixed in 0.71.0 (issue #3).
+
 ## 0.77.0 - 2026-11-09 - minor
 - mulebox feedback draft takes several job ids and puts them in the draft with each job's result, stages, CI step and the mulebox that ran it; --title (default the summary's first sentence), --grep for numbered log lines with context, --log-lines, -o FILE (issue #10).
 - mulebox feedback guide prints the whole reporting procedure: when to report, what evidence to gather, how to take out private data the scrub cannot see, ask before posting. The skill points to it; a second skill was weighed and dropped, as the guide in the CLI cannot fall behind the tool.

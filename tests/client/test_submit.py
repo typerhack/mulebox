@@ -101,7 +101,7 @@ def test_submit_body_of_a_compose_project(make_repo):
         "CI": "1", "MULEBOX_COMPOSE_FILES": "docker-compose.yml:docker-compose.ci.yml"}
 
 
-def test_a_job_without_containers_sends_no_compose_and_says_what_it_left_out(make_repo):
+def test_a_job_without_containers_or_ports_sends_no_compose_and_no_notice(make_repo):
     project = replace(PROJECT, compose=("docker-compose.yml",), setup="pnpm install",
                       env={"URL": "http://127.0.0.1:${MULEBOX_PORT_API_8000}", "CI": "1"},
                       job_options={"test": JobOptions(setup=NO_SETUP, compose=False)})
@@ -111,7 +111,16 @@ def test_a_job_without_containers_sends_no_compose_and_says_what_it_left_out(mak
     body = remote.calls[0].body
     assert body["env"] == {"CI": "1"} and body["env_order"] == ["CI"]
     assert body["setup"] is None and "docker" not in body["needs"]
-    assert "URL" in io.err.getvalue()
+    assert "URL" not in io.err.getvalue()  # it could not use it: nothing to say (issue #9)
+
+
+def test_a_job_with_containers_says_which_entries_it_goes_without(make_repo):
+    project = replace(PROJECT, env={"URL": "http://127.0.0.1:${MULEBOX_PORT_VITE}", "CI": "1"},
+                      job_options={"e2e": JobOptions(ports=("vite",)),
+                                   "test": JobOptions(ports=("api",))})
+    io = streams()
+    run_job(project, "test", make_repo(), FakeRemote([[result()]]), io)
+    assert "env: URL is not set for this job" in io.err.getvalue()
 
 
 def test_a_job_with_a_port_sends_its_name_and_others_lose_what_needs_it(make_repo):
@@ -273,9 +282,8 @@ def test_the_failure_summary_is_the_last_thing_printed_after_the_container_logs(
 
 
 def test_the_left_out_notice_reads_for_one_entry_and_for_more():
-    assert submit.left_out(["A"]) == ("this job leaves out the env: entry A, which uses a port "
-                                      "it does not have")
-    assert "entries A, B, which use a port" in submit.left_out(["A", "B"])
+    assert submit.left_out(["A"]).startswith("note: env: A is not set for this job, as it does not")
+    assert submit.left_out(["A", "B"]).startswith("note: env: A, B are not set")
 
 
 def test_warm_runs_a_job_up_to_its_command_and_never_counts_as_it(make_repo):

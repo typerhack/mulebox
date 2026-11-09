@@ -36,6 +36,9 @@ NO_SETUP = ""
 _PORT_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]*")
 _LIKE_A_SERVICE_PORT = re.compile(r"[_-]\d+([_-]udp)?$", re.IGNORECASE)
 _SEPARATOR = ","
+# An install that runs in a container (`docker compose exec api composer install`) cannot run in a
+# job with no containers; such a job does not inherit it (issue #3).
+_IN_A_CONTAINER = re.compile(r"\bdocker(?:-compose\b|\s+(?:compose|exec|run)\b)")
 
 
 @dataclass(frozen=True)
@@ -114,6 +117,8 @@ def for_job(project: Any, name: str | None) -> tuple[Any, list[str]]:
     setup = project.setup if options.setup is None else options.setup or None
     install = project.install if options.install is None else options.install or None
     files = project.compose if options.compose else ()
+    if options.install is None and not files and install and _IN_A_CONTAINER.search(install):
+        install = None
     own = {port_variable(port) for port in options.ports}
     others = {port_variable(port) for job in project.job_options.values() for port in job.ports}
 

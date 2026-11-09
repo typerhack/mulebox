@@ -292,9 +292,12 @@ exclude: [reports/]             # extra paths never uploaded (secrets are exclud
      job has no such variable, so `env:` entries built on it are left out there.
 
      With `compose: false` the job needs no Docker on its machine. It keeps the top-level `install`
-     and `setup` unless it says otherwise: one that runs in a service needs `install: false`. `env:` entries built on
-     `MULEBOX_PORT_...`, directly or through an earlier entry, are left out for that job, and
-     `check` says which. `mulebox run` always uses the top-level values.
+     and `setup` unless it says otherwise, except a top-level `install` that runs `docker compose`,
+     `docker exec` or `docker run`: with no containers it could not work, so the job goes without it.
+     The order is always `install`, then `setup`, then the command; a `cd` in `setup` does not
+     reach the command. `env:` entries built on `MULEBOX_PORT_...`, directly or through an earlier
+     entry, are not set for that job; it says so only when it has containers or `ports:` of its
+     own, as one with neither has nothing such an entry could point to. `mulebox run` always uses the top-level values.
      `ports:` needs a build machine on 0.40 or later: an older worker refuses the job at
      the start, with exit 5.
    - A job may span several lines (`check: |`). The first line that fails ends it, as in a

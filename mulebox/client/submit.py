@@ -83,7 +83,7 @@ def run_job(
     io = streams or Streams()
     job, argv = (WARM_JOB_NAME, WARM_ARGV) if warm else job_request(project, target)
     project, dropped = for_job(project, target if isinstance(target, str) else None)
-    if dropped:
+    if dropped and (project.compose or project.host_ports):  # else nothing could use them
         report.status(io.err, left_out(dropped))
     try:
         snap = make_snapshot(root, project.exclude)
@@ -134,10 +134,11 @@ def run_job(
 
 
 def left_out(names: Sequence[str]) -> str:
-    """The notice for `env:` entries a job goes without."""
-    what = f"entry {names[0]}, which uses" if len(names) == 1 else (
-        f"entries {', '.join(names)}, which use")
-    return f"this job leaves out the env: {what} a port it does not have"
+    """The notice for `env:` entries a job goes without. Only a job with containers or ports of
+    its own gets it: one with neither has nothing such an entry could point to (issue #9)."""
+    what = f"env: {names[0]} is" if len(names) == 1 else f"env: {', '.join(names)} are"
+    return (f"note: {what} not set for this job, as it does not run the service or `ports:` "
+            "entry that gives that port; only a command that needs that address would notice")
 
 
 def _refuse_detach(remote: RemoteLike, job_id: str) -> None:
