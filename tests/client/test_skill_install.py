@@ -157,3 +157,40 @@ def test_status_as_text(home, capsys):
     put(folder_in(home, ".claude"), PACKAGED)
     code, out = run(capsys, "status")
     assert code == 0 and f"contract schema {SCHEMA}" in out.out and ": current" in out.out
+
+
+def test_contract_says_when_a_copy_is_out_of_date_even_with_the_same_schema(
+        home, tmp_path, monkeypatch, capsys):
+    claude = folder_in(home, ".claude")
+    path = put(claude, PACKAGED.replace("## What to do with it", "## An older text"))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MULEBOX_CONFIG", str(tmp_path / "missing.toml"))
+    assert cli.main(["contract"]) == 0
+    err = capsys.readouterr().err
+    assert "skill is out of date" in err and str(path) in err and "mulebox skill update" in err
+    assert run(capsys, "update")[0] == 0
+    assert cli.main(["contract"]) == 0
+    assert "out of date" not in capsys.readouterr().err
+
+
+def test_contract_is_quiet_with_no_copy_or_a_current_one(home, tmp_path, monkeypatch, capsys):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("MULEBOX_CONFIG", str(tmp_path / "missing.toml"))
+    assert cli.main(["contract"]) == 0
+    assert "skill" not in capsys.readouterr().err
+    put(folder_in(home, ".claude"), PACKAGED)
+    assert cli.main(["contract"]) == 0
+    assert "skill" not in capsys.readouterr().err
+
+
+def test_the_skill_tells_the_agent_to_update_itself():
+    assert "run `mulebox skill update`" in PACKAGED and "read the\nSKILL.md" in PACKAGED
+
+
+def test_setup_refresh_updates_old_copies_and_leaves_the_rest(home):
+    old = put(folder_in(home, ".claude"), OLD)
+    folder_in(home, ".claude-work")  # no copy there: none is added
+    lines = si.refresh_here()
+    assert old.read_text() == PACKAGED and len(lines) == 1 and "updated" in lines[0]
+    assert not si.skill_path(home / ".claude-work").exists()
+    assert si.refresh_here() == []

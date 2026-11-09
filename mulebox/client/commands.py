@@ -16,7 +16,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import attention, contract, queue_view, report, summary, take_back, tui
+from mulebox.client import (attention, contract, queue_view, report, skill_install, summary,
+                            take_back, tui)
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -146,6 +147,8 @@ def _contract(args: argparse.Namespace) -> int:
     except ProjectNotFound:
         config = None
     terms = contract.build(config, get_version())
+    if stale := skill_install.stale_here():
+        report.status(sys.stderr, stale)
     sys.stdout.write(json.dumps(terms, indent=2) + "\n" if args.json
                      else contract.render(terms))
     return 0

@@ -153,8 +153,8 @@ def skills(copies: list[Copy], schema: int) -> list[Finding]:
         if copy.state in (BEHIND, DIFFERS):
             written = f"schema {copy.schema}" if copy.schema else "no schema"
             out.append(Finding(WARN, "skill", f"the copy in {copy.folder} is out of date (written "
-                               f"for {written}, current {schema}): tell the user that "
-                               "`mulebox skill update` fixes it; do not update it yourself"))
+                               f"for {written}, current {schema}): run `mulebox skill update`, "
+                               "then read the skill again"))
         elif copy.state == AHEAD:
             out.append(Finding(WARN, "skill", f"the copy in {copy.folder} is newer than this "
                                "mulebox; upgrade mulebox"))

@@ -1,4 +1,5 @@
-"""CLI `mulebox skill install|update|status`, run by a person, never by an agent on its own.
+"""CLI `mulebox skill install|update|status`. An agent runs `update` when `mulebox contract`
+says its skill is out of date (client/skill_install.py); `install` is a person's choice.
 
 Without `--config-dir` they cover every Claude config folder that exists here
 (client/skill_install.py). `status` changes nothing.

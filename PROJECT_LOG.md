@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.82.0 - 2026-11-09 - minor
+- The mulebox skill keeps itself current: mulebox contract, the first thing every copy tells an agent to run, says on stderr when an installed copy differs from this mulebox's (not only a lower contract schema, which missed the 0.77.0 text change), and the skill tells the agent to run mulebox skill update and read it again. mulebox setup <host> also updates out-of-date copies on the laptop at its end, so the skill moves with every upgrade. Agents may now update the skill; doctor and the contract say so.
+
 ## 0.81.1 - 2026-11-09 - patch
 - mulebox run --take says a small file's size in bytes; a 6-byte file read "0.0 KiB" in the first real run.
 

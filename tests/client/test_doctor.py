@@ -95,9 +95,9 @@ def test_versions_warn_about_a_worker_behind_its_coordinator():
     assert [f.level for f in found] == ["ok", "warn"]
 
 
-def test_a_skill_behind_is_a_warning_that_sends_the_agent_to_the_user():
+def test_a_skill_behind_is_a_warning_that_says_how_to_update_it():
     found = doctor.skills([Copy("/c", skill_install.BEHIND, 1)], 3)
-    assert found[0].level == "warn" and "tell the user" in found[0].text
+    assert found[0].level == "warn" and "run `mulebox skill update`" in found[0].text
     assert "schema 1, current 3" in found[0].text
 
 

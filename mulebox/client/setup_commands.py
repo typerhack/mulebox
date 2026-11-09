@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from mulebox.client import setup, setup_worker
+from mulebox.client import setup, setup_worker, skill_install
 from mulebox.client.commands import guarded
 
 
@@ -36,4 +36,6 @@ def _setup(args: argparse.Namespace) -> int:
     except setup.SetupError as exc:
         _say(f"error: {exc}")
         return 1
+    for line in skill_install.refresh_here():
+        _say(line)
     return 0

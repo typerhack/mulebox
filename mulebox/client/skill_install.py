@@ -2,8 +2,11 @@
 
 The skill ships inside the package, so a skill and the mulebox that wrote it have one version.
 `SKILL.md` says which contract schema it was written for and `mulebox contract` prints the
-current one, so an agent can tell that its copy is behind and tell the user. Agents never
-update it: only a person runs `mulebox skill update`.
+current one. A schema number only moves when the contract does, so the text is compared too:
+`mulebox contract`, the first thing every copy of the skill tells an agent to run, says on
+stderr when a copy differs from this mulebox's (`stale_notice`), and the agent then runs
+`mulebox skill update` and reads the skill again. An old copy written before this rule still
+says to run the contract first, so it is reached too.
 
 Several Claude config folders can exist on one machine: `~/.claude`, `~/.claude-work`, and
 whatever `CLAUDE_CONFIG_DIR` names. A copy is in `<folder>/skills/mulebox/SKILL.md`. Only that
@@ -95,6 +98,36 @@ def inspect(folder: Path, packaged: str) -> Copy:
 
 def inspect_all(folders: Iterable[Path], packaged: str) -> list[Copy]:
     return [inspect(folder, packaged) for folder in folders]
+
+
+def stale_notice(copies: Iterable[Copy]) -> str | None:
+    """What `mulebox contract` says when a copy is out of date; None when none is."""
+    old = [copy for copy in copies if copy.state in (BEHIND, DIFFERS)]
+    if not old:
+        return None
+    where = ", ".join(str(copy.path) for copy in old)
+    return (f"the mulebox skill is out of date ({where}). Run `mulebox skill update`, then read "
+            "that SKILL.md again: this session loaded the old text.")
+
+
+def stale_here() -> str | None:
+    """`stale_notice` for the Claude config folders of this user."""
+    folders = config_folders(os.environ, Path.home())
+    return stale_notice(inspect_all(folders, packaged_text())) if folders else None
+
+
+def refresh_here() -> list[str]:
+    """`mulebox setup`: update this user's out-of-date copies, so the skill moves with mulebox;
+    one line per copy updated or refused. Missing and linked copies are left as they are."""
+    packaged, lines = packaged_text(), []
+    for copy in inspect_all(config_folders(os.environ, Path.home()), packaged):
+        if copy.state in (BEHIND, DIFFERS):
+            try:
+                write(copy.folder, packaged)
+                lines.append(f"the mulebox skill in {copy.folder} is updated to this mulebox's")
+            except OSError as exc:
+                lines.append(f"could not update the mulebox skill in {copy.folder}: {exc}")
+    return lines
 
 
 def write(folder: Path, packaged: str) -> None:

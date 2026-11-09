@@ -411,9 +411,16 @@ mulebox skill update     # replace out-of-date copies, after upgrading mulebox
 
 These cover `~/.claude`, `~/.claude-work` and the folder `CLAUDE_CONFIG_DIR` names, those that
 exist; `--config-dir <folder>` names one instead, and may repeat. `update` replaces hand edits
-in a copy, and leaves alone a skill folder that is a link. The skill says which contract schema
-it was written for; when `mulebox contract` shows a higher one, the agent tells you, and
-`mulebox doctor` reports it too. Agents never update it themselves.
+in a copy, and leaves alone a skill folder that is a link.
+
+The skill moves with mulebox, so its version is always the laptop's mulebox. Upgrading goes:
+upgrade mulebox on the laptop, then `mulebox setup <host>` installs that same version on the
+build machine and, at its end, updates the out-of-date skill copies on the laptop. A copy
+that is still old, after an upgrade without `setup`, is caught by the session: the skill tells
+the agent to run `mulebox contract` first, which says on stderr when an installed copy differs
+from this mulebox's; the agent then runs `mulebox skill update`, reads the skill again and tells
+you. `mulebox doctor` reports it too. Copies from before 0.82.0 lack that last step, but still
+run the contract first, so the agent sees the notice.
 
 Agents without skills can read [agents.md](agents.md) instead.
 

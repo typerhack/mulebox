@@ -38,10 +38,10 @@ def test_the_repository_path_and_the_packaged_skill_are_one_file():
     assert SKILL.read_text(encoding="utf-8") == skill_install.packaged_text()
 
 
-def test_it_tells_the_agent_to_report_a_stale_skill_and_not_to_update_it():
+def test_it_tells_the_agent_to_update_a_stale_skill_and_read_it_again():
     body = parts()[1]
-    assert "mulebox skill update" in body
-    assert "Never update this skill\nyourself" in body
+    assert "run `mulebox skill update`" in body and "read the\nSKILL.md it names again" in body
+    assert "Never update" not in body
 
 
 def test_it_teaches_detached_jobs_and_following_them():

@@ -27,10 +27,10 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 15. `mulebox contract` prints the current schema on
-its first line. If that number is higher, this skill is behind: tell the user that
-`mulebox skill update` fixes it, and go on following the contract. Never update this skill
-yourself.
+This skill was written for contract schema 15. Keep it current, in every session, before
+anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
+its first line gives a schema higher than 15, run `mulebox skill update`, then read the
+SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
 

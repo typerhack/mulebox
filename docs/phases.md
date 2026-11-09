@@ -253,6 +253,9 @@ Marked `[~]` until checked on a real machine.
       states its contract schema, `mulebox doctor` reports it, a test ties the two. Tested
       2026-11-04 (0.31.0) with temporary folders only; the wheel holds SKILL.md. Open: the
       user installs it, and an agent notices a behind skill in a real session (see M7.2).
+      2026-11-09 (0.82.0): a text change in 0.77.0 went unnoticed by every session, as only the
+      schema was compared; now `mulebox contract` reports any copy that differs, the agent
+      updates it itself (the user's choice), and `mulebox setup` updates the laptop's copies.
 
 ## M9: Faster and clearer jobs  (done 2026-11-06, 0.62.2)
 Worked out from the first real jobs on a slow connection (2026-11-04).
