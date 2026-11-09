@@ -33,9 +33,12 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   whose `passed` only meant the slot was given back.
 - 17 -> 18: `jobs.take` (JSON list, default '[]'): files `mulebox run --take` brings back
   (coordinator/taken.py).
+- 18 -> 19: the `clients` table: each laptop's mulebox and skill state (clients.py).
 """
 
 import sqlite3
+
+from mulebox.coordinator import clients
 
 from mulebox.common.errors import MuleboxError
 
@@ -83,6 +86,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     15: ("ALTER TABLE workers ADD COLUMN load TEXT",),
     16: ("ALTER TABLE jobs ADD COLUMN ci_result TEXT NOT NULL DEFAULT '{}'",),
     17: ("ALTER TABLE jobs ADD COLUMN take TEXT NOT NULL DEFAULT '[]'",),
+    18: (clients.TABLE,),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

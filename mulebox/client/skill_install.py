@@ -116,6 +116,18 @@ def stale_here() -> str | None:
     return stale_notice(inspect_all(folders, packaged_text())) if folders else None
 
 
+def state_here() -> str:
+    """This user's skill, as a submit reports it (coordinator/clients.py): `current`,
+    `out_of_date` (a copy differs from this mulebox's), or `none` (no copy, only links)."""
+    try:
+        copies = inspect_all(config_folders(os.environ, Path.home()), packaged_text())
+    except OSError:
+        return "none"
+    if any(copy.state in (BEHIND, DIFFERS) for copy in copies):
+        return "out_of_date"
+    return "current" if any(copy.state == CURRENT for copy in copies) else "none"
+
+
 def refresh_here() -> list[str]:
     """`mulebox setup`: update this user's out-of-date copies, so the skill moves with mulebox;
     one line per copy updated or refused. Missing and linked copies are left as they are."""

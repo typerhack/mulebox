@@ -16,13 +16,14 @@ from typing import Any
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
-from mulebox.coordinator import api, attendance, queue, steps, usual, workers
+from mulebox.coordinator import api, attendance, clients, queue, steps, usual, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.validate import check_job_id
 from mulebox.coordinator.views import placement, reservation_dict
-from mulebox.dashboard import machines
+from mulebox.dashboard import machines, notices
+from mulebox.version import get_version
 
 QUEUE_FINISHED = 20
 HISTORY_DEFAULT = 50
@@ -62,7 +63,10 @@ class DashboardData:
             limits = attendance.read_limits(conn)
             active = [{**job, **attendance.fields(job, now, limits)}
                       for job in queue.active_jobs(conn)]
-            return machines.snapshot(workers.listing(conn), active, now)
+            found = workers.listing(conn)
+            panel = machines.snapshot(found, active, now)
+            panel["notices"] = notices.notices(get_version(), found, clients.recent(conn, now), now)
+            return panel
 
     def job(self, job_id: str, now: float | None = None) -> dict[str, Any] | None:
         """The detail view of one job, or None when the id is malformed or unknown."""

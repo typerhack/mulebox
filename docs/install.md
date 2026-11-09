@@ -422,6 +422,10 @@ from this mulebox's; the agent then runs `mulebox skill update`, reads the skill
 you. `mulebox doctor` reports it too. Copies from before 0.82.0 lack that last step, but still
 run the contract first, so the agent sees the notice.
 
+The dashboard shows the same, for every laptop that sent a job in the last two weeks: a strip
+above the panels names a laptop on another mulebox than the build machine, a laptop whose skill
+is out of date, and a worker on another mulebox than the coordinator, each with its fix.
+
 Agents without skills can read [agents.md](agents.md) instead.
 
 ## Dashboard on the LAN

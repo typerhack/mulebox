@@ -6,11 +6,13 @@ import platform
 import socket
 from collections.abc import Sequence
 
+from mulebox.client import skill_install
 from mulebox.client.snapshot import Snapshot
 from mulebox.common import compose
 from mulebox.common.config import ProjectConfig
 from mulebox.common.config_jobs import HOST_PORTS_KEY, join_ports
 from mulebox.common.ids import new_id
+from mulebox.version import get_version
 
 RUN_JOB_NAME = "run"
 WARM_JOB_NAME = "warm"
@@ -57,6 +59,8 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "branch": snap.branch,
         "client": socket.gethostname() or "client",
         "client_os": client_os(),
+        "client_version": get_version(),
+        "skill": skill_install.state_here(),
         "setup": project.setup,
         "install": project.install,
         "toolchain": dict(project.toolchain),

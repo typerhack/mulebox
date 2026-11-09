@@ -194,3 +194,12 @@ def test_setup_refresh_updates_old_copies_and_leaves_the_rest(home):
     assert old.read_text() == PACKAGED and len(lines) == 1 and "updated" in lines[0]
     assert not si.skill_path(home / ".claude-work").exists()
     assert si.refresh_here() == []
+
+
+def test_the_state_a_submit_reports(home):
+    assert si.state_here() == "none"
+    claude = folder_in(home, ".claude")
+    put(claude, PACKAGED)
+    assert si.state_here() == "current"
+    put(folder_in(home, ".claude-work"), OLD)
+    assert si.state_here() == "out_of_date"

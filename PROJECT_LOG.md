@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.0 - 2026-11-09 - minor
+- The dashboard warns when installs are out of step: a strip above the panels names a laptop on another mulebox than the build machine, a laptop whose skill is out of date, and a worker on another mulebox than the coordinator, each with the command that fixes it. Laptops now say their mulebox version and skill state with every submit, kept per laptop in a new clients table (schema 19).
+
 ## 0.82.0 - 2026-11-09 - minor
 - The mulebox skill keeps itself current: mulebox contract, the first thing every copy tells an agent to run, says on stderr when an installed copy differs from this mulebox's (not only a lower contract schema, which missed the 0.77.0 text change), and the skill tells the agent to run mulebox skill update and read it again. mulebox setup <host> also updates out-of-date copies on the laptop at its end, so the skill moves with every upgrade. Agents may now update the skill; doctor and the contract say so.
 

@@ -14,6 +14,7 @@ from mulebox.common import take_paths
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (
     attendance,
+    clients,
     holds,
     leases,
     machine_api,
@@ -96,7 +97,10 @@ def submit(req: Request) -> Message:
         "detached": v.flag(body, "detached"),
         "take": _take(body),
     }
+    said = clients.fields(body)
     with req.store.write() as conn:
+        if said:  # first, as a repeat answered from an earlier result returns early
+            clients.seen(conn, fields["client"], said, req.now)
         job = st.find_by_key(conn, fields["idempotency_key"])
         same = reuse.earlier(conn, fields, req.now) if job is None and v.flag(body, "reuse") else None
         if same is not None:

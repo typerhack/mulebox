@@ -7,6 +7,7 @@ import { historyView, queueView, tick, tickLeft } from "./jobs.js";
 import { liveStream } from "./live.js";
 import { Machine } from "./machine.js";
 import { renderMachines } from "./machines.js";
+import { renderVersions } from "./versions.js";
 
 const work = document.getElementById("work");
 const conn = document.getElementById("conn");
@@ -102,6 +103,7 @@ let laneKey = "";
 function onMachines(event) {
   machines = JSON.parse(event.data);
   renderMachines(document.getElementById("machines"), machines);
+  renderVersions(document.getElementById("versions"), machines.notices);
   const key = JSON.stringify(machines.machines.map((m) => [m.name, m.state]));
   if (key !== laneKey) {
     laneKey = key;

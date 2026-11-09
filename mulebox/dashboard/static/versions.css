@@ -1,0 +1,8 @@
+/* The out-of-step strip (versions.js): the warning colour on its edge and icon only, so it is
+   seen without shouting; the text stays readable in both themes. */
+.versions { margin: 10px 12px 0; padding: 6px 10px; border: 1px solid var(--warn); border-radius: 3px; }
+.versions ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
+.versions li { display: flex; align-items: baseline; gap: 7px; }
+.versions .warning { color: var(--warn); transform: translateY(2px); }
+.versions .fix { color: var(--ink-soft); }
+.versions code { color: var(--ink); }
