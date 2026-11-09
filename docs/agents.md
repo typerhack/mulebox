@@ -57,6 +57,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | get a detached job's result | `mulebox wait <job-id>` |
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | the same inside a compose service | `mulebox run --in <service> -- <cmd> <args...>` |
+| the same with no containers, install or setup | `mulebox run --bare -- <cmd> <args...>` |
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |

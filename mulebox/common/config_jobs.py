@@ -109,11 +109,17 @@ def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
     return commands, options
 
 
-def for_job(project: Any, name: str | None) -> tuple[Any, list[str]]:
+# `mulebox run --bare`: the command alone, with no containers, install or setup (issue #5).
+BARE = JobOptions(setup=NO_SETUP, install=NO_SETUP, compose=False)
+
+
+def for_job(project: Any, name: str | None,
+            options: JobOptions | None = None) -> tuple[Any, list[str]]:
     """(`project` as job `name` sees it, the `env:` entries it cannot have); None is `mulebox
-    run`. A job without containers has no compose port, and a job has none of another job's
-    `ports:`: an entry built on one goes, not the whole job."""
-    options = project.job_options.get(name, JobOptions())
+    run`, and `options` stand in for the job's own (BARE). A job without containers has no
+    compose port, and a job has none of another job's `ports:`: an entry built on one goes,
+    not the whole job."""
+    options = options or project.job_options.get(name, JobOptions())
     setup = project.setup if options.setup is None else options.setup or None
     install = project.install if options.install is None else options.install or None
     files = project.compose if options.compose else ()

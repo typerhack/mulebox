@@ -31,7 +31,7 @@ from mulebox.client.job_body import WARM_ARGV, WARM_JOB_NAME, job_request, submi
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
 from mulebox.common.config import ProjectConfig
-from mulebox.common.config_jobs import for_job
+from mulebox.common.config_jobs import JobOptions, for_job
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.ssh import RemoteError, SSHUnavailable
@@ -75,6 +75,7 @@ def run_job(
     detach: bool = False,
     again: bool = False,
     warm: bool = False,
+    options: JobOptions | None = None,
 ) -> int:
     """Run a job on the build machines as if it ran here; return its exit code.
 
@@ -82,7 +83,7 @@ def run_job(
     runs only up to its command: toolchains, images, `install` and `setup`."""
     io = streams or Streams()
     job, argv = (WARM_JOB_NAME, WARM_ARGV) if warm else job_request(project, target)
-    project, dropped = for_job(project, target if isinstance(target, str) else None)
+    project, dropped = for_job(project, target if isinstance(target, str) else None, options)
     if dropped and (project.compose or project.host_ports):  # else nothing could use them
         report.status(io.err, left_out(dropped))
     try:

@@ -43,6 +43,7 @@ COMMANDS = {
     "one_job": "mulebox check <job>",
     "one_off": "mulebox run -- <cmd> <args...>",
     "one_off_in_a_service": "mulebox run --in <service> -- <cmd> <args...>",
+    "one_off_bare": "mulebox run --bare -- <cmd> <args...>",
     "leave_running": "mulebox check --detach",
     "prepare_ahead": "mulebox warm [job]",
     "follow_it": "mulebox events --job <job-id> --json",
@@ -53,7 +54,7 @@ COMMANDS = {
     "read_log": "mulebox logs <job-id>",
     "why_it_failed": "mulebox logs <job-id> --summary",
     "cancel": "mulebox cancel <job-id>",
-    "report_a_problem": "mulebox feedback draft <job-id> --summary <text>",
+    "report_a_problem": "mulebox feedback guide",
     "skill_status": "mulebox skill status",
 }
 THROUGH_MULEBOX = ("builds", "type checks", "lint", "tests")

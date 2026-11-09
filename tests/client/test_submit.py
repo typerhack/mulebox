@@ -144,6 +144,20 @@ def test_mulebox_run_keeps_the_top_level_values(make_repo):
     assert remote.calls[0].body["setup"] == "pnpm install"
 
 
+def test_a_bare_run_has_no_containers_install_or_setup(make_repo):
+    from mulebox.common.config_jobs import BARE
+    project = replace(PROJECT, compose=("docker-compose.yml",), setup="bash setup.sh",
+                      install="docker compose exec -T api composer install",
+                      env={"URL": "http://127.0.0.1:${MULEBOX_PORT_API_8000}", "CI": "1"})
+    remote = FakeRemote([[result()]])
+    io = streams()
+    run_job(project, ["curl", "-sS", "x"], make_repo(), remote, io, options=BARE)
+    body = remote.calls[0].body
+    assert body["setup"] is None and body.get("install") is None and "docker" not in body["needs"]
+    assert "MULEBOX_COMPOSE_FILES" not in body["env"] and body["env"] == {"CI": "1"}
+    assert "URL" not in io.err.getvalue()
+
+
 def test_a_failing_line_of_a_multi_line_job_fails_it(tmp_path):
     project = replace(PROJECT, jobs={"check": "false\necho passed anyway\n"})
     _, argv = submit.job_request(project, "check")

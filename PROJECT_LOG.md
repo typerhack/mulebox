@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.78.0 - 2026-11-09 - minor
+- mulebox run --bare runs the command alone: no containers, install or setup, so a one-off curl no longer starts MySQL, builds an image and prints the project's setup output (issue #5). In the contract as one_off_bare; report_a_problem now names mulebox feedback guide.
+
 ## 0.77.1 - 2026-11-09 - patch
 - The notice about env: entries a job goes without is printed only for a job with containers or ports of its own, and says what it means; a lint job with neither printed it every run (issues #6, #9).
 - A compose: false job no longer inherits a top-level install that runs docker compose, docker exec or docker run, which could not work without containers; docs say the order install, setup, command, and that a cd in setup stays there, fixed in 0.71.0 (issue #3).

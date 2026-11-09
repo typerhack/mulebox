@@ -28,6 +28,7 @@ from mulebox.common.config import (
     load_client_config,
     load_project_config,
 )
+from mulebox.common.config_jobs import BARE
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import MessageType, ProtocolError
 from mulebox.common.redact import Redactor
@@ -64,6 +65,8 @@ def register(sub: argparse._SubParsersAction) -> None:
                      help="print the job id once it is queued and leave it running")
     run.add_argument("--in", dest="service", metavar="SERVICE",
                      help="run it inside this compose service")
+    run.add_argument("--bare", action="store_true",
+                     help="the command alone: no containers, install or setup")
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -172,10 +175,13 @@ def _run(args: argparse.Namespace) -> int:
         raise UsageError("nothing to run; use `mulebox run -- <command> [args...]`")
     project, root = project_here()
     if args.service:
+        if args.bare:
+            raise UsageError("--in runs in a service, which --bare does not start")
         if not project.compose:
             raise UsageError("--in needs `compose:` in .mulebox.yml")
         argv = ["docker", "compose", "exec", "-T", args.service, *argv]
-    return run_job(project, argv, root, connect(), detach=args.detach)
+    return run_job(project, argv, root, connect(), detach=args.detach,
+                   options=BARE if args.bare else None)
 
 
 def _queue(args: argparse.Namespace) -> int:
