@@ -13,7 +13,7 @@ JOB_FIELDS = (
 
 
 STATUS_FIELDS = ("project", "job", "branch", "kind", "detached", "created_at", "started_at",
-                 "finished_at", "log_size")
+                 "finished_at", "log_size", "worker_version")
 
 
 def job_dict(job: dict[str, Any], position: int | None = None,

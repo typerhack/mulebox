@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import feedback, report
+from mulebox.client import feedback, feedback_guide, report
 from mulebox.client.commands import Handler, UsageError, guarded
 from mulebox.client.remote import Remote, request
 from mulebox.common.anonymize import Anonymizer
@@ -31,11 +31,22 @@ QUEUE_LIMIT = 200
 def register(sub: argparse._SubParsersAction) -> None:
     parser = sub.add_parser("feedback", help="report what mulebox could not handle")
     actions = parser.add_subparsers(dest="feedback_command", metavar="<action>", required=True)
-    made = actions.add_parser("draft", help="print a scrubbed issue draft; sends nothing")
-    made.add_argument("job_id", nargs="?", help="the job this is about")
+    made = actions.add_parser(
+        "draft", help="print a scrubbed issue draft (or write it with -o); sends nothing",
+        description="Builds a scrubbed issue draft and prints it, or writes it to -o FILE for "
+                    "`mulebox feedback post FILE`. Nothing is sent. See `mulebox feedback guide`.")
+    made.add_argument("job_ids", nargs="*", metavar="job_id", help="the jobs this is about")
     made.add_argument("--summary", required=True, help="what happened, in plain words")
-    made.add_argument("--log", action="store_true", help="include the job's last log lines")
+    made.add_argument("--title", help="the issue title (default: the summary's first sentence)")
+    made.add_argument("--log", action="store_true", help="include each job's last log lines")
+    made.add_argument("--log-lines", type=int, default=feedback.LOG_LINES, metavar="N",
+                      help=f"how many last lines --log takes (default {feedback.LOG_LINES})")
+    made.add_argument("--grep", metavar="PATTERN",
+                      help="include each job's log lines matching PATTERN, with the lines around")
+    made.add_argument("-o", "--output", type=Path, metavar="FILE", help="write the draft here")
     made.set_defaults(func=_guarded(_draft))
+    told = actions.add_parser("guide", help="how to report a problem with mulebox")
+    told.set_defaults(func=_guarded(_guide))
     sent = actions.add_parser("post", help="open a GitHub issue from a reviewed draft file")
     sent.add_argument("file", type=Path)
     sent.set_defaults(func=_guarded(_post))
@@ -94,24 +105,48 @@ def _read_log(remote: Remote, job_id: str) -> str:
         offset = following
 
 
+def _pick_lines(remote: Remote, job_id: str, args: argparse.Namespace) -> str:
+    log = _read_log(remote, job_id)
+    parts = [feedback.matching(log, args.grep)] if args.grep else []
+    if args.log:
+        parts.append(feedback.tail(log, max(1, args.log_lines)))
+    return "\n...\n".join(part for part in parts if part)
+
+
 def _draft(args: argparse.Namespace) -> int:
     if not args.summary.strip():
         raise UsageError("--summary needs some text")
-    if args.log and not args.job_id:
-        raise UsageError("--log needs a job id")
+    if (args.log or args.grep) and not args.job_ids:
+        raise UsageError("--log and --grep need a job id")
     project, root, config = _context()
     jobs = _queue_or_nothing(config)
     names = feedback.local_names(project, root, config) | feedback.names_in(jobs)
-    job, log = None, None
-    if args.job_id:
+    found, logs = [], {}
+    if args.job_ids:
         if config is None:
             raise UsageError("a job id needs the client config, to reach the coordinator")
         remote = Remote(config)
-        job = dict(remote.call(request(MessageType.STATUS, job_id=args.job_id)).body)
-        if args.log:
-            log = _read_log(remote, args.job_id)
-    text = feedback.draft(args.summary, get_version(), Anonymizer(names), job, log)
-    sys.stdout.write(text)
+        for job_id in dict.fromkeys(args.job_ids):
+            body = dict(remote.call(request(MessageType.STATUS, job_id=job_id)).body)
+            names |= feedback.names_in([body])
+            found.append(body)
+            if args.log or args.grep:
+                logs[job_id] = _pick_lines(remote, job_id, args)
+    text = feedback.draft(args.summary, get_version(), Anonymizer(names), found, logs, args.title)
+    if args.output is None:
+        sys.stdout.write(text)
+        return 0
+    try:
+        args.output.write_text(text, encoding="utf-8")
+    except OSError as exc:
+        raise UsageError(f"cannot write {args.output}: {exc.strerror}") from None
+    report.status(sys.stderr, f"draft written to {args.output}; read it, then "
+                              f"`mulebox feedback post {args.output}`")
+    return 0
+
+
+def _guide(args: argparse.Namespace) -> int:
+    sys.stdout.write(feedback_guide.TEXT)
     return 0
 
 

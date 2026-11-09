@@ -184,7 +184,10 @@ Order agreed with the user on 2026-11-04.
 - [~] M7.2 Installable skill: `skills/mulebox/`, installed once system-wide, so any project
       can say "use the mulebox skill". Built 2026-11-04 (0.11.1). Open: the user installs it
       in another session, and an agent uses it in a real project.
-- [~] M7.3 Agent feedback: `mulebox feedback draft` and `post`, redacted first. Built
+- [~] M7.3 Agent feedback: `mulebox feedback draft` and `post`, redacted first. 2026-11-09 (0.77.0):
+      ten real issues were filed by agents in two projects; from them, drafts carry job ids, stages and
+      picked log lines, the scrub keeps public values and names what it refuses, and `mulebox feedback
+      guide` holds the procedure (issues #10, #11). Built
       2026-11-04 (0.12.0): a real failed job with fake private output left no project,
       branch, identity, address, password or machine name in its draft; `post` sent the
       reviewed file to a stand-in `gh` and refused a tampered one. Screenshots dropped: they

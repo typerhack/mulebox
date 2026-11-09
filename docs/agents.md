@@ -618,16 +618,21 @@ jobs:
 
 ## 4. Reporting what mulebox could not handle
 
-If mulebox itself got in the way, and the user wants it reported:
+If mulebox itself got in the way, and the user wants it reported, `mulebox feedback guide` prints
+the whole procedure. In short:
 
-    mulebox feedback draft <job-id> --summary "what happened" > draft.md   # sends nothing
-    mulebox feedback post draft.md                                         # opens the issue
+    mulebox feedback draft <id> [<id> ...] --summary "what happened" \
+        --title "short title" --grep "error|FAIL" -o draft.md            # sends nothing
+    mulebox feedback post draft.md                                        # opens the issue
 
-Add `--log` to the draft to include the job's last lines. Leave out the job id when no job
-is involved, such as an unreachable machine. **Show the user the draft and get their
-approval before posting.** Read it yourself too: file names and code in logs cannot be
-recognised automatically. `post` needs `feedback_repo` in `client.toml`, and it refuses a
-file that still holds something the scrub would remove.
+The draft holds every job id given, with its result, stages and the mulebox that ran it: the
+people who run mulebox trace a report by them. `--grep` adds the log lines matching a pattern with
+the lines around them, `--log` the last lines (`--log-lines N`). Leave out the job id when no job
+is involved, such as an unreachable machine, and copy what mulebox printed: some notices are in
+no log. **Show the user the final file and get their approval before posting.** Read it yourself
+too: the scrub replaces names, private links, addresses and secrets, but cannot recognise private
+code, customer data or internal names. `post` needs `feedback_repo` in `client.toml`; it refuses a
+file that still holds something the scrub would remove, and says on which line and what kind.
 
 ## 5. Things you must not do
 

@@ -34,22 +34,48 @@ def cli(tmp_path, monkeypatch):
     return tmp_path, sent
 
 
-def test_draft_holds_the_result_but_no_identifying_job_fields():
-    text = feedback.draft("It broke on example-app", "1.2.3", SCRUB, JOB)
+def test_draft_holds_the_job_id_and_result_but_no_identifying_job_fields():
+    text = feedback.draft("It broke on example-app", "1.2.3", SCRUB, [JOB])
     assert "# It broke on [private]" in text and "exit_code: 2" in text
-    assert "outcome: failed" in text and "mulebox 1.2.3" in text
-    for private in ("example-app", "secret-feature", "job-1"):
+    assert "outcome: failed" in text and "mulebox 1.2.3" in text and "### job-1" in text
+    for private in ("example-app", "secret-feature"):
         assert private not in text
+
+
+def test_draft_has_every_job_its_stages_and_a_ci_failure():
+    ci = {**JOB, "job_id": "job-2", "kind": "runner", "worker_version": "0.76.0",
+          "ci_result": {"outcome": "failed", "step": "Run tests", "message": "exit code 1."},
+          "steps": [{"stage": "images", "started_at": 1.0, "finished_at": 16.5, "exit_code": 0}]}
+    text = feedback.draft("Two jobs", "1", SCRUB, [JOB, ci])
+    assert "### job-1" in text and "### job-2" in text and "worker_version: 0.76.0" in text
+    assert "GitHub step that failed: Run tests: exit code 1." in text
+    assert "| images | 15.5 | 0 |  |" in text
+
+
+def test_title_is_the_given_one_or_the_first_sentence():
+    assert feedback.title_from("It hangs. Then it fails, and more.") == "It hangs."
+    assert feedback.title_from("It hangs. Then", "Hangs on start") == "Hangs on start"
+    assert feedback.title_from("version 0.76.0 hangs") == "version 0.76.0 hangs"
+
+
+def test_grep_picks_numbered_lines_with_context_and_marks_gaps():
+    log = "\n".join(f"line {n}" for n in range(1, 21)).replace("line 5", "npm error ETIMEDOUT")
+    picked = feedback.matching(log, "ETIMEDOUT|line 15")
+    assert picked.splitlines() == ["3: line 3", "4: line 4", "5: npm error ETIMEDOUT", "6: line 6",
+                                   "7: line 7", "...", "13: line 13", "14: line 14",
+                                   "15: line 15", "16: line 16", "17: line 17"]
+    with pytest.raises(feedback.FeedbackError):
+        feedback.matching(log, "(")
 
 
 def test_log_is_scrubbed_and_capped():
     log = "\n".join(f"line {n} /home/alice/app" for n in range(200))
-    text = feedback.draft("x", "1", SCRUB, JOB, log)
-    assert "alice" not in text and "line 199" in text and "line 100" not in text
+    text = feedback.draft("x", "1", SCRUB, [JOB], {"job-1": feedback.tail(log)})
+    assert "alice" not in text and "200: line 199" in text and "line 100 " not in text
 
 
 def test_no_log_section_unless_given():
-    assert "```" not in feedback.draft("x", "1", SCRUB, JOB)
+    assert "```" not in feedback.draft("x", "1", SCRUB, [JOB])
 
 
 def test_names_in_covers_every_project_in_the_queue_not_just_this_one():
@@ -72,13 +98,13 @@ def test_local_names_include_the_git_identity_and_repository(tmp_path):
 
 def test_a_hand_added_private_detail_blocks_the_post():
     feedback.check_clean(CLEAN, SCRUB)
-    with pytest.raises(feedback.FeedbackError, match="line 6"):
+    with pytest.raises(feedback.FeedbackError, match="line 6: IP address"):
         feedback.check_clean(CLEAN + "Details at 10.0.0.1\n", SCRUB)
 
 
 def test_a_real_draft_passes_its_own_check():
-    feedback.check_clean(feedback.draft("It broke on example-app", "1", SCRUB, JOB,
-                                        "see /home/alice/x"), SCRUB)
+    feedback.check_clean(feedback.draft("It broke on example-app", "1", SCRUB, [JOB],
+                                        {"job-1": "see /home/alice/x"}), SCRUB)
 
 
 @pytest.mark.parametrize("text", ["", "no title", "# ", "## wrong level\n"])
@@ -92,6 +118,16 @@ def test_cli_draft_sends_nothing_and_works_with_no_coordinator(cli, capsys):
     code = main(["feedback", "draft", "--summary", "cannot reach build-1 at 10.0.0.1"])
     out = capsys.readouterr().out
     assert code == 0 and sent == [] and "10.0.0.1" not in out and "build-1" not in out
+
+
+def test_cli_draft_writes_a_file_and_the_guide_prints(cli, capsys):
+    folder, sent = cli
+    out = folder / "draft.md"
+    assert main(["feedback", "draft", "--summary", "It hangs. More.", "-o", str(out)]) == 0
+    assert out.read_text().startswith("# It hangs.\n") and sent == []
+    assert "mulebox feedback post" in capsys.readouterr().err
+    assert main(["feedback", "guide"]) == 0
+    assert "Take out what is private" in capsys.readouterr().out
 
 
 def test_cli_post_sends_exactly_the_reviewed_file(cli, capsys):

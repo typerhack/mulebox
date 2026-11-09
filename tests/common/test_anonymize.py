@@ -49,3 +49,30 @@ def test_scrubbing_twice_changes_nothing(text):
     anonymizer = Anonymizer(["alice", "private"])
     once = anonymizer.scrub(text)
     assert anonymizer.scrub(once) == once
+
+
+@pytest.mark.parametrize("text", [
+    "npm error network request to https://registry.npmjs.org/vitest/-/vitest-5.1.0.tgz failed",
+    "mulebox: service mysql port 3306/tcp is on 127.0.0.1:26280",
+    "listening on 0.0.0.0:8000",
+    "npm install vitest@5.1.0 @vitest/ui@5.1.0-beta.2 typescript@latest",
+    "a CI slot on github, the workflow in .github/workflows/ci.yml",
+])
+def test_public_harmless_values_are_kept(text):
+    assert Anonymizer(["github"]).scrub(text) == text
+
+
+@pytest.mark.parametrize("text, gone", [
+    ("ssh alice@192.168.1.50", "192.168.1.50"),
+    ("see https://registry.example.com/x", "registry.example.com"),
+    ("https://github.com/example-org/example-app/pull/3", "example-org"),
+])
+def test_what_looks_public_but_is_not_still_goes(text, gone):
+    assert gone not in Anonymizer().scrub(text)
+
+
+def test_findings_name_the_kind_and_the_line_never_the_value():
+    text = "fine line\nconnect to 10.0.0.7 for example-app\nhttps://intranet.example.com/x"
+    found = Anonymizer(["example-app"]).findings(text)
+    assert found == [(2, "IP address, name of a person, project or machine"), (3, "link")]
+    assert "10.0.0.7" not in str(found) and "intranet" not in str(found)

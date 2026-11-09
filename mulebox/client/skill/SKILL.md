@@ -129,7 +129,9 @@ different versions, tell the user.
   tell the user why it failed.
 - A job waits in the queue: that is normal too. Other projects and CI share it. If `check`
   suggests detaching, cancel nothing: the suggestion is for the next run.
-- mulebox itself could not do what you needed: tell the user what happened, with the
-  command, the exit code and the job id. If they want it reported, make a draft with
-  `mulebox feedback draft <job-id> --summary "<what happened>"`. It sends nothing. Show
-  them the draft; post it with `mulebox feedback post <file>` only once they approve.
+- mulebox itself did something wrong (a wrong result, a job that could not start with no clear
+  reason, a confusing message): tell the user what happened, with the command, the exit code
+  and every job id involved. Copy what mulebox printed now: some notices are in no log. If they
+  want it reported, run `mulebox feedback guide` and follow it: it says what evidence to gather,
+  how to draft with `mulebox feedback draft`, how to take out private data the scrub cannot
+  see, and to post only once the user approves the final file.

@@ -151,13 +151,21 @@ may be private, so:
 
 - **Two steps.** `draft` only prints; nothing leaves the machine. An agent shows the draft
   to its user and posts only with their approval. `post` is off until `feedback_repo` is set.
-- **Little to leak.** A draft holds the summary, the mulebox version, the operating system
-  and the job's result. Never a project, branch, machine or command.
+- **Enough to trace.** A draft holds the summary, the mulebox version, the operating system
+  and, for every job id given, the id, its result, stages and the mulebox that ran it, plus log
+  lines picked by pattern or from the end when asked. Job ids identify nobody and are how the
+  people running mulebox look a job up. Never a project, branch or machine name.
 - **Scrubbed.** Secrets, then every name known locally and from the coordinator, including
-  other projects', then home folders, email and IP addresses and URLs
-  (`common/anonymize.py`).
+  other projects' (also inside longer words such as an env name), then home folders, email and
+  IP addresses, user@host targets and links (`common/anonymize.py`). Kept, as they identify
+  nobody: loopback addresses, links to public package registries and toolchain sites, and
+  `package@version`. Private code and business text cannot be recognised: the procedure
+  (`mulebox feedback guide`, client/feedback_guide.py) has the agent read the draft for them.
 - **Checked again.** `post` refuses a file the scrub would still change, so what was
-  reviewed is what is sent, and details added by hand are caught when they match a rule.
+  reviewed is what is sent, and details added by hand are caught when they match a rule. The
+  refusal names each line and the kind of thing found, never the value.
+- **One skill.** The procedure is printed by the CLI, not a second skill: the `mulebox` skill
+  is already loaded when something goes wrong, and the guide cannot fall behind the tool.
 - **Logs on request only.** The scrub cannot recognise a private file name or line of code
   it has no name for, so `--log` is a choice, and reading the draft is a real step.
 - **No screenshots.** They cannot be scrubbed, and `gh issue create` cannot attach them.

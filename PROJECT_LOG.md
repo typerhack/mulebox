@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.77.0 - 2026-11-09 - minor
+- mulebox feedback draft takes several job ids and puts them in the draft with each job's result, stages, CI step and the mulebox that ran it; --title (default the summary's first sentence), --grep for numbered log lines with context, --log-lines, -o FILE (issue #10).
+- mulebox feedback guide prints the whole reporting procedure: when to report, what evidence to gather, how to take out private data the scrub cannot see, ask before posting. The skill points to it; a second skill was weighed and dropped, as the guide in the CLI cannot fall behind the tool.
+- The scrub keeps what identifies nobody: loopback addresses, links to public package registries, package@version, and the word github; post names each refused line and the kind of thing found, never the value (issue #11).
+
 ## 0.76.0 - 2026-11-09 - minor
 - GitHub jobs get their real result: GitHub does not give the completed hook the job's status, so all 129 earlier reservations were stored as passed. The hook now reads it from the runner's own diary (runners/diary.py), with the first failed step and GitHub's message on it, stored as jobs.ci_result (schema 17). Checked against 124 real runs. Older reservations still show released.
 - Dashboard: CI jobs appear in the Failed and Passed tabs; a failed one says which step failed and why; every finished job's state has a mark (check, cross, warning, stop) in tables, history and on its page (marks.css).
