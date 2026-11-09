@@ -436,7 +436,8 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       as the state lasts until fixed (the user's choice). Done 2026-11-09 (0.83.1): in real Edge on the
       deployed dashboard, a stale skill copy showed the warning and the mark after one job and went away
       live after `mulebox skill update`; the danger level was drawn in the page by its own code, as no
-      real worker was out of step. Not seen: the light theme, and the mark scrolling to the strip.
+      real worker was out of step. 0.83.4: a rounded warning triangle, seen in both themes in real Edge on
+      the deployed dashboard (strip drawn by its own code). Not seen: the mark scrolling to the strip.
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 

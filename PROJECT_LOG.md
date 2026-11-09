@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.6 - 2026-11-09 - patch
+- Docs: setup's target is whatever `ssh` takes (alias, address, user@address); troubleshooting lists setup's three login messages and what to do for each; roadmap M14.9 notes the light theme seen.
+
 ## 0.83.5 - 2026-11-09 - patch
 - mulebox setup names why the login failed: an unknown host name asks for an address or an ssh config entry, an unreachable machine asks for its network and ssh server, and only a refused login gets the key advice.
 

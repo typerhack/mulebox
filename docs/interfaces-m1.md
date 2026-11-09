@@ -219,7 +219,8 @@ Stage rows: `steps`, see [interfaces-m4.md](interfaces-m4.md), Job steps.
 - `mulebox setup <ssh-target>` (run on the laptop, client/setup.py): builds a wheel from the
   running package (client/wheel.py), sends it with these files, runs the install, fills empty
   `capabilities` (`mulebox node-offers`, worker/offers.py), writes `client.toml` if there is none,
-  and runs a first job.
+  and runs a first job. A failed login check names its cause from ssh's words: an unknown host
+  name, a machine out of reach, or a refused login (the only case that gets key advice).
 - `docs/install.md`: user steps.
 
 ## Decisions made during the build (0.5.0)

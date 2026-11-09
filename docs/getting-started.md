@@ -46,8 +46,9 @@ root. Use it for projects you trust, on a network you trust.
 
 1. Get mulebox on the laptop: with pipx, as a binary, or by hand from a clone
    ([install.md, section 2](install.md#2-install-on-the-laptop)).
-2. Install the build machine, from the laptop: `mulebox setup build-1` (`alice@build-1` works
-   too, without the ssh config entry). It installs everything
+2. Install the build machine, from the laptop: `mulebox setup build-1` (`build-1` is whatever
+   you would type after `ssh`: a `Host` alias, an address, or `alice@192.168.1.50`, which works
+   without the ssh config entry). It installs everything
    there, finds out what the machine offers, writes the laptop's config and runs a first job.
 
 ## 2. Decide where the project's tools come from
