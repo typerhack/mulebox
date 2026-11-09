@@ -103,7 +103,8 @@ let laneKey = "";
 function onMachines(event) {
   machines = JSON.parse(event.data);
   renderMachines(document.getElementById("machines"), machines);
-  renderVersions(document.getElementById("versions"), machines.notices);
+  renderVersions(document.getElementById("versions"), document.getElementById("versions-mark"),
+                 machines.notices);
   const key = JSON.stringify(machines.machines.map((m) => [m.name, m.state]));
   if (key !== laneKey) {
     laneKey = key;

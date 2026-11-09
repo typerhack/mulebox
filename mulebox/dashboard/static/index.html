@@ -24,6 +24,7 @@
       <a href="#/history" data-nav="history">History</a>
     </nav>
     <div class="right">
+      <button id="versions-mark" class="icon" type="button" hidden></button>
       <span id="conn" class="conn" role="status" data-state="connecting">connecting</span>
       <button id="theme" class="icon" type="button" aria-label="Switch theme">
         <svg class="system" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="1"/><path d="M9 21h6M12 17v4"/></svg>
@@ -33,7 +34,7 @@
       <button id="signout" type="button" hidden>Sign out</button>
     </div>
   </header>
-  <section id="versions" class="versions" role="status" aria-label="Out of step" hidden></section>
+  <section id="versions" class="versions" role="status" aria-label="Out of step" tabindex="-1" hidden></section>
   <main class="layout">
     <section id="cpu" class="box" aria-label="CPU"></section>
     <div class="side">

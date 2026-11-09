@@ -86,4 +86,4 @@ def fingerprint(panel: dict[str, Any]) -> tuple:
                   tuple(row["capabilities"]), tuple((j["job_id"], left_mark(j)) for j in row["jobs"]),
                   *(whole(row.get(key)) for key in READINGS))
                  for row in panel["machines"]) + tuple(
-        (n["kind"], n["name"], n["text"]) for n in panel.get("notices", []))
+        (n["kind"], n["level"], n["name"], n["text"]) for n in panel.get("notices", []))

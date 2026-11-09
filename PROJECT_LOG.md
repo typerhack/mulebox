@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.1 - 2026-11-09 - patch
+- The out-of-step strip has two levels: danger in red with a crossed circle for a worker on another mulebox (jobs can fail), warning in amber with a triangle for a laptop or its skill; bigger icons, a faint tint, and a mark with the count in the header that stays in sight and brings the strip back into view.
+
 ## 0.83.0 - 2026-11-09 - minor
 - The dashboard warns when installs are out of step: a strip above the panels names a laptop on another mulebox than the build machine, a laptop whose skill is out of date, and a worker on another mulebox than the coordinator, each with the command that fixes it. Laptops now say their mulebox version and skill state with every submit, kept per laptop in a new clients table (schema 19).
 

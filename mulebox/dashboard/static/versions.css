@@ -1,8 +1,17 @@
-/* The out-of-step strip (versions.js): the warning colour on its edge and icon only, so it is
-   seen without shouting; the text stays readable in both themes. */
-.versions { margin: 10px 12px 0; padding: 6px 10px; border: 1px solid var(--warn); border-radius: 3px; }
-.versions ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
-.versions li { display: flex; align-items: baseline; gap: 7px; }
-.versions .warning { color: var(--warn); transform: translateY(2px); }
+/* The out-of-step strip and its header mark (versions.js). The level's colour is on the edge,
+   the icon and a faint tint behind the strip, so it reads as an alert at a glance; the text
+   stays the page's own ink in both themes. */
+.versions { --level: var(--warn); margin: 10px 12px 0; padding: 7px 10px;
+  border: 1px solid var(--level); border-radius: 3px;
+  background: color-mix(in srgb, var(--level) 9%, transparent); }
+.versions:focus { outline: 2px solid var(--level); outline-offset: 2px; }
+.versions[data-level="danger"], #versions-mark[data-level="danger"] { --level: var(--bad); }
+.versions ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.versions li { display: flex; align-items: flex-start; gap: 8px; }
+.versions li[data-level="danger"] .level { fill: var(--bad); }
+.versions li[data-level="warning"] .level { fill: var(--warn); }
+.versions .level { flex: none; width: 16px; height: 16px; }
 .versions .fix { color: var(--ink-soft); }
-.versions code { color: var(--ink); }
+.versions code { color: var(--ink); font-weight: 700; }
+#versions-mark { --level: var(--warn); gap: 5px; width: auto; padding: 0 8px; color: var(--level); border-color: var(--level); }
+#versions-mark .level { display: block; width: 15px; height: 15px; fill: var(--level); }

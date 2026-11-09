@@ -113,8 +113,10 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
 - A worker that is gone for good stays listed as offline until removing workers exists
   (M5.2).
 - **Out of step** (`dashboard/notices.py`, `static/versions.js`): `notices`, a list of `kind`
-  (`worker`, `client`, `skill`), `name`, `text` and `fix`, shown as a strip above the panels
-  and hidden while empty. A notice is an online worker on another mulebox than the coordinator,
+  (`worker`, `client`, `skill`), `level` (`danger` for a worker, as jobs can fail; `warning` for
+  a laptop), `name`, `text` and `fix`, dangers first. Shown as a strip above the panels in its
+  worst level's colour, and as a mark with the count in the header that brings the strip into
+  view; both hidden while empty. A notice is an online worker on another mulebox than the coordinator,
   a laptop seen in the last 14 days on another mulebox than the build machine, or a laptop
   whose skill differs from its mulebox's. Laptops say their `client_version` and `skill`
   (`current`, `out_of_date`, `none`) with every `submit`; the newest word per laptop is kept in
