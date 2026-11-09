@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 from mulebox.client import gitinfo
-from mulebox.client.excludes import Excludes
+from mulebox.client.excludes import Excludes, Patterns
 from mulebox.client.tree import (
     Fingerprint,
     current_fingerprint,
@@ -76,8 +76,10 @@ class _HashingReader:
         return data
 
 
-def make_snapshot(root: Path, extra_excludes: Iterable[str] = ()) -> Snapshot:
-    """Pack `root` (the folder holding .mulebox.yml) into a temporary tar.gz."""
+def make_snapshot(root: Path, extra_excludes: Iterable[str] = (),
+                  ignore_changes: Iterable[str] = ()) -> Snapshot:
+    """Pack `root` (the folder holding .mulebox.yml) into a temporary tar.gz. Paths matching
+    `ignore_changes` are packed but left out of the fingerprint."""
     root = Path(root).resolve()
     try:
         gitinfo.ensure_worktree(root)
@@ -90,7 +92,8 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = ()) -> Snapshot:
     path = Path(name)
     try:
         with os.fdopen(fd, "wb") as raw:
-            fingerprint, files, skipped = _write_archive(root, paths, raw)
+            fingerprint, files, skipped = _write_archive(root, paths, raw,
+                                                         Patterns(ignore_changes))
         size = path.stat().st_size
         if size > MAX_SNAPSHOT_BYTES:
             raise SnapshotError(
@@ -104,8 +107,9 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = ()) -> Snapshot:
     return Snapshot(path, digest, fingerprint, commit, branch, files, size, tuple(skipped))
 
 
-def _write_archive(root: Path, paths: list[str], raw: BinaryIO) -> tuple[str, int, list[str]]:
-    fingerprint, files, skipped = Fingerprint(), 0, []
+def _write_archive(root: Path, paths: list[str], raw: BinaryIO,
+                   unchecked: Patterns | None = None) -> tuple[str, int, list[str]]:
+    fingerprint, files, skipped = Fingerprint(unchecked), 0, []
     with tarfile.open(
         fileobj=raw, mode="w:gz", format=tarfile.PAX_FORMAT, compresslevel=_COMPRESS_LEVEL
     ) as tar:

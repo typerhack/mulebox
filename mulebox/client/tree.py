@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import BinaryIO
 
 from mulebox.client import gitinfo
-from mulebox.client.excludes import Excludes
+from mulebox.client.excludes import Excludes, Patterns
 
 READ_CHUNK = 1024 * 1024
 _DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | getattr(os, "O_CLOEXEC", 0)
@@ -106,10 +106,13 @@ def _open_final(dir_fd: int, path: str, name: str) -> Entry | None:
 class Fingerprint:
     """Accumulates entries (in sorted path order) into the snapshot fingerprint."""
 
-    def __init__(self) -> None:
+    def __init__(self, unchecked: Patterns | None = None) -> None:
         self._hash = hashlib.sha256()
+        self._unchecked = unchecked  # `ignore_changes`: sent, never fingerprinted
 
     def add(self, path: str, mode: int, digest: str) -> None:
+        if self._unchecked and self._unchecked.matches(path):
+            return
         line = f"{path}\0{mode:o}\0{digest}\n"
         self._hash.update(line.encode("utf-8", errors="surrogateescape"))
 
@@ -136,10 +139,10 @@ def file_digest(file: BinaryIO) -> str:
     return digest.hexdigest()
 
 
-def current_fingerprint(root: Path, extra_excludes=()) -> str:
+def current_fingerprint(root: Path, extra_excludes=(), ignore_changes=()) -> str:
     """Fingerprint of the worktree as it is now (for the stale check after a job)."""
     root = Path(root)
-    fingerprint = Fingerprint()
+    fingerprint = Fingerprint(Patterns(ignore_changes))
     for entry in walk(root, selected_paths(root, Excludes(extra_excludes))):
         if entry.link is not None:
             if not link_stays_inside(entry.path, entry.link):

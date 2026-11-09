@@ -67,6 +67,22 @@ class _Pattern:
         return any(fnmatchcase(part, self.glob) for part in parts[:last])
 
 
+class Patterns:
+    """A project's own patterns alone, in the syntax above: `ignore_changes`, paths whose changes
+    never change a job's result (docs/agents.md). They are sent, but not fingerprinted."""
+
+    def __init__(self, patterns: Iterable[str] = ()) -> None:
+        compiled = (_compile(p) for p in patterns)
+        self._patterns = tuple(p for p in compiled if p is not None)
+
+    def __bool__(self) -> bool:
+        return bool(self._patterns)
+
+    def matches(self, relpath: str) -> bool:
+        parts = [p for p in relpath.lower().split("/") if p not in ("", ".")]
+        return bool(parts) and any(p.matches(parts) for p in self._patterns)
+
+
 def _compile(pattern: str) -> _Pattern | None:
     text = pattern.strip().lower()
     dir_only = text.endswith("/")

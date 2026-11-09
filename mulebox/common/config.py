@@ -90,6 +90,7 @@ class ProjectConfig:
     compose: tuple[str, ...] = ()
     timeout_min: int = DEFAULT_TIMEOUT_MIN
     exclude: tuple[str, ...] = ()
+    ignore_changes: tuple[str, ...] = ()  # paths whose changes never change a result
     env: dict[str, str] = field(default_factory=dict)
     job_options: dict[str, config_jobs.JobOptions] = field(default_factory=dict)
     host_ports: tuple[str, ...] = ()  # of the one job `for_job` gave this for
@@ -160,6 +161,7 @@ def load_project_config(path: Path) -> ProjectConfig:
         job_options=options,
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
         exclude=reader.strings("exclude"),
+        ignore_changes=reader.strings("ignore_changes"),
         env=config_project.env_values(reader, files),
     )
     reader.finish()

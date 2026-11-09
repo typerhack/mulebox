@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.79.0 - 2026-11-09 - minor
+- ignore_changes: in .mulebox.yml lists paths that are sent but not fingerprinted, so a changelog or docs edit keeps a passed result: no stale warning, and check gives the result back without a five-minute rerun (issue #2).
+
 ## 0.78.0 - 2026-11-09 - minor
 - mulebox run --bare runs the command alone: no containers, install or setup, so a one-off curl no longer starts MySQL, builds an image and prints the project's setup output (issue #5). In the contract as one_off_bare; report_a_problem now names mulebox feedback guide.
 

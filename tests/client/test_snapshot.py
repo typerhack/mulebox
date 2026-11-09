@@ -198,3 +198,31 @@ def test_too_large_snapshot_is_refused_and_removed(make_repo, monkeypatch, tmp_p
     with pytest.raises(SnapshotError, match="upload limit"):
         make_snapshot(make_repo(tracked={"a.txt": "x" * 1000}), ())
     assert list(temp.iterdir()) == []
+
+
+def test_ignored_changes_are_sent_but_leave_the_fingerprint_alone(tmp_path):
+    import subprocess
+    from mulebox.client.snapshot import current_fingerprint, make_snapshot
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True, capture_output=True)
+    git("init")
+    git("config", "user.email", "a@example.com")
+    git("config", "user.name", "a")
+    (tmp_path / "app.py").write_text("x = 1\n")
+    (tmp_path / "docs").mkdir()
+    (tmp_path / "docs" / "notes.md").write_text("one\n")
+    (tmp_path / "CHANGELOG.md").write_text("one\n")
+    git("add", ".")
+    git("commit", "-m", "x")
+    rules = ("docs/", "*.md")
+    snap = make_snapshot(tmp_path, (), rules)
+    try:
+        assert snap.files == 3
+        (tmp_path / "CHANGELOG.md").write_text("two\n")
+        (tmp_path / "docs" / "notes.md").write_text("two\n")
+        assert current_fingerprint(tmp_path, (), rules) == snap.fingerprint
+        assert current_fingerprint(tmp_path) != current_fingerprint(tmp_path, (), rules)
+        (tmp_path / "app.py").write_text("x = 2\n")
+        assert current_fingerprint(tmp_path, (), rules) != snap.fingerprint
+    finally:
+        snap.discard()

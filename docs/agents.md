@@ -125,7 +125,10 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   template tracked in git (`.env.example`, `.env.sample`, `.env.template`, `.env.dist`),
   which is uploaded so `setup` can build `.env` from it. Keep real values out of templates.
 - If you edit files while a job runs, mulebox prints a "stale" warning at the end: the
-  result belongs to the snapshot, not to your current files. Run it again.
+  result belongs to the snapshot, not to your current files. Run it again. Paths in
+  `ignore_changes:` (same patterns as `exclude:`) are still sent but do not count: an edit
+  there, such as a changelog line, keeps the result, and `check` gives it back without a rerun.
+  List only files no job reads: a test that reads a listed file would pass on old content.
 - Jobs wait in one queue shared by every project and by GitHub Actions. Waiting is normal;
   do not cancel and resubmit to "speed it up". While queued, `check` prints its position and,
   once a job has at least 3 passed runs with stage rows, an estimate of how long it runs once
@@ -219,6 +222,7 @@ jobs:
   typecheck: pnpm typecheck
 timeout_min: 30                 # how often a running job checks in; not a limit (section 1a)
 exclude: [reports/]             # extra paths never uploaded (secrets are excluded already)
+ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result (below)
 ```
 
    Rules for the values:

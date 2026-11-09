@@ -87,7 +87,7 @@ def run_job(
     if dropped and (project.compose or project.host_ports):  # else nothing could use them
         report.status(io.err, left_out(dropped))
     try:
-        snap = make_snapshot(root, project.exclude)
+        snap = make_snapshot(root, project.exclude, project.ignore_changes)
     except KeyboardInterrupt:
         report.status(io.err, "cancelled before the job was submitted")
         return report.EXIT_CANCELLED
@@ -160,7 +160,7 @@ def _left_running(job_id: str, io: Streams) -> None:
 def stale_check(root: Path, project: ProjectConfig, fingerprint: str, io: Streams) -> None:
     """Warn when the project's files are no longer the ones the job ran on."""
     try:
-        changed = current_fingerprint(root, project.exclude) != fingerprint
+        changed = current_fingerprint(root, project.exclude, project.ignore_changes) != fingerprint
     except Exception:  # the result stands; only the staleness is unknown
         changed = False
     if changed:
