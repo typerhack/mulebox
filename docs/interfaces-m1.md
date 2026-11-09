@@ -97,6 +97,14 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | job_update | job_id, state, + attempt_id | status_ok |
 | log_chunk (worker) | job_id, offset, data, + attempt_id | status_ok |
 | result (worker) | job_id, outcome, exit_code, duration_s, + attempt_id | status_ok |
+| taken (worker) | job_id, attempt_id, index, offset, data (base64, at most 512 KiB) | status_ok (+ `size`); only while the job is active, before `result` |
+| take | job_id, index, offset | take_ok (`data` base64 from offset, `size`, `eof`; `missing: true` when the run left no such file) |
+
+`submit` may carry `take`: up to 20 relative paths (`mulebox run --take`, common/take_paths.py),
+stored as `jobs.take` (schema 18) and sent in `claim_ok`. After a passed command the worker reads
+each from the job's worktree (a plain file, no symlink, 16 MiB each, 32 MiB together) and sends
+`taken` chunks before `result`; the client fetches them with `take` and writes them into the
+project. The coordinator keeps them under `<staging>/taken/` for a day after the job.
 
 `claim_ok` body: `limits: "coordinator"` (no runtime limit on the worker; an older
 coordinator sends none and `timeout_min` stays hard), job_id, attempt_id, project, argv,

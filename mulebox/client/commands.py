@@ -16,7 +16,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import attention, contract, queue_view, report, summary, tui
+from mulebox.client import attention, contract, queue_view, report, summary, take_back, tui
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -67,6 +67,9 @@ def register(sub: argparse._SubParsersAction) -> None:
                      help="run it inside this compose service")
     run.add_argument("--bare", action="store_true",
                      help="the command alone: no containers, install or setup")
+    run.add_argument("--take", action="append", default=[], metavar="PATH",
+                     help="once the command passed, copy this file back into the project "
+                          "(repeat for more), e.g. --take api/composer.lock")
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -180,8 +183,14 @@ def _run(args: argparse.Namespace) -> int:
         if not project.compose:
             raise UsageError("--in needs `compose:` in .mulebox.yml")
         argv = ["docker", "compose", "exec", "-T", args.service, *argv]
+    if args.take and args.detach:
+        raise UsageError("--take brings files back at the end, so it waits; drop --detach")
+    try:
+        take = take_back.check(args.take, project.exclude)
+    except ValueError as exc:
+        raise UsageError(str(exc)) from None
     return run_job(project, argv, root, connect(), detach=args.detach,
-                   options=BARE if args.bare else None)
+                   options=BARE if args.bare else None, take=take)
 
 
 def _queue(args: argparse.Namespace) -> int:

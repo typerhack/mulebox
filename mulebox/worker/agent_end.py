@@ -6,7 +6,7 @@ Split from agent.py: `Agent` provides the rest (`active`, `finishing`, `executor
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, MessageType, Outcome
 from mulebox.common.status import CLEANUP
-from mulebox.worker import background, install_step, pull_failure
+from mulebox.worker import background, install_step, pull_failure, take_back
 from mulebox.worker.job import ActiveJob, ended_badly
 from mulebox.worker.link import LinkError, request
 
@@ -24,6 +24,8 @@ class Ending:
         exit_code = pull_failure.checked(outcome, exit_code, job.tailer)
         exit_code = install_step.checked(outcome, exit_code, job.tailer)
         job.outcome, job.exit_code = outcome, exit_code
+        if outcome is Outcome.PASSED and job.take and job.tree is not None:
+            job.taking = take_back.chunks(take_back.read_files(job.tree, job.take, job.tailer.note))
         job.steps.close(exit_code, now, ended_badly(outcome))
         self._keep_setup(job)
         job.steps.begin(CLEANUP, now)
@@ -79,6 +81,7 @@ class Ending:
         try:
             self._send_cleaning(job, now)
             job.tailer.send(self._sender(now))
+            take_back.send(job.job_id, job.attempt_id, job.taking, self._sender(now))
             self._call(request(
                 MessageType.RESULT, job_id=job.job_id, outcome=job.outcome.value,
                 exit_code=job.exit_code, duration_s=round(job.duration_s, 3),

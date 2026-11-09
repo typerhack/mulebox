@@ -30,7 +30,7 @@ MARKER = "mulebox-worker:"
 WORKER_MESSAGES = frozenset({
     MessageType.CLAIM, MessageType.JOB_UPDATE, MessageType.LOG_CHUNK, MessageType.STEPS,
     MessageType.RESULT, MessageType.HEARTBEAT, MessageType.QUEUE, MessageType.RESERVE,
-    MessageType.ACQUIRE, MessageType.RELEASE, MessageType.RUNNER_JOBS,
+    MessageType.ACQUIRE, MessageType.RELEASE, MessageType.RUNNER_JOBS, MessageType.TAKEN,
 })
 _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,62}")
 _KEY_TYPES = ("ssh-ed25519", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384",

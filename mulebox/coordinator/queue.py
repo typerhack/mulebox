@@ -134,5 +134,5 @@ def claim_body(job: dict[str, Any]) -> dict[str, Any]:
     """claim_ok body (docs/interfaces-m1.md, Wire usage)."""
     names = ("job_id", "attempt_id", "project", "job", "branch", "argv", "fingerprint",
              "base_commit",
-             "timeout_min", "setup", "install", "toolchain", "needs", "env", "env_order")
+             "timeout_min", "setup", "install", "toolchain", "needs", "env", "env_order", "take")
     return {**{name: job[name] for name in names}, "limits": LIMITS_BY_COORDINATOR}

@@ -25,13 +25,13 @@ from mulebox.coordinator.errors import Conflict, NotFound
 # 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
 # 7: env order; 8: stop reason and activity; 9: told; 10: disk; 11: install;
 # 12: worker version (migrate.py)
-SCHEMA_VERSION = 17
+SCHEMA_VERSION = 18
 BASE_SCHEMA = 12  # what _SCHEMA builds, as it runs at every open; later columns are migrate steps
 BUSY_TIMEOUT_MS = 10_000
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
 _JSON_COLUMNS = frozenset({"argv", "toolchain", "needs", "capabilities", "env", "env_order",
-                          "activity", "ci_result"})
+                          "activity", "ci_result", "take"})
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS jobs (
@@ -96,7 +96,7 @@ _JOB_COLUMNS = frozenset(
     "install toolchain needs timeout_min state outcome exit_code duration_s worker attempt_id "
     "upload_sha256 client_lease_until worker_lease_until cancel_requested log_size "
     "created_at queued_at started_at finished_at kind pinned_worker runner run_url env "
-    "detached env_order stop_reason activity active_at check_in_ok told_at worker_version client_os ci_result".split()
+    "detached env_order stop_reason activity active_at check_in_ok told_at worker_version client_os ci_result take".split()
 )
 
 

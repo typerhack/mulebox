@@ -58,6 +58,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | a one-off command (one test file, one script) | `mulebox run -- <cmd> <args...>` |
 | the same inside a compose service | `mulebox run --in <service> -- <cmd> <args...>` |
 | the same with no containers, install or setup | `mulebox run --bare -- <cmd> <args...>` |
+| change a file on the machine and get it back, such as a lockfile | `mulebox run --take <path> -- <cmd> <args...>`, e.g. `mulebox run --in api --take api/composer.lock -- composer update --no-install vendor/pkg` |
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
@@ -75,6 +76,11 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   totals can fill the last lines. It is the last thing
   printed, after the container logs, so the end of the output is where the error is. Read that
   first; open the full log only if it is not enough.
+- `--take <path>` (repeat it for more files) copies a file back into your project once the
+  command passed, written in place. Paths are relative to the folder with `.mulebox.yml`. It
+  waits, so not with `--detach`; it never brings back a file mulebox never sends (`.env`, keys,
+  `exclude:`); a file the command did not leave is named, and the exit code is then 1. Use it for
+  lockfiles a package manager rewrites, rather than running the package manager locally.
 - The exit code is the job's exit code. mulebox's own codes:
 
 | Code | Meaning | What to do |

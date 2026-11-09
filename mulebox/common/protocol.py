@@ -112,6 +112,9 @@ class MessageType(StrEnum):
     DRAIN_OK = "drain_ok"
     MACHINE = "machine"
     MACHINE_OK = "machine_ok"
+    TAKEN = "taken"
+    TAKE = "take"
+    TAKE_OK = "take_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -163,6 +166,11 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: `action` drain, resume or remove one worker (machine_api.py).
     MessageType.MACHINE: frozenset({"worker", "action"}),
     MessageType.MACHINE_OK: frozenset({"worker", "action", "running"}),
+    # worker -> coordinator: bytes of a file `mulebox run --take` asked for (coordinator/taken.py).
+    MessageType.TAKEN: frozenset({"job_id", "index", "offset", "data"}),
+    # client -> coordinator: bytes of that file from `offset`; replied with take_ok.
+    MessageType.TAKE: frozenset({"job_id", "index", "offset"}),
+    MessageType.TAKE_OK: frozenset({"data", "size", "eof"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

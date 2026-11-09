@@ -54,6 +54,7 @@ SAMPLE_VALUES = {
     "jobs": [{"job_id": "job-01JC3X0000000000000000000", "state": "queued"}],
     "repository": "example-org/example-app",
     "run_id": "123456789", "run_attempt": "1", "runner": "build-1-example-app",
+    "index": 0, "size": 18, "eof": True,
 }
 
 
@@ -94,7 +95,7 @@ def test_enum_values_match_contract():
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "steps", "error",
         "queue", "queue_ok", "projects", "projects_ok", "machines", "machines_ok", "logs", "watch",
         "reach", "reach_ok", "reserve", "acquire", "release", "runner_jobs", "drain", "drain_ok",
-        "machine", "machine_ok"}
+        "machine", "machine_ok", "taken", "take", "take_ok"}
 
 
 def test_transition_table_is_exact():

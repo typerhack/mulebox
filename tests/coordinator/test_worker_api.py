@@ -13,7 +13,7 @@ def test_claim_ok_body(store, staging):
     assert set(reply.body) == {"job_id", "attempt_id", "project", "job", "branch", "argv",
                                "fingerprint",
                                "base_commit", "timeout_min", "setup", "install", "toolchain", "needs", "env",
-                               "env_order", "limits"}
+                               "env_order", "limits", "take"}
     assert reply.body["setup"] == "pnpm install" and reply.body["argv"] == ["pnpm", "check"]
 
 

@@ -10,6 +10,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
+from mulebox.common import take_paths
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (
     attendance,
@@ -22,6 +23,7 @@ from mulebox.coordinator import (
     reuse,
     runner_api,
     steps,
+    taken,
     usual,
     worker_api,
     workers,
@@ -65,6 +67,13 @@ def handle(store: Store, staging: Staging, msg: Message, now: float, *,
         return error_message(msg.request_id, "internal", f"internal error: {type(exc).__name__}")
 
 
+def _take(body: dict[str, Any]) -> list[str]:
+    try:
+        return list(take_paths.checked(v.strings(body, "take")))
+    except ValueError as exc:
+        raise BadRequest(str(exc)) from None
+
+
 def submit(req: Request) -> Message:
     body = req.body
     fields = {
@@ -85,6 +94,7 @@ def submit(req: Request) -> Message:
         "needs": needs.required(v.strings(body, "needs"), v.string_map(body, "env")),
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
         "detached": v.flag(body, "detached"),
+        "take": _take(body),
     }
     with req.store.write() as conn:
         job = st.find_by_key(conn, fields["idempotency_key"])
@@ -243,6 +253,8 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.DRAIN: drain,
     MessageType.MACHINE: machine_api.machine,
     MessageType.LOGS: logs,
+    MessageType.TAKE: taken.take,
+    MessageType.TAKEN: taken.taken,
     MessageType.CLAIM: worker_api.claim,
     MessageType.JOB_UPDATE: worker_api.job_update,
     MessageType.LOG_CHUNK: worker_api.log_chunk,

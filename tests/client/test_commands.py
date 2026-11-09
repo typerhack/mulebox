@@ -190,3 +190,19 @@ def test_a_job_says_which_system_sent_it(fake, in_repo, capsys, monkeypatch):
     fake.scenario(log=["t\n"])
     assert cli.main(["run", "--", "true"]) == 0
     assert fake.requests()[0]["body"]["client_os"] == "macOS"
+
+
+def test_run_take_refuses_detach_secrets_and_escapes(fake, in_repo, capsys):
+    assert cli.main(["run", "--take", "composer.lock", "--detach", "--", "true"]) == 2
+    assert "drop --detach" in capsys.readouterr().err
+    assert cli.main(["run", "--take", ".env", "--", "true"]) == 2
+    assert "never moves" in capsys.readouterr().err
+    assert cli.main(["run", "--take", "../x", "--", "true"]) == 2
+    assert fake.requests() == []
+
+
+def test_a_failed_run_takes_nothing_back(fake, in_repo, capsys):
+    fake.scenario(log=["t\n"], exit_code=1, outcome="failed")
+    assert cli.main(["run", "--take", "composer.lock", "--", "false"]) == 1
+    assert fake.requests()[0]["body"]["take"] == ["composer.lock"]
+    assert all(r["type"] != "take" for r in fake.requests())

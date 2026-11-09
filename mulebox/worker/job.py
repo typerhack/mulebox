@@ -36,6 +36,8 @@ class ActiveJob:
     tree: Any = None  # the Path of the project's worktree this job runs in
     setup_key: str | None = None  # set when this job's `setup` counts once it has passed
     install_key: str | None = None  # the same for its `install`
+    take: list[str] = field(default_factory=list)  # files `mulebox run --take` brings back
+    taking: list[tuple[int, int, bytes]] = field(default_factory=list)  # chunks yet to send
 
     @property
     def steps(self) -> StepTracker:

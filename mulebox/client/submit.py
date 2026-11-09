@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import attention, delta, report, summary
+from mulebox.client import attention, delta, report, summary, take_back
 from mulebox.client.job_body import WARM_ARGV, WARM_JOB_NAME, job_request, submit_body
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
@@ -76,6 +76,7 @@ def run_job(
     again: bool = False,
     warm: bool = False,
     options: JobOptions | None = None,
+    take: tuple[str, ...] = (),
 ) -> int:
     """Run a job on the build machines as if it ran here; return its exit code.
 
@@ -98,7 +99,7 @@ def run_job(
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {report.format_size(snap.size)}")
         body = submit_body(project, job, argv, snap, detach,
-                           reuse=isinstance(target, str) and not (again or warm))
+                           reuse=isinstance(target, str) and not (again or warm), take=take)
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         already = reply.body.get("already")
@@ -131,7 +132,10 @@ def run_job(
         snap.discard()
     stale_check(root, project, snap.fingerprint, io)
     watcher.finish(result)
-    return report.exit_code_for(result)
+    code = report.exit_code_for(result)
+    if take and code == 0:
+        code = take_back.bring_back(remote.call, request, watcher.job_id, take, root, io.err)
+    return code
 
 
 def left_out(names: Sequence[str]) -> str:
