@@ -16,6 +16,23 @@ def test_a_failed_login_says_what_to_do(monkeypatch):
         setup.check_login("build-1")
 
 
+@pytest.mark.parametrize(("ssh_says", "advice", "not_advice"), [
+    ("ssh: Could not resolve hostname host: nodename nor servname provided, or not known",
+     "does not know a machine called build-1", "ssh-copy-id"),
+    ("ssh: connect to host build-1 port 22: Connection timed out", "cannot reach build-1",
+     "ssh-copy-id"),
+    ("alice@build-1: Permission denied (publickey)", "ssh-copy-id build-1", "cannot reach"),
+])
+def test_a_failed_login_names_its_cause(ssh_says, advice, not_advice, monkeypatch):
+    def fail(*args, **kwargs):
+        raise ssh.SSHUnavailable(f"cannot connect to build-1 over ssh (exit 255): {ssh_says}")
+
+    monkeypatch.setattr(setup.ssh, "run_remote", fail)
+    with pytest.raises(setup.SetupError) as caught:
+        setup.check_login("build-1")
+    assert advice in str(caught.value) and not_advice not in str(caught.value)
+
+
 @pytest.mark.parametrize("target", ["-oProxyCommand=x", "-", "bad host", ""])
 def test_a_bad_target_is_refused_before_any_ssh(target, monkeypatch):
     monkeypatch.setattr(setup.ssh.subprocess, "Popen", None)

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.5 - 2026-11-09 - patch
+- mulebox setup names why the login failed: an unknown host name asks for an address or an ssh config entry, an unreachable machine asks for its network and ssh server, and only a refused login gets the key advice.
+
 ## 0.83.4 - 2026-11-09 - patch
 - The warning triangle (out-of-step strip, header mark, warn results) has rounded corners and a rounded mark with a round dot; the sharp one with a square cut-out looked crude at 15 px in both themes.
 

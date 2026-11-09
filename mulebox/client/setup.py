@@ -41,19 +41,38 @@ class SetupError(MuleboxError):
     """A step failed; the message says what to do."""
 
 
-def check_login(target: str) -> None:
-    try:
-        ssh.run_remote(target, ["true"], timeout_s=LOGIN_TIMEOUT_S, connect_timeout_s=CONNECT_S)
-    except ssh.SSHError as exc:
-        raise SetupError(
-            f"cannot log in to {target} without a prompt, and mulebox never answers one.\n"
+# ssh's own words for a machine that cannot be reached at all: no key would help, so the
+# advice is about the name or the network, not about logging in.
+_UNKNOWN_NAME = ("could not resolve hostname", "name or service not known")
+_UNREACHABLE = ("connection refused", "timed out", "no route to host", "network is unreachable")
+
+
+def _login_advice(target: str, detail: str) -> str:
+    text = detail.lower()
+    if any(word in text for word in _UNKNOWN_NAME):
+        return (f"this laptop does not know a machine called {target}.\n"
+                "Give its address, such as `mulebox setup 192.168.1.50`, or a name from "
+                f"~/.ssh/config (`Host {target}` with `HostName <address>` under it). Then check "
+                f"that `ssh {target} true` works.")
+    if any(word in text for word in _UNREACHABLE):
+        return (f"cannot reach {target}.\n"
+                "Check that it is on, that this laptop is on its network (or VPN), and that it "
+                f"runs an ssh server; then that `ssh {target} true` works.")
+    return (f"cannot log in to {target} without a prompt, and mulebox never answers one.\n"
             f"Make `ssh {target} true` work. With no key on this laptop yet, make one: "
             "`ssh-keygen -t ed25519`. Copy it with `ssh-copy-id`, which asks for the password "
             f"there once, so a person runs it: `ssh-copy-id {target}` if your user name there is "
             f"the same as here, else `ssh-copy-id <user>@{target}`, or put `User <user>` under "
             f"`Host {target}` in ~/.ssh/config. Then `ssh {target} true` once, to accept its "
             "host key. A key with a passphrase must be loaded into your ssh agent "
-            f"(docs/getting-started.md, What you need).\n({exc})") from exc
+            "(docs/getting-started.md, What you need).")
+
+
+def check_login(target: str) -> None:
+    try:
+        ssh.run_remote(target, ["true"], timeout_s=LOGIN_TIMEOUT_S, connect_timeout_s=CONNECT_S)
+    except ssh.SSHError as exc:
+        raise SetupError(f"{_login_advice(target, str(exc))}\n({exc})") from exc
 
 
 def remote_for(target: str) -> Remote:
