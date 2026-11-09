@@ -428,6 +428,15 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       the diary reader agreed with the runner's final result on all 124 real runs on the machine.
       Done when: a real CI run that fails and one that passes show on the deployed dashboard in Edge
       with their marks, the failed step, and a CI card's cores during a container-heavy step.
+      Seen 2026-11-09: a real passing CI run with its mark in the Passed tab. Open: a real failure, and
+      the CI card's cores during a container step.
+- [x] M14.9 Out-of-step strip: a laptop on another mulebox than the build machine, a laptop whose skill
+      is out of date (warning, amber), a worker on another mulebox than the coordinator (danger, red),
+      each with its fix, above the panels, and a mark with the count in the header. A strip over a toast,
+      as the state lasts until fixed (the user's choice). Done 2026-11-09 (0.83.1): in real Edge on the
+      deployed dashboard, a stale skill copy showed the warning and the mark after one job and went away
+      live after `mulebox skill update`; the danger level was drawn in the page by its own code, as no
+      real worker was out of step. Not seen: the light theme, and the mark scrolling to the strip.
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 
@@ -583,6 +592,20 @@ browser download blocked for the machine's network location.
 - [x] M19.9 Collapse `Downloading ...: x MB/y MB` in the log; show pnpm's own install apart in `prepare`: a
       stage `toolchain`, as installing pinned tools was hidden in `prepare` (167 s on one real job). Done
       2026-11-07 (0.67.1): a real job showed `toolchain` 40 s, and the real log of 2224 lines kept one of its 589 download lines.
+
+## M20: Issues filed by agents
+From the first issues agents filed through `mulebox feedback` (#1 to #11, 2026-11-09). All closed,
+each with a report of what was checked.
+- [x] M20.1 Drafts with job ids, `--grep`, `-o` and `mulebox feedback guide`; a fairer scrub that
+      names what it refuses (#10, #11). 0.77.0, real drafts and the real check.
+- [x] M20.2 Quieter env notice; a `compose: false` job skips a docker install (#3, #6, #9). 0.77.1,
+      a real compose-free job on the machine.
+- [x] M20.3 `mulebox run --bare` (#5), `ignore_changes:` (#2), `mulebox runner caches` (#8),
+      `mulebox run --take` (#4). 0.78.0 to 0.81.1; all but runner caches run for real. Open: runner
+      caches applied to a real runner, which restarts a project's CI (the user's call).
+- [x] M20.4 The skill keeps itself current: `mulebox contract` reports a copy that differs, the agent
+      runs `mulebox skill update` (the user's choice over a plugin marketplace), `mulebox setup`
+      updates the laptop's copies. 0.82.0: setup updated two real copies.
 
 ## Parking lot
 - `mulebox init` on a laptop with no node, for a project that names no Node version anywhere, writes a file with no node pinned; on a machine with none

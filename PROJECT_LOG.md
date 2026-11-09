@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.3 - 2026-11-09 - patch
+- Roadmap: M14.9 (out-of-step strip) done, M14.8 progress, and M20 for the issues agents filed (#1 to #11).
+
 ## 0.83.2 - 2026-11-09 - patch
 - install.sh sets a runner's CPU share with a plain if, not A && B || C, which shellcheck flags; the repository's CI failed on it, while the build machine, which has no shellcheck, skipped that test.
 
