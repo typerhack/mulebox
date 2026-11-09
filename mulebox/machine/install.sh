@@ -243,8 +243,10 @@ install_units() {
     # A runner may be in a job: its new CPU share is set in place, never by a restart.
     systemctl --user list-units --plain --no-legend 'mulebox-runner@*' 2>/dev/null \
         | awk '{print $1}' | while read -r unit; do
-            [ -n "$unit" ] && systemctl --user set-property --runtime "$unit" \
-                CPUWeight=50 IOWeight=50 2>/dev/null || true
+            if [ -n "$unit" ]; then
+                systemctl --user set-property --runtime "$unit" \
+                    CPUWeight=50 IOWeight=50 2>/dev/null || true
+            fi
         done
 }
 

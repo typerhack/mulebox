@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.2 - 2026-11-09 - patch
+- install.sh sets a runner's CPU share with a plain if, not A && B || C, which shellcheck flags; the repository's CI failed on it, while the build machine, which has no shellcheck, skipped that test.
+
 ## 0.83.1 - 2026-11-09 - patch
 - The out-of-step strip has two levels: danger in red with a crossed circle for a worker on another mulebox (jobs can fail), warning in amber with a triangle for a laptop or its skill; bigger icons, a faint tint, and a mark with the count in the header that stays in sight and brings the strip back into view.
 
