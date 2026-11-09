@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.81.1 - 2026-11-09 - patch
+- mulebox run --take says a small file's size in bytes; a 6-byte file read "0.0 KiB" in the first real run.
+
 ## 0.81.0 - 2026-11-09 - minor
 - mulebox run --take <path> brings a file the command changed back into the project once it passed, such as a lockfile from composer update, so the package manager no longer has to run on the laptop (issue #4). The worker sends the files to the coordinator in chunks before the result (taken), the client fetches them (take) and writes them in place; paths stay inside the project, no symlinks, no secrets or excluded files, 16 MiB each. Schema 18 (jobs.take); kept a day.
 

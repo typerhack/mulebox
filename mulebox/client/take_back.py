@@ -89,5 +89,6 @@ def bring_back(call: Call, request: Callable[..., Any], job_id: str, paths: Sequ
             report.status(err, f"not taken back: {path}: {exc}")
             missing += 1
             continue
-        report.status(err, f"taken back: {path} ({report.format_size(len(data))})")
+        size = f"{len(data)} bytes" if len(data) < 1024 else report.format_size(len(data))
+        report.status(err, f"taken back: {path} ({size})")
     return 1 if missing else 0

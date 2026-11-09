@@ -50,7 +50,7 @@ def test_files_are_written_in_place_and_the_missing_one_named(tmp_path):
     assert (tmp_path / "composer.lock").stat().st_mode & 0o777 == 0o600
     assert (tmp_path / "web" / "package-lock.json").read_bytes() == b"x"
     text = err.getvalue()
-    assert "taken back: composer.lock" in text and "not taken back: gone.lock" in text
+    assert "taken back: composer.lock (8 bytes)" in text and "not taken back: gone.lock" in text
     assert not [p for p in tmp_path.rglob(".*mulebox-*")]
 
 
