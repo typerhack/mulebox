@@ -3,8 +3,8 @@
 - `mulebox-hooks/started.sh` and `completed.sh`: the job hooks GitHub's runner calls; each
   execs `~/.mulebox/bin/mulebox runner-hook <started|completed>`.
 - `.env`: the runner's own environment file (written by its `config.sh`); mulebox sets
-  `ACTIONS_RUNNER_HOOK_JOB_STARTED` and `ACTIONS_RUNNER_HOOK_JOB_COMPLETED` in it and keeps
-  every other line.
+  `ACTIONS_RUNNER_HOOK_JOB_STARTED` and `ACTIONS_RUNNER_HOOK_JOB_COMPLETED` in it, and the cache
+  settings of `runner caches` (runner_caches.py), and keeps every other line.
 - `.mulebox-runner.json`: what `runner add` registered (repo, labels, version), for
   `runner list` and `runner remove --repo`.
 - `.mulebox-reservation`: written by the hooks while a job holds a build slot (busy).
@@ -78,13 +78,20 @@ def write_hooks(paths: NodePaths, folder: Path) -> dict[str, Path]:
 
 def set_env_hooks(paths: NodePaths, folder: Path, scripts: dict[str, Path]) -> None:
     """Set the hook variables in the runner's .env; other lines are kept."""
+    set_env(paths, folder, {name: str(script) for name, script in scripts.items()})
+
+
+def set_env(paths: NodePaths, folder: Path, values: dict[str, str],
+            drop: frozenset[str] = frozenset()) -> None:
+    """Set `values` in the runner's .env, removing the names in `drop` first; other lines kept."""
     env = folder / ENV_FILE
     try:
         lines = env.read_text(encoding="utf-8").splitlines()
     except FileNotFoundError:
         lines = []
-    kept = [ln for ln in lines if ln.split("=", 1)[0].strip() not in scripts]
-    kept += [f"{variable}={script}" for variable, script in scripts.items()]
+    gone = drop | values.keys()
+    kept = [ln for ln in lines if ln.split("=", 1)[0].strip() not in gone]
+    kept += [f"{name}={value}" for name, value in values.items()]
     write_file(paths, env, "\n".join(kept) + "\n")
 
 

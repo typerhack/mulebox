@@ -5,6 +5,7 @@ On the build machine (the token is read from stdin, or prompted without echo on 
     mulebox runner add --repo <owner/repo> [--labels a,b] [--name N]
     mulebox runner list
     mulebox runner remove <name> | --repo <owner/repo> [--name N]
+    mulebox runner caches <name> --project <project> [--only cache-npm,...] | --off
 
 On the laptop (the token comes from `gh`, the command runs on the coordinator over ssh):
 
@@ -53,6 +54,16 @@ def register(sub: argparse._SubParsersAction) -> None:
     remove.add_argument("--name", help="runner name (same as the positional argument)")
     remove.add_argument("--config", help="node config file")
     remove.set_defaults(func=_guarded(_remove))
+
+    shared = actions.add_parser(
+        "caches", help="let a runner use a project's package caches, as its mulebox jobs do")
+    shared.add_argument("runner", help="runner name (see `mulebox runner list`)")
+    shared.add_argument("--project", help="the project name in .mulebox.yml")
+    shared.add_argument("--only", help="comma-separated caches (default all: "
+                        "cache-pnpm,cache-composer,cache-npm,cache-pip)")
+    shared.add_argument("--off", action="store_true", help="stop sharing")
+    shared.add_argument("--config", help="node config file")
+    shared.set_defaults(func=_guarded(_caches))
 
     reg = actions.add_parser("register", help="from the laptop: add a runner for a repo")
     _options(reg, labels=True, config=False)
@@ -158,6 +169,22 @@ def _remove(args: argparse.Namespace) -> int:
         manage.check_runner_repo(machine, name, args.repo)
     token = read_token("GitHub runner removal token: ")
     manage.remove(machine, name, token)
+    return 0
+
+
+def _caches(args: argparse.Namespace) -> int:
+    from mulebox.runners import runner_caches
+
+    if args.off == bool(args.project):
+        raise RunnerUsageError("give --project <name>, or --off")
+    tools = [t.strip() for t in (args.only or "").split(",") if t.strip()]
+    env = runner_caches.share(_machine(args), args.runner, None if args.off else args.project,
+                              tools)
+    for name, value in env.items():
+        print(f"{name}={value}")
+    print(f"runner {args.runner} restarted; " + (
+        "it no longer uses mulebox's caches" if args.off else
+        f"its jobs now use {args.project}'s caches"))
     return 0
 
 

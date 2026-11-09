@@ -105,6 +105,9 @@ On the build machine (CLI `mulebox runner ...`):
   Default name `<node>-<repo>`; default labels `mulebox` (GitHub adds `self-hosted`,
   `Linux`, `X64`).
 - `runner list`: name, repo, service state, busy/idle.
+- `runner caches <name> --project <project> [--only cache-npm,...] | --off`: writes the project's
+  package cache settings (worker/caches.py `for_job`) into the runner's `.env`, drops them with
+  `--off`, records `caches_of` in `.mulebox-runner.json`, restarts the unit. Refused while busy.
 - `runner remove <name>`: removal token on stdin; stops and disables the unit, runs
   `./config.sh remove --token <t>`, removes the runner folder through safepath.
 - Unit template `mulebox/machine/systemd/mulebox-runner@.service`: `ExecStart=%h/.mulebox/runners/

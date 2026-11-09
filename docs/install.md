@@ -229,6 +229,21 @@ never put on a command line or in a log. `roots.runners` must stay `~/.mulebox/r
 (the unit template runs runners from there). In workflows, use
 `runs-on: [self-hosted, mulebox]`.
 
+**One cache for the gate and CI.** A project's mulebox jobs download through its package caches;
+a runner downloads through its own, so a package the gate already has can still fail to download
+in CI. On the build machine, point a runner at the project's caches (the name in `.mulebox.yml`):
+
+```sh
+~/.mulebox/bin/mulebox runner caches build-1-example-app --project example-app   # all four
+~/.mulebox/bin/mulebox runner caches build-1-example-app --project example-app --only cache-npm
+~/.mulebox/bin/mulebox runner caches build-1-example-app --off
+```
+
+It sets `npm_config_cache`, `pnpm_config_store_dir`, `COMPOSER_CACHE_DIR`, `PIP_CACHE_DIR` and
+`MULEBOX_CACHE_<TOOL>` (for a workflow's compose file) in the runner's `.env` and restarts its
+service; a runner with a job running is refused. CI then writes into the cache the gate reads,
+so do it only for a runner of a private repository whose pull requests you trust.
+
 **Private repositories only.** Never attach a runner to a public repository: anyone can open a
 pull request, and its workflow file comes from that pull request, so it can ask for your runner
 whatever your own workflow says, and run its code on your build machine.

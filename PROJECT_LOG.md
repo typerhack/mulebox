@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.80.0 - 2026-11-09 - minor
+- mulebox runner caches <runner> --project <name> points a GitHub runner at the project's package caches, so the gate and CI on one machine download through the same cache; --off undoes it (issue #8).
+
 ## 0.79.0 - 2026-11-09 - minor
 - ignore_changes: in .mulebox.yml lists paths that are sent but not fingerprinted, so a changelog or docs edit keeps a passed result: no stale warning, and check gives the result back without a five-minute rerun (issue #2).
 
