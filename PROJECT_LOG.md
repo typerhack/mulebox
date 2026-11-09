@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.4 - 2026-11-09 - patch
+- The warning triangle (out-of-step strip, header mark, warn results) has rounded corners and a rounded mark with a round dot; the sharp one with a square cut-out looked crude at 15 px in both themes.
+
 ## 0.83.3 - 2026-11-09 - patch
 - Roadmap: M14.9 (out-of-step strip) done, M14.8 progress, and M20 for the issues agents filed (#1 to #11).
 
