@@ -48,7 +48,7 @@ function elapsed(job) {
   return el("span", { class: "time" },
     el("span", { class: "num", "data-elapsed": job.job_id, text: duration(job.elapsed_s) }),
     job.usual_s ? el("span", { class: "usual", title: `usually ${duration(job.usual_s)}`,
-                               text: `of usually ${roughly(job.usual_s)}` }) : null);
+                               text: `usually ${roughly(job.usual_s)}` }) : null);
 }
 
 function block(job, cores) {

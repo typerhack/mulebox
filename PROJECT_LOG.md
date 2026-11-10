@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.91.1 - 2026-11-10 - patch
+- A running card reads "12m 11s usually 13m": without "of", a job of ten minutes or an hour also keeps its time on the card's first line. Measured in real Edge on a real card at 280 px.
+
 ## 0.91.0 - 2026-11-10 - minor
 - GitHub runs' waiting slots move in line like any job: arrows on their waiting row, and Move items in their three dots (`mulebox first|up|down|last` too). Nothing else about them is steered, as GitHub owns the run. Asked by the user.
 - The line is one order for both kinds: a slot's turn and the check that holds agent jobs behind a slot now follow moves (`store.line_key`, shared with upgrades); before, both went by arrival time alone, so moving a job ahead of a waiting slot did not really put it ahead.
