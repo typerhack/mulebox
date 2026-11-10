@@ -410,6 +410,16 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [ ] M14.1 Jobs box redesign. Three mockups were rejected as flooded with data; the top row (CPU,
       memory, disk, machines) stays. Done when: the user picks a design and it runs on the real
       dashboard in Edge.
+- [ ] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
+      Next.js was weighed and left out: it would need Node and a second server on every machine).
+      Built at release time into static files that the existing aiohttp server serves, so no Node
+      on build machines and the same one-command install; the `/api` endpoints and the live event
+      stream stay as they are. A component library and design system with it (for example shadcn/ui
+      on Radix, Tailwind), done together with M14.1 rather than as a separate rewrite. Costs: a Node
+      build in the release and CI, a few hundred KB more in the package, browser-side tests.
+      Done when: the dashboard runs from the React build on the real machine in Edge, with every
+      view and control of today, and its overhead on the machine measured no higher than now
+      (about 0.5% of a core and 50 MB, M2.3).
 - [x] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
       VPN tunnel once. Built 2026-11-10 (0.84.0): workers report in and out over physical interfaces
       only, shown by `mulebox machine list`. Run on the real machine: a 30 MB download read 849 KiB/s

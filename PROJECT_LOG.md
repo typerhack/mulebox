@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.89.2 - 2026-11-10 - patch
+- Roadmap: M14.10, the dashboard front end in React with Vite, built at release time and served by the existing server (the user's choice; Next.js left out).
+- Actions menu a little wider so hints wrap less; a running card's time stays on one line beside its Actions button.
+
 ## 0.89.1 - 2026-11-10 - patch
 - Actions menus, after the user's review: a bordered "Actions" button with a chevron on each card and row (the dots were hard to see), "Queue actions" beside the tabs instead of on the box border, and every item with an outline icon, a bold name and one line on what it does, grouped, listing only what applies now.
 - The page draws its controls once its token arrives; before, a quiet queue showed no menus or arrows after a reload.
