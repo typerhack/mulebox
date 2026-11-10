@@ -114,7 +114,8 @@ def test_runner_unit_template():
     service = unit["Service"]
     assert service["WorkingDirectory"] == "%h/.mulebox/runners/%i"
     assert service["ExecStart"] == "%h/.mulebox/runners/%i/run.sh"
-    assert service["KillMode"] == "process"
+    assert service["KillMode"] == "mixed"  # a restart leaves no old listener behind
+    assert service["Environment"] == "RUNNER_MANUALLY_TRAP_SIG=1"  # run.sh passes the stop on
     assert service["KillSignal"] == "SIGTERM"
     assert service["TimeoutStopSec"] == "5min"
     assert service["Restart"] == "always"

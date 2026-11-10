@@ -111,7 +111,9 @@ On the build machine (CLI `mulebox runner ...`):
 - `runner remove <name>`: removal token on stdin; stops and disables the unit, runs
   `./config.sh remove --token <t>`, removes the runner folder through safepath.
 - Unit template `mulebox/machine/systemd/mulebox-runner@.service`: `ExecStart=%h/.mulebox/runners/
-  %i/run.sh`, `WorkingDirectory=%h/.mulebox/runners/%i`, `KillMode=process`,
+  %i/run.sh`, `WorkingDirectory=%h/.mulebox/runners/%i`, `Environment=RUNNER_MANUALLY_TRAP_SIG=1` (so
+  run.sh passes a stop on to the listener), `KillMode=mixed` (anything left is killed: a restart
+  never leaves the old listener running beside the new one),
   `KillSignal=SIGTERM`, `TimeoutStopSec=5min`, `Restart=always`, `RestartSec=10`. install.sh
   copies it with the others (enable is per runner).
 

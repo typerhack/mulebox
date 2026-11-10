@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.84.2 - 2026-11-10 - patch
+- A runner's restart (`mulebox runner caches`) left its old listener running beside the new one: the unit stopped run.sh alone (KillMode=process), and run.sh passes a stop on only with RUNNER_MANUALLY_TRAP_SIG. The unit now sets that and KillMode=mixed. Seen on a real runner: the old listener, without the new cache settings, took the next CI job.
+
 ## 0.84.1 - 2026-11-10 - patch
 - Roadmap: M14.9 done in full (the mark at 390 px), M14.2 built, M5.3 blocked on a second worker.
 

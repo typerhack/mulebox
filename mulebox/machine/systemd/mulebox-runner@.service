@@ -9,7 +9,11 @@ After=mulebox-worker.service
 Type=simple
 WorkingDirectory=%h/.mulebox/runners/%i
 ExecStart=%h/.mulebox/runners/%i/run.sh
-KillMode=process
+# run.sh passes a stop on to the listener only with this set; without it a stop ended run.sh
+# alone, and a restart left the old listener running beside the new one. `mixed` then kills
+# whatever is still in the unit once run.sh is gone, so a restart never leaves a second listener.
+Environment=RUNNER_MANUALLY_TRAP_SIG=1
+KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=5min
 Restart=always
