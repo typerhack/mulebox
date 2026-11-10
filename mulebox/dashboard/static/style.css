@@ -239,6 +239,7 @@ td .branch { color: var(--ink-muted); margin-left: 8px; }
 .readings { display: grid; gap: 2px; margin: 4px 0 3px; }
 .readings .label { color: var(--ink-muted); min-width: 3ch; }
 .reading-none { margin: 3px 0; }
+.readings .net .value { grid-column: 2 / -1; text-align: left; color: var(--ink-soft); }
 .slots { display: flex; align-items: center; gap: 8px; margin: 3px 0; color: var(--ink-soft); }
 .slots .boxes { display: inline-flex; gap: 3px; }
 .slot { width: 11px; height: 11px; border: 1px solid var(--accent); border-radius: 2px; }

@@ -1,12 +1,13 @@
 // The machines box: every worker, whether it is online, its slots as filled or empty
 // squares, its capabilities, what it is running, and a small live reading of its CPU and
-// memory on the same load ramp as the big graphs.
+// memory on the same load ramp as the big graphs, and its network in and out as text.
 //
 // A reading is only shown when the server measured it (`cpu_pct`, `mem_pct` on the row).
 // Every worker reports its machine's load (M5.3); one that is offline or has not reported yet
-// says "no live data".
+// says "no live data". Network (M14.2) counts the machine's physical interfaces only, so a VPN
+// tunnel's traffic is not added to Wi-Fi's.
 
-import { badge, clock, el, fill, jobLink, meter, soonest, questionMark } from "./format.js";
+import { badge, bytes, clock, el, fill, jobLink, meter, soonest, questionMark } from "./format.js";
 
 const READINGS = [["cpu", "cpu_pct"], ["mem", "mem_pct"]];
 
@@ -33,12 +34,23 @@ function reading(row, label, key) {
             el("span", { class: "value num", text: `${value.toFixed(0)}%` }));
 }
 
+const rate = (kibS) => `${bytes(kibS * 1024)}/s`;
+
+// Text only: a rate has no fixed top, so a bar would mean nothing.
+function network(row) {
+  const { net_in_kib_s: inbound, net_out_kib_s: outbound } = row;
+  if (typeof inbound !== "number" || typeof outbound !== "number") return null;
+  return el("div", { class: "row net" }, el("span", { class: "label", text: "net" }),
+            el("span", { class: "value num", text: `in ${rate(inbound)}, out ${rate(outbound)}` }));
+}
+
 function readings(row) {
   const live = READINGS.filter(([, key]) => typeof row[key] === "number");
   if (!live.length) {
     return el("p", { class: "muted reading-none", text: "no live data" });
   }
-  return el("div", { class: "readings" }, ...live.map(([label, key]) => reading(row, label, key)));
+  return el("div", { class: "readings" }, ...live.map(([label, key]) => reading(row, label, key)),
+            ...[network(row)].filter(Boolean));
 }
 
 function card(row) {
