@@ -22,6 +22,8 @@ from mulebox.client.remote import CoordinatorError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState
 from mulebox.dashboard import keys, login
+from mulebox.runners.cancel_run import cancel_run
+from mulebox.runners.github import GitHubError
 
 TOKEN_HEADER = "X-Mulebox-Token"
 PAGE_TOKEN = secrets.token_hex(32)  # this service's own, for pages without a sign-in
@@ -64,11 +66,12 @@ async def cancel_job(request: web.Request) -> web.Response:
     job = await asyncio.to_thread(request.app[keys.DATA].job, job_id)
     if job is None:
         raise web.HTTPNotFound(text="no such job\n")
-    if job["kind"] != "job":
-        raise web.HTTPConflict(text="this only holds a slot for a GitHub run; "
-                                    "cancel the run on GitHub\n")
     if job["state"] == JobState.FINISHED:
         raise web.HTTPConflict(text="this job has already finished\n")
+    if job["kind"] == "runner":
+        return await _cancel_run(request, job)
+    if job["kind"] != "job":
+        raise web.HTTPConflict(text="this is not a job that can be cancelled here\n")
     try:
         reply = await request.app[keys.CANCELLER].cancel(job_id)
     except CoordinatorError as exc:
@@ -81,3 +84,16 @@ async def cancel_job(request: web.Request) -> web.Response:
     return web.json_response({"job_id": job_id, "state": body.get("state"),
                               "outcome": body.get("outcome"),
                               "cancel_requested": body.get("cancel_requested", False)})
+
+
+async def _cancel_run(request: web.Request, job: dict) -> web.Response:
+    """A GitHub run's slot: GitHub is asked to cancel the run (runners/cancel_run.py), and the
+    runner frees the slot when it stops. A run still waiting for a slot is cancelled the same way."""
+    try:
+        run = await asyncio.to_thread(cancel_run, job.get("run_url"))
+    except GitHubError as exc:
+        _log.warning("cancel of GitHub run for %s failed: %s", job["job_id"], exc)
+        raise web.HTTPBadGateway(text=f"{exc}\n") from None
+    _log.info("GitHub run %s cancelled from the dashboard by %s", run, request.remote)
+    return web.json_response({"job_id": job["job_id"], "state": job["state"],
+                              "outcome": None, "cancel_requested": True, "github_run": run})

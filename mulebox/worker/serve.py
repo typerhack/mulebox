@@ -8,6 +8,7 @@ from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.redact import StreamRedactor, secret_values
+from mulebox.runners.runner_controls import RunnerControls, RunnerUnit
 from mulebox.runners.runner_meter import CiContainers, RunnerMeter
 from mulebox.runners.supervise import Supervisor
 from mulebox.worker.agent import Agent
@@ -25,10 +26,14 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
     """Recovery first, then the claim loop until `stop` is set."""
     paths = paths or NodePaths.from_config(node.roots)
     stop = stop or threading.Event()
+    ci = CiContainers(paths.runners, docker)
+    systemctl = getattr(executor, "systemctl", None)  # runners are services: systemd only
+    steer = (RunnerControls(RunnerUnit(systemctl), docker or Docker(), ci.of)
+             if systemctl is not None else None)
     agent = Agent(node, link, executor, paths, docker=docker,
                   supervisor=Supervisor(node.name, paths.runners, redactor=lambda: StreamRedactor(
-                      secret_values(node.job_env)), meter=RunnerMeter(
-                          containers=CiContainers(paths.runners, docker))))
+                      secret_values(node.job_env)), meter=RunnerMeter(containers=ci),
+                      controls=steer))
     agent.recover()
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)
     while not stop.is_set():

@@ -410,6 +410,10 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [x] M14.12 Design system: [design-system.md](design-system.md) with its tokens and specimen. Three
       proposals (Stable, Signal, Gauge) made by a Fable subagent and reviewed by a second model; the
       user picked Gauge on 2026-11-10 (0.94.0). Its open points are listed there, for M14.10.
+- [~] M14.13 A GitHub run's card and row with the three dots, like an agent job's (the user's ask,
+      2026-11-10): open its page, open on GitHub, Freeze or Resume and Boost or End boost once it runs,
+      Cancel on GitHub (`gh run cancel` on the machine). Built 0.95.0, with tests. Done when: on a real
+      CI run in Edge, each item does what it says on the machine and on GitHub.
 - [ ] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
       with data; the top row (CPU, memory, disk, machines) stays. Done when: the user picks a design
       and it runs on the real dashboard in Edge.

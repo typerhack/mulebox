@@ -10,6 +10,9 @@ says `paused` and `boost` while they are on, and this brings the machine in line
   else on the machine, which keeps the default; the coordinator stops giving the machine new
   jobs meanwhile. Containers that start later are boosted with the next reply.
 
+The same class steers a GitHub run on its runner (runners/runner_controls.py): there the "unit"
+is the runner's service and the containers are found by their Compose folder, not by a label.
+
 Docker can be slow, so changes run on a background thread (background.py) and the loop never
 waits; a change that fails is tried again with the next reply. Before a job is stopped its pause
 is released at once (`release`), as Docker does not stop a paused container.
@@ -17,6 +20,7 @@ is released at once (`release`), as Docker does not stop a paused container.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -51,9 +55,14 @@ def containers(docker: Any, job_id: str) -> list[str]:
 class JobControls:
     """What has been applied to one job, and the change in progress."""
 
-    def __init__(self) -> None:
-        self.applied = Wanted()
+    def __init__(self, find: Callable[[], list[str]] | None = None,
+                 applied: Wanted | None = None) -> None:
+        self.find = find  # the containers to steer; by default the job's, by its label
+        self.applied = applied if applied is not None else Wanted()
         self.task: Any = None
+
+    def _containers(self, docker: Any, job: Any) -> list[str]:
+        return self.find() if self.find is not None else containers(docker, job.job_id)
 
     def follow(self, body: dict[str, Any], job: Any, executor: Any, docker: Any) -> None:
         """Start bringing `job` in line with a heartbeat reply; a no-op while one is running."""
@@ -69,7 +78,7 @@ class JobControls:
         self.task = background.start_thread(lambda: self._apply(want, job, executor, docker))
 
     def _apply(self, want: Wanted, job: Any, executor: Any, docker: Any) -> None:
-        ids = containers(docker, job.job_id)
+        ids = self._containers(docker, job)
         if want.boost or self.applied.boost:
             executor.prioritize(job.handle, want.boost)
             for cid in ids:
@@ -100,7 +109,7 @@ class JobControls:
             self.task = None
         if self.applied.paused and job.handle is not None:
             try:
-                self._unpause(job, executor, docker, containers(docker, job.job_id))
+                self._unpause(job, executor, docker, self._containers(docker, job))
             except Exception as exc:  # noqa: BLE001 - the stop goes on regardless
                 LOG.warning("could not resume %s before stopping it: %s", job.job_id, exc)
         self.applied = Wanted()

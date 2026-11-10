@@ -148,6 +148,10 @@ class SystemdExecutor:
         if handle.exit_code is None:
             handle.exit_code = 143
 
+    def systemctl(self, *args: str) -> subprocess.CompletedProcess:
+        """`systemctl --user` for other mulebox units (runners/runner_controls.py checks names)."""
+        return self._systemctl(*args)
+
     def freeze(self, handle: UnitHandle, on: bool) -> None:
         """Freeze or thaw the unit's processes (cgroup freezer); a stop thaws it by itself."""
         self._systemctl("freeze" if on else "thaw", _check_unit(handle.name))

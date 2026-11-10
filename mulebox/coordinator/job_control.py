@@ -14,8 +14,11 @@ mulebox runs on its owner's own network, so whoever reaches the queue may steer 
   takes no new job until it ends (queue.boosted_on). A queued job is also moved first.
 - `normal`: ends the boost; the job keeps its place in line.
 
-A GitHub run's slot and a waiting upgrade only move in line: GitHub owns the run, and pausing
-or boosting its slot could leave a CI run hanging. A finished or cancelled job has nothing to steer.
+A GitHub run's slot moves in line while it waits. Once its run holds the slot, it can be
+paused (frozen) and boosted like a job: the worker applies both to the runner's service and the
+run's Compose containers (runners/supervise.py). A long freeze can make GitHub give up on the
+runner and fail the run; the owner chose to have it anyway. A waiting upgrade only moves in line,
+and a finished or cancelled job has nothing to steer.
 """
 
 from __future__ import annotations
@@ -88,15 +91,24 @@ def changes(conn: sqlite3.Connection, job: dict[str, Any], action: str,
     return {"boost": 0} if job["boost"] else {}  # normal
 
 
+def _allowed(job: dict[str, Any], action: str) -> bool:
+    """Whether `action` applies to a job of this kind in this state (the docstring's rules)."""
+    if job["kind"] == queue.JOB_KIND:
+        return True
+    if action in MOVES:
+        return job["state"] == JobState.QUEUED
+    return job["kind"] == queue.RUNNER_KIND and job["state"] in (JobState.STARTING, JobState.RUNNING)
+
+
 def control(req: Request) -> Message:
     action = v.text(req.body, "action")
     if action not in ACTIONS:
         raise BadRequest(f"field 'action' must be one of {', '.join(ACTIONS)}")
     with req.store.write() as conn:
         job = st.require_job(conn, v.job_id(req.body))
-        if job["kind"] != queue.JOB_KIND and (action not in MOVES or job["state"] != JobState.QUEUED):
-            what = ("holds a slot for a GitHub run; it can only move in line while it waits, "
-                    "the run itself is steered on GitHub" if job["kind"] == queue.RUNNER_KIND
+        if not _allowed(job, action):
+            what = ("holds a slot for a GitHub run; while it waits it can only move in line, "
+                    "and once it runs it can be paused or boosted" if job["kind"] == queue.RUNNER_KIND
                     else "is an upgrade; it can only move in line while it waits, or be cancelled")
             raise Conflict(f"job {job['job_id']} {what}")
         if job["state"] not in _STEERABLE or job["cancel_requested"]:

@@ -4,7 +4,8 @@ A reservation is a job row with `kind = 'runner'`, pinned to one worker, with no
 It is created `queued`, granted (`queued -> starting -> running` in one transaction) when
 it is first in line among the queued rows its worker could run and both a cluster slot and
 a worker slot are free, and ended by `release`. Its owner may move it in line like any
-waiting job (job_control.py); nothing else about it is steered, as GitHub owns the run. Every function here runs inside the caller's write
+waiting job, and pause or boost it once it runs (job_control.py). Every function here runs
+inside the caller's write
 transaction; the time comes in as `now`.
 """
 

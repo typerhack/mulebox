@@ -4,6 +4,7 @@ import pytest
 
 from mulebox.common.protocol import JobState, MessageType, Outcome
 from mulebox.coordinator import api, leases
+from mulebox.coordinator import store as st
 
 from .helpers import queued, request
 
@@ -126,13 +127,26 @@ def test_a_paused_job_does_not_hold_a_slot_back(store, staging):
     assert acquire(store, staging, res, now=T0 + 2)["state"] == "running"
 
 
-def test_a_slot_only_moves(store, staging):
+def test_a_waiting_slot_only_moves_and_a_running_one_is_paused_or_boosted(store, staging):
     res = reserve(store, staging, now=T0)
     for action in ("pause", "boost"):
         reply = control(store, staging, res, action)
         assert reply.type is MessageType.ERROR and "only move in line" in reply.body["message"]
     acquire(store, staging, res, now=T0 + 1)
     assert "only move in line" in control(store, staging, res, "first").body["message"]
+    for action, field, value in (("pause", "paused", 1), ("boost", "boost", 1),
+                                 ("resume", "paused", 0), ("normal", "boost", 0)):
+        assert control(store, staging, res, action).type is MessageType.STATUS_OK
+        with store.read() as conn:
+            assert st.require_job(conn, res)[field] == value
+
+
+def test_a_boosted_run_keeps_new_jobs_off_its_machine(store, staging):
+    res = reserve(store, staging, now=T0)
+    acquire(store, staging, res, now=T0 + 1)
+    control(store, staging, res, "boost")
+    queued(store, staging, now=T0 + 2)
+    assert claim(store, staging, now=T0 + 3, slots=2).type is not MessageType.CLAIM_OK
 
 
 def test_other_workers_are_not_blocked_by_a_pinned_reservation(store, staging):

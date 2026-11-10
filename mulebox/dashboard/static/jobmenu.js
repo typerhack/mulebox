@@ -2,12 +2,13 @@
 // beside the tabs for everything at once. Each item sends the same request as its command
 // (`mulebox pause|resume|first|up|down|last|boost|normal|cancel`, `mulebox machine pause|resume`).
 //
-// Every item has an icon, a name and one line on what it does, and only the items that apply
+// A GitHub run's card and row have one too (runnerGroups). Every item has an icon, a name and one
+// line on what it does, and only the items that apply
 // to the job as it is now are listed. The queue view is redrawn on every queue event, so the
 // open menu lives on the page itself and follows its button (found again by `data-menu`).
 
 import { actionToken, post } from "./access.js";
-import { drawIcon, el } from "./format.js";
+import { drawIcon, el, safeUrl } from "./format.js";
 import { MOVE_SHAPES } from "./queuemoves.js";
 
 const WAITING = new Set(["uploading", "queued"]);
@@ -58,10 +59,31 @@ function moves(job) {
   ].filter(Boolean);
 }
 
+// A GitHub run's slot: it moves while it waits; once it runs, its runner is frozen or boosted
+// (runners/runner_controls.py). Cancel asks GitHub, which owns the run (runners/cancel_run.py).
+function runnerGroups(job, open_) {
+  const running = RUNNING.has(job.state);
+  const run = safeUrl(job.run_url);
+  const github = run && item("open", "Open on GitHub", "The run, its steps and its output there",
+                             () => { window.open(run, "_blank", "noopener"); });
+  const hold = !running ? null : job.paused
+    ? item("resume", "Resume", "The runner goes on where it stopped", control(job.job_id, "resume"))
+    : item("freeze", "Freeze", "Stops the runner and its containers; a long freeze can fail the run",
+           control(job.job_id, "pause"));
+  const boost = !running ? null : job.boost
+    ? item("calm", "End boost", "Shares the machine again", control(job.job_id, "normal"))
+    : item("boost", "Boost", "Gets the CPU and disk first; nothing new starts beside it",
+           control(job.job_id, "boost"));
+  const cancel = run && item("cancel", "Cancel on GitHub", "Asks GitHub to cancel the run; the slot frees",
+                             () => post(jobUrl(job.job_id, "cancel")), "danger");
+  return [[hold].filter(Boolean), WAITING.has(job.state) && job.position ? moves(job) : [],
+          [boost, open_, github].filter(Boolean), [cancel].filter(Boolean)];
+}
+
 function jobGroups(job) {
   const open_ = item("open", "Open its page", "Its log, stages and all its details",
                      () => { location.hash = `#/job/${encodeURIComponent(job.job_id)}`; });
-  if (job.kind === "runner") return [moves(job), [open_]];  // GitHub owns the run itself
+  if (job.kind === "runner") return runnerGroups(job, open_);
   if (job.kind === "upgrade") {
     return [moves(job), [open_],
             [item("cancel", "Cancel upgrade", "Takes it out of line; the machine stays as it is",
@@ -214,8 +236,9 @@ export function followMenu() {
 
 // The "Actions" button for one job, or null where this page has no controls or nothing to steer.
 export function jobMenu(job) {
-  const onlyMoves = ["upgrade", "runner"].includes(job.kind) && WAITING.has(job.state) && job.position;
-  if (!token || !(job.kind === "job" || onlyMoves) || job.cancel_requested
+  const onlyMoves = job.kind === "upgrade" && WAITING.has(job.state) && job.position;
+  const run = job.kind === "runner" && (RUNNING.has(job.state) || job.position);
+  if (!token || !(job.kind === "job" || onlyMoves || run) || job.cancel_requested
       || !(WAITING.has(job.state) || RUNNING.has(job.state))) return null;
   latest.set(job.job_id, { kind: "job", job });
   return menuButton(job.job_id, null, `Actions for ${job.project ?? "job"} ${job.job_id}`);

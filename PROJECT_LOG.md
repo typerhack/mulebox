@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.95.0 - 2026-11-10 - minor
+- A GitHub run's card and waiting row get the three dots, as agent jobs have (the user's ask): open its page, open on GitHub, and once it runs Freeze or Resume and Boost or End boost; its page gets the same buttons. The worker's runner supervisor applies them to the runner's service and its Compose containers (runners/runner_controls.py, reusing worker/controls.JobControls), and thaws and sets the service back when the run ends; the coordinator allows them on a running slot only (job_control.py). A long freeze can make GitHub fail the run; the user chose to have it.
+- Cancel on GitHub: from the card's three dots or the run's page, the dashboard asks GitHub with `gh run cancel` on its machine (runners/cancel_run.py); `gh` must be logged in there. Before, the dashboard refused it.
+
 ## 0.94.0 - 2026-11-10 - minor
 - A design system, Gauge (M14.12): docs/design-system.md with its rules, docs/design-system/tokens.css as the one source of token values, and specimen.html as the picture. The user picked it from three proposals (Stable, Signal, Gauge) made by a Fable subagent and reviewed by a second model. Its open points are listed for the React front end (M14.10).
 - AGENTS.md rule 10: every screen follows the design system and takes its values from tokens.css. CLAUDE.md, README, design.md and the roadmap link it.

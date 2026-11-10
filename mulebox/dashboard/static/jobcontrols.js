@@ -27,20 +27,24 @@ function said(job) {
   return parts.join(" ");
 }
 
+// A GitHub run's slot only moves while it waits, and is paused or boosted once it runs
+// (coordinator/job_control.py).
 function buttons(job) {
   const waiting = WAITING.has(job.state);
-  const list = [job.paused ? ["resume", "Resume", true] : ["pause", "Pause", false]];
+  const steers = job.kind === "job" || !waiting;
+  const list = steers ? [job.paused ? ["resume", "Resume", true] : ["pause", "Pause", false]] : [];
   if (waiting && job.position) {
     list.push(["first", "To front", false], ["up", "Up", false], ["down", "Down", false],
               ["last", "To end", false]);
   }
-  list.push(job.boost ? ["normal", "End boost", true] : ["boost", "Boost", false]);
+  if (steers) list.push(job.boost ? ["normal", "End boost", true] : ["boost", "Boost", false]);
   return list;
 }
 
 // `{ node, update(job) }`, or null when this page offers no controls for this job.
 export function jobControls(job, token) {
-  if (!token || job.kind !== "job" || job.cancel_requested
+  const runner = job.kind === "runner" && (RUNNING.has(job.state) || job.position);
+  if (!token || !(job.kind === "job" || runner) || job.cancel_requested
       || !(WAITING.has(job.state) || RUNNING.has(job.state))) {
     return null;
   }

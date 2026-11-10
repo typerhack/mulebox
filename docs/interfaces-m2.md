@@ -198,9 +198,10 @@ What the protection below keeps out is other web pages in the same browser.
   CLI sends, to the same `mulebox rpc`, started as a child process instead of over ssh
   (`Canceller`, 30 s limit). So every rule stays in the coordinator, and the dashboard process itself keeps its read-only
   store. `read_reply` in `client/remote.py` reads the answer for both.
-- **What it cancels.** Agent jobs before they finish, from a job's page only, so a click in a
-  moving queue cannot land on the wrong job. A runner reservation is refused (409): GitHub owns
-  those, and cancelling the slot would not stop the run. A finished job is 409. Unknown is 404.
+- **What it cancels.** Agent jobs before they finish, from a job's page or its three dots, which
+  ask twice. For a GitHub run's slot GitHub is asked to cancel the run (interfaces-m3.md), as
+  cancelling only the slot would not stop it; a slot with no run address, or a `gh` that is not
+  logged in, is 502 with the reason. A finished job is 409. Unknown is 404.
   A coordinator that fails or does not answer is 502, with the reason, and the job is untouched.
   Cancelling twice is harmless. Each cancel is logged with the job and the address it came from.
 - **The other controls act at once.** None loses work and each has its way back on the same

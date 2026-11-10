@@ -32,7 +32,18 @@ gone for 60 s the worker releases it.
   starting -> running` in one transaction, sets `worker = pinned_worker`, `started_at`, and
   a worker lease.
 - A waiting reservation can be moved in line (`job_control` `first|up|down|last`, the
-  dashboard's arrows and three dots); every other control is refused, as GitHub owns the run.
+  dashboard's arrows and three dots), and nothing else. A granted one can be paused, resumed,
+  boosted and set back (`pause|resume|boost|normal`): the worker's supervisor freezes or thaws the
+  runner's service `mulebox-runner@<name>.service` and pauses its Compose containers (those whose
+  Compose folder is in the runner's `_work`), or raises their CPU and disk weight
+  (runners/runner_controls.py); a boost keeps new jobs off the machine, as for an agent job. A
+  frozen listener stops answering GitHub, so a long freeze can fail the run. When the
+  reservation ends while paused or boosted, the service is thawed and set back; after a worker
+  restart the first round sets it as the coordinator says.
+- The dashboard cancels a run by asking GitHub: `gh run cancel <run id> -R <owner/repo>` on the
+  dashboard's machine, from the reservation's `run_url` (runners/cancel_run.py). `gh` must be
+  logged in there with rights on the repository; otherwise the reply says so. The slot frees when
+  the runner stops, through its completed hook.
 - Slot accounting counts `starting|running|cleaning` rows of both kinds.
 
 ## Wire messages (protocol.py additions)

@@ -15,6 +15,7 @@ from mulebox.dashboard.cancel import TOKEN_HEADER
 from mulebox.dashboard.canceller import Canceller, rpc_command
 from mulebox.dashboard.server import STATIC_DIR, build_app
 from mulebox.dashboard.session import LanAccess, LoginLimiter, Sessions
+from mulebox.runners.cancel_run import run_of
 from tests.coordinator.helpers import queued
 
 from .conftest import HOST, NOW, PASSWORD, FakeCanceller
@@ -162,22 +163,33 @@ def test_the_controls_are_on_unless_turned_off(settings, expected):
     assert (commands._canceller(node, None, None) is not None) is expected
 
 
-def test_a_finished_job_and_a_reservation_are_refused(lan, run_job, finish_job, store):
+def test_a_finished_job_is_refused_and_a_github_run_goes_to_github(lan, run_job, finish_job,
+                                                                     store, monkeypatch):
     done, state = run_job()
     finish_job(state)
-    reservation, _ = run_job()
+    no_address, _ = run_job()
+    run, _ = run_job()
+    url = "https://github.com/alice/example-app/actions/runs/42"
     with store.write() as conn:
-        st.update_job(conn, reservation, kind="runner")
+        st.update_job(conn, no_address, kind="runner")
+        st.update_job(conn, run, kind="runner", run_url=url)
+    asked = []
+
+    def cancel_run(given):  # the real address check, then GitHub's answer without asking it
+        asked.append(given)
+        run_of(given)
+        return "alice/example-app#42"
+    monkeypatch.setattr("mulebox.dashboard.cancel.cancel_run", cancel_run)
     fake = FakeCanceller()
 
-    async def go(http, url):
-        token = await sign_in(http, url)
-        replies = [await post(http, url, job_id, page_headers(url, token))
-                   for job_id in (done, reservation, "job-nosuch")]
+    async def go(http, url_):
+        token = await sign_in(http, url_)
+        replies = [await post(http, url_, job_id, page_headers(url_, token))
+                   for job_id in (done, no_address, run, "job-nosuch")]
         return [reply.status for reply in replies]
 
-    assert lan(go, fake) == [409, 409, 404]
-    assert fake.asked == []
+    assert lan(go, fake) == [409, 502, 200, 404]
+    assert fake.asked == [] and asked == [None, url]
 
 
 def test_a_coordinator_failure_is_said_and_the_job_stays(lan, run_job):
