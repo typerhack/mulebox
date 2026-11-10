@@ -5,9 +5,13 @@
 // A small mark in the header, with the count, stays in sight when the page scrolls and brings
 // the strip back into view. Both are hidden while everything is in step, the usual case.
 
-import { ICONS, drawIcon, el } from "./format.js";
+import { drawIcon, el } from "./format.js";
 
-const SHAPES = { danger: ICONS.bad, warning: ICONS.warn };
+// Outlines, drawn with a stroke in the level's colour (versions.css), no fill.
+const SHAPES = {
+  danger: "M8 1.75a6.25 6.25 0 1 0 0 12.5 6.25 6.25 0 0 0 0-12.5ZM5.75 5.75l4.5 4.5M10.25 5.75l-4.5 4.5",
+  warning: "M6.9 2.6a1.27 1.27 0 0 1 2.2 0l5.4 9.6A1.25 1.25 0 0 1 13.4 14H2.6a1.25 1.25 0 0 1-1.1-1.8ZM8 6v3.4M8 11.6v.01",
+};
 
 // `a `b` c` -> text and <code> parts, so a command reads as one.
 function withCode(text) {
@@ -15,7 +19,7 @@ function withCode(text) {
 }
 
 function notice(item) {
-  return el("li", { "data-level": item.level }, drawIcon(SHAPES[item.level] ?? ICONS.warn, "level"),
+  return el("li", { "data-level": item.level }, drawIcon(SHAPES[item.level] ?? SHAPES.warning, "level"),
             el("span", {}, el("span", {}, ...withCode(item.text)), " ",
                el("span", { class: "fix" }, ...withCode(item.fix))));
 }

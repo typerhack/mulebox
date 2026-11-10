@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.87.1 - 2026-11-10 - patch
+- Out-of-step strip and header mark: the warning triangle and the danger circle are outlines now, a round stroke in the level's colour with no fill (the user's ask: the filled shapes looked muddy), and the light theme's amber for them is brighter (`--warn-mark`).
+
 ## 0.87.0 - 2026-11-10 - minor
 - Dashboard controls, on by default on the tunnel and the LAN address with or without a password (the user's call: mulebox is a tool for the owner's own network): a job's page has Pause or Resume, Run first or Back in line, Boost or End boost beside Cancel; each online machine has Pause or Resume. They send the CLI's requests through `mulebox rpc`; Origin, Host and a page token still keep other web pages out. `controls = false` takes them away; `cancel_button` is read and ignored.
 

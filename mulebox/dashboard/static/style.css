@@ -7,6 +7,7 @@
   --bg: #0f1216; --line: #2b3542; --line-soft: #1d252f; --row: #151a21;
   --ink: #d9e0e8; --ink-soft: #aab4c0; --ink-muted: #76828f;
   --accent: #62c6ba; --good: #4dc46d; --warn: #e2a83c; --bad: #ec6a5f; --active: #63a9ff;
+  --warn-mark: #f0b445;
   --lo: #2fa89a; --mid: #e2a83c; --hi: #ec6a5f;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
 }
@@ -15,6 +16,7 @@
   --bg: #eef1f4; --line: #b9c4d0; --line-soft: #dde3ea; --row: #e6eaef;
   --ink: #1a222c; --ink-soft: #46525f; --ink-muted: #66727f;
   --accent: #0f7f74; --good: #1e7f3f; --warn: #946400; --bad: #c62f3b; --active: #1f5fc4;
+  --warn-mark: #b87300;
   --lo: #1c9c8f; --mid: #d3900f; --hi: #d4453a;
 }
 @media (prefers-color-scheme: light) {
@@ -23,6 +25,7 @@
     --bg: #eef1f4; --line: #b9c4d0; --line-soft: #dde3ea; --row: #e6eaef;
     --ink: #1a222c; --ink-soft: #46525f; --ink-muted: #66727f;
     --accent: #0f7f74; --good: #1e7f3f; --warn: #946400; --bad: #c62f3b; --active: #1f5fc4;
+    --warn-mark: #b87300;
     --lo: #1c9c8f; --mid: #d3900f; --hi: #d4453a;
   }
 }
