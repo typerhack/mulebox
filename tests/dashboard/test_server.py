@@ -192,3 +192,18 @@ def test_the_shipped_page_works_under_the_policy():
     assert "Loading" in page  # what a viewer sees if the scripts never run
     code = "".join(p.read_text(encoding="utf-8") for p in STATIC_DIR.glob("*.js"))
     assert "innerHTML" not in code and "insertAdjacentHTML" not in code and "eval(" not in code
+
+
+def test_stats_counts_a_running_job_and_checks_its_query(call, run_job):
+    run_job(now=NOW - 120)
+
+    async def go(client):
+        found = await (await client.get("/api/stats?from=0&by=project,worker&day_starts=0")).json()
+        bad = [(await client.get(url)).status for url in (
+            "/api/stats?from=x", "/api/stats?kind=upgrade", "/api/stats?by=branch")]
+        return found, bad
+    found, bad = call(go)
+    assert found["total"]["running"] == 1 and found["total"]["seconds"] == 120.0
+    assert list(found["by"]) == ["project", "worker"] and found["by"]["worker"][0]["key"] == "wrk-a"
+    assert found["days"][0]["seconds"] == 120.0 and "project" in found["choices"]
+    assert bad == [400, 400, 400]

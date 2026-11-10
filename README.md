@@ -57,6 +57,8 @@ mulebox queue  --SSH-->        |
   `setup` only when what it depends on changed. Compose jobs still run `setup`, in new containers.
 - **Folders you can find and clean**: `mulebox projects` shows where each project is and its size;
   `mulebox project clean` and `mulebox project reset` remove what is not needed.
+- **How long jobs ran**: `mulebox stats` adds up job minutes today, by day and since the first
+  job, by project, job, source (a laptop or GitHub), machine or kind.
 - **Only changes cross the network**: over a slow link, a job sends the files that changed since
   the last one, not the whole project.
 - **Branches run side by side**: different branches run at once, and a second job on the same

@@ -20,6 +20,8 @@ from pathlib import Path
 
 from aiohttp import web
 
+from mulebox.coordinator.errors import BadRequest
+from mulebox.coordinator.stats import GROUPS as STAT_FILTERS
 from mulebox.dashboard import cancel, controls, keys, login, streams
 from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
@@ -87,6 +89,7 @@ def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = tim
     app.router.add_get("/api/machines", _machines)
     app.router.add_get("/api/history", _history)
     app.router.add_get("/api/metrics", _metrics)
+    app.router.add_get("/api/stats", _stats)
     app.router.add_get("/api/jobs/{job_id}", _job)
     app.router.add_get("/api/jobs/{job_id}/log.txt", streams.log_text)
     app.router.add_get("/api/jobs/{job_id}/log", streams.log_stream)
@@ -148,6 +151,30 @@ async def _history(request: web.Request) -> web.Response:
     project = query.get("project") or None
     body = await asyncio.to_thread(request.app[keys.DATA].history, limit, before, project)
     return web.json_response(body)
+
+
+def _numbers(text: str) -> list[float]:
+    return [float(part) for part in text.split(",") if part]
+
+
+async def _stats(request: web.Request) -> web.Response:
+    """Job minutes: `from`, `to`, `day_starts` (commas) in epoch seconds, `by` (commas) and
+    one value per filter (coordinator/stats.py, GROUPS)."""
+    query, body = request.query, {}
+    try:
+        body.update({name: float(query[name]) for name in ("from", "to") if query.get(name)})
+        if query.get("day_starts"):
+            body["day_starts"] = _numbers(query["day_starts"])
+    except ValueError:
+        raise web.HTTPBadRequest(text="from, to and day_starts must be numbers\n") from None
+    if "by" in query:
+        body["by"] = [part for part in query["by"].split(",") if part]
+    body.update({name: value for name, value in query.items() if name in STAT_FILTERS and value})
+    try:
+        found = await asyncio.to_thread(request.app[keys.DATA].stats, body, request.app[keys.CLOCK]())
+    except BadRequest as exc:
+        raise web.HTTPBadRequest(text=f"{exc}\n") from None
+    return web.json_response(found)
 
 
 async def _metrics(request: web.Request) -> web.Response:

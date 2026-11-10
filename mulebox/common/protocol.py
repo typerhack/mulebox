@@ -119,6 +119,8 @@ class MessageType(StrEnum):
     UPGRADE = "upgrade"
     PROJECT_PAUSE = "project_pause"
     PROJECT_PAUSE_OK = "project_pause_ok"
+    STATS = "stats"
+    STATS_OK = "stats_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -184,6 +186,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: pause, resume (projects, minutes) or list (project_pause.py).
     MessageType.PROJECT_PAUSE: frozenset({"action"}),
     MessageType.PROJECT_PAUSE_OK: frozenset({"paused"}),
+    # client -> coordinator: job minutes in a range (coordinator/stats.py).
+    MessageType.STATS: frozenset(),
+    MessageType.STATS_OK: frozenset({"total", "by", "days"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

@@ -16,7 +16,7 @@ from typing import Any
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
-from mulebox.coordinator import api, attendance, clients, queue, steps, usual, workers
+from mulebox.coordinator import api, attendance, clients, queue, stats_api, steps, usual, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -114,6 +114,10 @@ class DashboardData:
         rows = [{**row, "shown_state": shown_state(row)} for row in rows]
         more = len(rows) == limit
         return {"jobs": rows, "next_before": rows[-1]["finished_at"] if more else None}
+
+    def stats(self, body: dict[str, Any], now: float) -> dict[str, Any]:
+        """Job minutes, as `mulebox stats` gets them (coordinator/stats_api.py)."""
+        return stats_api.answer(self.store, body, now)
 
     def log_chunk(self, job_id: str, offset: int) -> dict[str, Any] | None:
         """A `log_chunk` body from `offset` (state read first, as watch.py does)."""

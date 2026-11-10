@@ -21,6 +21,7 @@ S = JobState
 
 SAMPLE_VALUES = {
     "seconds": 60,
+    "total": {}, "by": {}, "days": [],
     "action": "drain",
     "running": [],
     "paused": {},
@@ -90,7 +91,7 @@ def test_enum_values_match_contract():
     assert [o.value for o in Outcome] == [
         "passed", "failed", "cancelled", "timed_out", "interrupted"]
     assert {t.value for t in MessageType} == {
-        "job_ok", "job_control", "upgrade", "project_pause", "project_pause_ok",
+        "job_ok", "job_control", "upgrade", "project_pause", "project_pause_ok", "stats", "stats_ok",
         "submit", "submit_ok", "upload_done", "status", "status_ok", "upload_plan_ok", "cancel",
         "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "steps", "error",

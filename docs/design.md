@@ -185,6 +185,20 @@ projects exist is already in the job history, so a registry would be a second co
 a project appears only after its first job, and nothing can be stored about one. Add a
 table only when real adoption shows something that belongs in neither place.
 
+## Job minutes
+
+`mulebox stats` and the dashboard's statistics (`/api/stats`) answer how long jobs ran, from
+one module, `coordinator/stats.py`, so the two never disagree. The measure is wall time on a
+machine, added up: two jobs side by side for ten minutes count twenty. It is not CPU time and
+not time saved. Agent jobs count from their start to the end of their command, GitHub runs
+from the slot granted to its release; upgrades are not jobs. A run still going counts to now
+and is also given apart, a run that ended with no length (most often interrupted) is counted
+as unknown, never as zero, and frozen time is in it, as the store keeps that a job is paused,
+not when. A run is cut at a range's edges, so a job across midnight counts on both days. The
+caller sends the ranges in epoch seconds: only it knows its own midnight and summer time.
+Filters and breakdowns: project, job, source (`client`: a laptop or `github`), machine and
+kind. Job rows are kept for ever, so the totals since the first job stay exact.
+
 ## Project config: `.mulebox.yml`
 
 ```yaml

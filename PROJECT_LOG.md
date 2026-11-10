@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.92.0 - 2026-11-10 - minor
+- Job minutes (M14.11, the user's ask): `mulebox stats` shows how long jobs ran today, day by day and since the first job, with a breakdown by project, job, source (a laptop or GitHub), machine or kind, and the same filters. One module, `coordinator/stats.py`, behind the new `stats` request and the dashboard's `/api/stats`, so both give the same numbers. Wall time added up; running runs count to now and are given apart, runs with no length are counted as unknown, runs are cut at midnight. Rules in design.md, Job minutes. The page comes next, from a design the user picks.
+
 ## 0.91.1 - 2026-11-10 - patch
 - A running card reads "12m 11s usually 13m": without "of", a job of ten minutes or an hour also keeps its time on the card's first line. Measured in real Edge on a real card at 280 px.
 
