@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.100.1 - 2026-11-10 - patch
+- Roadmap: M14.1 and M14.10 done (the React dashboard on the real machine in Edge, the classic page retired); the facts with no API data yet and the dashboard's overhead go to the parking lot.
+
 ## 0.100.0 - 2026-11-10 - minor
 - History page (the user's ask): live search on project, job or branch (300 ms after typing stops, no Filter button) and the Statistics filters plus job name and result, kept in the address and while paging. `/api/history` takes `project`, `job`, `client`, `worker`, `kind`, `result` and `q`, all in SQL (dashboard/history_query.py), 400 on a bad value, and lists the filters' choices on its first page from the same list the Statistics page uses; both pages share one `FilterSelect`.
 - Checked: web lint, types, 42 tests and build; the full suite through `mulebox check` (2760 passed); in real Edge on the stand-in API at full width and 390 px in both themes.

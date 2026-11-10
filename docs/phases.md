@@ -414,13 +414,15 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       2026-11-10): open its page, open on GitHub, Freeze or Resume and Boost or End boost once it runs,
       Cancel on GitHub (`gh run cancel` on the machine). Built 0.95.0, with tests. Done when: on a real
       CI run in Edge, each item does what it says on the machine and on GitHub.
-- [~] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
+- [x] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
       with data; the top row (CPU, memory, disk, machines) stays. 2026-11-10: of three layouts in Gauge
       the user picked "Monitor on top" (design-system/dashboard-mockup.html), with Memory and Disk of
       equal height, and both meter styles, Gauge and Rainbow, for the viewer to choose, Auto by default; for several
       machines "click a row" and a Machines page (design-system.md).
-      Done when: it runs on the real dashboard in Edge.
-- [~] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
+      Done when: it runs on the real dashboard in Edge. Done 2026-11-10 (0.98.0): on the deployed
+      dashboard in real Edge, running and waiting side by side (the user's pick of three, with a second
+      model's refinements), a waiting row saying which job holds its branch (0.99.0).
+- [x] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
       Next.js was weighed and left out: it would need Node and a second server on every machine).
       Built at release time into static files that the existing aiohttp server serves, so no Node
       on build machines and the same one-command install; the `/api` endpoints and the live event
@@ -437,6 +439,9 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       busy on two branches. Overhead with the React page open: 1.95% of a core and 72 MB over 60 s, against
       2.15% and 72 MB with the classic page in the same conditions; the 0.5% and 50 MB above are from M2.3
       and no longer hold for either. 0.98.0: running and waiting side by side, chart colours (user's picks).
+      Done 2026-11-10 (0.99.0): the classic page retired (the user's call), the sign-in page in the design
+      system, `/` answering 503 with no build; History with live search and filters 0.100.0, seen on real
+      data in Edge. Facts the mockup shows with no API data yet are in the parking lot.
 - [x] M14.11 Job minutes (the user's ask, 2026-11-10, with a second opinion from another model):
       how long jobs ran, GitHub runs and mulebox's own, today and since the first job, filtered
       and broken down by kind, project, source and machine. Built 0.92.0: `coordinator/stats.py`,
@@ -682,6 +687,10 @@ each with a report of what was checked.
       updates the laptop's copies. 0.82.0: setup updated two real copies.
 
 ## Parking lot
+- Dashboard facts the mockup shows that no API gives yet: memory used by jobs and swap, Docker's disk
+  use and job folders, a CI step's length and result per step, log line times (M14.10, 2026-11-10).
+- The overhead target of M2.3 (0.5% of a core, 50 MB) no longer holds with either front end (about 2%
+  and 72 MB, measured 2026-11-10); worth a look at what the dashboard process does every 2 s.
 - `mulebox init` on a laptop with no node, for a project that names no Node version anywhere, writes a file with no node pinned; on a machine with none
   of its own the job ends with `npm: command not found`. Found 2026-11-06.
 - Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own
