@@ -49,3 +49,7 @@ button.danger.sure { color: var(--bg); background: var(--bad); }
 .action-menu button[disabled] { color: var(--ink-muted); cursor: default; }
 .action-menu button.danger { color: var(--bad); }
 .action-menu .failed { margin: 4px 10px; color: var(--bad); max-width: 32ch; }
+/* A job the owner paused, froze or boosted says so beside its state (lanes.js). */
+.slot-head .head-start { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; }
+.steered { color: var(--warn); font-weight: 700; }
+.wait .steered { margin-left: 8px; }

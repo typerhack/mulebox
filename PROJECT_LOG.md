@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.88.1 - 2026-11-10 - patch
+- Jobs box: a frozen, paused or boosted job says so on its card and waiting row; before, only its page and `mulebox queue` did.
+
 ## 0.88.0 - 2026-11-10 - minor
 - Reorder the line (the user's ask): `mulebox up|down|last <job-id>` beside `first`, and four outline arrows (to the front, up, down, to the end) on every waiting job in the dashboard's Queue tab and on its page. A move writes the new order into every waiting job's priority, so jobs sent later still come after them. `normal` now only ends a boost and keeps the job's place.
 - A "more actions" menu (dots) on every running card and waiting row in the Jobs box: pause or freeze, resume, the moves, boost, open its page, cancel (asked twice). One in the Jobs header acts on everything: pause or resume all machines, freeze all running jobs, resume all paused jobs.

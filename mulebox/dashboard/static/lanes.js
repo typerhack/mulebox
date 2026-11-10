@@ -50,9 +50,18 @@ function elapsed(job) {
     job.usual_s ? el("span", { class: "usual", text: `of usually ${duration(job.usual_s)}` }) : null);
 }
 
+// What the owner set on a job (job_control.py), as words beside its state.
+function steered(job) {
+  const running = job.state === "starting" || job.state === "running";
+  const words = [job.paused ? (running ? "frozen" : "paused") : null, job.boost ? "boosted" : null]
+    .filter(Boolean);
+  return words.length ? el("span", { class: "steered", text: words.join(", ") }) : null;
+}
+
 function block(job, cores) {
   return el("div", { class: "slot-block", "data-filled": "1" },
-    el("div", { class: "slot-head" }, badge(job.shown_state ?? job.state),
+    el("div", { class: "slot-head" },
+      el("span", { class: "head-start" }, badge(job.shown_state ?? job.state), steered(job)),
       el("span", { class: "head-end" }, elapsed(job), jobMenu(job))),
     jobLink(job),
     el("span", { class: "branch", text: runText(job) }),
@@ -96,7 +105,7 @@ function waitingEntry(job, allMachines, total) {
   }
   lines.push(questionMark(job));
   return el("li", { class: "wait" }, place,
-    el("span", {}, jobLink(job), el("span", { class: "branch", text: runText(job) })),
+    el("span", {}, jobLink(job), el("span", { class: "branch", text: runText(job) }), steered(job)),
     el("span", { class: "wait-end" }, elapsed(job), moveButtons(job, total), jobMenu(job)), ...lines);
 }
 
