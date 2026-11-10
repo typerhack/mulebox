@@ -74,3 +74,4 @@ button.danger.sure { color: var(--bg); background: var(--bad); }
 .steer-icon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6;
   stroke-linecap: round; stroke-linejoin: round; }
 .wait .steered { margin-left: 8px; vertical-align: -2px; }
+.slot-head .usual { white-space: nowrap; }

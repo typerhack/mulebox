@@ -463,13 +463,17 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       deployed dashboard: scrolled 344 px down the mark stayed in sight, and its click put the strip 8 px
       below the header and focused it (strip drawn by its own code; the real one had been seen that
       morning, with the laptop on 0.83.6 and the machine on 0.83.5).
-- [~] M14.3 Steer jobs and machines (the user's ask, 2026-11-10: full control, no sign-in, a LAN tool):
+- [x] M14.3 Steer jobs and machines (the user's ask, 2026-11-10: full control, no sign-in, a LAN tool):
       pause or freeze, resume, move in line (front, up, down, end), boost, cancel, from the CLI, a
       job's page, a dots menu on every card and arrows on every waiting row; pause or resume a
       machine; a header menu for all machines and all jobs at once. Built 0.86.0 to 0.88.1. Seen
       2026-11-10 in real Edge on the deployed dashboard: the menus open on real cards, and Freeze
-      froze a real job on the machine (systemd freezer, its output stopped). Done when: resume,
-      boost, the moves and the header menu are used on real jobs in Edge.
+      froze a real job on the machine (systemd freezer, its output stopped). Done 2026-11-10 (0.90.2),
+      in real Edge on the deployed dashboard with drill jobs while the real projects were paused
+      (`mulebox project pause`): up, down and to the front reordered the real line; Freeze and Resume
+      from a card's menu set the job's unit frozen and running; Boost gave it CPU and IO weight
+      10000; Queue actions paused and resumed the machine (draining, then busy), froze both running
+      jobs and resumed them; the icons for frozen, boosted and paused showed on cards and rows.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it

@@ -123,7 +123,8 @@ export function queueView(box, snapshot, machines) {
   else if (tab.id === "queue") panel.append(lanesView(snapshot, machines));
   else panel.append(...table(tab, snapshot));
   const bar = el("div", { class: "jobs-bar" }, tabs(snapshot, box, machines), queueMenu(snapshot, machines));
-  fill(box, "Jobs", fleetNote(machines), bar, panel);
+  const kept = box.querySelector(":scope > .body")?.scrollTop ?? 0;  // a redraw keeps the place
+  fill(box, "Jobs", fleetNote(machines), bar, panel).scrollTop = kept;
   followMenu();
   if (focused) box.querySelector(`[data-tab="${current}"]`)?.focus();
 }

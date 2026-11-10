@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.90.3 - 2026-11-10 - patch
+- Dashboard: the Jobs list keeps its scroll position when the queue redraws; before, any change in the queue threw a reader back to the top. Found in the M14.3 drill.
+- A running card's "of usually" time does not break inside itself.
+- Roadmap: M14.3 done in real Edge on real jobs.
+
 ## 0.90.2 - 2026-11-10 - patch
 - Dashboard: a frozen, paused or boosted job shows small icons beside its state (snowflake, pause, bolt; the words as tooltip and for screen readers), not words that broke the card's layout (the user's review).
 - `mulebox queue` no longer marks every moved job "first": the position column already says the order.
