@@ -27,6 +27,18 @@ const ICON = {
   ...MOVE_SHAPES,
 };
 
+// A job's state set by its owner, as small icons beside its state on its card and row, with the
+// words as the tooltip and for screen readers; null when nothing is set.
+export function steeredIcons(job) {
+  const running = RUNNING.has(job.state);
+  const marks = [job.paused && (running ? ["freeze", "frozen"] : ["pause", "paused"]),
+                 job.boost && ["boost", "boosted"]].filter(Boolean);
+  if (!marks.length) return null;
+  const words = marks.map(([, word]) => word).join(", ");
+  return el("span", { class: "steered", role: "img", "aria-label": words, title: words },
+            ...marks.map(([icon]) => drawIcon(ICON[icon], "steer-icon")));
+}
+
 let token = null;  // menus show from the first draw after the page has it (app.js draws again)
 actionToken().then((given) => { token = given; });
 const latest = new Map();  // menu key -> what its items are made from
@@ -89,7 +101,8 @@ function queueGroups({ snapshot, machines }) {
   return [
     [taking.length && item("pause", "Pause all machines", "No new job starts; what runs finishes",
                            () => each(taking, machine("pause"))),
-     held.length && item("resume", "Resume all machines", `${plural(held.length, "machine")} take jobs again`,
+     held.length && item("resume", "Resume all machines", held.length === 1 ? "The machine takes jobs again"
+                                           : `${held.length} machines take jobs again`,
                          () => each(held, machine("resume")))],
     [toFreeze.length && item("freeze", `Freeze ${plural(toFreeze.length, "running job")}`,
                              "Each stops where it is; nothing is lost",

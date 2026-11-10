@@ -39,8 +39,8 @@ def state_cell(job: dict[str, Any]) -> str:
     state = f"{MARK} {shown_state(job)}" if job.get("question") else str(shown_state(job))
     if job.get("state") == "finished":
         return state
-    marks = [word for key, word in (("paused", "paused"), ("boost", "boosted"),
-                                    ("priority", "first")) if job.get(key)]
+    # Priority is only the line's order, which POS already shows (job_control._move).
+    marks = [word for key, word in (("paused", "paused"), ("boost", "boosted")) if job.get(key)]
     return f"{state}, {', '.join(marks)}" if marks else state
 
 

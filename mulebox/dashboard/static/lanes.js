@@ -11,7 +11,7 @@
 // that one line (queuemoves.js).
 
 import { doingLine } from "./doing.js";
-import { jobMenu } from "./jobmenu.js";
+import { jobMenu, steeredIcons } from "./jobmenu.js";
 import { moveButtons } from "./queuemoves.js";
 import { badge, clock, duration, el, jobLink, soonest, questionMark, runText } from "./format.js";
 
@@ -50,18 +50,10 @@ function elapsed(job) {
     job.usual_s ? el("span", { class: "usual", text: `of usually ${duration(job.usual_s)}` }) : null);
 }
 
-// What the owner set on a job (job_control.py), as words beside its state.
-function steered(job) {
-  const running = job.state === "starting" || job.state === "running";
-  const words = [job.paused ? (running ? "frozen" : "paused") : null, job.boost ? "boosted" : null]
-    .filter(Boolean);
-  return words.length ? el("span", { class: "steered", text: words.join(", ") }) : null;
-}
-
 function block(job, cores) {
   return el("div", { class: "slot-block", "data-filled": "1" },
     el("div", { class: "slot-head" },
-      el("span", { class: "head-start" }, badge(job.shown_state ?? job.state), steered(job)),
+      el("span", { class: "head-start" }, badge(job.shown_state ?? job.state), steeredIcons(job)),
       el("span", { class: "head-end" }, elapsed(job), jobMenu(job))),
     jobLink(job),
     el("span", { class: "branch", text: runText(job) }),
@@ -102,13 +94,13 @@ function waitingEntry(job, allMachines, total) {
   if (job.waiting_for && stuck) {
     lines.push(el("p", { class: "reason" }, badge("stuck"), el("span", { text: job.waiting_for })));
   } else if (job.waiting_for) {  // paused, held, or behind an upgrade: it will start
-    lines.push(el("p", { class: "muted", text: job.waiting_for }));
+    lines.push(el("p", { class: "muted", text: job.waiting_for.replaceAll("`", "") }));
   } else if (allMachines && Array.isArray(job.can_run_on) && job.can_run_on.length < allMachines) {
     lines.push(el("p", { class: "muted", text: `only ${job.can_run_on.join(", ")}` }));
   }
   lines.push(questionMark(job));
   return el("li", { class: "wait" }, place,
-    el("span", {}, jobLink(job), el("span", { class: "branch", text: runText(job) }), steered(job)),
+    el("span", {}, jobLink(job), el("span", { class: "branch", text: runText(job) }), steeredIcons(job)),
     el("span", { class: "wait-end" }, elapsed(job), moveButtons(job, total), jobMenu(job)), ...lines);
 }
 

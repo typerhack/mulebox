@@ -68,8 +68,9 @@ button.danger.sure { color: var(--bg); background: var(--bad); }
 .action-menu hr { border: 0; border-top: 1px solid var(--line); margin: 4px 2px; }
 .action-menu .empty { margin: 6px 9px; color: var(--ink-soft); }
 .action-menu .failed { margin: 4px 9px; color: var(--bad); }
-/* A job the owner paused, froze or boosted says so beside its state (lanes.js). */
-.slot-head .head-start { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; }
-.steered { color: var(--warn); font-weight: 700; }
-.wait .steered { margin-left: 8px; }
-.slot-head .head-start { line-height: 22px; }
+/* A job the owner paused, froze or boosted shows it as icons beside its state (jobmenu.js). */
+.slot-head .head-start { display: inline-flex; align-items: center; gap: 6px; flex: none; white-space: nowrap; }
+.steered { display: inline-flex; align-items: center; gap: 3px; flex: none; color: var(--warn); }
+.steer-icon { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round; }
+.wait .steered { margin-left: 8px; vertical-align: -2px; }

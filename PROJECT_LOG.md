@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.90.2 - 2026-11-10 - patch
+- Dashboard: a frozen, paused or boosted job shows small icons beside its state (snowflake, pause, bolt; the words as tooltip and for screen readers), not words that broke the card's layout (the user's review).
+- `mulebox queue` no longer marks every moved job "first": the position column already says the order.
+- Wait reasons on the dashboard without command backticks; "The machine takes jobs again" in Queue actions.
+
 ## 0.90.1 - 2026-11-10 - patch
 - Dashboard: freezing, pausing, boosting or moving a job now reaches open pages; the queue's change check left those fields out, so a frozen job's card did not say so until something else changed. Found in the M14.3 drill in Edge.
 - Dashboard: waiting rows give the coordinator's own reason (paused, a paused project, behind an upgrade, the machines held), the one `mulebox status` gives; before, only "no machine fits" showed.
