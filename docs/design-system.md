@@ -35,7 +35,7 @@ Every color is a role. A role is used only for what its name says.
 | Status | `--status-running`, `-queued`, `-passed`, `-failed`, `-cancelled`, `-warning`, `-danger`, `--on-danger` | job results and alerts, on the icon only |
 | Strip tints | `--status-warning-soft`, `--status-failed-soft` | the background of the warning and danger strips, nothing else |
 | Meters and graph | `--meter-track`, `--meter-fill`, `--graph-line` | resource meters and the CPU line |
-| Chart series | `--chart-1` to `--chart-6` | charts with more than one series, in this fixed order |
+| Chart series | `--chart-1` to `--chart-6` | the marks and legend swatches of charts with more than one series, in this fixed order: teal, ochre, indigo, rose, slate, light blue |
 | Load ramp | `--ramp-lo`, `--ramp-mid`, `--ramp-hi` | the Rainbow meter style only (below) |
 
 - Status color sits on the icon only. The word beside it stays in `--text-1`.
@@ -44,8 +44,17 @@ Every color is a role. A role is used only for what its name says.
 - A meter turns `--status-warning` from 80% and `--status-danger` from 92%, and gets the
   warning or alert icon beside its number.
 - Chart series take `--chart-1` onwards in order, never cycled; a seventh series folds into
-  Other. Three light values are under 3:1 on a white panel, so every series also has a label or
-  a legend with its number. The single CPU line uses the accent.
+  Other. The palette is muted to the level of the rest of the page (the user's pick on
+  2026-11-10, over the brighter reference palette): series 1 is the teal of meters and of every
+  single bar, so mulebox jobs are the same teal in a split bar and in a breakdown; series 2, on
+  the Statistics page GitHub Actions, is a dull ochre.
+- A series color is for chart marks and legend swatches only, never for an icon or text: the
+  ochre is close to the warning amber, and a label in it would read as a warning. Labels,
+  values and legends stay in the text colors.
+- In the light theme series 4 and 6 are under 3:1 on a white panel, and the ochre is under 3:1
+  on a grey card (`--surface-2`), so every series also has a label or a legend with its number.
+  Series 1 and 2 are told apart by all three kinds of color vision in both themes. The single
+  CPU line uses the accent.
 - Teal and the passed green are close for some color vision. A state is therefore always an
   icon with its own shape, never a colored dot.
 
@@ -69,6 +78,16 @@ machine names were the others, the strip rejected):
   to the Machines page at its foot.
 - The Jobs box gives a lane only to a machine that runs or waits for something; the rest are one
   line ("Nothing running on 14 machines").
+- A lane that has both running and waiting jobs is two halves: the running cards on the left
+  under "Running", the line on the right under "Waiting in line", a hairline between them. Two
+  cards sit side by side in the running half when each can be 280px wide (4 slots on a wide
+  screen), else they stack. A lane with only one of the two has no headings and takes the whole
+  width, as do the shared "Next free machine" list and the stuck jobs. Under 760px of Jobs box
+  the halves stack, headings kept. A waiting row folds by the width of its own list: time,
+  arrows and three dots drop under the name when the list is under 640px.
+- A line of more than 6 shows its first 5 and "Show all waiting (N)", which opens the rest in
+  place ("Show the first 5" closes it). Rows keep their real positions either way, and the
+  lane's note counts them all.
 - A Machines page beside Queue lists every machine with its state, readings, slots, offers,
   version and last seen, sortable, with its pause button.
 - Usually 4 or 5 machines; the layout holds at 20.
@@ -182,10 +201,17 @@ Do not:
 
 Found in a review of the proposal (2026-11-10), to settle in the first React components (M14.10):
 
-- Rows and cards use 6px and 10px gaps that are not on the scale. Either they become tokens or
-  they move to 8px and 12px.
 - Controls are 28 to 32px with a pointer and 36px on touch screens, smaller than the common 44px.
   Check them in real use before keeping them.
-- The meter style switch: where it sits and its icon, drawn with the dashboard mockups.
 - Not drawn yet: a running job that is also frozen or boosted, the Resume and Unboost menu
   items, the stage waterfall and the live log as components.
+
+Settled in the React dashboard (M14.10):
+
+- Gaps are on the scale only. The 6px and 10px gaps of the proposal became 4, 8 and 12px
+  (`--space-1` to `--space-3`): 4px inside a line of facts, 8px between rows and cards, 12px
+  inside a card and between a row's columns.
+- The meter style switch is an icon button in the header, left of the theme switch, and steps
+  through Auto, Gauge and Rainbow with the icons `contrast`, `gauge` and `rainbow`; its tooltip
+  names the current style and the next one.
+

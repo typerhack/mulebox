@@ -62,6 +62,40 @@ describe("the Jobs box", () => {
     expect(screen.getAllByRole("button", { name: /^Actions for/ })).toHaveLength(3);
   });
 
+  it("splits a lane with running and waiting jobs, and only that lane", () => {
+    showQueue();
+    queueStore.set({ at: performance.now(), snapshot: {
+      now: 0, recent: [],
+      running: [job("a", { state: "running", worker: "build-1" }), job("b", { state: "running", worker: "build-2" })],
+      queued: [job("w", { position: 1, can_run_on: ["build-1"] }), job("any", { position: 2, can_run_on: ["build-1", "build-2"] })],
+    } });
+    render(<TipProvider><JobsBox /></TipProvider>);
+    const split = screen.getByRole("region", { name: "build-1" });
+    expect([...split.querySelectorAll("h3")].map((h) => h.textContent)).toEqual(["Running", "Waiting in line"]);
+    expect(screen.getByRole("list", { name: "Waiting for build-1" }).children).toHaveLength(1);
+    expect(screen.getByRole("region", { name: "build-2" }).querySelector("h3")).toBeNull();
+    expect(screen.getByRole("region", { name: "Next free machine" }).querySelector("h3")).toBeNull();
+  });
+
+  it("folds a long line to its first rows and opens it in place, positions kept", () => {
+    showQueue();
+    queueStore.set({ at: performance.now(), snapshot: {
+      now: 0, recent: [], running: [job("a", { state: "running", worker: "build-1" })],
+      queued: Array.from({ length: 8 }, (_, i) => job(`w${i}`, { position: i + 1, can_run_on: ["build-1"] })),
+    } });
+    render(<TipProvider><JobsBox /></TipProvider>);
+    const list = screen.getByRole("list", { name: "Waiting for build-1" });
+    expect(list.children).toHaveLength(5);
+    expect(screen.getByRole("region", { name: "build-1" }).textContent).toContain("8 waiting for it");
+    const more = screen.getByRole("button", { name: "Show all waiting (8)" });
+    expect(more.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(more);
+    expect(list.children).toHaveLength(8);
+    expect(list.querySelector("li:last-child [aria-label='Position 8']")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Show the first 5" }));
+    expect(list.children).toHaveLength(5);
+  });
+
   it("remembers the tab, and says where a GitHub job failed", () => {
     showQueue();
     render(<TipProvider><JobsBox /></TipProvider>);

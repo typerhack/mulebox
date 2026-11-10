@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { groupLanes, isStuck, waitReason } from "./lanes";
+import { WAIT_SHOWN, groupLanes, isStuck, shownWaiting, waitReason } from "./lanes";
 import type { Job, Machine, MachinesPanel, QueueSnapshot } from "./types";
 
 const job = (id: string, more: Partial<Job>): Job => ({ job_id: id, state: "queued", kind: "job", ...more });
@@ -39,5 +39,14 @@ describe("groupLanes", () => {
     expect(waitReason(job("a", { waiting_for: "paused" }), 3)).toBe("paused");
     expect(waitReason(job("a", { can_run_on: ["build-1"] }), 3)).toBe("Only build-1");
     expect(waitReason(job("a", { can_run_on: ["build-1", "build-2"] }), 2)).toBeNull();
+  });
+
+  it("shows the front of a long line until asked for all, and never hides one row alone", () => {
+    const line = (n: number) => Array.from({ length: n }, (_, i) => job(`w${i + 1}`, { position: i + 3 }));
+    expect(shownWaiting(line(WAIT_SHOWN + 1), false)).toMatchObject({ long: false, rows: { length: WAIT_SHOWN + 1 } });
+    const cut = shownWaiting(line(8), false);
+    expect(cut.long).toBe(true);
+    expect(cut.rows.map((j) => j.position)).toEqual([3, 4, 5, 6, 7]);
+    expect(shownWaiting(line(8), true)).toMatchObject({ long: true, rows: { length: 8 } });
   });
 });

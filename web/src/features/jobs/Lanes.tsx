@@ -1,16 +1,19 @@
 // The Queue tab: the queue by machine (lib/lanes.ts). A lane only for a machine that runs or
-// waits for something; the rest are one line of names. Stuck jobs come first: they are the
+// waits for something; the rest are one line of names. A lane with both shows its running
+// cards on the left and its line on the right, each under a heading; with only one of the
+// two it takes the whole width. Stuck jobs come first: they are the
 // one thing here that needs a person. Slots, offers and readings are the Machines box's job.
 
 import type { ReactNode } from "react";
 
 import { ago, plural } from "../../lib/format";
 import { groupLanes, type Lane } from "../../lib/lanes";
-import type { Job, MachinesPanel, QueueSnapshot } from "../../lib/types";
+import type { MachinesPanel, QueueSnapshot } from "../../lib/types";
 import { Empty } from "../../ui/Panel";
 import { Status } from "../../ui/Status";
 import { MachineState } from "../machines/parts";
-import { JobCard, WaitRow } from "./JobCard";
+import { JobCard } from "./JobCard";
+import { WaitList } from "./WaitList";
 
 interface LaneBoxProps {
   title: string;
@@ -31,14 +34,7 @@ const LaneBox = ({ title, state, note, sub, children }: LaneBoxProps) => (
   </section>
 );
 
-function Waits({ jobs, total, machineCount }: { jobs: Job[]; total: number; machineCount: number | null }) {
-  if (!jobs.length) return null;
-  return (
-    <ol className="border-t border-line">
-      {jobs.map((job) => <WaitRow key={job.job_id} job={job} total={total} machineCount={machineCount} />)}
-    </ol>
-  );
-}
+const COLUMN = "text-sm font-semibold text-ink-2";
 
 function laneNote(lane: Lane): string {
   return [lane.running.length && `${lane.running.length} running`,
@@ -48,16 +44,21 @@ function laneNote(lane: Lane): string {
 function MachineLane({ lane, total, now }: { lane: Lane; total: number; now: number }) {
   const m = lane.machine;
   const offline = m?.state === "offline";
+  const both = lane.running.length > 0 && lane.waiting.length > 0;
+  const cards = lane.running.map((job) => <JobCard key={job.job_id} job={job} cores={m?.cores} total={total} />);
+  const line = <WaitList jobs={lane.waiting} total={total} machineCount={null} label={`Waiting for ${lane.name}`} />;
   return (
     <LaneBox title={lane.name} note={laneNote(lane)}
       state={m ? <MachineState machine={m} /> : <Status state="unknown" word="Not listed yet" />}
       sub={offline ? `Offline, last seen ${ago(m.last_seen, now)}. What waits for it starts when it is back.` : null}>
-      {lane.running.length > 0 && (
-        <div className="auto-cards">
-          {lane.running.map((job) => <JobCard key={job.job_id} job={job} cores={m?.cores} total={total} />)}
+      {both ? (
+        <div className="lane-split">
+          <div><h3 className={COLUMN}>Running</h3><div className="run-cards">{cards}</div></div>
+          <div className="lane-wait"><h3 className={COLUMN}>Waiting in line</h3>{line}</div>
         </div>
+      ) : (
+        <>{cards.length > 0 && <div className="auto-cards">{cards}</div>}{line}</>
       )}
-      <Waits jobs={lane.waiting} total={total} machineCount={null} />
     </LaneBox>
   );
 }
@@ -77,14 +78,14 @@ export function Lanes({ snapshot, machines }: Props) {
       {stuck.length > 0 && (
         <LaneBox title="No machine fits" note={`${stuck.length} waiting`}
           state={<Status state="stuck" word="Stuck" />} sub="Nothing offers what these need.">
-          <Waits jobs={stuck} total={total} machineCount={null} />
+          <WaitList jobs={stuck} total={total} machineCount={null} label="Waiting, no machine fits" />
         </LaneBox>
       )}
       {lanes.map((lane) => <MachineLane key={lane.name} lane={lane} total={total} now={now} />)}
       {shared.length > 0 && (
         <LaneBox title="Next free machine" note={`${shared.length} waiting`}
           sub="Whichever machine is free first takes these, in this order.">
-          <Waits jobs={shared} total={total} machineCount={count} />
+          <WaitList jobs={shared} total={total} machineCount={count} label="Waiting for the next free machine" />
         </LaneBox>
       )}
       {nothing && <Empty title="Nothing is running or waiting." hint="Send a job with `mulebox check` from a project." />}

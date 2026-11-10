@@ -107,6 +107,7 @@
   --breakpoint-md: 761px;
   --breakpoint-lg: 1101px;
   --container-sm: 640px;
+  --container-md: 760px;
   --container-lg: 900px;
 
   @keyframes spin { to { transform: rotate(360deg); } }

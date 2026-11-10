@@ -67,7 +67,10 @@ built when it connects, never taken from the last published event, whose elapsed
 would be stale.
 
 `Queue` is the queue by machine: one lane per worker with its name and state, a block per
-running job, and the jobs waiting for it. Slots, capabilities and readings are shown once,
+running job, and the jobs waiting for it. In the React dashboard a lane with both shows the
+running blocks on the left and the line on the right, each under a heading (one column when
+narrow), and a line of more than 6 shows its first 5 until "Show all waiting (N)" is pressed
+(docs/design-system.md, Several machines). Slots, capabilities and readings are shown once,
 in the Machines box, not here. Waiting jobs keep their real positions and appear in
 exactly one place:
 

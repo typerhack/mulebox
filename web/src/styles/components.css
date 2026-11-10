@@ -74,8 +74,20 @@
     .job-split { grid-template-columns: minmax(var(--spacing-menu), var(--spacing-col-2xl)) minmax(0, 1fr); }
   }
 
+  /* A machine's lane with both running and waiting jobs: the cards on the left, the line on
+     the right under its own heading; one column when the Jobs box is narrow. Two cards sit
+     side by side in the running column when it is wide enough for both. */
+  .lane-split { display: grid; gap: var(--space-4) var(--space-5); grid-template-columns: minmax(0, 1fr); }
+  .lane-split > * { display: grid; gap: var(--space-2); align-content: start; min-width: 0; }
+  .run-cards { display: grid; gap: var(--space-2);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--spacing-col-l)), 1fr)); }
+  @variant @md {
+    .lane-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .lane-split > .lane-wait { border-left: 1px solid var(--border); padding-left: var(--space-5); }
+  }
+
   /* A waiting row: position, the job, then time, moves and menu; these drop under the name
-     when the lane is narrow. */
+     when its list is narrow (the list is the container, so half a lane counts as narrow). */
   .wait-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
     gap: var(--space-1) var(--space-3); }
   @variant @max-sm {

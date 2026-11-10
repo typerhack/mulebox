@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.98.0 - 2026-11-10 - minor
+- Jobs box (the user's pick of three, option A, with a second model's refinements): a machine's lane with running and waiting jobs shows the cards on the left and the line on the right, each under a heading (one column under 760 px, two cards side by side when each can be 280 px wide); a line of more than 6 shows its first 5 and "Show all waiting (N)", positions kept.
+- Statistics colours (the user's pick of three, option 3): chart series are a muted teal and ochre palette (`--chart-1` to `--chart-6` in tokens.css), the ochre on marks and swatches only, in place of a blue and orange foreign to the theme.
+- design-system.md: chart rules, the lane layout, and the 4/8/12 gaps and the meter switch settled from "Open before building"; specimen and mockup colours updated. Stand-in API scenes `MULEBOX_MOCK_SCENE=split|wide`.
+- phases.md: the dashboard controls drilled in real Edge on 0.97.0, and the overhead measured against the classic page.
+
 ## 0.97.0 - 2026-11-10 - minor
 - The dashboard front end in React (M14.10 with M14.1): `web/`, React 19 with Vite, TypeScript and Tailwind CSS locked to the design system's tokens (tokens.css imported by path, Tailwind's own palette and scales left out, `npm run lint` fails on a typed-in value). Radix menus and tooltips, Lucide icons, Geist bundled. Layout "Monitor on top" in Gauge: every view and control of the classic page, plus the Machines page, a clicked machine shown in CPU, Memory and Disk, the meter style switch (Auto, Gauge, Rainbow) and a GitHub job's log as its steps.
 - Served by the same aiohttp process: `/` is the React build when the package holds one (`mulebox/dashboard/app/`, not in git), the classic page stays at `/classic/`, and without a build `/` is the classic page (dashboard/pages.py). The policy gained `font-src 'self'` for the bundled fonts.

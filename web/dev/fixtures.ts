@@ -1,5 +1,5 @@
 // Made-up data for `npm run dev` without a dashboard: a queue with every kind of row, two,
-// five or twenty machines (MULEBOX_MOCK_MACHINES), a job with stages and a GitHub run. The
+// five or twenty machines (MULEBOX_MOCK_MACHINES), other queues (dev/scenes.ts), a job with stages and a GitHub run. The
 // shapes are the API's (docs/interfaces-m2.md); the names are examples.
 
 const now = () => Date.now() / 1000;
@@ -8,7 +8,7 @@ const OFFERS = [["docker", "node 22", "python 3.12"], ["docker", "playwright"], 
 
 export interface MockJob { [key: string]: unknown; job_id: string; state: string; kind: string; position?: number | null }
 
-const job = (id: string, more: Record<string, unknown>): MockJob => ({
+export const job = (id: string, more: Record<string, unknown>): MockJob => ({
   job_id: `job-01EXAMPLE${id}`, project: "example-app", job: "check", branch: "main", client: "laptop.local",
   client_os: "macOS", state: "queued", outcome: null, exit_code: null, worker: null, kind: "job", position: null,
   paused: false, boost: false, cancel_requested: false, pinned_worker: null, run_url: null,
@@ -57,15 +57,17 @@ export function makeQueue() {
   return { running, queued, recent };
 }
 
-export function makeMachines(queue: ReturnType<typeof makeQueue>) {
+// `set` changes a machine by name (a scene's slots and state, dev/scenes.ts).
+export function makeMachines(queue: ReturnType<typeof makeQueue>, set: Record<string, { slots?: number; state?: string }> = {}) {
   return Array.from({ length: COUNT }, (_, index) => {
     const n = index + 1, name = `build-${n}`;
-    const offline = n === 2 || n === 13, busy = n === 1 || n === 4 || n === 7;
     const jobs = queue.running.filter((row) => row.worker === name);
-    const slots = n === 1 ? 3 : 2 + (n % 3);
+    const busy = n === 1 || n === 4 || n === 7;
+    const slots = set[name]?.slots ?? (n === 1 ? 3 : 2 + (n % 3));
+    const state = set[name]?.state ?? (n === 2 || n === 13 ? "offline" : n === 3 ? "draining" : n === 1 ? "busy" : "available");
+    const offline = state === "offline";
     return {
-      name, host: n === 1, version: n === 5 ? "0.95.4" : "0.95.5", slots, capabilities: OFFERS[index % OFFERS.length],
-      state: offline ? "offline" : n === 3 ? "draining" : busy && n === 1 ? "busy" : "available",
+      name, host: n === 1, version: n === 5 ? "0.95.4" : "0.95.5", slots, capabilities: OFFERS[index % OFFERS.length], state,
       free_slots: offline ? 0 : Math.max(0, slots - jobs.length), last_seen: offline ? now() - 840 : now(),
       cpu_pct: offline ? null : n === 1 ? 41 : busy ? 77 : 3 + (n * 7) % 9,
       mem_pct: offline ? null : n === 1 ? 62 : 15 + (n * 5) % 40, cores: 8,

@@ -77,12 +77,12 @@
   --meter-track: #e2e6eb;
   --meter-fill: #0b7268;
   --graph-line: #0b7268;
-  --chart-1: #2a78d6;
-  --chart-2: #eb6834;
-  --chart-3: #1baf7a;
-  --chart-4: #eda100;
-  --chart-5: #e87ba4;
-  --chart-6: #008300;
+  --chart-1: #0b7268;
+  --chart-2: #c08a3e;
+  --chart-3: #4d5a8f;
+  --chart-4: #d98aa6;
+  --chart-5: #5d6976;
+  --chart-6: #a9c3e8;
 }
 
 /* Dark colors, chosen in the page. */
@@ -117,12 +117,12 @@
   --meter-track: #28323c;
   --meter-fill: #62c6ba;
   --graph-line: #62c6ba;
-  --chart-1: #3987e5;
-  --chart-2: #d95926;
-  --chart-3: #199e70;
-  --chart-4: #c98500;
-  --chart-5: #d55181;
-  --chart-6: #008300;
+  --chart-1: #62c6ba;
+  --chart-2: #b98a45;
+  --chart-3: #8f9be0;
+  --chart-4: #a2577a;
+  --chart-5: #aeb8c3;
+  --chart-6: #3f6ea8;
 }
 
 /* Dark colors, from the system setting when the page has no choice of its own. */
@@ -158,12 +158,12 @@
     --meter-track: #28323c;
     --meter-fill: #62c6ba;
     --graph-line: #62c6ba;
-    --chart-1: #3987e5;
-    --chart-2: #d95926;
-    --chart-3: #199e70;
-    --chart-4: #c98500;
-    --chart-5: #d55181;
-    --chart-6: #008300;
+    --chart-1: #62c6ba;
+    --chart-2: #b98a45;
+    --chart-3: #8f9be0;
+    --chart-4: #a2577a;
+    --chart-5: #aeb8c3;
+    --chart-6: #3f6ea8;
   }
 }
 

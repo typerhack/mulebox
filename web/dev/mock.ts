@@ -6,12 +6,14 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 
+import { makeScene } from "./scenes.ts";
 import { AGENT_LOG, CI_LOG, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
 const TOKEN = "mock-token";
 const now = () => Date.now() / 1000;
-const queue = makeQueue();
-let machines = makeMachines(queue);
+const scene = makeScene(process.env.MULEBOX_MOCK_SCENE);
+const queue = scene?.queue ?? makeQueue();
+let machines = makeMachines(queue, scene?.machines);
 const viewers = new Set<ServerResponse>();
 
 const send = (res: ServerResponse, event: string, data: unknown, id?: number) =>
@@ -66,7 +68,7 @@ function cancel(row: MockJob) {
                        finished_at: now(), position: null, duration_s: row.elapsed_s ?? 0 });
   queue.recent.unshift(row);
   renumber();
-  machines = makeMachines(queue).map((m, index) => ({ ...m, state: machines[index].state === "draining" ? "draining" : m.state }));
+  machines = makeMachines(queue, scene?.machines).map((m, index) => ({ ...m, state: machines[index].state === "draining" ? "draining" : m.state }));
 }
 
 function body(req: IncomingMessage): Promise<Record<string, string>> {

@@ -61,3 +61,12 @@ export function waitReason(job: Job, machineCount: number | null): string | null
   }
   return null;
 }
+
+// A long line shows its first few jobs until asked for all of them. One row more than that
+// is shown as it is: a control that hides a single row saves nothing.
+export const WAIT_SHOWN = 5;
+
+export function shownWaiting(jobs: Job[], all: boolean): { rows: Job[]; long: boolean } {
+  const long = jobs.length > WAIT_SHOWN + 1;
+  return { rows: long && !all ? jobs.slice(0, WAIT_SHOWN) : jobs, long };
+}

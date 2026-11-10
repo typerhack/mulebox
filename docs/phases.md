@@ -431,6 +431,12 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       view and control of today, and its overhead on the machine measured no higher than now
       (about 0.5% of a core and 50 MB, M2.3). Built 2026-11-10 (0.96.0 other machines' readings,
       0.97.0 the app in web/, served at /, the old page at /classic/), with tests.
+      Run 2026-11-10 (0.97.0) in real Edge on the deployed dashboard with drill jobs: move up, Freeze and
+      Resume (unit frozen, then running), Boost and End boost (weight 10000, then back), machine pause and
+      resume (draining, then online), a two-step cancel of a waiting job, Queue actions opened; two slots
+      busy on two branches. Overhead with the React page open: 1.95% of a core and 72 MB over 60 s, against
+      2.15% and 72 MB with the classic page in the same conditions; the 0.5% and 50 MB above are from M2.3
+      and no longer hold for either. 0.98.0: running and waiting side by side, chart colours (user's picks).
 - [x] M14.11 Job minutes (the user's ask, 2026-11-10, with a second opinion from another model):
       how long jobs ran, GitHub runs and mulebox's own, today and since the first job, filtered
       and broken down by kind, project, source and machine. Built 0.92.0: `coordinator/stats.py`,
