@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.93.2 - 2026-11-10 - patch
+- Roadmap: M14.8 no longer lists the real failure and the CI card's cores as open; both were seen on 2026-11-10.
+
 ## 0.93.1 - 2026-11-10 - patch
 - Roadmap: M14.3 notes that moving GitHub's waiting slots (0.91.0) is covered by tests only so far.
 

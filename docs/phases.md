@@ -453,8 +453,7 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       the diary reader agreed with the runner's final result on all 124 real runs on the machine.
       Done when: a real CI run that fails and one that passes show on the deployed dashboard in Edge
       with their marks, the failed step, and a CI card's cores during a container-heavy step.
-      Seen 2026-11-09: a real passing CI run with its mark in the Passed tab. Open: a real failure, and
-      the CI card's cores during a container step.
+      Seen 2026-11-09: a real passing CI run with its mark in the Passed tab.
       Done 2026-11-10: two real CI runs' backend test step used about 8 cores in its containers while
       the card read 5.6 to 7.4 cores (sampled from the dashboard's own API each few seconds); a run made
       to fail on purpose on a throwaway branch of this repository showed in Edge in the Failed tab with
