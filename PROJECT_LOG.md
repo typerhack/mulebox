@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.89.3 - 2026-11-10 - patch
+- A running card keeps "of usually" beside its time (0.89.2 hid it, against M14.6); the Actions button goes under the time when the card is narrow.
+
 ## 0.89.2 - 2026-11-10 - patch
 - Roadmap: M14.10, the dashboard front end in React with Vite, built at release time and served by the existing server (the user's choice; Next.js left out).
 - Actions menu a little wider so hints wrap less; a running card's time stays on one line beside its Actions button.

@@ -41,9 +41,8 @@ button.danger.sure { color: var(--bg); background: var(--bad); }
 .menu-button .chevron { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.75;
   stroke-linecap: round; stroke-linejoin: round; }
 .menu-button[aria-expanded="true"] .chevron { transform: rotate(180deg); }
-.slot-head .head-end { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.slot-head .head-end { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 4px 8px; min-width: 0; }
 .slot-head .head-end .time { flex-wrap: nowrap; white-space: nowrap; }
-.slot-head .head-end .usual { display: none; }  /* beside Actions: the job's page and lanes keep it */
 .jobs-bar { display: flex; align-items: flex-end; gap: 12px; position: sticky; top: 0; z-index: 1;
   background: var(--bg); border-bottom: 1px solid var(--line); margin: -2px 0 8px; }
 .jobs-bar .tabs { position: static; flex: 1; border-bottom: 0; margin: 0; }
