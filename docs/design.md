@@ -60,7 +60,10 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    run. The owner can steer it (`mulebox pause|resume|first|up|down|last|boost|normal`, or the
    dashboard): a waiting job moves to the front, one place up or down, or to the end (the move
    writes the new order into every waiting job's priority, so jobs sent later come after them), a paused one keeps its place and does not start,
-   and a machine running a `boost`ed job takes no new one (coordinator/job_control.py).
+   and a machine running a `boost`ed job takes no new one (coordinator/job_control.py). A whole
+   project can be paused for a while (`mulebox project pause`, coordinator/project_pause.py), and
+   an upgrade can wait in the line like a job (`mulebox setup <machine> --queued`,
+   coordinator/upgrades.py): nothing behind it starts on its machine until it has installed.
    Cluster-wide and per-worker slot limits, both default 1 and 2 in the installed `node.toml`.
    Jobs of different branches run at once; a job whose branch is busy waits for it, and younger
    jobs of other branches may pass it (`branch_busy` says so).

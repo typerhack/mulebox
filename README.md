@@ -35,11 +35,14 @@ mulebox queue  --SSH-->        |
   checks on a build machine and exits with the same pass/fail code.
 - **One queue for everything**: agent checks and GitHub Actions jobs share it, so the build
   machine is never overloaded.
-- **Live views**: a terminal view on the laptop and a read-only web dashboard showing the
-  queue, live logs and machine load, opened through an SSH tunnel with `mulebox dashboard
-  open`, or directly from other devices on your LAN, with a password unless you turn it off.
+- **Live views**: a terminal view on the laptop and a web dashboard showing the queue, live
+  logs and machine load, opened through an SSH tunnel with `mulebox dashboard open`, or
+  directly from other devices on your LAN, with a password if you want one.
+- **You steer the queue**: pause or freeze a job, move it up or down the line, boost it, pause a
+  machine or a whole project, from the CLI or the dashboard. Upgrades wait their turn in the
+  line (`mulebox setup <machine> --queued`), so they never cut a running job short.
 - **Made to grow**: jobs are claimed by workers, so more machines need no change to agents or
-  projects. Installing a second machine is not finished yet (roadmap, M5).
+  projects: `mulebox setup <host> --worker-of <coordinator>` adds one.
 - **One command to set up**: `mulebox setup <host>` installs a build machine from the laptop, finds
   out what it offers, and proves it with a first job. It upgrades the same way.
 - **Per-project config**: a small `.mulebox.yml` in each repo says what "check" means, and

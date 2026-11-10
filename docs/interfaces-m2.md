@@ -176,9 +176,12 @@ page has Pause or Resume, To front, Up, Down and To end (waiting jobs), Boost or
 (coordinator/job_control.py), and Cancel; each online machine in the Machines box has Pause or
 Resume (`machine drain` and `resume`). In the Queue tab each waiting job has four arrows for the
 same moves; positions are the whole line's, across lanes.
-Every running card and waiting row also has a dots menu with all of a job's actions (jobmenu.js),
-and the Jobs header has one for everything at once: pause or resume all machines, freeze all
-running jobs, resume all paused jobs. Each item sends the same request as one button would. `cancel_button`, from before 0.87.0, is read and ignored.
+Every running card and waiting row also has a three-dots button opening a menu of that job's
+actions, each with an icon and a line on what it does, listing only what applies now (jobmenu.js).
+"Queue actions", beside the tabs, does everything at once: pause or resume all machines, freeze
+all running jobs, resume all paused jobs. Each item sends the same request as one button would.
+A frozen, paused or boosted job shows a snowflake, pause or bolt icon beside its state, and a
+waiting row gives the coordinator's own reason (paused, a paused project, behind an upgrade). `cancel_button`, from before 0.87.0, is read and ignored.
 What the protection below keeps out is other web pages in the same browser.
 
 - **The way to the coordinator.** The same `cancel`, `job_control` and `machine` requests the

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.90.4 - 2026-11-10 - patch
+- Docs caught up with the day: README (steering the queue, queued upgrades, adding a machine), design.md (project pause and queued upgrades in the queue), interfaces-m2.md (three-dots menus, Queue actions, state icons, wait reasons).
+
 ## 0.90.3 - 2026-11-10 - patch
 - Dashboard: the Jobs list keeps its scroll position when the queue redraws; before, any change in the queue threw a reader back to the top. Found in the M14.3 drill.
 - A running card's "of usually" time does not break inside itself.
