@@ -107,6 +107,19 @@ job name, for today or all time, the top 8 with a way to show all. Two `/api/sta
 per change, with this browser's own midnights; again each minute while the page is open. The
 design is option A of three the user was shown on 2026-11-10.
 
+## History page (`web/src/features/history/`, `web/src/lib/history.ts`, `dashboard/history_query.py`)
+
+`#/history`: every finished job, newest first, 50 at a time with "Load more". A search box
+("Search project, job or branch") searches about 300 ms after typing stops, or at once on
+Enter; its cross or Escape clears it. Below it the dropdowns Type, Project, Source and Machine,
+the Statistics page's own with its wording and labels, then Job name and Result (passed,
+failed, cancelled). The values come from the `choices` of the first page, the Statistics page's
+list (`coordinator/stats.py` `choices`). The filters live in the hash, such as
+`#/history?project=example-app&q=main`, swapped in place (no browser history step), so a reload
+or a shared link keeps them. A request a newer one replaced is ignored when it answers. With
+nothing found the page says so and offers "Clear filters"; with filters set the same control
+sits beside the search.
+
 ## Processes and access
 
 - `mulebox dashboard serve` runs on the coordinator machine as the user service
@@ -293,7 +306,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for` |
 | `GET /api/machines` | machines panel snapshot (above) |
-| `GET /api/history?limit=&before=&project=` | `{jobs, next_before}`, newest first; `limit` 1..200, default 50; page with `before = next_before` |
+| `GET /api/history?limit=&before=&project=&job=&client=&worker=&kind=&result=&q=` | `{jobs, next_before}`, finished jobs newest first, and on the first page (no `before`) `choices`, every value of each filter as `/api/stats` gives it; `limit` 1..200, default 50; page with `before = next_before`, which keeps the filters. `project`, `job`, `client`, `worker` and `kind` (job or runner) are exact values; `result` is passed, failed (timed out and interrupted too) or cancelled (stopped as stuck too), as `shown_state` shows them, a GitHub run with no result of its own matching none; `q` is part of the project, job name or branch in any case, `%` and `_` taken as typed. Values up to 200 characters; 400 on a bad value |
 | `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested`, `log_size` and, while it runs, `activity` as in a `status` reply; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |

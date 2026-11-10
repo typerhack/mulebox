@@ -23,7 +23,7 @@ from aiohttp import web
 
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.stats import GROUPS as STAT_FILTERS
-from mulebox.dashboard import cancel, controls, keys, login, metrics_api, pages, streams
+from mulebox.dashboard import cancel, controls, history_query, keys, login, metrics_api, pages, streams
 from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
 from mulebox.dashboard.hub import Hub
@@ -142,8 +142,11 @@ async def _history(request: web.Request) -> web.Response:
         before = float(query["before"]) if query.get("before") else None
     except ValueError:
         raise web.HTTPBadRequest(text="limit and before must be numbers\n") from None
-    project = query.get("project") or None
-    body = await asyncio.to_thread(request.app[keys.DATA].history, limit, before, project)
+    try:
+        chosen = history_query.filters(query)
+    except BadRequest as exc:
+        raise web.HTTPBadRequest(text=f"{exc}\n") from None
+    body = await asyncio.to_thread(request.app[keys.DATA].history, limit, before, chosen)
     return web.json_response(body)
 
 

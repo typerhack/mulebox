@@ -16,13 +16,13 @@ from typing import Any
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
-from mulebox.coordinator import api, attendance, clients, queue, stats_api, steps, usual, workers
+from mulebox.coordinator import api, attendance, clients, queue, stats, stats_api, steps, usual, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.validate import check_job_id
 from mulebox.coordinator.views import placement, reservation_dict, running_ahead, waiting_for
-from mulebox.dashboard import machines, notices
+from mulebox.dashboard import history_query, machines, notices
 from mulebox.version import get_version
 
 QUEUE_FINISHED = 20
@@ -106,23 +106,20 @@ class DashboardData:
         return detail
 
     def history(self, limit: int = HISTORY_DEFAULT, before: float | None = None,
-                project: str | None = None) -> dict[str, Any]:
-        """Finished jobs, newest first; page with `before` = the last `finished_at` seen."""
-        where, params = "state = ?", [JobState.FINISHED.value]
-        if before is not None:
-            where += " AND finished_at < ?"
-            params.append(before)
-        if project:
-            where += " AND project = ?"
-            params.append(project)
+                chosen: dict[str, str] | None = None) -> dict[str, Any]:
+        """Finished jobs matching `chosen` (history_query.filters), newest first; page with
+        `before` = the last `finished_at` seen. The first page also lists every value each
+        filter can take, the Statistics page's list (coordinator/stats.py `choices`)."""
+        where, params = history_query.where(chosen or {}, before)
         limit = max(1, min(HISTORY_MAX, limit))
         with self.store.read() as conn:
-            jobs = st.select_jobs(conn, where, tuple(params), "finished_at DESC, seq DESC",
-                                  limit=limit)
+            jobs = st.select_jobs(conn, where, params, "finished_at DESC, seq DESC", limit=limit)
+            options = stats.choices(conn) if before is None else None
         rows = [{**reservation_dict(job), "duration_s": job["duration_s"]} for job in jobs]
         rows = [{**row, "shown_state": shown_state(row)} for row in rows]
         more = len(rows) == limit
-        return {"jobs": rows, "next_before": rows[-1]["finished_at"] if more else None}
+        return {"jobs": rows, "next_before": rows[-1]["finished_at"] if more else None,
+                **({"choices": options} if options is not None else {})}
 
     def stats(self, body: dict[str, Any], now: float) -> dict[str, Any]:
         """Job minutes, as `mulebox stats` gets them (coordinator/stats_api.py)."""

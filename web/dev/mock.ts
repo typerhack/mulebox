@@ -7,6 +7,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 
 import { makeScene } from "./scenes.ts";
+import { answerHistory, historyRows } from "./history.ts";
 import { AGENT_LOG, CI_LOG, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
 const TOKEN = "mock-token";
@@ -15,6 +16,7 @@ const scene = makeScene(process.env.MULEBOX_MOCK_SCENE);
 const queue = scene?.queue ?? makeQueue();
 let machines = makeMachines(queue, scene?.machines);
 const viewers = new Set<ServerResponse>();
+const history = historyRows(queue.recent, now());
 
 const send = (res: ServerResponse, event: string, data: unknown, id?: number) =>
   res.write(`${id === undefined ? "" : `id: ${id}\n`}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -110,7 +112,11 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
   if (path === "/api/session") return json(res, { action_token: TOKEN, cancel_token: TOKEN });
   if (path === "/api/queue") return json(res, snapshot());
   if (path === "/api/machines") return json(res, panel());
-  if (path === "/api/history") return json(res, { jobs: queue.recent, next_before: null });
+  if (path === "/api/history") {
+    const { status, body } = answerHistory(history, url.searchParams);
+    await new Promise((done) => setTimeout(done, 100 + Math.random() * 400));
+    return status === 200 ? json(res, body) : text(res, String(body), status);
+  }
   if (path === "/api/stats") return json(res, stats((url.searchParams.get("day_starts") ?? "").split(",").filter(Boolean).map(Number)));
   if (path === "/api/metrics") {
     const name = url.searchParams.get("machine"), row = machines.find((m) => m.name === name);

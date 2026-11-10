@@ -18,6 +18,8 @@
   svg { flex: none; }
   svg.lucide { stroke-width: var(--icon-stroke); }
   svg.lucide.status-icon { stroke-width: calc(var(--icon-stroke) + 0.25); }
+  /* The search box has its own clear control (features/history/HistorySearch.tsx). */
+  input[type="search"]::-webkit-search-cancel-button { appearance: none; }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; }
   }

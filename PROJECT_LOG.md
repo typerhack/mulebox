@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.100.0 - 2026-11-10 - minor
+- History page (the user's ask): live search on project, job or branch (300 ms after typing stops, no Filter button) and the Statistics filters plus job name and result, kept in the address and while paging. `/api/history` takes `project`, `job`, `client`, `worker`, `kind`, `result` and `q`, all in SQL (dashboard/history_query.py), 400 on a bad value, and lists the filters' choices on its first page from the same list the Statistics page uses; both pages share one `FilterSelect`.
+- Checked: web lint, types, 42 tests and build; the full suite through `mulebox check` (2760 passed); in real Edge on the stand-in API at full width and 390 px in both themes.
+
 ## 0.99.0 - 2026-11-10 - minor
 - The classic dashboard page is retired (the user's call): the React build is the only front end. The lan sign-in page is part of it, in Gauge, with only it, its stylesheet and the fonts open before signing in; with no build, `/` answers 503 with how to build it, and the API keeps working. `mulebox setup` stops, naming Node.js and npm, when the build is missing or out of date and npm is not there.
 - A waiting row in the Jobs box says which job holds its branch, as `mulebox queue` does (`branch_busy`).

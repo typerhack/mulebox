@@ -16,7 +16,8 @@ npm run dev          # http://localhost:5173/app/ with made-up data
 
 `npm run dev` alone serves a stand-in API (`dev/mock.ts`, `dev/fixtures.ts`): a queue with every
 kind of row, and controls that change it, so menus, arrows, Pause and Cancel can be tried without
-touching a real queue. `MULEBOX_MOCK_MACHINES=20 npm run dev` gives twenty machines.
+touching a real queue, and a history of 120 jobs to search, filter and page (`dev/history.ts`).
+`MULEBOX_MOCK_MACHINES=20 npm run dev` gives twenty machines.
 
 To see real data, point it at a dashboard; requests go through Vite's proxy:
 

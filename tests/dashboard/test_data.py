@@ -142,7 +142,7 @@ def test_history_pages_and_filters(data, run_job, finish_job):
     second = data.history(limit=2, before=first["next_before"])
     assert [j["project"] for j in second["jobs"]] == ["other-app"]
     assert second["next_before"] is None
-    assert len(data.history(project="other-app")["jobs"]) == 1
+    assert len(data.history(chosen={"project": "other-app"})["jobs"]) == 1
 
 
 def test_history_limit_is_bounded(data):

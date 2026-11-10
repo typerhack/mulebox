@@ -8,6 +8,7 @@ import { duration } from "../../lib/format";
 import { DAYS, DIMS, FILTERS, SERIES, askStats, dayName, int, label, runsText, share, type Dim } from "../../lib/stats";
 import type { Stats } from "../../lib/types";
 import { cx } from "../../ui/cx";
+import { FilterSelect } from "../../ui/FilterSelect";
 import { Panel } from "../../ui/Panel";
 import { Segmented, Tabs } from "../../ui/Tabs";
 import { Tip } from "../../ui/Tip";
@@ -117,16 +118,10 @@ export function StatsPage() {
     <Panel title="Statistics" label="Statistics" strong bodyClassName="grid gap-4">
       <div className="flex flex-wrap gap-3">
         {FILTERS.map(([dim, title, everything]) => (
-          <label key={dim} className="grid gap-1 text-sm text-ink-2">
-            {title}
-            <select value={filters[dim] ?? ""} onChange={(event) => pickFilter(dim, event.target.value)}
-              onFocus={() => { choosing.current = true; }} onBlur={() => { choosing.current = false; }}
-              className={cx("h-ctl touch:h-ctl-touch max-w-col-m rounded-m border bg-surface-1 px-2 text-base text-ink-1",
-                            filters[dim] ? "border-accent" : "border-line-strong")}>
-              <option value="">{everything}</option>
-              {(all.choices?.[dim] ?? []).map((key) => <option key={key} value={key}>{label(dim, key)}</option>)}
-            </select>
-          </label>
+          <FilterSelect key={dim} title={title} everything={everything} value={filters[dim] ?? ""}
+            options={(all.choices?.[dim] ?? []).map((key) => [key, label(dim, key)])}
+            onChange={(value) => pickFilter(dim, value)}
+            onFocus={() => { choosing.current = true; }} onBlur={() => { choosing.current = false; }} />
         ))}
       </div>
       <div className="grid gap-gap md:grid-cols-2"><Head range="today" found={today} /><Head range="all" found={all} /></div>
