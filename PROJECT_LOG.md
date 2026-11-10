@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.84.1 - 2026-11-10 - patch
+- Roadmap: M14.9 done in full (the mark at 390 px), M14.2 built, M5.3 blocked on a second worker.
+
 ## 0.84.0 - 2026-11-10 - minor
 - Workers report their machine's network in and out (KiB/s) with every claim and heartbeat, over its physical interfaces only (common/netdev.py), so a VPN tunnel and Docker bridges do not count the same bytes again; `mulebox machine list` shows them and the dashboard's machine rows carry them (M14.2, no schema change: `workers.load` is JSON).
 

@@ -158,6 +158,9 @@ queue and returns the same result as running it locally.
       beside the build machine's 73% in `mulebox machine list`, from the same stored readings the
       dashboard shows; it was a container, so its numbers were the build machine's own. Open: the
       readings seen on the dashboard in a browser (Edge through the extension showed an error page).
+      2026-11-10: Edge reaches the dashboard again, but the dashboard's own machine shows its live
+      sample, so this needs a second worker, and a throwaway one could not be built: the build machine
+      could not reach the Ubuntu archive.
 
 ## M6: Open-source readiness
 - [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)
@@ -407,8 +410,11 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [ ] M14.1 Jobs box redesign. Three mockups were rejected as flooded with data; the top row (CPU,
       memory, disk, machines) stays. Done when: the user picks a design and it runs on the real
       dashboard in Edge.
-- [ ] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
-      VPN tunnel once.
+- [~] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
+      VPN tunnel once. Built 2026-11-10 (0.84.0): workers report in and out over physical interfaces
+      only, shown by `mulebox machine list`. Run on the real machine: a 30 MB download read 849 KiB/s
+      while Wi-Fi moved 1205 and the VPN tunnel 1098, so the tunnel was not added again. Open: where it
+      goes on the dashboard, the user's pick, as the top panels stay as they are.
 - [x] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
       slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
       time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its
@@ -437,7 +443,11 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       deployed dashboard, a stale skill copy showed the warning and the mark after one job and went away
       live after `mulebox skill update`; the danger level was drawn in the page by its own code, as no
       real worker was out of step. 0.83.4: a rounded warning triangle, seen in both themes in real Edge on
-      the deployed dashboard (strip drawn by its own code). Not seen: the mark scrolling to the strip.
+      the deployed dashboard (strip drawn by its own code). 0.83.7: the mark had scrolled away with the
+      page on narrow layouts; the header is now sticky there. Seen 2026-11-10 at 390 px in real Edge on the
+      deployed dashboard: scrolled 344 px down the mark stayed in sight, and its click put the strip 8 px
+      below the header and focused it (strip drawn by its own code; the real one had been seen that
+      morning, with the laptop on 0.83.6 and the machine on 0.83.5).
 - [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
       only. Freezing a running job was advised against.
 
