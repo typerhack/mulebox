@@ -42,6 +42,7 @@ const isCI = (job) => job.kind === "runner";
 export const repository = (job) => (job.project ?? "-").replace("__", "/");
 
 export function jobName(job) {
+  if (job.kind === "upgrade") return `mulebox upgrade to ${job.branch ?? "?"}`;
   if (isCI(job)) return (job.project ?? "-").split("__").pop();
   return `${job.project ?? "-"} / ${job.job ?? "-"}`;
 }
@@ -53,8 +54,9 @@ export const shortId = (job) => job.job_id.slice(-6);
 // clients do not say, and then the line goes without it.
 const origin = (job) => (isCI(job) ? "CI" : job.client_os ?? null);
 
-export const runText = (job) =>
-  [origin(job), job.branch ?? "-", shortId(job)].filter(Boolean).join(", ");
+export const runText = (job) => (job.kind === "upgrade"
+  ? `nothing new starts here before it, ${shortId(job)}`
+  : [origin(job), job.branch ?? "-", shortId(job)].filter(Boolean).join(", "));
 
 // GitHub's mark for a CI slot, a laptop for a job an agent sent. The word in `runText` says
 // the same, so the icon is decoration for a quicker eye.
@@ -68,6 +70,10 @@ const GITHUB = "M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.1
 const LAPTOP = "M2.5 3h11v7.5h-11ZM3.75 4.25v5h8.5v-5ZM.5 11.5h15v.75c0 .7-.55 1.25-1.25 " +
   "1.25H1.75C1.05 13.5.5 12.95.5 12.25Z";
 
+// An arrow into a tray: a new version going onto the machine.
+const UPGRADE = "M7.25 1.5h1.5v6.69l2.22-2.22 1.06 1.06L8 11.06 3.97 7.03l1.06-1.06 2.22 2.22ZM1.5 " +
+  "10h1.5v2.5h10V10h1.5v4h-13Z";
+
 // A size on the icon itself, so a stylesheet that is late or older cannot squash it.
 function sized(icon, px) {
   icon.setAttribute("width", px);
@@ -77,7 +83,8 @@ function sized(icon, px) {
 
 export function jobLink(job) {
   return el("a", { href: `#/job/${encodeURIComponent(job.job_id)}`, class: "job-link" },
-    sized(drawIcon(isCI(job) ? GITHUB : LAPTOP, "origin"), 15), el("span", { text: jobName(job) }));
+    sized(drawIcon(job.kind === "upgrade" ? UPGRADE : isCI(job) ? GITHUB : LAPTOP, "origin"), 15),
+    el("span", { text: jobName(job) }));
 }
 
 // Build a DOM element. Text always goes through textContent, so nothing is parsed as HTML.

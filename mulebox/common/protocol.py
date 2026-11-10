@@ -116,6 +116,7 @@ class MessageType(StrEnum):
     TAKE = "take"
     TAKE_OK = "take_ok"
     JOB_CONTROL = "job_control"
+    UPGRADE = "upgrade"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -175,6 +176,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: `action` pause, resume, first, boost or normal on one job
     # (coordinator/job_control.py); replied with status_ok.
     MessageType.JOB_CONTROL: frozenset({"job_id", "action"}),
+    # machine -> coordinator: `action` queue (worker, version), turn or done (job_id) of an
+    # upgrade waiting in line (coordinator/upgrades.py); replied with status_ok.
+    MessageType.UPGRADE: frozenset({"action"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

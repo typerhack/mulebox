@@ -18,7 +18,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, workers
+from mulebox.coordinator import holds, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -64,6 +64,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                                   (JobState.QUEUED.value, JOB_KIND), QUEUE_ORDER):
             if blocker is not None and _key(blocker) < _key(job):
                 return None  # FIFO: the older reservation goes first
+            if upgrades.blocks(conn, worker, job):
+                return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
                     and job["project"] not in on_hold and not job["paused"]):
                 return st.transition(

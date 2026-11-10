@@ -42,7 +42,8 @@ It checks the login, installs mulebox on the machine, finds out whether Docker w
 fills `capabilities` if that list is empty, writes `~/.config/mulebox/client.toml` if you have
 none, and runs a first job through the real queue. Each step that fails says what to do. Run it
 again at any time, also to upgrade: `node.toml` is kept, and it stops if jobs are running unless
-you add `--when-idle`, which waits for them while new jobs wait in line, or `--now`.
+you add `--queued` (below), `--when-idle`, which waits for them while new jobs wait in line, or
+`--now`.
 
 To install by hand instead, copy `install.sh`, `node.toml.example` and `systemd/` from
 `mulebox/machine/` and a wheel into one folder on the build machine, and run
@@ -348,6 +349,16 @@ The installer reinstalls the wheel into the existing venv, updates the unit file
 restarts the services. A running job is interrupted by the restart (state `interrupted`,
 never replayed), so `mulebox setup` stops if a job is running. `--when-idle` waits instead: new jobs and CI runs wait in line, the running ones finish, the upgrade runs and the line moves on, and a killed laptop holds nothing for more than 2 minutes while waiting. `--now` upgrades at once. `node.toml`
 is kept.
+
+`mulebox setup <machine> --queued` does what `--when-idle` does without keeping the laptop: the
+new version goes to the machine and becomes a row in its line, "mulebox upgrade to X", and the
+command returns. Nothing new starts on that machine (jobs and CI runs wait), the running jobs
+end, it installs, and the line goes on. With `--behind` the jobs already waiting go first. It
+shows in `mulebox queue` and on the dashboard; `mulebox status <id>` follows it, `mulebox logs
+<id>` has the installer's output, and while it waits it can be moved like a job or taken back
+with `mulebox cancel <id>`. Once installing it cannot be cancelled. It does not run the first
+job `setup` runs otherwise. If its waiter goes away (a reboot), the row goes after 90 s and the
+machine runs jobs again.
 Upgrade the coordinator and every worker together: a worker's stage rows and toolchain
 reports, and detached jobs, need both to be new. `mulebox doctor` shows the versions.
 When the Python minor version changed, the old venv is moved to

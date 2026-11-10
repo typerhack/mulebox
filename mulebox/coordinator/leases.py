@@ -84,6 +84,9 @@ def expire(store: Store, now: float, staging: Staging | None = None) -> list[str
             lost = Outcome.CANCELLED if job["stop_reason"] else Outcome.INTERRUPTED
             st.finish(conn, job, lost, now)
             finished.append(job["job_id"])
+        from mulebox.coordinator import upgrades  # upgrades -> views -> leases
+
+        finished += upgrades.expire(conn, now)
         for job in st.select_jobs(conn, "state = ? AND created_at < ?",
                                   (JobState.UPLOADING.value, now - UPLOAD_TIMEOUT_S)):
             st.finish(conn, job, Outcome.INTERRUPTED, now)

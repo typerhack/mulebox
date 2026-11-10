@@ -26,6 +26,7 @@ from mulebox.coordinator import (
     runner_api,
     steps,
     taken,
+    upgrades,
     usual,
     worker_api,
     workers,
@@ -33,7 +34,7 @@ from mulebox.coordinator import (
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
-from mulebox.coordinator.errors import BadRequest, CoordinatorError, NoWorker
+from mulebox.coordinator.errors import BadRequest, Conflict, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.reach import reach
@@ -173,6 +174,9 @@ def status(req: Request) -> Message:
 def cancel(req: Request) -> Message:
     with req.store.write() as conn:
         before = st.require_job(conn, v.job_id(req.body))
+        if before["kind"] == upgrades.UPGRADE_KIND and before["state"] in st.ACTIVE_STATES:
+            raise Conflict(f"upgrade {before['job_id']} is installing; stopping it halfway would "
+                           "leave the machine without mulebox. It ends by itself")
         job = leases.cancel(conn, before, req.now)
     if before["state"] != JobState.FINISHED and job["state"] == JobState.FINISHED:
         req.staging.remove_upload(job["job_id"])
@@ -258,6 +262,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.DRAIN: drain,
     MessageType.MACHINE: machine_api.machine,
     MessageType.JOB_CONTROL: job_control.control,
+    MessageType.UPGRADE: upgrades.upgrade,
     MessageType.LOGS: logs,
     MessageType.TAKE: taken.take,
     MessageType.TAKEN: taken.taken,

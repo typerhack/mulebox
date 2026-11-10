@@ -21,7 +21,17 @@ let open = null;  // { key, node, problem, armed }
 const jobUrl = (id, what) => `/api/jobs/${encodeURIComponent(id)}/${what}`;
 const control = (id, action) => post(jobUrl(id, "control"), { action });
 
+function upgradeItems(job) {
+  return [["Move to the front", () => control(job.job_id, "first")],
+          ["Move up one", () => control(job.job_id, "up")],
+          ["Move down one", () => control(job.job_id, "down")],
+          ["Move to the end", () => control(job.job_id, "last")],
+          ["Open its page", () => { location.hash = `#/job/${encodeURIComponent(job.job_id)}`; }],
+          ["Cancel upgrade", () => post(jobUrl(job.job_id, "cancel")), "danger"]];
+}
+
 function jobItems(job) {
+  if (job.kind === "upgrade") return upgradeItems(job);
   const running = RUNNING.has(job.state);
   const items = [job.paused
     ? ["Resume", () => control(job.job_id, "resume")]
@@ -83,9 +93,10 @@ function draw() {
   const items = source.kind === "queue" ? queueItems(source) : jobItems(source.job);
   node.replaceChildren(...items.map(([text, send, tone, disabled]) => {
     const sure = tone === "danger" && open.armed;
+    const yes = source.job?.kind === "upgrade" ? "Yes, cancel the upgrade"
+                                                : "Yes, cancel: it stops for whoever waits on it";
     const made = el("button", { type: "button", role: "menuitem", class: tone ?? null,
-                                disabled: disabled ? "" : null,
-                                text: sure ? "Yes, cancel: it stops for whoever waits on it" : text });
+                                disabled: disabled ? "" : null, text: sure ? yes : text });
     made.addEventListener("click", async () => {
       if (tone === "danger" && !open.armed) { open.armed = true; draw(); node.querySelector(".danger")?.focus(); return; }
       try {
@@ -145,7 +156,8 @@ export function followMenu() {
 
 // The menu button for one job, or null where this page has no controls or nothing to steer.
 export function jobMenu(job) {
-  if (!token || job.kind !== "job" || job.cancel_requested
+  const upgradeWaits = job.kind === "upgrade" && WAITING.has(job.state);
+  if (!token || !(job.kind === "job" || upgradeWaits) || job.cancel_requested
       || !(WAITING.has(job.state) || RUNNING.has(job.state))) return null;
   latest.set(job.job_id, { kind: "job", job });
   return menuButton(job.job_id, `Actions for ${job.project ?? "job"} ${job.job_id}`);

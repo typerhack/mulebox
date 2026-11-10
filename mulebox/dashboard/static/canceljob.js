@@ -11,7 +11,9 @@ const CANCELLABLE = new Set(["uploading", "queued", "starting", "running"]);
 
 // `{ node, update(job) }`, or null when this page offers no cancel for this job.
 export function cancelControl(job, token) {
-  if (!token || job.kind !== "job" || !CANCELLABLE.has(job.state) || job.cancel_requested) {
+  const upgradeWaits = job.kind === "upgrade" && (job.state === "queued" || job.state === "uploading");
+  if (!token || !(job.kind === "job" || upgradeWaits) || !CANCELLABLE.has(job.state)
+      || job.cancel_requested) {
     return null;
   }
   const node = el("div", { class: "job-cancel" });

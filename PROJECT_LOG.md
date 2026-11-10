@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.89.0 - 2026-11-10 - minor
+- Queued upgrades (M16.5, the user's idea): `mulebox setup <machine> --queued` sends the new version and returns; on the machine it is a row in the line, "mulebox upgrade to X", next by default (nothing new starts there, the running jobs end, it installs, the line goes on) or `--behind` the jobs already waiting. A waiter unit on the machine asks for its turn and installs; the installed mulebox reports the result and the installer's output as the row's log. It shows in `mulebox queue` and on the dashboard, moves and cancels like a job while it waits, cannot be cancelled while installing, and lets the machine go 90 s after its waiter disappears. Wire message `upgrade`, allowed for worker keys.
+
 ## 0.88.1 - 2026-11-10 - patch
 - Jobs box: a frozen, paused or boosted job says so on its card and waiting row; before, only its page and `mulebox queue` did.
 

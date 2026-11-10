@@ -453,8 +453,13 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       deployed dashboard: scrolled 344 px down the mark stayed in sight, and its click put the strip 8 px
       below the header and focused it (strip drawn by its own code; the real one had been seen that
       morning, with the laptop on 0.83.6 and the machine on 0.83.5).
-- [ ] M14.3 Hold a waiting job, pause a machine or the queue. Built on M2.5: off by default, sign-in
-      only. Freezing a running job was advised against.
+- [~] M14.3 Steer jobs and machines (the user's ask, 2026-11-10: full control, no sign-in, a LAN tool):
+      pause or freeze, resume, move in line (front, up, down, end), boost, cancel, from the CLI, a
+      job's page, a dots menu on every card and arrows on every waiting row; pause or resume a
+      machine; a header menu for all machines and all jobs at once. Built 0.86.0 to 0.88.1. Seen
+      2026-11-10 in real Edge on the deployed dashboard: the menus open on real cards, and Freeze
+      froze a real job on the machine (systemd freezer, its output stopped). Done when: resume,
+      boost, the moves and the header menu are used on real jobs in Edge.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it
@@ -492,11 +497,12 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       --when-idle` with a job running: the job finished and passed, a job queued meanwhile said why it
       waited and ran after, and the upgrade passed. CI runs wait too (tests).
 - [-] M16.4 Reuse a passed result: moved to M18.3, the user wants it now.
-- [ ] M16.5 An upgrade as an entry in the waiting list (the user's idea, 2026-11-10): sent from the
+- [~] M16.5 An upgrade as an entry in the waiting list (the user's idea, 2026-11-10): sent from the
       laptop and left, it waits its turn like a job, shown in the queue and on the dashboard, then
-      applies once the machine's slots are all free, and the line goes on after it. Today
-      `setup --when-idle` holds the queue at once and keeps the laptop attached. Open: the user
-      picks whether it goes next or behind the jobs already waiting.
+      applies once the machine's slots are all free, and the line goes on after it. Next in line by
+      default (the user: "dont start a new job till update is done"), `--behind` after the jobs
+      already waiting. Built 2026-11-10 (0.89.0): `mulebox setup <machine> --queued`, schema
+      unchanged, with tests. Done when: a real queued upgrade on the machine with jobs running.
 
 ## M18: Jobs that respect the agent's time
 From the user on 2026-11-06. Comes first: mulebox must beat an agent running directly on the machine.

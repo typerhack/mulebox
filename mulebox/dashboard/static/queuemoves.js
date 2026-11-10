@@ -31,7 +31,9 @@ async function move(job, action) {
 // The four buttons for a waiting job at `job.position` of `total`, or null when this page
 // offers no controls or the job has no place in line yet.
 export function moveButtons(job, total) {
-  if (!token || job.kind !== "job" || !job.position || job.cancel_requested) return null;
+  if (!token || !["job", "upgrade"].includes(job.kind) || !job.position || job.cancel_requested) {
+    return null;
+  }
   const note = pending.get(job.job_id);
   if (note && !note.failed && note.position !== job.position) pending.delete(job.job_id);
   const left = pending.get(job.job_id);

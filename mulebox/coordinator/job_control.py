@@ -93,9 +93,12 @@ def control(req: Request) -> Message:
         raise BadRequest(f"field 'action' must be one of {', '.join(ACTIONS)}")
     with req.store.write() as conn:
         job = st.require_job(conn, v.job_id(req.body))
-        if job["kind"] != "job":
+        if job["kind"] == queue.RUNNER_KIND:
             raise Conflict(f"job {job['job_id']} holds a slot for a GitHub run; "
                            "steer that run on GitHub")
+        if job["kind"] != queue.JOB_KIND and (action not in MOVES or job["state"] != JobState.QUEUED):
+            raise Conflict(f"job {job['job_id']} is an upgrade; it can only move in line "
+                           "while it waits, or be cancelled")
         if job["state"] not in _STEERABLE or job["cancel_requested"]:
             raise Conflict(f"job {job['job_id']} is "
                            f"{'being cancelled' if job['cancel_requested'] else job['state']}; "
