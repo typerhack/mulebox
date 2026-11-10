@@ -43,3 +43,14 @@ def test_a_paused_projects_github_runs_wait(store, staging):
             "pinned_worker": "wrk-a", "project": "o__example-app", "job": "ci", "runner": "r1",
             "idempotency_key": "gh-1"}, 1000.0)
         assert reservations.try_grant(conn, slot, 1001.0, 10)["state"] == "queued"
+
+
+def test_a_paused_projects_jobs_do_not_hold_another_projects_github_run_back(store, staging):
+    queued(store, staging, now=1.0, project="example-app")  # ahead in line, but may not start
+    pause(store, staging, "example-app")
+    with store.write() as conn:
+        slot = reservations.create(conn, {
+            "pinned_worker": "wrk-a", "project": "o__example-app", "job": "ci", "runner": "r1",
+            "idempotency_key": "gh-2"}, 1000.0)
+        assert reservations.ahead(conn, slot, 1001.0) == 0
+        assert reservations.try_grant(conn, slot, 1001.0, 10)["state"] == "running"

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.95.2 - 2026-11-10 - patch
+- A job of a paused or held project no longer holds a GitHub run back: it keeps its place in line but may not start, as a paused job already did (reservations.ahead). Found on the real machine, where a CI run waited with both slots free behind three jobs of paused projects.
+
 ## 0.95.1 - 2026-11-10 - patch
 - A GitHub run's service goes back to weight 50, its unit's own, after a boost and at a worker start; 0.95.0 set it to 100, found on the real machine. The cancel item asks "Yes, cancel the run", not "Yes, cancel on github".
 

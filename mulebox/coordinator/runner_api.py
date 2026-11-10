@@ -49,7 +49,7 @@ def acquire(req: Request) -> Message:
     with req.store.write() as conn:
         job = rs.require(conn, v.job_id(req.body))
         job = rs.try_grant(conn, job, req.now, req.cluster_slots)
-        place = rs.ahead(conn, job) + 1 if job["state"] == JobState.QUEUED else None
+        place = rs.ahead(conn, job, req.now) + 1 if job["state"] == JobState.QUEUED else None
     return req.reply(MessageType.STATUS_OK, status_body(job, place))
 
 

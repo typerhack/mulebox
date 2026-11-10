@@ -65,18 +65,21 @@ def require(conn: sqlite3.Connection, job_id: str) -> dict[str, Any]:
     return job
 
 
-def ahead(conn: sqlite3.Connection, job: dict[str, Any]) -> int:
+def ahead(conn: sqlite3.Connection, job: dict[str, Any], now: float) -> int:
     """Queued rows ahead of `job` in line (moves count, job_control.py) that its worker could
-    run: agent jobs whose needs the worker meets and that are not paused, and reservations
-    pinned to it. A paused job keeps its place without holding a GitHub run back."""
+    run: agent jobs whose needs the worker meets and that are not paused, nor of a paused or
+    held project, and reservations pinned to it. A job that may not start keeps its place
+    without holding a GitHub run back."""
     worker = job["pinned_worker"]
     known = workers.get(conn, worker)
     have = set(known["capabilities"]) if known else set()
+    on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
     queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,))
     return sum(
         1 for row in queued
         if st.line_key(row) < st.line_key(job)
-        and ((row["kind"] == JOB_KIND and set(row["needs"]) <= have and not row["paused"])
+        and ((row["kind"] == JOB_KIND and set(row["needs"]) <= have and not row["paused"]
+              and row["project"] not in on_hold)
              or (row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker))
     )
 
@@ -96,7 +99,7 @@ def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
 
     Returns the job, `running` when granted, unchanged otherwise.
     """
-    if job["state"] != JobState.QUEUED or ahead(conn, job) > 0 or holds.draining(conn, now):
+    if job["state"] != JobState.QUEUED or ahead(conn, job, now) > 0 or holds.draining(conn, now):
         return job
     worker = job["pinned_worker"]
     if upgrades.blocks(conn, worker, job) or job["project"] in project_pause.paused(conn, now):
