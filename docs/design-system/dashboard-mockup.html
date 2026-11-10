@@ -1,0 +1,1043 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup 1: Monitor on top</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+/* tokens.css, copied unchanged */
+/* mulebox design system "Gauge": the one source of its token values.
+   Rules and the reason for each token: docs/design-system.md. Picture: specimen.html beside this file.
+   Theme: data-theme="light" or "dark" on <html>; with neither, the system setting decides. */
+
+:root {
+  /* Type. Geist and Geist Mono (OFL), bundled with the app, never loaded from the web. */
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-base: 13.5px;
+  --text-lg: 15px;
+  --text-xl: 20px;
+  --text-display: clamp(34px, 5vw, 48px);
+
+  /* Space: a 4px base. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 40px;
+  --space-8: 56px;
+  --gutter: clamp(16px, 3vw, 24px);
+  --app-gap: 12px;
+
+  /* Corners: one per level. */
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 8px;
+  --radius-full: 999px;
+
+  /* Icons: Lucide, outline. */
+  --icon: 16px;
+  --icon-stroke: 1.5;
+
+  /* Motion. */
+  --dur-fast: 100ms;
+  --dur-base: 180ms;
+  --ease: cubic-bezier(0.3, 0, 0.2, 1);
+
+  /* Elevation: only a menu floats. */
+  --shadow-1: none;
+  --shadow-2: 0 8px 24px -6px rgba(10, 14, 18, 0.28), 0 2px 6px rgba(10, 14, 18, 0.12);
+}
+
+/* Light colors. */
+:root {
+  --surface-0: #f3f5f7;
+  --surface-1: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-3: #e2e6eb;
+  --text-1: #141b22;
+  --text-2: #46525e;
+  --text-3: #5d6976;
+  --border: #d5dbe2;
+  --border-strong: #76838f;
+  --accent: #0b7268;
+  --accent-hover: #085e56;
+  --accent-ink: #ffffff;
+  --focus: #0b7268;
+  --status-running: #1b5fc4;
+  --status-queued: #46525e;
+  --status-passed: #1a7a3c;
+  --status-failed: #c22f3a;
+  --status-cancelled: #5d6976;
+  --status-warning: #8a5d00;
+  --status-danger: #c22f3a;
+  --on-danger: #ffffff;
+  --status-warning-soft: #fbf1dc;
+  --status-failed-soft: #fbe6e7;
+  --meter-track: #e2e6eb;
+  --meter-fill: #0b7268;
+  --graph-line: #0b7268;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+}
+
+/* Dark colors, chosen in the page. */
+:root[data-theme="dark"] {
+  --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7);
+  --surface-0: #0f1317;
+  --surface-1: #151a20;
+  --surface-2: #1c232b;
+  --surface-3: #28323c;
+  --text-1: #e6ebf0;
+  --text-2: #aeb8c3;
+  --text-3: #8f9aa6;
+  --border: #27313b;
+  --border-strong: #6f7c8a;
+  --accent: #62c6ba;
+  --accent-hover: #7fd6cb;
+  --accent-ink: #0f1317;
+  --focus: #62c6ba;
+  --status-running: #6fb1ff;
+  --status-queued: #aeb8c3;
+  --status-passed: #4dc46d;
+  --status-failed: #f47f76;
+  --status-cancelled: #8f9aa6;
+  --status-warning: #e8b04a;
+  --status-danger: #f47f76;
+  --on-danger: #1c0d0c;
+  --status-warning-soft: #2b2414;
+  --status-failed-soft: #301b1c;
+  --meter-track: #28323c;
+  --meter-fill: #62c6ba;
+  --graph-line: #62c6ba;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+}
+
+/* Dark colors, from the system setting when the page has no choice of its own. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7);
+    --surface-0: #0f1317;
+    --surface-1: #151a20;
+    --surface-2: #1c232b;
+    --surface-3: #28323c;
+    --text-1: #e6ebf0;
+    --text-2: #aeb8c3;
+    --text-3: #8f9aa6;
+    --border: #27313b;
+    --border-strong: #6f7c8a;
+    --accent: #62c6ba;
+    --accent-hover: #7fd6cb;
+    --accent-ink: #0f1317;
+    --focus: #62c6ba;
+    --status-running: #6fb1ff;
+    --status-queued: #aeb8c3;
+    --status-passed: #4dc46d;
+    --status-failed: #f47f76;
+    --status-cancelled: #8f9aa6;
+    --status-warning: #e8b04a;
+    --status-danger: #f47f76;
+    --on-danger: #1c0d0c;
+    --status-warning-soft: #2b2414;
+    --status-failed-soft: #301b1c;
+    --meter-track: #28323c;
+    --meter-fill: #62c6ba;
+    --graph-line: #62c6ba;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+  }
+}
+
+/* component styles of the Gauge specimen */
+:root { --graph-fill: color-mix(in srgb, var(--graph-line) 14%, transparent); color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+[data-state="running"] { --st: var(--status-running); --st-soft: var(--status-running-soft, transparent); }
+[data-state="queued"] { --st: var(--status-queued); --st-soft: var(--status-queued-soft, transparent); }
+[data-state="passed"] { --st: var(--status-passed); --st-soft: var(--status-passed-soft, transparent); }
+[data-state="failed"] { --st: var(--status-failed); --st-soft: var(--status-failed-soft, transparent); }
+[data-state="cancelled"] { --st: var(--status-cancelled); --st-soft: var(--status-cancelled-soft, transparent); }
+/* Structure shared by the three specimens. Everything that gives a system its look
+   (color, type, corners, borders, sizes) lives in the system's own block below. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--surface-0); color: var(--text-1); font: var(--text-base)/1.5 var(--font-ui); overflow-x: hidden; }
+h1, h2, h3, p, ul, ol, figure, pre { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+code, pre { font-family: var(--font-mono); font-size: 0.92em; }
+button { font: inherit; color: inherit; }
+button:disabled { opacity: 1; cursor: not-allowed; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+svg.i { width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; flex: none; display: block; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:root[data-theme="dark"] .when-light, :root:not([data-theme="dark"]) .when-dark { display: none; }
+
+/* Page chrome */
+.doc-head { padding: var(--space-6) var(--gutter) 0; max-width: 1232px; margin: 0 auto; }
+.doc-head-in { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; justify-content: space-between; }
+.doc-kicker { color: var(--text-2); font-size: var(--text-sm); }
+.doc-head h1 { font-size: var(--text-display); line-height: 1.05; margin: var(--space-1) 0 var(--space-3); }
+.doc-idea { max-width: 62ch; color: var(--text-2); font-size: var(--text-lg); line-height: 1.45; }
+.doc-nav { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin-top: var(--space-5); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
+.doc-nav a { color: var(--text-2); text-decoration: none; font-weight: 600; padding: 4px 0; }
+.doc-nav a:hover { color: var(--text-1); text-decoration: underline; text-underline-offset: 4px; }
+.doc { max-width: 1232px; margin: 0 auto; padding: 0 var(--gutter) var(--space-8); }
+.doc > section { padding-top: var(--space-7); }
+.doc h2 { font-size: var(--text-xl); line-height: 1.2; margin-bottom: var(--space-2); }
+.doc-lead, .doc-note { color: var(--text-2); max-width: 76ch; margin-bottom: var(--space-4); }
+.doc-h3 { font-size: var(--text-lg); margin: var(--space-6) 0 var(--space-2); }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-5); }
+.prose p + p { margin-top: var(--space-2); }
+.prose p { max-width: 70ch; }
+.prose code, .doc-lead code, .doc-note code { color: var(--text-1); }
+
+/* Token chips: left half light value, right half dark value */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.swatch { min-width: 0; }
+.swatch .chip { display: grid; grid-template-columns: 1fr 1fr; height: 44px; border-radius: var(--radius-s); overflow: hidden; border: 1px solid var(--border-strong); }
+.swatch code { display: block; margin-top: 6px; color: var(--text-1); font-weight: 600; overflow-wrap: anywhere; }
+.swatch small { display: block; color: var(--text-2); font-family: var(--font-mono); font-size: 0.8em; }
+.swatch-group { color: var(--text-2); font-size: var(--text-sm); font-weight: 600; margin: var(--space-4) 0 var(--space-2); }
+
+.type-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--space-2) var(--space-4); align-items: baseline; padding: var(--space-2) 0; }
+.type-row + .type-row { border-top: 1px solid var(--border); }
+.type-row code { color: var(--text-2); }
+.type-row small { display: block; color: var(--text-2); font-size: var(--text-xs); }
+.log-sample { font-size: var(--text-sm); line-height: 1.6; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.space-row { display: grid; grid-template-columns: 96px 56px minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: 3px 0; color: var(--text-2); font-size: var(--text-sm); }
+.space-row i { display: block; height: 12px; background: var(--text-1); border-radius: 2px; }
+.radius-list { display: grid; gap: var(--space-3); }
+.radius-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--space-3); align-items: center; }
+.radius-row i { display: block; width: 56px; height: 40px; border: 2px solid var(--text-1); border-right: 0; border-bottom: 0; }
+.radius-row code { color: var(--text-1); font-weight: 600; }
+.radius-row small { display: block; color: var(--text-2); font-size: var(--text-sm); }
+.icon-grid { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin-top: var(--space-4); }
+.icon-grid span { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: var(--text-sm); }
+.icon-grid svg { color: var(--text-1); }
+
+.demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.demo { min-width: 0; }
+.demo.wide { grid-column: 1 / -1; }
+.demo figcaption { color: var(--text-2); font-size: var(--text-sm); margin-bottom: var(--space-2); max-width: 80ch; }
+.demo-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.demo-row + .demo-row { margin-top: var(--space-4); }
+.state-icons .sep { width: 1px; height: 24px; background: var(--border-strong); }
+.state-note { color: var(--text-2); font-size: var(--text-sm); flex: 1 1 260px; }
+.meters { display: grid; gap: var(--space-3); }
+.menu-room { padding-bottom: 300px !important; }
+.strips { display: grid; gap: var(--space-3); }
+.tip-demo { position: relative; display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.rules ul { display: grid; gap: var(--space-2); }
+.rules li { padding-left: 16px; position: relative; max-width: 60ch; }
+.rules li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--text-2); }
+.rule-h { display: flex; align-items: center; gap: 8px; font-size: var(--text-lg); margin-bottom: var(--space-3); }
+.rule-h svg { color: var(--status-passed); }
+.rule-h.dont svg { color: var(--status-failed); }
+.table-wrap { overflow-x: auto; }
+table.contrast { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.contrast th { text-align: left; color: var(--text-2); font-weight: 600; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border-strong); white-space: nowrap; }
+.contrast td { padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); }
+.contrast td.fail { color: var(--status-failed); font-weight: 700; }
+
+/* Component structure */
+.panel { min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px var(--space-3); }
+.panel-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.panel-note { color: var(--text-2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.icon-btn { display: inline-grid; place-items: center; padding: 0; cursor: pointer; flex: none; }
+.tabs { display: flex; }
+.tabs [role="tab"] { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: none; border: 0; white-space: nowrap; }
+.status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.status[data-state="running"] svg { animation: spin 1.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.mod { display: inline-grid; place-items: center; color: var(--text-1); }
+.meter-row { display: grid; grid-template-columns: var(--meter-label, 5ch) minmax(0, 1fr) max-content; gap: 10px; align-items: center; }
+.meter-label { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter { position: relative; overflow: hidden; background: var(--meter-track); }
+.meter > i { display: block; height: 100%; width: var(--v); background: var(--meter-fill); transition: width var(--dur-base) var(--ease); }
+.meter-row[data-level="warn"] .meter > i { background: var(--status-warning); }
+.meter-row[data-level="danger"] .meter > i { background: var(--status-danger); }
+.meter-value { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 4ch; text-align: right; font-weight: 600; }
+.meter-value svg { width: 14px; height: 14px; }
+.meter-row[data-level="warn"] .meter-value svg { color: var(--status-warning); }
+.meter-row[data-level="danger"] .meter-value svg { color: var(--status-danger); }
+.fact { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--text-2); }
+.fact .num { color: var(--text-1); }
+
+.graph { position: relative; height: 132px; }
+.graph.small { height: 96px; }
+.graph svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.graph .g-grid { stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.graph .g-area { fill: var(--graph-fill); stroke: none; }
+.graph .g-line { fill: none; stroke: var(--graph-line); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.graph .g-scale { position: absolute; left: 0; top: 0; color: var(--text-2); font-size: var(--text-xs); line-height: 1; pointer-events: none; background: var(--surface-1); padding: 0 4px 2px 0; }
+.graph .g-cross { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-2); pointer-events: none; }
+.graph .g-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--graph-line); border: 2px solid var(--surface-1); pointer-events: none; }
+.graph .g-tip { position: absolute; top: 0; white-space: nowrap; pointer-events: none; z-index: 2; }
+.graph .g-tip b { font-weight: 700; margin-right: 6px; }
+.cores { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2) var(--space-5); margin-top: var(--space-4); --meter-label: 2ch; }
+.stack { display: flex; gap: 2px; height: 20px; margin: var(--space-2) 0 var(--space-3); }
+.stack i { display: block; border-radius: 3px; min-width: 4px; }
+.chart-title { font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); color: var(--text-2); font-size: var(--text-sm); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; }
+.legend .num { color: var(--text-1); font-weight: 600; }
+
+.machine-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px var(--space-3); }
+.machine-head strong { overflow-wrap: anywhere; }
+.machine-readings { display: grid; gap: 6px; margin-top: var(--space-2); --meter-label: 4ch; }
+.machine-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px var(--space-4); margin-top: var(--space-2); color: var(--text-2); }
+.slots { display: inline-flex; align-items: center; gap: 8px; }
+.slot-boxes { display: inline-flex; gap: 4px; }
+.net { display: inline-flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; }
+.net span { display: inline-flex; align-items: center; gap: 3px; }
+.net svg { width: 14px; height: 14px; }
+
+.lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-3); }
+.lane-note { color: var(--text-2); margin-left: auto; }
+.lane-running { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.job-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; min-width: 0; }
+.job-main { min-width: 0; display: grid; gap: 1px; }
+.job-name { font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
+.job-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+.job-branch, .job-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; color: var(--text-2); overflow-wrap: anywhere; min-width: 0; }
+.job-branch svg, .job-meta svg { width: 14px; height: 14px; }
+.job-side { display: flex; align-items: center; gap: 6px; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: min(320px, 100%); min-width: min(280px, 100%); }
+.menu-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 12px; align-items: start; width: 100%; text-align: left; background: none; border: 0; cursor: pointer; }
+.menu-item svg { grid-row: span 2; margin-top: 2px; }
+.menu-item b { font-weight: 700; }
+.menu-item small { color: var(--text-2); font-size: var(--text-sm); }
+.menu-item[data-tone="danger"] b, .menu-item[data-tone="danger"] svg { color: var(--status-danger); }
+.waits { display: grid; }
+.wait-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; min-width: 0; }
+.wait-main { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; }
+.wait-why { flex-basis: 100%; color: var(--text-2); font-size: var(--text-sm); }
+.wait-side { display: flex; align-items: center; gap: var(--space-2); }
+.wait-time { color: var(--text-2); }
+.moves { display: inline-flex; }
+.strip { display: flex; gap: 10px; align-items: flex-start; }
+.strip svg { margin-top: 1px; }
+.strip code { font-weight: 700; overflow-wrap: anywhere; }
+.tooltip { display: inline-block; white-space: nowrap; }
+.empty { display: grid; }
+
+.app { display: grid; gap: var(--app-gap); }
+.app-top { display: grid; gap: var(--app-gap); grid-template-columns: minmax(0, 1fr) minmax(240px, 280px) minmax(270px, 330px); }
+.app-side { display: grid; gap: var(--app-gap); align-content: start; }
+.p-machines .panel-body { display: grid; align-content: start; }
+
+@media (max-width: 1100px) {
+  .app-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .p-cpu { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .two-col, .demo-grid, .app-top { grid-template-columns: minmax(0, 1fr); }
+  .type-row { grid-template-columns: minmax(0, 1fr); }
+  .wait-row { grid-template-columns: auto minmax(0, 1fr); }
+  .wait-side { grid-column: 1 / -1; justify-content: space-between; }
+  .lane-note { margin-left: 0; flex-basis: 100%; }
+  .menu { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
+}
+.cores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.p-cpu { display: flex; flex-direction: column; }
+.p-cpu .panel-body { flex: 1; display: flex; flex-direction: column; }
+.p-cpu .graph { flex: 1 1 132px; min-height: 132px; }
+.menu-room .lane-running { max-width: 480px; }
+/* C: Gauge. Precise and compact: hairlines, small corners, thin meters, teal for what you can act on. */
+:root {
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --text-xs: 11.5px; --text-sm: 12.5px; --text-base: 13.5px; --text-lg: 15px; --text-xl: 20px; --text-display: clamp(34px, 5vw, 48px);
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-7: 40px; --space-8: 56px;
+  --gutter: clamp(16px, 3vw, 24px); --app-gap: 12px;
+  --radius-s: 4px; --radius-m: 6px; --radius-l: 8px; --radius-full: 999px;
+  --icon: 16px; --icon-stroke: 1.5;
+  --dur-fast: 100ms; --dur-base: 180ms; --ease: cubic-bezier(0.3, 0, 0.2, 1);
+  --shadow-1: none; --shadow-2: 0 8px 24px -6px rgba(10, 14, 18, 0.28), 0 2px 6px rgba(10, 14, 18, 0.12);
+}
+:root[data-theme="dark"] { --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7); }
+
+.doc-head h1 { font-weight: 600; letter-spacing: -0.035em; }
+.doc h2 { font-weight: 600; letter-spacing: -0.015em; }
+.doc-h3 { font-weight: 600; }
+.panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-l); }
+.panel-head { padding: 10px var(--space-3) 0; }
+.panel-head h3 { font-size: var(--text-sm); font-weight: 600; color: var(--text-2); gap: 6px; }
+.panel-note { font-size: var(--text-sm); color: var(--text-1); font-weight: 500; }
+.panel-body { padding: var(--space-3); }
+
+.btn { height: 32px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-m); font-weight: 500; font-size: var(--text-base); background: var(--surface-1); color: var(--text-1); transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.btn svg { width: 14px; height: 14px; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-secondary:hover { background: var(--surface-2); border-color: var(--text-1); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover { background: var(--surface-3); }
+.btn-danger { border-color: var(--status-danger); color: var(--status-danger); }
+.btn-danger:hover { background: var(--status-danger); color: var(--on-danger); }
+.btn:disabled { border-color: var(--border); color: var(--text-3); background: var(--surface-2); }
+.icon-btn { width: 30px; height: 30px; border: 1px solid var(--border-strong); border-radius: var(--radius-m); background: var(--surface-1); color: var(--text-1); transition: background var(--dur-fast) var(--ease); }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--surface-3); border-color: var(--text-1); }
+
+.tabs { gap: 0 var(--space-5); border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
+.tabs [role="tab"] { height: 34px; padding: 0; color: var(--text-2); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; gap: 6px; }
+.tabs [role="tab"]:hover { color: var(--text-1); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
+.tabs .count { min-width: 20px; padding: 0 5px; border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); font-size: var(--text-xs); line-height: 17px; font-weight: 500; }
+.tabs [aria-selected="true"] .count { color: var(--text-1); border-color: var(--border-strong); }
+
+.status { color: var(--text-1); font-weight: 500; }
+.status svg { color: var(--st); stroke-width: 1.75; }
+.status.icon-only svg { width: 18px; height: 18px; }
+.mod svg { width: 16px; height: 16px; }
+
+.meter { height: 6px; border-radius: 3px; }
+.meter > i { border-radius: 3px; }
+.meter-label, .meter-value { font-size: var(--text-sm); }
+.meter-value { font-weight: 500; }
+.fact { margin-top: 6px; font-size: var(--text-sm); }
+.graph { height: 120px; }
+.graph .g-line { stroke-width: 1.5; }
+.graph .g-tip, .tooltip { background: var(--text-1); color: var(--surface-0); padding: 3px 8px; border-radius: var(--radius-s); font-size: var(--text-sm); }
+.cores { gap: 6px var(--space-5); margin-top: var(--space-3); }
+
+.machine { padding: 10px 0; }
+.machine:first-child { padding-top: 0; }
+.machine + .machine { border-top: 1px solid var(--border); }
+.machine-head strong { font-weight: 600; }
+.machine-foot { font-size: var(--text-sm); }
+.slot-boxes i { width: 10px; height: 10px; border: 1px solid var(--text-2); border-radius: 2px; }
+.slot-boxes i[data-used] { background: var(--text-1); border-color: var(--text-1); }
+
+.lane-head { padding-bottom: var(--space-2); }
+.lane-head strong { font-weight: 600; font-size: var(--text-lg); }
+.lane-note { font-size: var(--text-sm); }
+.lane-running { gap: var(--space-2); }
+.job-card { gap: 10px; padding: 10px 10px 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-m); }
+.job-card .status.icon-only { margin-top: 1px; }
+.job-name { font-weight: 600; }
+.job-branch, .job-meta { font-size: var(--text-sm); }
+.job-branch { font-family: var(--font-mono); font-size: var(--text-xs); }
+.job-card .icon-btn { background: var(--surface-1); }
+.menu { background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius-l); box-shadow: var(--shadow-2); padding: 4px; }
+:root[data-theme="dark"] .menu { background: var(--surface-2); }
+.menu-item { padding: 7px 10px; border-radius: var(--radius-s); gap: 0 10px; }
+.menu-item:hover { background: var(--surface-3); }
+.menu-item b { font-weight: 600; }
+
+.waits { margin-top: var(--space-3); border-top: 1px solid var(--border); }
+.wait-row { gap: 4px var(--space-3); padding: 6px 0; border-bottom: 1px solid var(--border); }
+.pos { min-width: 2ch; color: var(--text-2); font-family: var(--font-mono); font-size: var(--text-sm); text-align: right; }
+.wait-main .job-branch { font-family: var(--font-mono); font-size: var(--text-xs); }
+.wait-time { font-size: var(--text-sm); }
+.moves .icon-btn { width: 28px; height: 28px; border-radius: 0; margin-left: -1px; }
+.moves .icon-btn:first-child { margin-left: 0; border-radius: var(--radius-m) 0 0 var(--radius-m); }
+.moves .icon-btn:last-child { border-radius: 0 var(--radius-m) var(--radius-m) 0; }
+.moves .icon-btn:hover { position: relative; }
+.moves .icon-btn:disabled { color: var(--text-3); border-color: var(--border); background: var(--surface-2); }
+.wait-side > .icon-btn { width: 28px; height: 28px; }
+
+.strip { padding: 8px 12px; border: 1px solid var(--status-warning); border-radius: var(--radius-m); background: var(--status-warning-soft); }
+.strip svg { color: var(--status-warning); margin-top: 2px; }
+.strip strong { font-weight: 600; }
+.strip[data-level="danger"] { border-color: var(--status-danger); background: var(--status-failed-soft); }
+.strip[data-level="danger"] svg { color: var(--status-danger); }
+.strip-fix { color: var(--text-2); }
+.strip code { color: var(--text-1); }
+
+.empty { gap: 2px; padding: var(--space-2) 0 0; }
+.empty-icon { color: var(--text-2); margin-bottom: 4px; }
+.empty-icon svg { width: 20px; height: 20px; }
+.empty-title { font-weight: 600; }
+.empty-hint { color: var(--text-2); font-size: var(--text-sm); }
+
+@media (pointer: coarse), (max-width: 520px) {
+  .icon-btn, .moves .icon-btn, .wait-side > .icon-btn { width: 36px; height: 36px; }
+  .btn { height: 36px; }
+  .tabs [role="tab"] { height: 40px; }
+}
+@media (max-width: 520px) { .tabs { gap: 0 var(--space-4); } }
+@media (min-width: 1101px) { .cores { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px var(--space-4); } }
+.menu-room { padding-bottom: 232px !important; }
+/* layout and the pieces the specimen does not draw yet */
+body { overflow-x: visible; min-height: 100vh; }
+[hidden] { display: none !important; }
+.status[data-still] svg { animation: none; }
+code { color: var(--text-1); }
+.only-phone { display: none; }
+
+/* The mockup's own bar: not part of the dashboard. */
+.mock-bar { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-6); align-items: flex-start; justify-content: space-between; padding: var(--space-3) var(--gutter); background: var(--surface-1); border-bottom: 1px solid var(--border-strong); }
+.mock-bar h1 { font-size: var(--text-lg); font-weight: 600; margin-bottom: var(--space-1); }
+.mock-bar p { color: var(--text-2); max-width: 92ch; font-size: var(--text-sm); }
+.mock-bar strong { color: var(--text-1); font-weight: 600; }
+.mock-ctl { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.seg { display: inline-flex; }
+.seg .btn { border-radius: 0; margin-left: -1px; }
+.seg .btn:first-child { margin-left: 0; border-radius: var(--radius-m) 0 0 var(--radius-m); }
+.seg .btn:last-child { border-radius: 0 var(--radius-m) var(--radius-m) 0; }
+.seg .btn[aria-pressed="true"] { background: var(--surface-3); border-color: var(--text-1); position: relative; font-weight: 600; }
+.phone-wrap { display: grid; justify-content: center; gap: var(--space-3); padding: var(--space-6) var(--gutter); }
+.phone { box-sizing: content-box; width: 390px; height: 844px; border: 1px solid var(--border-strong); border-radius: var(--radius-l); background: var(--surface-0); display: block; }
+html.embed .mock-bar { display: none; }
+
+/* App header (options 1 and 2) */
+.app-head { position: sticky; top: 0; z-index: 10; background: var(--surface-0); border-bottom: 1px solid var(--border); }
+.app-head-in { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-3); padding: 0 var(--gutter); min-height: 48px; }
+.brand { font-weight: 600; font-size: var(--text-lg); text-decoration: none; letter-spacing: -0.01em; }
+.ver { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-3); }
+.nav { display: flex; gap: var(--space-5); align-self: stretch; margin-left: var(--space-4); }
+.nav a { display: inline-flex; align-items: center; gap: 6px; min-height: 48px; color: var(--text-2); font-weight: 500; text-decoration: none; border-bottom: 2px solid transparent; border-top: 2px solid transparent; white-space: nowrap; }
+.nav a:hover { color: var(--text-1); }
+.nav a[aria-current="page"] { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
+.head-right { margin-left: auto; display: flex; align-items: center; gap: var(--space-2); }
+.live { display: inline-flex; gap: 6px; align-items: center; font-size: var(--text-sm); color: var(--text-2); font-weight: 500; white-space: nowrap; padding: 0 var(--space-1); }
+.live svg { color: var(--status-passed); stroke-width: 1.75; }
+.mark-btn { width: auto; padding: 0 8px; gap: 4px; display: inline-flex; align-items: center; text-decoration: none; font-weight: 600; font-size: var(--text-sm); }
+.mark-btn svg { color: var(--status-warning); stroke-width: 1.75; }
+.menu-anchor { position: relative; display: inline-flex; }
+.menu-anchor .menu { width: 300px; max-width: calc(100vw - 2 * var(--gutter)); }
+.strip { scroll-margin-top: 60px; }
+.strip code { white-space: nowrap; }
+
+.page { padding: var(--app-gap) var(--gutter) var(--space-7); display: grid; gap: var(--app-gap); }
+.page > *, [data-view] { min-width: 0; }
+.p-jobs .panel-head h3 { font-size: var(--text-lg); color: var(--text-1); }
+
+/* Machines */
+.machine-ctl { display: inline-flex; align-items: center; gap: var(--space-2); }
+.machine-ctl .icon-btn, .lane-ctl .icon-btn { width: 28px; height: 28px; }
+.machine-quiet { color: var(--text-2); font-size: var(--text-sm); margin-top: var(--space-2); }
+.machine-offers { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 6px; color: var(--text-2); font-size: var(--text-sm); }
+.machine-offers code { font-size: var(--text-xs); white-space: nowrap; padding: 0 5px; border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--surface-2); line-height: 17px; }
+
+/* Lanes, cards and rows */
+.lanes { container-type: inline-size; }
+.lanes > .lane + .lane { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.lane-sub { color: var(--text-2); font-size: var(--text-sm); margin-bottom: var(--space-2); }
+.lane-ctl { margin-left: auto; }
+.lane > .machine-readings { margin: 0 0 var(--space-2); }
+.lane > .machine-foot { margin: 0 0 var(--space-3); font-size: var(--text-sm); }
+.lane > .machine-quiet { margin: 0 0 var(--space-2); }
+.lane .waits { margin-top: 0; }
+.lane .lane-running + .waits { margin-top: var(--space-3); }
+.job-sep { color: var(--text-3); font-weight: 400; }
+.job-ref { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; min-width: 0; }
+.job-id { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--text-3); white-space: nowrap; }
+.job-meta { gap: 2px 12px; margin-top: 2px; }
+.job-meta > span, .src { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.src svg { width: 14px; height: 14px; }
+.job-cores { --meter-label: 5ch; margin-top: 6px; }
+.job-card[aria-current="true"] { background: var(--surface-3); }
+.wait-row, .job-head { position: relative; }
+.wait-src { color: var(--text-2); font-size: var(--text-sm); }
+.wait-why code { font-size: var(--text-xs); }
+.wait-time { white-space: nowrap; }
+@container (max-width: 640px) {
+  .wait-row { grid-template-columns: auto minmax(0, 1fr); }
+  .wait-side { grid-column: 2; justify-content: flex-end; }
+  .wait-side .wait-time { margin-right: auto; }
+}
+.done-list { border-top: 1px solid var(--border); }
+.done-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--space-4); padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+.done-row .status { min-width: 10ch; align-self: center; }
+.done-row .wait-main { flex: 1 1 260px; }
+.done-facts { display: inline-flex; gap: var(--space-4); color: var(--text-2); font-size: var(--text-sm); }
+
+/* Compact readings */
+.vitals { display: flex; align-items: stretch; }
+.vitals-grid { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.vital { padding: 10px var(--space-3); display: grid; gap: 6px; align-content: start; min-width: 0; }
+.vital + .vital { border-left: 1px solid var(--border); }
+.vital-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0 var(--space-2); font-size: var(--text-sm); color: var(--text-2); font-weight: 600; }
+.vital-h span { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.vital-h b { color: var(--text-1); font-weight: 600; display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
+.vital-h b svg { width: 14px; height: 14px; color: var(--status-warning); }
+.vital[data-level="warn"] .meter > i { background: var(--status-warning); }
+.vital .meter { align-self: center; margin: var(--space-2) 0; }
+.vital-s, .vital-slots { color: var(--text-2); font-size: var(--text-sm); }
+.graph.spark { height: 22px; }
+.spark .g-scale { display: none; }
+.vitals-more { align-self: center; margin: 0 var(--space-2); }
+.vitals-more[aria-expanded="true"] svg { transform: rotate(180deg); }
+.vitals-link { text-decoration: none; }
+
+/* Job page */
+.jobpage { display: grid; gap: var(--app-gap); min-width: 0; container-type: inline-size; }
+.crumb { display: inline-flex; align-items: center; gap: 6px; justify-self: start; color: var(--text-2); text-decoration: none; font-weight: 500; min-height: 28px; }
+.crumb:hover { color: var(--text-1); }
+.job-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-4); align-items: center; }
+.job-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); }
+.job-title h2 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+.job-title .status { font-size: var(--text-lg); font-weight: 600; }
+.job-title .status svg { width: 20px; height: 20px; }
+.mark-word { display: inline-flex; gap: 4px; align-items: center; font-weight: 500; white-space: nowrap; }
+.job-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.job-line { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-4); color: var(--text-2); font-size: var(--text-sm); }
+.job-line > span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.job-line svg { width: 14px; height: 14px; }
+.job-body { display: grid; gap: var(--app-gap); min-width: 0; align-items: start; }
+.job-body > * { min-width: 0; }
+@container (min-width: 900px) { .job-body.split { grid-template-columns: minmax(320px, 440px) minmax(0, 1fr); } }
+@container (max-width: 640px) { .job-head { grid-template-columns: minmax(0, 1fr); } }
+.p-stages .panel-head h3, .p-log .panel-head h3, .p-steps .panel-head h3 { color: var(--text-1); }
+.stages { display: grid; gap: var(--space-2); }
+.stage, .stage-axis { display: grid; grid-template-columns: 11ch minmax(0, 1fr) 7ch; gap: var(--space-3); align-items: center; }
+.stage-name { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.stage-name .status svg { width: 14px; height: 14px; }
+.stage-track { position: relative; height: 14px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); background-image: linear-gradient(to right, var(--border) 1px, transparent 1px); background-size: 25% 100%; }
+.stage-bar { position: absolute; top: 4px; height: 6px; border-radius: 3px; background: var(--meter-fill); left: calc(var(--from) / var(--total) * 100%); width: calc(var(--len) / var(--total) * 100%); }
+.stage-usual { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--text-1); left: calc(var(--at) / var(--total) * 100%); }
+.stage-time { text-align: right; color: var(--text-2); font-size: var(--text-sm); }
+.stage-axis { margin-top: 4px; color: var(--text-3); }
+.stage-axis > div { display: flex; justify-content: space-between; font-size: var(--text-xs); }
+.stage-axis > div span { width: 0; display: flex; justify-content: center; }
+.stage-key { display: flex; flex-wrap: wrap; gap: 4px var(--space-5); margin-top: var(--space-3); color: var(--text-2); font-size: var(--text-sm); }
+.stage-key span { display: inline-flex; gap: 6px; align-items: center; }
+.key-bar { width: 16px; height: 6px; border-radius: 3px; background: var(--meter-fill); }
+.key-tick { width: 2px; height: 12px; background: var(--text-1); }
+.p-stages .machine-readings { --meter-label: 5ch; margin-top: var(--space-4); }
+.log { font-size: var(--text-sm); line-height: 1.6; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-m); padding: var(--space-3); max-height: 420px; overflow-y: auto; }
+.log-tools { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.log-state { display: flex; gap: 6px; align-items: flex-start; margin-top: var(--space-2); color: var(--text-2); font-size: var(--text-sm); }
+.log-state svg { width: 14px; height: 14px; margin-top: 2px; }
+.icon-btn[aria-pressed="true"] { background: var(--surface-3); border-color: var(--text-1); }
+.job-details { padding: 10px var(--space-3); }
+.job-details summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); color: var(--text-2); }
+.job-details dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--space-2) var(--space-5); margin: var(--space-3) 0 0; }
+.job-details dt { color: var(--text-2); font-size: var(--text-sm); }
+.job-details dd { margin: 0; overflow-wrap: anywhere; }
+.steps li + li { border-top: 1px solid var(--border); }
+.steps summary { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; min-height: 34px; cursor: pointer; list-style: none; }
+.steps summary::-webkit-details-marker { display: none; }
+.steps .log { margin-bottom: var(--space-2); }
+
+/* Option 2: side by side */
+.two { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: var(--app-gap); align-items: start; }
+.two-side { display: grid; gap: var(--app-gap); position: sticky; top: calc(48px + var(--app-gap)); scroll-margin-top: 60px; min-width: 0; }
+.two-main { display: grid; gap: var(--app-gap); min-width: 0; }
+.two-side .cores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.two-side .p-cpu .graph { flex: 0 0 72px; min-height: 72px; height: 72px; }
+@media (min-width: 901px) { .two-side { max-height: calc(100vh - 48px - 2 * var(--app-gap)); overflow-y: auto; scrollbar-width: thin; } }
+
+/* Option 3: rail and lanes */
+.shell { display: grid; grid-template-columns: 200px minmax(0, 1fr); min-height: 100vh; }
+.rail { position: sticky; top: 0; height: calc(100vh - var(--mock-h, 0px)); display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-3); background: var(--surface-1); border-right: 1px solid var(--border); }
+.rail .brand { padding: 6px 10px; }
+.rail-links { display: grid; gap: 2px; }
+.rail-links a { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: var(--radius-m); border-left: 2px solid transparent; color: var(--text-2); font-weight: 500; text-decoration: none; }
+.rail-links a:hover { background: var(--surface-2); color: var(--text-1); }
+.rail-links a[aria-current="page"] { background: var(--surface-2); color: var(--text-1); font-weight: 600; border-left-color: var(--accent); }
+.rail-foot { margin-top: auto; display: grid; gap: var(--space-2); padding: 0 6px; }
+.rail-row { display: flex; align-items: center; justify-content: space-between; }
+.main { min-width: 0; padding: 0 var(--gutter) var(--space-7); display: grid; gap: var(--app-gap); align-content: start; }
+.main > * { min-width: 0; }
+.topbar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: var(--space-3); min-height: 48px; margin: 0 calc(-1 * var(--gutter)); padding: 0 var(--gutter); background: var(--surface-0); border-bottom: 1px solid var(--border); }
+.topbar h2 { font-size: var(--text-lg); font-weight: 600; }
+.phone-tools { align-items: center; gap: var(--space-2); }
+.layout-3 .tabs { margin-bottom: var(--app-gap); }
+.lanes.cols { container-type: normal; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--app-gap); align-items: start; }
+.col { padding: var(--space-3); container-type: inline-size; min-width: 0; }
+.col-stack { display: grid; gap: var(--app-gap); min-width: 0; }
+.cols .lane-running { grid-template-columns: minmax(0, 1fr); }
+.done-panel { padding: 0 var(--space-3); }
+.done-panel:not(:has(.done-list:not([hidden]))) { display: none; }
+.done-panel .done-list { border-top: 0; }
+.md { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: var(--app-gap); align-items: start; }
+.md > * { min-width: 0; }
+
+@media (max-width: 1100px) {
+  .lanes.cols { grid-template-columns: minmax(0, 1fr); }
+  .md { grid-template-columns: minmax(0, 1fr); }
+  .md-queue { display: none; }
+}
+@media (max-width: 900px) {
+  .two { grid-template-columns: minmax(0, 1fr); }
+  .two-side { position: static; order: 2; }
+  .layout-2 .only-phone { display: block; }
+}
+@media (max-width: 760px) {
+  .only-phone { display: block; }
+  .phone-tools.only-phone { display: inline-flex; }
+  .app-head-in { gap: 0 var(--space-2); }
+  .nav { order: 3; flex-basis: 100%; margin-left: 0; border-top: 1px solid var(--border); }
+  .nav a { min-height: 40px; }
+  .queue-btn { width: 36px; padding: 0; }
+  .menu-anchor { position: static; }
+  .app-head-in { position: relative; }
+  .menu-anchor .menu { left: var(--gutter); right: var(--gutter); top: 44px; width: auto; max-width: none; }
+  .queue-btn span { display: none; }
+  .vitals { flex-direction: column; }
+  .vitals-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .vital:nth-child(3) { border-left: 0; }
+  .vital:nth-child(n+3) { border-top: 1px solid var(--border); }
+  .vitals-more { align-self: stretch; margin: 0 var(--space-2) var(--space-2); }
+  .job-actions .btn { flex: 1 1 auto; }
+  .shell { grid-template-columns: minmax(0, 1fr); padding-bottom: 56px; }
+  .rail { position: fixed; top: auto; bottom: 0; left: 0; right: 0; z-index: 11; height: 56px; flex-direction: row; padding: 0; border-right: 0; border-top: 1px solid var(--border); }
+  .rail .brand, .rail-foot { display: none; }
+  .rail-links { flex: 1; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; }
+  .rail-links a { flex-direction: column; justify-content: center; gap: 2px; height: 56px; padding: 0; border-radius: 0; border-left: 0; border-top: 2px solid transparent; font-size: var(--text-xs); }
+  .rail-links a[aria-current="page"] { border-top-color: var(--accent); background: none; }
+  .topbar h2 { display: none; }
+}
+
+/* Menus and controls after the real dashboard (jobmenu.js, canceljob.js) */
+.menu hr { border: 0; border-top: 1px solid var(--border); margin: 4px 0; }
+.menu-item[data-tone="danger"] b { color: var(--text-1); }
+.cancel-ctl, .cancel-armed { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.cancel-note { flex-basis: 100%; color: var(--text-2); font-size: var(--text-sm); }
+.controls-said { grid-column: 1 / -1; color: var(--text-2); font-size: var(--text-sm); }
+.vitals-link .vitals { border-color: var(--border-strong); }
+/* Names wrap at words, never inside one. */
+.job-name, .job-branch, .job-meta, .machine-head strong, .lane-head strong { overflow-wrap: normal; }
+.job-branch { white-space: nowrap; }
+/* Touch sizes come last, so nothing above sets them back. */
+@media (pointer: coarse), (max-width: 520px) {
+  .icon-btn, .moves .icon-btn, .wait-side > .icon-btn, .machine-ctl .icon-btn, .lane-ctl .icon-btn, .job-card .icon-btn { width: 36px; height: 36px; }
+  .mark-btn { width: auto; }
+  .btn { height: 36px; }
+  .crumb { min-height: 36px; }
+  .steps summary { min-height: 36px; }
+  .menu-item { min-height: 36px; }
+}
+/* Job head: the title keeps its words; the controls drop under it when both do not fit. */
+.job-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-4); }
+.job-title { flex: 1 0 auto; max-width: 100%; }
+.job-title h2 { white-space: nowrap; }
+.job-actions { flex: 0 1 auto; min-width: 0; }
+.job-line, .controls-said { flex: 0 0 100%; }
+
+/* Top row: the middle column (Memory over Disk) is as tall as CPU and Machines beside it, so the
+   three bottoms line up; Memory and Disk share it in two equal halves. */
+.app-top { align-items: stretch; }
+.app-side { grid-template-rows: 1fr 1fr; align-content: stretch; }
+.app-side > .panel { display: flex; flex-direction: column; }
+
+/* Variant "Rainbow" (the paint switch): today's dashboard gradient, teal to amber to red by value,
+   on meters (segmented, as now) and on the CPU graph. Not part of Gauge; shown to compare. */
+.ramp-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+:root { --ramp-lo: #1c9c8f; --ramp-mid: #d3900f; --ramp-hi: #d4453a; }
+:root[data-theme="dark"] { --ramp-lo: #2fa89a; --ramp-mid: #e2a83c; --ramp-hi: #ec6a5f; }
+.r-lo { stop-color: var(--ramp-lo); } .r-mid { stop-color: var(--ramp-mid); } .r-hi { stop-color: var(--ramp-hi); }
+#ramp-area stop { stop-opacity: 0.42; }
+[data-paint="rainbow"] .graph .g-line { stroke: url(#ramp-line); }
+[data-paint="rainbow"] .graph .g-area { fill: url(#ramp-area); }
+[data-paint="rainbow"] .meter { background: linear-gradient(90deg, var(--ramp-lo), var(--ramp-mid) 62%, var(--ramp-hi)); border-radius: 2px; }
+[data-paint="rainbow"] .meter > i { position: absolute; inset: 0 0 0 var(--v); width: auto; background: var(--meter-track) !important; }
+[data-paint="rainbow"] .meter::after { content: ""; position: absolute; inset: 0;
+  background: repeating-linear-gradient(90deg, transparent 0 5px, var(--surface-1) 5px 7px); }
+[data-paint="rainbow"] .job-card .meter::after { background: repeating-linear-gradient(90deg, transparent 0 5px, var(--surface-2) 5px 7px); }
+[data-paint="rainbow"] .meter { height: 8px; }
+
+</style>
+</head>
+<body class="layout-1"><svg class="ramp-defs" width="0" height="0" aria-hidden="true" focusable="false"><defs>
+<linearGradient id="ramp-line" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="0"><stop offset="0" class="r-lo"/><stop offset="0.62" class="r-mid"/><stop offset="1" class="r-hi"/></linearGradient>
+<linearGradient id="ramp-area" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="0"><stop offset="0" class="r-lo"/><stop offset="0.62" class="r-mid"/><stop offset="1" class="r-hi"/></linearGradient>
+</defs></svg>
+<aside class="mock-bar" aria-label="About this mockup"><div><h1>Option 1: Monitor on top</h1>
+<p>One column: the top row you like stays whole and first (CPU graph and cores, memory, disk, machines), and the Jobs box takes the full width below it. Lanes stack, so running cards sit three across and waiting rows get one long line each.</p><p><strong>Puts first:</strong> machine load, then the queue. The safest step from today's page.</p></div>
+<div class="mock-ctl"><span class="seg" role="group"><button class="btn btn-secondary" type="button" data-set="view:queue" aria-pressed="false">Queue page</button><button class="btn btn-secondary" type="button" data-set="view:job" aria-pressed="false">Job page</button><button class="btn btn-secondary" type="button" data-set="view:ci" aria-pressed="false">CI job page</button></span>
+<span class="seg" role="group"><button class="btn btn-secondary" type="button" data-set="device:desktop" aria-pressed="false">Desktop</button><button class="btn btn-secondary" type="button" data-set="device:phone" aria-pressed="false">Phone, 390 px</button></span>
+<span class="seg" role="group"><button class="btn btn-secondary" type="button" data-set="paint:gauge" aria-pressed="false">Gauge</button><button class="btn btn-secondary" type="button" data-set="paint:rainbow" aria-pressed="false">Rainbow</button></span></div></aside>
+<div id="phone-wrap" class="phone-wrap" hidden><iframe id="phone" class="phone" title="The page at 390 px"></iframe></div>
+<div id="app"><header class="app-head"><div class="app-head-in">
+<a class="brand" href="#" data-go="queue">mulebox</a><span class="ver">0.94.0</span>
+<nav class="nav" aria-label="Views"><a href="#" data-go="queue" aria-current="page"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg><span>Queue</span></a><a href="#" data-go="queue"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg><span>History</span></a><a href="#" data-go="queue"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg><span>Statistics</span></a></nav>
+<div class="head-right"><a class="icon-btn mark-btn" href="#out-of-step" aria-label="1 thing is out of step" title="1 thing is out of step"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><span class="num">1</span></a><span class="menu-anchor" data-menu-host><button class="btn btn-secondary queue-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="queue" title="Actions for every machine and every job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg><span>Queue actions</span></button></span><span class="live" role="status" title="Connected to build-1, updating live"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg><span>Live</span></span><button class="icon-btn" type="button" data-theme-switch aria-label="Switch theme" title="Switch theme"><span class="when-dark"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg></span><span class="when-light"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></span></button></div></div></header><main class="page"><div class="strip" data-level="warning" role="status" id="out-of-step" tabindex="-1"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><div><strong>This laptop runs mulebox 0.93.4, build-1 runs 0.94.0.</strong> <span class="strip-fix">Update the laptop with <code>pipx upgrade mulebox</code>.</span></div></div><div class="app-top"><section class="panel p-cpu" aria-label="CPU"><header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg> CPU</h3><span class="panel-note num">8 cores, 41% now</span></header><div class="panel-body"><div class="graph " data-graph data-seed="7" data-unit="%" data-name="CPU"></div><div class="cores"><div class="meter-row"><span class="meter-label">0</span><div class="meter" role="meter" aria-label="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="38" style="--v:38%"><i></i></div><span class="meter-value num">38%</span></div><div class="meter-row"><span class="meter-label">1</span><div class="meter" role="meter" aria-label="1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="52" style="--v:52%"><i></i></div><span class="meter-value num">52%</span></div><div class="meter-row"><span class="meter-label">2</span><div class="meter" role="meter" aria-label="2" aria-valuemin="0" aria-valuemax="100" aria-valuenow="27" style="--v:27%"><i></i></div><span class="meter-value num">27%</span></div><div class="meter-row"><span class="meter-label">3</span><div class="meter" role="meter" aria-label="3" aria-valuemin="0" aria-valuemax="100" aria-valuenow="61" style="--v:61%"><i></i></div><span class="meter-value num">61%</span></div><div class="meter-row"><span class="meter-label">4</span><div class="meter" role="meter" aria-label="4" aria-valuemin="0" aria-valuemax="100" aria-valuenow="44" style="--v:44%"><i></i></div><span class="meter-value num">44%</span></div><div class="meter-row"><span class="meter-label">5</span><div class="meter" role="meter" aria-label="5" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33" style="--v:33%"><i></i></div><span class="meter-value num">33%</span></div><div class="meter-row"><span class="meter-label">6</span><div class="meter" role="meter" aria-label="6" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58" style="--v:58%"><i></i></div><span class="meter-value num">58%</span></div><div class="meter-row"><span class="meter-label">7</span><div class="meter" role="meter" aria-label="7" aria-valuemin="0" aria-valuemax="100" aria-valuenow="19" style="--v:19%"><i></i></div><span class="meter-value num">19%</span></div></div></div></section><div class="app-side"><section class="panel p-mem" aria-label="Memory"><header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19v-3"/><path d="M10 19v-3"/><path d="M14 19v-3"/><path d="M18 19v-3"/><path d="M8 11V9"/><path d="M16 11V9"/><path d="M12 11V9"/><path d="M2 15h20"/><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"/></svg> Memory</h3><span class="panel-note num">19.8 of 32 GB</span></header><div class="panel-body"><div class="meter-row"><span class="meter-label">Used</span><div class="meter" role="meter" aria-label="Memory used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62" style="--v:62%"><i></i></div><span class="meter-value num">62%</span></div><p class="fact"><span>Jobs</span><span class="num">11.2 GB</span></p><p class="fact"><span>Swap</span><span class="num">0 of 8 GB</span></p></div></section><section class="panel p-disk" aria-label="Disk"><header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg> Disk</h3><span class="panel-note num">38 GB free</span></header><div class="panel-body"><div class="meter-row" data-level="warn"><span class="meter-label">/home</span><div class="meter" role="meter" aria-label="Disk used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="84" style="--v:84%"><i></i></div><span class="meter-value num"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>84%</span></div><p class="fact"><span>Docker</span><span class="num">61 GB</span></p><p class="fact"><span>Containers</span><span class="num">6 running</span></p><p class="fact"><span>Overhead</span><span class="num">0.5% of a core, 44 MB</span></p></div></section></div><section class="panel p-machines" aria-label="Machines"><header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg> Machines</h3><span class="panel-note num">1 of 2 online, 0 of 5 slots free</span></header><div class="panel-body"><div class="machine"><div class="machine-head"><strong>build-1</strong><span class="machine-ctl"><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="status-word">Busy</span></span><button class="icon-btn" type="button" aria-label="Pause build-1" title="Take no new jobs here; what runs finishes"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg></button></span></div>
+<div class="machine-readings"><div class="meter-row"><span class="meter-label">CPU</span><div class="meter" role="meter" aria-label="CPU" aria-valuemin="0" aria-valuemax="100" aria-valuenow="41" style="--v:41%"><i></i></div><span class="meter-value num">41%</span></div><div class="meter-row"><span class="meter-label">Mem</span><div class="meter" role="meter" aria-label="Mem" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62" style="--v:62%"><i></i></div><span class="meter-value num">62%</span></div></div><div class="machine-foot"><span class="slots"><span class="slot-boxes" aria-hidden="true"><i data-used></i><i data-used></i><i data-used></i></span><span class="num">0 of 3 slots free</span></span><span class="net num" aria-label="Network"><span title="Coming in"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>3.4 MB/s</span><span title="Going out"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>212 KB/s</span></span></div><p class="machine-offers">Offers <code>docker</code><code>node 22</code><code>python 3.12</code></p></div>
+<div class="machine"><div class="machine-head"><strong>build-2</strong><span class="machine-ctl"><span class="status" data-state="cancelled"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.36 6.64A9 9 0 0 1 20.77 15"/><path d="M6.16 6.16a9 9 0 1 0 12.68 12.68"/><path d="M12 2v4"/><path d="m2 2 20 20"/></svg><span class="status-word">Offline</span></span><button class="icon-btn" type="button" aria-label="Pause build-2" title="Take no new jobs here; what runs finishes"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg></button></span></div>
+<p class="machine-quiet">No live data. Last seen 14 min ago.</p><div class="machine-foot"><span class="slots"><span class="slot-boxes" aria-hidden="true"><i></i><i></i></span><span class="num">2 slots</span></span></div><p class="machine-offers">Offers <code>docker</code><code>playwright</code></p></div></div></section></div>
+<div data-view="queue"><section class="panel p-jobs" aria-label="Jobs"><header class="panel-head"><h3>Jobs</h3></header><div class="panel-body" data-tabs-root><div class="tabs" role="tablist" aria-label="Job views"><button role="tab" type="button" aria-selected="true" data-tab="queue">Queue<span class="count num">8</span></button><button role="tab" type="button" aria-selected="false" data-tab="failed">Failed<span class="count num">2</span></button><button role="tab" type="button" aria-selected="false" data-tab="passed">Passed<span class="count num">38</span></button><button role="tab" type="button" aria-selected="false" data-tab="recent">Recent<span class="count num">40</span></button></div><div data-tabpanel="queue"><div class="lanes"><section class="lane " aria-label="build-1"><div class="lane-head"><strong>build-1</strong><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="status-word">Busy</span></span><span class="lane-note num">3 running</span></div><div class="lane-running"><article class="job-card" data-state="running" data-menu-host>
+<span class="status icon-only" data-state="running" role="img" aria-label="Running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span>
+<div class="job-main"><a class="job-name" href="#" data-go="job">example-app <span class="job-sep">/</span> check</a>
+<span class="job-ref"><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>feature/login</span><span class="job-id" title="Job id">a41f9c2</span></span>
+<span class="job-meta"><span class="src" title="Sent from a laptop, macOS"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>macOS</span><span title="Stage">Tests</span><span><span class="num">2m 14s</span> of usually 4m</span></span>
+<div class="job-cores"><div class="meter-row"><span class="meter-label">Cores</span><div class="meter" role="meter" aria-label="Cores this job uses, of 8" aria-valuemin="0" aria-valuemax="100" aria-valuenow="40" style="--v:40%"><i></i></div><span class="meter-value num">3.2</span></div></div>
+</div>
+<div class="job-side"><span class="mod" role="img" aria-label="Boosted" title="Boosted"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="run-boosted" aria-label="Actions for example-app / check" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></article><article class="job-card" data-state="running" data-menu-host>
+<span class="status icon-only" data-state="running" role="img" aria-label="Running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span>
+<div class="job-main"><a class="job-name" href="#" data-go="ci">docs-site <span class="job-sep">/</span> CI</a>
+<span class="job-ref"><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span><span class="job-id" title="Job id">c07e55d</span></span>
+<span class="job-meta"><span class="src" title="A GitHub CI run"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>CI</span><span title="GitHub step">Build site</span><span><span class="num">0m 41s</span> of usually 1m 30s</span></span>
+<div class="job-cores"><div class="meter-row"><span class="meter-label">Cores</span><div class="meter" role="meter" aria-label="Cores this job uses, of 8" aria-valuemin="0" aria-valuemax="100" aria-valuenow="14" style="--v:14%"><i></i></div><span class="meter-value num">1.1</span></div></div>
+</div>
+<div class="job-side"><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="run-ci" aria-label="Actions for docs-site / CI" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></article><article class="job-card" data-state="running" data-menu-host>
+<span class="status icon-only" data-state="running" data-still role="img" aria-label="Running, frozen" title="Running, frozen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span>
+<div class="job-main"><a class="job-name" href="#" data-go="job">example-api <span class="job-sep">/</span> test</a>
+<span class="job-ref"><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>fix/timeouts</span><span class="job-id" title="Job id">e93b210</span></span>
+<span class="job-meta"><span class="src" title="Sent from a laptop, Linux"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>Linux</span><span title="Stage">Services</span><span><span class="num">6m 02s</span> of usually 5m</span></span>
+<div class="job-cores"><div class="meter-row"><span class="meter-label">Cores</span><div class="meter" role="meter" aria-label="Cores this job uses, of 8" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" style="--v:0%"><i></i></div><span class="meter-value num">0.0</span></div></div>
+</div>
+<div class="job-side"><span class="mod" role="img" aria-label="Frozen" title="Frozen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="run-frozen" aria-label="Actions for example-api / test" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></article></div></section><section class="lane " aria-label="build-2"><div class="lane-head"><strong>build-2</strong><span class="status" data-state="cancelled"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.36 6.64A9 9 0 0 1 20.77 15"/><path d="M6.16 6.16a9 9 0 1 0 12.68 12.68"/><path d="M12 2v4"/><path d="m2 2 20 20"/></svg><span class="status-word">Offline</span></span><span class="lane-note num">1 waiting for it</span></div><p class="lane-sub">Offline, last seen 14 min ago. What waits for it starts when it is back.</p><ol class="waits"><li class="wait-row" data-menu-host><span class="pos num" aria-label="Position 4">4</span>
+<div class="wait-main"><a class="job-name" href="#" data-go="ci">example-api <span class="job-sep">/</span> CI</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span><span class="wait-src"><span class="src" title="A GitHub CI run"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>CI</span></span><span class="wait-why">Only build-2 has this runner, and build-2 is offline</span></div>
+<div class="wait-side"><span class="wait-time num">waiting 3m 05s</span><span class="moves" role="group" aria-label="Move example-api / CI in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="wait-4" aria-label="Actions for example-api / CI" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></li></ol></section><section class="lane " aria-label="Next free machine"><div class="lane-head"><strong>Next free machine</strong><span class="lane-note num">3 waiting</span></div><p class="lane-sub">Whichever machine is free first takes these, in this order.</p><ol class="waits"><li class="wait-row" data-menu-host><span class="pos num" aria-label="Position 1">1</span>
+<div class="wait-main"><a class="job-name" href="#" data-go="job">example-app <span class="job-sep">/</span> check</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>feature/login</span><span class="wait-src"><span class="src" title="Sent from a laptop, macOS"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>macOS</span></span><span class="wait-why">Waits for the job running on this branch</span></div>
+<div class="wait-side"><span class="wait-time num">waiting 0m 48s</span><span class="moves" role="group" aria-label="Move example-app / check in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="wait-1" aria-label="Actions for example-app / check" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></li><li class="wait-row" data-menu-host><span class="pos num" aria-label="Position 2">2</span>
+<div class="wait-main"><a class="job-name" href="#" data-go="job">example-worker <span class="job-sep">/</span> check</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>chore/deps</span><span class="wait-src"><span class="src" title="Sent from a laptop, macOS"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>macOS</span></span><span class="wait-why">Next when a slot is free on build-1</span></div>
+<div class="wait-side"><span class="wait-time num">waiting 0m 31s</span><span class="moves" role="group" aria-label="Move example-worker / check in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="wait-2" aria-label="Actions for example-worker / check" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></li><li class="wait-row" data-menu-host><span class="pos num" aria-label="Position 3">3</span>
+<div class="wait-main"><a class="job-name" href="#" data-go="job">docs-site <span class="job-sep">/</span> build</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>draft/pricing</span><span class="wait-src"><span class="src" title="Sent from a laptop, Linux"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>Linux</span></span><span class="wait-why">The project docs-site is paused. Resume it with <code>mulebox project resume docs-site</code></span></div>
+<div class="wait-side"><span class="mod" role="img" aria-label="Paused" title="Paused"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg></span><span class="wait-time num">waiting 12m 40s</span><span class="moves" role="group" aria-label="Move docs-site / build in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="wait-3" aria-label="Actions for docs-site / build" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></li></ol></section><section class="lane " aria-label="No machine fits"><div class="lane-head"><strong>No machine fits</strong><span class="status" data-state="queued"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span class="status-word">Stuck</span></span><span class="lane-note num">1 waiting</span></div><ol class="waits"><li class="wait-row" data-menu-host><span class="pos num" aria-label="Position 5">5</span>
+<div class="wait-main"><a class="job-name" href="#" data-go="job">example-app <span class="job-sep">/</span> e2e</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>feature/checkout</span><span class="wait-src"><span class="src" title="Sent from a laptop, macOS"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>macOS</span></span><span class="wait-why">Needs playwright. Only build-2 offers it, and build-2 is offline</span></div>
+<div class="wait-side"><span class="wait-time num">waiting 9m 12s</span><span class="moves" role="group" aria-label="Move example-app / e2e in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" data-menu="wait-5" aria-label="Actions for example-app / e2e" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg></button></div></li></ol></section></div></div><ol class="done-list" data-tabpanel="failed" hidden><li class="done-row"><span class="status" data-state="failed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span class="status-word">Failed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-api / test</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>fix/timeouts</span><span class=wait-why>Exit 1 in the stage run</span></div><span class="done-facts num"><span>build-1</span><span>3m 12s</span><span>11:48</span></span></li><li class="done-row"><span class="status" data-state="failed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span class="status-word">Failed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">docs-site / CI</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span><span class=wait-why>GitHub step Build site: exit code 1</span></div><span class="done-facts num"><span>build-1</span><span>0m 52s</span><span>10:31</span></span></li></ol><ol class="done-list" data-tabpanel="passed" hidden><li class="done-row"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="status-word">Passed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-app / check</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span></div><span class="done-facts num"><span>build-1</span><span>3m 51s</span><span>11:58</span></span></li><li class="done-row"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="status-word">Passed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-worker / check</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>chore/deps</span></div><span class="done-facts num"><span>build-1</span><span>1m 07s</span><span>11:52</span></span></li><li class="done-row"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="status-word">Passed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-api / CI</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span></div><span class="done-facts num"><span>build-2</span><span>2m 40s</span><span>11:20</span></span></li><li class="done-row"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="status-word">Passed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">docs-site / build</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span></div><span class="done-facts num"><span>build-1</span><span>1m 24s</span><span>11:02</span></span></li></ol><ol class="done-list" data-tabpanel="recent" hidden><li class="done-row"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="status-word">Passed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-app / check</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span></div><span class="done-facts num"><span>build-1</span><span>3m 51s</span><span>11:58</span></span></li><li class="done-row"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg><span class="status-word">Passed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-worker / check</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>chore/deps</span></div><span class="done-facts num"><span>build-1</span><span>1m 07s</span><span>11:52</span></span></li><li class="done-row"><span class="status" data-state="failed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg><span class="status-word">Failed</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-api / test</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>fix/timeouts</span><span class=wait-why>Exit 1 in the stage run</span></div><span class="done-facts num"><span>build-1</span><span>3m 12s</span><span>11:48</span></span></li><li class="done-row"><span class="status" data-state="cancelled"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/></svg><span class="status-word">Cancelled</span></span><div class="wait-main"><a class="job-name" href="#" data-go="job">example-app / e2e</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>feature/login</span><span class=wait-why>Cancelled from the dashboard</span></div><span class="done-facts num"><span>build-2</span><span>0m 38s</span><span>11:41</span></span></li></ol></div></section></div><div data-view="job" hidden><div class="jobpage">
+<a class="crumb" href="#" data-go="queue"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Back to the queue</a>
+<header class="job-head" data-menu-host>
+<div class="job-title"><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="status-word">Running</span></span><h2>example-app <span class="job-sep">/</span> check</h2><span class="mark-word"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Boosted</span></div>
+<div class="job-actions" role="group" aria-label="Job controls"><button class="btn btn-secondary" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>Pause</button><button class="btn btn-secondary" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg>End boost</button><span class="cancel-ctl"><button class="btn btn-danger" type="button" data-arm><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Cancel job</button><span class="cancel-armed" hidden><span class="cancel-note">This stops the job for whoever is waiting on it.</span><button class="btn btn-danger" type="button" data-disarm>Yes, cancel job</button><button class="btn btn-secondary" type="button" data-disarm>Keep job</button></span></span></div>
+<p class="controls-said" role="status">Boosted: it gets the machine's CPU and disk first, and the machine takes no new job until it ends.</p>
+<p class="job-line"><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>feature/login</span><span class="job-id">a41f9c2</span><span class="src" title="Sent from a laptop, macOS"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16"/></svg>macOS</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>build-1</span><span class="num">started 12:02:17</span></p>
+</header>
+<div class="job-body split"><section class="panel p-stages" aria-label="Stages"><header class="panel-head"><h3>Stages</h3><span class="panel-note num">2m 14s of usually 4m</span></header><div class="panel-body"><ol class="stages" style="--total:240"><li class="stage" title="Prepare: 2s, usually 3s"><span class="stage-name"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>Prepare</span><div class="stage-track"><i class="stage-bar" style="--from:0;--len:2"></i><i class="stage-usual" style="--at:3"></i></div><span class="stage-time num">2s</span></li><li class="stage" title="Toolchain: 1s, usually 1s"><span class="stage-name"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>Toolchain</span><div class="stage-track"><i class="stage-bar" style="--from:2;--len:1.5"></i><i class="stage-usual" style="--at:3"></i></div><span class="stage-time num">1s</span></li><li class="stage" title="Images: 16s, usually 18s"><span class="stage-name"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>Images</span><div class="stage-track"><i class="stage-bar" style="--from:3;--len:16"></i><i class="stage-usual" style="--at:21"></i></div><span class="stage-time num">16s</span></li><li class="stage" title="Services: 9s, usually 10s"><span class="stage-name"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>Services</span><div class="stage-track"><i class="stage-bar" style="--from:19;--len:9"></i><i class="stage-usual" style="--at:29"></i></div><span class="stage-time num">9s</span></li><li class="stage" title="Install: skipped, the lockfile did not change"><span class="stage-name"><span class="status" data-state="cancelled"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg></span>Install</span><div class="stage-track"></div><span class="stage-time num">skipped</span></li><li class="stage" title="Setup: 12s, usually 14s"><span class="stage-name"><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>Setup</span><div class="stage-track"><i class="stage-bar" style="--from:28;--len:12"></i><i class="stage-usual" style="--at:42"></i></div><span class="stage-time num">12s</span></li><li class="stage" title="Tests: 1m 34s so far, usually 3m 10s"><span class="stage-name"><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span>Tests</span><div class="stage-track"><i class="stage-bar" style="--from:40;--len:94"></i><i class="stage-usual" style="--at:230"></i></div><span class="stage-time num">1m 34s</span></li></ol><div class="stage-axis" aria-hidden="true"><span></span><div><span class="num">0</span><span class="num">1m</span><span class="num">2m</span><span class="num">3m</span><span class="num">4m</span></div><span></span></div><p class="stage-key"><span><i class="key-bar"></i>This run</span><span><i class="key-tick"></i>Where the stage usually ends</span></p></div></section><section class="panel p-log" aria-label="Log"><header class="panel-head"><h3>Log</h3>
+<span class="log-tools"><span class="live" title="The log stream is open"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/></svg><span>Stream open</span></span>
+<button class="icon-btn" type="button" aria-pressed="true" aria-label="Follow the newest line" title="Follow the newest line"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17V3"/><path d="m6 11 6 6 6-6"/><path d="M19 21H5"/></svg></button>
+<a class="btn btn-ghost" href="#">Full log as text</a></span></header>
+<div class="panel-body"><pre class="log" tabindex="0">12:02:19  mulebox: job a41f9c2 on build-1, branch feature/login
+12:02:21  prepare: 3 files changed, sent 1.4 KiB
+12:02:38  images: example-app-web built, 2 pulled from cache
+12:02:47  services: db healthy, cache healthy
+12:02:47  install: skipped, pnpm-lock.yaml did not change
+12:02:59  setup: migrations applied (14)
+12:03:00  $ pnpm run check
+12:03:06  tsc --noEmit: no errors
+12:03:19  eslint: 412 files, no problems
+12:03:21  vitest run
+12:03:38   PASS  src/login/session.test.ts (41 tests)
+12:03:52   PASS  src/login/form.test.ts (18 tests)
+12:03:47   PASS  src/cart/totals.test.ts (63 tests)</pre>
+<p class="log-state"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Quiet for 45 s. The job is using 3.2 cores, so it is still working.</span></p></div></section></div>
+<details class="panel job-details"><summary>Job details</summary><dl><div><dt>Client</dt><dd>laptop, macOS</dd></div><div><dt>Worker</dt><dd>build-1</dd></div><div><dt>Commit</dt><dd><code>9f2c41d07a3e</code></dd></div><div><dt>Check-in every</dt><dd>20 min</dd></div><div><dt>Toolchain</dt><dd><code>node 22.11, pnpm 9.12</code></dd></div><div><dt>Setup</dt><dd><code>pnpm run db:migrate</code></dd></div></dl></details>
+</div></div><div data-view="ci" hidden><div class="jobpage">
+<a class="crumb" href="#" data-go="queue"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Back to the queue</a>
+<header class="job-head" data-menu-host>
+<div class="job-title"><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg><span class="status-word">Running</span></span><h2>docs-site <span class="job-sep">/</span> CI</h2></div>
+<div class="job-actions" role="group" aria-label="Job controls"><button class="btn btn-secondary" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg>Pause</button><button class="btn btn-secondary" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>Boost</button><a class="btn btn-secondary" href="#"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>Follow it live on GitHub</a><span class="cancel-ctl"><button class="btn btn-danger" type="button" data-arm><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Cancel on GitHub</button><span class="cancel-armed" hidden><span class="cancel-note">GitHub is asked to cancel the run; the slot frees when the runner stops.</span><button class="btn btn-danger" type="button" data-disarm>Yes, cancel the run</button><button class="btn btn-secondary" type="button" data-disarm>Keep run</button></span></span></div>
+<p class="job-line"><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>main</span><span class="job-id">c07e55d</span><span class="src"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2"/><path d="M7 11v4a2 2 0 0 0 2 2h4"/><rect width="8" height="8" x="13" y="13" rx="2"/></svg>GitHub CI run</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>build-1</span><span class="num">started 12:13:44</span></p>
+</header>
+<div class="job-body split"><section class="panel p-stages" aria-label="Time"><header class="panel-head"><h3>Time</h3><span class="panel-note num">0m 41s of usually 1m 30s</span></header><div class="panel-body"><ol class="stages" style="--total:120"><li class="stage" title="This run: 41s so far, usually 1m 30s"><span class="stage-name"><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span>CI run</span><div class="stage-track"><i class="stage-bar" style="--from:0;--len:41"></i><i class="stage-usual" style="--at:90"></i></div><span class="stage-time num">0m 41s</span></li></ol><div class="machine-readings"><div class="meter-row"><span class="meter-label">Cores</span><div class="meter" role="meter" aria-label="Cores this job uses, of 8" aria-valuemin="0" aria-valuemax="100" aria-valuenow="14" style="--v:14%"><i></i></div><span class="meter-value num">1.1</span></div></div><p class="fact"><span>Counts the run's Compose containers</span></p></div></section><section class="panel p-steps" aria-label="Steps"><header class="panel-head"><h3>Steps</h3><span class="panel-note num">4 of 5</span></header><div class="panel-body"><ol class="steps"><li><details><summary><span class="status" data-state="passed" title="Passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span class="step-name">Set up job</span><span class="stage-time num">2s</span></summary></details></li><li><details><summary><span class="status" data-state="passed" title="Passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span class="step-name">Check out</span><span class="stage-time num">3s</span></summary></details></li><li><details><summary><span class="status" data-state="passed" title="Passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span><span class="step-name">Install dependencies</span><span class="stage-time num">14s</span></summary></details></li><li><details open><summary><span class="status" data-state="running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span><span class="step-name">Build site</span><span class="stage-time num">22s</span></summary><pre class="log">12:14:03  $ pnpm run build
+12:14:05  vite v6.0.1 building for production
+12:14:19  transforming (318) src/pages/pricing.mdx</pre></details></li><li><details><summary><span class="status" data-state="queued" title="Not started"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><span class="step-name">Upload pages</span><span class="stage-time num"></span></summary></details></li></ol><p class="log-state"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>The runner hands over a step's output in blocks, or when the step ends. GitHub has every line.</span></p></div></section></div>
+<details class="panel job-details"><summary>Job details</summary><dl><div><dt>Source</dt><dd>GitHub Actions runner on build-1</dd></div><div><dt>Workflow</dt><dd><code>ci.yml</code>, job <code>build</code></dd></div><div><dt>Commit</dt><dd><code>41be07c9d2aa</code></dd></div></dl></details>
+</div></div></main></div>
+<template id="menu-run-boosted"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg><b>Freeze</b><small>Stops it where it is, containers too; nothing is lost</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14"/></svg><b>End boost</b><small>Shares the machine again</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel job</b><small>Stops it for whoever waits on it</small></button></template><template id="menu-run-frozen"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg><b>Resume</b><small>Goes on where it stopped</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><b>Boost</b><small>Gets the CPU and disk first; nothing new starts beside it</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel job</b><small>Stops it for whoever waits on it</small></button></template><template id="menu-run-ci"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg><b>Freeze</b><small>Stops the runner and its containers; a long freeze can fail the run</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><b>Boost</b><small>Gets the CPU and disk first; nothing new starts beside it</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg><b>Open on GitHub</b><small>The run, its steps and its output there</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel the run"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel on GitHub</b><small>Asks GitHub to cancel the run; the slot frees</small></button></template><template id="menu-queue"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg><b>Pause all machines</b><small>No new job starts; what runs finishes</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12"/><line x1="12" x2="12" y1="2" y2="22"/><path d="m20 16-4-4 4-4"/><path d="m4 8 4 4-4 4"/><path d="m16 4-4 4-4-4"/><path d="m8 20 4-4 4 4"/></svg><b>Freeze 2 running jobs</b><small>Each stops where it is; nothing is lost</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"/></svg><b>Resume 1 paused job</b><small>Frozen ones go on, paused ones can start</small></button></template><template id="menu-wait-1"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg><b>Pause</b><small>Keeps its place in line but does not start</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><b>Move down one</b><small>To #2 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg><b>Move to the end</b><small>Every other waiting job goes first</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><b>Boost</b><small>Goes first, then gets its machine to itself</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel job</b><small>Stops it for whoever waits on it</small></button></template><template id="menu-wait-2"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg><b>Pause</b><small>Keeps its place in line but does not start</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg><b>Move to the front</b><small>Starts before every other waiting job</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg><b>Move up one</b><small>To #1 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><b>Move down one</b><small>To #3 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg><b>Move to the end</b><small>Every other waiting job goes first</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><b>Boost</b><small>Goes first, then gets its machine to itself</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel job</b><small>Stops it for whoever waits on it</small></button></template><template id="menu-wait-3"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg><b>Pause</b><small>Keeps its place in line but does not start</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg><b>Move to the front</b><small>Starts before every other waiting job</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg><b>Move up one</b><small>To #2 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><b>Move down one</b><small>To #4 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg><b>Move to the end</b><small>Every other waiting job goes first</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><b>Boost</b><small>Goes first, then gets its machine to itself</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel job</b><small>Stops it for whoever waits on it</small></button></template><template id="menu-wait-4"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg><b>Move to the front</b><small>Starts before every other waiting job</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg><b>Move up one</b><small>To #3 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg><b>Move down one</b><small>To #5 in line</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5"/><path d="m7 13 5 5 5-5"/></svg><b>Move to the end</b><small>Every other waiting job goes first</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg><b>Open on GitHub</b><small>The run, its steps and its output there</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel the run"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel on GitHub</b><small>Asks GitHub to cancel the run; the slot frees</small></button></template><template id="menu-wait-5"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg><b>Pause</b><small>Keeps its place in line but does not start</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5"/><path d="m17 18-5-5-5 5"/></svg><b>Move to the front</b><small>Starts before every other waiting job</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg><b>Move up one</b><small>To #4 in line</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg><b>Boost</b><small>Goes first, then gets its machine to itself</small></button><button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5"/><path d="M15 8h-5"/><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3"/></svg><b>Open its page</b><small>Its log, stages and all its details</small></button><hr role="separator"><button class="menu-item" role="menuitem" type="button" data-tone="danger" data-sure="Yes, cancel job"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg><b>Cancel job</b><small>Stops it for whoever waits on it</small></button></template>
+<script>
+// Mockup behaviour: view and width switches, theme, tabs, menus. Example data only.
+(() => {
+  const root = document.documentElement, q = new URLSearchParams(location.search);
+  const st = { view: q.get("view") || "queue", device: q.get("device") || "desktop", theme: q.get("theme") || "dark",
+               paint: q.get("paint") || "gauge" };
+  const embed = q.has("embed");
+  if (embed) root.classList.add("embed");
+  const frame = document.getElementById("phone"), app = document.getElementById("app");
+  const wrap = document.getElementById("phone-wrap");
+  if (q.get("fh")) frame.style.height = q.get("fh") + "px";
+  let frameView = null;
+  const src = () => {
+    const p = new URLSearchParams({ embed: 1, view: st.view, theme: st.theme, paint: st.paint });
+    return location.pathname.split("/").pop() + "?" + p;
+  };
+  const apply = () => {
+    root.dataset.theme = st.theme;
+    root.dataset.paint = st.paint;
+    if (embed) { /* the phone frame follows the page's paint switch */ }
+    document.querySelectorAll("[data-view]").forEach((n) => { n.hidden = n.dataset.view !== st.view; });
+    document.querySelectorAll("[data-set]").forEach((b) => {
+      const [k, v] = b.dataset.set.split(":");
+      b.setAttribute("aria-pressed", String(st[k] === v));
+    });
+    document.querySelectorAll("[data-page-title]").forEach((n) => { n.textContent = st.view === "queue" ? "Queue" : "Job"; });
+    if (embed) return;
+    const phone = st.device === "phone";
+    app.hidden = phone; wrap.hidden = !phone;
+    const key = st.view + st.paint + st.theme;
+    if (phone && frameView !== key) { frameView = key; frame.src = src(); }
+    if (!phone) frameView = null;
+  };
+  const tell = (msg) => { if (embed && parent !== window) parent.postMessage(msg, "*"); };
+  addEventListener("message", (event) => {
+    const d = event.data || {};
+    if (d.theme) st.theme = d.theme;
+    if (d.view) { st.view = d.view; frameView = d.view; }
+    apply();
+  });
+
+  const closeMenus = () => {
+    document.querySelectorAll(".menu[data-live]").forEach((m) => m.remove());
+    document.querySelectorAll('[aria-haspopup][aria-expanded="true"]').forEach((b) => b.setAttribute("aria-expanded", "false"));
+  };
+  document.addEventListener("click", (event) => {
+    const t = event.target;
+    const menuBtn = t.closest("[data-menu]");
+    if (menuBtn) {
+      const wasOpen = menuBtn.getAttribute("aria-expanded") === "true";
+      closeMenus();
+      if (!wasOpen) {
+        const menu = document.createElement("div");
+        menu.className = "menu"; menu.dataset.live = ""; menu.setAttribute("role", "menu");
+        menu.append(document.getElementById("menu-" + menuBtn.dataset.menu).content.cloneNode(true));
+        menuBtn.closest("[data-menu-host]").append(menu);
+        menuBtn.setAttribute("aria-expanded", "true");
+      }
+      return;
+    }
+    const item = t.closest(".menu-item");
+    if (item) {  // a danger item asks twice, as the real menu does
+      if (item.dataset.sure && !item.dataset.armed) {
+        item.dataset.armed = "1";
+        item.querySelector("b").textContent = item.dataset.sure;
+        item.querySelector("small").textContent = "Click again to confirm";
+      } else closeMenus();
+      return;
+    }
+    const arm = t.closest("[data-arm], [data-disarm]");
+    if (arm) {
+      const ctl = arm.closest(".cancel-ctl"), on = arm.hasAttribute("data-arm");
+      ctl.querySelector("[data-arm]").hidden = on; ctl.querySelector(".cancel-armed").hidden = !on;
+      return;
+    }
+    if (!t.closest(".menu")) closeMenus();
+    const go = t.closest("[data-go]");
+    if (go) { event.preventDefault(); st.view = go.dataset.go; tell({ view: st.view }); apply(); scrollTo(0, 0); return; }
+    const set = t.closest("[data-set]");
+    if (set) { const [k, v] = set.dataset.set.split(":"); st[k] = v; apply(); return; }
+    if (t.closest("[data-theme-switch]")) { st.theme = st.theme === "dark" ? "light" : "dark"; tell({ theme: st.theme }); apply(); return; }
+    const tab = t.closest("[data-tab]");
+    if (tab) {
+      const box = tab.closest("[data-tabs-root]");
+      box.querySelectorAll("[data-tab]").forEach((b) => b.setAttribute("aria-selected", String(b === tab)));
+      box.querySelectorAll("[data-tabpanel]").forEach((p) => { p.hidden = p.dataset.tabpanel !== tab.dataset.tab; });
+      return;
+    }
+    const toggle = t.closest("[data-toggle]");
+    if (toggle) {
+      const target = document.getElementById(toggle.dataset.toggle);
+      target.hidden = !target.hidden;
+      toggle.setAttribute("aria-expanded", String(!target.hidden));
+      return;
+    }
+    const pressed = t.closest("button[aria-pressed]:not([data-set])");
+    if (pressed) pressed.setAttribute("aria-pressed", String(pressed.getAttribute("aria-pressed") !== "true"));
+    if (t.closest('a[href="#"]')) event.preventDefault();
+  });
+  // The mockup's own bar sits above the app; the rail must not count it as part of the window.
+  const bar = document.querySelector(".mock-bar");
+  const fit = () => root.style.setProperty("--mock-h", Math.max(0, bar.getBoundingClientRect().bottom) + "px");
+  addEventListener("scroll", fit, { passive: true }); addEventListener("resize", fit); fit();
+  document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMenus(); });
+  apply();
+
+})();
+
+// Live line graph: one series, a crosshair that snaps to the nearest sample, a new sample every 2 s.
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const SHAPE = "line";
+  const N = 60, W = 600, H = 100;
+  const make = (tag, attrs) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    return node;
+  };
+  document.querySelectorAll("[data-graph]").forEach((host) => {
+    let seed = Number(host.dataset.seed) || 1;
+    const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    let value = 40;
+    const next = () => { value = Math.max(6, Math.min(94, value + (rand() - 0.5) * 22)); return Math.round(value); };
+    const data = Array.from({ length: N }, next);
+    const unit = host.dataset.unit || "", name = host.dataset.name || "";
+
+    const svg = make("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img" });
+    svg.append(make("line", { class: "g-grid", x1: 0, x2: W, y1: 0.5, y2: 0.5 }),
+               make("line", { class: "g-grid", x1: 0, x2: W, y1: H / 2, y2: H / 2 }),
+               make("line", { class: "g-grid", x1: 0, x2: W, y1: H - 0.5, y2: H - 0.5 }));
+    const area = make("path", { class: "g-area" }), line = make("path", { class: "g-line" });
+    svg.append(area, line);
+    const scale = Object.assign(document.createElement("span"), { className: "g-scale", textContent: "100" + unit });
+    const cross = Object.assign(document.createElement("i"), { className: "g-cross", hidden: true });
+    const dot = Object.assign(document.createElement("i"), { className: "g-dot" });
+    const tip = Object.assign(document.createElement("span"), { className: "g-tip", hidden: true });
+    host.append(svg, scale, cross, dot, tip);
+    host.tabIndex = 0;
+
+    const x = (i) => (i / (N - 1)) * W, y = (v) => H - (v / 100) * H;
+    const draw = () => {
+      let d = "";
+      data.forEach((v, i) => {
+        if (i === 0) d += `M${x(i)},${y(v)}`;
+        else if (SHAPE === "step") d += `H${x(i)}V${y(v)}`;
+        else d += `L${x(i)},${y(v)}`;
+      });
+      line.setAttribute("d", d);
+      area.setAttribute("d", `${d}V${H}H0Z`);
+      svg.setAttribute("aria-label", `${name} over the last 2 minutes, now ${data[N - 1]}${unit}`);
+      place(dot, N - 1);
+    };
+    const place = (node, i) => {
+      node.style.left = (i / (N - 1)) * 100 + "%";
+      if (node === dot) node.style.top = (1 - data[i] / 100) * 100 + "%";
+    };
+    let hover = null;
+    const show = (i) => {
+      hover = i;
+      cross.hidden = tip.hidden = false;
+      place(cross, i); place(dot, i);
+      const ago = (N - 1 - i) * 2;
+      tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: data[i] + unit }),
+                          document.createTextNode(ago ? `${ago} s ago` : "now"));
+      const left = (i / (N - 1)) * host.clientWidth;
+      const room = host.clientWidth - tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(room, left - tip.offsetWidth / 2)) + "px";
+    };
+    const hide = () => { hover = null; cross.hidden = tip.hidden = true; place(dot, N - 1); };
+    host.addEventListener("pointermove", (event) => {
+      const box = host.getBoundingClientRect();
+      show(Math.max(0, Math.min(N - 1, Math.round(((event.clientX - box.left) / box.width) * (N - 1)))));
+    });
+    host.addEventListener("pointerleave", hide);
+    host.addEventListener("focus", () => show(N - 1));
+    host.addEventListener("blur", hide);
+    host.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") show(Math.max(0, (hover ?? N - 1) - 1));
+      if (event.key === "ArrowRight") show(Math.min(N - 1, (hover ?? N - 1) + 1));
+    });
+    draw();
+    setInterval(() => { data.shift(); data.push(next()); draw(); if (hover !== null) show(hover); }, 2000);
+  });
+})();
+</script>
+</body>
+</html>

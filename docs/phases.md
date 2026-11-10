@@ -414,9 +414,11 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       2026-11-10): open its page, open on GitHub, Freeze or Resume and Boost or End boost once it runs,
       Cancel on GitHub (`gh run cancel` on the machine). Built 0.95.0, with tests. Done when: on a real
       CI run in Edge, each item does what it says on the machine and on GitHub.
-- [ ] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
-      with data; the top row (CPU, memory, disk, machines) stays. Done when: the user picks a design
-      and it runs on the real dashboard in Edge.
+- [~] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
+      with data; the top row (CPU, memory, disk, machines) stays. 2026-11-10: of three layouts in Gauge
+      the user picked "Monitor on top" (design-system/dashboard-mockup.html), with Memory and Disk of
+      equal height, and both meter styles, Gauge and Rainbow, for the viewer to choose (design-system.md).
+      Done when: it runs on the real dashboard in Edge.
 - [ ] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
       Next.js was weighed and left out: it would need Node and a second server on every machine).
       Built at release time into static files that the existing aiohttp server serves, so no Node

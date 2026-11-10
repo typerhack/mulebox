@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.95.3 - 2026-11-10 - patch
+- Design system: two meter styles, Gauge (one solid fill) and Rainbow (the old dashboard's teal to amber to red ramp, segmented), chosen per browser beside the theme switch; the ramp colours are tokens in tokens.css. The user's choice after seeing both.
+- The dashboard layout the user picked, "Monitor on top", kept as docs/design-system/dashboard-mockup.html for M14.1 and M14.10.
+
 ## 0.95.2 - 2026-11-10 - patch
 - A job of a paused or held project no longer holds a GitHub run back: it keeps its place in line but may not start, as a paused job already did (reservations.ahead). Found on the real machine, where a CI run waited with both slots free behind three jobs of paused projects.
 

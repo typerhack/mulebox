@@ -9,6 +9,9 @@ here.
   repeat them.
 - Picture: [design-system/specimen.html](design-system/specimen.html), every component in both
   themes. Open it in a browser. Where it and tokens.css differ, tokens.css wins.
+- The dashboard in this system: [design-system/dashboard-mockup.html](design-system/dashboard-mockup.html),
+  the layout the user picked ("Monitor on top", 2026-11-10), with its Queue, job and CI job pages,
+  a 390 px view and both meter styles. It is the picture M14.1 and M14.10 build.
 
 ## The idea
 
@@ -33,6 +36,7 @@ Every color is a role. A role is used only for what its name says.
 | Strip tints | `--status-warning-soft`, `--status-failed-soft` | the background of the warning and danger strips, nothing else |
 | Meters and graph | `--meter-track`, `--meter-fill`, `--graph-line` | resource meters and the CPU line |
 | Chart series | `--chart-1` to `--chart-6` | charts with more than one series, in this fixed order |
+| Load ramp | `--ramp-lo`, `--ramp-mid`, `--ramp-hi` | the Rainbow meter style only (below) |
 
 - Status color sits on the icon only. The word beside it stays in `--text-1`.
 - Frozen, paused and boosted are marks on a job, not results: they are drawn in ink
@@ -48,6 +52,24 @@ Every color is a role. A role is used only for what its name says.
 Contrast: every text and control pair passes WCAG AA in both themes (64 of 64 pairs, checked
 from the token values; the table is in the specimen). Panel hairlines sit near 1.4:1 on purpose,
 as decoration; anything you can press uses `--border-strong`.
+
+## Meter styles
+
+Two styles for load: resource meters (CPU per core, memory, disk, a machine's CPU and memory, a
+card's cores) and the CPU graph. Each viewer picks one; the choice is remembered per browser,
+like the theme, with a switch beside the theme switch. Decided by the user on 2026-11-10 after
+seeing both: Rainbow looked best to them in light, Gauge in dark, and they want the viewer to
+choose.
+
+- **Gauge**: one solid fill, `--meter-fill`, on a `--meter-track`; the graph in `--graph-line`
+  with a faint fill. A meter turns warning and danger at the thresholds above.
+- **Rainbow**: the load ramp of the dashboard before Gauge. Meters are segmented (5px blocks,
+  2px gaps) and coloured by position from `--ramp-lo` through `--ramp-mid` (at 62%) to
+  `--ramp-hi`, so how full a meter is shows in its colour; the graph's line and area take the
+  same ramp from bottom to top, the area at about 40% opacity.
+- Only load uses the ramp. Job states, strips, buttons and everything else follow the rest of
+  this page in both styles; the ramp is the one allowed exception to "status colour only for
+  status", and only for load.
 
 ## Type
 
@@ -143,5 +165,6 @@ Found in a review of the proposal (2026-11-10), to settle in the first React com
   they move to 8px and 12px.
 - Controls are 28 to 32px with a pointer and 36px on touch screens, smaller than the common 44px.
   Check them in real use before keeping them.
+- The meter style switch: where it sits and its icon, drawn with the dashboard mockups.
 - Not drawn yet: a running job that is also frozen or boosted, the Resume and Unboost menu
   items, the stage waterfall and the live log as components.

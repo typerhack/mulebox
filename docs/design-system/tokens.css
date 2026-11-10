@@ -47,6 +47,10 @@
 
 /* Light colors. */
 :root {
+  /* Load ramp, for the "Rainbow" meter style only (design-system.md, Meter styles). */
+  --ramp-lo: #1c9c8f;
+  --ramp-mid: #d3900f;
+  --ramp-hi: #d4453a;
   --surface-0: #f3f5f7;
   --surface-1: #ffffff;
   --surface-2: #f0f2f5;
@@ -84,6 +88,9 @@
 /* Dark colors, chosen in the page. */
 :root[data-theme="dark"] {
   --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7);
+  --ramp-lo: #2fa89a;
+  --ramp-mid: #e2a83c;
+  --ramp-hi: #ec6a5f;
   --surface-0: #0f1317;
   --surface-1: #151a20;
   --surface-2: #1c232b;
@@ -122,6 +129,9 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7);
+    --ramp-lo: #2fa89a;
+    --ramp-mid: #e2a83c;
+    --ramp-hi: #ec6a5f;
     --surface-0: #0f1317;
     --surface-1: #151a20;
     --surface-2: #1c232b;
