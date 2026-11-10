@@ -14,7 +14,7 @@ from typing import Any
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Outcome
-from mulebox.coordinator import holds, queue, upgrades, workers
+from mulebox.coordinator import holds, project_pause, queue, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -98,7 +98,7 @@ def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
     if job["state"] != JobState.QUEUED or ahead(conn, job) > 0 or holds.draining(conn, now):
         return job
     worker = job["pinned_worker"]
-    if upgrades.blocks(conn, worker, job):
+    if upgrades.blocks(conn, worker, job) or job["project"] in project_pause.paused(conn, now):
         return job
     if queue.active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots):
         return job

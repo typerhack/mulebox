@@ -51,6 +51,10 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
                 "nothing new starts there meanwhile")
     if job.get("paused"):
         return PAUSED_REASON
+    from mulebox.coordinator import project_pause
+
+    if (until := project_pause.paused(conn, now).get(job["project"])) is not None:
+        return project_pause.reason(job["project"], until)
     if holds.draining(conn, now):
         return holds.DRAIN_REASON
     if (upgrade := upgrades.ahead_of(conn, job)) is not None:

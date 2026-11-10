@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.90.0 - 2026-11-10 - minor
+- Pause whole projects: `mulebox project pause <name>... [--minutes N]`, `resume`, `paused`. None of a paused project's jobs or GitHub runs starts, they keep their place and say why, and the rest of the queue goes on; a pause ends by itself (60 min by default, a day at most). Wire message `project_pause`. Asked by the user, to keep real projects off the machine during drills.
+- Job cards and waiting rows have the three dots again (the user's call: the "Actions" button broke a card's layout), bolder and on the same line as the time; "Queue actions" keeps its words.
+
 ## 0.89.3 - 2026-11-10 - patch
 - A running card keeps "of usually" beside its time (0.89.2 hid it, against M14.6); the Actions button goes under the time when the card is narrow.
 

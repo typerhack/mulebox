@@ -1,4 +1,4 @@
-// "Actions" menus on the Jobs box: one on every job card and waiting row, and "Queue actions"
+// Actions menus on the Jobs box: three dots on every job card and waiting row, and "Queue actions"
 // beside the tabs for everything at once. Each item sends the same request as its command
 // (`mulebox pause|resume|first|up|down|last|boost|normal|cancel`, `mulebox machine pause|resume`).
 //
@@ -23,6 +23,7 @@ const ICON = {
   open: "M9.5 2.5h4v4M13.5 2.5 7.75 8.25M11.5 9.5v4h-9v-9h4",
   cancel: "M8 1.75a6.25 6.25 0 1 0 0 12.5 6.25 6.25 0 0 0 0-12.5ZM5.75 5.75l4.5 4.5M10.25 5.75l-4.5 4.5",
   chevron: "M4.5 6.25 8 9.75l3.5-3.5",
+  dots: "M2.25 8a1.75 1.75 0 1 0 3.5 0 1.75 1.75 0 1 0-3.5 0ZM6.25 8a1.75 1.75 0 1 0 3.5 0 1.75 1.75 0 1 0-3.5 0ZM10.25 8a1.75 1.75 0 1 0 3.5 0 1.75 1.75 0 1 0-3.5 0Z",
   ...MOVE_SHAPES,
 };
 
@@ -175,11 +176,14 @@ document.addEventListener("click", (event) => {
 });
 window.addEventListener("resize", () => close());
 
+// A job's button is the three dots, small enough to sit beside its time; the queue's has words.
 function menuButton(key, text, label) {
-  const made = el("button", { type: "button", class: "menu-button", "data-menu": key, title: label,
-                              "aria-label": label, "aria-haspopup": "menu",
-                              "aria-expanded": open?.key === key ? "true" : "false" },
-                  el("span", { text }), drawIcon(ICON.chevron, "chevron"));
+  const parts = text ? [el("span", { text }), drawIcon(ICON.chevron, "chevron")]
+                     : [drawIcon(ICON.dots, "dots")];
+  const made = el("button", { type: "button", class: text ? "menu-button" : "menu-button dots-button",
+                              "data-menu": key, title: label, "aria-label": label,
+                              "aria-haspopup": "menu", "aria-expanded": open?.key === key ? "true" : "false" },
+                  ...parts);
   made.addEventListener("click", () => show(key, made));
   return made;
 }
@@ -200,7 +204,7 @@ export function jobMenu(job) {
   if (!token || !(job.kind === "job" || upgradeWaits) || job.cancel_requested
       || !(WAITING.has(job.state) || RUNNING.has(job.state))) return null;
   latest.set(job.job_id, { kind: "job", job });
-  return menuButton(job.job_id, "Actions", `Actions for ${job.project ?? "job"} ${job.job_id}`);
+  return menuButton(job.job_id, null, `Actions for ${job.project ?? "job"} ${job.job_id}`);
 }
 
 // "Queue actions": every machine and every job at once.

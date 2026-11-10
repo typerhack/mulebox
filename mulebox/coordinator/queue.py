@@ -18,7 +18,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, upgrades, workers
+from mulebox.coordinator import holds, project_pause, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -57,7 +57,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 or holds.draining(conn, now) or boosted_on(conn, worker)):
             return None
         blocker = oldest_reservation(conn, worker)
-        on_hold = holds.held(conn, now)
+        on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         for job in st.select_jobs(conn, "state = ? AND kind = ?",

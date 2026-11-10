@@ -426,6 +426,9 @@ mulebox boost <job-id>      # the job gets the machine's CPU and disk first, and
                             # machine takes no new job until it ends
 mulebox normal <job-id>     # ends the boost; the job keeps its place in line
 mulebox machine pause <name>    # the same as `machine drain`: no new jobs there
+mulebox project pause <name>... [--minutes 60]  # none of these projects' jobs or CI runs
+                                # starts; the rest go on; ends by itself
+mulebox project resume <name>...   # and `mulebox project paused` lists them
 mulebox machine resume <name>
 ```
 
