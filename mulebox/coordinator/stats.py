@@ -70,7 +70,8 @@ def summary(conn: sqlite3.Connection, start: float, end: float, now: float,
             day_starts: list[float] | None = None) -> dict[str, Any]:
     """Job minutes in [start, end) with `filters` (GROUPS names to one value each): the total,
     one breakdown per name in `by`, and per day when `day_starts` (ascending, the first at or
-    after `start`) is given, each day ending at the next start or at `end`."""
+    after `start`) is given, each day ending at the next start or at `end`, with its seconds
+    split by kind (`kinds`)."""
     where, params = _filters(filters or {})
     sql, ranged = _ranged(start, end, now, where, params)
     first = conn.execute(f"SELECT MIN(started_at) FROM jobs WHERE {where}", params).fetchone()[0]
@@ -78,7 +79,9 @@ def summary(conn: sqlite3.Connection, start: float, end: float, now: float,
     edges = [*(day_starts or []), end]
     for day, after in zip(edges, edges[1:]):
         day_sql, day_params = _ranged(day, after, now, where, params)
-        days.append({"from": day, **_row(_sums(conn, day_sql, day_params, None)[0])})
+        kinds = {row["key"]: round(row["seconds"], 1) for row in _sums(conn, day_sql, day_params, "kind")}
+        days.append({"from": day, **_row(_sums(conn, day_sql, day_params, None)[0]),
+                     "kinds": {kind: kinds.get(kind, 0.0) for kind in KINDS}})
     return {
         "from": start, "to": end, "now": now, "first_started_at": first,
         "filters": {name: value for name, value in (filters or {}).items() if value},

@@ -420,12 +420,14 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       Done when: the dashboard runs from the React build on the real machine in Edge, with every
       view and control of today, and its overhead on the machine measured no higher than now
       (about 0.5% of a core and 50 MB, M2.3).
-- [~] M14.11 Job minutes (the user's ask, 2026-11-10, with a second opinion from another model):
+- [x] M14.11 Job minutes (the user's ask, 2026-11-10, with a second opinion from another model):
       how long jobs ran, GitHub runs and mulebox's own, today and since the first job, filtered
       and broken down by kind, project, source and machine. Built 0.92.0: `coordinator/stats.py`,
-      the `stats` request, `mulebox stats` and `/api/stats`. Next: the page, from a design the
-      user picks. Done when: the page runs on the real dashboard in Edge and its numbers match
-      `mulebox stats` on the real history.
+      the `stats` request, `mulebox stats` and `/api/stats`. The page 0.93.0, design A of three
+      the user was shown. Done when: the page runs on the real dashboard in Edge and its numbers match
+      `mulebox stats` on the real history. Done 2026-11-10 (0.93.0): in real Edge on the deployed
+      dashboard, all time 38h 30m in 1104 runs and today 10h 37m in 221, GitHub alone 8h 40m in 183
+      and 2h 17m in 38, as `mulebox stats` gave; both themes; nothing past the edge at 390 px.
 - [x] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
       VPN tunnel once. Built 2026-11-10 (0.84.0): workers report in and out over physical interfaces
       only, shown by `mulebox machine list`. Run on the real machine: a 30 MB download read 849 KiB/s

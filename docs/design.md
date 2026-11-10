@@ -187,7 +187,7 @@ table only when real adoption shows something that belongs in neither place.
 
 ## Job minutes
 
-`mulebox stats` and the dashboard's statistics (`/api/stats`) answer how long jobs ran, from
+`mulebox stats` and the dashboard's Statistics page (`/api/stats`) answer how long jobs ran, from
 one module, `coordinator/stats.py`, so the two never disagree. The measure is wall time on a
 machine, added up: two jobs side by side for ten minutes count twenty. It is not CPU time and
 not time saved. Agent jobs count from their start to the end of their command, GitHub runs

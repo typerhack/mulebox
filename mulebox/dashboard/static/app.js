@@ -8,6 +8,7 @@ import { historyView, queueView, tick, tickLeft } from "./jobs.js";
 import { liveStream } from "./live.js";
 import { Machine } from "./machine.js";
 import { renderMachines } from "./machines.js";
+import { statsView } from "./statsview.js";
 import { renderVersions } from "./versions.js";
 
 const work = document.getElementById("work");
@@ -41,13 +42,14 @@ function navigate() {
   closeView?.();
   closeView = null;
   route = location.hash.replace(/^#\/?/, "");
-  const name = route.startsWith("history") ? "history" : "queue";
+  const name = ["history", "stats"].find((page) => route.startsWith(page)) ?? "queue";
   document.querySelectorAll("[data-nav]").forEach((link) => {
     if (link.dataset.nav === name) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
   });
   if (route.startsWith("job/")) closeView = jobView(work, decodeURIComponent(route.slice(4)));
   else if (route === "history") historyView(work);
+  else if (route === "stats") closeView = statsView(work);
   else showQueue();
 }
 

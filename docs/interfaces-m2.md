@@ -64,6 +64,16 @@ Job steps). `mulebox status` shows them, and the job view as a waterfall with `s
 watch stream's last `status_ok` and its `result` have `stage` when a job ended badly in a known
 stage (`steps.failed_stage`), and `job_event` puts it in the `finished` event.
 
+## Statistics page (`static/statsview.js`, `static/statschart.js`, `static/stats.css`)
+
+`#/stats`, under the top row like every page. Filters (type, project, source, machine) on top;
+today and all time side by side, each with its split between mulebox jobs and GitHub Actions
+and what is apart (runs still going, runs with no recorded length); a note that run time is
+added up; the last 14 days as stacked columns; one table, by project, type, source, machine or
+job name, for today or all time, the top 8 with a way to show all. Two `/api/stats` requests
+per change, with this browser's own midnights; again each minute while the page is open. The
+design is option A of three the user was shown on 2026-11-10.
+
 ## Processes and access
 
 - `mulebox dashboard serve` runs on the coordinator machine as the user service
@@ -251,6 +261,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |
 | `GET /api/events` | queue, machines and metrics, SSE (below) |
 | `GET /api/metrics` | `{history, drops}`: the kept samples and viewers dropped so far |
+| `GET /api/stats?from=&to=&day_starts=&by=&project=&job=&client=&worker=&kind=` | job minutes, the `stats_ok` body of interfaces-m1.md (`day_starts` and `by` comma-separated); 400 on a bad value |
 
 Bad numbers in `limit` or `before` give 400. An unusable offset or event id is ignored.
 

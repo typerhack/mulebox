@@ -44,6 +44,7 @@ def test_a_run_across_midnight_counts_on_both_days(store, staging):
     with store.read() as conn:
         found = stats.summary(conn, DAY, 3 * DAY, 10 * DAY, day_starts=[DAY, 2 * DAY])
     assert [day["seconds"] for day in found["days"]] == [120.0, 180.0]
+    assert found["days"][0]["kinds"] == {"job": 120.0, "runner": 0.0}
     assert found["total"]["seconds"] == 300.0
     assert total(store, 3 * DAY, 4 * DAY)["total"]["runs"] == 0
 

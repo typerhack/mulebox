@@ -162,6 +162,21 @@ export function badge(state) {
 
 // An icon, drawn here because `el` cannot make SVG. Decoration: the word beside it carries
 // the meaning.
+// An outline icon on a 24 grid from one or more stroked paths (stats.css sizes and strokes it).
+export function drawOutline(paths, name) {
+  const ns = "http://www.w3.org/2000/svg";
+  const icon = document.createElementNS(ns, "svg");
+  icon.setAttribute("viewBox", "0 0 24 24");
+  icon.setAttribute("aria-hidden", "true");
+  icon.classList.add("outline", name);
+  for (const d of [paths].flat()) {
+    const shape = document.createElementNS(ns, "path");
+    shape.setAttribute("d", d);
+    icon.append(shape);
+  }
+  return icon;
+}
+
 export function drawIcon(path, name) {
   const ns = "http://www.w3.org/2000/svg";
   const icon = document.createElementNS(ns, "svg");
