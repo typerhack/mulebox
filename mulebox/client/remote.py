@@ -49,8 +49,9 @@ class StreamEnded(CoordinatorError):
     """A watch stream stopped before its result; reconnecting gets the rest."""
 
 
-def request(kind: MessageType, **body: Any) -> Message:
-    return Message(kind, new_id("req"), body)
+def request(type_: MessageType, /, **body: Any) -> Message:
+    """A request; any body field name works, `kind` and `type_` too (`mulebox stats --kind`)."""
+    return Message(type_, new_id("req"), body)
 
 
 def remote_program(remote_bin: str) -> str:

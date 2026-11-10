@@ -31,3 +31,8 @@ def test_render():
     assert any(line.strip().startswith("GitHub") for line in lines)
     assert sc.render({"first_started_at": None, "filters": {"project": "x"}}, "project") == [
         "No job has run yet that fits these filters."]
+
+
+def test_a_kind_filter_reaches_the_body():
+    from mulebox.client.remote import request
+    assert request(sc.MessageType.STATS, kind="runner").body == {"kind": "runner"}
