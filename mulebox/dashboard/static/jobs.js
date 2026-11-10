@@ -122,8 +122,8 @@ export function queueView(box, snapshot, machines) {
   if (!snapshot) panel.append(el("p", { class: "empty", text: "waiting for data" }));
   else if (tab.id === "queue") panel.append(lanesView(snapshot, machines));
   else panel.append(...table(tab, snapshot));
-  const note = el("span", { class: "jobs-note" }, fleetNote(machines), queueMenu(snapshot, machines));
-  fill(box, "Jobs", note, tabs(snapshot, box, machines), panel);
+  const bar = el("div", { class: "jobs-bar" }, tabs(snapshot, box, machines), queueMenu(snapshot, machines));
+  fill(box, "Jobs", fleetNote(machines), bar, panel);
   followMenu();
   if (focused) box.querySelector(`[data-tab="${current}"]`)?.focus();
 }

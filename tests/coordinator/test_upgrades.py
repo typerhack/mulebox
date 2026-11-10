@@ -119,3 +119,12 @@ def test_an_installing_upgrade_is_not_cancelled(store, staging):
     assert ask(store, staging, action="turn", job_id=upgrade)["go"] is True
     reply = api.handle(store, staging, request("cancel", job_id=upgrade), 1001.0)
     assert reply.type == "error" and "installing" in reply.body["message"]
+
+
+def test_a_job_behind_it_says_why_it_waits(store, staging):
+    upgrade = line_up(store, staging, now=1.0)["job_id"]
+    waiting = queued(store, staging, now=2.0)
+    body = api.handle(store, staging, request("status", job_id=waiting), 3.0).body
+    assert upgrade in body["waiting_for"] and "upgrade of wrk-a" in body["waiting_for"]
+    own = api.handle(store, staging, request("status", job_id=upgrade), 3.0).body
+    assert "installs once the jobs running on wrk-a end" in own["waiting_for"]

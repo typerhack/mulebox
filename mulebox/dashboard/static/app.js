@@ -1,6 +1,7 @@
 // Dashboard start-up: the one event stream, the hash routes, the theme switch and the
 // once-a-second tick.
 
+import { actionToken } from "./access.js";
 import { getJson } from "./format.js";
 import { jobView } from "./jobdetail.js";
 import { historyView, queueView, tick, tickLeft } from "./jobs.js";
@@ -133,6 +134,14 @@ setInterval(() => {
   tickLeft(document, snapshot, age());
 }, 1000);
 navigate();
+// The controls (menus, arrows, machine buttons) need the page's token, which can come after
+// the first draw; draw again once it is here, as the queue may not change for a while. The
+// modules that use it took it from the same promise first.
+actionToken().then((token) => {
+  if (!token) return;
+  if (machines) renderMachines(document.getElementById("machines"), machines);
+  if (route === "") showQueue();
+});
 getJson("/healthz").then((health) => {
   document.getElementById("version").textContent = health.version;
   const signout = document.getElementById("signout");

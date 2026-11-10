@@ -60,6 +60,16 @@ def blocks(conn: sqlite3.Connection, worker: str, row: dict[str, Any]) -> bool:
     return False
 
 
+def ahead_of(conn: sqlite3.Connection, row: dict[str, Any]) -> dict[str, Any] | None:
+    """A waiting or installing upgrade that comes before `row` in line, if any."""
+    marks = ", ".join("?" * len(_PENDING))
+    for upgrade in st.select_jobs(conn, f"kind = ? AND state IN ({marks})",
+                                  (UPGRADE_KIND, *_PENDING), queue.QUEUE_ORDER):
+        if upgrade["state"] != JobState.QUEUED or _key(upgrade) < _key(row):
+            return upgrade
+    return None
+
+
 def _due(conn: sqlite3.Connection, upgrade: dict[str, Any]) -> bool:
     """The machine runs nothing, and nothing ahead in line could start there first."""
     worker = upgrade["pinned_worker"]

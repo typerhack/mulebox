@@ -497,12 +497,15 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       --when-idle` with a job running: the job finished and passed, a job queued meanwhile said why it
       waited and ran after, and the upgrade passed. CI runs wait too (tests).
 - [-] M16.4 Reuse a passed result: moved to M18.3, the user wants it now.
-- [~] M16.5 An upgrade as an entry in the waiting list (the user's idea, 2026-11-10): sent from the
+- [x] M16.5 An upgrade as an entry in the waiting list (the user's idea, 2026-11-10): sent from the
       laptop and left, it waits its turn like a job, shown in the queue and on the dashboard, then
       applies once the machine's slots are all free, and the line goes on after it. Next in line by
       default (the user: "dont start a new job till update is done"), `--behind` after the jobs
       already waiting. Built 2026-11-10 (0.89.0): `mulebox setup <machine> --queued`, schema
-      unchanged, with tests. Done when: a real queued upgrade on the machine with jobs running.
+      unchanged, with tests. Done 2026-11-10 (0.89.0): on the real machine the laptop was free in
+      1.3 s; with a job running, the upgrade waited at #1 and a job sent after it waited with a slot
+      free; when the job ended it installed in 14 s with the installer's output as its log, and a
+      real job and a CI run started right after. No bundle or unit was left.
 
 ## M18: Jobs that respect the agent's time
 From the user on 2026-11-06. Comes first: mulebox must beat an agent running directly on the machine.

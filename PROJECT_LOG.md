@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.89.1 - 2026-11-10 - patch
+- Actions menus, after the user's review: a bordered "Actions" button with a chevron on each card and row (the dots were hard to see), "Queue actions" beside the tabs instead of on the box border, and every item with an outline icon, a bold name and one line on what it does, grouped, listing only what applies now.
+- The page draws its controls once its token arrives; before, a quiet queue showed no menus or arrows after a reload.
+- A job behind an upgrade says so (`waiting_for`), and the upgrade says what it waits for; the dashboard shows such reasons plainly, keeping the red "stuck" badge for jobs nothing can run.
+- Roadmap: M16.5 done on the real machine.
+
 ## 0.89.0 - 2026-11-10 - minor
 - Queued upgrades (M16.5, the user's idea): `mulebox setup <machine> --queued` sends the new version and returns; on the machine it is a row in the line, "mulebox upgrade to X", next by default (nothing new starts there, the running jobs end, it installs, the line goes on) or `--behind` the jobs already waiting. A waiter unit on the machine asks for its turn and installs; the installed mulebox reports the result and the installer's output as the row's log. It shows in `mulebox queue` and on the dashboard, moves and cancels like a job while it waits, cannot be cancelled while installing, and lets the machine go 90 s after its waiter disappears. Wire message `upgrade`, allowed for worker keys.
 

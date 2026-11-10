@@ -40,13 +40,22 @@ def controls(job: dict[str, Any]) -> dict[str, Any]:
 
 
 def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
-    """Why a queued agent job cannot start yet (needs.py); None for anything else."""
-    if job["state"] != JobState.QUEUED or job["kind"] != "job":
+    """Why a queued agent job or upgrade cannot start yet (needs.py, upgrades.py); None for
+    anything else."""
+    from mulebox.coordinator import upgrades  # upgrades -> views
+
+    if job["state"] != JobState.QUEUED or job["kind"] not in ("job", upgrades.UPGRADE_KIND):
         return None
+    if job["kind"] == upgrades.UPGRADE_KIND:
+        return (f"it installs once the jobs running on {job['pinned_worker']} end; "
+                "nothing new starts there meanwhile")
     if job.get("paused"):
         return PAUSED_REASON
     if holds.draining(conn, now):
         return holds.DRAIN_REASON
+    if (upgrade := upgrades.ahead_of(conn, job)) is not None:
+        return (f"an upgrade of {upgrade['pinned_worker']} to {upgrade['branch']} is ahead of it "
+                f"({upgrade['job_id']})")
     return needs.waiting_for(workers.listing(conn), job["needs"], now)
 
 

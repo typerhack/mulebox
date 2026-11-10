@@ -98,8 +98,11 @@ function waitingEntry(job, allMachines, total) {
   const place = job.position ? el("span", { class: "pos", text: `#${job.position}` })
                              : badge(job.shown_state ?? job.state);
   const lines = [];
-  if (job.waiting_for) {
+  const stuck = Array.isArray(job.can_run_on) && !job.can_run_on.length && !job.pinned_worker;
+  if (job.waiting_for && stuck) {
     lines.push(el("p", { class: "reason" }, badge("stuck"), el("span", { text: job.waiting_for })));
+  } else if (job.waiting_for) {  // paused, held, or behind an upgrade: it will start
+    lines.push(el("p", { class: "muted", text: job.waiting_for }));
   } else if (allMachines && Array.isArray(job.can_run_on) && job.can_run_on.length < allMachines) {
     lines.push(el("p", { class: "muted", text: `only ${job.can_run_on.join(", ")}` }));
   }

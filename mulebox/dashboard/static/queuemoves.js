@@ -7,12 +7,16 @@ import { actionToken, post } from "./access.js";
 import { drawIcon, el } from "./format.js";
 
 // Outlines in the button's own colour (style.css, .moves).
+export const MOVE_SHAPES = {
+  first: "M3.5 2.75h9M8 13.25v-7.5M4.75 9 8 5.75 11.25 9",
+  up: "M8 13V3.5M4.75 6.75 8 3.5l3.25 3.25",
+  down: "M8 3v9.5M4.75 9.25 8 12.5l3.25-3.25",
+  last: "M3.5 13.25h9M8 2.75v7.5M4.75 7 8 10.25 11.25 7",
+};
 const MOVES = [
-  ["first", "Move to the front of the line", "M3.5 2.75h9M8 13.25v-7.5M4.75 9 8 5.75 11.25 9"],
-  ["up", "Move one place up", "M8 13V3.5M4.75 6.75 8 3.5l3.25 3.25"],
-  ["down", "Move one place down", "M8 3v9.5M4.75 9.25 8 12.5l3.25-3.25"],
-  ["last", "Move to the end of the line", "M3.5 13.25h9M8 2.75v7.5M4.75 7 8 10.25 11.25 7"],
-];
+  ["first", "Move to the front of the line"], ["up", "Move one place up"],
+  ["down", "Move one place down"], ["last", "Move to the end of the line"],
+].map(([action, label]) => [action, label, MOVE_SHAPES[action]]);
 
 let token = null;  // the buttons show from the first render after the page has it
 actionToken().then((given) => { token = given; });
