@@ -420,7 +420,7 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       equal height, and both meter styles, Gauge and Rainbow, for the viewer to choose, Auto by default; for several
       machines "click a row" and a Machines page (design-system.md).
       Done when: it runs on the real dashboard in Edge.
-- [ ] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
+- [~] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
       Next.js was weighed and left out: it would need Node and a second server on every machine).
       Built at release time into static files that the existing aiohttp server serves, so no Node
       on build machines and the same one-command install; the `/api` endpoints and the live event
@@ -429,7 +429,8 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       build in the release and CI, a few hundred KB more in the package, browser-side tests.
       Done when: the dashboard runs from the React build on the real machine in Edge, with every
       view and control of today, and its overhead on the machine measured no higher than now
-      (about 0.5% of a core and 50 MB, M2.3).
+      (about 0.5% of a core and 50 MB, M2.3). Built 2026-11-10 (0.96.0 other machines' readings,
+      0.97.0 the app in web/, served at /, the old page at /classic/), with tests.
 - [x] M14.11 Job minutes (the user's ask, 2026-11-10, with a second opinion from another model):
       how long jobs ran, GitHub runs and mulebox's own, today and since the first job, filtered
       and broken down by kind, project, source and machine. Built 0.92.0: `coordinator/stats.py`,

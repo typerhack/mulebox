@@ -359,7 +359,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 ## Dashboard
 
 - A separate read-only process beside the coordinator (its controls are the one exception, and
-  their writes go through `mulebox rpc`): aiohttp, plain HTML and JS, canvas
+  their writes go through `mulebox rpc`): aiohttp serving static files, canvas
   graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
   log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
 - Shows: every machine with whether it is online, its free slots, capabilities, what it
@@ -371,8 +371,17 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   machine the dashboard runs on. For another machine, CPU per core, memory and its fullest
   disk over the last 5 minutes, from what its worker sends with its claims and heartbeats,
   kept by the dashboard process (no Docker count or overhead there).
-- Look: the design system, [design-system.md](design-system.md) (Gauge, chosen 2026-11-10). The
-  page of today predates it and moves to it with the React front end (M14.10).
+- Look: the design system, [design-system.md](design-system.md) (Gauge, chosen 2026-11-10).
+- The front end is React (M14.10), in `web/` at the repository root: React 19, Vite, TypeScript,
+  Tailwind CSS locked to the design system's tokens (its own palette and scales are switched
+  off, and a lint step fails on a value typed into a class name), Radix primitives for menus
+  and tooltips, Lucide icons, Geist bundled. No state library: the one event stream feeds
+  small stores read with `useSyncExternalStore`, and the routes are hashes. It is built to
+  static files in `mulebox/dashboard/app/` at release time and by `mulebox setup` on the
+  laptop, so a build machine never needs Node and the install stays one command. Next.js was
+  weighed and left out: it would need Node and a second server on every machine.
+- The page from before, plain HTML and JS modules with no build step, stays at `/classic/`
+  until the owner retires it, and is what `/` serves when the package holds no build.
 - Layout: a live monitor in boxes that fills the window, machine load first and the jobs
   box below, one theme over the whole page, and a system, light or dark switch remembered
   per browser. System is the default; the sign-in page always follows the system.
@@ -470,7 +479,8 @@ mulebox/
   common/       config.py  protocol.py  ssh.py  ids.py  log.py  safepath.py  redact.py
   client/       snapshot.py  submit.py  tui.py  commands.py
   coordinator/  store.py  queue.py  leases.py  recovery.py  api.py  staging.py
-  dashboard/    server.py  streams.py  hub.py  events.py  metrics.py  data.py  static/
+  dashboard/    server.py  pages.py  streams.py  hub.py  events.py  metrics.py  data.py
+                static/ (classic page)  app/ (the React build, not in git)
   worker/       agent.py  project_home.py  workspace.py  executor.py  cleaner.py  docker.py
                 docker_cleanup.py  reclaim.py  compose_file.py  compose_job.py  ports.py
                 toolchains.py

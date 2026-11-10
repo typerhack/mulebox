@@ -11,9 +11,11 @@ from pathlib import Path
 
 WARN_LINES = 300
 FAIL_LINES = 500
-CODE_SUFFIXES = {".py", ".sh", ".js", ".ts", ".css", ".html", ".toml", ".yml", ".yaml"}
+CODE_SUFFIXES = {".py", ".sh", ".js", ".mjs", ".ts", ".tsx", ".css", ".html", ".toml", ".yml", ".yaml"}
 DOCS_DIR = "docs"
 SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "node_modules"}
+# The dashboard's React build: made from web/ by a bundler, one long line per file, not written by hand.
+BUILT_DIRS = {("mulebox", "dashboard", "app")}
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
@@ -22,7 +24,8 @@ def code_files(root: Path) -> list[Path]:
     for path in root.rglob("*"):
         if any(part in SKIP_DIRS or part.endswith(".egg-info") for part in path.parts):
             continue
-        if path.relative_to(root).parts[0] == DOCS_DIR:
+        parts = path.relative_to(root).parts
+        if parts[0] == DOCS_DIR or parts[:3] in BUILT_DIRS:
             continue
         if path.is_file() and path.suffix in CODE_SUFFIXES:
             files.append(path)

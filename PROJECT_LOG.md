@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.97.0 - 2026-11-10 - minor
+- The dashboard front end in React (M14.10 with M14.1): `web/`, React 19 with Vite, TypeScript and Tailwind CSS locked to the design system's tokens (tokens.css imported by path, Tailwind's own palette and scales left out, `npm run lint` fails on a typed-in value). Radix menus and tooltips, Lucide icons, Geist bundled. Layout "Monitor on top" in Gauge: every view and control of the classic page, plus the Machines page, a clicked machine shown in CPU, Memory and Disk, the meter style switch (Auto, Gauge, Rainbow) and a GitHub job's log as its steps.
+- Served by the same aiohttp process: `/` is the React build when the package holds one (`mulebox/dashboard/app/`, not in git), the classic page stays at `/classic/`, and without a build `/` is the classic page (dashboard/pages.py). The policy gained `font-src 'self'` for the bundled fonts.
+- `mulebox setup` builds the front end before the wheel when it is out of date (client/webbuild.py); without npm it says so and goes on. CI has a `web` job; the release workflow builds it before the binary.
+- Checked: lint, types, 32 unit tests and the build; the Python suite through `mulebox check` (2750 passed); in real Edge against the real dashboard read only, and with made-up data at 1912, 1440 and 390 px, both themes, both meter styles, 2 and 20 machines. Bundle JS 419 kB (132 kB gzip), CSS 31 kB (7.5 kB gzip).
+
 ## 0.96.0 - 2026-11-10 - minor
 - Other machines' readings for the dashboard (M14.10, so a clicked machine fills CPU, Memory and Disk): workers send per-core CPU, memory totals and their fullest disk inside `load` with claims and heartbeats, from the same 2 s sample, no extra process; a claim's `disk_free` reuses that reading. Disk usage is shared in common/disk.py (`usage_by_device`, `fullest`). The coordinator checks each new field and keeps it in `workers.load`, schema unchanged (20). The dashboard keeps up to 5 minutes per worker from its existing 2 s machines read (dashboard/machine_history.py); `GET /api/metrics?machine=<name>` answers for the host, for another worker (empty while offline), or 404 (dashboard/metrics_api.py). `/api/machines` rows gain `host` and `version`. Full suite passed through `mulebox check` (2735 passed).
 

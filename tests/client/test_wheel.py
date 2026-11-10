@@ -4,8 +4,26 @@ import subprocess
 import sys
 import zipfile
 
+from pathlib import Path
+
+import pytest
+
+import mulebox
 from mulebox.client import wheel
 from mulebox.version import source_version
+
+
+@pytest.fixture(autouse=True)
+def prepared(monkeypatch):
+    """No Node in these tests: the web build before a wheel has its own (test_webbuild.py)."""
+    asked = []
+    monkeypatch.setattr(wheel, "_prepare", asked.append)
+    return asked
+
+
+def test_the_web_front_end_is_looked_at_before_the_files_are_read(tmp_path, prepared):
+    wheel.build(tmp_path)
+    assert prepared == [Path(mulebox.__file__).resolve().parent]
 
 
 def test_the_wheel_holds_code_installer_and_metadata(tmp_path):

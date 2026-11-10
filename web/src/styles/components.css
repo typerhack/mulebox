@@ -1,0 +1,124 @@
+/* The few pieces utilities cannot say: a meter in both styles, the graph's layers, the stage
+   track, and the grids of the page. Values are tokens or sizes named in theme.css. */
+
+@layer components {
+  .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Meter: Gauge is one solid fill; Rainbow is segmented and coloured by position. `--v` is
+     the share, set from the component. */
+  .meter { position: relative; overflow: hidden; min-width: 0; height: var(--spacing-meter);
+    border-radius: var(--radius-meter); background: var(--meter-track); }
+  .meter > i { display: block; height: 100%; width: var(--v, 0%); border-radius: var(--radius-meter);
+    background: var(--meter-fill); transition: width var(--dur-base) var(--ease); }
+  .meter[data-level="warn"] > i { background: var(--status-warning); }
+  .meter[data-level="danger"] > i { background: var(--status-danger); }
+  :root[data-paint="rainbow"] .meter { height: var(--space-2); border-radius: var(--spacing-hair);
+    background: linear-gradient(90deg, var(--ramp-lo), var(--ramp-mid) 62%, var(--ramp-hi)); }
+  :root[data-paint="rainbow"] .meter > i { position: absolute; inset: 0 0 0 var(--v, 0%); width: auto;
+    border-radius: 0; background: var(--meter-track); transition: inset var(--dur-base) var(--ease); }
+  :root[data-paint="rainbow"] .meter::after { content: ""; position: absolute; inset: 0;
+    background: repeating-linear-gradient(90deg, transparent 0 calc(var(--space-1) * 1.25),
+      var(--meter-gap, var(--surface-1)) calc(var(--space-1) * 1.25) calc(var(--space-1) * 1.75)); }
+  .on-card { --meter-gap: var(--surface-2); }
+
+  /* Graph: a canvas, its scale note, and the crosshair's tip. */
+  .graph { position: relative; min-height: var(--spacing-graph); }
+  .graph canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .graph-small { min-height: var(--spacing-spark); }
+
+  /* The top row: CPU, Memory over Disk, Machines. The middle column is as tall as its
+     neighbours, shared in two halves, so the three bottoms line up. */
+  .top-row { display: grid; gap: var(--app-gap); align-items: stretch;
+    grid-template-columns: minmax(0, 1fr) minmax(var(--spacing-col-m), var(--spacing-col-l))
+      minmax(var(--spacing-col-l), var(--spacing-col-xl)); }
+  .top-side { display: grid; gap: var(--app-gap); grid-template-rows: 1fr 1fr; }
+  .cores { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1) var(--space-5); }
+  .auto-cards { display: grid; gap: var(--space-2);
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--spacing-col-2xl)), 1fr)); }
+  .auto-facts { display: grid; gap: var(--space-2) var(--space-5);
+    grid-template-columns: repeat(auto-fill, minmax(var(--spacing-col-m), 1fr)); }
+  .cores { --meter-label: 2ch; }
+  .labels-4 { --meter-label: 4ch; }
+  .meter-row.labels-none { grid-template-columns: minmax(0, 1fr) max-content; }
+  .meter-row.labels-none > :first-child { display: none; }
+  .meter-row { display: grid; grid-template-columns: var(--meter-label, 5ch) minmax(0, 1fr) max-content;
+    gap: var(--space-2); align-items: center; }
+  @variant lg {
+    /* The row keeps its height whatever machine is picked and however many there are. */
+    .top-row { min-height: var(--spacing-col-xl); }
+    .cores { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-1) var(--space-4); }
+  }
+  @variant max-lg {
+    .top-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .top-row > :first-child { grid-column: 1 / -1; }
+  }
+  @variant max-md {
+    .top-row { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* Stage waterfall: a track with quarter lines, the run's bar and the usual end as a tick. */
+  .stage { display: grid; grid-template-columns: 14ch minmax(0, 1fr) 9ch; gap: var(--space-3); align-items: center; }
+  .stage-track { position: relative; height: calc(var(--space-1) * 3.5);
+    border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+    background-image: linear-gradient(to right, var(--border) 1px, transparent 1px); background-size: 25% 100%; }
+  .stage-bar { position: absolute; top: var(--space-1); height: var(--spacing-meter); min-width: var(--spacing-hair);
+    border-radius: var(--radius-meter); background: var(--meter-fill); left: var(--from); width: var(--len); }
+  .stage-bar[data-tone="failed"] { background: var(--status-failed); }
+  .stage-usual { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px;
+    background: var(--text-1); left: var(--at); }
+
+  /* The job page: stages beside the log when there is room. */
+  .job-split { display: grid; gap: var(--app-gap); align-items: start; min-width: 0; }
+  .job-split > * { min-width: 0; }
+  @variant @lg {
+    .job-split { grid-template-columns: minmax(var(--spacing-menu), var(--spacing-col-2xl)) minmax(0, 1fr); }
+  }
+
+  /* A waiting row: position, the job, then time, moves and menu; these drop under the name
+     when the lane is narrow. */
+  .wait-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+    gap: var(--space-1) var(--space-3); }
+  @variant @max-sm {
+    .wait-row { grid-template-columns: auto minmax(0, 1fr); }
+    .wait-row > .wait-side { grid-column: 2; justify-content: flex-end; }
+    .wait-row > .wait-side > .wait-time { margin-right: auto; }
+  }
+
+  /* Tables turn into stacked cards on a narrow screen: each cell says its own column. */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th { text-align: left; padding: var(--space-2) var(--space-4) var(--space-2) 0;
+    border-bottom: 1px solid var(--border-strong); color: var(--text-2); font-size: var(--text-sm);
+    font-weight: 600; white-space: nowrap; }
+  .data-table td { padding: var(--space-1) var(--space-4) var(--space-1) 0; border-bottom: 1px solid var(--border);
+    vertical-align: middle; }
+  .data-table th:last-child, .data-table td:last-child { padding-right: 0; }
+  .data-table th.end, .data-table td.end { text-align: right; }
+  @variant max-lg {
+    .data-table.stacks thead { display: none; }
+    .data-table.stacks, .data-table.stacks tbody { display: block; }
+    .data-table.stacks tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+    .data-table.stacks td { display: block; padding: 0; border: 0; text-align: left; }
+    .data-table.stacks td[data-label]::before { content: attr(data-label); display: block;
+      color: var(--text-2); font-size: var(--text-xs); }
+    .data-table.stacks td.wide { grid-column: 1 / -1; }
+  }
+
+  /* The day chart of the Statistics page. */
+  .day-chart { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: var(--space-1) var(--space-2); }
+  .day-plot { position: relative; height: var(--spacing-graph); border-bottom: 1px solid var(--border-strong);
+    background-image: linear-gradient(to bottom, var(--border) 1px, transparent 1px); background-size: 100% 50%; }
+  .day-cols { position: absolute; inset: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+    gap: var(--spacing-hair); align-items: end; }
+  .day-col { display: flex; flex-direction: column; justify-content: flex-end; height: 100%;
+    padding: 0; border: 0; background: none; }
+  .day-col:hover, .day-col:focus-visible { background: var(--surface-2); }
+  .day-stack { display: flex; flex-direction: column; gap: var(--spacing-hair); width: 100%; height: var(--h); }
+  .day-stack > i, .split-bar > i { display: block; flex: var(--n) 0 0; min-height: 1px;
+    border-radius: var(--spacing-hair); }
+  .split-bar { display: flex; gap: var(--spacing-hair); height: var(--space-5); }
+  .split-bar > i { min-width: var(--space-1); border-radius: var(--radius-meter); }
+  .day-axis { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; text-align: center; }
+  .share-bar { height: var(--spacing-meter); border-radius: var(--radius-meter); background: var(--meter-track); }
+  .share-bar > i { display: block; height: 100%; width: var(--v); border-radius: var(--radius-meter); }
+}

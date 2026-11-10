@@ -3,6 +3,28 @@
 The contract for `mulebox/dashboard/`, `mulebox/common/status.py` and
 `mulebox/client/tunnel.py`. Design goals: [design.md](design.md) (Dashboard).
 
+## The two front ends (`dashboard/pages.py`, `web/`)
+
+- **React** (M14.10): source in `web/` at the repository root ([web/README.md](../web/README.md)),
+  built by `npm run build` into `mulebox/dashboard/app/` (not in git; in the wheel and the
+  binary). When `app/index.html` exists, `/` serves it and its files are under `/app/`.
+- **Classic**: `mulebox/dashboard/static/`, hand-written modules with no build step. Always at
+  `/classic/`, with its files under `/static/`, so the two can be compared until the owner
+  retires it. Without a build, `/` serves it too. The sign-in page is one of its files.
+- Both read the same `/api` routes and event streams, described below; the sections name the
+  classic modules, and the React ones are their ports: `web/src/lib/` (lanes, menus, formats,
+  the log's steps, the chart), `web/src/state/` (the stream into stores, the picked machine)
+  and `web/src/features/` (one folder per view).
+- Only in the React front end: the Machines page (`#/machines`), the machine picked for CPU,
+  Memory and Disk (`/api/metrics?machine=`, asked every 2 s while another machine than the
+  host is picked), the meter style switch (Auto, Gauge, Rainbow, kept per browser as
+  `mulebox-meters`), and a GitHub job's log drawn as its steps (`web/src/lib/cilog.ts` reads
+  the `mulebox: step:` and `--- output of` lines the runner's hooks write).
+- Every guard below covers both: they are GET routes of one app. The policy gained
+  `font-src 'self'` for the bundled Geist files; nothing else changed in it. The React build
+  has no inline script or style, loads nothing from another origin, and sets styles only
+  through the DOM, which the policy allows.
+
 ## Status model (`common/status.py`)
 
 One place decides how a job is shown; the terminal view and the dashboard both use it.
@@ -242,7 +264,8 @@ What the protection below keeps out is other web pages in the same browser.
   container count only, never names, images or inspect output. Commands are redacted.
 - **Logs are text.** They are redacted by the worker before storage. The page appends them
   as text nodes; no code path parses server data as HTML.
-- **No external resources.** No CDN, no build step; `static/` ships in the wheel.
+- **No external resources.** No CDN, and nothing is built on a build machine: `static/` and
+  the React build in `app/` ship in the wheel. Fonts are files of the package.
 - **File names.** Browser filter lists block some script names outright (`logview.js` was
   one), and one blocked ES module stops the whole page. Check new names in a real browser.
 

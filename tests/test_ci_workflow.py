@@ -5,6 +5,7 @@ test too: that protection is having no self-hosted runner at all (docs/releasing
 """
 
 import importlib.util
+import json
 import re
 import tomllib
 from pathlib import Path
@@ -65,6 +66,26 @@ def test_it_runs_the_gate_on_the_minimum_python():
     assert workflow["jobs"]["test"]["strategy"]["matrix"]["python"][0] == minimum
     commands = " ".join(step.get("run", "") for step in steps(workflow))
     assert "tools/check_line_counts.py" in commands and "pytest" in commands
+
+
+def test_the_web_front_end_has_its_own_gate_and_is_built_into_a_release():
+    web = load(REPO / ".github" / "workflows" / "ci.yml")["jobs"]["web"]
+    commands = [step.get("run", "") for step in web["steps"]]
+    assert web["defaults"]["run"]["working-directory"] == "web"
+    for needed in ("npm ci", "npm run lint", "npm run typecheck", "npm test", "npm run build"):
+        assert any(needed in command for command in commands), needed
+    scripts = json.loads((REPO / "web" / "package.json").read_text(encoding="utf-8"))["scripts"]
+    assert "check-classes.mjs" in scripts["lint"]  # no value typed in beside the design tokens
+    names = [step.get("name") for step in load(REPO / ".github" / "workflows" / "release.yml")["jobs"]["build"]["steps"]]
+    assert names.index("Build the dashboard front end") < names.index("Build")
+
+
+def test_web_packages_are_pinned_to_exact_versions():
+    package = json.loads((REPO / "web" / "package.json").read_text(encoding="utf-8"))
+    for group in ("dependencies", "devDependencies"):
+        for name, version in package[group].items():
+            assert re.fullmatch(r"\d+\.\d+\.\d+", version), (name, version)
+    assert (REPO / "web" / "package-lock.json").is_file()
 
 
 def test_a_release_runs_on_tags_alone_and_gives_only_its_upload_the_token():

@@ -7,7 +7,8 @@ For people who maintain mulebox. Versions, commits and the project log follow
 
 [.github/workflows/ci.yml](../.github/workflows/ci.yml) runs on every push to `main` and every
 pull request: the file-size check and the test suite, on the minimum supported Python and on a
-newer one. `tests/test_ci_workflow.py` checks the rules below, and that the first Python in the
+newer one, and a `web` job for the dashboard's front end (`npm ci`, lint with the check for
+values typed in beside the design tokens, types, unit tests, build). `tests/test_ci_workflow.py` checks the rules below, and that the first Python in the
 workflow is `requires-python` from `pyproject.toml`. Change the two together.
 
 To check the workflow without pushing, lint it and run the same commands:
@@ -16,6 +17,20 @@ To check the workflow without pushing, lint it and run the same commands:
 uvx --from actionlint-py actionlint .github/workflows/ci.yml
 mulebox check
 ```
+
+## The dashboard's front end
+
+`web/` builds into `mulebox/dashboard/app/`, which is not in git: every way a package is made
+builds it first.
+
+- `mulebox setup` builds it on the laptop before it makes the wheel it sends, when the build is
+  missing or older than a file under `web/` (`mulebox/client/webbuild.py`). Without `npm` it
+  says so in one line and the machine gets the classic page, or the build the package has.
+- The release workflow builds it before the binary, which carries the package's files.
+- A wheel made by hand needs it built first: `(cd web && npm ci && npm run build)`.
+
+Packages are pinned to exact versions in `web/package.json`, with `package-lock.json`
+committed; a test holds that. To update one, change both with `npm install --save-exact`.
 
 ## Keeping CI safe in a public repository
 
@@ -66,6 +81,7 @@ Only after the user has declared it.
    Add the wheel, write the notes from the log, and publish it:
 
    ```sh
+   (cd web && npm ci && npm run build)    # the dashboard's front end goes into the wheel
    python -m pip wheel --no-deps -w dist .
    gh release upload v1.0.0 dist/mulebox-1.0.0-py3-none-any.whl
    gh release edit v1.0.0 --draft=false --notes-file notes.md

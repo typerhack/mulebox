@@ -1,0 +1,137 @@
+/* Tailwind, locked to the design system's tokens (docs/design-system.md).
+
+   Tailwind's own theme is not imported: no palette, no spacing scale, no radius or type scale
+   of its own exists here. Every utility that takes a colour, a size, a space, a corner or a
+   duration resolves to a token of docs/design-system/tokens.css, which stays the one source
+   and is imported by path, never copied. `inline` makes a utility use the token itself, so no
+   second set of variables is made. scripts/check-classes.mjs fails the build on a value typed
+   into a class name or a stylesheet outside this file. */
+
+@layer theme, base, components, utilities;
+@import "../../../docs/design-system/tokens.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@theme inline {
+  /* Colour roles. `ink` is the text role: `text-ink-1` reads better than `text-text-1`. */
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-ink-1: var(--text-1);
+  --color-ink-2: var(--text-2);
+  --color-ink-3: var(--text-3);
+  --color-line: var(--border);
+  --color-line-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-ink: var(--accent-ink);
+  --color-focus: var(--focus);
+  --color-running: var(--status-running);
+  --color-queued: var(--status-queued);
+  --color-passed: var(--status-passed);
+  --color-failed: var(--status-failed);
+  --color-cancelled: var(--status-cancelled);
+  --color-warning: var(--status-warning);
+  --color-danger: var(--status-danger);
+  --color-on-danger: var(--on-danger);
+  --color-warning-soft: var(--status-warning-soft);
+  --color-failed-soft: var(--status-failed-soft);
+  --color-meter-track: var(--meter-track);
+  --color-meter-fill: var(--meter-fill);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* Space: the tokens by their number, so `gap-3` is `--space-3`. */
+  --spacing-0: 0;
+  --spacing-px: 1px;
+  --spacing-1: var(--space-1);
+  --spacing-2: var(--space-2);
+  --spacing-3: var(--space-3);
+  --spacing-4: var(--space-4);
+  --spacing-5: var(--space-5);
+  --spacing-6: var(--space-6);
+  --spacing-7: var(--space-7);
+  --spacing-8: var(--space-8);
+  --spacing-gutter: var(--gutter);
+  --spacing-gap: var(--app-gap);
+
+  /* Component sizes the design system states in words (design-system.md, Components and Icons)
+     but has no token for. Each is derived from a token here, once, so a change of the base
+     moves them all; they belong in tokens.css once the owner agrees. */
+  --spacing-hair: calc(var(--space-1) / 2);          /* 2px: the accent line, a slot's corner */
+  --spacing-meter: calc(var(--space-1) * 1.5);       /* 6px: a meter */
+  --spacing-icon-s: calc(var(--icon) - 2px);         /* 14px */
+  --spacing-icon: var(--icon);                       /* 16px */
+  --spacing-icon-m: calc(var(--icon) + 2px);         /* 18px */
+  --spacing-icon-l: var(--space-5);                  /* 20px */
+  --spacing-slot: calc(var(--space-1) * 2.5);        /* 10px: a slot box */
+  --spacing-ctl-s: calc(var(--space-1) * 7);         /* 28px: icon buttons in rows */
+  --spacing-ctl-icon: calc(var(--space-1) * 7.5);    /* 30px: an icon button */
+  --spacing-ctl: calc(var(--space-1) * 8);           /* 32px: a button */
+  --spacing-tab: calc(var(--space-1) * 8.5);         /* 34px: a tab */
+  --spacing-ctl-touch: calc(var(--space-1) * 9);     /* 36px: any control on touch or under 520px */
+  --spacing-head: calc(var(--space-3) * 4);          /* 48px: the header */
+  --spacing-spark: calc(var(--space-6) * 2);         /* 48px: the small memory graph */
+  --spacing-graph: calc(var(--space-6) * 5);         /* 120px: the CPU graph */
+  --spacing-log: calc(var(--space-7) * 10.5);        /* 420px: the log before it scrolls */
+  --spacing-menu: calc(var(--space-7) * 8);          /* 320px: a menu */
+  --spacing-col-s: calc(var(--space-7) * 3.75);      /* 150px */
+  --spacing-col-m: calc(var(--space-7) * 6);         /* 240px */
+  --spacing-col-l: calc(var(--space-7) * 7);         /* 280px */
+  --spacing-col-xl: calc(var(--space-7) * 8.25);     /* 330px */
+  --spacing-col-2xl: calc(var(--space-7) * 11);      /* 440px */
+  --spacing-read: 76ch;                              /* a line of prose */
+
+  /* Three weights only. */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-normal: 1.5;
+  --leading-log: 1.6;
+  --tracking-tight: -0.015em;
+
+  --radius-meter: calc(var(--space-1) * 0.75);       /* 3px: half a meter's height */
+  --shadow-menu: var(--shadow-2);
+
+  --default-transition-duration: var(--dur-fast);
+  --default-transition-timing-function: var(--ease);
+  --animate-spin: spin 1.6s linear infinite;
+
+  /* Where the layout changes, as in the chosen mockup. */
+  --breakpoint-touch: 521px;
+  --breakpoint-md: 761px;
+  --breakpoint-lg: 1101px;
+  --container-sm: 640px;
+  --container-lg: 900px;
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+}
+
+/* These tokens already carry the names Tailwind's theme uses for type sizes, fonts and corners.
+   `reference` keeps Tailwind from writing them out again, which would point each at itself. */
+@theme inline reference {
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --font-ui: var(--font-ui);
+  --font-mono: var(--font-mono);
+  --radius-s: var(--radius-s);
+  --radius-m: var(--radius-m);
+  --radius-l: var(--radius-l);
+}
+
+/* States that Radix and ARIA put on an element, as variants with plain names. */
+@custom-variant open (&[data-state="open"], &[aria-expanded="true"]);
+@custom-variant on (&[aria-selected="true"], &[aria-pressed="true"], &[aria-current="page"]);
+@custom-variant lit (&[data-highlighted]);
+@custom-variant off (&:disabled, &[data-disabled]);
+@custom-variant touch { @media (pointer: coarse), (max-width: 520px) { @slot; } }
+@custom-variant dark (:root[data-theme="dark"] &);
+@custom-variant rainbow (:root[data-paint="rainbow"] &);
