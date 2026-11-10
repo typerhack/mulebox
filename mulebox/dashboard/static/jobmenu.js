@@ -47,7 +47,7 @@ let open = null;  // { key, node, problem, armed }
 
 const jobUrl = (id, what) => `/api/jobs/${encodeURIComponent(id)}/${what}`;
 const control = (id, action) => () => post(jobUrl(id, "control"), { action });
-const item = (icon, label, hint, send, tone = null) => ({ icon, label, hint, send, tone });
+const item = (icon, label, hint, send, tone = null, sure = null) => ({ icon, label, hint, send, tone, sure });
 
 function moves(job) {
   const at = job.position, last = latest.get("queue")?.total ?? Infinity;
@@ -75,7 +75,8 @@ function runnerGroups(job, open_) {
     : item("boost", "Boost", "Gets the CPU and disk first; nothing new starts beside it",
            control(job.job_id, "boost"));
   const cancel = run && item("cancel", "Cancel on GitHub", "Asks GitHub to cancel the run; the slot frees",
-                             () => post(jobUrl(job.job_id, "cancel")), "danger");
+                             () => post(jobUrl(job.job_id, "cancel")), "danger",
+                             "Yes, cancel the run");
   return [[hold].filter(Boolean), WAITING.has(job.state) && job.position ? moves(job) : [],
           [boost, open_, github].filter(Boolean), [cancel].filter(Boolean)];
 }
@@ -154,7 +155,7 @@ function entry(made) {
   const button = el("button", { type: "button", role: "menuitem", class: made.tone ?? null },
     drawIcon(ICON[made.icon], "item-icon"),
     el("span", { class: "item-text" },
-       el("span", { class: "item-label", text: armed ? `Yes, ${made.label.toLowerCase()}` : made.label }),
+       el("span", { class: "item-label", text: armed ? (made.sure ?? `Yes, ${made.label.toLowerCase()}`) : made.label }),
        el("span", { class: "item-hint", text: armed ? "Click again to confirm" : made.hint })));
   button.addEventListener("click", async () => {
     if (made.tone === "danger" && !open.armed) {

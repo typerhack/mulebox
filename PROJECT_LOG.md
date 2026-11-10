@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.95.1 - 2026-11-10 - patch
+- A GitHub run's service goes back to weight 50, its unit's own, after a boost and at a worker start; 0.95.0 set it to 100, found on the real machine. The cancel item asks "Yes, cancel the run", not "Yes, cancel on github".
+
 ## 0.95.0 - 2026-11-10 - minor
 - A GitHub run's card and waiting row get the three dots, as agent jobs have (the user's ask): open its page, open on GitHub, and once it runs Freeze or Resume and Boost or End boost; its page gets the same buttons. The worker's runner supervisor applies them to the runner's service and its Compose containers (runners/runner_controls.py, reusing worker/controls.JobControls), and thaws and sets the service back when the run ends; the coordinator allows them on a running slot only (job_control.py). A long freeze can make GitHub fail the run; the user chose to have it.
 - Cancel on GitHub: from the card's three dots or the run's page, the dashboard asks GitHub with `gh run cancel` on its machine (runners/cancel_run.py); `gh` must be logged in there. Before, the dashboard refused it.

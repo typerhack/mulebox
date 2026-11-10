@@ -27,7 +27,7 @@ from mulebox.runners.names import RunnerUsageError, unit_name
 from mulebox.worker.controls import BOOST_WEIGHT, JobControls, Wanted
 
 LOG = get_logger("runners.controls")
-SERVICE_WEIGHT = 100  # systemd's default; the runner's unit sets none of its own
+SERVICE_WEIGHT = 50  # the runner unit's own (machine/systemd/mulebox-runner@.service)
 _RUNNING = (JobState.STARTING, JobState.RUNNING)
 
 
