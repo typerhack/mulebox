@@ -104,9 +104,9 @@ def run(node, port: int, lan=None, config_path: Path | None = None) -> int:
               "(is the coordinator installed and started?)", file=sys.stderr)
         return EXIT_CONFIG
     try:
-        data = DashboardData(store, staging)
+        data = DashboardData(store, staging, local_name=node.name)
         access, tls = lan if lan else (None, None)
-        hub = Hub(data, EventBus(), node.roots, local_name=node.name)
+        hub = Hub(data, EventBus(), node.roots)
         app = build_app(data, hub, lan=access, canceller=_canceller(node, access, config_path))
         listeners = [Listener(BIND_HOST, port)]
         _log.info("dashboard on http://%s:%d", BIND_HOST, port)

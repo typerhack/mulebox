@@ -86,12 +86,12 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
 | status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity`; `stop_reason` on a stopped job) |
 | cancel | job_id | status_ok |
-| heartbeat | job_id, lease (`client`/`worker`), + `attempt_id`, `activity` and `load` for worker | status_ok (+ `cancel`) |
+| heartbeat | job_id, lease (`client`/`worker`), + `attempt_id`, `activity` and `load` (as in claim) for worker | status_ok (+ `cancel`) |
 | queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts; `dashboard`, see below) |
 | projects | - | projects_ok (projects: `project`, `jobs`, `last_run`, `kind`, `state`, `outcome` of the newest job, newest first) |
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |
 | watch | job_id, offset, + `lease: bool`, `log: bool` (default true) | stream: log_chunk (none with `log: false`) / status_ok lines, final `result` |
-| claim | worker, capabilities, free_slots, + `toolchains` (name to versions), `version`, `disk_free`, `load` (`cpu_pct`, `mem_pct`, `cores` of the machine, each or null) | claim_ok or claim_none |
+| claim | worker, capabilities, free_slots, + `toolchains` (name to versions), `version`, `disk_free`, `load` (`cpu_pct`, `mem_pct`, `cores`, `net_in_kib_s`, `net_out_kib_s` of the machine, each or null; for the dashboard's graphs `cpu` per core, `memory` and `disk`, the fullest disk under its roots, each left out unless well formed; interfaces-m2.md, Metrics) | claim_ok or claim_none |
 | machines | - | machines_ok (`version` of the coordinator; `workers`: worker, online, capabilities, toolchains or null, version or null, slots, disk_free, draining, load or null while offline) |
 | machine | worker, action (`drain`, `resume`, `remove`) | machine_ok (worker, action, `running`: its unfinished jobs and CI jobs waiting for it); `remove` is a conflict while the worker is online or has jobs |
 | stats | optional `from`, `to` (epoch seconds; the first job and now by default), `project`, `job`, `client`, `worker`, `kind` (`job` or `runner`), `by` (breakdowns, default all), `day_starts` (ascending, at most 400) | stats_ok with `total`, `by` (name -> rows of `key`, `seconds`, `runs`, `running`, `running_seconds`, `unknown`), `days` (each with `kinds`: seconds per kind), `first_started_at`, `choices` (every value each filter takes); docs/design.md, Job minutes |

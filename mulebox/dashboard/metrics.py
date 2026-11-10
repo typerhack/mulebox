@@ -7,9 +7,8 @@ development) CPU and memory are None and nothing fails.
 - CPU: busy share per core between two samples of `/proc/stat` (busy = total - idle -
   iowait), in percent. The first sample has no previous one, so it reports None.
 - Memory: `/proc/meminfo` MemTotal and MemAvailable (used = total - available), bytes.
-- Disk: file system usage (`shutil.disk_usage`) of each mulebox root, one entry per file
-  system (roots on the same device are listed together). Not a `du` of the roots: walking
-  job folders and caches would cost far more than the dashboard is allowed to.
+- Disk: file system usage of each mulebox root, one entry per file system (roots on the same
+  device are listed together; common/disk.py `usage_by_device`, which workers report too).
 - Self: CPU share and resident memory of the dashboard process itself (the overhead).
 """
 
@@ -17,34 +16,16 @@ from __future__ import annotations
 
 import os
 import resource
-import shutil
 import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from mulebox.common.disk import usage_by_device as disk_usage
 from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, read
 
-DiskUsage = Callable[[str], Any]
 __all__ = ["Sampler", "cpu_percent", "disk_usage", "parse_cpu", "parse_memory"]
-
-
-def disk_usage(roots: dict[str, str], usage: DiskUsage = shutil.disk_usage
-               ) -> list[dict[str, Any]]:
-    """One entry per file system holding a root: the root names on it and its usage."""
-    by_device: dict[int, dict[str, Any]] = {}
-    for name, path in sorted(roots.items()):
-        try:
-            device = os.stat(path).st_dev
-            found = usage(path)
-        except OSError:
-            continue
-        entry = by_device.setdefault(device, {
-            "roots": [], "total": found.total, "used": found.used, "free": found.free,
-        })
-        entry["roots"].append(name)
-    return list(by_device.values())
 
 
 class Sampler:

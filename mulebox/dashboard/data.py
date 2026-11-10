@@ -33,8 +33,9 @@ DETAIL_FIELDS = ("base_commit", "timeout_min", "needs", "toolchain", "duration_s
 
 
 class DashboardData:
-    def __init__(self, store: Store, staging: Staging) -> None:
-        self.store, self.staging = store, staging
+    def __init__(self, store: Store, staging: Staging, local_name: str | None = None) -> None:
+        """`local_name`: the worker on the dashboard's own machine, if one is (`host` rows)."""
+        self.store, self.staging, self.local_name = store, staging, local_name
         self._redactor = Redactor()
 
     def queue_jobs(self, now: float | None = None,
@@ -64,14 +65,18 @@ class DashboardData:
         return snapshot(self.queue_jobs(now), now)
 
     def machines(self, now: float) -> dict[str, Any]:
+        return self.fleet(now)[0]
+
+    def fleet(self, now: float) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """The machines panel, and the workers as stored (with their full `load`) it came from."""
         with self.store.read() as conn:
             limits = attendance.read_limits(conn)
             active = [{**job, **attendance.fields(job, now, limits)}
                       for job in queue.active_jobs(conn)]
             found = workers.listing(conn)
-            panel = machines.snapshot(found, active, now)
+            panel = machines.snapshot(found, active, now, self.local_name)
             panel["notices"] = notices.notices(get_version(), found, clients.recent(conn, now), now)
-            return panel
+            return panel, found
 
     def job(self, job_id: str, now: float | None = None) -> dict[str, Any] | None:
         """The detail view of one job, or None when the id is malformed or unknown."""

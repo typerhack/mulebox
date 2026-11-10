@@ -22,7 +22,7 @@ from aiohttp import web
 
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.stats import GROUPS as STAT_FILTERS
-from mulebox.dashboard import cancel, controls, keys, login, streams
+from mulebox.dashboard import cancel, controls, keys, login, metrics_api, streams
 from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
 from mulebox.dashboard.hub import Hub
@@ -178,5 +178,4 @@ async def _stats(request: web.Request) -> web.Response:
 
 
 async def _metrics(request: web.Request) -> web.Response:
-    hub = request.app[keys.HUB]
-    return web.json_response({"history": list(hub.history), "drops": hub.bus.drops})
+    return web.json_response(await metrics_api.reply(request))

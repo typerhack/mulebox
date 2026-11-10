@@ -106,8 +106,11 @@ of the Failed tab: it did not fail.
 The panel feeds the Machines box, the lanes above and `/api/machines`.
 
 - A row per worker in the coordinator's `workers` table: `name`, `state`, `slots`,
-  `free_slots`, `capabilities`, `last_seen`, `jobs`, `cpu_pct`, `mem_pct`. Plus `total`,
-  `online` and `free_slots` for the cluster.
+  `free_slots`, `capabilities`, `last_seen`, `jobs`, `cpu_pct`, `mem_pct`, `cores`,
+  `net_in_kib_s`, `net_out_kib_s`, `host` (true on the row of the worker on the dashboard's own
+  machine, `node.toml`'s `name`; none is when no worker runs there) and `version` (the mulebox
+  the worker last reported, null before it did; a change publishes a `machines` event). Plus
+  `total`, `online` and `free_slots` for the cluster.
 - **Readings.** `cpu_pct` (average over the cores), `mem_pct` and `cores` are what each worker
   last reported with a claim or heartbeat (`workers.load`, M5.3), at most every 2 s; null while
   it is offline or has not reported, and then the box reads `no live data`, never a guess. The
@@ -261,7 +264,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |
 | `GET /api/events` | queue, machines and metrics, SSE (below) |
-| `GET /api/metrics` | `{history, drops}`: the kept samples and viewers dropped so far |
+| `GET /api/metrics?machine=` | no `machine`, or the host's own name: `{history, drops, machine, host: true}`, the kept samples, viewers dropped so far and the host's worker name (null when none runs there). Another worker: `{machine, host: false, last_seen, history}` (Metrics, below); 404 for a name the store does not know |
 | `GET /api/stats?from=&to=&day_starts=&by=&project=&job=&client=&worker=&kind=` | job minutes, the `stats_ok` body of interfaces-m1.md (`day_starts` and `by` comma-separated); 400 on a bad value |
 
 Bad numbers in `limit` or `before` give 400. An unusable offset or event id is ignored.
@@ -303,3 +306,17 @@ Sampled once however many viewers there are (`hub.py`). Blocking reads run in a 
 
 The last 150 samples (5 minutes) are kept. Missing values are null, not errors: without
 `/proc` (macOS) or Docker the dashboard still runs.
+
+**Other machines** (`dashboard/machine_history.py`, `dashboard/metrics_api.py`). Each worker
+sends with its claims and heartbeats, in `load` (interfaces-m1.md), `cpu` (percent per core),
+`memory` (`total`, `available`, `used` bytes) and `disk`, the fullest file system under its
+roots (`roots`, `total`, `used`, `free`; common/disk.py `fullest`), read in the same sampling as
+`cpu_pct`, at most every 2 s, by no extra process. The coordinator keeps the latest in
+`workers.load`. The hub's machines loop, which reads the workers every 2 s anyway, keeps an
+entry per worker each time its `last_seen` moved on by 1.5 s or more: `{t, cpu, memory, disk}`,
+`t` being `last_seen` and `disk` a list of one, so the host's shape without `self`, `docker` and
+`viewers`. Up to 5 minutes and 200 entries per worker, in the dashboard process only; a worker
+removed from the store is forgotten, and a restart starts empty. An offline worker answers
+`history: []` with its `last_seen`. A worker before these readings gives `cpu: []`,
+`memory: null` and `disk: []`. The page polls this every 2 s while such a machine is picked; the
+host's samples keep coming on the event stream.

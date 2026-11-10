@@ -5,7 +5,8 @@
 - machines: reads the workers every MACHINES_S and publishes a `machines` event only when
   the panel changes, which includes a machine going quiet and, for the machine this
   dashboard runs on (`local_name`), its CPU and memory readings moving a whole percent.
-  Other machines carry no readings until workers report them (M5.3).
+  Other machines carry what their workers last reported (M5.3), and the same read feeds up to
+  5 minutes of each worker's readings for its graphs (machine_history.py).
 - metrics: CPU, memory and own overhead every METRICS_S; Docker every DOCKER_S; disk
   every DISK_S. Each `metrics` event carries the newest value of every part; the last
   HISTORY samples are kept for the graphs of a viewer that just connected.
@@ -27,6 +28,7 @@ from mulebox.common.status import fingerprint, snapshot
 from mulebox.dashboard import docker, machines
 from mulebox.dashboard.data import DashboardData
 from mulebox.dashboard.events import EventBus
+from mulebox.dashboard.machine_history import MachineHistory
 from mulebox.dashboard.metrics import Sampler, disk_usage
 
 _log = get_logger(__name__)
@@ -44,7 +46,9 @@ class Hub:
                  docker_count: Callable[[], Awaitable[int | None]] | None = None,
                  clock: Callable[[], float] = time.time, local_name: str | None = None) -> None:
         self.data, self.bus, self.roots, self.clock = data, bus, roots, clock
-        self.local_name = local_name
+        # The worker on this machine; by default the one the data names.
+        self.local_name = local_name if local_name is not None else getattr(data, "local_name", None)
+        self.machine_history = MachineHistory()
         self.sampler = sampler or Sampler()
         socket = docker.socket_path()
         self.docker_count = docker_count or (lambda: docker.running_containers(socket))
@@ -69,7 +73,9 @@ class Hub:
 
     async def machines_step(self) -> bool:
         """Publish a `machines` event if the panel changed; True when one was published."""
-        panel = await asyncio.to_thread(self.data.machines, self.clock())
+        now = self.clock()
+        panel, found = await asyncio.to_thread(self.data.fleet, now)
+        self.machine_history.record(found, now)
         machines.with_readings(panel, self.local_name, self.history[-1] if self.history else None)
         mark = machines.fingerprint(panel)
         if mark == self._machines_print:

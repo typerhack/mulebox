@@ -93,3 +93,33 @@ def test_a_claim_and_a_heartbeat_record_the_machine_load(store, staging):
                                "net_in_kib_s": None, "net_out_kib_s": None}
         assert workers.report(row, 2.0)["load"]["cores"] == 8
         assert workers.report(row, 100.0)["load"] is None  # offline: no stale reading
+
+
+GRAPHS = {"cpu": [10.0, 90.5], "memory": {"total": 8, "available": 6, "used": 2},
+          "disk": {"roots": ["cache", "jobs"], "total": 100, "used": 40, "free": 60}}
+
+
+def test_the_graph_readings_are_kept_with_the_load(store, staging):
+    from mulebox.coordinator import api, queue, workers
+
+    from .helpers import queued, request
+    queued(store, staging)
+    job = queue.claim(store, "build-1", [], 1, 5, now=1.0, load={"cpu_pct": 50.0, **GRAPHS})
+    with store.read() as conn:
+        assert {k: workers.get(conn, "build-1")["load"][k] for k in GRAPHS} == GRAPHS
+    api.handle(store, staging, request("heartbeat", job_id=job["job_id"], lease="worker",
+                                       attempt_id=job["attempt_id"],
+                                       load={"cpu": [10.0, 120.0], "memory": {"total": -1},
+                                             "disk": {"roots": "jobs", "total": 1, "used": 0,
+                                                      "free": 1}}), 2.0)
+    with store.read() as conn:
+        load = workers.get(conn, "build-1")["load"]
+    assert not {"cpu", "memory", "disk"} & set(load)  # malformed: dropped, the claim still taken
+
+
+def test_graph_readings_are_checked_one_by_one():
+    from mulebox.coordinator import validate
+    got = validate.load({"load": {**GRAPHS, "cpu": [True], "memory": {"total": 1.5}}})
+    assert "cpu" not in got and "memory" not in got and got["disk"] == GRAPHS["disk"]
+    assert "cpu" not in validate.load({"load": {"cpu": []}})
+    assert "disk" not in validate.load({"load": {"disk": {**GRAPHS["disk"], "roots": ["x" * 40]}}})

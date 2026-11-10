@@ -62,7 +62,8 @@ class Agent(Ending, Skipping):
         self.cleaner = Cleaner(paths, node.name, docker)
         self.ports = PortPool()
         self.meter = activity.MachineMeter()
-        self.host = HostLoad()  # the machine's CPU and memory, sent with claims and heartbeats
+        # The machine's CPU, memory and fullest disk, sent with claims and heartbeats.
+        self.host = HostLoad(roots=dict(node.roots))
         self.machine = runspec.Machine(node.name, paths, docker, self.ports, node.job_env)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []

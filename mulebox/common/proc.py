@@ -7,8 +7,9 @@ from __future__ import annotations
 import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
-from mulebox.common import netdev
+from mulebox.common import disk, netdev
 
 PROC = Path("/proc")
 IDLE, IOWAIT = 3, 4
@@ -70,22 +71,27 @@ def read(path: Path) -> str | None:
 
 class HostLoad:
     """The machine's CPU (average of its cores) and memory in percent, and its network in and out
-    in KiB/s over its physical interfaces (common/netdev.py), for the coordinator.
+    in KiB/s over its physical interfaces (common/netdev.py), for the coordinator. For the
+    dashboard's graphs of a machine it is not on, also `cpu` (busy percent per core), `memory`
+    (total, available and used bytes) and `disk`, the fullest file system under `roots`
+    (common/disk.py `fullest`), each null when not read.
 
     CPU and network are the change between two samples, so the first call has neither. Calls closer together
     than `min_span_s` give the last answer again: a worker asks on every claim and heartbeat."""
 
     def __init__(self, proc: Path = PROC, min_span_s: float = 2.0,
-                 clock: Callable[[], float] = time.monotonic, net: Path = netdev.SYS_NET) -> None:
+                 clock: Callable[[], float] = time.monotonic, net: Path = netdev.SYS_NET,
+                 roots: dict[str, str] | None = None) -> None:
         self.proc, self.min_span_s, self.clock, self.net = proc, min_span_s, clock, net
+        self.roots = roots or {}
         self._cpu: list[tuple[int, int]] = []
         self._net: tuple[int, int] | None = None
         self._at: float | None = None
-        self._last: dict[str, float | int | None] = {"cpu_pct": None, "cores": None,
-                                                     "mem_pct": None, "net_in_kib_s": None,
-                                                     "net_out_kib_s": None}
+        self._last: dict[str, Any] = {"cpu_pct": None, "cores": None, "mem_pct": None,
+                                      "net_in_kib_s": None, "net_out_kib_s": None,
+                                      "cpu": None, "memory": None, "disk": None}
 
-    def sample(self) -> dict[str, float | int | None]:
+    def sample(self) -> dict[str, Any]:
         now = self.clock()
         if self._at is not None and now - self._at < self.min_span_s:
             return self._last
@@ -106,5 +112,7 @@ class HostLoad:
             if memory and memory["total"] else None,
             "net_in_kib_s": flow[0] if flow else None,
             "net_out_kib_s": flow[1] if flow else None,
+            "cpu": shares, "memory": memory,
+            "disk": disk.fullest(self.roots) if self.roots else None,
         }
         return self._last

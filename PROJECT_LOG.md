@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.96.0 - 2026-11-10 - minor
+- Other machines' readings for the dashboard (M14.10, so a clicked machine fills CPU, Memory and Disk): workers send per-core CPU, memory totals and their fullest disk inside `load` with claims and heartbeats, from the same 2 s sample, no extra process; a claim's `disk_free` reuses that reading. Disk usage is shared in common/disk.py (`usage_by_device`, `fullest`). The coordinator checks each new field and keeps it in `workers.load`, schema unchanged (20). The dashboard keeps up to 5 minutes per worker from its existing 2 s machines read (dashboard/machine_history.py); `GET /api/metrics?machine=<name>` answers for the host, for another worker (empty while offline), or 404 (dashboard/metrics_api.py). `/api/machines` rows gain `host` and `version`. Full suite passed through `mulebox check` (2735 passed).
+
 ## 0.95.5 - 2026-11-10 - patch
 - Design system: several machines (the user's pick, "click a row"): the top row shows the host by default and any machine clicked in the Machines box, never changing size; lanes only for machines with work; a Machines page. The reference mockup is updated with it.
 

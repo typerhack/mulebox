@@ -368,7 +368,9 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   machine with what runs and what waits for it; jobs several machines could take in one
   shared list, jobs no machine fits marked stuck), failed, passed and recent jobs behind
   tabs, live log, history, and CPU per core, memory, disk and Docker containers for the
-  machine the dashboard runs on.
+  machine the dashboard runs on. For another machine, CPU per core, memory and its fullest
+  disk over the last 5 minutes, from what its worker sends with its claims and heartbeats,
+  kept by the dashboard process (no Docker count or overhead there).
 - Look: the design system, [design-system.md](design-system.md) (Gauge, chosen 2026-11-10). The
   page of today predates it and moves to it with the React front end (M14.10).
 - Layout: a live monitor in boxes that fills the window, machine load first and the jobs

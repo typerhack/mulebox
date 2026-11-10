@@ -126,7 +126,9 @@ def ci_result(body: dict[str, Any], name: str = "ci_result") -> dict[str, str]:
 
 def load(body: dict[str, Any], name: str = "load") -> dict[str, Any] | None:
     """A worker's machine load: `cpu_pct` and `mem_pct` (0 to 100), `cores`, and its network in
-    and out (`net_in_kib_s`, `net_out_kib_s`, M14.2), each or null.
+    and out (`net_in_kib_s`, `net_out_kib_s`, M14.2), each or null; for the dashboard's graphs
+    of the machine, `cpu` (percent per core), `memory` and `disk` (byte counts), kept only when
+    well formed, as a worker before them does not send them.
     Anything else in it, or a value out of range, is dropped: a reading must not fail a claim."""
     value = body.get(name)
     if not isinstance(value, dict):
@@ -142,4 +144,44 @@ def load(body: dict[str, Any], name: str = "load") -> dict[str, Any] | None:
             out[key] = float(item) if 0 <= item <= MAX_KIB_S else None
         else:
             out[key] = float(item) if 0 <= item <= 100 else None
-    return out
+    graphs = {"cpu": _per_core(value.get("cpu")),
+              "memory": _bytes(value.get("memory"), MEMORY_FIELDS),
+              "disk": _disk(value.get("disk"))}
+    return {**out, **{key: item for key, item in graphs.items() if item is not None}}
+
+
+MEMORY_FIELDS = ("total", "available", "used")
+DISK_FIELDS = ("total", "used", "free")
+MAX_ROOTS, MAX_ROOT_NAME = 16, 32
+
+
+def _percent(item: Any) -> bool:
+    return isinstance(item, (int, float)) and not isinstance(item, bool) and 0 <= item <= 100
+
+
+def _per_core(value: Any) -> list[float] | None:
+    """Busy percent per core, or None unless every value is one (at most 4096 cores)."""
+    if not isinstance(value, list) or not value or len(value) > 4096:
+        return None
+    return [float(item) for item in value] if all(map(_percent, value)) else None
+
+
+def _bytes(value: Any, names: tuple[str, ...]) -> dict[str, int] | None:
+    """`names` as byte counts, or None unless each is a whole number at or above zero."""
+    if not isinstance(value, dict):
+        return None
+    found = {key: value.get(key) for key in names}
+    if any(isinstance(item, bool) or not isinstance(item, int) or item < 0
+           for item in found.values()):
+        return None
+    return found
+
+
+def _disk(value: Any) -> dict[str, Any] | None:
+    """The fullest disk: its byte counts and the names of the roots on it."""
+    counts = _bytes(value, DISK_FIELDS)
+    roots = value.get("roots") if counts else None
+    if not isinstance(roots, list) or len(roots) > MAX_ROOTS or not all(
+            isinstance(root, str) and 0 < len(root) <= MAX_ROOT_NAME for root in roots):
+        return None
+    return {"roots": list(roots), **counts}

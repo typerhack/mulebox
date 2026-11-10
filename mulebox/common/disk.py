@@ -7,8 +7,10 @@ and `mulebox project clean` shows it first. Docker's images are not mulebox's to
 
 from __future__ import annotations
 
+import os
 import shutil
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
 LOW_FREE_BYTES = 10_000_000_000  # a compose job's images and an install can take that
 
@@ -22,6 +24,35 @@ def free_bytes(folders: Iterable[str]) -> int | None:
         except OSError:
             continue
     return min(found) if found else None
+
+
+DiskUsage = Callable[[str], Any]
+
+
+def usage_by_device(roots: dict[str, str], usage: DiskUsage = shutil.disk_usage
+                    ) -> list[dict[str, Any]]:
+    """One entry per file system holding a root: the root names on it, its `total`, `used` and
+    `free` bytes. A file system's usage, not a `du` of the roots: walking job folders and caches
+    would cost far more than a reading may. Roots that cannot be read are left out."""
+    by_device: dict[int, dict[str, Any]] = {}
+    for name, path in sorted(roots.items()):
+        try:
+            device = os.stat(path).st_dev
+            found = usage(path)
+        except OSError:
+            continue
+        entry = by_device.setdefault(device, {
+            "roots": [], "total": found.total, "used": found.used, "free": found.free,
+        })
+        entry["roots"].append(name)
+    return list(by_device.values())
+
+
+def fullest(roots: dict[str, str], usage: DiskUsage = shutil.disk_usage
+            ) -> dict[str, Any] | None:
+    """The entry of `usage_by_device` with the least free space; None when none can be read."""
+    found = usage_by_device(roots, usage)
+    return min(found, key=lambda entry: entry["free"]) if found else None
 
 
 def is_low(free: int | None) -> bool:

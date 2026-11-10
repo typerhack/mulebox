@@ -26,8 +26,11 @@ def by_name(paths: NodePaths) -> dict[str, list[str]]:
 
 
 def fields(node: NodeConfig, paths: NodePaths, load: HostLoad | None = None) -> dict[str, Any]:
-    """The claim body's facts about this worker; `load` its machine's CPU and memory (M5.3)."""
+    """The claim body's facts about this worker; `load` its machine's CPU, memory and fullest disk
+    (M5.3), whose free space is `disk_free` too when it read one."""
+    sample = load.sample() if load is not None else None
+    fullest = (sample or {}).get("disk")
+    free = fullest["free"] if fullest else disk.free_bytes(node.roots.values())
     return {"worker": node.name, "capabilities": compose.worker_capabilities(node.capabilities),
-            "toolchains": by_name(paths), "version": get_version(),
-            "disk_free": disk.free_bytes(node.roots.values()),
-            **({"load": load.sample()} if load is not None else {})}
+            "toolchains": by_name(paths), "version": get_version(), "disk_free": free,
+            **({"load": sample} if sample is not None else {})}

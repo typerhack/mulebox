@@ -56,3 +56,13 @@ def test_docker_socket_choice():
     assert docker.socket_path({}) == docker.DEFAULT_SOCKET
     assert docker.socket_path({"DOCKER_HOST": "unix:///run/x.sock"}) == "/run/x.sock"
     assert docker.socket_path({"DOCKER_HOST": "tcp://192.168.1.50:2375"}) is None
+
+
+def test_the_fullest_disk_is_the_one_with_least_free(tmp_path):
+    from mulebox.common import disk
+    (tmp_path / "a").mkdir()
+    sizes = {str(tmp_path): (100, 90, 10), str(tmp_path / "a"): (100, 20, 80)}
+    usage = lambda path: namedtuple("usage", "total used free")(*sizes[path])  # noqa: E731
+    assert disk.fullest({"jobs": str(tmp_path)}, usage) == {
+        "roots": ["jobs"], "total": 100, "used": 90, "free": 10}
+    assert disk.fullest({"gone": str(tmp_path / "no")}, usage) is None
