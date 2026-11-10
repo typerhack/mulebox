@@ -1,7 +1,7 @@
 """`mulebox machine`: the build machines of the queue, from the laptop (docs/install.md).
 
     mulebox machine list
-    mulebox machine drain <name> [--wait]
+    mulebox machine drain <name> [--wait]    (also `machine pause`)
     mulebox machine resume <name>
     mulebox machine remove <name>
 
@@ -28,11 +28,12 @@ KEY_TIMEOUT_S = 30
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    machine = sub.add_parser("machine", help="list, drain, resume or remove build machines")
+    machine = sub.add_parser("machine", help="list, pause (drain), resume or remove build machines")
     actions = machine.add_subparsers(dest="machine_command", metavar="<action>", required=True)
     actions.add_parser("list", help="every machine, online or not").set_defaults(
         func=guarded(_list))
-    drain = actions.add_parser("drain", help="let a machine finish its jobs and take no new ones")
+    drain = actions.add_parser("drain", aliases=["pause"],
+                               help="let a machine finish its jobs and take no new ones")
     drain.add_argument("name")
     drain.add_argument("--wait", action="store_true", help="return once its jobs have ended")
     drain.set_defaults(func=guarded(_drain))

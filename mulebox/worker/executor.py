@@ -49,6 +49,8 @@ class Executor(Protocol):
     def stop(self, handle: Any) -> None: ...
     def list_orphans(self) -> list[str]: ...
     def kill(self, name: str) -> None: ...
+    def freeze(self, handle: Any, on: bool) -> None: ...
+    def prioritize(self, handle: Any, on: bool) -> None: ...
 
 
 def unit_name(job_id: str) -> str:
@@ -128,6 +130,13 @@ class SubprocessExecutor:
         self._terminate_group(handle)
         if handle.exit_code is None:
             self._finish(handle, handle.proc.wait())
+
+    def freeze(self, handle: ProcessHandle, on: bool) -> None:
+        """Stop or continue the job's process group (no cgroup freezer without systemd)."""
+        self._signal(handle.pgid, signal.SIGSTOP if on else signal.SIGCONT)
+
+    def prioritize(self, handle: ProcessHandle, on: bool) -> None:
+        """Nothing to raise without systemd: a plain process group has no weight to set."""
 
     def list_orphans(self) -> list[str]:
         """Jobs started by this executor whose process group is still alive."""

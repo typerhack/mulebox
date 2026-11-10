@@ -12,6 +12,8 @@ JOB_FIELDS = (
 )
 
 
+PAUSED_REASON = "paused by its owner; `mulebox resume <job>` lets it start"
+
 STATUS_FIELDS = ("project", "job", "branch", "kind", "detached", "created_at", "started_at",
                  "finished_at", "log_size", "worker_version")
 
@@ -26,15 +28,23 @@ def job_dict(job: dict[str, Any], position: int | None = None,
         data["waiting_for"] = waiting
     if job["stop_reason"]:
         data["stop_reason"] = job["stop_reason"]
+    data.update(controls(job))
     if job.get("ci_result"):  # how a GitHub job went, as its runner said (runners/diary.py)
         data["ci_result"] = job["ci_result"]
     return data
+
+
+def controls(job: dict[str, Any]) -> dict[str, Any]:
+    """The owner's controls on a job (job_control.py), only those that are on."""
+    return {name: job[name] for name in ("paused", "boost", "priority") if job.get(name)}
 
 
 def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
     """Why a queued agent job cannot start yet (needs.py); None for anything else."""
     if job["state"] != JobState.QUEUED or job["kind"] != "job":
         return None
+    if job.get("paused"):
+        return PAUSED_REASON
     if holds.draining(conn, now):
         return holds.DRAIN_REASON
     return needs.waiting_for(workers.listing(conn), job["needs"], now)
@@ -92,6 +102,7 @@ def status_body(job: dict[str, Any], position: int | None = None,
         body["worker"] = job["worker"]
     if waiting:
         body["waiting_for"] = waiting
+    body.update(controls(job))  # a worker pauses or boosts a running job from this
     body.update(extra)
     return body
 

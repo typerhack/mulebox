@@ -399,6 +399,27 @@ mulebox dashboard open --port 8091     # if local port 8090 is taken
 If `[dashboard] port` was changed in `node.toml`, pass the same value as `--remote-port`.
 Nothing but the SSH connection is exposed: the page is reached only through the tunnel.
 
+### Steering jobs and machines
+
+mulebox is meant for your own network, so whoever reaches the queue may steer it, from the
+laptop or from the dashboard:
+
+```sh
+mulebox pause <job-id>      # a waiting job keeps its place and does not start;
+                            # a running one is frozen where it is, its containers too
+mulebox resume <job-id>     # goes on where it stopped
+mulebox first <job-id>      # a waiting job goes before every other waiting job
+mulebox boost <job-id>      # the job gets the machine's CPU and disk first, and the
+                            # machine takes no new job until it ends
+mulebox normal <job-id>     # back to its own place in line, without the boost
+mulebox machine pause <name>    # the same as `machine drain`: no new jobs there
+mulebox machine resume <name>
+```
+
+A paused job is not asked whether it is stuck, and resuming it answers what was asked meanwhile.
+A paused job still holds its slot and its memory. A boost does not stop GitHub runners on that
+machine from taking CI jobs; it only weighs the job above them.
+
 ## Skill for coding agents
 
 The package ships a skill that teaches a coding agent to work through mulebox in any project.

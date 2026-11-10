@@ -1,4 +1,7 @@
-"""The FIFO queue: atomic claims, slot accounting, queue positions and the listing.
+"""The queue: atomic claims, slot accounting, queue positions and the listing.
+
+Oldest first, except what its owner moved up (`priority`, job_control.py). A paused job is
+skipped and keeps its place; a machine running a boosted job takes no new one until it ends.
 
 A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
 claiming at once can never get the same job, and the cluster-wide slot limit holds.
@@ -24,7 +27,7 @@ from mulebox.coordinator.store import ACTIVE_STATES, Store
 DEFAULT_FINISHED_LIMIT = 20
 
 _ACTIVE_SQL = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
-_QUEUE_ORDER = "queued_at, seq"
+_QUEUE_ORDER = "priority DESC, queued_at, seq"
 JOB_KIND = "job"
 RUNNER_KIND = "runner"
 
@@ -51,7 +54,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
         if (free < 1 or workers.is_draining(conn, worker)
                 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
-                or holds.draining(conn, now)):
+                or holds.draining(conn, now) or boosted_on(conn, worker)):
             return None
         blocker = oldest_reservation(conn, worker)
         on_hold = holds.held(conn, now)
@@ -62,7 +65,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
             if blocker is not None and _key(blocker) < _key(job):
                 return None  # FIFO: the older reservation goes first
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
-                    and job["project"] not in on_hold):
+                    and job["project"] not in on_hold and not job["paused"]):
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,
@@ -91,6 +94,12 @@ def active_on(conn: sqlite3.Connection, worker: str, kind: str | None = None) ->
     return conn.execute(sql, params).fetchone()[0]
 
 
+def boosted_on(conn: sqlite3.Connection, worker: str) -> bool:
+    """Whether `worker` runs a job its owner gave the whole machine (job_control.py)."""
+    return conn.execute(f"SELECT 1 FROM jobs WHERE {_ACTIVE_SQL} AND worker = ? AND boost = 1",
+                        (worker,)).fetchone() is not None
+
+
 def oldest_reservation(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
     """The oldest queued reservation pinned to `worker`, or None."""
     rows = st.select_jobs(conn, "state = ? AND kind = ? AND pinned_worker = ?",
@@ -107,9 +116,10 @@ def position(conn: sqlite3.Connection, job: dict[str, Any]) -> int | None:
     if job["state"] != JobState.QUEUED:
         return None
     ahead = conn.execute(
-        "SELECT COUNT(*) FROM jobs WHERE state = ? AND (queued_at < ? OR "
-        "(queued_at = ? AND seq < ?))",
-        (JobState.QUEUED.value, job["queued_at"], job["queued_at"], job["seq"]),
+        "SELECT COUNT(*) FROM jobs WHERE state = ? AND (priority > ? OR (priority = ? AND "
+        "(queued_at < ? OR (queued_at = ? AND seq < ?))))",
+        (JobState.QUEUED.value, job["priority"], job["priority"], job["queued_at"],
+         job["queued_at"], job["seq"]),
     ).fetchone()[0]
     return ahead + 1
 

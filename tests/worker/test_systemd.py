@@ -141,3 +141,18 @@ def test_a_job_without_a_limit_has_no_runtime_limit(tmp_path):
     spec = RunSpec(name="mulebox-job-a", argv=("true",), cwd=tmp_path, env={},
                    log_path=tmp_path / "out.log", timeout_s=None)
     assert not any("RuntimeMaxSec" in arg for arg in run_argv(spec))
+
+
+def test_freeze_and_weight_of_a_job_unit():
+    runner = FakeRunner()
+    ex = SystemdExecutor(runner)
+    handle = ex.start(_spec())
+    ex.freeze(handle, True)
+    ex.freeze(handle, False)
+    ex.prioritize(handle, True)
+    ex.prioritize(handle, False)
+    assert runner.calls[1:] == [
+        ["systemctl", "--user", "freeze", UNIT], ["systemctl", "--user", "thaw", UNIT],
+        ["systemctl", "--user", "set-property", "--runtime", UNIT, "CPUWeight=10000",
+         "IOWeight=10000"],
+        ["systemctl", "--user", "set-property", "--runtime", UNIT, "CPUWeight=50", "IOWeight=50"]]

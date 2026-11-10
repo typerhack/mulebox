@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.86.0 - 2026-11-10 - minor
+- Steer jobs (M14.3, the user's ask): `mulebox pause|resume|first|boost|normal <job-id>` and `machine pause` (drain). A paused waiting job keeps its place and does not start; a paused running job is frozen on its machine (systemd freezer, docker pause) and is not asked or stopped as stuck, and resuming answers what was asked. `first` moves a waiting job ahead; `boost` gives a job the top CPU and disk weight and keeps its machine from taking new jobs. Schema 20 (`jobs.paused`, `priority`, `boost`), wire message `job_control`.
+
 ## 0.85.1 - 2026-11-10 - patch
 - Roadmap: M14.2 and M14.8 done, runner caches run on a real runner (M20.3).
 

@@ -115,6 +115,7 @@ class MessageType(StrEnum):
     TAKEN = "taken"
     TAKE = "take"
     TAKE_OK = "take_ok"
+    JOB_CONTROL = "job_control"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -171,6 +172,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: bytes of that file from `offset`; replied with take_ok.
     MessageType.TAKE: frozenset({"job_id", "index", "offset"}),
     MessageType.TAKE_OK: frozenset({"data", "size", "eof"}),
+    # client -> coordinator: `action` pause, resume, first, boost or normal on one job
+    # (coordinator/job_control.py); replied with status_ok.
+    MessageType.JOB_CONTROL: frozenset({"job_id", "action"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

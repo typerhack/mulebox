@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from mulebox.common.protocol import Outcome
+from mulebox.worker.controls import JobControls
 from mulebox.worker.job_meter import JobMeter
 from mulebox.worker.logtail import LogTailer
 from mulebox.worker.steps import StepTracker
@@ -38,6 +39,7 @@ class ActiveJob:
     install_key: str | None = None  # the same for its `install`
     take: list[str] = field(default_factory=list)  # files `mulebox run --take` brings back
     taking: list[tuple[int, int, bytes]] = field(default_factory=list)  # chunks yet to send
+    controls: JobControls = field(default_factory=JobControls)  # pause and boost (controls.py)
 
     @property
     def steps(self) -> StepTracker:

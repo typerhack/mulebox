@@ -268,6 +268,8 @@ class Agent(Ending, Skipping):
         elif reply.type is MessageType.ERROR or reply.body.get("state") == JobState.FINISHED:
             LOG.warning("coordinator no longer runs %s; stopping it", job.job_id)
             self._end(job, Outcome.INTERRUPTED, None, now)
+        else:
+            job.controls.follow(reply.body, job, self.executor, self.docker)
 
     def shutdown(self, now: float | None = None) -> None:
         """Stop every running job as interrupted and try to report once."""

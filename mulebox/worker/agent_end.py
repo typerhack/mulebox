@@ -18,6 +18,7 @@ class Ending:
     def _end(self, job: ActiveJob, outcome: Outcome, exit_code: int | None, now: float) -> None:
         """Stop the process, flush the log, clean up; reports go out via _deliver."""
         if job.handle is not None and self.executor.poll(job.handle) is None:
+            job.controls.release(job, self.executor, self.docker)  # a paused job cannot stop
             self.executor.stop(job.handle)
         job.duration_s = max(0.0, now - job.started_at)
         job.tailer.finish()

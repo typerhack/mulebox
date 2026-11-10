@@ -148,6 +148,16 @@ class SystemdExecutor:
         if handle.exit_code is None:
             handle.exit_code = 143
 
+    def freeze(self, handle: UnitHandle, on: bool) -> None:
+        """Freeze or thaw the unit's processes (cgroup freezer); a stop thaws it by itself."""
+        self._systemctl("freeze" if on else "thaw", _check_unit(handle.name))
+
+    def prioritize(self, handle: UnitHandle, on: bool) -> None:
+        """The unit's CPU and disk weight: the top while boosted, its usual share otherwise."""
+        weight = 10000 if on else 50
+        self._systemctl("set-property", "--runtime", _check_unit(handle.name),
+                        f"CPUWeight={weight}", f"IOWeight={weight}")
+
     def list_orphans(self) -> list[str]:
         proc = self._systemctl("list-units", "--all", "--plain", "--no-legend",
                                "--type=service", f"{UNIT_PREFIX}*")

@@ -34,6 +34,16 @@ def _cell(text: Any, limit: int | None) -> str:
     return value
 
 
+def state_cell(job: dict[str, Any]) -> str:
+    """The state, with the owner's controls on it (coordinator/job_control.py)."""
+    state = f"{MARK} {shown_state(job)}" if job.get("question") else str(shown_state(job))
+    if job.get("state") == "finished":
+        return state
+    marks = [word for key, word in (("paused", "paused"), ("boost", "boosted"),
+                                    ("priority", "first")) if job.get(key)]
+    return f"{state}, {', '.join(marks)}" if marks else state
+
+
 def job_row(job: dict[str, Any], now: float, full_ids: bool = False) -> list[str]:
     job_id = str(job.get("job_id", ""))
     values = {
@@ -41,7 +51,7 @@ def job_row(job: dict[str, Any], now: float, full_ids: bool = False) -> list[str
         "PROJECT": job.get("project"),
         "JOB": job.get("job"),
         "BRANCH": job.get("branch"),
-        "STATE": f"{MARK} {shown_state(job)}" if job.get("question") else shown_state(job),
+        "STATE": state_cell(job),
         "ELAPSED": _elapsed(job, now),
         "POS": queue_position(job),
     }

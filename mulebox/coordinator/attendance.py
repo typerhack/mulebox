@@ -12,6 +12,8 @@ is asked whether all is well (`check_in`), and answers with `mulebox ok` or `mul
 - Activity is what the worker reports (worker/activity.py). `active_at` is NULL while it cannot
   tell (no /proc, a stage it cannot see into). Not knowing never counts as idle, so such a job
   has only `max_s`, and still only with its question unanswered.
+- A paused job (job_control.py) is not asked and never stopped; resuming it answers every
+  question so far and counts as activity, so it is not stopped for its pause.
 - A queued job is never stopped. A runner reservation belongs to GitHub, and a cancelled job is
   ending anyway.
 
@@ -63,8 +65,8 @@ def question(job: dict[str, Any], now: float, limits: Limits) -> dict[str, Any] 
     stuck; None when nothing is waiting for an answer."""
     started = job["started_at"]
     if (job["kind"] != "job" or job["cancel_requested"] or job["state"] not in _RUNNING
-            or not started):
-        return None
+            or not started or job.get("paused")):
+        return None  # a paused job is still on purpose: resuming answers what was asked
     number = job["check_in_ok"] + 1
     period = job["timeout_min"] * 60.0
     asked = started + number * period

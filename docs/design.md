@@ -56,7 +56,10 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    compares it with the project's last snapshot and asks for the difference, rebuilds the whole
    snapshot, and queues the job only if the result matches the list. Any trouble sends the whole
    snapshot, so a saving never fails a job. One snapshot per project stays in `<staging>/bases`.
-2. **Queue**: one FIFO line. Assignment is atomic: the oldest job a free worker can run.
+2. **Queue**: one line, oldest first. Assignment is atomic: the oldest job a free worker can
+   run. The owner can steer it (`mulebox pause|resume|first|boost|normal`, or the dashboard):
+   a job moved `first` goes before the others, a paused one keeps its place and does not start,
+   and a machine running a `boost`ed job takes no new one (coordinator/job_control.py).
    Cluster-wide and per-worker slot limits, both default 1 and 2 in the installed `node.toml`.
    Jobs of different branches run at once; a job whose branch is busy waits for it, and younger
    jobs of other branches may pass it (`branch_busy` says so).
