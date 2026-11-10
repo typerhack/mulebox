@@ -32,7 +32,9 @@ function renderMark(mark, strip, items) {
   mark.title = word;
   mark.replaceChildren(drawIcon(SHAPES[level], "level"), el("span", { class: "num", text: String(items.length) }));
   mark.onclick = () => {
-    strip.scrollIntoView({ block: "nearest" });
+    // Below the sticky header, not under it.
+    strip.style.scrollMarginTop = `${(mark.closest("header")?.offsetHeight ?? 0) + 8}px`;
+    strip.scrollIntoView({ block: "start" });
     strip.focus({ preventScroll: true });
   };
 }

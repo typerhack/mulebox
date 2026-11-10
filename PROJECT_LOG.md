@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.83.7 - 2026-11-10 - patch
+- Dashboard: on narrow layouts, where the page scrolls, the header is sticky, so the out-of-step mark stays in sight as designed; it had scrolled away with the page (seen at 390 px in real Edge). Its click puts the strip below the header, not under it.
+
 ## 0.83.6 - 2026-11-09 - patch
 - Docs: setup's target is whatever `ssh` takes (alias, address, user@address); troubleshooting lists setup's three login messages and what to do for each; roadmap M14.9 notes the light theme seen.
 

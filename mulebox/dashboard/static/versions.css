@@ -15,3 +15,9 @@
 .versions code { color: var(--ink); font-weight: 700; }
 #versions-mark { --level: var(--warn); gap: 5px; width: auto; padding: 0 8px; color: var(--level); border-color: var(--level); }
 #versions-mark .level { display: block; width: 15px; height: 15px; fill: var(--level); }
+/* Where the page scrolls (narrow layouts), the header stays on top so the mark stays in sight,
+   and the body grows with its content, as a sticky header only sticks within its parent. */
+@media (max-width: 1100px) {
+  body { height: auto; min-height: 100%; }
+  .top { position: sticky; top: 0; z-index: 3; background: var(--bg); }
+}
