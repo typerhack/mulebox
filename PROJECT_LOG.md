@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.93.3 - 2026-11-10 - patch
+- Roadmap: M14.3's last open check passed: a real waiting CI slot moved up from its arrow in Edge and took the next free slot ahead of a job queued before it.
+
 ## 0.93.2 - 2026-11-10 - patch
 - Roadmap: M14.8 no longer lists the real failure and the CI card's cores as open; both were seen on 2026-11-10.
 

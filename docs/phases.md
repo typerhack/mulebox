@@ -482,8 +482,9 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       10000; Queue actions paused and resumed the machine (draining, then busy), froze both running
       jobs and resumed them; the icons for frozen, boosted and paused showed on cards and rows.
       0.91.0 (the user's ask): a GitHub run's waiting slot moves in line too, and both kinds follow
-      one order; tests only so far, as no CI run was waiting while it was checked. Open: the arrows
-      on a real waiting CI slot.
+      one order. Seen 2026-11-10 (0.93.2) in real Edge on the deployed dashboard: with both slots
+      held by drill jobs, a real CI run's waiting slot sat at #2 behind a drill job; its up arrow
+      put it at #1, and when a slot came free it started ahead of the job that had queued first.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it
