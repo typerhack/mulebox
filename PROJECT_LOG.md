@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.93.4 - 2026-11-10 - patch
+- CLAUDE.md: any UI work loads Anthropic's frontend-design skill first, whatever the model, subagents included (the user's rule).
+
 ## 0.93.3 - 2026-11-10 - patch
 - Roadmap: M14.3's last open check passed: a real waiting CI slot moved up from its arrow in Edge and took the next free slot ahead of a job queued before it.
 
