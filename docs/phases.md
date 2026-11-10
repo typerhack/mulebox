@@ -417,7 +417,7 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [~] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
       with data; the top row (CPU, memory, disk, machines) stays. 2026-11-10: of three layouts in Gauge
       the user picked "Monitor on top" (design-system/dashboard-mockup.html), with Memory and Disk of
-      equal height, and both meter styles, Gauge and Rainbow, for the viewer to choose (design-system.md).
+      equal height, and both meter styles, Gauge and Rainbow, for the viewer to choose, Auto by default (design-system.md).
       Done when: it runs on the real dashboard in Edge.
 - [ ] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
       Next.js was weighed and left out: it would need Node and a second server on every machine).

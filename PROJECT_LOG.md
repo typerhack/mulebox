@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.95.4 - 2026-11-10 - patch
+- Design system: a third meter style, Auto, the default: Rainbow in the light theme, Gauge in the dark one (the user's choice).
+
 ## 0.95.3 - 2026-11-10 - patch
 - Design system: two meter styles, Gauge (one solid fill) and Rainbow (the old dashboard's teal to amber to red ramp, segmented), chosen per browser beside the theme switch; the ramp colours are tokens in tokens.css. The user's choice after seeing both.
 - The dashboard layout the user picked, "Monitor on top", kept as docs/design-system/dashboard-mockup.html for M14.1 and M14.10.

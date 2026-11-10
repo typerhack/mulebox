@@ -56,10 +56,11 @@ as decoration; anything you can press uses `--border-strong`.
 ## Meter styles
 
 Two styles for load: resource meters (CPU per core, memory, disk, a machine's CPU and memory, a
-card's cores) and the CPU graph. Each viewer picks one; the choice is remembered per browser,
-like the theme, with a switch beside the theme switch. Decided by the user on 2026-11-10 after
-seeing both: Rainbow looked best to them in light, Gauge in dark, and they want the viewer to
-choose.
+card's cores) and the CPU graph. Each viewer picks Auto, Gauge or Rainbow; the choice is
+remembered per browser, like the theme, with a switch beside the theme switch. Auto is the
+default: Rainbow in the light theme, Gauge in the dark one, following the theme as it changes
+(the system's too). Decided by the user on 2026-11-10 after seeing both: Rainbow looked best to
+them in light, Gauge in dark, and they want the viewer to choose.
 
 - **Gauge**: one solid fill, `--meter-fill`, on a `--meter-track`; the graph in `--graph-line`
   with a faint fill. A meter turns warning and danger at the thresholds above.
