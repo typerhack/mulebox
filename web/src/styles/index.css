@@ -1,4 +1,5 @@
 /* One stylesheet, in this order, so every part knows the theme's names. */
 @import "./theme.css";
+@import "./fonts.css";
 @import "./base.css";
 @import "./components.css";

@@ -14,12 +14,25 @@ from mulebox.coordinator.store import Store
 from mulebox.dashboard.data import DashboardData
 from mulebox.dashboard.events import EventBus
 from mulebox.dashboard.hub import Hub
-from mulebox.dashboard.server import STATIC_DIR, build_app
+from mulebox.dashboard.server import build_app
 from mulebox.dashboard.session import LanAccess, LoginLimiter, Sessions
 from tests.coordinator.conftest import root_map, staging, store  # noqa: F401
 from tests.coordinator.helpers import queued, request
 
 NOW = 1000.0
+LOGIN_PAGE = ('<!doctype html><title>sign in</title><link rel="stylesheet" href="/app/login.css">'
+              '<!--message--><form method="post" action="/login"></form>')
+
+
+def fake_app(folder):
+    """A stand-in for the front end's build (web/, git-ignored): the page, the sign-in page,
+    its stylesheet and a font, which the tests need whether or not anyone ran npm."""
+    for name, text in (("index.html", "<!doctype html><title>react</title>"),
+                       ("login.html", LOGIN_PAGE), ("login.css", "body{}"),
+                       ("fonts/geist.woff2", "font"), ("assets/index-abc.js", "export {};")):
+        (folder / name).parent.mkdir(parents=True, exist_ok=True)
+        (folder / name).write_text(text, encoding="utf-8")
+    return folder
 
 
 class FakeSampler:
@@ -75,13 +88,11 @@ def hub(data, root_map):  # noqa: F811
 @pytest.fixture
 def call(data, hub, tmp_path):
     """Run `async fn(client)` against the real app, with the sampling loops off."""
-    static = tmp_path / "static"
-    static.mkdir()
-    (static / "index.html").write_text("<!doctype html><title>x</title>", encoding="utf-8")
+    built = fake_app(tmp_path / "app")
 
     def run(fn):
         async def main():
-            app = build_app(data, hub, clock=lambda: NOW, start_hub=False, static_dir=static)
+            app = build_app(data, hub, clock=lambda: NOW, start_hub=False, app_dir=built)
             async with TestClient(TestServer(app)) as client:
                 return await fn(client)
         return asyncio.run(main())
@@ -131,7 +142,7 @@ def stored_password(tmp_path_factory):
 
 
 @pytest.fixture
-def lan(data, hub, stored_password):
+def lan(data, hub, stored_password, tmp_path):
     """Run `async fn(http, url)` on a real LAN listener."""
     def run(fn, canceller, *, with_password=True):
         async def main():
@@ -140,7 +151,7 @@ def lan(data, hub, stored_password):
             stored = password.load(stored_password) if with_password else None
             access = LanAccess(ipaddress.ip_network("127.0.0.0/8"), frozenset({HOST}), (HOST, port),
                                stored, Sessions(clock), LoginLimiter(clock))
-            app = build_app(data, hub, clock=clock, start_hub=False, static_dir=STATIC_DIR,
+            app = build_app(data, hub, clock=clock, start_hub=False, app_dir=fake_app(tmp_path / "app"),
                             lan=access, canceller=canceller)
             server = TestServer(app, port=port)
             await server.start_server()

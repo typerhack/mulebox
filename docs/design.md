@@ -380,8 +380,10 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   static files in `mulebox/dashboard/app/` at release time and by `mulebox setup` on the
   laptop, so a build machine never needs Node and the install stays one command. Next.js was
   weighed and left out: it would need Node and a second server on every machine.
-- The page from before, plain HTML and JS modules with no build step, stays at `/classic/`
-  until the owner retires it, and is what `/` serves when the package holds no build.
+- With no build in the package, `/` answers 503 with how to get one, and the API keeps
+  working.
+- The sign-in page of `lan` mode is part of the build too (`web/login.html`), with no script,
+  and only it, its stylesheet and the fonts are open without a session.
 - Layout: a live monitor in boxes that fills the window, machine load first and the jobs
   box below, one theme over the whole page, and a system, light or dark switch remembered
   per browser. System is the default; the sign-in page always follows the system.
@@ -480,7 +482,7 @@ mulebox/
   client/       snapshot.py  submit.py  tui.py  commands.py
   coordinator/  store.py  queue.py  leases.py  recovery.py  api.py  staging.py
   dashboard/    server.py  pages.py  streams.py  hub.py  events.py  metrics.py  data.py
-                static/ (classic page)  app/ (the React build, not in git)
+                app/ (the React build, not in git)
   worker/       agent.py  project_home.py  workspace.py  executor.py  cleaner.py  docker.py
                 docker_cleanup.py  reclaim.py  compose_file.py  compose_job.py  ports.py
                 toolchains.py

@@ -1,5 +1,6 @@
-"""The web build before a wheel: only from a checkout, only when stale, and without npm the
-wheel still goes out (with a stand-in for npm; nothing here runs Node)."""
+"""The web build before a wheel: only from a checkout, only when stale, and a stale or missing
+build with no npm stops rather than ship a wheel with no page (with a stand-in for npm;
+nothing here runs Node)."""
 
 import os
 import subprocess
@@ -45,11 +46,33 @@ def test_a_pip_install_has_no_web_folder_and_nothing_runs(tmp_path):
     assert not npm.calls
 
 
-def test_without_npm_it_says_so_in_one_line_and_goes_on(tmp_path):
+def no_npm(name):
+    return None
+
+
+def test_a_missing_build_without_npm_stops_and_says_how_to_get_node(tmp_path):
     package, _ = checkout(tmp_path)
-    said = []
-    assert webbuild.ensure(package, which=lambda name: None, say=said.append) == "no-npm"
-    assert len(said) == 1 and "npm not found" in said[0] and "\n" not in said[0]
+    with pytest.raises(webbuild.WebBuildError, match="not built and npm is not on the PATH") as err:
+        webbuild.ensure(package, which=no_npm, run=Npm(package))
+    assert "Install Node.js" in str(err.value) and "npm run build" in str(err.value)
+
+
+def test_a_stale_build_without_npm_stops_too(tmp_path):
+    package, web = checkout(tmp_path)
+    webbuild.ensure(package, which=found, run=Npm(package))
+    index = package / "dashboard" / "app" / "index.html"
+    later = index.stat().st_mtime + 10
+    os.utime(web / "src" / "main.tsx", (later, later))
+    with pytest.raises(webbuild.WebBuildError, match="out of date and npm is not on the PATH"):
+        webbuild.ensure(package, which=no_npm)
+
+
+def test_a_fresh_build_needs_no_npm(tmp_path):
+    package, _ = checkout(tmp_path)
+    webbuild.ensure(package, which=found, run=Npm(package))
+    npm = Npm(package)
+    assert webbuild.ensure(package, which=no_npm, run=npm) == "fresh"
+    assert not npm.calls
 
 
 def test_a_missing_build_installs_packages_once_and_builds(tmp_path):

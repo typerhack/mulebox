@@ -37,6 +37,8 @@ describe("groupLanes", () => {
     expect(isStuck(job("a", { can_run_on: [] }))).toBe(true);
     expect(isStuck(job("a", { can_run_on: [], pinned_worker: "build-1" }))).toBe(false);
     expect(waitReason(job("a", { waiting_for: "paused" }), 3)).toBe("paused");
+    expect(waitReason(job("a", { branch_busy: "20261110-xfzpmd" }), 3)).toBe("xfzpmd is running on this branch");
+    expect(waitReason(job("a", { waiting_for: "paused", branch_busy: "20261110-xfzpmd" }), 3)).toBe("paused");
     expect(waitReason(job("a", { can_run_on: ["build-1"] }), 3)).toBe("Only build-1");
     expect(waitReason(job("a", { can_run_on: ["build-1", "build-2"] }), 2)).toBeNull();
   });

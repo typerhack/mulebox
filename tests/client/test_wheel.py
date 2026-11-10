@@ -33,9 +33,21 @@ def test_the_wheel_holds_code_installer_and_metadata(tmp_path):
     assert "mulebox/cli.py" in names
     assert "mulebox/machine/install.sh" in names
     assert "mulebox/machine/systemd/mulebox-worker.service" in names
-    assert "mulebox/dashboard/static/style.css" in names or any(
-        name.startswith("mulebox/dashboard/static/") for name in names)
+    assert not [name for name in names if name.startswith("mulebox/dashboard/static/")]
     assert not [name for name in names if "__pycache__" in name or name.endswith(".pyc")]
+
+
+def test_the_wheel_carries_the_built_front_end(tmp_path, monkeypatch):
+    """Whatever the build left in dashboard/app goes in, the sign-in page and fonts too."""
+    package = tmp_path / "mulebox"
+    for name in ("dashboard/app/index.html", "dashboard/app/login.html", "dashboard/app/login.css",
+                 "dashboard/app/fonts/geist.woff2", "dashboard/app/assets/index-abc.js", "cli.py"):
+        (package / name).parent.mkdir(parents=True, exist_ok=True)
+        (package / name).write_text("x", encoding="utf-8")
+    monkeypatch.setattr(mulebox, "__file__", str(package / "__init__.py"))
+    names = zipfile.ZipFile(wheel.build(tmp_path)).namelist()
+    for name in ("index.html", "login.html", "login.css", "fonts/geist.woff2", "assets/index-abc.js"):
+        assert f"mulebox/dashboard/app/{name}" in names
 
 
 def test_pip_installs_it(tmp_path):

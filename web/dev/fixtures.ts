@@ -31,7 +31,7 @@ export function makeQueue() {
   const wait = (id: string, position: number, more: Record<string, unknown>) =>
     job(id, { position, elapsed_s: 30 * position, section: "queued", can_run_on: ["build-1", "build-2"], needs: [], ...more });
   const queued: MockJob[] = [
-    wait("W00001", 1, { branch: "feature/login", waiting_for: "Waits for the job running on this branch" }),
+    wait("W00001", 1, { branch: "feature/login", branch_busy: "job-01EXAMPLEA41F9C" }),
     wait("W00002", 2, { project: "example-worker", branch: "chore/deps" }),
     wait("W00003", 3, { project: "docs-site", job: "build", branch: "draft/pricing", client_os: "Linux", paused: true,
                         waiting_for: "The project docs-site is paused. Resume it with `mulebox project resume docs-site`" }),

@@ -25,7 +25,7 @@ from mulebox.dashboard import keys
 from mulebox.dashboard.events import BEAT, count, encode, frame
 
 POLL_S = 0.5
-BEAT_S = 5.0  # a page takes 20 s of silence for a dead connection (static/live.js)
+BEAT_S = 5.0  # a page takes 20 s of silence for a dead connection (web/src/lib/live.ts)
 TEXT_CHUNK = 128 * 1024
 
 

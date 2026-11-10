@@ -94,7 +94,9 @@ Point an agent at it: "read mulebox's docs/agents.md and set this project up".
 
 ## Development
 
-Requires Python 3.12 or newer.
+Requires Python 3.12 or newer, and Node.js 22 with npm for the dashboard's front end (`web/`,
+[web/README.md](web/README.md)): from a checkout, `mulebox setup` builds it and stops without npm,
+and the dashboard shows no page until it is built.
 
 ```sh
 python3 -m venv .venv
@@ -103,6 +105,7 @@ python3 -m venv .venv
 .venv/bin/python -m pytest              # includes the file-size check
 .venv/bin/python -m pytest -n auto      # same, in parallel (about 5x faster)
 .venv/bin/python tools/check_line_counts.py
+(cd web && npm ci && npm run build)    # the dashboard's page, into mulebox/dashboard/app/
 ```
 
 After a VERSION bump, rerun the `pip install -e` step: the installed metadata keeps the

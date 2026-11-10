@@ -168,9 +168,10 @@ mkdir -p ~/.local/bin
 ln -s ~/.mulebox-client/bin/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
 ```
 
-A clone holds the dashboard's front end as source (`web/`). With Node 22 and `npm` on the laptop,
-`mulebox setup` builds it before it installs a machine; without them the machine gets the classic
-dashboard page, and setup says so. The binary and a released wheel already carry the build.
+A clone holds the dashboard's front end as source (`web/`), so installing from one needs Node.js
+22 and `npm` on the laptop: `mulebox setup` builds the front end before it installs a machine, and
+stops with what to install when the build is missing or out of date and `npm` is not there. The
+binary and a released wheel already carry the build and need no Node.
 
 Then run `mulebox setup` (section 1). It writes `~/.config/mulebox/client.toml`; to change it later, the template is
 [mulebox/machine/client.toml.example](../mulebox/machine/client.toml.example):

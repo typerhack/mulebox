@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.99.0 - 2026-11-10 - minor
+- The classic dashboard page is retired (the user's call): the React build is the only front end. The lan sign-in page is part of it, in Gauge, with only it, its stylesheet and the fonts open before signing in; with no build, `/` answers 503 with how to build it, and the API keeps working. `mulebox setup` stops, naming Node.js and npm, when the build is missing or out of date and npm is not there.
+- A waiting row in the Jobs box says which job holds its branch, as `mulebox queue` does (`branch_busy`).
+- The line-count check skips `.claude/` (agent worktrees, git-ignored).
+- Checked: web lint, types, 36 tests and build; the full suite through `mulebox check` (2759 passed); in real Edge on a local lan dashboard with a throwaway password: the sign-in page in both themes, a wrong password's message, signing in, and the 503 page with no build.
+
 ## 0.98.0 - 2026-11-10 - minor
 - Jobs box (the user's pick of three, option A, with a second model's refinements): a machine's lane with running and waiting jobs shows the cards on the left and the line on the right, each under a heading (one column under 760 px, two cards side by side when each can be 280 px wide); a line of more than 6 shows its first 5 and "Show all waiting (N)", positions kept.
 - Statistics colours (the user's pick of three, option 3): chart series are a muted teal and ochre palette (`--chart-1` to `--chart-6` in tokens.css), the ochre on marks and swatches only, in place of a blue and orange foreign to the theme.

@@ -5,7 +5,7 @@ import re
 import pytest
 
 from mulebox.dashboard import streams
-from mulebox.dashboard.server import STATIC_DIR, host_name
+from mulebox.dashboard.server import host_name
 from mulebox.version import get_version
 
 from .conftest import NOW
@@ -82,7 +82,7 @@ def test_a_new_viewer_gets_elapsed_times_of_now_not_of_the_last_event(data, hub,
     asyncio.run(hub.queue_step())  # published at NOW
 
     async def go():
-        app = build_app(data, hub, clock=lambda: NOW + 600, start_hub=False, static_dir=tmp_path)
+        app = build_app(data, hub, clock=lambda: NOW + 600, start_hub=False, app_dir=tmp_path)
         async with TestClient(TestServer(app)) as client:
             reply = await client.get("/api/events")
             text = (await reply.content.read(4096)).decode()
@@ -176,22 +176,6 @@ def test_log_text_and_tail(call, run_job, write_log, finish_job):
     kind, body, tail = call(go)
     assert kind.startswith("text/plain") and body == "abcdef"
     assert [d["data"] for e, d in sse(tail) if e == "log"] == ["ef"]
-
-
-def test_the_shipped_page_works_under_the_policy():
-    page = (STATIC_DIR / "index.html").read_text(encoding="utf-8")
-    assert "style=" not in page and "onclick" not in page.lower()
-    assert not re.search(r"<script(?![^>]*\bsrc=)", page)  # no inline script
-    assert "http://" not in page and "https://" not in page  # no CDN
-    for name in ("app.js", "style.css", "charts.js", "jobs.js", "lanes.js", "jobdetail.js",
-                 "machine.js", "machines.js", "format.js", "canceljob.js", "canceljob.css", "doing.js", "doing.css",
-                 "marks.css", "versions.js", "versions.css"):
-        assert (STATIC_DIR / name).is_file()
-    # Filter lists block some names outright, and one blocked module blanks the page.
-    assert not (STATIC_DIR / "logview.js").exists()
-    assert "Loading" in page  # what a viewer sees if the scripts never run
-    code = "".join(p.read_text(encoding="utf-8") for p in STATIC_DIR.glob("*.js"))
-    assert "innerHTML" not in code and "insertAdjacentHTML" not in code and "eval(" not in code
 
 
 def test_stats_counts_a_running_job_and_checks_its_query(call, run_job):

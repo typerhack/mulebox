@@ -37,7 +37,7 @@ version = { file = "VERSION" }
 include = ["mulebox*"]
 
 [tool.setuptools.package-data]
-"mulebox.dashboard" = ["static/*", "app/*", "app/assets/*"]
+"mulebox.dashboard" = ["app/*", "app/assets/*", "app/fonts/*"]
 "mulebox.client" = ["skill/SKILL.md"]
 "mulebox.machine" = ["install.sh", "*.example", "systemd/*"]
 

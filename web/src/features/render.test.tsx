@@ -50,6 +50,17 @@ describe("the Jobs box", () => {
     expect(screen.getByRole("region", { name: /Nothing running on build-2/ })).toBeTruthy();
   });
 
+  it("says which job holds a waiting job's branch, as `mulebox queue` does", () => {
+    queueStore.set({ at: performance.now(), snapshot: {
+      now: 0, recent: [],
+      running: [job("run", { state: "running", worker: "build-1", section: "running" })],
+      queued: [job("next", { position: 1, section: "queued", can_run_on: ["build-1", "build-2"], branch_busy: "job-xfzpmd" })],
+    } });
+    machinesStore.set({ machines: [machine("build-1"), machine("build-2", { state: "available" })], total: 2, online: 2, free_slots: 2 });
+    render(<TipProvider><JobsBox /></TipProvider>);
+    expect(screen.getByRole("region", { name: "Next free machine" }).textContent).toContain("xfzpmd is running on this branch");
+  });
+
   it("has no controls without the page's token, and arrows and menus with it", () => {
     showQueue();
     const { unmount } = render(<TipProvider><JobsBox /></TipProvider>);

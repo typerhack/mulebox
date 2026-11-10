@@ -25,7 +25,7 @@ builds it first.
 
 - `mulebox setup` builds it on the laptop before it makes the wheel it sends, when the build is
   missing or older than a file under `web/` (`mulebox/client/webbuild.py`). Without `npm` it
-  says so in one line and the machine gets the classic page, or the build the package has.
+  stops and names Node.js and npm; a build that is already fresh needs neither.
 - The release workflow builds it before the binary, which carries the package's files.
 - A wheel made by hand needs it built first: `(cd web && npm ci && npm run build)`.
 

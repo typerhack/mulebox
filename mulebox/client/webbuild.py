@@ -6,8 +6,9 @@ laptop that runs `mulebox setup` builds, when it can.
 
 - No `web/` beside the package (a pip install, the binary): nothing to do; the package already
   holds whatever build it was shipped with.
-- `npm` not on the PATH: the wheel goes without a fresh build, said in one line.
-- Otherwise the build runs when its output is missing or older than any source file.
+- The build is there and newer than every source file: nothing to do, npm or not.
+- Otherwise it is built, which needs Node.js and npm; without them this stops with how to get
+  them, as a wheel with no page or an old one would install a dashboard that does not match.
 """
 
 from __future__ import annotations
@@ -19,13 +20,16 @@ from pathlib import Path
 
 from mulebox.common.errors import MuleboxError
 
-SOURCES = ("src", "public", "package.json", "package-lock.json", "index.html", "vite.config.ts")
-NO_NPM = ("npm not found: the dashboard's new front end is not built, "
-          "so the wheel goes with the one it has, or the classic page")
+SOURCES = ("src", "public", "package.json", "package-lock.json", "index.html", "login.html",
+           "vite.config.ts")
+NO_NPM = ("the dashboard's front end in web/ is {state} and npm is not on the PATH. Install "
+          "Node.js (it comes with npm; https://nodejs.org or your package manager, such as "
+          "`brew install node` or `apt install nodejs npm`), then run this again; or build it "
+          "yourself with `npm ci` and `npm run build` in web/")
 
 
 class WebBuildError(MuleboxError):
-    """The web build ran and failed; the wheel must not go out with a half-made front end."""
+    """The web build could not run or failed; the wheel must not go out without its page."""
 
 
 def _newest(web: Path) -> float:
@@ -44,19 +48,19 @@ def stale(web: Path, out: Path) -> bool:
 
 
 def ensure(package: Path, *, which: Callable[[str], str | None] = shutil.which,
-           run: Callable[..., object] = subprocess.run,
-           say: Callable[[str], None] = print) -> str:
+           run: Callable[..., object] = subprocess.run) -> str:
     """Build `web/` into `package`'s dashboard when needed. Returns what happened:
-    `absent`, `no-npm`, `fresh` or `built`."""
+    `absent`, `fresh` or `built`; raises WebBuildError with no npm or a failed build."""
     web = package.parent / "web"
     if not (web / "package.json").is_file():
         return "absent"
+    out = package / "dashboard" / "app"
+    if not stale(web, out):
+        return "fresh"
     npm = which("npm")
     if npm is None:
-        say(NO_NPM)
-        return "no-npm"
-    if not stale(web, package / "dashboard" / "app"):
-        return "fresh"
+        state = "out of date" if (out / "index.html").is_file() else "not built"
+        raise WebBuildError(NO_NPM.format(state=state))
     try:
         if not (web / "node_modules").is_dir():
             run([npm, "ci", "--no-audit", "--no-fund"], cwd=web, check=True, capture_output=True, text=True)

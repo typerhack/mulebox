@@ -1,0 +1,19 @@
+/* Geist and Geist Mono (OFL), bundled: the files come from the npm packages, the family names
+   are the ones tokens.css asks for. Three weights are used; one variable file holds them.
+   Shared by the app (index.css) and the sign-in page (src/login/login.css). The build gives
+   them fixed names under fonts/ (vite.config.ts), which the sign-in page may load before a
+   session exists (mulebox/dashboard/login.py). */
+@font-face {
+  font-family: "Geist";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  src: url("@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2-variations");
+}
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400 600;
+  src: url("@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2") format("woff2-variations");
+}

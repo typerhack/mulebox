@@ -54,6 +54,7 @@ export interface Job {
   needs?: string[];
   can_run_on?: string[];
   waiting_for?: string | null;
+  branch_busy?: string | null;
 }
 
 export interface Step {

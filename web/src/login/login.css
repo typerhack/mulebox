@@ -1,0 +1,97 @@
+/* The sign-in page (login.html), on its own: it loads before a session exists, so it gets
+   only this file and the fonts, never the app. Built to a fixed name, login.css, that the
+   server lets through without a session (vite.config.ts, mulebox/dashboard/login.py).
+   Theme from the system setting, as tokens.css defines it; the page has no script to read
+   a choice made in the app. */
+
+@import "../../../docs/design-system/tokens.css";
+@import "../styles/fonts.css";
+
+:root { color-scheme: light dark; }
+*, *::before, *::after { box-sizing: border-box; }
+
+body.login-page {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: var(--gutter);
+  background: var(--surface-0);
+  color: var(--text-1);
+  font: var(--text-base)/1.5 var(--font-ui);
+}
+
+.login {
+  width: min(100%, 36ch);
+  padding: var(--space-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-l);
+  background: var(--surface-1);
+}
+
+.login h1 {
+  margin: 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.login .lead { margin: var(--space-1) 0 var(--space-5); color: var(--text-2); }
+
+/* A message from the server: the danger strip of the design system, its icon in the status
+   colour and the words in the text colour. */
+.login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--status-danger);
+  border-radius: var(--radius-m);
+  background: var(--status-failed-soft);
+  font-weight: 500;
+}
+.login-error svg {
+  flex: none;
+  width: var(--icon);
+  height: var(--icon);
+  margin-top: 2px;
+  color: var(--status-danger);
+  stroke-width: calc(var(--icon-stroke) + 0.25);
+}
+
+.login form { display: grid; gap: var(--space-2); }
+.login label { font-size: var(--text-sm); font-weight: 500; color: var(--text-2); }
+
+/* 1rem, the browser's own size: a phone zooms into a field whose text is smaller. */
+.login input,
+.login button {
+  min-height: calc(var(--space-1) * 9);
+  border-radius: var(--radius-m);
+  font: inherit;
+  font-size: 1rem;
+}
+.login input {
+  width: 100%;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+  color: var(--text-1);
+  transition: border-color var(--dur-fast) var(--ease);
+}
+.login input:hover { border-color: var(--text-1); }
+
+/* The one primary button of the view. */
+.login button {
+  margin-top: var(--space-2);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
+}
+.login button:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
+
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }

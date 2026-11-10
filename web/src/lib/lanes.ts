@@ -7,6 +7,7 @@
 // capabilities cover its `needs`). A job several machines could take waits in one shared
 // list, and a job no machine fits is shown as stuck with the coordinator's reason.
 
+import { shortId } from "./format";
 import type { Job, Machine, MachinesPanel, QueueSnapshot } from "./types";
 
 export interface Lane {
@@ -52,10 +53,11 @@ export function groupLanes(snapshot: QueueSnapshot | null, machines: MachinesPan
 export const isStuck = (job: Job) =>
   Array.isArray(job.can_run_on) && !job.can_run_on.length && !job.pinned_worker;
 
-// Why a waiting job is where it is: the coordinator's reason, or which machines could take it
-// when not all of them can.
+// Why a waiting job is where it is: the coordinator's reason, the job holding its branch (as
+// `mulebox queue` says it, client/report.py), or which machines could take it when not all can.
 export function waitReason(job: Job, machineCount: number | null): string | null {
   if (job.waiting_for) return job.waiting_for;
+  if (job.branch_busy) return `${shortId({ job_id: job.branch_busy })} is running on this branch`;
   if (machineCount && Array.isArray(job.can_run_on) && job.can_run_on.length < machineCount) {
     return `Only ${job.can_run_on.join(", ")}`;
   }

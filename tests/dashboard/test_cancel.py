@@ -13,7 +13,7 @@ from mulebox.coordinator import store as st
 from mulebox.dashboard import commands
 from mulebox.dashboard.cancel import TOKEN_HEADER
 from mulebox.dashboard.canceller import Canceller, rpc_command
-from mulebox.dashboard.server import STATIC_DIR, build_app
+from mulebox.dashboard.server import build_app
 from mulebox.dashboard.session import LanAccess, LoginLimiter, Sessions
 from mulebox.runners.cancel_run import run_of
 from tests.coordinator.helpers import queued
@@ -130,7 +130,7 @@ def test_the_tunnel_listener_has_the_controls(data, hub, run_job):
         clock = lambda: NOW  # noqa: E731
         access = LanAccess(ipaddress.ip_network("127.0.0.0/8"), frozenset({HOST}),
                            ("192.168.1.50", 8090), "hash", Sessions(clock), LoginLimiter(clock))
-        app = build_app(data, hub, clock=clock, start_hub=False, static_dir=STATIC_DIR, lan=access,
+        app = build_app(data, hub, clock=clock, start_hub=False, lan=access,
                         canceller=fake)
         async with TestClient(TestServer(app)) as client:
             origin = f"http://{HOST}:{client.server.port}"

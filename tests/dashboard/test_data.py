@@ -73,6 +73,17 @@ def test_waiting_jobs_say_where_they_may_go_and_running_ones_do_not(data, store,
     assert "offline: wrk-b" in next(r for r in later if r["job_id"] == docker)["waiting_for"]
 
 
+def test_a_queued_job_behind_one_on_its_branch_names_it(data, store, staging, run_job):
+    """`mulebox queue` says "XFZPMD is running on this branch"; the dashboard row carries the
+    same holder, and a job on another branch carries none."""
+    running, _ = run_job(branch="feature")
+    behind = queued(store, staging, NOW + 1, branch="feature")
+    other = queued(store, staging, NOW + 2, branch="other")
+    rows = {row["job_id"]: row for row in data.queue_snapshot(NOW + 3)["queued"]}
+    assert rows[behind]["branch_busy"] == running
+    assert "branch_busy" not in rows[other]
+
+
 def test_a_queued_job_nobody_fits_any_more_has_nowhere_to_go(data, store, staging):
     queue.claim(store, "wrk-a", ["gpu"], 1, 1, now=NOW)
     job_id = queued(store, staging, NOW, needs=["gpu"])

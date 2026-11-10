@@ -2,7 +2,6 @@
 
 import asyncio
 import ipaddress
-import shutil
 
 import pytest
 from aiohttp import ClientSession, CookieJar, TCPConnector
@@ -11,10 +10,10 @@ from yarl import URL
 
 from mulebox.dashboard import cert, password
 from mulebox.dashboard.login import COOKIE
-from mulebox.dashboard.server import LOGIN_CSP, STATIC_DIR, build_app
+from mulebox.dashboard.server import LOGIN_CSP, build_app
 from mulebox.dashboard.session import FREE_FAILURES, LanAccess, LoginLimiter, Sessions
 
-from .conftest import NOW
+from .conftest import NOW, fake_app
 
 PASSWORD = "correct horse"
 HOST = "127.0.0.1"
@@ -32,19 +31,16 @@ def tls_dir(tmp_path_factory):
 def lan(request, data, hub, tls_dir, tmp_path):
     """Run `async fn(http, url)` on the LAN listener; `range_` is the allowed network."""
     scheme = request.param
-    static = tmp_path / "static"
-    static.mkdir()
-    for name in ("index.html", "login.html", "style.css"):
-        shutil.copy(STATIC_DIR / name, static / name)
+    def run(fn, range_="127.0.0.0/8", open_lan=False, built=True):
+        folder = fake_app(tmp_path / "app") if built else tmp_path / "app"
 
-    def run(fn, range_="127.0.0.0/8", open_lan=False):
         async def main():
             clock = lambda: NOW  # noqa: E731
             port = unused_port()
             access = LanAccess(ipaddress.ip_network(range_), frozenset({HOST}), (HOST, port),
                                None if open_lan else password.load(tls_dir), Sessions(clock),
                                LoginLimiter(clock))
-            app = build_app(data, hub, clock=clock, start_hub=False, static_dir=static, lan=access)
+            app = build_app(data, hub, clock=clock, start_hub=False, app_dir=folder, lan=access)
             server = TestServer(app, scheme=scheme, port=port)
             await server.start_server(
                 ssl=cert.server_context(tls_dir) if scheme == "https" else None)
@@ -72,14 +68,16 @@ def test_nothing_is_readable_before_signing_in(lan):
     async def go(http, url):
         statuses = {}
         for path in ("/api/queue", "/api/history", "/api/metrics", "/api/stats", "/api/events", "/healthz",
-                     "/api/jobs/x", "/api/jobs/x/log.txt", "/static/app.js"):
+                     "/api/jobs/x", "/api/jobs/x/log.txt", "/app/assets/index-abc.js", "/app/index.html",
+                     "/app/login.html", "/app/fonts/../index.html", "/app/fonts/%2e%2e/index.html"):
             reply = await http.get(url + path, allow_redirects=False)
             statuses[path] = reply.status
         page = await http.get(f"{url}/", allow_redirects=False)
         return statuses, page.status, page.headers["Location"]
     statuses, status, location = lan(go)
     assert status == 303 and location == "/login"
-    assert statuses.pop("/static/app.js") == 303
+    pages = [path for path in statuses if path.startswith("/app/")]
+    assert {statuses.pop(path) for path in pages} == {303}
     assert set(statuses.values()) == {401}
 
 
@@ -172,13 +170,27 @@ def test_cross_site_post_is_refused_but_a_same_site_null_origin_passes(lan):
 def test_login_page_allows_only_its_own_form_and_uses_no_inline_code(lan):
     async def go(http, url):
         page = await http.get(f"{url}/login")
-        style = await http.get(f"{url}/static/style.css")
-        return page.status, page.headers, await page.text(), style.status
-    status, headers, text, style = lan(go)
-    assert status == 200 and style == 200
+        style = await http.get(f"{url}/app/login.css")
+        font = await http.get(f"{url}/app/fonts/geist.woff2")
+        return page.status, page.headers, await page.text(), style.status, font.status
+    status, headers, text, style, font = lan(go)
+    assert status == 200 and style == 200 and font == 200
+    assert "<!--message-->" not in text and 'action="/login"' in text
     assert headers["Content-Security-Policy"] == LOGIN_CSP
     assert "<script" not in text and "style=" not in text
     assert headers["Cache-Control"] == "no-store"
+
+
+def test_without_a_build_the_login_page_says_so_and_still_signs_in(lan):
+    async def go(http, url):
+        page = await http.get(f"{url}/login")
+        wrong = await sign_in(http, url, "wrong")
+        right = await sign_in(http, url)
+        root = await http.get(f"{url}/")
+        return page.status, await page.text(), wrong.status, right.status, root.status
+    page, text, wrong, right, root = lan(go, built=False)
+    assert page == 503 and "npm run build" in text
+    assert wrong == 503 and right == 303 and root == 503
 
 
 def test_signed_in_visitor_skips_the_login_page(lan):
@@ -192,7 +204,7 @@ def test_signed_in_visitor_skips_the_login_page(lan):
 def test_without_a_password_the_page_opens_directly_and_sign_in_is_gone(lan):
     async def go(http, url):
         statuses = [(await http.get(url + p, allow_redirects=False)).status
-                    for p in ("/", "/api/queue", "/api/machines", "/static/style.css")]
+                    for p in ("/", "/api/queue", "/api/machines", "/app/login.css")]
         login = await http.get(f"{url}/login", allow_redirects=False)
         health = await (await http.get(f"{url}/healthz")).json()
         posted = await http.post(f"{url}/login", data={"password": "x"})

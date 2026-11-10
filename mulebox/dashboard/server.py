@@ -8,8 +8,8 @@ Read-only, and GET-only apart from signing in and out and the optional cancel bu
 - On the LAN listener (`lan` mode): the address range and a session (login.py).
 - Headers: a strict Content-Security-Policy (only this origin, no inline script), no
   sniffing, no referrer, no framing; API replies are not cached.
-Pages and their files come from the package (pages.py): the React app when it was built, the
-classic page otherwise and at `/classic/`; no CDN.
+Pages and their files come from the package (pages.py): the React app's build, or a 503 page
+that says how to build it; no CDN.
 """
 
 from __future__ import annotations
@@ -30,7 +30,6 @@ from mulebox.dashboard.hub import Hub
 from mulebox.dashboard.session import LanAccess
 from mulebox.version import get_version
 
-STATIC_DIR = Path(__file__).with_name("static")
 LOCAL_HOSTS = frozenset({"127.0.0.1", "localhost", "[::1]"})
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; "
        "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
@@ -70,21 +69,21 @@ async def _headers(request: web.Request, response: web.StreamResponse) -> None:
 
 def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = time.time,
               allowed_hosts: frozenset[str] = LOCAL_HOSTS, start_hub: bool = True,
-              static_dir: Path = STATIC_DIR, lan: LanAccess | None = None,
-              canceller: Canceller | None = None, app_dir: Path | None = None) -> web.Application:
-    """`app_dir` is the React build; by default the folder `app` beside `static_dir`."""
+              lan: LanAccess | None = None, canceller: Canceller | None = None,
+              app_dir: Path = pages.APP_DIR) -> web.Application:
+    """`app_dir` is the React build (pages.py)."""
     app = web.Application(middlewares=[guard, login.lan_guard])
     app[keys.ALLOWED_HOSTS] = allowed_hosts
     if lan is not None:
         app[keys.LAN] = lan
-        login.add_routes(app, static_dir)
+        login.add_routes(app, app_dir)
     app[keys.HUB], app[keys.DATA], app[keys.CLOCK] = hub, data, clock
     if canceller is not None:
         app[keys.CANCELLER] = canceller
         app.router.add_post("/api/jobs/{job_id}/cancel", cancel.cancel_job)
         controls.add_routes(app)
     app.on_response_prepare.append(_headers)
-    pages.add_routes(app, static_dir, app_dir or pages.app_dir_for(static_dir))
+    pages.add_routes(app, app_dir)
     app.router.add_get("/healthz", _health)
     app.router.add_get("/api/session", cancel.session)
     app.router.add_get("/api/queue", _queue)

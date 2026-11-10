@@ -13,7 +13,7 @@ WARN_LINES = 300
 FAIL_LINES = 500
 CODE_SUFFIXES = {".py", ".sh", ".js", ".mjs", ".ts", ".tsx", ".css", ".html", ".toml", ".yml", ".yaml"}
 DOCS_DIR = "docs"
-SKIP_DIRS = {".git", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "node_modules"}
+SKIP_DIRS = {".git", ".claude", ".venv", "__pycache__", ".pytest_cache", "build", "dist", "node_modules"}
 # The dashboard's React build: made from web/ by a bundler, one long line per file, not written by hand.
 BUILT_DIRS = {("mulebox", "dashboard", "app")}
 REPO_ROOT = Path(__file__).resolve().parent.parent

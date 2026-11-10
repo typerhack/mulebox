@@ -3,27 +3,33 @@
 The contract for `mulebox/dashboard/`, `mulebox/common/status.py` and
 `mulebox/client/tunnel.py`. Design goals: [design.md](design.md) (Dashboard).
 
-## The two front ends (`dashboard/pages.py`, `web/`)
+## The front end (`dashboard/pages.py`, `web/`)
 
 - **React** (M14.10): source in `web/` at the repository root ([web/README.md](../web/README.md)),
   built by `npm run build` into `mulebox/dashboard/app/` (not in git; in the wheel and the
-  binary). When `app/index.html` exists, `/` serves it and its files are under `/app/`.
-- **Classic**: `mulebox/dashboard/static/`, hand-written modules with no build step. Always at
-  `/classic/`, with its files under `/static/`, so the two can be compared until the owner
-  retires it. Without a build, `/` serves it too. The sign-in page is one of its files.
-- Both read the same `/api` routes and event streams, described below; the sections name the
-  classic modules, and the React ones are their ports: `web/src/lib/` (lanes, menus, formats,
-  the log's steps, the chart), `web/src/state/` (the stream into stores, the picked machine)
-  and `web/src/features/` (one folder per view).
-- Only in the React front end: the Machines page (`#/machines`), the machine picked for CPU,
-  Memory and Disk (`/api/metrics?machine=`, asked every 2 s while another machine than the
-  host is picked), the meter style switch (Auto, Gauge, Rainbow, kept per browser as
-  `mulebox-meters`), and a GitHub job's log drawn as its steps (`web/src/lib/cilog.ts` reads
-  the `mulebox: step:` and `--- output of` lines the runner's hooks write).
-- Every guard below covers both: they are GET routes of one app. The policy gained
-  `font-src 'self'` for the bundled Geist files; nothing else changed in it. The React build
-  has no inline script or style, loads nothing from another origin, and sets styles only
-  through the DOM, which the policy allows.
+  binary). `/` serves `app/index.html` and its files are under `/app/`; it is the only
+  front end.
+- **Without a build** (a checkout nobody built), `/` and `/login` answer 503 with a short page
+  that says how to get one: a release, or `npm ci` and `npm run build` in `web/`. The API and
+  the event streams keep working. `mulebox setup` builds before it makes a wheel and stops,
+  naming Node.js and npm, when the build is missing or stale and npm is not there
+  (`client/webbuild.py`).
+- **Sign-in page**: `web/login.html` with `web/src/login/login.css`, built to `app/login.html`
+  and `app/login.css`, the fonts to `app/fonts/` by fixed names (`web/vite.config.ts`), so
+  the LAN guard can let exactly those through. No script; the server fills in its message.
+  Its theme follows the system setting.
+- The code: `web/src/lib/` (lanes, menus, formats, the log's steps, the chart),
+  `web/src/state/` (the stream into stores, the picked machine) and `web/src/features/` (one
+  folder per view). Pages: the queue (`#/`), a job (`#/job/<id>`), history (`#/history`), statistics
+  (`#/stats`) and machines (`#/machines`); the machine picked for CPU, Memory and Disk
+  (`/api/metrics?machine=`, asked every 2 s while another machine than the host is picked),
+  the meter style switch (Auto, Gauge, Rainbow, kept per browser as `mulebox-meters`), and a
+  GitHub job's log drawn as its steps (`web/src/lib/cilog.ts` reads the `mulebox: step:` and
+  `--- output of` lines the runner's hooks write).
+- Every guard below covers it: these are GET routes of one app. The policy has
+  `font-src 'self'` for the bundled Geist files. The build has no inline script or style,
+  loads nothing from another origin, and sets styles only through the DOM, which the policy
+  allows.
 
 ## Status model (`common/status.py`)
 
@@ -51,11 +57,13 @@ Input is a public job dict; every function tolerates missing or malformed fields
 
 The dashboard's queue rows add, on waiting agent jobs only: `needs`, `can_run_on` (the
 workers whose capabilities cover them, online or not: the same test `queue.claim` makes)
-and `waiting_for` (needs.py, when a queued job cannot start now). None of it is an
+and `waiting_for` (needs.py, when a queued job cannot start now), and on every queued job
+`branch_busy`, the job holding its branch (views.py `running_ahead`), which the row names as
+`mulebox queue` does ("XFZPMD is running on this branch"). None of it is an
 assignment: the queue is one line, and the first capable worker with a free slot takes the
 job. A running job has its `worker`; a runner reservation its `pinned_worker`.
 
-## Jobs box (`static/jobs.js`, `static/lanes.js`)
+## Jobs box (`web/src/features/jobs/`, `web/src/lib/lanes.ts`)
 
 Tabs, each with a live count, remembered per browser, each showing one thing: `Queue`
 (default, what is happening now), `Failed` (failed, timed out or interrupted) and `Passed`
@@ -89,7 +97,7 @@ Job steps). `mulebox status` shows them, and the job view as a waterfall with `s
 watch stream's last `status_ok` and its `result` have `stage` when a job ended badly in a known
 stage (`steps.failed_stage`), and `job_event` puts it in the `finished` event.
 
-## Statistics page (`static/statsview.js`, `static/statschart.js`, `static/stats.css`)
+## Statistics page (`web/src/features/stats/`, `web/src/lib/stats.ts`)
 
 `#/stats`, under the top row like every page. Filters (type, project, source, machine) on top;
 today and all time side by side, each with its split between mulebox jobs and GitHub Actions
@@ -126,7 +134,7 @@ fingerprints); browsers count down between (`tickLeft`). A stopped job reads `st
 (`shown_state`, also in history), with its reason as `stop_text` on the job's page, and stays out
 of the Failed tab: it did not fail.
 
-## Machines box (`dashboard/machines.py`, `static/machines.js`)
+## Machines box (`dashboard/machines.py`, `web/src/features/top/MachinesBox.tsx`)
 
 The panel feeds the Machines box, the lanes above and `/api/machines`.
 
@@ -150,7 +158,7 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
   offers none. They are job slots, not spare CPU; per-machine load is M5.3.
 - A worker that is gone for good stays listed as offline until removing workers exists
   (M5.2).
-- **Out of step** (`dashboard/notices.py`, `static/versions.js`): `notices`, a list of `kind`
+- **Out of step** (`dashboard/notices.py`, `web/src/features/header/OutOfStep.tsx`): `notices`, a list of `kind`
   (`worker`, `client`, `skill`), `level` (`danger` for a worker, as jobs can fail; `warning` for
   a laptop), `name`, `text` and `fix`, dangers first. Shown as a strip above the panels in its
   worst level's colour, and as a mark with the count in the header that brings the strip into
@@ -177,8 +185,8 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
   where everyone is trusted; `lan_tls` covers the rest. A warning on every visit was
   judged worse than no encryption at home.
 - **Order on the LAN listener.** Host must be `lan_address` (421), the peer must be in
-  `lan_range` (403), then a session is needed. Only `/login` and `/static/style.css` are
-  open without one. Pages redirect to `/login`; `/healthz` and `/api/` get 401.
+  `lan_range` (403), then a session is needed. Only `/login`, its stylesheet `/app/login.css` and the
+  bundled fonts under `/app/fonts/` are open without one (`login.is_public`). Pages redirect to `/login`; `/healthz` and `/api/` get 401.
 - **`lan_password = false`** turns sign-in off: `/login` redirects to `/`, posts to it get
   404, and no password file is needed. The Host and range rules still apply. It defaults
   to true, and the service logs a warning when it is off.
@@ -205,7 +213,7 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 - **Files outside the roots.** `dashboard/` holds operator configuration, written only by
   the explicit `cert` and `password` commands, never by a job.
 
-## Controls (`dashboard/cancel.py`, `dashboard/controls.py`, `dashboard/canceller.py`, `static/access.js`, `static/canceljob.js`, `static/jobcontrols.js`)
+## Controls (`dashboard/cancel.py`, `dashboard/controls.py`, `dashboard/canceller.py`, `web/src/features/job/JobControls.tsx`, `web/src/features/jobs/JobMenu.tsx`)
 
 On by default (`controls = false` under `[dashboard]` takes them away), on the tunnel and on the
 LAN address, with or without a password: mulebox is for its owner's own network, and whoever
@@ -215,7 +223,7 @@ page has Pause or Resume, To front, Up, Down and To end (waiting jobs), Boost or
 Resume (`machine drain` and `resume`). In the Queue tab each waiting job has four arrows for the
 same moves; positions are the whole line's, across lanes.
 Every running card and waiting row also has a three-dots button opening a menu of that job's
-actions, each with an icon and a line on what it does, listing only what applies now (jobmenu.js).
+actions, each with an icon and a line on what it does, listing only what applies now (`web/src/lib/menu.ts`).
 "Queue actions", beside the tabs, does everything at once: pause or resume all machines, freeze
 all running jobs, resume all paused jobs. Each item sends the same request as one button would.
 A frozen, paused or boosted job shows a snowflake, pause or bolt icon beside its state, and a
@@ -267,8 +275,8 @@ What the protection below keeps out is other web pages in the same browser.
   container count only, never names, images or inspect output. Commands are redacted.
 - **Logs are text.** They are redacted by the worker before storage. The page appends them
   as text nodes; no code path parses server data as HTML.
-- **No external resources.** No CDN, and nothing is built on a build machine: `static/` and
-  the React build in `app/` ship in the wheel. Fonts are files of the package.
+- **No external resources.** No CDN, and nothing is built on a build machine: the React
+  build in `app/` ships in the wheel. Fonts are files of the package.
 - **File names.** Browser filter lists block some script names outright (`logview.js` was
   one), and one blocked ES module stops the whole page. Check new names in a real browser.
 
