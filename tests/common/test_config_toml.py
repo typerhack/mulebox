@@ -146,7 +146,7 @@ def test_node_minimal_defaults(tmp_path):
         roots={k: f"/home/alice/.mulebox/{k}" for k in ("jobs", "cache", "staging", "runners")},
         dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
                    "lan_port": 8090, "lan_tls": False, "lan_password": True,
-                   "cancel_button": False},
+                   "controls": True},
         retention={"log_days": 30, "step_days": 365},
         limits={"unattended_idle_min": 15, "unattended_max_hours": 24},
     )
@@ -168,7 +168,7 @@ def test_node_full(tmp_path):
     assert config.dashboard == {"mode": "lan", "port": 8091, "lan_range": "192.168.1.0/24",
                                 "lan_address": "192.168.1.50", "lan_port": 9443,
                                 "lan_tls": True, "lan_password": False,
-                                "cancel_button": False}
+                                "controls": True}
 
 
 def test_node_default_path_under_home(isolated_home, monkeypatch, tmp_path):

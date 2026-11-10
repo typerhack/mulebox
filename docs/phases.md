@@ -492,6 +492,11 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       --when-idle` with a job running: the job finished and passed, a job queued meanwhile said why it
       waited and ran after, and the upgrade passed. CI runs wait too (tests).
 - [-] M16.4 Reuse a passed result: moved to M18.3, the user wants it now.
+- [ ] M16.5 An upgrade as an entry in the waiting list (the user's idea, 2026-11-10): sent from the
+      laptop and left, it waits its turn like a job, shown in the queue and on the dashboard, then
+      applies once the machine's slots are all free, and the line goes on after it. Today
+      `setup --when-idle` holds the queue at once and keeps the laptop attached. Open: the user
+      picks whether it goes next or behind the jobs already waiting.
 
 ## M18: Jobs that respect the agent's time
 From the user on 2026-11-06. Comes first: mulebox must beat an agent running directly on the machine.

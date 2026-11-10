@@ -1,70 +1,23 @@
-"""The cancel button: where it exists, what protects it, and the real way to the coordinator."""
+"""The cancel button: where it exists, what protects it, and the real way to the coordinator.
+The `lan` fixture and the fake are in conftest.py, shared with test_controls.py."""
 
 import asyncio
 import ipaddress
 import logging
 
 import pytest
-from aiohttp import ClientSession, CookieJar
-from aiohttp.test_utils import TestClient, TestServer, unused_port
+from aiohttp.test_utils import TestClient, TestServer
 
 from mulebox.client.remote import CoordinatorError
-from mulebox.common.protocol import Message, MessageType
 from mulebox.coordinator import store as st
-from mulebox.dashboard import commands, password
+from mulebox.dashboard import commands
 from mulebox.dashboard.cancel import TOKEN_HEADER
 from mulebox.dashboard.canceller import Canceller, rpc_command
 from mulebox.dashboard.server import STATIC_DIR, build_app
 from mulebox.dashboard.session import LanAccess, LoginLimiter, Sessions
 from tests.coordinator.helpers import queued
 
-from .conftest import NOW
-
-PASSWORD = "correct horse"
-HOST = "127.0.0.1"
-
-
-class FakeCanceller:
-    def __init__(self, failure=None):
-        self.asked, self.failure = [], failure
-
-    async def cancel(self, job_id):
-        self.asked.append(job_id)
-        if self.failure:
-            raise self.failure
-        return Message(MessageType.STATUS_OK, "req-1", {"job_id": job_id, "state": "running",
-                                                        "cancel_requested": True})
-
-
-@pytest.fixture(scope="module")
-def stored_password(tmp_path_factory):
-    directory = tmp_path_factory.mktemp("lan")
-    password.save(directory, PASSWORD)
-    return directory
-
-
-@pytest.fixture
-def lan(data, hub, stored_password):
-    """Run `async fn(http, url)` on a real LAN listener."""
-    def run(fn, canceller, *, with_password=True):
-        async def main():
-            clock = lambda: NOW  # noqa: E731
-            port = unused_port()
-            stored = password.load(stored_password) if with_password else None
-            access = LanAccess(ipaddress.ip_network("127.0.0.0/8"), frozenset({HOST}), (HOST, port),
-                               stored, Sessions(clock), LoginLimiter(clock))
-            app = build_app(data, hub, clock=clock, start_hub=False, static_dir=STATIC_DIR,
-                            lan=access, canceller=canceller)
-            server = TestServer(app, port=port)
-            await server.start_server()
-            try:
-                async with ClientSession(cookie_jar=CookieJar(unsafe=True)) as http:
-                    return await fn(http, f"http://{HOST}:{port}")
-            finally:
-                await server.close()
-        return asyncio.run(main())
-    return run
-
+from .conftest import HOST, NOW, PASSWORD, FakeCanceller
 
 async def sign_in(http, url):
     await http.post(f"{url}/login", data={"password": PASSWORD}, allow_redirects=False)
@@ -152,21 +105,23 @@ def test_a_preflight_gets_no_approval(lan, run_job):
     assert status == 405 and "Access-Control-Allow-Origin" not in headers
 
 
-def test_no_button_on_the_lan_address_without_a_password(lan, run_job):
+def test_the_lan_address_without_a_password_has_the_controls(lan, run_job):
+    """mulebox is for its owner's own network: no sign-in, still the page's own token."""
     job_id, _ = run_job()
     fake = FakeCanceller()
 
     async def go(http, url):
-        session = await (await http.get(f"{url}/api/session")).json()
-        reply = await post(http, url, job_id, {"Origin": url, TOKEN_HEADER: "x"})
-        return session, reply.status
+        token = (await (await http.get(f"{url}/api/session")).json())["action_token"]
+        refused = await post(http, url, job_id, {"Origin": url, TOKEN_HEADER: "x"})
+        done = await post(http, url, job_id, page_headers(url, token))
+        return refused.status, done.status
 
-    assert lan(go, fake, with_password=False) == ({"cancel_token": None}, 404)
-    assert fake.asked == []
+    assert lan(go, fake, with_password=False) == (403, 200)
+    assert fake.asked == [job_id]
 
 
-def test_no_button_on_the_tunnel_listener(data, hub, run_job, tmp_path):
-    """The LAN state exists, the request comes in on the other socket."""
+def test_the_tunnel_listener_has_the_controls(data, hub, run_job):
+    """The LAN state exists with a password, the request comes in on the tunnel's socket."""
     job_id, _ = run_job()
     fake = FakeCanceller()
 
@@ -177,40 +132,34 @@ def test_no_button_on_the_tunnel_listener(data, hub, run_job, tmp_path):
         app = build_app(data, hub, clock=clock, start_hub=False, static_dir=STATIC_DIR, lan=access,
                         canceller=fake)
         async with TestClient(TestServer(app)) as client:
-            client.session.headers["Host"] = HOST
-            session = await (await client.get("/api/session")).json()
-            reply = await client.post(f"/api/jobs/{job_id}/cancel")
-            return session, reply.status
+            origin = f"http://{HOST}:{client.server.port}"
+            client.session.headers["Host"] = f"{HOST}:{client.server.port}"
+            token = (await (await client.get("/api/session")).json())["action_token"]
+            bare = await client.post(f"/api/jobs/{job_id}/cancel")
+            done = await client.post(f"/api/jobs/{job_id}/cancel",
+                                     headers={"Origin": origin, TOKEN_HEADER: token})
+            return bare.status, done.status
 
-    assert asyncio.run(main()) == ({"cancel_token": None}, 404)
-    assert fake.asked == []
+    assert asyncio.run(main()) == (403, 200)
+    assert fake.asked == [job_id]
 
 
-def test_without_the_setting_there_is_no_route_at_all(call, run_job):
+def test_with_the_controls_off_there_is_no_route_at_all(call, run_job):
     job_id, _ = run_job()
 
     async def go(client):
         session = await (await client.get("/api/session")).json()
         return session, (await client.post(f"/api/jobs/{job_id}/cancel")).status
 
-    assert call(go) == ({"cancel_token": None}, 404)
+    assert call(go) == ({"action_token": None, "cancel_token": None}, 404)
 
 
-@pytest.mark.parametrize("settings, has_password, expected", [
-    ({}, True, False),
-    ({"cancel_button": False}, True, False),
-    ({"cancel_button": True}, True, True),
-    ({"cancel_button": True}, False, False),
+@pytest.mark.parametrize("settings, expected", [
+    ({}, True), ({"controls": True}, True), ({"controls": False}, False),
 ])
-def test_the_setting_counts_only_with_a_password(settings, has_password, expected):
+def test_the_controls_are_on_unless_turned_off(settings, expected):
     node = type("Node", (), {"dashboard": settings})
-    access = type("Access", (), {"password_hash": "hash" if has_password else None})
-    assert (commands._canceller(node, access, None) is not None) is expected
-
-
-def test_the_setting_alone_does_nothing_in_local_mode():
-    node = type("Node", (), {"dashboard": {"cancel_button": True}})
-    assert commands._canceller(node, None, None) is None
+    assert (commands._canceller(node, None, None) is not None) is expected
 
 
 def test_a_finished_job_and_a_reservation_are_refused(lan, run_job, finish_job, store):

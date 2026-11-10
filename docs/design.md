@@ -340,8 +340,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 
 ## Dashboard
 
-- A separate read-only process beside the coordinator (the optional cancel button is the one
-  exception, and its write goes through `mulebox rpc`): aiohttp, plain HTML and JS, canvas
+- A separate read-only process beside the coordinator (its controls are the one exception, and
+  their writes go through `mulebox rpc`): aiohttp, plain HTML and JS, canvas
   graphs. One Server-Sent Events stream for queue changes and metrics, one per open job
   log; both resume by event id after drops. Contract: [interfaces-m2.md](interfaces-m2.md).
 - Shows: every machine with whether it is online, its free slots, capabilities, what it
@@ -374,12 +374,12 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Logs are redacted before they are stored or streamed, rendered as text, never HTML; no
   environment variables or full container inspect output. A job's `setup` line is redacted the
   same way before the dashboard shows it, as the command is.
-- Cancelling from the page is optional and off by default. It exists only for someone signed in
-  on the `lan` address: stopping another person's job is the one thing here that needs to know
-  somebody asked, and the tunnel and a passwordless `lan` cannot tell. Where the button does not
-  exist, `mulebox cancel` still does. It sends what `mulebox cancel` sends, by the same `mulebox
-  rpc`, so a job cancelled from the page ends like any other, and the dashboard process never
-  holds a writable store. Protection against other pages: interfaces-m2.md, Cancel button.
+- The page can steer the queue: cancel, pause, resume, run first and boost a job, and pause a
+  machine. mulebox is for its owner's own network, so these are on wherever the page opens, as
+  the same commands are from any laptop with ssh to the machine (decided by the user on
+  2026-11-10; before 0.87.0 cancelling needed a sign-in on the `lan` address and was off by
+  default). Each sends what the CLI sends, by the same `mulebox rpc`, so the dashboard process
+  never holds a writable store. Protection against other pages: interfaces-m2.md, Controls.
 
 ## Multiple machines
 

@@ -1,7 +1,8 @@
-"""How the dashboard reaches the coordinator for the one thing it writes: `cancel`.
+"""How the dashboard reaches the coordinator for what it writes: `cancel`, a job's controls
+(`job_control`) and pausing a machine (`machine`).
 
-The same request `mulebox cancel` sends, to the same `mulebox rpc`, started here instead of
-over ssh. So every rule stays in one place (`coordinator.api.cancel`), and this process keeps
+The same requests `mulebox cancel`, `mulebox pause` and `mulebox machine pause` send, to the
+same `mulebox rpc`, started here instead of over ssh. So every rule stays in one place (`coordinator.api.cancel`), and this process keeps
 its store read-only: the write happens in a process of its own, gone after one request.
 No aiohttp here.
 """
@@ -33,7 +34,18 @@ class Canceller:
     async def cancel(self, job_id: str) -> Message:
         """The `status_ok` reply. A failure raises CoordinatorError, with `code` when it is
         the coordinator's own answer. Cancelling twice is harmless, so a caller may retry."""
-        msg = request(MessageType.CANCEL, job_id=job_id)
+        return await self.send(request(MessageType.CANCEL, job_id=job_id))
+
+    async def control(self, job_id: str, action: str) -> Message:
+        """`job_control` (coordinator/job_control.py); its `status_ok` reply."""
+        return await self.send(request(MessageType.JOB_CONTROL, job_id=job_id, action=action))
+
+    async def machine(self, worker: str, action: str) -> Message:
+        """`machine` drain or resume (coordinator/machine_api.py); its `machine_ok` reply."""
+        return await self.send(request(MessageType.MACHINE, worker=worker, action=action))
+
+    async def send(self, msg: Message) -> Message:
+        """One request through a `mulebox rpc` of its own; its reply, or CoordinatorError."""
         process = await asyncio.create_subprocess_exec(
             *self.command, stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL)

@@ -1,17 +1,20 @@
-"""The optional cancel button's routes and their protection (interfaces-m2.md, Cancel button).
+"""The dashboard's controls and their protection (interfaces-m2.md, Controls): the cancel
+route here, a job's and a machine's controls in controls.py.
 
-The route exists only with `cancel_button` on, and answers only on the LAN listener with a
-password: the tunnel listener has no sign-in, so nobody there is known to have asked. A session
-alone is not enough. `SameSite=Strict` does not cover a page on another port of this address,
-which counts as the same site, and `Sec-Fetch-Site` does not come over plain HTTP. So `Origin`
-must be this exact origin, and a token only this session's pages can read must be in a header,
-which a cross-site request cannot set without a CORS approval this app never gives.
+mulebox runs on its owner's network, so whoever reaches the dashboard may steer it: the controls
+are on unless `controls = false`, on the tunnel and on the LAN address, with or without a
+password. What they keep out is other web pages in the same browser. The Host check (server.py)
+stops a name rebound to this machine. `Origin` must be this exact origin, and a token only this
+dashboard's pages can read must be in a header, which a cross-site request cannot set without a
+CORS approval this app never gives. With a password the token is the session's, so it ends with
+the sign-in; without one it is a secret made when the service starts.
 """
 
 from __future__ import annotations
 
 import asyncio
 import hmac
+import secrets
 
 from aiohttp import web
 
@@ -21,20 +24,26 @@ from mulebox.common.protocol import JobState
 from mulebox.dashboard import keys, login
 
 TOKEN_HEADER = "X-Mulebox-Token"
+PAGE_TOKEN = secrets.token_hex(32)  # this service's own, for pages without a sign-in
 _log = get_logger(__name__)
 
 
-def _offered(request: web.Request) -> bool:
-    return keys.CANCELLER in request.app and login.sign_in_needed(request)
+def offered(request: web.Request) -> bool:
+    return keys.CANCELLER in request.app
 
 
 def _token(request: web.Request) -> str:
+    if not login.sign_in_needed(request):
+        return PAGE_TOKEN
     access = request.app[keys.LAN]
     return access.sessions.action_token(request.cookies.get(login.COOKIE, ""))
 
 
-def _check_origin(request: web.Request) -> None:
-    """After login.same_site: only a page of this dashboard, in this session, gets through."""
+def check(request: web.Request) -> None:
+    """Refuse anything but a page of this dashboard (and of this session, with a password)."""
+    if not offered(request):
+        raise web.HTTPNotFound(text="the dashboard's controls are off here\n")
+    login.same_site(request)
     if request.headers.get("Origin") != f"{request.scheme}://{request.host}":
         raise web.HTTPForbidden(text="cross-site request refused\n")
     given = request.headers.get(TOKEN_HEADER, "")
@@ -43,15 +52,14 @@ def _check_origin(request: web.Request) -> None:
 
 
 async def session(request: web.Request) -> web.Response:
-    """What this page may do: a `cancel_token` to send back, or null for no button."""
-    return web.json_response({"cancel_token": _token(request) if _offered(request) else None})
+    """What this page may do: an `action_token` to send back, or null with the controls off.
+    `cancel_token` is the same, for a page loaded before 0.87.0."""
+    token = _token(request) if offered(request) else None
+    return web.json_response({"action_token": token, "cancel_token": token})
 
 
 async def cancel_job(request: web.Request) -> web.Response:
-    if not _offered(request):
-        raise web.HTTPNotFound(text="no cancel button here\n")
-    login.same_site(request)
-    _check_origin(request)
+    check(request)
     job_id = request.match_info["job_id"]
     job = await asyncio.to_thread(request.app[keys.DATA].job, job_id)
     if job is None:

@@ -507,10 +507,10 @@ is limited to this one address and cannot vouch for any other site. It lasts 825
 replace it with `mulebox dashboard cert --force`, then trust the new one on each device.
 Trusting it on a phone has not been tried yet.
 
-**Optional: a cancel button.** Set `cancel_button = true` under `[dashboard]` and restart. A job's
-page then has a `Cancel job` button for whoever signed in at the LAN address. It needs
-`mode = "lan"` and a password: with `lan_password = false`, and through the tunnel, there is no
-button, as nobody has signed in there. `mulebox cancel` works either way.
+**Buttons.** A job's page has Cancel, Pause or Resume, Run first and Boost, and each machine in
+the Machines box has Pause or Resume, through the tunnel and at the LAN address alike (see
+[Steering jobs and machines](#steering-jobs-and-machines)). To have a page that only shows, set
+`controls = false` under `[dashboard]` and restart.
 
 **Optional: no password.** On a network where you trust everyone, set `lan_password = false`
 and restart; `mulebox dashboard password` is then not needed. The page opens directly for

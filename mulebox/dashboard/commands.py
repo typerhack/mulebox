@@ -79,15 +79,12 @@ def _serve(args: argparse.Namespace) -> int:
 
 
 def _canceller(node, access, config_path: Path | None):
-    """The cancel button's link, only where someone signs in: anywhere else it does not exist."""
+    """The link the dashboard's controls write through; none with `controls = false`."""
     from mulebox.dashboard.canceller import Canceller
 
-    if not node.dashboard.get("cancel_button"):
+    if not node.dashboard.get("controls", True):
+        _log.info("the dashboard's controls are off (controls = false)")
         return None
-    if access is None or access.password_hash is None:
-        _log.warning("no cancel button: cancel_button needs mode = \"lan\" and a password")
-        return None
-    _log.info("the cancel button is on for signed-in users")
     return Canceller(config_path)
 
 

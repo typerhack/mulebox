@@ -1,5 +1,6 @@
-/* The optional cancel button, on the line of a job's page that holds the way back. Its own
-   file so that the page's stylesheet stays within the size rule. */
+/* The dashboard's controls: cancel on the line of a job's page that holds the way back, the
+   job's other controls under it (jobcontrols.js), and a machine's Pause in the Machines box.
+   Their own file so that the page's stylesheet stays within the size rule. */
 .job-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 0 0 6px; }
 .job-bar .crumb { margin: 0; }
 .job-cancel { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 8px; margin-left: auto; }
@@ -9,3 +10,12 @@
 button.danger { color: var(--bad); border-color: var(--bad); }
 button.danger:hover { border-color: var(--ink); }
 button.danger.sure { color: var(--bg); background: var(--bad); }
+.job-controls { margin: 0 0 6px; }
+.row-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.row-buttons button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.row-buttons button[disabled] { opacity: .6; cursor: progress; }
+.controls-said { margin: 4px 0 0; color: var(--ink-soft); }
+.controls-said:empty { display: none; }
+.controls-said.failed, .machine-controls .failed { color: var(--bad); }
+.machine-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; margin: 3px 0 0; }
+.machine-control { min-height: 24px; padding: 1px 8px; color: var(--ink-soft); }

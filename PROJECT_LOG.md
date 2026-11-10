@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.87.0 - 2026-11-10 - minor
+- Dashboard controls, on by default on the tunnel and the LAN address with or without a password (the user's call: mulebox is a tool for the owner's own network): a job's page has Pause or Resume, Run first or Back in line, Boost or End boost beside Cancel; each online machine has Pause or Resume. They send the CLI's requests through `mulebox rpc`; Origin, Host and a page token still keep other web pages out. `controls = false` takes them away; `cancel_button` is read and ignored.
+
 ## 0.86.0 - 2026-11-10 - minor
 - Steer jobs (M14.3, the user's ask): `mulebox pause|resume|first|boost|normal <job-id>` and `machine pause` (drain). A paused waiting job keeps its place and does not start; a paused running job is frozen on its machine (systemd freezer, docker pause) and is not asked or stopped as stuck, and resuming answers what was asked. `first` moves a waiting job ahead; `boost` gives a job the top CPU and disk weight and keeps its machine from taking new jobs. Schema 20 (`jobs.paused`, `priority`, `boost`), wire message `job_control`.
 

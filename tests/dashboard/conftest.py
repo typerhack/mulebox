@@ -1,16 +1,21 @@
 """Dashboard fixtures: the coordinator's real store and staging, plus a running job."""
 
 import asyncio
+import ipaddress
 
 import pytest
-from aiohttp.test_utils import TestClient, TestServer
+from aiohttp import ClientSession, CookieJar
+from aiohttp.test_utils import TestClient, TestServer, unused_port
 
+from mulebox.common.protocol import Message, MessageType
 from mulebox.coordinator import api
+from mulebox.dashboard import password
 from mulebox.coordinator.store import Store
 from mulebox.dashboard.data import DashboardData
 from mulebox.dashboard.events import EventBus
 from mulebox.dashboard.hub import Hub
-from mulebox.dashboard.server import build_app
+from mulebox.dashboard.server import STATIC_DIR, build_app
+from mulebox.dashboard.session import LanAccess, LoginLimiter, Sessions
 from tests.coordinator.conftest import root_map, staging, store  # noqa: F401
 from tests.coordinator.helpers import queued, request
 
@@ -87,3 +92,62 @@ def call(data, hub, tmp_path):
 def readonly_store(staging):  # noqa: F811
     with Store(staging.db_path, readonly=True).open() as opened:
         yield opened
+
+
+PASSWORD = "correct horse"
+HOST = "127.0.0.1"
+
+
+class FakeCanceller:
+    """The dashboard's way to the coordinator, writing down what it was asked."""
+
+    def __init__(self, failure=None):
+        self.asked, self.failure = [], failure
+
+    def _answer(self, asked, kind, body):
+        self.asked.append(asked)
+        if self.failure:
+            raise self.failure
+        return Message(kind, "req-1", body)
+
+    async def cancel(self, job_id):
+        return self._answer(job_id, MessageType.STATUS_OK,
+                            {"job_id": job_id, "state": "running", "cancel_requested": True})
+
+    async def control(self, job_id, action):
+        return self._answer((job_id, action), MessageType.STATUS_OK,
+                            {"job_id": job_id, "state": "queued", "paused": action == "pause"})
+
+    async def machine(self, worker, action):
+        return self._answer((worker, action), MessageType.MACHINE_OK,
+                            {"worker": worker, "action": action, "running": []})
+
+
+@pytest.fixture(scope="module")
+def stored_password(tmp_path_factory):
+    directory = tmp_path_factory.mktemp("lan")
+    password.save(directory, PASSWORD)
+    return directory
+
+
+@pytest.fixture
+def lan(data, hub, stored_password):
+    """Run `async fn(http, url)` on a real LAN listener."""
+    def run(fn, canceller, *, with_password=True):
+        async def main():
+            clock = lambda: NOW  # noqa: E731
+            port = unused_port()
+            stored = password.load(stored_password) if with_password else None
+            access = LanAccess(ipaddress.ip_network("127.0.0.0/8"), frozenset({HOST}), (HOST, port),
+                               stored, Sessions(clock), LoginLimiter(clock))
+            app = build_app(data, hub, clock=clock, start_hub=False, static_dir=STATIC_DIR,
+                            lan=access, canceller=canceller)
+            server = TestServer(app, port=port)
+            await server.start_server()
+            try:
+                async with ClientSession(cookie_jar=CookieJar(unsafe=True)) as http:
+                    return await fn(http, f"http://{HOST}:{port}")
+            finally:
+                await server.close()
+        return asyncio.run(main())
+    return run

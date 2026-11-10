@@ -1,9 +1,11 @@
 // One job's detail, with its stages and live log (joblog.js).
 
+import { actionToken } from "./access.js";
 import { cancelControl } from "./canceljob.js";
 import { badge, clock, duration, el, fill, getJson, jobName, repository, safeUrl, questionMark,
          shortId } from "./format.js";
 import { atBottom, followLog, latestButton, quietText } from "./joblog.js";
+import { jobControls } from "./jobcontrols.js";
 import { resultLine } from "./jobresult.js";
 import { timeline } from "./timeline.js";
 
@@ -69,10 +71,11 @@ export function jobView(box, jobId) {
   fill(box, "Job", null, back(), el("p", { class: "muted", role: "status", text: "Loading" }));
   Promise.all([
     getJson(`/api/jobs/${encodeURIComponent(jobId)}`),
-    getJson("/api/session").catch(() => null),  // no answer: no button, the rest still works
-  ]).then(([job, access]) => {
+    actionToken(),  // null: no buttons, the rest still works
+  ]).then(([job, token]) => {
     if (closed) return;
-    const control = cancelControl(job, access?.cancel_token);
+    const control = cancelControl(job, token);
+    const steer = jobControls(job, token);
     const stateSlot = el("span", {}, badge(job.shown_state ?? job.outcome ?? job.state));
     const stages = el("div", {}, timeline(job));
     const info = el("div", {}, facts(job));
@@ -91,6 +94,7 @@ export function jobView(box, jobId) {
         draw();
         quiet.textContent = quietText(fresh.activity);
         control?.update(fresh);
+        steer?.update(fresh);
       })
       .catch(() => {});  // the next tick tries again, and the log shows the connection
     ticking = setInterval(() => {
@@ -112,6 +116,7 @@ export function jobView(box, jobId) {
     const ci = job.kind === "runner";
     const parts = [
       control ? el("div", { class: "job-bar" }, back(), control.node) : back(),
+      steer?.node,
       result,
       whichRun(job),
       backSlot,
@@ -142,6 +147,7 @@ export function jobView(box, jobId) {
       quiet.textContent = "";
       box.querySelector("[data-alone]")?.remove();
       control?.update(final);
+      steer?.update(final);
       if (job.state !== "finished" && atBottom(pre)) stopBack = goingBack(backSlot);
     });
   }).catch((error) => {

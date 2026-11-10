@@ -4,12 +4,43 @@
 //
 // A reading is only shown when the server measured it (`cpu_pct`, `mem_pct` on the row).
 // Every worker reports its machine's load (M5.3); one that is offline or has not reported yet
-// says "no live data". Network (M14.2) counts the machine's physical interfaces only, so a VPN
+// says "no live data". Each online machine has Pause (no new jobs there; what runs finishes) or
+// Resume, the dashboard's `mulebox machine pause|resume`. Network (M14.2) counts the machine's physical interfaces only, so a VPN
 // tunnel's traffic is not added to Wi-Fi's.
 
+import { actionToken, post } from "./access.js";
 import { badge, bytes, clock, el, fill, jobLink, meter, soonest, questionMark } from "./format.js";
 
 const READINGS = [["cpu", "cpu_pct"], ["mem", "mem_pct"]];
+
+let token = null;  // the controls show from the first render after the page has it
+actionToken().then((given) => { token = given; });
+const asked = new Map();  // machine -> what this page asked and has not seen yet, or a refusal
+
+async function steer(name, action) {
+  asked.set(name, action === "pause" ? "Pausing" : "Resuming");
+  try {
+    await post(`/api/machines/${encodeURIComponent(name)}/control`, { action });
+  } catch (failure) {
+    asked.set(name, `Not changed. ${failure.status ? failure.message : "The dashboard did not answer."}`);
+  }
+}
+
+function control(row) {
+  if (!token || row.state === "offline") return null;
+  const paused = row.state === "draining";
+  const note = asked.get(row.name);
+  if (note && (note === "Pausing") === paused) asked.delete(row.name);  // it took
+  const left = asked.get(row.name);
+  if (left && !left.startsWith("Not")) return el("span", { class: "muted", role: "status", text: left });
+  const made = el("button", { type: "button", class: "machine-control",
+                              text: paused ? "Resume" : "Pause",
+                              title: paused ? "Let this machine take jobs again"
+                                            : "Take no new jobs here; what runs finishes" });
+  made.addEventListener("click", () => steer(row.name, paused ? "resume" : "pause"));
+  return el("span", { class: "machine-controls" }, made,
+            left ? el("span", { class: "failed", role: "alert", text: left }) : null);
+}
 
 function slots(row) {
   const used = row.state === "offline" ? 0
@@ -57,6 +88,7 @@ function card(row) {
   const alone = soonest(row.jobs);
   const parts = [
     el("p", { class: "head" }, el("strong", { text: row.name }), badge(row.state)),
+    control(row),
     questionMark(alone.job, alone.count),
     readings(row),
     slots(row),

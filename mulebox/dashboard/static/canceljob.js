@@ -1,24 +1,13 @@
-// The optional cancel button on a job's page. The server gives a token only where it is on
-// (interfaces-m2.md, Cancel button), so without one nothing here exists.
+// The cancel button on a job's page. The server gives a token only where its controls are on
+// (interfaces-m2.md, Controls), so without one nothing here exists.
 //
 // A cancel is asked twice, in the page rather than a browser dialog. The first click puts
 // "Keep job" under the pointer, so a double click keeps the job.
 
+import { post } from "./access.js";
 import { el } from "./format.js";
 
 const CANCELLABLE = new Set(["uploading", "queued", "starting", "running"]);
-
-async function ask(jobId, token) {
-  const reply = await fetch(`/api/jobs/${encodeURIComponent(jobId)}/cancel`, {
-    method: "POST", headers: { "X-Mulebox-Token": token, Accept: "application/json" },
-  });
-  if (!reply.ok) {
-    const failure = new Error((await reply.text()).trim());
-    failure.status = reply.status;
-    throw failure;
-  }
-  return reply.json();
-}
 
 // `{ node, update(job) }`, or null when this page offers no cancel for this job.
 export function cancelControl(job, token) {
@@ -59,7 +48,7 @@ export function cancelControl(job, token) {
   async function send() {
     show("sending", el("p", { role: "status", text: "Cancelling" }));
     try {
-      const done = await ask(job.job_id, token);
+      const done = await post(`/api/jobs/${encodeURIComponent(job.job_id)}/cancel`);
       if (done.state === "finished") node.remove();
       else requested();
     } catch (failure) {

@@ -20,7 +20,7 @@ from pathlib import Path
 
 from aiohttp import web
 
-from mulebox.dashboard import cancel, keys, login, streams
+from mulebox.dashboard import cancel, controls, keys, login, streams
 from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
 from mulebox.dashboard.hub import Hub
@@ -78,6 +78,7 @@ def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = tim
     if canceller is not None:
         app[keys.CANCELLER] = canceller
         app.router.add_post("/api/jobs/{job_id}/cancel", cancel.cancel_job)
+        controls.add_routes(app)
     app.on_response_prepare.append(_headers)
     app.router.add_get("/", _index(static_dir))
     app.router.add_get("/healthz", _health)
