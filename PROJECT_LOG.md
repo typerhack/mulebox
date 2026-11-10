@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.93.1 - 2026-11-10 - patch
+- Roadmap: M14.3 notes that moving GitHub's waiting slots (0.91.0) is covered by tests only so far.
+
 ## 0.93.0 - 2026-11-10 - minor
 - Dashboard: a Statistics page (`#/stats`, M14.11), design A of the three the user was shown: filters by type, project, source and machine; today and all time side by side with the split between mulebox jobs and GitHub Actions; the last 14 days as stacked columns; one table by project, type, source, machine or job name. From `/api/stats`, so it shows what `mulebox stats` shows; checked against it in real Edge on the real history.
 - `stats` days carry their seconds per kind (`kinds`), for the chart; before, the split of a past day was not known.

@@ -482,6 +482,9 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       from a card's menu set the job's unit frozen and running; Boost gave it CPU and IO weight
       10000; Queue actions paused and resumed the machine (draining, then busy), froze both running
       jobs and resumed them; the icons for frozen, boosted and paused showed on cards and rows.
+      0.91.0 (the user's ask): a GitHub run's waiting slot moves in line too, and both kinds follow
+      one order; tests only so far, as no CI run was waiting while it was checked. Open: the arrows
+      on a real waiting CI slot.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it
