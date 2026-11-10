@@ -8,6 +8,8 @@ import time
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
+from mulebox.common import netdev
+
 PROC = Path("/proc")
 IDLE, IOWAIT = 3, 4
 
@@ -67,34 +69,42 @@ def read(path: Path) -> str | None:
 
 
 class HostLoad:
-    """The machine's CPU (average of its cores) and memory in percent, for the coordinator.
+    """The machine's CPU (average of its cores) and memory in percent, and its network in and out
+    in KiB/s over its physical interfaces (common/netdev.py), for the coordinator.
 
-    CPU is the share between two samples, so the first call has none. Calls closer together
+    CPU and network are the change between two samples, so the first call has neither. Calls closer together
     than `min_span_s` give the last answer again: a worker asks on every claim and heartbeat."""
 
     def __init__(self, proc: Path = PROC, min_span_s: float = 2.0,
-                 clock: Callable[[], float] = time.monotonic) -> None:
-        self.proc, self.min_span_s, self.clock = proc, min_span_s, clock
+                 clock: Callable[[], float] = time.monotonic, net: Path = netdev.SYS_NET) -> None:
+        self.proc, self.min_span_s, self.clock, self.net = proc, min_span_s, clock, net
         self._cpu: list[tuple[int, int]] = []
+        self._net: tuple[int, int] | None = None
         self._at: float | None = None
         self._last: dict[str, float | int | None] = {"cpu_pct": None, "cores": None,
-                                                     "mem_pct": None}
+                                                     "mem_pct": None, "net_in_kib_s": None,
+                                                     "net_out_kib_s": None}
 
     def sample(self) -> dict[str, float | int | None]:
         now = self.clock()
         if self._at is not None and now - self._at < self.min_span_s:
             return self._last
-        self._at = now
+        span, self._at = (now - self._at if self._at is not None else 0.0), now
         stat = read(self.proc / "stat")
         cores = parse_cpu(stat) if stat else []
         shares = cpu_percent(self._cpu, cores)
         self._cpu = cores
         meminfo = read(self.proc / "meminfo")
         memory = parse_memory(meminfo) if meminfo else None
+        net = netdev.totals(self.net)
+        flow = netdev.rates(self._net, net, span)
+        self._net = net
         self._last = {
             "cpu_pct": round(sum(shares) / len(shares), 1) if shares else None,
             "cores": len(cores) or None,
             "mem_pct": round(memory["used"] / memory["total"] * 100, 1)
             if memory and memory["total"] else None,
+            "net_in_kib_s": flow[0] if flow else None,
+            "net_out_kib_s": flow[1] if flow else None,
         }
         return self._last

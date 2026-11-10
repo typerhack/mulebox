@@ -108,7 +108,8 @@ def check_job_id(value: Any) -> str:
     return value
 
 
-LOAD_FIELDS = ("cpu_pct", "mem_pct", "cores")
+LOAD_FIELDS = ("cpu_pct", "mem_pct", "cores", "net_in_kib_s", "net_out_kib_s")
+MAX_KIB_S = 100 * 1024 * 1024  # 100 GiB/s: anything above is not a reading
 CI_RESULT_FIELDS = {"outcome": 32, "step": 200, "message": 500}  # name -> longest kept
 
 
@@ -124,7 +125,8 @@ def ci_result(body: dict[str, Any], name: str = "ci_result") -> dict[str, str]:
 
 
 def load(body: dict[str, Any], name: str = "load") -> dict[str, Any] | None:
-    """A worker's machine load: `cpu_pct` and `mem_pct` (0 to 100) and `cores`, each or null.
+    """A worker's machine load: `cpu_pct` and `mem_pct` (0 to 100), `cores`, and its network in
+    and out (`net_in_kib_s`, `net_out_kib_s`, M14.2), each or null.
     Anything else in it, or a value out of range, is dropped: a reading must not fail a claim."""
     value = body.get(name)
     if not isinstance(value, dict):
@@ -136,6 +138,8 @@ def load(body: dict[str, Any], name: str = "load") -> dict[str, Any] | None:
             out[key] = None
         elif key == "cores":
             out[key] = int(item) if 1 <= item <= 4096 else None
+        elif key.startswith("net_"):
+            out[key] = float(item) if 0 <= item <= MAX_KIB_S else None
         else:
             out[key] = float(item) if 0 <= item <= 100 else None
     return out

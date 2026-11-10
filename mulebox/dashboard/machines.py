@@ -28,8 +28,9 @@ def _job(job: dict[str, Any]) -> dict[str, Any]:
 
 
 def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> dict[str, Any]:
-    """A row. `cpu_pct`, `mem_pct` and `cores` are what the worker last reported with a claim
-    or heartbeat (`workers.load`, M5.3), null while it is offline or has not said; the
+    """A row. `cpu_pct`, `mem_pct`, `cores` and the network in and out (`net_in_kib_s`,
+    `net_out_kib_s`, M14.2) are what the worker last reported with a claim or heartbeat
+    (`workers.load`, M5.3), null while it is offline or has not said; the
     dashboard's own machine gets its finer live sample on top (`with_readings`)."""
     slots = worker["slots"] if worker["slots"] is not None else max(len(jobs), 1)
     online = is_online(worker, now)
@@ -43,7 +44,8 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float) -> d
 
 
 def _load(load: dict[str, Any] | None) -> dict[str, Any]:
-    return {key: (load or {}).get(key) for key in ("cpu_pct", "mem_pct", "cores")}
+    return {key: (load or {}).get(key)
+            for key in ("cpu_pct", "mem_pct", "cores", "net_in_kib_s", "net_out_kib_s")}
 
 
 def readings(sample: dict[str, Any] | None) -> dict[str, float | None]:

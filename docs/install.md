@@ -305,7 +305,9 @@ Moving the coordinator to another machine is done by hand, as it holds the queue
    there, or remove that file before setup writes a new one.
 
 Each machine's CPU and memory show on the dashboard and in `mulebox machine list`, as its worker
-reports them. Not yet: `mulebox project clean` or `reset` on another worker's folders.
+reports them. `machine list` also shows each machine's network in and out, over its physical
+interfaces only (Wi-Fi, Ethernet): a VPN tunnel's traffic also crosses Wi-Fi, and a container's
+crosses a bridge, so counting those would count the same bytes twice. Not yet: `mulebox project clean` or `reset` on another worker's folders.
 
 ## Security model
 

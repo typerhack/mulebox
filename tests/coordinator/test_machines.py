@@ -89,6 +89,7 @@ def test_a_claim_and_a_heartbeat_record_the_machine_load(store, staging):
                                        load={"cpu_pct": 300, "cores": 8, "mem_pct": "x"}), 2.0)
     with store.read() as conn:
         row = workers.get(conn, "build-1")
-        assert row["load"] == {"cpu_pct": None, "cores": 8, "mem_pct": None}
+        assert row["load"] == {"cpu_pct": None, "cores": 8, "mem_pct": None,
+                               "net_in_kib_s": None, "net_out_kib_s": None}
         assert workers.report(row, 2.0)["load"]["cores"] == 8
         assert workers.report(row, 100.0)["load"] is None  # offline: no stale reading

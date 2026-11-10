@@ -18,6 +18,7 @@ import time
 
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import Remote, request
+from mulebox.client.report import format_size
 from mulebox.client.setup_worker import marker_name
 from mulebox.common import ssh
 from mulebox.common.protocol import MessageType
@@ -62,16 +63,24 @@ def percent(value: float | None) -> str:
     return "-" if value is None else f"{value:.0f}%"
 
 
+def per_second(kib_s: float | None) -> str:
+    """Network in or out over the machine's physical interfaces (common/netdev.py)."""
+    return "-" if kib_s is None else f"{format_size(int(kib_s * 1024))}/s"
+
+
 def _list(args: argparse.Namespace) -> int:
     rows = connect().call(request(MessageType.MACHINES)).body.get("workers", [])
     if not rows:
         print("no machines yet")
         return 0
-    print(f"{'NAME':<20} {'STATE':<17} {'SLOTS':>5} {'CPU':>5} {'MEM':>5}  {'VERSION':<9} OFFERS")
+    print(f"{'NAME':<20} {'STATE':<17} {'SLOTS':>5} {'CPU':>5} {'MEM':>5} {'NET IN':>13} "
+          f"{'NET OUT':>13}  {'VERSION':<9} OFFERS")
     for row in rows:
         load = row.get("load") or {}
         print(f"{row['worker']:<20} {state(row):<17} {row.get('slots') or '-':>5} "
-              f"{percent(load.get('cpu_pct')):>5} {percent(load.get('mem_pct')):>5}  "
+              f"{percent(load.get('cpu_pct')):>5} {percent(load.get('mem_pct')):>5} "
+              f"{per_second(load.get('net_in_kib_s')):>13} "
+              f"{per_second(load.get('net_out_kib_s')):>13}  "
               f"{row.get('version') or '-':<9} {', '.join(row.get('capabilities') or []) or '-'}")
     return 0
 
