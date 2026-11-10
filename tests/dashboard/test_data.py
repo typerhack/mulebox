@@ -187,3 +187,18 @@ def test_a_running_job_says_what_it_is_doing_and_a_waiting_one_does_not(data, st
     rows = {row["job_id"]: row for row in data.queue_jobs(NOW)}
     assert rows.pop(job_id)["doing"] == {"stage": "images", "step": None, "cpu_pct": 310.0}
     assert ["doing" in row for row in rows.values()] == [False]
+
+
+
+def test_queue_rows_carry_the_coordinators_reason_and_controls(store, staging, data):
+    from mulebox.common.status import fingerprint
+
+    job_id = queued(store, staging, now=NOW, project="example-app")
+    before = fingerprint(data.queue_jobs(NOW + 1))
+    api.handle(store, staging, request("project_pause", action="pause", projects=["example-app"]), NOW + 1)
+    assert "project example-app is paused" in next(
+        j for j in data.queue_jobs(NOW + 2) if j["job_id"] == job_id)["waiting_for"]
+    api.handle(store, staging, request("job_control", job_id=job_id, action="pause"), NOW + 1)
+    row = next(j for j in data.queue_jobs(NOW + 2) if j["job_id"] == job_id)
+    assert row["paused"] is True and row["waiting_for"]
+    assert fingerprint(data.queue_jobs(NOW + 2)) != before

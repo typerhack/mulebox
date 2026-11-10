@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.90.1 - 2026-11-10 - patch
+- Dashboard: freezing, pausing, boosting or moving a job now reaches open pages; the queue's change check left those fields out, so a frozen job's card did not say so until something else changed. Found in the M14.3 drill in Edge.
+- Dashboard: waiting rows give the coordinator's own reason (paused, a paused project, behind an upgrade, the machines held), the one `mulebox status` gives; before, only "no machine fits" showed.
+
 ## 0.90.0 - 2026-11-10 - minor
 - Pause whole projects: `mulebox project pause <name>... [--minutes N]`, `resume`, `paused`. None of a paused project's jobs or GitHub runs starts, they keep their place and say why, and the rest of the queue goes on; a pause ends by itself (60 min by default, a day at most). Wire message `project_pause`. Asked by the user, to keep real projects off the machine during drills.
 - Job cards and waiting rows have the three dots again (the user's call: the "Actions" button broke a card's layout), bolder and on the same line as the time; "Queue actions" keeps its words.

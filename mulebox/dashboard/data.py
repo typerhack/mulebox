@@ -21,7 +21,7 @@ from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.validate import check_job_id
-from mulebox.coordinator.views import placement, reservation_dict
+from mulebox.coordinator.views import placement, reservation_dict, waiting_for
 from mulebox.dashboard import machines, notices
 from mulebox.version import get_version
 
@@ -49,10 +49,15 @@ class DashboardData:
                        if job["state"] != JobState.FINISHED}
             doing = {job["job_id"]: _doing(job, steps.for_job(conn, job["job_id"]))
                      for job, _ in rows if job["state"] in ACTIVE}
+            # The coordinator's own reason (paused, held, behind an upgrade, a paused project,
+            # nothing fits), the one `mulebox status` and `queue` give.
+            why = {job["job_id"]: reason for job, _ in rows
+                   if (reason := waiting_for(conn, job, now))}
         return [{**reservation_dict(job, pos), **placement(fleet, job, now),
                  **attendance.fields(job, now, limits),
                  **({"usual_s": typical[job["job_id"]]} if typical.get(job["job_id"]) else {}),
-                 **({"doing": doing[job["job_id"]]} if job["job_id"] in doing else {})}
+                 **({"doing": doing[job["job_id"]]} if job["job_id"] in doing else {}),
+                 **({"waiting_for": why[job["job_id"]]} if job["job_id"] in why else {})}
                 for job, pos in rows]
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:

@@ -206,15 +206,17 @@ def failed_step(steps: list[dict[str, Any]]) -> dict[str, Any] | None:
 def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     """What changes when a view must redraw: ids, states, outcomes, positions, for a
     waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), a
-    waiting question's reason and whole minutes left, and what a job in a slot is doing
-    (`doing_mark`), or its card would keep what it showed when the job started.
+    waiting question's reason and whole minutes left, what a job in a slot is doing
+    (`doing_mark`), or its card would keep what it showed when the job started, and the
+    owner's controls (paused, boost, priority), or a frozen job would not say so.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
     return tuple(
         (j.get("job_id"), j.get("state"), j.get("outcome"), j.get("position"),
          j.get("worker"), j.get("started_at"), j.get("finished_at"),
-         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j), doing_mark(j))
+         j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j), doing_mark(j),
+         bool(j.get("paused")), bool(j.get("boost")), j.get("priority") or 0)
         for j in jobs
     )
 
