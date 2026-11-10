@@ -9,7 +9,7 @@ Changes to this file go through the integrator.
 A GitHub self-hosted runner lives on a worker as its own user service. Before GitHub's job
 starts, the runner calls its job-started hook, which **reserves a slot** in the mulebox
 queue pinned to that worker and blocks until the slot is granted. The job-completed hook
-releases it. Agent jobs (`mulebox check`) and runner jobs share one FIFO queue and the
+releases it. Agent jobs (`mulebox check`) and runner jobs share one line and the
 same slot limits, so the machine never runs more than `slots` heavy jobs at once.
 
 A completion hook is skipped when the runner crashes, so the worker supervises active
@@ -24,12 +24,15 @@ gone for 60 s the worker releases it.
   "github"`, `argv = []`. It is created directly in `queued` (it skips `uploading`).
 - New columns (schema version bump with a migration for existing databases): `kind TEXT
   NOT NULL DEFAULT 'job'`, `pinned_worker TEXT`, `runner TEXT`, `run_url TEXT`.
-- FIFO across both kinds: `queue.claim` (agent jobs) never takes `kind = runner` rows, and
-  does not take a job while an **older** queued reservation pinned to that worker waits.
-  `acquire` (below) grants a reservation only when it is the oldest queued row the worker
-  could run and a cluster slot and a worker slot are free. Granting moves it `queued ->
+- One line across both kinds, oldest first unless its owner moved a row (`priority`,
+  `store.line_key`): `queue.claim` (agent jobs) never takes `kind = runner` rows, and does not
+  take a job while a queued reservation pinned to that worker is **ahead** of it in line.
+  `acquire` (below) grants a reservation only when it is first in line among the queued rows
+  the worker could run (a paused agent job keeps its place without holding it back) and a cluster slot and a worker slot are free. Granting moves it `queued ->
   starting -> running` in one transaction, sets `worker = pinned_worker`, `started_at`, and
   a worker lease.
+- A waiting reservation can be moved in line (`job_control` `first|up|down|last`, the
+  dashboard's arrows and three dots); every other control is refused, as GitHub owns the run.
 - Slot accounting counts `starting|running|cleaning` rows of both kinds.
 
 ## Wire messages (protocol.py additions)

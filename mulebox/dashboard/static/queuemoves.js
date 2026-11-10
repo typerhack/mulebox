@@ -1,6 +1,7 @@
 // Moving a waiting job in line from the Queue tab: to the front, one up, one down, to the end
 // (`mulebox first|up|down|last`, coordinator/job_control.py). Positions are the real line's,
-// across every lane, so "up" passes the job just ahead of it in the whole queue. The queue
+// across every lane, so "up" passes the job just ahead of it in the whole queue. GitHub's
+// waiting slots move too; that is all that is steered about them. The queue
 // event that follows redraws the list; until then the row says it is moving.
 
 import { actionToken, post } from "./access.js";
@@ -35,7 +36,7 @@ async function move(job, action) {
 // The four buttons for a waiting job at `job.position` of `total`, or null when this page
 // offers no controls or the job has no place in line yet.
 export function moveButtons(job, total) {
-  if (!token || !["job", "upgrade"].includes(job.kind) || !job.position || job.cancel_requested) {
+  if (!token || !["job", "upgrade", "runner"].includes(job.kind) || !job.position || job.cancel_requested) {
     return null;
   }
   const note = pending.get(job.job_id);

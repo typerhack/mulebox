@@ -2,8 +2,9 @@
 
 A reservation is a job row with `kind = 'runner'`, pinned to one worker, with no snapshot.
 It is created `queued`, granted (`queued -> starting -> running` in one transaction) when
-it is the oldest queued row its worker could run and both a cluster slot and a worker slot
-are free, and ended by `release`. Every function here runs inside the caller's write
+it is first in line among the queued rows its worker could run and both a cluster slot and
+a worker slot are free, and ended by `release`. Its owner may move it in line like any
+waiting job (job_control.py); nothing else about it is steered, as GitHub owns the run. Every function here runs inside the caller's write
 transaction; the time comes in as `now`.
 """
 
@@ -64,19 +65,18 @@ def require(conn: sqlite3.Connection, job_id: str) -> dict[str, Any]:
 
 
 def ahead(conn: sqlite3.Connection, job: dict[str, Any]) -> int:
-    """Queued rows older than `job` that its worker could run (agent jobs whose needs the
-    worker meets, and reservations pinned to it)."""
+    """Queued rows ahead of `job` in line (moves count, job_control.py) that its worker could
+    run: agent jobs whose needs the worker meets and that are not paused, and reservations
+    pinned to it. A paused job keeps its place without holding a GitHub run back."""
     worker = job["pinned_worker"]
     known = workers.get(conn, worker)
     have = set(known["capabilities"]) if known else set()
-    older = st.select_jobs(
-        conn, "state = ? AND (queued_at < ? OR (queued_at = ? AND seq < ?))",
-        (JobState.QUEUED.value, job["queued_at"], job["queued_at"], job["seq"]),
-    )
+    queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,))
     return sum(
-        1 for row in older
-        if (row["kind"] == JOB_KIND and set(row["needs"]) <= have)
-        or (row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker)
+        1 for row in queued
+        if st.line_key(row) < st.line_key(job)
+        and ((row["kind"] == JOB_KIND and set(row["needs"]) <= have and not row["paused"])
+             or (row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker))
     )
 
 

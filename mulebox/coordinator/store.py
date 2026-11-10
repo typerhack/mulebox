@@ -249,6 +249,11 @@ def select_jobs(conn: sqlite3.Connection, where: str = "1", params: tuple = (),
     return [_row_to_job(row) for row in conn.execute(sql, params)]
 
 
+def line_key(job: dict[str, Any]) -> tuple[int, float, int]:
+    """A queued row's place in the one line, smaller first (queue.QUEUE_ORDER)."""
+    return (-job["priority"], job["queued_at"], job["seq"])
+
+
 def insert_job(conn: sqlite3.Connection, fields: dict[str, Any]) -> dict[str, Any]:
     encoded = _encode_columns(fields)
     names = ", ".join(encoded)

@@ -379,7 +379,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   environment variables or full container inspect output. A job's `setup` line is redacted the
   same way before the dashboard shows it, as the command is.
 - The page can steer the queue: cancel, pause, resume, move in line and boost a job, and pause a
-  machine. mulebox is for its owner's own network, so these are on wherever the page opens, as
+  machine. A GitHub run's waiting slot only moves in line: GitHub owns the run. mulebox is for its owner's own network, so these are on wherever the page opens, as
   the same commands are from any laptop with ssh to the machine (decided by the user on
   2026-11-10; before 0.87.0 cancelling needed a sign-in on the `lan` address and was off by
   default). Each sends what the CLI sends, by the same `mulebox rpc`, so the dashboard process

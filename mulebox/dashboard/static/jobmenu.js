@@ -61,6 +61,7 @@ function moves(job) {
 function jobGroups(job) {
   const open_ = item("open", "Open its page", "Its log, stages and all its details",
                      () => { location.hash = `#/job/${encodeURIComponent(job.job_id)}`; });
+  if (job.kind === "runner") return [moves(job), [open_]];  // GitHub owns the run itself
   if (job.kind === "upgrade") {
     return [moves(job), [open_],
             [item("cancel", "Cancel upgrade", "Takes it out of line; the machine stays as it is",
@@ -213,8 +214,8 @@ export function followMenu() {
 
 // The "Actions" button for one job, or null where this page has no controls or nothing to steer.
 export function jobMenu(job) {
-  const upgradeWaits = job.kind === "upgrade" && WAITING.has(job.state);
-  if (!token || !(job.kind === "job" || upgradeWaits) || job.cancel_requested
+  const onlyMoves = ["upgrade", "runner"].includes(job.kind) && WAITING.has(job.state) && job.position;
+  if (!token || !(job.kind === "job" || onlyMoves) || job.cancel_requested
       || !(WAITING.has(job.state) || RUNNING.has(job.state))) return null;
   latest.set(job.job_id, { kind: "job", job });
   return menuButton(job.job_id, null, `Actions for ${job.project ?? "job"} ${job.job_id}`);

@@ -14,7 +14,8 @@ mulebox runs on its owner's own network, so whoever reaches the queue may steer 
   takes no new job until it ends (queue.boosted_on). A queued job is also moved first.
 - `normal`: ends the boost; the job keeps its place in line.
 
-A GitHub run's slot is GitHub's, and a finished or cancelled job has nothing to steer.
+A GitHub run's slot and a waiting upgrade only move in line: GitHub owns the run, and pausing
+or boosting its slot could leave a CI run hanging. A finished or cancelled job has nothing to steer.
 """
 
 from __future__ import annotations
@@ -93,12 +94,11 @@ def control(req: Request) -> Message:
         raise BadRequest(f"field 'action' must be one of {', '.join(ACTIONS)}")
     with req.store.write() as conn:
         job = st.require_job(conn, v.job_id(req.body))
-        if job["kind"] == queue.RUNNER_KIND:
-            raise Conflict(f"job {job['job_id']} holds a slot for a GitHub run; "
-                           "steer that run on GitHub")
         if job["kind"] != queue.JOB_KIND and (action not in MOVES or job["state"] != JobState.QUEUED):
-            raise Conflict(f"job {job['job_id']} is an upgrade; it can only move in line "
-                           "while it waits, or be cancelled")
+            what = ("holds a slot for a GitHub run; it can only move in line while it waits, "
+                    "the run itself is steered on GitHub" if job["kind"] == queue.RUNNER_KIND
+                    else "is an upgrade; it can only move in line while it waits, or be cancelled")
+            raise Conflict(f"job {job['job_id']} {what}")
         if job["state"] not in _STEERABLE or job["cancel_requested"]:
             raise Conflict(f"job {job['job_id']} is "
                            f"{'being cancelled' if job['cancel_requested'] else job['state']}; "

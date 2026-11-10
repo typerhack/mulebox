@@ -10,6 +10,15 @@ export function duration(seconds) {
   return `${s}s`;
 }
 
+// A length from past runs, to the minute past one: it is a rough figure, and the short form keeps
+// it on the card's first line beside the time so far (lanes.js).
+export function roughly(seconds) {
+  const total = Math.max(0, Math.round(seconds));
+  if (total < 60) return `${total}s`;
+  const minutes = Math.round(total / 60), h = Math.floor(minutes / 60), m = minutes % 60;
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
+}
+
 export function bytes(n) {
   if (n === null || n === undefined) return "-";
   const units = ["B", "KB", "MB", "GB", "TB"];

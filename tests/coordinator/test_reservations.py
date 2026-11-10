@@ -96,6 +96,45 @@ def test_agent_job_waits_behind_older_reservation(store, staging):
     assert claim(store, staging, now=T0 + 6).type is MessageType.CLAIM_OK
 
 
+def control(store, staging, job_id, action, now=T0):
+    return call(store, staging, "job_control", now=now, job_id=job_id, action=action)
+
+
+def test_a_waiting_slot_moves_in_line_and_its_new_place_holds(store, staging):
+    older = queued(store, staging, now=T0)
+    res = reserve(store, staging, now=T0 + 1)
+    assert control(store, staging, res, "first").body["position"] == 1
+    assert claim(store, staging, now=T0 + 2).type is MessageType.CLAIM_NONE  # the slot leads
+    assert acquire(store, staging, res, now=T0 + 3)["state"] == "running"
+    call(store, staging, "release", now=T0 + 4, job_id=res, outcome="passed")
+    assert claim(store, staging, now=T0 + 5).body["job_id"] == older
+
+
+def test_a_job_moved_ahead_of_a_slot_goes_first(store, staging):
+    res = reserve(store, staging, now=T0)
+    later = queued(store, staging, now=T0 + 1)
+    control(store, staging, later, "first")
+    waiting = acquire(store, staging, res, now=T0 + 2)
+    assert (waiting["state"], waiting["position"]) == ("queued", 2)
+    assert claim(store, staging, now=T0 + 3).body["job_id"] == later
+
+
+def test_a_paused_job_does_not_hold_a_slot_back(store, staging):
+    paused = queued(store, staging, now=T0)
+    control(store, staging, paused, "pause")
+    res = reserve(store, staging, now=T0 + 1)
+    assert acquire(store, staging, res, now=T0 + 2)["state"] == "running"
+
+
+def test_a_slot_only_moves(store, staging):
+    res = reserve(store, staging, now=T0)
+    for action in ("pause", "boost"):
+        reply = control(store, staging, res, action)
+        assert reply.type is MessageType.ERROR and "only move in line" in reply.body["message"]
+    acquire(store, staging, res, now=T0 + 1)
+    assert "only move in line" in control(store, staging, res, "first").body["message"]
+
+
 def test_other_workers_are_not_blocked_by_a_pinned_reservation(store, staging):
     reserve(store, staging, now=T0, worker="build-2")
     queued(store, staging, now=T0 + 1)

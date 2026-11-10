@@ -40,8 +40,7 @@ _WAITING = (JobState.QUEUED.value,)
 _PENDING = (JobState.QUEUED.value, *(s.value for s in ACTIVE_STATES))
 
 
-def _key(row: dict[str, Any]) -> tuple[int, float, int]:
-    return (-row["priority"], row["queued_at"], row["seq"])
+_key = st.line_key
 
 
 def pending(conn: sqlite3.Connection, worker: str) -> list[dict[str, Any]]:

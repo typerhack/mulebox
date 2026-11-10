@@ -13,7 +13,7 @@
 import { doingLine } from "./doing.js";
 import { jobMenu, steeredIcons } from "./jobmenu.js";
 import { moveButtons } from "./queuemoves.js";
-import { badge, clock, duration, el, jobLink, soonest, questionMark, runText } from "./format.js";
+import { badge, clock, duration, el, jobLink, roughly, soonest, questionMark, runText } from "./format.js";
 
 const SHARED = { title: "next free machine", sub: "whichever of these is free first" };
 const STUCK = { title: "no machine fits", sub: "nothing offers what they need" };
@@ -47,7 +47,8 @@ export function groupLanes(snapshot, machines) {
 function elapsed(job) {
   return el("span", { class: "time" },
     el("span", { class: "num", "data-elapsed": job.job_id, text: duration(job.elapsed_s) }),
-    job.usual_s ? el("span", { class: "usual", text: `of usually ${duration(job.usual_s)}` }) : null);
+    job.usual_s ? el("span", { class: "usual", title: `usually ${duration(job.usual_s)}`,
+                               text: `of usually ${roughly(job.usual_s)}` }) : null);
 }
 
 function block(job, cores) {

@@ -8,8 +8,8 @@ claiming at once can never get the same job, and the cluster-wide slot limit hol
 
 Agent jobs (`kind = 'job'`) and runner reservations (`kind = 'runner'`, reservations.py)
 share one line: slots count `starting|running|cleaning` rows of both kinds, `claim` only
-hands out agent jobs, and it never passes an older reservation pinned to the claiming
-worker.
+hands out agent jobs, and it never passes a reservation pinned to the claiming worker
+that is ahead of it in line. Paused rows wait without holding back the rows behind them.
 """
 
 import sqlite3
@@ -62,8 +62,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         for job in st.select_jobs(conn, "state = ? AND kind = ?",
                                   (JobState.QUEUED.value, JOB_KIND), QUEUE_ORDER):
-            if blocker is not None and _key(blocker) < _key(job):
-                return None  # FIFO: the older reservation goes first
+            if blocker is not None and st.line_key(blocker) < st.line_key(job):
+                return None  # the reservation ahead in line goes first
             if upgrades.blocks(conn, worker, job):
                 return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
@@ -103,14 +103,10 @@ def boosted_on(conn: sqlite3.Connection, worker: str) -> bool:
 
 
 def oldest_reservation(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
-    """The oldest queued reservation pinned to `worker`, or None."""
+    """The queued reservation pinned to `worker` that is first in line, or None."""
     rows = st.select_jobs(conn, "state = ? AND kind = ? AND pinned_worker = ?",
                           (JobState.QUEUED.value, RUNNER_KIND, worker), QUEUE_ORDER, limit=1)
     return rows[0] if rows else None
-
-
-def _key(job: dict[str, Any]) -> tuple[float, int]:
-    return (job["queued_at"], job["seq"])
 
 
 def position(conn: sqlite3.Connection, job: dict[str, Any]) -> int | None:
