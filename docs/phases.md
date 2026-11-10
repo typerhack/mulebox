@@ -410,11 +410,12 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [ ] M14.1 Jobs box redesign. Three mockups were rejected as flooded with data; the top row (CPU,
       memory, disk, machines) stays. Done when: the user picks a design and it runs on the real
       dashboard in Edge.
-- [~] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
+- [x] M14.2 Network use per machine on the dashboard, as jobs download a lot, counting Wi-Fi and a
       VPN tunnel once. Built 2026-11-10 (0.84.0): workers report in and out over physical interfaces
       only, shown by `mulebox machine list`. Run on the real machine: a 30 MB download read 849 KiB/s
-      while Wi-Fi moved 1205 and the VPN tunnel 1098, so the tunnel was not added again. Open: where it
-      goes on the dashboard, the user's pick, as the top panels stay as they are.
+      while Wi-Fi moved 1205 and the VPN tunnel 1098, so the tunnel was not added again. Done 2026-11-10
+      (0.85.0): a `net` line under each machine's meters, the user's pick; in real Edge on the deployed
+      dashboard it changed live (657 KB/s in, then 166) and fit at 390 px.
 - [x] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
       slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
       time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its
@@ -427,7 +428,7 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       followed on the dashboard: every step as it started, a quiet step's 10 lines at its end, a busy step's 300
       lines in pieces and to the last one after the slot was released, no step repeated. A step of a second or
       less can be missed; GitHub has it.
-- [~] M14.8 GitHub jobs with their real result: passed, failed or cancelled from the runner's own diary,
+- [x] M14.8 GitHub jobs with their real result: passed, failed or cancelled from the runner's own diary,
       the failed step and GitHub's message, in the Failed and Passed tabs; a mark on every finished
       job's state; a CI card's CPU counts the job's Compose containers. Asked by the user on 2026-11-09,
       after a CI backend test step used all 8 cores while its card read 0.0. Built 2026-11-09 (0.76.0):
@@ -436,6 +437,10 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       with their marks, the failed step, and a CI card's cores during a container-heavy step.
       Seen 2026-11-09: a real passing CI run with its mark in the Passed tab. Open: a real failure, and
       the CI card's cores during a container step.
+      Done 2026-11-10: two real CI runs' backend test step used about 8 cores in its containers while
+      the card read 5.6 to 7.4 cores (sampled from the dashboard's own API each few seconds); a run made
+      to fail on purpose on a throwaway branch of this repository showed in Edge in the Failed tab with
+      its cross, the failed step and GitHub's message. The branch and its runs were deleted.
 - [x] M14.9 Out-of-step strip: a laptop on another mulebox than the build machine, a laptop whose skill
       is out of date (warning, amber), a worker on another mulebox than the coordinator (danger, red),
       each with its fix, above the panels, and a mark with the count in the header. A strip over a toast,
@@ -612,8 +617,10 @@ each with a report of what was checked.
 - [x] M20.2 Quieter env notice; a `compose: false` job skips a docker install (#3, #6, #9). 0.77.1,
       a real compose-free job on the machine.
 - [x] M20.3 `mulebox run --bare` (#5), `ignore_changes:` (#2), `mulebox runner caches` (#8),
-      `mulebox run --take` (#4). 0.78.0 to 0.81.1; all but runner caches run for real. Open: runner
-      caches applied to a real runner, which restarts a project's CI (the user's call).
+      `mulebox run --take` (#4). 0.78.0 to 0.81.1; all but runner caches run for real. Runner
+      caches 2026-11-10 on this repository's own runner (the user's pick): its restart left the old
+      listener running, which took the next job without the settings (fixed 0.84.2); after the fix a
+      real CI job had `PIP_CACHE_DIR` on the project's cache and installed from what the gate had filled.
 - [x] M20.4 The skill keeps itself current: `mulebox contract` reports a copy that differs, the agent
       runs `mulebox skill update` (the user's choice over a plugin marketplace), `mulebox setup`
       updates the laptop's copies. 0.82.0: setup updated two real copies.

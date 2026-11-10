@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.85.1 - 2026-11-10 - patch
+- Roadmap: M14.2 and M14.8 done, runner caches run on a real runner (M20.3).
+
 ## 0.85.0 - 2026-11-10 - minor
 - Dashboard: each machine in the Machines box has a `net` line under its cpu and mem meters, its network in and out as the worker reports it (M14.2, the user's pick of placement).
 
