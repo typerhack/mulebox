@@ -1,4 +1,4 @@
-"""`job_control` requests: pause, resume, first, boost and normal on one job (M14.3)."""
+"""`job_control` requests: pause, resume, moves in line, boost and normal on one job (M14.3)."""
 
 import pytest
 
@@ -40,15 +40,14 @@ def test_a_paused_waiting_job_keeps_its_place_and_does_not_start(store, staging)
     assert claim(store, "wrk-b")["job_id"] == paused
 
 
-def test_first_goes_before_older_jobs_and_normal_puts_it_back(store, staging):
+def test_first_goes_before_older_jobs(store, staging):
     older = queued(store, staging, now=1.0)
     newer = queued(store, staging, now=2.0)
     act(store, staging, newer, "first")
     first, second = job(store, newer), job(store, older)
     with store.read() as conn:
         assert queue.position(conn, first) == 1 and queue.position(conn, second) == 2
-    act(store, staging, newer, "normal")
-    assert claim(store)["job_id"] == older
+    assert claim(store)["job_id"] == newer
 
 
 def test_first_twice_and_on_two_jobs_keeps_the_latest_ahead(store, staging):
@@ -56,7 +55,7 @@ def test_first_twice_and_on_two_jobs_keeps_the_latest_ahead(store, staging):
     act(store, staging, a, "first")
     before = job(store, a)["priority"]
     act(store, staging, a, "first")
-    assert job(store, a)["priority"] == before  # already leads: no climbing
+    assert job(store, a)["priority"] == before  # already leads: nothing changes
     act(store, staging, b, "first")
     assert claim(store)["job_id"] == b
 
@@ -107,3 +106,41 @@ def test_what_cannot_be_steered(store, staging):
     running = claimed(store, staging, now=1002.0)["job_id"]
     with pytest.raises(Conflict, match="only a waiting job"):
         act(store, staging, running, "first")
+
+
+def _line(store):
+    with store.read() as conn:
+        rows = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), queue.QUEUE_ORDER)
+    return [row["job_id"] for row in rows]
+
+
+def test_up_down_first_and_last_reorder_the_line(store, staging):
+    a, b, c, d = (queued(store, staging, now=float(n)) for n in range(1, 5))
+    act(store, staging, c, "up")
+    assert _line(store) == [a, c, b, d]
+    act(store, staging, a, "down")
+    assert _line(store) == [c, a, b, d]
+    act(store, staging, c, "last")
+    assert _line(store) == [a, b, d, c]
+    act(store, staging, d, "first")
+    assert _line(store) == [d, a, b, c]
+    act(store, staging, d, "up")  # already first: nothing moves
+    act(store, staging, c, "down")
+    assert _line(store) == [d, a, b, c]
+    later = queued(store, staging, now=9.0)
+    assert _line(store)[-1] == later  # a job sent later still comes after the moved ones
+    assert claim(store)["job_id"] == d
+
+
+def test_normal_ends_a_boost_and_keeps_the_place(store, staging):
+    older = queued(store, staging, now=1.0)
+    newer = queued(store, staging, now=2.0)
+    act(store, staging, newer, "boost")
+    act(store, staging, newer, "normal")
+    assert job(store, newer)["boost"] is False and _line(store) == [newer, older]
+
+
+def test_only_a_job_in_line_moves(store, staging):
+    running = claimed(store, staging, now=1.0)["job_id"]
+    with pytest.raises(Conflict, match="moves in line"):
+        act(store, staging, running, "down")

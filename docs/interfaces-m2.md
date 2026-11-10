@@ -172,9 +172,13 @@ serving), `login.py` (rules and pages), `session.py`, `password.py`, `cert.py`,
 On by default (`controls = false` under `[dashboard]` takes them away), on the tunnel and on the
 LAN address, with or without a password: mulebox is for its owner's own network, and whoever
 reaches the queue may steer it, as `mulebox cancel` and `mulebox pause` already let them. A job's
-page has Pause or Resume, Run first or Back in line (waiting jobs), Boost or End boost
+page has Pause or Resume, To front, Up, Down and To end (waiting jobs), Boost or End boost
 (coordinator/job_control.py), and Cancel; each online machine in the Machines box has Pause or
-Resume (`machine drain` and `resume`). `cancel_button`, from before 0.87.0, is read and ignored.
+Resume (`machine drain` and `resume`). In the Queue tab each waiting job has four arrows for the
+same moves; positions are the whole line's, across lanes.
+Every running card and waiting row also has a dots menu with all of a job's actions (jobmenu.js),
+and the Jobs header has one for everything at once: pause or resume all machines, freeze all
+running jobs, resume all paused jobs. Each item sends the same request as one button would. `cancel_button`, from before 0.87.0, is read and ignored.
 What the protection below keeps out is other web pages in the same browser.
 
 - **The way to the coordinator.** The same `cancel`, `job_control` and `machine` requests the
@@ -234,7 +238,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
 | `GET /api/session` | `{action_token, cancel_token}` (the same value): what this page sends with a change, null with the controls off |
 | `POST /api/jobs/{id}/cancel` | `{job_id, state, outcome, cancel_requested}`; rules in Controls |
-| `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, boost, normal; `{job_id, action, state, paused, boost, priority}` |
+| `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, priority}` |
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for` |
 | `GET /api/machines` | machines panel snapshot (above) |

@@ -27,7 +27,7 @@ from mulebox.coordinator.store import ACTIVE_STATES, Store
 DEFAULT_FINISHED_LIMIT = 20
 
 _ACTIVE_SQL = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
-_QUEUE_ORDER = "priority DESC, queued_at, seq"
+QUEUE_ORDER = "priority DESC, queued_at, seq"
 JOB_KIND = "job"
 RUNNER_KIND = "runner"
 
@@ -61,7 +61,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         for job in st.select_jobs(conn, "state = ? AND kind = ?",
-                                  (JobState.QUEUED.value, JOB_KIND), _QUEUE_ORDER):
+                                  (JobState.QUEUED.value, JOB_KIND), QUEUE_ORDER):
             if blocker is not None and _key(blocker) < _key(job):
                 return None  # FIFO: the older reservation goes first
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
@@ -103,7 +103,7 @@ def boosted_on(conn: sqlite3.Connection, worker: str) -> bool:
 def oldest_reservation(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
     """The oldest queued reservation pinned to `worker`, or None."""
     rows = st.select_jobs(conn, "state = ? AND kind = ? AND pinned_worker = ?",
-                          (JobState.QUEUED.value, RUNNER_KIND, worker), _QUEUE_ORDER, limit=1)
+                          (JobState.QUEUED.value, RUNNER_KIND, worker), QUEUE_ORDER, limit=1)
     return rows[0] if rows else None
 
 
@@ -128,7 +128,7 @@ def listing(conn: sqlite3.Connection, finished_limit: int = DEFAULT_FINISHED_LIM
             ) -> list[tuple[dict[str, Any], int | None]]:
     """(job, position) pairs: active jobs, then queued in order, uploading, recent finished."""
     active = st.select_jobs(conn, _ACTIVE_SQL, (), "started_at, seq")
-    queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), _QUEUE_ORDER)
+    queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), QUEUE_ORDER)
     uploading = st.select_jobs(conn, "state = ?", (JobState.UPLOADING.value,), "seq")
     finished = st.select_jobs(
         conn, "state = ?", (JobState.FINISHED.value,), "finished_at DESC, seq DESC",

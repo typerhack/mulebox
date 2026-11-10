@@ -1,14 +1,17 @@
-"""`mulebox pause|resume|first|boost|normal <job-id>`: steer one job (coordinator/job_control.py).
+"""`mulebox pause|resume|first|up|down|last|boost|normal <job-id>`: steer one job.
 
     mulebox pause <job-id>     a waiting job keeps its place and does not start; a running one
                                is frozen on its machine, containers too, until resumed
     mulebox resume <job-id>    undo a pause
-    mulebox first <job-id>     a waiting job goes before every other waiting job
+    mulebox first <job-id>     a waiting job goes to the front of the line
+    mulebox up <job-id>        one place ahead in line
+    mulebox down <job-id>      one place back in line
+    mulebox last <job-id>      to the end of the line
     mulebox boost <job-id>     the job gets the machine's CPU and disk first, and its machine
                                takes no new job until it ends
-    mulebox normal <job-id>    back to its own place in line, without the boost
+    mulebox normal <job-id>    end the boost; the job keeps its place in line
 
-Pausing a whole machine is `mulebox machine pause <name>` (machine_commands.py).
+The rules are the coordinator's (coordinator/job_control.py). Pausing a whole machine is `mulebox machine pause <name>` (machine_commands.py).
 """
 
 from __future__ import annotations
@@ -23,12 +26,16 @@ from mulebox.common.protocol import MessageType
 HELP = {
     "pause": "pause a job: a waiting one does not start, a running one is frozen",
     "resume": "resume a paused job",
-    "first": "run a waiting job before every other waiting job",
+    "first": "move a waiting job to the front of the line",
+    "up": "move a waiting job one place ahead in line",
+    "down": "move a waiting job one place back in line",
+    "last": "move a waiting job to the end of the line",
     "boost": "give a job the machine's CPU and disk first; the machine takes no new job",
-    "normal": "put a job back in its own place in line, without the boost",
+    "normal": "end a job's boost; it keeps its place in line",
 }
 DONE = {
-    "pause": "paused", "resume": "resumed", "first": "moved first in line",
+    "pause": "paused", "resume": "resumed", "first": "moved to the front of the line",
+    "up": "moved one place ahead", "down": "moved one place back", "last": "moved to the end of the line",
     "boost": "boosted", "normal": "back to normal",
 }
 
@@ -49,6 +56,8 @@ def line(job_id: str, action: str, body: dict) -> str:
         note = "it keeps its place and does not start"
     elif action == "boost" and state != "running":
         note = "first in line, and it gets its machine to itself once it starts"
+    elif body.get("position"):
+        note = f"now #{body['position']} in line"
     else:
         note = f"state {state}"
     return f"mulebox: job {job_id} {DONE[action]}: {note}"

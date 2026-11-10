@@ -1,9 +1,9 @@
 """The dashboard's controls on a job and on a machine (interfaces-m2.md, Controls).
 
-    POST /api/jobs/<id>/control      {"action": "pause|resume|first|boost|normal"}
+    POST /api/jobs/<id>/control      {"action": "pause|resume|first|up|down|last|boost|normal"}
     POST /api/machines/<name>/control {"action": "pause|resume"}
 
-The same requests `mulebox pause|resume|first|boost|normal` and `mulebox machine pause|resume`
+The same requests `mulebox pause|resume|first|up|down|last|boost|normal` and `mulebox machine pause|resume`
 send, through the canceller's `mulebox rpc`, so every rule stays in the coordinator
 (coordinator/job_control.py, coordinator/machine_api.py). Protected like cancel (cancel.check).
 A coordinator's refusal comes back as 409 with its own words.
@@ -19,7 +19,7 @@ from mulebox.client.remote import CoordinatorError
 from mulebox.common.log import get_logger
 from mulebox.dashboard import cancel, keys
 
-JOB_ACTIONS = frozenset({"pause", "resume", "first", "boost", "normal"})
+JOB_ACTIONS = frozenset({"pause", "resume", "first", "up", "down", "last", "boost", "normal"})
 MACHINE_ACTIONS = {"pause": "drain", "resume": "resume"}  # the dashboard's word -> the request
 _log = get_logger(__name__)
 
@@ -55,6 +55,7 @@ async def job_control(request: web.Request) -> web.Response:
     _log.info("job %s: %s from the dashboard by %s", job_id, action, request.remote)
     body = reply.body
     return web.json_response({"job_id": job_id, "action": action, "state": body.get("state"),
+                              "position": body.get("position"),
                               **{key: body.get(key, False if key != "priority" else 0)
                                  for key in ("paused", "boost", "priority")}})
 

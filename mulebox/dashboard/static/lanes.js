@@ -7,9 +7,12 @@
 // is the one place it can run (pinned runner reservation, or the only worker whose
 // capabilities cover its `needs`). A job several machines could take waits in one shared
 // list, and a job no machine fits is shown as stuck with the coordinator's reason.
-// Positions are the real queue positions in every list.
+// Positions are the real queue positions in every list, and each waiting job can be moved in
+// that one line (queuemoves.js).
 
 import { doingLine } from "./doing.js";
+import { jobMenu } from "./jobmenu.js";
+import { moveButtons } from "./queuemoves.js";
 import { badge, clock, duration, el, jobLink, soonest, questionMark, runText } from "./format.js";
 
 const SHARED = { title: "next free machine", sub: "whichever of these is free first" };
@@ -49,7 +52,8 @@ function elapsed(job) {
 
 function block(job, cores) {
   return el("div", { class: "slot-block", "data-filled": "1" },
-    el("div", { class: "slot-head" }, badge(job.shown_state ?? job.state), elapsed(job)),
+    el("div", { class: "slot-head" }, badge(job.shown_state ?? job.state),
+      el("span", { class: "head-end" }, elapsed(job), jobMenu(job))),
     jobLink(job),
     el("span", { class: "branch", text: runText(job) }),
     doingLine(job, cores),
@@ -81,7 +85,7 @@ function groupCell(group, tone) {
 // A waiting entry: its real queue position, the job, how long it has waited, and below it
 // the reason it cannot start (from the coordinator) or, in the shared list, which machines
 // could take it when not all of them can.
-function waitingEntry(job, allMachines) {
+function waitingEntry(job, allMachines, total) {
   const place = job.position ? el("span", { class: "pos", text: `#${job.position}` })
                              : badge(job.shown_state ?? job.state);
   const lines = [];
@@ -93,23 +97,23 @@ function waitingEntry(job, allMachines) {
   lines.push(questionMark(job));
   return el("li", { class: "wait" }, place,
     el("span", {}, jobLink(job), el("span", { class: "branch", text: runText(job) })),
-    elapsed(job), ...lines);
+    el("span", { class: "wait-end" }, elapsed(job), moveButtons(job, total), jobMenu(job)), ...lines);
 }
 
-function waitingCell(jobs, allMachines) {
+function waitingCell(jobs, allMachines, total) {
   if (!jobs.length) return el("div", { class: "lane-waiting" }, el("p", { class: "empty", text: "nothing waiting" }));
   return el("div", { class: "lane-waiting" }, el("ul", { class: "waits" },
-    ...jobs.map((job) => waitingEntry(job, allMachines))));
+    ...jobs.map((job) => waitingEntry(job, allMachines, total))));
 }
 
-function laneRow(entry, state) {
+function laneRow(entry, state, total) {
   return el("div", { class: "lane", "data-state": state ?? null }, machineCell(entry),
-    el("div", { class: "lane-running" }, ...blocks(entry)), waitingCell(entry.waiting));
+    el("div", { class: "lane-running" }, ...blocks(entry)), waitingCell(entry.waiting, null, total));
 }
 
-function groupRow(group, jobs, tone, allMachines) {
+function groupRow(group, jobs, tone, allMachines, total) {
   return el("div", { class: "lane", "data-state": tone ?? "shared" }, groupCell(group, tone),
-    el("div", { class: "lane-running muted", text: "" }), waitingCell(jobs, allMachines));
+    el("div", { class: "lane-running muted", text: "" }), waitingCell(jobs, allMachines, total));
 }
 
 function header() {
@@ -126,8 +130,9 @@ export function lanesView(snapshot, machines) {
   }
   root.append(header());
   // Stuck jobs first: they are the one thing here that needs a person.
-  if (stuck.length) root.append(groupRow(STUCK, stuck, "stuck", null));
-  for (const entry of lanes) root.append(laneRow(entry, entry.machine?.state));
-  if (shared.length) root.append(groupRow(SHARED, shared, null, lanes.length));
+  const total = (snapshot?.queued ?? []).filter((job) => job.position).length;
+  if (stuck.length) root.append(groupRow(STUCK, stuck, "stuck", null, total));
+  for (const entry of lanes) root.append(laneRow(entry, entry.machine?.state, total));
+  if (shared.length) root.append(groupRow(SHARED, shared, null, lanes.length, total));
   return root;
 }

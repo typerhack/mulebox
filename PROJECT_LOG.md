@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.88.0 - 2026-11-10 - minor
+- Reorder the line (the user's ask): `mulebox up|down|last <job-id>` beside `first`, and four outline arrows (to the front, up, down, to the end) on every waiting job in the dashboard's Queue tab and on its page. A move writes the new order into every waiting job's priority, so jobs sent later still come after them. `normal` now only ends a boost and keeps the job's place.
+- A "more actions" menu (dots) on every running card and waiting row in the Jobs box: pause or freeze, resume, the moves, boost, open its page, cancel (asked twice). One in the Jobs header acts on everything: pause or resume all machines, freeze all running jobs, resume all paused jobs.
+
 ## 0.87.1 - 2026-11-10 - patch
 - Out-of-step strip and header mark: the warning triangle and the danger circle are outlines now, a round stroke in the level's colour with no fill (the user's ask: the filled shapes looked muddy), and the light theme's amber for them is brighter (`--warn-mark`).
 

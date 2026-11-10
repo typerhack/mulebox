@@ -1,4 +1,5 @@
-// A job's controls on its page: pause or resume, run first, boost (coordinator/job_control.py).
+// A job's controls on its page: pause or resume, its place in line, boost
+// (coordinator/job_control.py).
 //
 // Each acts at once: none loses work, and each has its way back on the same spot. A short line
 // says what is on now, in the words of what it does to this job. Cancelling, which does lose
@@ -20,8 +21,8 @@ function said(job) {
   if (job.boost) {
     parts.push(running ? "Boosted: it gets the machine's CPU and disk first, and the machine takes no new job until it ends."
                        : "Boosted: first in line, and it gets its machine to itself once it starts.");
-  } else if (job.priority && WAITING.has(job.state)) {
-    parts.push("First in line.");
+  } else if (job.position && WAITING.has(job.state)) {
+    parts.push(`#${job.position} in line.`);
   }
   return parts.join(" ");
 }
@@ -29,8 +30,9 @@ function said(job) {
 function buttons(job) {
   const waiting = WAITING.has(job.state);
   const list = [job.paused ? ["resume", "Resume", true] : ["pause", "Pause", false]];
-  if (waiting && !job.boost) {
-    list.push(job.priority ? ["normal", "Back in line", true] : ["first", "Run first", false]);
+  if (waiting && job.position) {
+    list.push(["first", "To front", false], ["up", "Up", false], ["down", "Down", false],
+              ["last", "To end", false]);
   }
   list.push(job.boost ? ["normal", "End boost", true] : ["boost", "Boost", false]);
   return list;

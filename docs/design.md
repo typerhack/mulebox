@@ -57,8 +57,9 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    snapshot, and queues the job only if the result matches the list. Any trouble sends the whole
    snapshot, so a saving never fails a job. One snapshot per project stays in `<staging>/bases`.
 2. **Queue**: one line, oldest first. Assignment is atomic: the oldest job a free worker can
-   run. The owner can steer it (`mulebox pause|resume|first|boost|normal`, or the dashboard):
-   a job moved `first` goes before the others, a paused one keeps its place and does not start,
+   run. The owner can steer it (`mulebox pause|resume|first|up|down|last|boost|normal`, or the
+   dashboard): a waiting job moves to the front, one place up or down, or to the end (the move
+   writes the new order into every waiting job's priority, so jobs sent later come after them), a paused one keeps its place and does not start,
    and a machine running a `boost`ed job takes no new one (coordinator/job_control.py).
    Cluster-wide and per-worker slot limits, both default 1 and 2 in the installed `node.toml`.
    Jobs of different branches run at once; a job whose branch is busy waits for it, and younger
@@ -374,7 +375,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Logs are redacted before they are stored or streamed, rendered as text, never HTML; no
   environment variables or full container inspect output. A job's `setup` line is redacted the
   same way before the dashboard shows it, as the command is.
-- The page can steer the queue: cancel, pause, resume, run first and boost a job, and pause a
+- The page can steer the queue: cancel, pause, resume, move in line and boost a job, and pause a
   machine. mulebox is for its owner's own network, so these are on wherever the page opens, as
   the same commands are from any laptop with ssh to the machine (decided by the user on
   2026-11-10; before 0.87.0 cancelling needed a sign-in on the `lan` address and was off by

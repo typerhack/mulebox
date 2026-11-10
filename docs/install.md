@@ -408,10 +408,12 @@ laptop or from the dashboard:
 mulebox pause <job-id>      # a waiting job keeps its place and does not start;
                             # a running one is frozen where it is, its containers too
 mulebox resume <job-id>     # goes on where it stopped
-mulebox first <job-id>      # a waiting job goes before every other waiting job
+mulebox first <job-id>      # a waiting job goes to the front of the line
+mulebox up <job-id>         # one place ahead (down: one back)
+mulebox last <job-id>       # to the end of the line
 mulebox boost <job-id>      # the job gets the machine's CPU and disk first, and the
                             # machine takes no new job until it ends
-mulebox normal <job-id>     # back to its own place in line, without the boost
+mulebox normal <job-id>     # ends the boost; the job keeps its place in line
 mulebox machine pause <name>    # the same as `machine drain`: no new jobs there
 mulebox machine resume <name>
 ```
@@ -507,7 +509,8 @@ is limited to this one address and cannot vouch for any other site. It lasts 825
 replace it with `mulebox dashboard cert --force`, then trust the new one on each device.
 Trusting it on a phone has not been tried yet.
 
-**Buttons.** A job's page has Cancel, Pause or Resume, Run first and Boost, and each machine in
+**Buttons.** A job's page has Cancel, Pause or Resume, To front, Up, Down, To end and Boost,
+each waiting job in the Queue tab has the same four arrows, and each machine in
 the Machines box has Pause or Resume, through the tunnel and at the LAN address alike (see
 [Steering jobs and machines](#steering-jobs-and-machines)). To have a page that only shows, set
 `controls = false` under `[dashboard]` and restart.
