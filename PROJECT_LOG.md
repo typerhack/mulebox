@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.95.5 - 2026-11-10 - patch
+- Design system: several machines (the user's pick, "click a row"): the top row shows the host by default and any machine clicked in the Machines box, never changing size; lanes only for machines with work; a Machines page. The reference mockup is updated with it.
+
 ## 0.95.4 - 2026-11-10 - patch
 - Design system: a third meter style, Auto, the default: Rainbow in the light theme, Gauge in the dark one (the user's choice).
 

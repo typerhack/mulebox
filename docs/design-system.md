@@ -53,6 +53,26 @@ Contrast: every text and control pair passes WCAG AA in both themes (64 of 64 pa
 from the token values; the table is in the specimen). Panel hairlines sit near 1.4:1 on purpose,
 as decoration; anything you can press uses `--border-strong`.
 
+## More than one machine
+
+Decided by the user on 2026-11-10 from three variants ("B, click a row"; a dropdown and a strip of
+machine names were the others, the strip rejected):
+
+- Machines are named by their worker name (`node.toml`), the same for everyone; the dashboard's
+  own machine carries a house mark and "Dashboard host".
+- CPU, Memory and Disk show the host by default. Clicking a machine in the Machines box shows that
+  machine in all three, its name in each panel's header and an accent line on its row; "Back to
+  host" in the CPU header returns. An offline machine keeps the panels' shape and says when it
+  was last seen.
+- The top row never changes size with the number of machines or the pick. With two machines the
+  Machines box is as before; with more, one line per machine scrolling inside the box, and a link
+  to the Machines page at its foot.
+- The Jobs box gives a lane only to a machine that runs or waits for something; the rest are one
+  line ("Nothing running on 14 machines").
+- A Machines page beside Queue lists every machine with its state, readings, slots, offers,
+  version and last seen, sortable, with its pause button.
+- Usually 4 or 5 machines; the layout holds at 20.
+
 ## Meter styles
 
 Two styles for load: resource meters (CPU per core, memory, disk, a machine's CPU and memory, a
