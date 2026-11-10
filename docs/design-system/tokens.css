@@ -1,0 +1,165 @@
+/* mulebox design system "Gauge": the one source of its token values.
+   Rules and the reason for each token: docs/design-system.md. Picture: specimen.html beside this file.
+   Theme: data-theme="light" or "dark" on <html>; with neither, the system setting decides. */
+
+:root {
+  /* Type. Geist and Geist Mono (OFL), bundled with the app, never loaded from the web. */
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --text-xs: 11.5px;
+  --text-sm: 12.5px;
+  --text-base: 13.5px;
+  --text-lg: 15px;
+  --text-xl: 20px;
+  --text-display: clamp(34px, 5vw, 48px);
+
+  /* Space: a 4px base. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 40px;
+  --space-8: 56px;
+  --gutter: clamp(16px, 3vw, 24px);
+  --app-gap: 12px;
+
+  /* Corners: one per level. */
+  --radius-s: 4px;
+  --radius-m: 6px;
+  --radius-l: 8px;
+  --radius-full: 999px;
+
+  /* Icons: Lucide, outline. */
+  --icon: 16px;
+  --icon-stroke: 1.5;
+
+  /* Motion. */
+  --dur-fast: 100ms;
+  --dur-base: 180ms;
+  --ease: cubic-bezier(0.3, 0, 0.2, 1);
+
+  /* Elevation: only a menu floats. */
+  --shadow-1: none;
+  --shadow-2: 0 8px 24px -6px rgba(10, 14, 18, 0.28), 0 2px 6px rgba(10, 14, 18, 0.12);
+}
+
+/* Light colors. */
+:root {
+  --surface-0: #f3f5f7;
+  --surface-1: #ffffff;
+  --surface-2: #f0f2f5;
+  --surface-3: #e2e6eb;
+  --text-1: #141b22;
+  --text-2: #46525e;
+  --text-3: #5d6976;
+  --border: #d5dbe2;
+  --border-strong: #76838f;
+  --accent: #0b7268;
+  --accent-hover: #085e56;
+  --accent-ink: #ffffff;
+  --focus: #0b7268;
+  --status-running: #1b5fc4;
+  --status-queued: #46525e;
+  --status-passed: #1a7a3c;
+  --status-failed: #c22f3a;
+  --status-cancelled: #5d6976;
+  --status-warning: #8a5d00;
+  --status-danger: #c22f3a;
+  --on-danger: #ffffff;
+  --status-warning-soft: #fbf1dc;
+  --status-failed-soft: #fbe6e7;
+  --meter-track: #e2e6eb;
+  --meter-fill: #0b7268;
+  --graph-line: #0b7268;
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+}
+
+/* Dark colors, chosen in the page. */
+:root[data-theme="dark"] {
+  --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7);
+  --surface-0: #0f1317;
+  --surface-1: #151a20;
+  --surface-2: #1c232b;
+  --surface-3: #28323c;
+  --text-1: #e6ebf0;
+  --text-2: #aeb8c3;
+  --text-3: #8f9aa6;
+  --border: #27313b;
+  --border-strong: #6f7c8a;
+  --accent: #62c6ba;
+  --accent-hover: #7fd6cb;
+  --accent-ink: #0f1317;
+  --focus: #62c6ba;
+  --status-running: #6fb1ff;
+  --status-queued: #aeb8c3;
+  --status-passed: #4dc46d;
+  --status-failed: #f47f76;
+  --status-cancelled: #8f9aa6;
+  --status-warning: #e8b04a;
+  --status-danger: #f47f76;
+  --on-danger: #1c0d0c;
+  --status-warning-soft: #2b2414;
+  --status-failed-soft: #301b1c;
+  --meter-track: #28323c;
+  --meter-fill: #62c6ba;
+  --graph-line: #62c6ba;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
+}
+
+/* Dark colors, from the system setting when the page has no choice of its own. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7);
+    --surface-0: #0f1317;
+    --surface-1: #151a20;
+    --surface-2: #1c232b;
+    --surface-3: #28323c;
+    --text-1: #e6ebf0;
+    --text-2: #aeb8c3;
+    --text-3: #8f9aa6;
+    --border: #27313b;
+    --border-strong: #6f7c8a;
+    --accent: #62c6ba;
+    --accent-hover: #7fd6cb;
+    --accent-ink: #0f1317;
+    --focus: #62c6ba;
+    --status-running: #6fb1ff;
+    --status-queued: #aeb8c3;
+    --status-passed: #4dc46d;
+    --status-failed: #f47f76;
+    --status-cancelled: #8f9aa6;
+    --status-warning: #e8b04a;
+    --status-danger: #f47f76;
+    --on-danger: #1c0d0c;
+    --status-warning-soft: #2b2414;
+    --status-failed-soft: #301b1c;
+    --meter-track: #28323c;
+    --meter-fill: #62c6ba;
+    --graph-line: #62c6ba;
+    --chart-1: #3987e5;
+    --chart-2: #d95926;
+    --chart-3: #199e70;
+    --chart-4: #c98500;
+    --chart-5: #d55181;
+    --chart-6: #008300;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+  }
+}

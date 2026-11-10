@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gauge: mulebox design system</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root { --surface-0: #f3f5f7; --surface-1: #ffffff; --surface-2: #f0f2f5; --surface-3: #e2e6eb; --text-1: #141b22; --text-2: #46525e; --text-3: #5d6976; --border: #d5dbe2; --border-strong: #76838f; --accent: #0b7268; --accent-hover: #085e56; --accent-ink: #ffffff; --focus: #0b7268; --status-running: #1b5fc4; --status-queued: #46525e; --status-passed: #1a7a3c; --status-failed: #c22f3a; --status-cancelled: #5d6976; --status-warning: #8a5d00; --status-danger: #c22f3a; --on-danger: #ffffff; --status-warning-soft: #fbf1dc; --status-failed-soft: #fbe6e7; --meter-track: #e2e6eb; --meter-fill: #0b7268; --graph-line: #0b7268; --chart-1: #2a78d6; --chart-2: #eb6834; --chart-3: #1baf7a; --chart-4: #eda100; --chart-5: #e87ba4; --chart-6: #008300; }
+:root[data-theme="dark"] { --surface-0: #0f1317; --surface-1: #151a20; --surface-2: #1c232b; --surface-3: #28323c; --text-1: #e6ebf0; --text-2: #aeb8c3; --text-3: #8f9aa6; --border: #27313b; --border-strong: #6f7c8a; --accent: #62c6ba; --accent-hover: #7fd6cb; --accent-ink: #0f1317; --focus: #62c6ba; --status-running: #6fb1ff; --status-queued: #aeb8c3; --status-passed: #4dc46d; --status-failed: #f47f76; --status-cancelled: #8f9aa6; --status-warning: #e8b04a; --status-danger: #f47f76; --on-danger: #1c0d0c; --status-warning-soft: #2b2414; --status-failed-soft: #301b1c; --meter-track: #28323c; --meter-fill: #62c6ba; --graph-line: #62c6ba; --chart-1: #3987e5; --chart-2: #d95926; --chart-3: #199e70; --chart-4: #c98500; --chart-5: #d55181; --chart-6: #008300; }
+:root { --graph-fill: color-mix(in srgb, var(--graph-line) 14%, transparent); color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+[data-state="running"] { --st: var(--status-running); --st-soft: var(--status-running-soft, transparent); }
+[data-state="queued"] { --st: var(--status-queued); --st-soft: var(--status-queued-soft, transparent); }
+[data-state="passed"] { --st: var(--status-passed); --st-soft: var(--status-passed-soft, transparent); }
+[data-state="failed"] { --st: var(--status-failed); --st-soft: var(--status-failed-soft, transparent); }
+[data-state="cancelled"] { --st: var(--status-cancelled); --st-soft: var(--status-cancelled-soft, transparent); }
+/* Structure shared by the three specimens. Everything that gives a system its look
+   (color, type, corners, borders, sizes) lives in the system's own block below. */
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--surface-0); color: var(--text-1); font: var(--text-base)/1.5 var(--font-ui); overflow-x: hidden; }
+h1, h2, h3, p, ul, ol, figure, pre { margin: 0; }
+ul, ol { padding: 0; list-style: none; }
+a { color: inherit; }
+code, pre { font-family: var(--font-mono); font-size: 0.92em; }
+button { font: inherit; color: inherit; }
+button:disabled { opacity: 1; cursor: not-allowed; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+svg.i { width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; flex: none; display: block; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+:root[data-theme="dark"] .when-light, :root:not([data-theme="dark"]) .when-dark { display: none; }
+
+/* Page chrome */
+.doc-head { padding: var(--space-6) var(--gutter) 0; max-width: 1232px; margin: 0 auto; }
+.doc-head-in { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; justify-content: space-between; }
+.doc-kicker { color: var(--text-2); font-size: var(--text-sm); }
+.doc-head h1 { font-size: var(--text-display); line-height: 1.05; margin: var(--space-1) 0 var(--space-3); }
+.doc-idea { max-width: 62ch; color: var(--text-2); font-size: var(--text-lg); line-height: 1.45; }
+.doc-nav { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin-top: var(--space-5); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border); font-size: var(--text-sm); }
+.doc-nav a { color: var(--text-2); text-decoration: none; font-weight: 600; padding: 4px 0; }
+.doc-nav a:hover { color: var(--text-1); text-decoration: underline; text-underline-offset: 4px; }
+.doc { max-width: 1232px; margin: 0 auto; padding: 0 var(--gutter) var(--space-8); }
+.doc > section { padding-top: var(--space-7); }
+.doc h2 { font-size: var(--text-xl); line-height: 1.2; margin-bottom: var(--space-2); }
+.doc-lead, .doc-note { color: var(--text-2); max-width: 76ch; margin-bottom: var(--space-4); }
+.doc-h3 { font-size: var(--text-lg); margin: var(--space-6) 0 var(--space-2); }
+.two-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--space-5); }
+.prose p + p { margin-top: var(--space-2); }
+.prose p { max-width: 70ch; }
+.prose code, .doc-lead code, .doc-note code { color: var(--text-1); }
+
+/* Token chips: left half light value, right half dark value */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.swatch { min-width: 0; }
+.swatch .chip { display: grid; grid-template-columns: 1fr 1fr; height: 44px; border-radius: var(--radius-s); overflow: hidden; border: 1px solid var(--border-strong); }
+.swatch code { display: block; margin-top: 6px; color: var(--text-1); font-weight: 600; overflow-wrap: anywhere; }
+.swatch small { display: block; color: var(--text-2); font-family: var(--font-mono); font-size: 0.8em; }
+.swatch-group { color: var(--text-2); font-size: var(--text-sm); font-weight: 600; margin: var(--space-4) 0 var(--space-2); }
+
+.type-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--space-2) var(--space-4); align-items: baseline; padding: var(--space-2) 0; }
+.type-row + .type-row { border-top: 1px solid var(--border); }
+.type-row code { color: var(--text-2); }
+.type-row small { display: block; color: var(--text-2); font-size: var(--text-xs); }
+.log-sample { font-size: var(--text-sm); line-height: 1.6; color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; }
+.space-row { display: grid; grid-template-columns: 96px 56px minmax(0, 1fr); gap: var(--space-3); align-items: center; padding: 3px 0; color: var(--text-2); font-size: var(--text-sm); }
+.space-row i { display: block; height: 12px; background: var(--text-1); border-radius: 2px; }
+.radius-list { display: grid; gap: var(--space-3); }
+.radius-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--space-3); align-items: center; }
+.radius-row i { display: block; width: 56px; height: 40px; border: 2px solid var(--text-1); border-right: 0; border-bottom: 0; }
+.radius-row code { color: var(--text-1); font-weight: 600; }
+.radius-row small { display: block; color: var(--text-2); font-size: var(--text-sm); }
+.icon-grid { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin-top: var(--space-4); }
+.icon-grid span { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: var(--text-sm); }
+.icon-grid svg { color: var(--text-1); }
+
+.demo-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-5); }
+.demo { min-width: 0; }
+.demo.wide { grid-column: 1 / -1; }
+.demo figcaption { color: var(--text-2); font-size: var(--text-sm); margin-bottom: var(--space-2); max-width: 80ch; }
+.demo-row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.demo-row + .demo-row { margin-top: var(--space-4); }
+.state-icons .sep { width: 1px; height: 24px; background: var(--border-strong); }
+.state-note { color: var(--text-2); font-size: var(--text-sm); flex: 1 1 260px; }
+.meters { display: grid; gap: var(--space-3); }
+.menu-room { padding-bottom: 300px !important; }
+.strips { display: grid; gap: var(--space-3); }
+.tip-demo { position: relative; display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); }
+.rules ul { display: grid; gap: var(--space-2); }
+.rules li { padding-left: 16px; position: relative; max-width: 60ch; }
+.rules li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 6px; height: 6px; border-radius: 50%; background: var(--text-2); }
+.rule-h { display: flex; align-items: center; gap: 8px; font-size: var(--text-lg); margin-bottom: var(--space-3); }
+.rule-h svg { color: var(--status-passed); }
+.rule-h.dont svg { color: var(--status-failed); }
+.table-wrap { overflow-x: auto; }
+table.contrast { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.contrast th { text-align: left; color: var(--text-2); font-weight: 600; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border-strong); white-space: nowrap; }
+.contrast td { padding: 6px 12px 6px 0; border-bottom: 1px solid var(--border); }
+.contrast td.fail { color: var(--status-failed); font-weight: 700; }
+
+/* Component structure */
+.panel { min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px var(--space-3); }
+.panel-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; }
+.panel-note { color: var(--text-2); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; white-space: nowrap; text-decoration: none; }
+.icon-btn { display: inline-grid; place-items: center; padding: 0; cursor: pointer; flex: none; }
+.tabs { display: flex; }
+.tabs [role="tab"] { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: none; border: 0; white-space: nowrap; }
+.status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.status[data-state="running"] svg { animation: spin 1.6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.mod { display: inline-grid; place-items: center; color: var(--text-1); }
+.meter-row { display: grid; grid-template-columns: var(--meter-label, 5ch) minmax(0, 1fr) max-content; gap: 10px; align-items: center; }
+.meter-label { color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter { position: relative; overflow: hidden; background: var(--meter-track); }
+.meter > i { display: block; height: 100%; width: var(--v); background: var(--meter-fill); transition: width var(--dur-base) var(--ease); }
+.meter-row[data-level="warn"] .meter > i { background: var(--status-warning); }
+.meter-row[data-level="danger"] .meter > i { background: var(--status-danger); }
+.meter-value { display: inline-flex; align-items: center; justify-content: flex-end; gap: 4px; min-width: 4ch; text-align: right; font-weight: 600; }
+.meter-value svg { width: 14px; height: 14px; }
+.meter-row[data-level="warn"] .meter-value svg { color: var(--status-warning); }
+.meter-row[data-level="danger"] .meter-value svg { color: var(--status-danger); }
+.fact { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--text-2); }
+.fact .num { color: var(--text-1); }
+
+.graph { position: relative; height: 132px; }
+.graph.small { height: 96px; }
+.graph svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.graph .g-grid { stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.graph .g-area { fill: var(--graph-fill); stroke: none; }
+.graph .g-line { fill: none; stroke: var(--graph-line); stroke-width: 2; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round; }
+.graph .g-scale { position: absolute; left: 0; top: 0; color: var(--text-2); font-size: var(--text-xs); line-height: 1; pointer-events: none; background: var(--surface-1); padding: 0 4px 2px 0; }
+.graph .g-cross { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--text-2); pointer-events: none; }
+.graph .g-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--graph-line); border: 2px solid var(--surface-1); pointer-events: none; }
+.graph .g-tip { position: absolute; top: 0; white-space: nowrap; pointer-events: none; z-index: 2; }
+.graph .g-tip b { font-weight: 700; margin-right: 6px; }
+.cores { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--space-2) var(--space-5); margin-top: var(--space-4); --meter-label: 2ch; }
+.stack { display: flex; gap: 2px; height: 20px; margin: var(--space-2) 0 var(--space-3); }
+.stack i { display: block; border-radius: 3px; min-width: 4px; }
+.chart-title { font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-5); color: var(--text-2); font-size: var(--text-sm); }
+.legend li { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 10px; height: 10px; border-radius: 2px; }
+.legend .num { color: var(--text-1); font-weight: 600; }
+
+.machine-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px var(--space-3); }
+.machine-head strong { overflow-wrap: anywhere; }
+.machine-readings { display: grid; gap: 6px; margin-top: var(--space-2); --meter-label: 4ch; }
+.machine-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px var(--space-4); margin-top: var(--space-2); color: var(--text-2); }
+.slots { display: inline-flex; align-items: center; gap: 8px; }
+.slot-boxes { display: inline-flex; gap: 4px; }
+.net { display: inline-flex; align-items: center; gap: 4px 10px; flex-wrap: wrap; }
+.net span { display: inline-flex; align-items: center; gap: 3px; }
+.net svg { width: 14px; height: 14px; }
+
+.lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--space-3); }
+.lane-note { color: var(--text-2); margin-left: auto; }
+.lane-running { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+.job-card { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; min-width: 0; }
+.job-main { min-width: 0; display: grid; gap: 1px; }
+.job-name { font-weight: 700; text-decoration: none; overflow-wrap: anywhere; }
+.job-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+.job-branch, .job-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; color: var(--text-2); overflow-wrap: anywhere; min-width: 0; }
+.job-branch svg, .job-meta svg { width: 14px; height: 14px; }
+.job-side { display: flex; align-items: center; gap: 6px; }
+.menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 5; width: min(320px, 100%); min-width: min(280px, 100%); }
+.menu-item { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 12px; align-items: start; width: 100%; text-align: left; background: none; border: 0; cursor: pointer; }
+.menu-item svg { grid-row: span 2; margin-top: 2px; }
+.menu-item b { font-weight: 700; }
+.menu-item small { color: var(--text-2); font-size: var(--text-sm); }
+.menu-item[data-tone="danger"] b, .menu-item[data-tone="danger"] svg { color: var(--status-danger); }
+.waits { display: grid; }
+.wait-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; min-width: 0; }
+.wait-main { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; }
+.wait-why { flex-basis: 100%; color: var(--text-2); font-size: var(--text-sm); }
+.wait-side { display: flex; align-items: center; gap: var(--space-2); }
+.wait-time { color: var(--text-2); }
+.moves { display: inline-flex; }
+.strip { display: flex; gap: 10px; align-items: flex-start; }
+.strip svg { margin-top: 1px; }
+.strip code { font-weight: 700; overflow-wrap: anywhere; }
+.tooltip { display: inline-block; white-space: nowrap; }
+.empty { display: grid; }
+
+.app { display: grid; gap: var(--app-gap); }
+.app-top { display: grid; gap: var(--app-gap); grid-template-columns: minmax(0, 1fr) minmax(240px, 280px) minmax(270px, 330px); }
+.app-side { display: grid; gap: var(--app-gap); align-content: start; }
+.p-machines .panel-body { display: grid; align-content: start; }
+
+@media (max-width: 1100px) {
+  .app-top { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .p-cpu { grid-column: 1 / -1; }
+}
+@media (max-width: 760px) {
+  .two-col, .demo-grid, .app-top { grid-template-columns: minmax(0, 1fr); }
+  .type-row { grid-template-columns: minmax(0, 1fr); }
+  .wait-row { grid-template-columns: auto minmax(0, 1fr); }
+  .wait-side { grid-column: 1 / -1; justify-content: space-between; }
+  .lane-note { margin-left: 0; flex-basis: 100%; }
+  .menu { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
+}
+.cores { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.p-cpu { display: flex; flex-direction: column; }
+.p-cpu .panel-body { flex: 1; display: flex; flex-direction: column; }
+.p-cpu .graph { flex: 1 1 132px; min-height: 132px; }
+.menu-room .lane-running { max-width: 480px; }
+/* C: Gauge. Precise and compact: hairlines, small corners, thin meters, teal for what you can act on. */
+:root {
+  --font-ui: "Geist", system-ui, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --text-xs: 11.5px; --text-sm: 12.5px; --text-base: 13.5px; --text-lg: 15px; --text-xl: 20px; --text-display: clamp(34px, 5vw, 48px);
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-7: 40px; --space-8: 56px;
+  --gutter: clamp(16px, 3vw, 24px); --app-gap: 12px;
+  --radius-s: 4px; --radius-m: 6px; --radius-l: 8px; --radius-full: 999px;
+  --icon: 16px; --icon-stroke: 1.5;
+  --dur-fast: 100ms; --dur-base: 180ms; --ease: cubic-bezier(0.3, 0, 0.2, 1);
+  --shadow-1: none; --shadow-2: 0 8px 24px -6px rgba(10, 14, 18, 0.28), 0 2px 6px rgba(10, 14, 18, 0.12);
+}
+:root[data-theme="dark"] { --shadow-2: 0 12px 32px -6px rgba(0, 0, 0, 0.7); }
+
+.doc-head h1 { font-weight: 600; letter-spacing: -0.035em; }
+.doc h2 { font-weight: 600; letter-spacing: -0.015em; }
+.doc-h3 { font-weight: 600; }
+.panel { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius-l); }
+.panel-head { padding: 10px var(--space-3) 0; }
+.panel-head h3 { font-size: var(--text-sm); font-weight: 600; color: var(--text-2); gap: 6px; }
+.panel-note { font-size: var(--text-sm); color: var(--text-1); font-weight: 500; }
+.panel-body { padding: var(--space-3); }
+
+.btn { height: 32px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-m); font-weight: 500; font-size: var(--text-base); background: var(--surface-1); color: var(--text-1); transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.btn svg { width: 14px; height: 14px; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-secondary:hover { background: var(--surface-2); border-color: var(--text-1); }
+.btn-ghost { border-color: transparent; background: transparent; }
+.btn-ghost:hover { background: var(--surface-3); }
+.btn-danger { border-color: var(--status-danger); color: var(--status-danger); }
+.btn-danger:hover { background: var(--status-danger); color: var(--on-danger); }
+.btn:disabled { border-color: var(--border); color: var(--text-3); background: var(--surface-2); }
+.icon-btn { width: 30px; height: 30px; border: 1px solid var(--border-strong); border-radius: var(--radius-m); background: var(--surface-1); color: var(--text-1); transition: background var(--dur-fast) var(--ease); }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--surface-3); border-color: var(--text-1); }
+
+.tabs { gap: 0 var(--space-5); border-bottom: 1px solid var(--border); margin-bottom: var(--space-3); }
+.tabs [role="tab"] { height: 34px; padding: 0; color: var(--text-2); font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -1px; gap: 6px; }
+.tabs [role="tab"]:hover { color: var(--text-1); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--text-1); font-weight: 600; border-bottom-color: var(--accent); }
+.tabs .count { min-width: 20px; padding: 0 5px; border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--surface-2); color: var(--text-2); font-size: var(--text-xs); line-height: 17px; font-weight: 500; }
+.tabs [aria-selected="true"] .count { color: var(--text-1); border-color: var(--border-strong); }
+
+.status { color: var(--text-1); font-weight: 500; }
+.status svg { color: var(--st); stroke-width: 1.75; }
+.status.icon-only svg { width: 18px; height: 18px; }
+.mod svg { width: 16px; height: 16px; }
+
+.meter { height: 6px; border-radius: 3px; }
+.meter > i { border-radius: 3px; }
+.meter-label, .meter-value { font-size: var(--text-sm); }
+.meter-value { font-weight: 500; }
+.fact { margin-top: 6px; font-size: var(--text-sm); }
+.graph { height: 120px; }
+.graph .g-line { stroke-width: 1.5; }
+.graph .g-tip, .tooltip { background: var(--text-1); color: var(--surface-0); padding: 3px 8px; border-radius: var(--radius-s); font-size: var(--text-sm); }
+.cores { gap: 6px var(--space-5); margin-top: var(--space-3); }
+
+.machine { padding: 10px 0; }
+.machine:first-child { padding-top: 0; }
+.machine + .machine { border-top: 1px solid var(--border); }
+.machine-head strong { font-weight: 600; }
+.machine-foot { font-size: var(--text-sm); }
+.slot-boxes i { width: 10px; height: 10px; border: 1px solid var(--text-2); border-radius: 2px; }
+.slot-boxes i[data-used] { background: var(--text-1); border-color: var(--text-1); }
+
+.lane-head { padding-bottom: var(--space-2); }
+.lane-head strong { font-weight: 600; font-size: var(--text-lg); }
+.lane-note { font-size: var(--text-sm); }
+.lane-running { gap: var(--space-2); }
+.job-card { gap: 10px; padding: 10px 10px 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-m); }
+.job-card .status.icon-only { margin-top: 1px; }
+.job-name { font-weight: 600; }
+.job-branch, .job-meta { font-size: var(--text-sm); }
+.job-branch { font-family: var(--font-mono); font-size: var(--text-xs); }
+.job-card .icon-btn { background: var(--surface-1); }
+.menu { background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius-l); box-shadow: var(--shadow-2); padding: 4px; }
+:root[data-theme="dark"] .menu { background: var(--surface-2); }
+.menu-item { padding: 7px 10px; border-radius: var(--radius-s); gap: 0 10px; }
+.menu-item:hover { background: var(--surface-3); }
+.menu-item b { font-weight: 600; }
+
+.waits { margin-top: var(--space-3); border-top: 1px solid var(--border); }
+.wait-row { gap: 4px var(--space-3); padding: 6px 0; border-bottom: 1px solid var(--border); }
+.pos { min-width: 2ch; color: var(--text-2); font-family: var(--font-mono); font-size: var(--text-sm); text-align: right; }
+.wait-main .job-branch { font-family: var(--font-mono); font-size: var(--text-xs); }
+.wait-time { font-size: var(--text-sm); }
+.moves .icon-btn { width: 28px; height: 28px; border-radius: 0; margin-left: -1px; }
+.moves .icon-btn:first-child { margin-left: 0; border-radius: var(--radius-m) 0 0 var(--radius-m); }
+.moves .icon-btn:last-child { border-radius: 0 var(--radius-m) var(--radius-m) 0; }
+.moves .icon-btn:hover { position: relative; }
+.moves .icon-btn:disabled { color: var(--text-3); border-color: var(--border); background: var(--surface-2); }
+.wait-side > .icon-btn { width: 28px; height: 28px; }
+
+.strip { padding: 8px 12px; border: 1px solid var(--status-warning); border-radius: var(--radius-m); background: var(--status-warning-soft); }
+.strip svg { color: var(--status-warning); margin-top: 2px; }
+.strip strong { font-weight: 600; }
+.strip[data-level="danger"] { border-color: var(--status-danger); background: var(--status-failed-soft); }
+.strip[data-level="danger"] svg { color: var(--status-danger); }
+.strip-fix { color: var(--text-2); }
+.strip code { color: var(--text-1); }
+
+.empty { gap: 2px; padding: var(--space-2) 0 0; }
+.empty-icon { color: var(--text-2); margin-bottom: 4px; }
+.empty-icon svg { width: 20px; height: 20px; }
+.empty-title { font-weight: 600; }
+.empty-hint { color: var(--text-2); font-size: var(--text-sm); }
+
+@media (pointer: coarse), (max-width: 520px) {
+  .icon-btn, .moves .icon-btn, .wait-side > .icon-btn { width: 36px; height: 36px; }
+  .btn { height: 36px; }
+  .tabs [role="tab"] { height: 40px; }
+}
+@media (max-width: 520px) { .tabs { gap: 0 var(--space-4); } }
+@media (min-width: 1101px) { .cores { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px var(--space-4); } }
+.menu-room { padding-bottom: 232px !important; }
+
+</style>
+</head>
+<body>
+<header class="doc-head">
+  <div class="doc-head-in">
+    <div>
+      <p class="doc-kicker">mulebox design system (reference picture; values in tokens.css)</p>
+      <h1>Gauge</h1>
+      <p class="doc-idea">A bench instrument: hairlines, small corners, thin meters and tight type, with the teal mulebox already has kept for what you can act on. A live monitor earns trust by being exact, so this one fits more on a screen and stays legible by ordering it, not by decorating it.</p>
+    </div>
+    <button class="btn btn-secondary" id="theme-toggle" type="button">
+      <span class="when-light"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg></span><span class="when-dark"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /> <path d="M12 2v2" /> <path d="M12 20v2" /> <path d="m4.93 4.93 1.41 1.41" /> <path d="m17.66 17.66 1.41 1.41" /> <path d="M2 12h2" /> <path d="M20 12h2" /> <path d="m6.34 17.66-1.41 1.41" /> <path d="m19.07 4.93-1.41 1.41" /></svg></span>
+      <span id="theme-word">Dark theme</span>
+    </button>
+  </div>
+  <nav class="doc-nav" aria-label="Sections">
+    <a href="#applied">Applied sample</a><a href="#tokens">Tokens</a><a href="#components">Components</a><a href="#rules">Rules</a><a href="#contrast">Contrast</a>
+  </nav>
+</header>
+
+<main class="doc">
+
+<section id="applied">
+  <h2>Applied sample</h2>
+  <p class="doc-lead">The top row and one lane of the Jobs box, with example data. Not the dashboard design: only what this system looks like once it holds real content.</p>
+
+  <div class="app">
+    <div class="app-top">
+      <section class="panel p-cpu" aria-label="CPU">
+        <header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="16" height="16" x="4" y="4" rx="2" /> <rect width="6" height="6" x="9" y="9" rx="1" /> <path d="M15 2v2" /> <path d="M15 20v2" /> <path d="M2 15h2" /> <path d="M2 9h2" /> <path d="M20 15h2" /> <path d="M20 9h2" /> <path d="M9 2v2" /> <path d="M9 20v2" /></svg> CPU</h3><span class="panel-note num">8 cores, 41% now</span></header>
+        <div class="panel-body">
+          <div class="graph" data-graph data-seed="7" data-unit="%" data-name="CPU"></div>
+          <div class="cores">
+            <div class="meter-row"><span class="meter-label">0</span><div class="meter" role="meter" aria-label="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="38" style="--v:38%"><i></i></div><span class="meter-value num">38%</span></div><div class="meter-row"><span class="meter-label">1</span><div class="meter" role="meter" aria-label="1" aria-valuemin="0" aria-valuemax="100" aria-valuenow="52" style="--v:52%"><i></i></div><span class="meter-value num">52%</span></div><div class="meter-row"><span class="meter-label">2</span><div class="meter" role="meter" aria-label="2" aria-valuemin="0" aria-valuemax="100" aria-valuenow="27" style="--v:27%"><i></i></div><span class="meter-value num">27%</span></div><div class="meter-row"><span class="meter-label">3</span><div class="meter" role="meter" aria-label="3" aria-valuemin="0" aria-valuemax="100" aria-valuenow="61" style="--v:61%"><i></i></div><span class="meter-value num">61%</span></div><div class="meter-row"><span class="meter-label">4</span><div class="meter" role="meter" aria-label="4" aria-valuemin="0" aria-valuemax="100" aria-valuenow="44" style="--v:44%"><i></i></div><span class="meter-value num">44%</span></div><div class="meter-row"><span class="meter-label">5</span><div class="meter" role="meter" aria-label="5" aria-valuemin="0" aria-valuemax="100" aria-valuenow="33" style="--v:33%"><i></i></div><span class="meter-value num">33%</span></div><div class="meter-row"><span class="meter-label">6</span><div class="meter" role="meter" aria-label="6" aria-valuemin="0" aria-valuemax="100" aria-valuenow="58" style="--v:58%"><i></i></div><span class="meter-value num">58%</span></div><div class="meter-row"><span class="meter-label">7</span><div class="meter" role="meter" aria-label="7" aria-valuemin="0" aria-valuemax="100" aria-valuenow="19" style="--v:19%"><i></i></div><span class="meter-value num">19%</span></div>
+          </div>
+        </div>
+      </section>
+      <div class="app-side">
+        <section class="panel" aria-label="Memory">
+          <header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 19v-3" /> <path d="M10 19v-3" /> <path d="M14 19v-3" /> <path d="M18 19v-3" /> <path d="M8 11V9" /> <path d="M16 11V9" /> <path d="M12 11V9" /> <path d="M2 15h20" /> <path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z" /></svg> Memory</h3><span class="panel-note num">19.8 of 32 GB</span></header>
+          <div class="panel-body">
+            <div class="meter-row"><span class="meter-label">Used</span><div class="meter" role="meter" aria-label="Memory used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62" style="--v:62%"><i></i></div><span class="meter-value num">62%</span></div>
+            <p class="fact"><span>Jobs</span><span class="num">11.2 GB</span></p>
+            <p class="fact"><span>Swap</span><span class="num">0 of 8 GB</span></p>
+          </div>
+        </section>
+        <section class="panel" aria-label="Disk">
+          <header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="22" x2="2" y1="12" y2="12" /> <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /> <line x1="6" x2="6.01" y1="16" y2="16" /> <line x1="10" x2="10.01" y1="16" y2="16" /></svg> Disk</h3><span class="panel-note num">38 GB free</span></header>
+          <div class="panel-body">
+            <div class="meter-row" data-level="warn"><span class="meter-label">/home</span><div class="meter" role="meter" aria-label="Disk used" aria-valuemin="0" aria-valuemax="100" aria-valuenow="84" style="--v:84%"><i></i></div><span class="meter-value num"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></svg>84%</span></div>
+            <p class="fact"><span>Docker</span><span class="num">61 GB</span></p>
+          </div>
+        </section>
+      </div>
+      <section class="panel p-machines" aria-label="Machines">
+        <header class="panel-head"><h3><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="20" height="8" x="2" y="2" rx="2" ry="2" /> <rect width="20" height="8" x="2" y="14" rx="2" ry="2" /> <line x1="6" x2="6.01" y1="6" y2="6" /> <line x1="6" x2="6.01" y1="18" y2="18" /></svg> Machines</h3><span class="panel-note num">1 of 4 slots free</span></header>
+        <div class="panel-body">
+          <div class="machine"><div class="machine-head"><strong>build-1</strong><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg><span class="status-word">Busy</span></span></div><div class="machine-readings"><div class="meter-row"><span class="meter-label">CPU</span><div class="meter" role="meter" aria-label="CPU" aria-valuemin="0" aria-valuemax="100" aria-valuenow="41" style="--v:41%"><i></i></div><span class="meter-value num">41%</span></div><div class="meter-row"><span class="meter-label">Mem</span><div class="meter" role="meter" aria-label="Mem" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62" style="--v:62%"><i></i></div><span class="meter-value num">62%</span></div></div><div class="machine-foot"><span class="slots"><span class="slot-boxes" aria-hidden="true"><i data-used></i><i data-used></i></span><span class="num">0 of 2 slots free</span></span><span class="net num" aria-label="Network"><span title="Coming in"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /> <path d="m19 12-7 7-7-7" /></svg>3.4 MB/s</span><span title="Going out"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7" /> <path d="M12 19V5" /></svg>212 KB/s</span></span></div></div>
+          <div class="machine"><div class="machine-head"><strong>build-2</strong><span class="status" data-state="queued"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <line x1="10" x2="10" y1="15" y2="9" /> <line x1="14" x2="14" y1="15" y2="9" /></svg><span class="status-word">Paused</span></span></div><div class="machine-readings"><div class="meter-row"><span class="meter-label">CPU</span><div class="meter" role="meter" aria-label="CPU" aria-valuemin="0" aria-valuemax="100" aria-valuenow="12" style="--v:12%"><i></i></div><span class="meter-value num">12%</span></div><div class="meter-row"><span class="meter-label">Mem</span><div class="meter" role="meter" aria-label="Mem" aria-valuemin="0" aria-valuemax="100" aria-valuenow="31" style="--v:31%"><i></i></div><span class="meter-value num">31%</span></div></div><div class="machine-foot"><span class="slots"><span class="slot-boxes" aria-hidden="true"><i data-used></i><i></i></span><span class="num">1 of 2 slots free</span></span><span class="net num" aria-label="Network"><span title="Coming in"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /> <path d="m19 12-7 7-7-7" /></svg>18 KB/s</span><span title="Going out"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7" /> <path d="M12 19V5" /></svg>6 KB/s</span></span></div></div>
+        </div>
+      </section>
+    </div>
+
+    <section class="panel p-jobs" aria-label="Jobs">
+      <header class="panel-head"><h3>Jobs</h3></header>
+      <div class="panel-body">
+        <div class="tabs" role="tablist" aria-label="Job views"><button role="tab" type="button" aria-selected="true">Queue<span class="count num">5</span></button><button role="tab" type="button" aria-selected="false">Failed<span class="count num">2</span></button><button role="tab" type="button" aria-selected="false">Passed<span class="count num">38</span></button><button role="tab" type="button" aria-selected="false">Recent<span class="count num">40</span></button></div>
+        <div class="lane">
+          <div class="lane-head">
+            <strong>build-1</strong>
+            <span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg><span class="status-word">Busy</span></span>
+            <span class="lane-note num">2 running, 3 waiting</span>
+          </div>
+          <div class="lane-running">
+            <article class="job-card" data-state="running"><span class="status icon-only" data-state="running" role="img" aria-label="Running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg></span><div class="job-main"><a class="job-name" href="#components">example-app</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>feature/login</span><span class="job-meta"><span role="img" aria-label="Sent from a laptop" title="Sent from a laptop"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" /></svg></span><span>check</span><span class="num">2m 14s</span><span>of usually 4m</span></span></div><div class="job-side"><span class="mod" role="img" aria-label="Boosted" title="Boosted"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for example-app" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></article>
+            <article class="job-card" data-state="running"><span class="status icon-only" data-state="running" role="img" aria-label="Running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg></span><div class="job-main"><a class="job-name" href="#components">docs-site</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>main</span><span class="job-meta"><span role="img" aria-label="A GitHub CI run" title="A GitHub CI run"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2" /> <path d="M7 11v4a2 2 0 0 0 2 2h4" /> <rect width="8" height="8" x="13" y="13" rx="2" /></svg></span><span>CI</span><span class="num">0m 41s</span><span>of usually 1m 30s</span></span></div><div class="job-side"><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for docs-site" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></article>
+          </div>
+          <ol class="waits">
+            <li class="wait-row"><span class="pos num" aria-label="Position 1">1</span><div class="wait-main"><a class="job-name" href="#components">example-api</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>fix/timeouts</span><span class="wait-why">Next on build-1 when a slot is free</span></div><div class="wait-side"><span class="wait-time num">waiting 0m 48s</span><span class="moves" role="group" aria-label="Move example-api in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5" /> <path d="m17 18-5-5-5 5" /></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5" /> <path d="m7 13 5 5 5-5" /></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for example-api" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></li>
+            <li class="wait-row"><span class="pos num" aria-label="Position 2">2</span><div class="wait-main"><a class="job-name" href="#components">example-app</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>feature/login</span><span class="wait-why">Waits for the job running on this branch</span></div><div class="wait-side"><span class="wait-time num">waiting 0m 31s</span><span class="moves" role="group" aria-label="Move example-app in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5" /> <path d="m17 18-5-5-5 5" /></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5" /> <path d="m7 13 5 5 5-5" /></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for example-app" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></li>
+            <li class="wait-row"><span class="pos num" aria-label="Position 3">3</span><div class="wait-main"><a class="job-name" href="#components">example-worker</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>chore/deps</span><span class="wait-why">Behind 2 jobs</span></div><div class="wait-side"><span class="wait-time num">waiting 0m 09s</span><span class="moves" role="group" aria-label="Move example-worker in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5" /> <path d="m17 18-5-5-5 5" /></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5" /> <path d="m7 13 5 5 5-5" /></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for example-worker" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></li>
+          </ol>
+        </div>
+      </div>
+    </section>
+  </div>
+</section>
+
+<section id="tokens">
+  <h2>Tokens</h2>
+  <p class="doc-lead">Named the way they land in code, as CSS custom properties on <code>:root</code> and <code>:root[data-theme="dark"]</code>. Each chip shows the light value on the left and the dark value on the right, whatever theme the page is in.</p>
+
+  <h3 class="doc-h3">Color roles</h3>
+  <p class="swatch-group">Surfaces, from the page up</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#f3f5f7"></i><i style="background:#0f1317"></i></div><code>--surface-0</code><small>#f3f5f7 / #0f1317</small></div><div class="swatch"><div class="chip"><i style="background:#ffffff"></i><i style="background:#151a20"></i></div><code>--surface-1</code><small>#ffffff / #151a20</small></div><div class="swatch"><div class="chip"><i style="background:#f0f2f5"></i><i style="background:#1c232b"></i></div><code>--surface-2</code><small>#f0f2f5 / #1c232b</small></div><div class="swatch"><div class="chip"><i style="background:#e2e6eb"></i><i style="background:#28323c"></i></div><code>--surface-3</code><small>#e2e6eb / #28323c</small></div></div><p class="swatch-group">Text and lines</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#141b22"></i><i style="background:#e6ebf0"></i></div><code>--text-1</code><small>#141b22 / #e6ebf0</small></div><div class="swatch"><div class="chip"><i style="background:#46525e"></i><i style="background:#aeb8c3"></i></div><code>--text-2</code><small>#46525e / #aeb8c3</small></div><div class="swatch"><div class="chip"><i style="background:#5d6976"></i><i style="background:#8f9aa6"></i></div><code>--text-3</code><small>#5d6976 / #8f9aa6</small></div><div class="swatch"><div class="chip"><i style="background:#d5dbe2"></i><i style="background:#27313b"></i></div><code>--border</code><small>#d5dbe2 / #27313b</small></div><div class="swatch"><div class="chip"><i style="background:#76838f"></i><i style="background:#6f7c8a"></i></div><code>--border-strong</code><small>#76838f / #6f7c8a</small></div></div><p class="swatch-group">Accent: teal for the primary action, the selected tab, focus and meters</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#0b7268"></i><i style="background:#62c6ba"></i></div><code>--accent</code><small>#0b7268 / #62c6ba</small></div><div class="swatch"><div class="chip"><i style="background:#085e56"></i><i style="background:#7fd6cb"></i></div><code>--accent-hover</code><small>#085e56 / #7fd6cb</small></div><div class="swatch"><div class="chip"><i style="background:#ffffff"></i><i style="background:#0f1317"></i></div><code>--accent-ink</code><small>#ffffff / #0f1317</small></div><div class="swatch"><div class="chip"><i style="background:#0b7268"></i><i style="background:#62c6ba"></i></div><code>--focus</code><small>#0b7268 / #62c6ba</small></div></div><p class="swatch-group">Status, on the icon only; the word beside it stays in text color</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#1b5fc4"></i><i style="background:#6fb1ff"></i></div><code>--status-running</code><small>#1b5fc4 / #6fb1ff</small></div><div class="swatch"><div class="chip"><i style="background:#46525e"></i><i style="background:#aeb8c3"></i></div><code>--status-queued</code><small>#46525e / #aeb8c3</small></div><div class="swatch"><div class="chip"><i style="background:#1a7a3c"></i><i style="background:#4dc46d"></i></div><code>--status-passed</code><small>#1a7a3c / #4dc46d</small></div><div class="swatch"><div class="chip"><i style="background:#c22f3a"></i><i style="background:#f47f76"></i></div><code>--status-failed</code><small>#c22f3a / #f47f76</small></div><div class="swatch"><div class="chip"><i style="background:#5d6976"></i><i style="background:#8f9aa6"></i></div><code>--status-cancelled</code><small>#5d6976 / #8f9aa6</small></div><div class="swatch"><div class="chip"><i style="background:#8a5d00"></i><i style="background:#e8b04a"></i></div><code>--status-warning</code><small>#8a5d00 / #e8b04a</small></div><div class="swatch"><div class="chip"><i style="background:#c22f3a"></i><i style="background:#f47f76"></i></div><code>--status-danger</code><small>#c22f3a / #f47f76</small></div><div class="swatch"><div class="chip"><i style="background:#ffffff"></i><i style="background:#1c0d0c"></i></div><code>--on-danger</code><small>#ffffff / #1c0d0c</small></div></div><p class="swatch-group">Strip tints</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#fbf1dc"></i><i style="background:#2b2414"></i></div><code>--status-warning-soft</code><small>#fbf1dc / #2b2414</small></div><div class="swatch"><div class="chip"><i style="background:#fbe6e7"></i><i style="background:#301b1c"></i></div><code>--status-failed-soft</code><small>#fbe6e7 / #301b1c</small></div></div><p class="swatch-group">Meters and the graph</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#e2e6eb"></i><i style="background:#28323c"></i></div><code>--meter-track</code><small>#e2e6eb / #28323c</small></div><div class="swatch"><div class="chip"><i style="background:#0b7268"></i><i style="background:#62c6ba"></i></div><code>--meter-fill</code><small>#0b7268 / #62c6ba</small></div><div class="swatch"><div class="chip"><i style="background:#0b7268"></i><i style="background:#62c6ba"></i></div><code>--graph-line</code><small>#0b7268 / #62c6ba</small></div></div><p class="swatch-group">Chart series, in fixed order</p><div class="swatches"><div class="swatch"><div class="chip"><i style="background:#2a78d6"></i><i style="background:#3987e5"></i></div><code>--chart-1</code><small>#2a78d6 / #3987e5</small></div><div class="swatch"><div class="chip"><i style="background:#eb6834"></i><i style="background:#d95926"></i></div><code>--chart-2</code><small>#eb6834 / #d95926</small></div><div class="swatch"><div class="chip"><i style="background:#1baf7a"></i><i style="background:#199e70"></i></div><code>--chart-3</code><small>#1baf7a / #199e70</small></div><div class="swatch"><div class="chip"><i style="background:#eda100"></i><i style="background:#c98500"></i></div><code>--chart-4</code><small>#eda100 / #c98500</small></div><div class="swatch"><div class="chip"><i style="background:#e87ba4"></i><i style="background:#d55181"></i></div><code>--chart-5</code><small>#e87ba4 / #d55181</small></div><div class="swatch"><div class="chip"><i style="background:#008300"></i><i style="background:#008300"></i></div><code>--chart-6</code><small>#008300 / #008300</small></div></div>
+
+  <h3 class="doc-h3">Chart colors</h3>
+  <p class="doc-note">Charts with more than one series (the Statistics page) take these six in this fixed order, never cycled; a seventh series folds into Other. They are the validated reference palette of the data-viz method, kept apart from the status colors so a series is never read as a result. The single CPU line uses the accent. Three light values sit under 3:1 on a white panel, so every series also gets a label or a legend with its number, as here.</p>
+  <div class="panel"><div class="panel-body">
+    <p class="chart-title">Job minutes by project, last 7 days</p>
+    <div class="stack" role="img" aria-label="example-app 212 min, example-api 148 min, docs-site 96 min, example-worker 54 min">
+      <i style="flex:212;background:var(--chart-1)"></i><i style="flex:148;background:var(--chart-2)"></i><i style="flex:96;background:var(--chart-3)"></i><i style="flex:54;background:var(--chart-4)"></i>
+    </div>
+    <ul class="legend">
+      <li><i style="background:var(--chart-1)"></i>example-app <span class="num">212 min</span></li>
+      <li><i style="background:var(--chart-2)"></i>example-api <span class="num">148 min</span></li>
+      <li><i style="background:var(--chart-3)"></i>docs-site <span class="num">96 min</span></li>
+      <li><i style="background:var(--chart-4)"></i>example-worker <span class="num">54 min</span></li>
+    </ul>
+  </div></div>
+
+  <h3 class="doc-h3">Type</h3>
+  <p class="doc-note">Geist for text and Geist Mono for logs, branch names and positions in line; both open (OFL) and small to bundle. Three weights only: 400, 500, 600. Base size 13.5px, nothing under 11.5px.</p>
+  <div class="panel"><div class="panel-body type-list">
+    <div class="type-row"><code>--text-display<small>34 to 48px / 600</small></code><span style="font-size:var(--text-display);font-weight:600;line-height:1.2">build-1 is busy</span></div><div class="type-row"><code>--text-xl<small>20px / 600</small></code><span style="font-size:var(--text-xl);font-weight:600;line-height:1.2">Jobs</span></div><div class="type-row"><code>--text-lg<small>15px / 600</small></code><span style="font-size:var(--text-lg);font-weight:600;line-height:1.2">example-app</span></div><div class="type-row"><code>--text-base<small>13.5px / 400</small></code><span style="font-size:var(--text-base);font-weight:400;line-height:1.2">Waits for the job running on this branch</span></div><div class="type-row"><code>--text-sm<small>12.5px / 500</small></code><span style="font-size:var(--text-sm);font-weight:500;line-height:1.2">2m 14s of usually 4m</span></div><div class="type-row"><code>--text-xs<small>11.5px / 500</small></code><span style="font-size:var(--text-xs);font-weight:500;line-height:1.2">feature/login</span></div>
+    <div class="type-row"><code>--font-mono</code><pre class="log-sample">12:04:31  pnpm run test
+12:04:38   PASS  src/login/session.test.ts (41 tests)
+12:04:39   FAIL  src/login/token.test.ts > refreshes an expired token</pre></div>
+  </div></div>
+
+  <div class="two-col">
+    <div>
+      <h3 class="doc-h3">Spacing</h3>
+      <p class="doc-note">A 4px base, used tightly: 12px inside panels and between them, 6 to 10 inside rows and cards.</p>
+      <div class="panel"><div class="panel-body"><div class="space-row"><code>--space-1</code><span class="num">4px</span><i style="width:4px"></i></div><div class="space-row"><code>--space-2</code><span class="num">8px</span><i style="width:8px"></i></div><div class="space-row"><code>--space-3</code><span class="num">12px</span><i style="width:12px"></i></div><div class="space-row"><code>--space-4</code><span class="num">16px</span><i style="width:16px"></i></div><div class="space-row"><code>--space-5</code><span class="num">20px</span><i style="width:20px"></i></div><div class="space-row"><code>--space-6</code><span class="num">24px</span><i style="width:24px"></i></div><div class="space-row"><code>--space-7</code><span class="num">40px</span><i style="width:40px"></i></div><div class="space-row"><code>--space-8</code><span class="num">56px</span><i style="width:56px"></i></div></div></div>
+    </div>
+    <div>
+      <h3 class="doc-h3">Corners</h3>
+      <p class="doc-note">Small and stepped by size. One radius per level.</p>
+      <div class="panel"><div class="panel-body radius-list"><div class="radius-row"><i style="border-top-left-radius:4px"></i><div><code>--radius-s: 4px</code><small>Menu items, counts, tooltips; meters use 3</small></div></div><div class="radius-row"><i style="border-top-left-radius:6px"></i><div><code>--radius-m: 6px</code><small>Buttons, icon buttons, cards, strips</small></div></div><div class="radius-row"><i style="border-top-left-radius:8px"></i><div><code>--radius-l: 8px</code><small>Panels and menus</small></div></div></div></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3 class="doc-h3">Borders and elevation</h3>
+      <div class="panel"><div class="panel-body prose"><p>Hairlines do the separating: 1px <code>--border</code> around panels and between rows, 1px <code>--border-strong</code> around anything you can press. Cards are one tone off the panel, with a hairline.</p><p>No shadows, except <code>--shadow-2</code> under a menu, the one thing that floats above the page.</p></div></div>
+    </div>
+    <div>
+      <h3 class="doc-h3">Motion</h3>
+      <div class="panel"><div class="panel-body prose"><p><code>--dur-fast: 100ms</code> for hover and press, <code>--dur-base: 180ms</code> for a meter moving to a new value and a menu opening.</p><p>By themselves only the running icon turns and meters glide. With reduced motion the icon stands still and values change at once. Nothing fades in on load.</p></div></div>
+    </div>
+  </div>
+
+  <h3 class="doc-h3">Icons</h3>
+  <div class="panel"><div class="panel-body prose">
+    <p>Lucide, outline only, stroke 1.5 at 16px (1.75 on status icons, so a state outweighs a decoration). Sizes 14, 16, 18 and 20. An icon alone always has a tooltip and an accessible name. Targets are 28 to 32px with a pointer and 36px on touch screens.</p>
+    <div class="icon-grid"><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>loader-circle</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /></svg>clock</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /></svg>circle-check</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /></svg>circle-x</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m4.9 4.9 14.2 14.2" /></svg>ban</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12" /> <line x1="12" x2="12" y1="2" y2="22" /> <path d="m20 16-4-4 4-4" /> <path d="m4 8 4 4-4 4" /> <path d="m16 4-4 4-4-4" /> <path d="m8 20 4-4 4 4" /></svg>snowflake</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1" /> <rect x="6" y="4" width="4" height="16" rx="1" /></svg>pause</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg>zap</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></svg>triangle-alert</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16h.01" /> <path d="M12 8v4" /> <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" /></svg>octagon-alert</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg>ellipsis</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5" /> <path d="m17 18-5-5-5 5" /></svg>chevrons-up</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg>chevron-up</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>chevron-down</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5" /> <path d="m7 13 5 5 5-5" /></svg>chevrons-down</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" /></svg>laptop</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect width="8" height="8" x="3" y="3" rx="2" /> <path d="M7 11v4a2 2 0 0 0 2 2h4" /> <rect width="8" height="8" x="13" y="13" rx="2" /></svg>workflow</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>git-branch</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /> <path d="m19 12-7 7-7-7" /></svg>arrow-down</span><span><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7" /> <path d="M12 19V5" /></svg>arrow-up</span></div>
+  </div></div>
+</section>
+
+<section id="components">
+  <h2>Components</h2>
+  <p class="doc-lead">Every piece below is built only from the tokens above. Switch the theme at the top of the page to see the other half.</p>
+
+  <div class="demo-grid">
+    <figure class="demo"><figcaption>Buttons</figcaption>
+      <div class="panel"><div class="panel-body demo-row">
+        <button class="btn btn-primary" type="button">Run again</button>
+        <button class="btn btn-secondary" type="button">Open log</button>
+        <button class="btn btn-ghost" type="button">Show all</button>
+        <button class="btn btn-danger" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></svg>Cancel job</button>
+        <button class="icon-btn" type="button" aria-label="More actions" title="More actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button>
+        <button class="btn btn-secondary" type="button" disabled>Disabled</button>
+      </div></div>
+    </figure>
+
+    <figure class="demo"><figcaption>Tabs with counts</figcaption>
+      <div class="panel"><div class="panel-body"><div class="tabs" role="tablist" aria-label="Job views"><button role="tab" type="button" aria-selected="true">Queue<span class="count num">5</span></button><button role="tab" type="button" aria-selected="false">Failed<span class="count num">2</span></button><button role="tab" type="button" aria-selected="false">Passed<span class="count num">38</span></button><button role="tab" type="button" aria-selected="false">Recent<span class="count num">40</span></button></div></div></div>
+    </figure>
+
+    <figure class="demo wide"><figcaption>Job states. In tables and on a job's page the icon comes with its word; on cards the icon stands alone and the word is its tooltip.</figcaption>
+      <div class="panel"><div class="panel-body">
+        <div class="demo-row">
+          <span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg><span class="status-word">Running</span></span><span class="status" data-state="queued"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /></svg><span class="status-word">Queued</span></span><span class="status" data-state="passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /></svg><span class="status-word">Passed</span></span><span class="status" data-state="failed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /></svg><span class="status-word">Failed</span></span><span class="status" data-state="cancelled"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m4.9 4.9 14.2 14.2" /></svg><span class="status-word">Cancelled</span></span>
+        </div>
+        <div class="demo-row state-icons">
+          <span class="status icon-only" data-state="running" role="img" aria-label="Running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg></span><span class="status icon-only" data-state="queued" role="img" aria-label="Queued" title="Queued"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /></svg></span><span class="status icon-only" data-state="passed" role="img" aria-label="Passed" title="Passed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /></svg></span><span class="status icon-only" data-state="failed" role="img" aria-label="Failed" title="Failed"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /></svg></span><span class="status icon-only" data-state="cancelled" role="img" aria-label="Cancelled" title="Cancelled"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m4.9 4.9 14.2 14.2" /></svg></span>
+          <span class="sep" aria-hidden="true"></span>
+          <span class="mod" role="img" aria-label="Frozen" title="Frozen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12" /> <line x1="12" x2="12" y1="2" y2="22" /> <path d="m20 16-4-4 4-4" /> <path d="m4 8 4 4-4 4" /> <path d="m16 4-4 4-4-4" /> <path d="m8 20 4-4 4 4" /></svg></span>
+          <span class="mod" role="img" aria-label="Paused" title="Paused"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="14" y="4" width="4" height="16" rx="1" /> <rect x="6" y="4" width="4" height="16" rx="1" /></svg></span>
+          <span class="mod" role="img" aria-label="Boosted" title="Boosted"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span>
+          <span class="state-note">Frozen, paused and boosted are marks on a job, not results, so they wear ink and never a status color.</span>
+        </div>
+      </div></div>
+    </figure>
+
+    <figure class="demo"><figcaption>Meter: normal, high (from 80%), critical (from 92%)</figcaption>
+      <div class="panel"><div class="panel-body meters">
+        <div class="meter-row"><span class="meter-label">CPU</span><div class="meter" role="meter" aria-label="CPU" aria-valuemin="0" aria-valuemax="100" aria-valuenow="41" style="--v:41%"><i></i></div><span class="meter-value num">41%</span></div>
+        <div class="meter-row" data-level="warn"><span class="meter-label">Disk</span><div class="meter" role="meter" aria-label="Disk" aria-valuemin="0" aria-valuemax="100" aria-valuenow="84" style="--v:84%"><i></i></div><span class="meter-value num"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></svg>84%</span></div>
+        <div class="meter-row" data-level="danger"><span class="meter-label">Mem</span><div class="meter" role="meter" aria-label="Memory" aria-valuemin="0" aria-valuemax="100" aria-valuenow="96" style="--v:96%"><i></i></div><span class="meter-value num"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16h.01" /> <path d="M12 8v4" /> <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" /></svg>96%</span></div>
+      </div></div>
+    </figure>
+
+    <figure class="demo"><figcaption>Live line graph. Move over it for a reading.</figcaption>
+      <div class="panel"><div class="panel-body">
+        <div class="graph small" data-graph data-seed="3" data-unit="%" data-name="CPU"></div>
+      </div></div>
+    </figure>
+
+    <figure class="demo"><figcaption>Machine row</figcaption>
+      <div class="panel"><div class="panel-body"><div class="machine"><div class="machine-head"><strong>build-1</strong><span class="status" data-state="running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg><span class="status-word">Busy</span></span></div><div class="machine-readings"><div class="meter-row"><span class="meter-label">CPU</span><div class="meter" role="meter" aria-label="CPU" aria-valuemin="0" aria-valuemax="100" aria-valuenow="41" style="--v:41%"><i></i></div><span class="meter-value num">41%</span></div><div class="meter-row"><span class="meter-label">Mem</span><div class="meter" role="meter" aria-label="Mem" aria-valuemin="0" aria-valuemax="100" aria-valuenow="62" style="--v:62%"><i></i></div><span class="meter-value num">62%</span></div></div><div class="machine-foot"><span class="slots"><span class="slot-boxes" aria-hidden="true"><i data-used></i><i data-used></i></span><span class="num">0 of 2 slots free</span></span><span class="net num" aria-label="Network"><span title="Coming in"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14" /> <path d="m19 12-7 7-7-7" /></svg>3.4 MB/s</span><span title="Going out"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 7-7 7 7" /> <path d="M12 19V5" /></svg>212 KB/s</span></span></div></div></div></div>
+    </figure>
+
+    <figure class="demo"><figcaption>Tooltip and empty state</figcaption>
+      <div class="panel"><div class="panel-body">
+        <div class="tip-demo">
+          <span class="mod" role="img" aria-label="Frozen"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12" /> <line x1="12" x2="12" y1="2" y2="22" /> <path d="m20 16-4-4 4-4" /> <path d="m4 8 4 4-4 4" /> <path d="m16 4-4 4-4-4" /> <path d="m8 20 4-4 4 4" /></svg></span>
+          <span class="tooltip" role="tooltip">Frozen. Resume it from the menu.</span>
+        </div>
+        <div class="empty">
+          <span class="empty-icon"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /> <path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg></span>
+          <p class="empty-title">Nothing is waiting</p>
+          <p class="empty-hint">Jobs you send with <code>mulebox check</code> line up here.</p>
+        </div>
+      </div></div>
+    </figure>
+
+    <figure class="demo wide"><figcaption>Running job card, with its three-dots menu open</figcaption>
+      <div class="panel"><div class="panel-body menu-room">
+        <div class="lane-running"><article class="job-card" data-state="running"><span class="status icon-only" data-state="running" role="img" aria-label="Running" title="Running"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg></span><div class="job-main"><a class="job-name" href="#components">example-app</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>feature/login</span><span class="job-meta"><span role="img" aria-label="Sent from a laptop" title="Sent from a laptop"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" /></svg></span><span>check</span><span class="num">2m 14s</span><span>of usually 4m</span></span></div><div class="job-side"><span class="mod" role="img" aria-label="Boosted" title="Boosted"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="true" aria-label="Actions for example-app" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div><div class="menu" role="menu" aria-label="Actions for example-app">
+<button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="2" x2="22" y1="12" y2="12" /> <line x1="12" x2="12" y1="2" y2="22" /> <path d="m20 16-4-4 4-4" /> <path d="m4 8 4 4-4 4" /> <path d="m16 4-4 4-4-4" /> <path d="m8 20 4-4 4 4" /></svg><b>Freeze</b><small>Stops its work until you resume it</small></button>
+<button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg><b>Boost</b><small>Gives it more CPU and disk than the others</small></button>
+<button class="menu-item" role="menuitem" type="button"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 12h-5" /> <path d="M15 8h-5" /> <path d="M19 17V5a2 2 0 0 0-2-2H4" /> <path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg><b>Open log</b><small>Follows its output live</small></button>
+<button class="menu-item" role="menuitem" type="button" data-tone="danger"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></svg><b>Cancel job</b><small>Stops it and frees its slot</small></button>
+</div></article></div>
+      </div></div>
+    </figure>
+
+    <figure class="demo wide"><figcaption>Waiting rows with move arrows: to the front, up, down, to the end</figcaption>
+      <div class="panel"><div class="panel-body">
+        <ol class="waits"><li class="wait-row"><span class="pos num" aria-label="Position 1">1</span><div class="wait-main"><a class="job-name" href="#components">example-api</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>fix/timeouts</span><span class="wait-why">Next on build-1 when a slot is free</span></div><div class="wait-side"><span class="wait-time num">waiting 0m 48s</span><span class="moves" role="group" aria-label="Move example-api in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5" /> <path d="m17 18-5-5-5 5" /></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up" disabled><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5" /> <path d="m7 13 5 5 5-5" /></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for example-api" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></li><li class="wait-row"><span class="pos num" aria-label="Position 2">2</span><div class="wait-main"><a class="job-name" href="#components">example-app</a><span class="job-branch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><line x1="6" x2="6" y1="3" y2="15" /> <circle cx="18" cy="6" r="3" /> <circle cx="6" cy="18" r="3" /> <path d="M18 9a9 9 0 0 1-9 9" /></svg>feature/login</span><span class="wait-why">Waits for the job running on this branch</span></div><div class="wait-side"><span class="wait-time num">waiting 0m 31s</span><span class="moves" role="group" aria-label="Move example-app in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m17 11-5-5-5 5" /> <path d="m17 18-5-5-5 5" /></svg></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m18 15-6-6-6 6" /></svg></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 6 5 5 5-5" /> <path d="m7 13 5 5 5-5" /></svg></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Actions for example-app" title="Actions"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1" /> <circle cx="19" cy="12" r="1" /> <circle cx="5" cy="12" r="1" /></svg></button></div></li></ol>
+      </div></div>
+    </figure>
+
+    <figure class="demo wide"><figcaption>Out-of-step strips: warning and danger</figcaption>
+      <div class="strips">
+        <div class="strip" data-level="warning" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></svg><div><strong>This laptop's skill is out of date.</strong> <span class="strip-fix">Run <code>mulebox skill update</code> on it.</span></div></div>
+        <div class="strip" data-level="danger" role="status"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16h.01" /> <path d="M12 8v4" /> <path d="M15.312 2a2 2 0 0 1 1.414.586l4.688 4.688A2 2 0 0 1 22 8.688v6.624a2 2 0 0 1-.586 1.414l-4.688 4.688a2 2 0 0 1-1.414.586H8.688a2 2 0 0 1-1.414-.586l-4.688-4.688A2 2 0 0 1 2 15.312V8.688a2 2 0 0 1 .586-1.414l4.688-4.688A2 2 0 0 1 8.688 2z" /></svg><div><strong>build-2 runs mulebox 0.91.0, the coordinator 0.93.4.</strong> <span class="strip-fix">Run <code>mulebox setup build-2</code> from the laptop.</span></div></div>
+      </div>
+    </figure>
+  </div>
+</section>
+
+<section id="rules">
+  <h2>Rules</h2>
+  <div class="two-col rules">
+    <div class="panel"><div class="panel-body"><h3 class="rule-h"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /></svg> Do</h3><ul><li>Separate with hairlines and one tone step. Align numbers to the right, in tabular figures.</li><li>Put status color on the icon only. The word beside it stays in text color.</li><li>Keep teal for what you can act on and for meters. One primary button per view at most.</li><li>Use mono for what is typed or machine-made: logs, branches, commands, positions.</li><li>Let a panel show less. If a row needs a fourth fact, it goes to the job's page.</li></ul></div></div>
+    <div class="panel"><div class="panel-body"><h3 class="rule-h dont"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /></svg> Don't</h3><ul><li>No tinted backgrounds for states, and no colored card borders except the strips.</li><li>No text under 11.5px, and no facts squeezed into columns narrower than their words.</li><li>No filled icons, no dots standing in for states, no control drawn in <code>--border</code> alone.</li><li>No shadows on panels or cards.</li><li>No second accent. If something needs to shout, it is a status.</li></ul></div></div>
+  </div>
+</section>
+
+<section id="contrast">
+  <h2>Contrast</h2>
+  <p class="doc-lead">Computed with the WCAG 2 formula from the token values, not judged by eye: 64 pairs, 64 pass. Text needs 4.5:1; icons, control outlines and meter fills need 3:1. Hairlines around panels are decoration and sit near 1.4:1 on purpose; anything you can press uses <code>--border-strong</code> instead. Teal and the passed green are close for some color vision, which is why a state is always an icon with its own shape, never a colored dot.</p>
+  <div class="panel"><div class="panel-body table-wrap">
+    <table class="contrast">
+      <thead><tr><th>Pair</th><th>Needs</th><th>Light</th><th>Dark</th></tr></thead>
+      <tbody><tr><td>Main text on the page<br><code>--text-1</code> on <code>--surface-0</code></td><td class="num">4.5:1</td><td class="num">15.9:1</td><td class="num">15.5:1</td></tr><tr><td>Main text on a panel<br><code>--text-1</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">17.4:1</td><td class="num">14.6:1</td></tr><tr><td>Main text on an inset<br><code>--text-1</code> on <code>--surface-2</code></td><td class="num">4.5:1</td><td class="num">15.5:1</td><td class="num">13.2:1</td></tr><tr><td>Secondary text on the page<br><code>--text-2</code> on <code>--surface-0</code></td><td class="num">4.5:1</td><td class="num">7.3:1</td><td class="num">9.3:1</td></tr><tr><td>Secondary text on a panel<br><code>--text-2</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">8.0:1</td><td class="num">8.7:1</td></tr><tr><td>Secondary text on an inset<br><code>--text-2</code> on <code>--surface-2</code></td><td class="num">4.5:1</td><td class="num">7.1:1</td><td class="num">7.9:1</td></tr><tr><td>Muted text on a panel<br><code>--text-3</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">5.6:1</td><td class="num">6.1:1</td></tr><tr><td>Control outline on a panel<br><code>--border-strong</code> on <code>--surface-1</code></td><td class="num">3:1</td><td class="num">3.9:1</td><td class="num">4.1:1</td></tr><tr><td>Control outline on an inset<br><code>--border-strong</code> on <code>--surface-2</code></td><td class="num">3:1</td><td class="num">3.5:1</td><td class="num">3.7:1</td></tr><tr><td>Primary button label<br><code>--accent-ink</code> on <code>--accent</code></td><td class="num">4.5:1</td><td class="num">5.8:1</td><td class="num">9.2:1</td></tr><tr><td>Focus ring on a panel<br><code>--focus</code> on <code>--surface-1</code></td><td class="num">3:1</td><td class="num">5.8:1</td><td class="num">8.6:1</td></tr><tr><td>Focus ring on the page<br><code>--focus</code> on <code>--surface-0</code></td><td class="num">3:1</td><td class="num">5.3:1</td><td class="num">9.2:1</td></tr><tr><td>Running on a panel<br><code>--status-running</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">6.0:1</td><td class="num">7.8:1</td></tr><tr><td>Queued on a panel<br><code>--status-queued</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">8.0:1</td><td class="num">8.7:1</td></tr><tr><td>Passed on a panel<br><code>--status-passed</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">5.4:1</td><td class="num">7.9:1</td></tr><tr><td>Failed on a panel<br><code>--status-failed</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">5.6:1</td><td class="num">6.8:1</td></tr><tr><td>Cancelled on a panel<br><code>--status-cancelled</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">5.6:1</td><td class="num">6.1:1</td></tr><tr><td>Meter fill on its track<br><code>--meter-fill</code> on <code>--meter-track</code></td><td class="num">3:1</td><td class="num">4.6:1</td><td class="num">6.4:1</td></tr><tr><td>Graph line on a panel<br><code>--graph-line</code> on <code>--surface-1</code></td><td class="num">3:1</td><td class="num">5.8:1</td><td class="num">8.6:1</td></tr><tr><td>Icon button mark<br><code>--text-1</code> on <code>--surface-3</code></td><td class="num">4.5:1</td><td class="num">13.8:1</td><td class="num">10.9:1</td></tr><tr><td>Selected tab line on a panel<br><code>--accent</code> on <code>--surface-1</code></td><td class="num">3:1</td><td class="num">5.8:1</td><td class="num">8.6:1</td></tr><tr><td>Status icons on a card<br><code>--status-running</code> on <code>--surface-2</code></td><td class="num">3:1</td><td class="num">5.4:1</td><td class="num">7.1:1</td></tr><tr><td>Danger button text<br><code>--status-danger</code> on <code>--surface-1</code></td><td class="num">4.5:1</td><td class="num">5.6:1</td><td class="num">6.8:1</td></tr><tr><td>Danger button label on hover<br><code>--on-danger</code> on <code>--status-danger</code></td><td class="num">4.5:1</td><td class="num">5.6:1</td><td class="num">7.3:1</td></tr><tr><td>Warning strip text<br><code>--text-1</code> on <code>--status-warning-soft</code></td><td class="num">4.5:1</td><td class="num">15.5:1</td><td class="num">12.8:1</td></tr><tr><td>Warning strip hint<br><code>--text-2</code> on <code>--status-warning-soft</code></td><td class="num">4.5:1</td><td class="num">7.1:1</td><td class="num">7.7:1</td></tr><tr><td>Warning strip edge and icon<br><code>--status-warning</code> on <code>--status-warning-soft</code></td><td class="num">3:1</td><td class="num">5.1:1</td><td class="num">7.9:1</td></tr><tr><td>Danger strip hint<br><code>--text-2</code> on <code>--status-failed-soft</code></td><td class="num">4.5:1</td><td class="num">6.7:1</td><td class="num">8.0:1</td></tr><tr><td>Danger strip edge and icon<br><code>--status-danger</code> on <code>--status-failed-soft</code></td><td class="num">3:1</td><td class="num">4.7:1</td><td class="num">6.3:1</td></tr><tr><td>High meter fill on its track<br><code>--status-warning</code> on <code>--meter-track</code></td><td class="num">3:1</td><td class="num">4.6:1</td><td class="num">6.7:1</td></tr><tr><td>Critical meter fill on its track<br><code>--status-danger</code> on <code>--meter-track</code></td><td class="num">3:1</td><td class="num">4.5:1</td><td class="num">5.1:1</td></tr><tr><td>Panel hairline (decoration)<br><code>--border</code> on <code>--surface-1</code></td><td class="num">1.2:1</td><td class="num">1.4:1</td><td class="num">1.3:1</td></tr></tbody>
+    </table>
+  </div></div>
+</section>
+
+</main>
+
+<script>
+// Theme switch: the system's home theme first, then what this browser chose last.
+(() => {
+  const root = document.documentElement;
+  const key = "mulebox-ds-theme-" + document.title.slice(0, 12);
+  let theme = "dark";
+  try { theme = localStorage.getItem(key) || theme; } catch (e) { /* storage may be blocked */ }
+  const word = document.getElementById("theme-word");
+  const apply = () => {
+    root.dataset.theme = theme;
+    word.textContent = theme === "dark" ? "Light theme" : "Dark theme";
+  };
+  apply();
+  document.getElementById("theme-toggle").addEventListener("click", () => {
+    theme = theme === "dark" ? "light" : "dark";
+    try { localStorage.setItem(key, theme); } catch (e) { /* fine without it */ }
+    apply();
+  });
+})();
+
+// Live line graph: one series, a crosshair that snaps to the nearest sample, a new sample every 2 s.
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const SHAPE = "line";
+  const N = 60, W = 600, H = 100;
+  const make = (tag, attrs) => {
+    const node = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, v);
+    return node;
+  };
+  document.querySelectorAll("[data-graph]").forEach((host) => {
+    let seed = Number(host.dataset.seed) || 1;
+    const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    let value = 40;
+    const next = () => { value = Math.max(6, Math.min(94, value + (rand() - 0.5) * 22)); return Math.round(value); };
+    const data = Array.from({ length: N }, next);
+    const unit = host.dataset.unit || "", name = host.dataset.name || "";
+
+    const svg = make("svg", { viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: "none", role: "img" });
+    svg.append(make("line", { class: "g-grid", x1: 0, x2: W, y1: 0.5, y2: 0.5 }),
+               make("line", { class: "g-grid", x1: 0, x2: W, y1: H / 2, y2: H / 2 }),
+               make("line", { class: "g-grid", x1: 0, x2: W, y1: H - 0.5, y2: H - 0.5 }));
+    const area = make("path", { class: "g-area" }), line = make("path", { class: "g-line" });
+    svg.append(area, line);
+    const scale = Object.assign(document.createElement("span"), { className: "g-scale", textContent: "100" + unit });
+    const cross = Object.assign(document.createElement("i"), { className: "g-cross", hidden: true });
+    const dot = Object.assign(document.createElement("i"), { className: "g-dot" });
+    const tip = Object.assign(document.createElement("span"), { className: "g-tip", hidden: true });
+    host.append(svg, scale, cross, dot, tip);
+    host.tabIndex = 0;
+
+    const x = (i) => (i / (N - 1)) * W, y = (v) => H - (v / 100) * H;
+    const draw = () => {
+      let d = "";
+      data.forEach((v, i) => {
+        if (i === 0) d += `M${x(i)},${y(v)}`;
+        else if (SHAPE === "step") d += `H${x(i)}V${y(v)}`;
+        else d += `L${x(i)},${y(v)}`;
+      });
+      line.setAttribute("d", d);
+      area.setAttribute("d", `${d}V${H}H0Z`);
+      svg.setAttribute("aria-label", `${name} over the last 2 minutes, now ${data[N - 1]}${unit}`);
+      place(dot, N - 1);
+    };
+    const place = (node, i) => {
+      node.style.left = (i / (N - 1)) * 100 + "%";
+      if (node === dot) node.style.top = (1 - data[i] / 100) * 100 + "%";
+    };
+    let hover = null;
+    const show = (i) => {
+      hover = i;
+      cross.hidden = tip.hidden = false;
+      place(cross, i); place(dot, i);
+      const ago = (N - 1 - i) * 2;
+      tip.replaceChildren(Object.assign(document.createElement("b"), { textContent: data[i] + unit }),
+                          document.createTextNode(ago ? `${ago} s ago` : "now"));
+      const left = (i / (N - 1)) * host.clientWidth;
+      const room = host.clientWidth - tip.offsetWidth;
+      tip.style.left = Math.max(0, Math.min(room, left - tip.offsetWidth / 2)) + "px";
+    };
+    const hide = () => { hover = null; cross.hidden = tip.hidden = true; place(dot, N - 1); };
+    host.addEventListener("pointermove", (event) => {
+      const box = host.getBoundingClientRect();
+      show(Math.max(0, Math.min(N - 1, Math.round(((event.clientX - box.left) / box.width) * (N - 1)))));
+    });
+    host.addEventListener("pointerleave", hide);
+    host.addEventListener("focus", () => show(N - 1));
+    host.addEventListener("blur", hide);
+    host.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft") show(Math.max(0, (hover ?? N - 1) - 1));
+      if (event.key === "ArrowRight") show(Math.min(N - 1, (hover ?? N - 1) + 1));
+    });
+    draw();
+    setInterval(() => { data.shift(); data.push(next()); draw(); if (hover !== null) show(hover); }, 2000);
+  });
+})();
+
+</script>
+</body>
+</html>

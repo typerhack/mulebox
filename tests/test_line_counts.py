@@ -32,3 +32,12 @@ def test_skips_virtualenv(tmp_path):
     (tmp_path / ".venv").mkdir()
     _write_lines(tmp_path / ".venv" / "big.py", 900)
     assert check_line_counts.check(tmp_path) == ([], [])
+
+
+def test_skips_top_level_docs_only(tmp_path):
+    (tmp_path / "docs").mkdir()
+    _write_lines(tmp_path / "docs" / "specimen.html", 900)
+    (tmp_path / "pkg" / "docs").mkdir(parents=True)
+    _write_lines(tmp_path / "pkg" / "docs" / "big.py", 500)
+    _, failures = check_line_counts.check(tmp_path)
+    assert [f.split(":")[0] for f in failures] == [str(Path("pkg") / "docs" / "big.py")]

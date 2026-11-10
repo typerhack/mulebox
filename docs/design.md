@@ -369,6 +369,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   shared list, jobs no machine fits marked stuck), failed, passed and recent jobs behind
   tabs, live log, history, and CPU per core, memory, disk and Docker containers for the
   machine the dashboard runs on.
+- Look: the design system, [design-system.md](design-system.md) (Gauge, chosen 2026-11-10). The
+  page of today predates it and moves to it with the React front end (M14.10).
 - Layout: a live monitor in boxes that fills the window, machine load first and the jobs
   box below, one theme over the whole page, and a system, light or dark switch remembered
   per browser. System is the default; the sign-in page always follows the system.

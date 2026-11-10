@@ -407,15 +407,18 @@ Fixes from the second project tests (2026-11-04).
 
 ## M14: Dashboard, from real use
 Decided by the user on 2026-11-05: the Jobs box comes before more project adoption.
-- [ ] M14.1 Jobs box redesign. Three mockups were rejected as flooded with data; the top row (CPU,
-      memory, disk, machines) stays. Done when: the user picks a design and it runs on the real
-      dashboard in Edge.
+- [x] M14.12 Design system: [design-system.md](design-system.md) with its tokens and specimen. Three
+      proposals (Stable, Signal, Gauge) made by a Fable subagent and reviewed by a second model; the
+      user picked Gauge on 2026-11-10 (0.94.0). Its open points are listed there, for M14.10.
+- [ ] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
+      with data; the top row (CPU, memory, disk, machines) stays. Done when: the user picks a design
+      and it runs on the real dashboard in Edge.
 - [ ] M14.10 Dashboard front end in React with Vite (the user's choice on 2026-11-10, for a modern UI;
       Next.js was weighed and left out: it would need Node and a second server on every machine).
       Built at release time into static files that the existing aiohttp server serves, so no Node
       on build machines and the same one-command install; the `/api` endpoints and the live event
-      stream stay as they are. A component library and design system with it (for example shadcn/ui
-      on Radix, Tailwind), done together with M14.1 rather than as a separate rewrite. Costs: a Node
+      stream stay as they are. Components on the design system (M14.12) and its tokens.css, for
+      example Radix primitives, done together with M14.1 rather than as a separate rewrite. Costs: a Node
       build in the release and CI, a few hundred KB more in the package, browser-side tests.
       Done when: the dashboard runs from the React build on the real machine in Edge, with every
       view and control of today, and its overhead on the machine measured no higher than now

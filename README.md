@@ -75,6 +75,7 @@ mulebox queue  --SSH-->        |
 | [agents.md](docs/agents.md) | everyday commands, every `.mulebox.yml` field, the agent rule |
 | [troubleshooting.md](docs/troubleshooting.md) | what an error means and what to do |
 | [design.md](docs/design.md) | how it works and why |
+| [design-system.md](docs/design-system.md) | the dashboard's look: tokens, components, rules |
 | [phases.md](docs/phases.md) | the roadmap: what is done and what is open |
 | [releasing.md](docs/releasing.md) | CI and releases, for maintainers |
 

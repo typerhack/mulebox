@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.94.0 - 2026-11-10 - minor
+- A design system, Gauge (M14.12): docs/design-system.md with its rules, docs/design-system/tokens.css as the one source of token values, and specimen.html as the picture. The user picked it from three proposals (Stable, Signal, Gauge) made by a Fable subagent and reviewed by a second model. Its open points are listed for the React front end (M14.10).
+- AGENTS.md rule 10: every screen follows the design system and takes its values from tokens.css. CLAUDE.md, README, design.md and the roadmap link it.
+- The line-count check skips the top-level docs/ folder, as its docstring and AGENTS.md already said docs are exempt; the specimen is a 695-line HTML picture.
+
 ## 0.93.4 - 2026-11-10 - patch
 - CLAUDE.md: any UI work loads Anthropic's frontend-design skill first, whatever the model, subagents included (the user's rule).
 

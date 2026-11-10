@@ -33,6 +33,10 @@ product work, not a personal script.
    from it and continue the next open task. Mark a task done only after its "done when"
    check passed.
 9. **Docs follow code.** A behaviour change updates the relevant doc in the same commit.
+10. **One design system.** Every screen follows [docs/design-system.md](docs/design-system.md):
+    colors, type, space, corners and motion come only from its
+    [tokens.css](docs/design-system/tokens.css), never typed into a component. A change to the
+    system is made there first, with the user's agreement.
 
 ## Commits
 
