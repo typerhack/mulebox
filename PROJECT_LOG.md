@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.106.4 - 2026-11-11 - patch
+- README: a full Features section in place of "What it does" (the user's ask): agents, speed, real projects, GitHub Actions, steering jobs, machines and projects, the dashboard, machines and safety, each feature checked against the roadmap and code.
+- `mulebox runner unregister` (`runner remove`) clears the runner unit's failed state, which systemd otherwise went on listing; seen when this repository's own runner was unregistered before going public.
+- History rewritten (the user's call): every commit's time zone is +0000 with the same moment, and a project name in two old tests is `example-app`; roadmap M6.4 updated.
+
 ## 0.106.3 - 2026-11-11 - patch
 - README: the architecture picture is centred (the user's ask).
 

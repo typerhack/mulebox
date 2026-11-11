@@ -137,7 +137,8 @@ def test_remove_stops_unregisters_and_deletes_through_safepath(machine, fakes, p
                         lambda path, roots: removed.append((path, roots)) or real(path, roots))
     manage.remove(machine, NAME, TOKEN)
     assert fakes.systemctl_calls == [
-        ["systemctl", "--user", "disable", "--now", f"mulebox-runner@{NAME}.service"]]
+        ["systemctl", "--user", "disable", "--now", f"mulebox-runner@{NAME}.service"],
+        ["systemctl", "--user", "reset-failed", f"mulebox-runner@{NAME}.service"]]
     argv, _, env = fakes.configs[-1]
     assert argv == manage.remove_argv(paths.runners / NAME)
     assert env["ACTIONS_RUNNER_INPUT_TOKEN"] == TOKEN

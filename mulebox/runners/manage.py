@@ -221,3 +221,5 @@ def remove(m: Machine, name: str, token: str) -> None:
         m.say(f"Unregistered {name} from GitHub")
     remove_tree(folder, m.paths.roots)
     m.say(f"Removed {folder}")
+    # A runner stopped mid-listen can leave its unit `failed`, which systemd would go on listing.
+    _systemctl(m, "reset-failed", unit)

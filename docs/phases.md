@@ -175,9 +175,11 @@ queue and returns the same result as running it locally.
       2026-11-05 (0.52.0): 7 fixes, the worst being fork pull requests on self-hosted runners, with a
       security model in docs/install.md. All 143 commits and local branches scanned: no secrets or
       addresses. History rewritten and pushed the same day: project names, author line and time zone
-      are gone. Open: a real fork pull request on GitHub. Before going public, unregister this
-      repository's own runner, kept for drills while it is private (docs/releasing.md);
-      `mulebox runner register` refuses a public repository since 0.101.0.
+      are gone. 2026-11-11 (0.106.4): all 286 commits scanned again; history rewritten once more, as
+      later commits carried the time zone again and two tests a project's name (commits are now made
+      in UTC); this repository's own runner unregistered. `mulebox runner register` refuses a public
+      repository since 0.101.0. Open: a real fork pull request on GitHub, and asking approval for
+      outside contributors' workflows, which GitHub allows only once the repository is public.
 - [ ] M6.5 1.0.0 release (only when the user declares it)
 
 ## M7: Agents

@@ -139,66 +139,135 @@ A sign-in lasts 24 hours; restarting the dashboard signs everyone out. It is pla
 turn on HTTPS, and a network you trust can go without the password (`lan_password = false`).
 All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the-lan).
 
-## What it does
+## Features
 
-**For agents**
+### For agents
 
 - **One command, the same answer.** `mulebox check` runs the project's checks on a node and gives
-  back the output and the exit code a local run would. It tests your files as they are now,
-  committed or not, and warns if you changed them while the job ran.
-- **Every job has an id.** An agent can send a job with `--detach`, go on working or end its
-  session, and come back later: `mulebox wait <id>` gives the output and exit code,
-  `status <id>` where it stands, `logs <id>` its log. A job runs to its end even if its agent went
-  away, and the agent's next command tells it the result.
-- **Agents choose how to wait**: follow the job, be pinged by `mulebox events` when it ends, or check
-  back later.
-- **No duplicate work.** On exactly the same files, `check` joins the job already running or gives
-  its recent result, failures included; `--again` forces a run.
+  back the output and exit code a local run would, with your files as they are now, committed or
+  not. If you change files while it runs, the result says it is stale.
+- **Every job has an id.** Send it with `--detach`, keep working or end the session, and come back:
+  `mulebox wait <id>` gives the output and exit code, `status <id>` where it stands, `logs <id>` its
+  log. A job runs to its end even when its agent went away, and the agent's next command tells it the
+  result, once.
+- **Three ways to wait**: follow the job, be pinged when it ends (`mulebox events --job <id>`), or
+  check back later.
+- **No duplicate work.** On exactly the same files, `check` joins the job already running or gives its
+  recent result, failures included. `--again` forces a run.
 - **Failures read fast.** A failed job ends with a short summary of the error and the stage it failed
-  in, and a job that could not start (a missing tool, an unreachable image) exits 5, apart from a
-  failed check.
-- **Long jobs ask, they do not die.** A long job asks its agent if all is well; the agent answers
-  `mulebox ok`. Only a job that is really stuck, with no answer, stops.
-- **Checked before anything is sent.** `mulebox doctor` checks the config, the node's tools and the
-  project's compose files, and runs nothing.
-- **A skill for Claude Code** that teaches any agent to work this way, installed by `mulebox setup`.
+  in (`logs <id> --summary`), with a hint when the failure reads like a lost network.
+- **Clear exit codes.** The check's own code on a failure; 5 for a job that could not start (a missing
+  tool, an unreachable image, a bad lockfile); 2 for a config error, caught before anything is sent;
+  75 for a job a restart interrupted; 76 for a stuck job that was stopped.
+- **Long jobs ask, they do not die.** There is no hard time limit. A long job asks its agent if all is
+  well, with its last output line; the agent answers `mulebox ok`. Only a job that is really stuck,
+  with no answer, stops.
+- **The position in line, and why.** A waiting job says where it stands, what runs ahead of it, and
+  why it waits: its branch is busy, no machine has what it needs, a machine is paused.
+- **Checked before anything is sent.** `mulebox doctor` checks the config, the node's tools and
+  versions, the project's compose files and whether the node reaches the images' registries; it runs
+  nothing.
+- **Written for agents.** `mulebox contract` tells an agent how this project works through mulebox.
+  The Claude Code skill teaches it the rest; `mulebox setup` installs it, and an agent whose skill is
+  out of date is told so and updates it.
+- **Problems reported safely.** `mulebox feedback draft` writes a GitHub issue with the job's ids,
+  stages and log lines, scrubbed of addresses, names and secrets; `post` files it once you read it.
 
-**Fast**
+### Fast
 
-- **Only changes cross the network.** Each project keeps a folder on the node with a git worktree per
+- **Only changes cross the network.** Each project has a folder on the node, with a git worktree per
   branch, and a job sends only the files that changed since the last one.
-- **Installs once.** Dependencies install only when the lockfile or setup changes, and package caches
-  (pnpm, npm, Composer, pip) are kept between jobs, also for fresh containers.
-- **Toolchains install themselves.** A project pins Node and pnpm versions, and the first job that
-  needs one installs it on the node, once.
-- **Branches run side by side**; a second job on the same branch waits for the first.
+- **Installs once.** `install` and `setup` run only when the lockfile, manifests or toolchain change,
+  and a lost network during an install is tried again.
+- **Package caches** for pnpm, npm, Composer and pip are kept per project between jobs, also for fresh
+  containers.
+- **Toolchains install themselves.** A project pins Node and pnpm, and the first job that needs a
+  version installs it on the node, checked against the official checksums, once for every project.
+- **Branches side by side.** Different branches run at once; a second job on the same branch waits.
+- **Get ready ahead of time.** `mulebox warm` fetches toolchains, images and caches and runs the
+  installs, with no command.
+- **Quiet logs.** Image download progress is folded into one line, with the bytes on the stage.
+- **How long it usually takes.** Each job and each stage shows its usual length from past passed
+  runs, beside the time so far.
 
-**Your CI on the same machines**
+### Real projects
 
-- **GitHub Actions runners** for your private repositories (`mulebox runner register`) share the
-  agents' line, so CI and agents never run more jobs than the node has slots. The dashboard shows a
-  run's steps, output and result, and runners can use the project's package caches.
+- **`mulebox init`** writes `.mulebox.yml` from the project's own files: Node, pnpm, npm, yarn, PHP with
+  Composer, Python, Flutter, Go and Rust, also one folder down (`api/`, `web/`), following what the
+  project's CI uses.
+- **Docker Compose.** Every job gets its own containers, names, networks and host ports (a port in use
+  moves), removed on every outcome, files written as root included. Services get 65536 open files and
+  the machine's job settings.
+- **Browser tests.** Playwright against the job's containers, with browsers kept for the next job.
+- **Several jobs per project**, each with its own command, setup, ports and containers or none, and
+  `env:` values that build on each other.
+- **`mulebox run -- <cmd>`** runs any command on the node; `--in <service>` runs it in a compose
+  service, `--take <path>` brings a changed file, such as a lockfile, back to the laptop.
 
-**Real projects**
+### GitHub Actions on the same machines
 
-- **Docker Compose**: every job gets its own services, names, ports and networks, removed on every
-  outcome, passed or failed.
-- **Browser tests**: Playwright against the job's containers, with the browsers kept for next time.
-- **`mulebox run`** runs any command on the node; `--take <path>` brings changed files, such as a
-  lockfile, back to the laptop.
+- **Runners for your private repositories** (`mulebox runner register --repo <owner>/<repo>`), with
+  their own labels. A CI job waits for a slot in the same line as the agents, so the node never runs
+  more than its slots.
+- **CI runs in the dashboard**: each step live, its output as the runner writes it, its length and
+  result; passed, failed or cancelled from the runner's own record, with the failed step and GitHub's
+  message. A run's CPU counts its containers.
+- **Steered like any job**: freeze, boost, move in line, open on GitHub, cancel on GitHub.
+- **Shared caches**: a runner can download through the project's package caches (`runner caches`).
+- **Safe by default**: runners attach to private repositories only; `register` refuses a public one.
 
-**Yours to control**
+### You steer
 
-- **Steer the line**: pause or freeze a job, move it, boost it, pause a machine or a whole project,
-  from the CLI or the dashboard. Upgrades wait their turn (`mulebox setup <node> --queued`).
-- **On your own machines**: jobs travel over ssh to machines you own; no cloud build service, no
-  port open to the internet.
+From the CLI or the dashboard, with no sign-in needed through the tunnel:
+
+- **A job**: pause a waiting one (it keeps its place), freeze a running one with its containers and
+  resume it where it stopped, boost it (the machine's CPU and disk first, nothing new starts beside
+  it), move it to the front, up, down or to the end, cancel it.
+- **A machine**: pause (drain) it so it finishes what runs and takes nothing new, resume it, or remove
+  it.
+- **A project**: pause all its jobs and CI runs, for a set time or until resumed (`mulebox project
+  pause`).
+- **Everything at once**: the dashboard's Queue actions pause or resume every machine, and freeze or
+  resume every running job.
+- **Upgrades in line**: `mulebox setup <node> --queued` waits its turn like a job, next by default or
+  `--behind` the jobs already waiting, then installs and the line goes on. `--when-idle` waits for
+  running jobs; a running job is never cut short unless you say `--now`.
+- **Clean up**: `mulebox projects` shows each project's folder and size; `project clean` removes old
+  branch folders, `project reset` a whole project. The node warns when its disk runs low.
+
+### The dashboard
+
+- **Live**: the line by machine, every running job with its stages as a waterfall and its log as it
+  happens, and a note when a job is quiet but still working.
+- **Top panels**: CPU over the last 5 minutes with a meter per core, or a compact view of the busiest
+  cores; memory with what jobs use and swap; disk with Docker's share; network in and out; every
+  machine with its slots and what it offers.
+- **Tabs**: Queue, Failed, Passed and Recent, with live counts.
+- **History** with search and filters you can share as a link, and **Statistics**: job minutes today,
+  by day and since the first job, by kind, project, source and machine (also `mulebox stats`).
+- **Machines page**: every node with its state, load, network, slots, version and last contact.
+- **Out of step**: a strip says when a laptop, a worker or a skill runs another version, with the fix.
+- **Light and dark** themes and two meter styles, remembered per browser, and a layout that works on
+  a phone.
+- **From any device on your LAN**, with a password, a firewall rule and optional HTTPS, or read-only
+  (`controls = false`).
+- **Light on the node**: about 0.6% of one core and 46 MB with a page open.
+
+### Machines and safety
+
+- **One command to set up**: `mulebox setup <node>` installs a node from the laptop, finds what it
+  offers (Docker, Playwright, toolchains), writes the laptop's config and proves it with a first job.
+- **More nodes**: `mulebox setup <node> --worker-of <coordinator>` adds a worker, with a key that can
+  only ask for work. Jobs go to a node that has what they need.
+- **Survives restarts**: services come back by themselves after a reboot; a running job ends as
+  `interrupted` (exit 75) and is not run again by itself, and waiting jobs run.
+- **On your own machines**: jobs travel over ssh to machines you own; no cloud service, no port open
+  to the internet.
 - **Private by default**: files that look like secrets are never uploaded, and logs are scrubbed of
   secrets before they are stored or shown.
-- **How long jobs ran**: `mulebox stats` adds up job minutes by day, project, source and machine.
-
-A job running when a node restarts or loses power ends as `interrupted` (exit 75); it is not run
-again by itself.
+- **Stays in its folders**: mulebox writes and deletes only inside its own roots on a node, checked
+  for links and mounts. Jobs run under systemd with limits, and nothing is left behind.
+- **Old logs go by themselves** after 30 days; job records stay.
 
 ## Commands
 
