@@ -33,7 +33,7 @@ def test_steps_live_and_a_step_output_under_its_name_even_after_the_page_is_dele
     (diag / "pages" / f"{PLAN}_{JOB}_1.log").write_text("2026-11-07T09:32:41Z every step again\n")
     log = RunnerLog("job-1", folder, make)
     log.poll(0)
-    assert sent_text(log) == "mulebox: step: First step\n"
+    assert sent_text(log) == "mulebox: step at 2026-11-07T09:32:11Z: First step\n"
 
     with open(diary, "a") as fh:
         fh.write(f"[x INFO JobServerQueue] Try to append 1 batches web console lines for record "
@@ -44,10 +44,42 @@ def test_steps_live_and_a_step_output_under_its_name_even_after_the_page_is_dele
     log.poll(0)
     page.unlink()  # GitHub has it: the runner deletes it, the open file still reads
     with open(diary, "a") as fh:
-        fh.write(f"{STAMP} Step result: Failed\n")
+        fh.write(f"{STAMP} Step result: Failed\n"
+                 "[2026-11-07 09:33:02Z INFO StepsRunner] Update job result with current step "
+                 "result 'Failed'.\n")
     log.poll(0)
     assert sent_text(log) == ("--- output of First step\nRun tests\nfirst line\n"
-                              "mulebox: step failed: First step\n")
+                              "mulebox: step failed at 2026-11-07T09:33:02Z: First step\n")
+
+
+def test_every_step_ends_with_its_result_and_time_as_the_diary_says(tmp_path):
+    """Lines as a real runner wrote them (2.3xx): a passed, a skipped and a cancelled step."""
+    folder, diag = runner(tmp_path)
+    (diag / "Worker_20261111-072502-utc.log").write_text("\n".join([
+        f'    "planId": "{PLAN}",',
+        "[2026-11-11 07:25:03Z INFO StepsRunner] Processing step: DisplayName='Set up runner'",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] Step result: ",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] No need for updating job result with current "
+        "step result 'Succeeded'.",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] Current state: job state = ''",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] Processing step: DisplayName='Post Run x'",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] Skipping step due to condition evaluation.",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] No need for updating job result with current "
+        "step result 'Skipped'.",
+        "[2026-11-11 07:26:33Z INFO StepsRunner] Processing step: DisplayName='count'",
+        "[2026-11-11 07:31:17Z INFO StepsRunner] Step result: Canceled",
+        "[2026-11-11 07:31:17Z INFO StepsRunner] No need for updating job result with current "
+        "step result 'Canceled'.",
+        "[2026-11-11 07:31:17Z INFO StepsRunner] Current state: job state = 'Canceled'", ""]))
+    log = RunnerLog("job-1", folder, make)
+    log.poll(0)
+    assert sent_text(log) == (
+        "mulebox: step at 2026-11-11T07:25:03Z: Set up runner\n"
+        "mulebox: step passed at 2026-11-11T07:26:33Z: Set up runner\n"
+        "mulebox: step at 2026-11-11T07:26:33Z: Post Run x\n"
+        "mulebox: step skipped at 2026-11-11T07:26:33Z: Post Run x\n"
+        "mulebox: step at 2026-11-11T07:26:33Z: count\n"
+        "mulebox: step cancelled at 2026-11-11T07:31:17Z: count\n")
 
 
 def test_pages_of_an_earlier_job_and_an_older_diary_are_left_alone(tmp_path):

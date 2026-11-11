@@ -14,7 +14,8 @@ describe("parseCiLog", () => {
     const text = ["mulebox: step: Set up job", "mulebox: step: Build site", "--- output of Build site",
                   "$ pnpm run build", "done", "--- output of a step", "Cleaning up", ""].join("\n");
     const { steps, other } = parseCiLog(text);
-    expect(steps).toEqual([{ name: "Set up job", output: "" }, { name: "Build site", output: "$ pnpm run build\ndone\n" }]);
+    expect(steps).toMatchObject([{ name: "Set up job", output: "", startedAt: null, result: null },
+                                 { name: "Build site", output: "$ pnpm run build\ndone\n" }]);
     expect(other).toBe("--- output of a step\nCleaning up");
   });
 });

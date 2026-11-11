@@ -3,15 +3,18 @@
 A runner reservation only holds a build slot: the job runs inside GitHub's runner, which sends its
 output to GitHub. The runner also writes two things on this machine, in `<runner>/_diag/`:
 
-- `Worker_<time>.log`, its own diary, written as it goes: the job's message with its `planId`
-  first, then `Processing step: DisplayName='...'`
-  as each step starts, `Step result: Failed` when one fails, and `... web console lines for
-  record '<id>'` while a step prints, which ties that step's record id to its name.
+- `Worker_<time>.log`, its own diary, written as it goes, each line with its time to the second:
+  the job's message with its `planId` first, then `Processing step: DisplayName='...'` as each
+  step starts, `... current step result '<Succeeded|Failed|Canceled|Skipped>'` as it ends, and
+  `... web console lines for record '<id>'` while a step prints, which ties that step's record
+  id to its name.
 - `pages/<plan id>_<record id>_<n>.log`, a step's output. It is written in blocks of about
   4 KB or when the step ends, then deleted once GitHub has it, seconds later.
   The job's own record has a page too, repeating every step; it is skipped.
 
-So the log here has every step as it starts, live, and a step's output once the runner writes
+So the log here has every step as it starts and as it ends, with the diary's times
+(`mulebox: step at <time>: <name>`, then `mulebox: step <passed|failed|cancelled|skipped> at
+<time>: <name>`, read back by web/src/lib/cilog.ts), and a step's output once the runner writes
 it: a busy step in pieces, a quiet one when it ends. A page is kept open from when it appears,
 because on Linux an open file can still be read after it is deleted. A step shorter than one
 poll can be missed; GitHub has everything. The last step is read once more after the slot is
@@ -28,7 +31,7 @@ from typing import BinaryIO
 
 from mulebox.common.redact import StreamRedactor
 from mulebox.runners import diary
-from mulebox.runners.diary import FAILED, STEP
+from mulebox.runners.diary import STEP
 from mulebox.worker.logtail import LogTailer, MakeRequest, Send
 
 READ_BYTES = 256 * 1024
@@ -38,6 +41,16 @@ _JOB = re.compile(r"\bJob ID ([0-9a-f-]{36})\b")  # its own page repeats every s
 _PLAN = re.compile(r'"planId":\s*"([0-9a-f-]{36})"')
 _STAMP = re.compile(r"^﻿?\d{4}-\d\d-\d\dT[\d:.]+Z ?")
 _GROUP, _END_GROUP = "##[group]", "##[endgroup]"
+_DIARY_TIME = re.compile(r"^\[(\d{4}-\d\d-\d\d) (\d\d:\d\d:\d\dZ) ")
+_ENDED = re.compile(r"current step result '(\w+)'")
+_RESULTS = {"succeeded": "passed", "succeededwithissues": "passed", "failed": "failed",
+            "canceled": "cancelled", "cancelled": "cancelled", "skipped": "skipped"}
+
+
+def _at(line: str) -> str:
+    """` at <time>` from a diary line's own time, or nothing when it has none."""
+    found = _DIARY_TIME.match(line)
+    return f" at {found[1]}T{found[2]}" if found else ""
 
 
 def _page_line(line: str) -> str | None:
@@ -122,11 +135,12 @@ class RunnerLog:
             self._job = job[1]
         elif step := STEP.search(line):
             self._step = step[1]
-            self.tailer.note(f"mulebox: step: {self._step}\n")
+            self.tailer.note(f"mulebox: step{_at(line)}: {self._step}\n")
         elif self._step and (record := _RECORD.search(line)):
             self._records.setdefault(record[1], self._step)
-        elif self._step and (failed := FAILED.search(line)):
-            self.tailer.note(f"mulebox: step {failed[1].lower()}: {self._step}\n")
+        elif self._step and (ended := _ENDED.search(line)):
+            if result := _RESULTS.get(ended[1].lower()):
+                self.tailer.note(f"mulebox: step {result}{_at(line)}: {self._step}\n")
 
     def _read_pages(self) -> None:
         try:

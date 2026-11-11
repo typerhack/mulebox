@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.102.0 - 2026-11-11 - minor
+- A GitHub run's page shows each step's length, live while it runs, and its result (passed, failed, cancelled or skipped) with its icon, from the runner's own diary (parking lot): the worker writes `mulebox: step at <time>: <name>` and `mulebox: step <result> at <time>: <name>` into the slot's log, and older logs still read. Checked against real runner diaries on the build machine (passed, skipped and cancelled steps).
+
 ## 0.101.3 - 2026-11-11 - patch
 - design-system.md, "Open before building": control sizes measured on the deployed dashboard (28 to 34px with a pointer, 36px on touch, under the 44 to 48px of platform guidance; raising it is the user's call); frozen and boosted cards, Resume and End boost, the waterfall and the live log recorded as settled.
 

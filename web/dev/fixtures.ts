@@ -110,9 +110,15 @@ export function detail(row: MockJob) {
 export const AGENT_LOG = ["mulebox: job on build-1, branch feature/login", "prepare: 3 files changed, sent 1.4 KiB",
   "images: example-app-web built, 2 pulled from cache", "services: db healthy, cache healthy", "$ pnpm run check",
   "tsc --noEmit: no errors", "eslint: 412 files, no problems", "vitest run", " PASS  src/login/session.test.ts (41 tests)"];
-export const CI_LOG = ["mulebox: step: Set up job", "mulebox: step: Check out", "mulebox: step: Install dependencies",
-  "mulebox: step: Build site", "--- output of Install dependencies", "added 412 packages in 14s", "--- output of Build site",
-  "$ pnpm run build", "vite building for production", "transforming (318) src/pages/pricing.mdx"];
+// A run's steps as the worker writes them (runners/live_log.py), with times from 41 s ago to now.
+const at = (ago: number) => new Date(Date.now() - ago * 1000).toISOString().replace(/\.\d+Z$/, "Z");
+export const CI_LOG = [
+  `mulebox: step at ${at(41)}: Set up job`, `mulebox: step passed at ${at(39)}: Set up job`,
+  `mulebox: step at ${at(39)}: Check out`, `mulebox: step passed at ${at(36)}: Check out`,
+  `mulebox: step at ${at(36)}: Use Node 22`, `mulebox: step skipped at ${at(36)}: Use Node 22`,
+  `mulebox: step at ${at(36)}: Install dependencies`, `mulebox: step passed at ${at(22)}: Install dependencies`,
+  `mulebox: step at ${at(22)}: Build site`, "--- output of Install dependencies", "added 412 packages in 14s",
+  "--- output of Build site", "$ pnpm run build", "vite building for production", "transforming (318) src/pages/pricing.mdx"];
 
 export function stats(days: number[]) {
   const row = (key: string, seconds: number, runs: number) => ({ key, seconds, runs, running: 0, running_seconds: 0, unknown: 0 });

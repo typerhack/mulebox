@@ -5,7 +5,8 @@
 import { Clock } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 
-import { parseCiLog } from "../../lib/cilog";
+import { parseCiLog, stepSeconds, type CiStep } from "../../lib/cilog";
+import { duration } from "../../lib/format";
 import type { JobDetail } from "../../lib/types";
 import { LinkButton } from "../../ui/Button";
 import { Panel } from "../../ui/Panel";
@@ -17,19 +18,26 @@ const KEEP_CHARS = 1024 * 1024;
 
 interface Props {
   job: JobDetail;
+  now: number;
   onState: (state: string) => void;
   onEnd: (job: JobDetail, atEnd: boolean) => void;
 }
 
-export function CiSteps({ job, onState, onEnd }: Props) {
+const WORDS: Record<string, string> = { passed: "Passed", failed: "Failed", cancelled: "Cancelled",
+                                        skipped: "Skipped", running: "Running" };
+
+export function CiSteps({ job, now, onState, onEnd }: Props) {
   const [text, setText] = useState("");
   const onChunk = useCallback((chunk: string) => setText((had) => (had + chunk).slice(-KEEP_CHARS)), []);
   const { stream, note } = useLog(job.job_id, { onChunk, onState, onEnd: (final) => onEnd(final, true) });
   const { steps, other } = useMemo(() => parseCiLog(text), [text]);
   const running = job.state !== "finished";
   const failedStep = job.ci_result?.step;
-  const stateOf = (name: string, index: number) => (name === failedStep ? "failed"
-    : running && index === steps.length - 1 ? "running" : "passed");
+  // The step's own result once the log has it; before that (or in a log from before step
+  // results), the job's failed step, the last step while the job runs, else passed.
+  const stateOf = (step: CiStep, index: number): string => step.result
+    ?? (step.name === failedStep ? "failed"
+      : running && index === steps.length - 1 ? "running" : "passed");
 
   return (
     <Panel title="Steps" label="Steps and output" strong
@@ -41,12 +49,18 @@ export function CiSteps({ job, onState, onEnd }: Props) {
       )}>
       <ol className="divide-y divide-line">
         {steps.map((step, index) => {
-          const state = stateOf(step.name, index);
+          const state = stateOf(step, index);
+          const took = state === "skipped" ? null : stepSeconds(step, now);
+          const word = step.result || state !== "passed" ? WORDS[state] : running ? "Started" : "Done";
           const head = (
             <>
-              <Status state={state} word={state === "passed" ? (running ? "Started" : "Done") : undefined} iconOnly />
+              <Status state={state} word={word} iconOnly />
               <span className="min-w-0 flex-1 break-words">{step.name}</span>
-              <span className="text-sm text-ink-3">{step.output ? "output" : ""}</span>
+              {step.output && <span className="text-sm text-ink-3">output</span>}
+              <span className="num whitespace-nowrap text-right text-sm text-ink-2"
+                    title={took === null ? undefined : `${word}: ${duration(took)}${step.endedAt === null && state === "running" ? " so far" : ""}`}>
+                {took === null ? "" : duration(took)}
+              </span>
             </>
           );
           return (

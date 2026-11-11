@@ -24,8 +24,11 @@ The contract for `mulebox/dashboard/`, `mulebox/common/status.py` and
   (`#/stats`) and machines (`#/machines`); the machine picked for CPU, Memory and Disk
   (`/api/metrics?machine=`, asked every 2 s while another machine than the host is picked),
   the meter style switch (Auto, Gauge, Rainbow, kept per browser as `mulebox-meters`), and a
-  GitHub job's log drawn as its steps (`web/src/lib/cilog.ts` reads the `mulebox: step:` and
-  `--- output of` lines the runner's hooks write).
+  GitHub job's log drawn as its steps, each with its length (live while it runs) and result
+  (`web/src/lib/cilog.ts` reads the lines `runners/live_log.py` writes from the runner's own
+  files: `mulebox: step at <time>: <name>` as a step starts, `mulebox: step <passed|failed|
+  cancelled|skipped> at <time>: <name>` as it ends, and `--- output of <name>`; logs from
+  before 0.101 have `mulebox: step: <name>` with no time and a result for failed steps only).
 - Every guard below covers it: these are GET routes of one app. The policy has
   `font-src 'self'` for the bundled Geist files. The build has no inline script or style,
   loads nothing from another origin, and sets styles only through the DOM, which the policy

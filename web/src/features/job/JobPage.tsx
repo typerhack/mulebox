@@ -92,7 +92,7 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
       <div className="job-split">
         {ci ? <RunTimePanel job={job} live={live} cores={cores} now={now} />
             : <StagesPanel job={job} live={live} cores={cores} now={now} />}
-        {ci ? <CiSteps job={job} onState={setState} onEnd={onEnd} />
+        {ci ? <CiSteps job={job} now={now} onState={setState} onEnd={onEnd} />
             : <LogPanel jobId={job.job_id} quiet={job.state === "finished" ? "" : quietText(job.activity)} onState={setState} onEnd={onEnd} />}
       </div>
       <JobFacts job={job} />
