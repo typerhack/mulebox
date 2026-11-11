@@ -8,7 +8,7 @@ import type { Plugin } from "vite";
 
 import { makeScene } from "./scenes.ts";
 import { answerHistory, historyRows } from "./history.ts";
-import { AGENT_LOG, CI_LOG, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
+import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
 const TOKEN = "mock-token";
 const now = () => Date.now() / 1000;
@@ -34,10 +34,10 @@ const snapshot = () => ({ now: now(), ...queue });
 function panel() {
   const live = machines.filter((m) => m.state !== "offline");
   return { machines, total: machines.length, online: live.length, free_slots: live.reduce((sum, m) => sum + m.free_slots, 0),
-           notices: [{ kind: "client", level: "warning", name: "laptop.local",
-                       text: "Laptop laptop.local runs mulebox 0.95.2, the build machine 0.95.5.", fix: "Upgrade mulebox on it with `pipx upgrade mulebox`." },
-                     ...machines.filter((m) => m.version !== "0.95.5").map((m) => ({ kind: "worker", level: "danger", name: m.name,
-                       text: `Worker ${m.name} runs mulebox ${m.version}, the coordinator 0.95.5.`, fix: `Run \`mulebox setup ${m.name}\`.` }))] };
+           notices: CLEAN ? [] : [{ kind: "client", level: "warning", name: "laptop.local",
+                       text: `Laptop laptop.local runs mulebox 0.0.1, the build machine ${VERSION}.`, fix: "Upgrade mulebox on it with `pipx upgrade mulebox`." },
+                     ...machines.filter((m) => m.version !== VERSION).map((m) => ({ kind: "worker", level: "danger", name: m.name,
+                       text: `Worker ${m.name} runs mulebox ${m.version}, the coordinator ${VERSION}.`, fix: `Run \`mulebox setup ${m.name}\`.` }))] };
 }
 const publish = () => viewers.forEach((res) => { send(res, "queue", snapshot()); send(res, "machines", panel()); });
 const find = (id: string) => [...queue.running, ...queue.queued, ...queue.recent].find((row) => row.job_id === id);
@@ -108,7 +108,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
   if (post && req.headers["x-mulebox-token"] !== TOKEN) return text(res, "the page's token is missing or old", 403);
   const jobMatch = /^\/api\/jobs\/([^/]+)(?:\/(.*))?$/.exec(path);
   const machineMatch = /^\/api\/machines\/([^/]+)\/control$/.exec(path);
-  if (path === "/healthz") return json(res, { ok: true, version: "0.95.5", lan: false, sign_in: false });
+  if (path === "/healthz") return json(res, { ok: true, version: VERSION, lan: false, sign_in: false });
   if (path === "/api/session") return json(res, { action_token: TOKEN, cancel_token: TOKEN });
   if (path === "/api/queue") return json(res, snapshot());
   if (path === "/api/machines") return json(res, panel());

@@ -2,8 +2,14 @@
 // five or twenty machines (MULEBOX_MOCK_MACHINES), other queues (dev/scenes.ts), a job with stages and a GitHub run. The
 // shapes are the API's (docs/interfaces-m2.md); the names are examples.
 
+import { readFileSync } from "node:fs";
+
 const now = () => Date.now() / 1000;
 const COUNT = Number(process.env.MULEBOX_MOCK_MACHINES ?? 2);
+// The repository's version; MULEBOX_MOCK_CLEAN=1 keeps every machine on it and shows no
+// out-of-step notice (for screenshots).
+export const VERSION = readFileSync(new URL("../../VERSION", import.meta.url), "utf8").trim();
+export const CLEAN = Boolean(process.env.MULEBOX_MOCK_CLEAN);
 const OFFERS = [["docker", "node 22", "python 3.12"], ["docker", "playwright"], ["docker", "node 22"]];
 
 export interface MockJob { [key: string]: unknown; job_id: string; state: string; kind: string; position?: number | null }
@@ -67,7 +73,7 @@ export function makeMachines(queue: ReturnType<typeof makeQueue>, set: Record<st
     const state = set[name]?.state ?? (n === 2 || n === 13 ? "offline" : n === 3 ? "draining" : n === 1 ? "busy" : "available");
     const offline = state === "offline";
     return {
-      name, host: n === 1, version: n === 5 ? "0.95.4" : "0.95.5", slots, capabilities: OFFERS[index % OFFERS.length], state,
+      name, host: n === 1, version: n === 5 && !CLEAN ? "0.0.1" : VERSION, slots, capabilities: OFFERS[index % OFFERS.length], state,
       free_slots: offline ? 0 : Math.max(0, slots - jobs.length), last_seen: offline ? now() - 840 : now(),
       cpu_pct: offline ? null : n === 1 ? 41 : busy ? 77 : 3 + (n * 7) % 9,
       mem_pct: offline ? null : n === 1 ? 62 : 15 + (n * 5) % 40, cores: n === 1 ? CORES : 8,
