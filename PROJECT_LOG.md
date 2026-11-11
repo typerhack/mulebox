@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.103.3 - 2026-11-11 - patch
+- Roadmap parking lot: the dashboard's overhead is back to 0.60% of a core and 46 MB, and the mockup's facts now on the dashboard are crossed off (job folders of other machines and log line times stay); the user's idea of a compact CPU view beside today's box is parked until they confirm it.
+
 ## 0.103.2 - 2026-11-11 - patch
 - A GitHub run's Time panel marks the run with its own result (failed, cancelled, passed, or released for an older slot with none); a failed run showed a pass mark. Found in a real CI drill on the deployed dashboard, where each step's length and result showed as built in 0.102.0.
 
