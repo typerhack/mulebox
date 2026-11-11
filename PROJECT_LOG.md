@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.106.1 - 2026-11-11 - patch
+- The sign-in page's field and button are 44px on touch screens and under 520px, as every control of the app since 0.103.1; it already used the design system's tokens and fonts in both themes.
+- README: opening the dashboard from a phone, with the sign-in page in both themes and the four steps to turn `lan` mode and its password on; `tools/screenshots.py` takes the sign-in page too.
+
 ## 0.106.0 - 2026-11-11 - minor
 - `mulebox setup` installs the agent skill in every Claude config folder on the laptop that has none, as well as updating old copies (the user's ask); `--no-skill` installs none. install.md, getting-started.md and the README say so, with a link to SKILL.md and how the newest skill comes with the newest mulebox.
 - README: commands name `<node>`, explained once, in place of `build-1`; the architecture as a Mermaid diagram (the user found the text drawing hard to read), the dev machine on top, the coordinator node handing jobs to worker nodes below.

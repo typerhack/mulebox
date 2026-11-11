@@ -104,6 +104,28 @@ Every screen is built on one small design system, Gauge: its tokens, components 
 
 All pictures come from made-up data (`tools/screenshots.py`).
 
+### Open it from your phone, with a password
+
+By default the dashboard opens only through an ssh tunnel from the dev machine
+(`mulebox dashboard open`), so it needs no password. To open it from any device on your network,
+turn on `lan` mode on the coordinator node; the page then asks for a password:
+
+<p>
+  <img src="docs/images/sign-in-light.png" alt="The sign-in page, light theme" width="48%">
+  <img src="docs/images/sign-in-dark.png" alt="The sign-in page, dark theme" width="48%">
+</p>
+
+1. In `~/.config/mulebox/node.toml` on the node, under `[dashboard]`, set who may connect and the
+   node's own address: `lan_range = "192.168.1.0/24"` and `lan_address = "192.168.1.50"`.
+2. On the node: `mulebox dashboard password` (asks twice, at least 10 characters), then
+   `mulebox dashboard firewall > firewall.sh`, read it, and `sudo sh firewall.sh`.
+3. Set `mode = "lan"` under `[dashboard]` and `systemctl --user restart mulebox-dashboard`.
+4. Open `http://192.168.1.50:8090` (the node's address) on any device in that range.
+
+A sign-in lasts 24 hours; restarting the dashboard signs everyone out. It is plain HTTP unless you
+turn on HTTPS, and a network you trust can go without the password (`lan_password = false`).
+All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the-lan).
+
 ## What it does
 
 - **One command for agents**: `mulebox check` runs the project's checks on a node and exits with

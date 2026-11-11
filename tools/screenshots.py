@@ -56,6 +56,8 @@ SHOTS = [
     Shot("cpu-compact-light", "#/", "light", env={**CLEAN, "MULEBOX_MOCK_CORES": "32"},
          prefs={"mulebox-cpu-view": "compact"}),
     Shot("phone-dark", "#/", width=390, height=844, env=CLEAN),
+    Shot("sign-in-light", "page:login.html", "light", width=1000, height=640, env=CLEAN, wait=2.0),
+    Shot("sign-in-dark", "page:login.html", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("design-system-light", "file:design-system/specimen.html", "light", height=1100, wait=2.0,
          script="document.documentElement.dataset.theme === 'dark' && document.getElementById('theme-toggle').click()"),
 ]
@@ -121,6 +123,8 @@ async def take(page: Page, shot: Shot, base: str | None) -> None:
     if shot.route.startswith("file:"):
         await page.send("Page.navigate", url=(ROOT / "docs" / shot.route[5:]).as_uri())
         await asyncio.sleep(1)
+    elif shot.route.startswith("page:"):
+        await page.send("Page.navigate", url=base + shot.route[5:])
     else:
         route = await job_route(base, shot.route[4:]) if shot.route.startswith("job:") else shot.route
         await page.send("Page.navigate", url=base)

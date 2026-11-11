@@ -6,6 +6,7 @@
 
 @import "../../../docs/design-system/tokens.css";
 @import "../styles/fonts.css";
+@reference "../styles/theme.css"; /* its `touch` variant, nothing more */
 
 :root { color-scheme: light dark; }
 *, *::before, *::after { box-sizing: border-box; }
@@ -70,6 +71,11 @@ body.login-page {
   border-radius: var(--radius-m);
   font: inherit;
   font-size: 1rem;
+}
+/* 44px on touch screens and narrow windows, as every control of the app (theme.css, touch). */
+.login input,
+.login button {
+  @variant touch { min-height: calc(var(--space-1) * 11); }
 }
 .login input {
   width: 100%;
