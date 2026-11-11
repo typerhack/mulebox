@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.1.1 - 2026-11-11 - patch
+- A test of UDP port probing failed once in GitHub's CI (on 1.0.1): the random UDP port's TCP side was held by something else on the shared machine. The test now picks a port whose TCP side is free.
+
 ## 1.1.0 - 2026-11-11 - minor
 - mulebox goes to PyPI, the user's choice: `uv tool install mulebox` (uv brings its own Python) or `pipx install mulebox` with Python 3.12 or newer. The release workflow checks the tag against VERSION, builds the dashboard and the wheel, installs and runs it, and publishes it by trusted publishing (environment `pypi`); `tools/pypi_readme.py` points the README's links at the tag for PyPI's page. The binaries are dropped (`tools/build_binary.py`, the `binary` extra): macOS kills an unsigned binary a browser downloaded, and there is no Apple Developer ID.
 - Upgrade messages name the command: `mulebox/common/upgrade.py` says `uv tool upgrade mulebox`, `pipx upgrade mulebox` or `git pull` from how mulebox was installed, used by `doctor`, `skill update`, the dashboard's version notice and the protocol error; a machine is upgraded with `mulebox setup <host>`.

@@ -202,11 +202,24 @@ def test_is_free_sees_a_real_listener():
 def test_is_free_sees_a_real_udp_service_a_tcp_probe_would_miss():
     import socket
 
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as service:
-        service.bind(("127.0.0.1", 0))
-        port = service.getsockname()[1]
-        assert not ports.is_free(port, "udp")
-        assert ports.is_free(port, "tcp")
+    def tcp_free(port):  # a random port's TCP side can be held elsewhere, as on a shared CI machine
+        with socket.socket() as probe:
+            try:
+                probe.bind(("127.0.0.1", port))
+            except OSError:
+                return False
+            return True
+
+    for _ in range(50):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as service:
+            service.bind(("127.0.0.1", 0))
+            port = service.getsockname()[1]
+            if not tcp_free(port):
+                continue
+            assert not ports.is_free(port, "udp")
+            assert ports.is_free(port, "tcp")
+            return
+    raise AssertionError("no port with its TCP side free")
 
 
 def test_is_free_sees_tcp_only_for_tcp():
