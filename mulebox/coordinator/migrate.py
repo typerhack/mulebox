@@ -97,6 +97,9 @@ _STEPS: dict[int, tuple[str, ...]] = {
 _INDEXES = (
     "CREATE INDEX IF NOT EXISTS jobs_kind ON jobs (kind, state, pinned_worker)",
     "CREATE INDEX IF NOT EXISTS jobs_project ON jobs (project, job, seq)",
+    # The recent finished jobs, read every second by the dashboard: without it SQLite sorted
+    # every finished job to keep 20 (9.7 ms on 1273 jobs, 1.5 ms with it).
+    "CREATE INDEX IF NOT EXISTS jobs_finished ON jobs (state, finished_at, seq)",
 )
 
 

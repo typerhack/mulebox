@@ -7,6 +7,7 @@ has no checkout around it and reads its metadata (setuptools copies VERSION ther
 time).
 """
 
+from functools import cache
 from importlib import metadata
 from pathlib import Path
 
@@ -26,6 +27,13 @@ def source_version() -> str:
 def get_version() -> str:
     if _in_checkout():
         return _VERSION_FILE.read_text(encoding="utf-8").strip()
+    return _installed_version()
+
+
+@cache
+def _installed_version() -> str:
+    """An installed package's version, read once: it cannot change under a running process, and
+    the dashboard asks for it every second (reading metadata cost about 1 ms each time)."""
     try:
         return metadata.version("mulebox")
     except metadata.PackageNotFoundError:

@@ -62,7 +62,7 @@ def test_version_one_store_is_migrated(old_db, staging):
             assert {"slots", "toolchains", "version", "draining", "load"} <= columns(conn, "workers")
             indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master "
                                                   "WHERE type = 'index'")}
-            assert "jobs_kind" in indexes
+            assert {"jobs_kind", "jobs_finished"} <= indexes
             old_worker = workers.get(conn, "build-1")
             assert old_worker["slots"] is None and old_worker["toolchains"] is None
             assert old_worker["draining"] == 0
@@ -178,3 +178,12 @@ def test_an_open_detached_job_is_not_unattended_since_the_day_it_started(staging
     assert job["stop_reason"] is None and job["activity"] == {} and job["active_at"] is None
     assert done["client_lease_until"] is None
     assert job["check_in_ok"] == 0 and job["told_at"] is None
+
+
+def test_recent_finished_jobs_need_no_sort(staging):
+    """The dashboard reads them every second; a sort of every finished job cost 9.7 ms."""
+    with Store(staging.db_path).open() as store, store.read() as conn:
+        plan = " ".join(row[3] for row in conn.execute(
+            "EXPLAIN QUERY PLAN SELECT * FROM jobs WHERE state = 'finished' "
+            "ORDER BY finished_at DESC, seq DESC LIMIT 20"))
+    assert "jobs_finished" in plan and "TEMP B-TREE" not in plan

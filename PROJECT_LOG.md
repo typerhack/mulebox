@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.101.2 - 2026-11-11 - patch
+- Dashboard overhead (parking lot): the queue, read every second, sorted every finished job to keep the last 20, 9.7 ms of 12.6 on the real store of 1273 jobs. An index `jobs_finished (state, finished_at, seq)`, made when the coordinator opens its store, brings that query to 1.5 ms. An installed package's version is read once per process, not on every machines read (about 1 ms each).
+
 ## 0.101.1 - 2026-11-11 - patch
 - `test_events_follow_a_real_job_through_the_queue` starts the first job once `events` has printed its first line, not after a fixed 0.8 s: on the loaded build machine it missed the #2 line and failed the gate.
 
