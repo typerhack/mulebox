@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.1.3 - 2026-11-11 - patch
+- Docs: releasing.md names 1.1.1 as the first release on PyPI, and the roadmap's M17.4 records how the release went and what is still open. 1.1.2 changed nothing in the package and is not released (the user's call).
+
 ## 1.1.2 - 2026-11-11 - patch
 - release.yml: a comment read "No token or password: PyPI trusts ...", which GitGuardian took for a password with the value "PyPI" (a false alarm on 1.1.0; nothing secret was ever in it). Reworded so it no longer reads as a setting.
 - Released: 1.1.1 is the first mulebox on PyPI, published by the release workflow; installed from PyPI with `uv tool install` (uv's own Python 3.12) and with pipx on the Mac, each holding the dashboard. The unpublished 1.0.0 draft release was deleted (the user's call); its tag stays.

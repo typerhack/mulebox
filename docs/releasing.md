@@ -87,5 +87,5 @@ Only after the user has said to release.
    Upgrade](install.md#upgrade).
 
 A version on PyPI cannot be uploaded twice, and a tag is never moved or deleted once pushed. If
-a release is wrong, fix it in a new version. 1.0.0 was tagged before mulebox was on PyPI; 1.1.0
-is the first release there.
+a release is wrong, fix it in a new version. 1.0.0 was tagged before mulebox was on PyPI; 1.1.1
+(2026-11-11) is the first release there.

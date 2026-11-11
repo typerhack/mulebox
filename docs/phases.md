@@ -631,8 +631,10 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       downloaded, there is no Apple Developer ID, and mulebox is a Python project. Built 2026-11-11
       (1.1.0): the release workflow publishes to PyPI by trusted publishing; a wheel built the same
       way held the dashboard, passed `twine check` and ran under `uv tool install` with uv's own
-      Python. Done when: after the first release, `uv tool install mulebox` and `pipx install
-      mulebox` from PyPI on a clean laptop each run `mulebox setup` and a job on a real machine.
+      Python. Released 2026-11-11: 1.1.1, the first on PyPI, published by the workflow; from PyPI,
+      `uv tool install` and pipx each installed it in empty folders on the Mac, and `mulebox setup`
+      from the uv copy upgraded the real build machine. Done when: a project's job runs from a
+      PyPI install on a clean laptop (M6.2's stranger covers it).
 - [x] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures
       fixed. Done 2026-11-06 (0.62.1), with no spare machine, the user's choice: two throwaway
       containers, a blank Ubuntu with systemd and sshd as the build machine, and a laptop with no
