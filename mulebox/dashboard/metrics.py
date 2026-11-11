@@ -9,6 +9,9 @@ development) CPU and memory are None and nothing fails.
 - Memory: `/proc/meminfo` MemTotal and MemAvailable (used = total - available), bytes.
 - Disk: file system usage of each mulebox root, one entry per file system (roots on the same
   device are listed together; common/disk.py `usage_by_device`, which workers report too).
+- Swap: `/proc/meminfo` SwapTotal and SwapFree, bytes, read with memory.
+- Jobs' memory: the working set (`memory.current` less `inactive_file`) of what mulebox runs for jobs (`jobs_memory`), the agent job
+  units, the services of GitHub runners running a job, and the containers of both.
 - Self: CPU share and resident memory of the dashboard process itself (the overhead).
 """
 
@@ -23,9 +26,23 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.disk import usage_by_device as disk_usage
-from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, read
+from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, parse_swap, read
+from mulebox.worker import cgroups
 
-__all__ = ["Sampler", "cpu_percent", "disk_usage", "parse_cpu", "parse_memory"]
+__all__ = ["Sampler", "cpu_percent", "disk_usage", "jobs_memory", "parse_cpu", "parse_memory",
+           "parse_swap"]
+
+
+def jobs_memory(containers: list[str], runners: list[str], root: Path = cgroups.ROOT) -> int | None:
+    """Bytes charged to the running agent job units, to the services of `runners` (those running
+    a GitHub job: an idle listener is no job) and to `containers`; None without cgroup v2. A
+    group gone between the listing and the read counts nothing."""
+    if not (root / "cgroup.controllers").is_file():
+        return None
+    groups = cgroups.job_unit_groups(root)
+    groups += [g for name in runners if (g := cgroups.runner_group(name, root)) is not None]
+    groups += [g for cid in containers if (g := cgroups.container_group(cid, root)) is not None]
+    return sum(cgroups.memory_bytes(group) or 0 for group in groups)
 
 
 class Sampler:
@@ -49,6 +66,10 @@ class Sampler:
         text = read(self.proc / "meminfo")
         return parse_memory(text) if text else None
 
+    def memory_and_swap(self) -> tuple[dict[str, int] | None, dict[str, int] | None]:
+        text = read(self.proc / "meminfo")
+        return (parse_memory(text), parse_swap(text)) if text else (None, None)
+
     def own(self) -> dict[str, float | int | None]:
         """CPU percent of one core used by this process since the last call, and its RSS."""
         wall, cpu = self.wall(), self.cpu_time()
@@ -67,4 +88,5 @@ class Sampler:
 
     def fast(self) -> dict[str, Any]:
         """The every-2-seconds part of a metrics event."""
-        return {"cpu": self.cpu(), "memory": self.memory(), "self": self.own()}
+        memory, swap = self.memory_and_swap()
+        return {"cpu": self.cpu(), "memory": memory, "swap": swap, "self": self.own()}

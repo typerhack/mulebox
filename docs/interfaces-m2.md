@@ -350,11 +350,15 @@ Sampled once however many viewers there are (`hub.py`). Blocking reads run in a 
 
 | Value | Every | Source |
 | --- | --- | --- |
-| `cpu` (percent per core), `memory`, `self` (own CPU and RSS) | 2 s | `/proc` |
+| `cpu` (percent per core), `memory`, `swap` (`total`, `used`), `self` (own CPU and RSS) | 2 s | `/proc` |
 | `docker` (running containers, or null) | 5 s | Engine API socket |
+| `jobs_memory` (bytes, or null without cgroup v2) | 5 s | The working set (`memory.current` less the `inactive_file` page cache) of the agent job units, of the services of GitHub runners running a job (an idle listener is not counted), and of the containers of both: labelled `mulebox.job`, or started by Compose from a runner's `_work` folder |
 | `disk` (one entry per file system holding a root) | 30 s | `statvfs`, never `du` |
+| `docker_disk` (bytes, or null) | 5 min | Engine API `GET /system/df`: image layers, containers, volumes and build cache, the total `docker system df` gives; Docker sizes every layer for it (0.7 s on a machine with 59 images) |
 
-The last 150 samples (5 minutes) are kept. Missing values are null, not errors: without
+`jobs_memory` leaves out page cache the kernel can drop at once, as `used` does. The Memory box
+shows it as Jobs and swap as Swap, the Disk box `docker_disk` as Docker, on the dashboard's own
+machine only. The last 150 samples (5 minutes) are kept. Missing values are null, not errors: without
 `/proc` (macOS) or Docker the dashboard still runs.
 
 **Other machines** (`dashboard/machine_history.py`, `dashboard/metrics_api.py`). Each worker
@@ -364,8 +368,8 @@ roots (`roots`, `total`, `used`, `free`; common/disk.py `fullest`), read in the 
 `cpu_pct`, at most every 2 s, by no extra process. The coordinator keeps the latest in
 `workers.load`. The hub's machines loop, which reads the workers every 2 s anyway, keeps an
 entry per worker each time its `last_seen` moved on by 1.5 s or more: `{t, cpu, memory, disk}`,
-`t` being `last_seen` and `disk` a list of one, so the host's shape without `self`, `docker` and
-`viewers`. Up to 5 minutes and 200 entries per worker, in the dashboard process only; a worker
+`t` being `last_seen` and `disk` a list of one, so the host's shape without `self`, `docker`,
+`viewers`, `swap`, `jobs_memory` and `docker_disk`. Up to 5 minutes and 200 entries per worker, in the dashboard process only; a worker
 removed from the store is forgotten, and a restart starts empty. An offline worker answers
 `history: []` with its `last_seen`. A worker before these readings gives `cpu: []`,
 `memory: null` and `disk: []`. The page polls this every 2 s while such a machine is picked; the

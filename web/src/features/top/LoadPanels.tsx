@@ -84,6 +84,12 @@ export function CpuPanel({ shown, now }: { shown: Shown; now: number }) {
   );
 }
 
+const orNa = <T,>(value: T | null, show: (v: T) => string) => (value === null ? "n/a" : show(value));
+
+// Host only: what mulebox runs for jobs (job units, busy runners and their containers) and swap.
+const swapText = (swap: Sample["swap"]) =>
+  !swap ? "n/a" : swap.total ? `${bytes(swap.used)} of ${bytes(swap.total)}` : "Off";
+
 export function MemoryPanel({ shown, now }: { shown: Shown; now: number }) {
   const { samples, machine } = shown;
   const memory = lastWith(samples, "memory");
@@ -96,7 +102,12 @@ export function MemoryPanel({ shown, now }: { shown: Shown; now: number }) {
       head={<Scope shown={shown} />} bodyClassName="flex flex-col gap-2">
       <Meter name="Used" value={offline ? null : pct} text={offline || pct === null ? "n/a" : percent(pct)}
         label={`Memory used: ${note}`} />
-      <Fact name="Available">{memory && !offline ? bytes(memory.available) : "n/a"}</Fact>
+      {shown.isHost ? (
+        <>
+          <Fact name={<span title="Memory of running jobs, their containers and GitHub runners busy with a job">Jobs</span>}>{orNa(lastWith(samples, "jobs_memory"), bytes)}</Fact>
+          <Fact name="Swap">{swapText(lastWith(samples, "swap"))}</Fact>
+        </>
+      ) : <Fact name="Available">{memory && !offline ? bytes(memory.available) : "n/a"}</Fact>}
       {memory && !offline && (
         <Graph small className="flex-1" points={samples.map((s) => ({ t: s.t, v: s.memory?.used ?? null }))}
           max={memory.total} windowS={WINDOW_S} format={bytes} scale="Last 5 min, 0 to total"
@@ -129,6 +140,7 @@ export function DiskPanel({ shown, now }: { shown: Shown; now: number }) {
       })}
       {shown.isHost && (
         <>
+          <Fact name={<span title="Disk used by Docker: images, containers, volumes and build cache">Docker</span>}>{orNa(lastWith(samples, "docker_disk"), bytes)}</Fact>
           <Fact name="Containers">{last?.docker === null || last?.docker === undefined ? "n/a" : `${last.docker} running`}</Fact>
           <Fact name="Overhead">{last?.self ? `${last.self.cpu.toFixed(1)}% of a core, ${bytes(last.self.rss)}` : "-"}</Fact>
           <Fact name="Viewers">{last?.viewers ?? "-"}</Fact>

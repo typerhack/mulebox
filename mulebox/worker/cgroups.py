@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 
 from mulebox.common.proc import PROC
+from mulebox.worker.executor import UNIT_PREFIX
 
 ROOT = Path("/sys/fs/cgroup")
 _USAGE = "usage_usec"
@@ -40,6 +41,33 @@ def container_group(container: str, root: Path = ROOT) -> Path | None:
         if group.is_dir():
             return group
     return None
+
+
+def memory_bytes(group: Path) -> int | None:
+    """Memory used by everything in `group` now: `memory.current` less the page cache the kernel
+    can drop at once (`inactive_file` in `memory.stat`), the working set, as the machine's own
+    "used" leaves out what it could free. A build that reads many files is not counted for them."""
+    try:
+        current = int((group / "memory.current").read_text(encoding="ascii").strip())
+    except (OSError, ValueError):
+        return None
+    try:
+        for line in (group / "memory.stat").read_text(encoding="ascii").splitlines():
+            key, _, value = line.partition(" ")
+            if key == "inactive_file":
+                return max(0, current - int(value))
+    except (OSError, ValueError):
+        pass
+    return current
+
+
+def job_unit_groups(root: Path = ROOT) -> list[Path]:
+    """The groups of the agent job units running now (worker/executor.py `unit_name`)."""
+    try:
+        return [group for group in unit_group("x", root).parent.glob(f"{UNIT_PREFIX}*.service")
+                if group.is_dir()]
+    except OSError:
+        return []
 
 
 def cpu_seconds(group: Path) -> float | None:

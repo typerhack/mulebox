@@ -82,7 +82,8 @@ def data(store, staging):  # noqa: F811
 @pytest.fixture
 def hub(data, root_map):  # noqa: F811
     return Hub(data, EventBus(epoch="test"), root_map, sampler=FakeSampler(),
-               docker_count=no_docker, clock=lambda: NOW)
+               docker_list=no_docker, docker_disk=no_docker,
+               job_memory=lambda ids, runners: None, clock=lambda: NOW)
 
 
 @pytest.fixture

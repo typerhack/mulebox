@@ -62,6 +62,20 @@ def parse_memory(text: str) -> dict[str, int] | None:
     return {"total": total, "available": available, "used": max(0, total - available)}
 
 
+def parse_swap(text: str) -> dict[str, int] | None:
+    """total and used swap bytes from /proc/meminfo; None if a field is missing."""
+    fields = {}
+    for line in text.splitlines():
+        name, _, rest = line.partition(":")
+        parts = rest.split()
+        if name in ("SwapTotal", "SwapFree") and parts and parts[0].isdigit():
+            fields[name] = int(parts[0]) * 1024
+    if len(fields) != 2:
+        return None
+    return {"total": fields["SwapTotal"],
+            "used": max(0, fields["SwapTotal"] - fields["SwapFree"])}
+
+
 def read(path: Path) -> str | None:
     try:
         return path.read_text(encoding="ascii", errors="replace")

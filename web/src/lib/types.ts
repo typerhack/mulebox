@@ -143,6 +143,9 @@ export interface Sample {
   t: number;
   cpu?: number[] | null;
   memory?: { total: number; available: number; used: number } | null;
+  swap?: { total: number; used: number } | null;
+  jobs_memory?: number | null;
+  docker_disk?: number | null;
   self?: { cpu: number; rss: number } | null;
   disk?: Disk[] | null;
   docker?: number | null;

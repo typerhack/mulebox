@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.103.0 - 2026-11-11 - minor
+- The Memory and Disk boxes show, for the dashboard's own machine, what the mockup asked for (parking lot): memory used by jobs, as the working set (`memory.current` less droppable page cache) of job units, of runners busy with a GitHub job and of both's containers; swap; and Docker's disk use (`GET /system/df`, every 5 minutes). On the build machine they add under 0.1 ms of CPU a second.
+
 ## 0.102.0 - 2026-11-11 - minor
 - A GitHub run's page shows each step's length, live while it runs, and its result (passed, failed, cancelled or skipped) with its icon, from the runner's own diary (parking lot): the worker writes `mulebox: step at <time>: <name>` and `mulebox: step <result> at <time>: <name>` into the slot's log, and older logs still read. Checked against real runner diaries on the build machine (passed, skipped and cancelled steps).
 

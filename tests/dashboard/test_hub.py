@@ -1,6 +1,9 @@
 import asyncio
 
-from .conftest import NOW
+from mulebox.dashboard.events import EventBus
+from mulebox.dashboard.hub import Hub
+
+from .conftest import NOW, FakeSampler
 
 
 def test_queue_event_only_when_the_queue_changes(hub, run_job, finish_job):
@@ -67,3 +70,49 @@ def test_a_failing_sample_does_not_end_its_loop(hub):
         await asyncio.gather(task, return_exceptions=True)
     asyncio.run(go())
     assert len(calls) == 2
+
+
+def test_docker_steps_give_the_count_the_jobs_memory_and_the_disk_use(data, tmp_path):
+    work = tmp_path / "runners" / "build-1-app" / "_work" / "app"
+    listing = [{"Id": "a1", "Labels": {"mulebox.job": "job-x"}},
+               {"Id": "b2", "Labels": {"com.docker.compose.project.working_dir": str(work)}},
+               {"Id": "c3", "Labels": {}}]
+    seen = []
+
+    async def containers():
+        return listing
+
+    async def disk():
+        return 13_700_000_000
+
+    def memory(ids, runners):
+        seen.append((ids, runners))
+        return 2048
+
+    hub = Hub(data, EventBus(epoch="test"), {"runners": str(tmp_path / "runners")},
+              sampler=FakeSampler(), docker_list=containers, docker_disk=disk,
+              job_memory=memory, clock=lambda: NOW)
+    hub.bus.publish("queue", {"running": [{"kind": "runner", "runner": "build-1-app"},
+                                          {"kind": "job", "runner": None}]})
+
+    async def go():
+        await hub.docker_step()
+        await hub.docker_disk_step()
+        return await hub.metrics_step()
+    sample = asyncio.run(go())
+    assert seen == [(["a1", "b2"], ["build-1-app"])]
+    assert sample["docker"] == 3 and sample["jobs_memory"] == 2048
+    assert sample["docker_disk"] == 13_700_000_000
+
+
+def test_no_docker_is_no_count_and_still_reads_the_job_units(data):
+    seen = []
+
+    async def nothing():
+        return None
+
+    hub = Hub(data, EventBus(epoch="test"), {}, sampler=FakeSampler(), docker_list=nothing,
+              docker_disk=nothing, job_memory=lambda ids, runners: seen.append(ids) or 0,
+              clock=lambda: NOW)
+    asyncio.run(hub.docker_step())
+    assert hub.docker is None and hub.jobs_memory == 0 and seen == [[]]

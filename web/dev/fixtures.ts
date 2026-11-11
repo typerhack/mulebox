@@ -82,6 +82,7 @@ export function sample(t: number, seed = 0) {
   return {
     t, cpu: Array.from({ length: 8 }, (_, k) => Math.max(1, Math.min(99, wave(k)))),
     memory: { total: 32 * gib, used: (18 + 2 * Math.sin(t / 40)) * gib, available: 12 * gib },
+    swap: { total: 8 * gib, used: 0 }, jobs_memory: (11 + Math.sin(t / 40)) * gib, docker_disk: 65 * gib,
     self: { cpu: 0.5, rss: 44 * 1024 ** 2 }, docker: 6, viewers: 1,
     disk: [{ roots: ["cache", "jobs", "projects"], total: 256 * gib, used: 215 * gib, free: 41 * gib }],
   };

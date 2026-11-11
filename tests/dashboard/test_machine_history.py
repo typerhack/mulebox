@@ -60,8 +60,8 @@ def _metrics(store, staging, *urls, local_name="wrk-a"):
                                            version="0.9.0", **({"load": load} if load else {})),
                    NOW)
     data = DashboardData(store, staging, local_name=local_name)
-    hub = Hub(data, EventBus(epoch="test"), {}, sampler=FakeSampler(), docker_count=no_docker,
-              clock=lambda: NOW)
+    hub = Hub(data, EventBus(epoch="test"), {}, sampler=FakeSampler(), docker_list=no_docker,
+              docker_disk=no_docker, job_memory=lambda ids, runners: None, clock=lambda: NOW)
 
     async def go():
         await hub.machines_step()
