@@ -24,6 +24,9 @@ def register(sub: argparse._SubParsersAction) -> None:
                         help="make the host one more worker of this coordinator machine")
     parser.add_argument("--coordinator-address", metavar="TARGET",
                         help="how the worker reaches the coordinator, if not as this laptop does")
+    parser.add_argument("--no-skill", action="store_true",
+                        help="do not install the agent skill where there is none; "
+                             "out-of-date copies are still updated")
     parser.set_defaults(func=guarded(_setup))
 
 
@@ -45,6 +48,6 @@ def _setup(args: argparse.Namespace) -> int:
     except setup.SetupError as exc:
         _say(f"error: {exc}")
         return 1
-    for line in skill_install.refresh_here():
+    for line in skill_install.refresh_here(install=not args.no_skill):
         _say(line)
     return 0

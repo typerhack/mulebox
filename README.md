@@ -20,8 +20,12 @@ over ssh with a key. On the laptop:
 
 ```sh
 pipx install git+https://github.com/example-org/mulebox
-mulebox setup build-1          # the build machine's ssh name: installs it, then runs a first job
+mulebox setup <node>           # installs mulebox on your build machine, then runs a first job
 ```
+
+`<node>` is your build machine as you reach it with ssh, named as you like: a name from your
+`~/.ssh/config`, such as `mulebox setup homelab`, or `user@address`, such as
+`mulebox setup alice@192.168.1.50`. The dashboard shows the machine under its own hostname.
 
 Then, in any project:
 
@@ -45,16 +49,17 @@ Two kinds of machine:
   **worker**, which runs jobs. One node is also the **coordinator**: it holds the line of jobs
   and their history, and serves the dashboard.
 
-```
-dev machine (laptop)                     nodes (Linux build machines on your LAN)
---------------------                     ----------------------------------------
-                                         node 1: coordinator + worker
-mulebox check   ------- ssh ------->       one line of jobs, history, dashboard
-mulebox queue                              runs jobs in its own slots
-mulebox dashboard open                          ^              ^
-                                                | ssh          | ssh
-                                         node 2: worker   node 3: worker
-                                           asks the coordinator for the next job it can run
+```mermaid
+flowchart TB
+    dev["<b>Dev machine</b> (your laptop)<br/>you and your agents run <code>mulebox check</code>"]
+    subgraph nodes["Nodes, on your LAN"]
+        coord["<b>Node 1: coordinator + worker</b><br/>one line of jobs, history, the dashboard<br/>and slots that run jobs"]
+        w2["<b>Node 2: worker</b><br/>slots that run jobs"]
+        w3["<b>Node 3: worker</b><br/>slots that run jobs"]
+    end
+    dev -- "ssh: a job goes in,<br/>its output and exit code come back" --> coord
+    coord -- "a job, when the worker<br/>asks for one over ssh" --> w2
+    coord -- "a job, when the worker<br/>asks for one over ssh" --> w3
 ```
 
 - The dev machine only ever talks to the coordinator. It does not know how many nodes there are,
@@ -65,7 +70,7 @@ mulebox dashboard open                          ^              ^
 - The dashboard runs only on the coordinator. Workers send their CPU, memory and network readings
   with every heartbeat, so one page shows every node.
 - One node is enough to start: it is both coordinator and worker. A second joins with
-  `mulebox setup node-2 --worker-of build-1`. A node can be drained, resumed and removed
+  `mulebox setup <second-node> --worker-of <first-node>`. A node can be drained, resumed and removed
   (`mulebox machine`). More than one node has been tried with a stand-in container only, so far.
 
 ## The dashboard
@@ -133,7 +138,21 @@ All pictures come from made-up data (`tools/screenshots.py`).
 
 ## For coding agents
 
-[docs/agents.md](docs/agents.md) is written for AI coding agents: everyday use, setting a project
+mulebox ships a skill for Claude Code, [SKILL.md](mulebox/client/skill/SKILL.md), that teaches an
+agent to send its work through mulebox in any project. You do not install it yourself:
+
+```sh
+mulebox setup <node>           # installs the skill in every Claude config folder, updates old copies
+mulebox skill status           # which copies you have, and whether they match this mulebox
+mulebox skill update           # bring them up to date by hand
+```
+
+The skill is part of mulebox, so the newest skill comes with the newest mulebox:
+`pipx upgrade mulebox`, then `mulebox setup <node>` upgrades the node and the skill together. An
+agent whose skill is out of date is told so by mulebox itself and updates it. Details:
+[install.md](docs/install.md#skill-for-coding-agents).
+
+Agents without skills can read [docs/agents.md](docs/agents.md): everyday use, setting a project
 up (`.mulebox.yml`, the agent rule), and moving GitHub Actions to mulebox runners. Point an agent
 at it: "read mulebox's docs/agents.md and set this project up".
 

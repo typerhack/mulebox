@@ -120,7 +120,8 @@ same error and a non-zero exit code you would get locally, and undo it.
 
 - Add the agent rule to the project's `AGENTS.md` or `CLAUDE.md`. The text to paste is in
   [agents.md, section 2, step 4](agents.md#agent-rule).
-- With Claude Code, install the skill once for all projects: `mulebox skill install`
+- With Claude Code, the skill is already installed for all projects: `mulebox setup` put it in
+  every Claude config folder (`mulebox skill install` does it by hand)
   ([details](install.md#skill-for-coding-agents)).
 - Or hand all of section 3 to the agent: "read mulebox's docs/agents.md and set this project
   up". That file is written for it.

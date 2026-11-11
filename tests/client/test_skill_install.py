@@ -187,13 +187,22 @@ def test_the_skill_tells_the_agent_to_update_itself():
     assert "run `mulebox skill update`" in PACKAGED and "read the\nSKILL.md" in PACKAGED
 
 
-def test_setup_refresh_updates_old_copies_and_leaves_the_rest(home):
+def test_setup_refresh_updates_old_copies_and_installs_missing_ones(home):
     old = put(folder_in(home, ".claude"), OLD)
-    folder_in(home, ".claude-work")  # no copy there: none is added
+    folder_in(home, ".claude-work")  # no copy there: setup installs one
     lines = si.refresh_here()
+    assert old.read_text() == PACKAGED
+    assert si.skill_path(home / ".claude-work").read_text() == PACKAGED
+    assert len(lines) == 2 and "updated" in lines[0] and "installed" in lines[1]
+    assert si.refresh_here() == []
+
+
+def test_setup_refresh_without_install_only_updates(home):
+    old = put(folder_in(home, ".claude"), OLD)
+    folder_in(home, ".claude-work")
+    lines = si.refresh_here(install=False)
     assert old.read_text() == PACKAGED and len(lines) == 1 and "updated" in lines[0]
     assert not si.skill_path(home / ".claude-work").exists()
-    assert si.refresh_here() == []
 
 
 def test_the_state_a_submit_reports(home):

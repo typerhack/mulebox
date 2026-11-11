@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.106.0 - 2026-11-11 - minor
+- `mulebox setup` installs the agent skill in every Claude config folder on the laptop that has none, as well as updating old copies (the user's ask); `--no-skill` installs none. install.md, getting-started.md and the README say so, with a link to SKILL.md and how the newest skill comes with the newest mulebox.
+- README: commands name `<node>`, explained once, in place of `build-1`; the architecture as a Mermaid diagram (the user found the text drawing hard to read), the dev machine on top, the coordinator node handing jobs to worker nodes below.
+
 ## 0.105.0 - 2026-11-11 - minor
 - README as a product page (the user's ask): a two-step install near the top, the architecture in the dev machine and node terms (the coordinator holds the line and the dashboard, workers ask it for jobs), and ten screenshots: the queue in both themes, a job and a GitHub run, machines, history, statistics, the compact CPU view, a phone and the design system's reference page.
 - `tools/screenshots.py` takes those pictures from the dashboard's stand-in data in headless Chrome; `MULEBOX_MOCK_CLEAN` leaves the stand-in's out-of-step notices out, and its machines report the checkout's own version.

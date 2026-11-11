@@ -446,8 +446,12 @@ machine from taking CI jobs; it only weighs the job above them.
 ## Skill for coding agents
 
 The package ships a skill that teaches a coding agent to work through mulebox in any project.
-It is short on purpose: it sends the agent to `mulebox contract`. For Claude Code, install it
-for all your projects:
+It is short on purpose: it sends the agent to `mulebox contract`. You can read it in
+[mulebox/client/skill/SKILL.md](../mulebox/client/skill/SKILL.md).
+
+For Claude Code, `mulebox setup` installs it for all your projects: into every Claude config
+folder on the laptop that has no copy yet, and it updates the copies that are out of date.
+`mulebox setup <host> --no-skill` installs none (out-of-date copies are still updated). By hand:
 
 ```sh
 mulebox skill install    # into every Claude config folder that exists here
@@ -459,9 +463,11 @@ These cover `~/.claude`, `~/.claude-work` and the folder `CLAUDE_CONFIG_DIR` nam
 exist; `--config-dir <folder>` names one instead, and may repeat. `update` replaces hand edits
 in a copy, and leaves alone a skill folder that is a link.
 
-The skill moves with mulebox, so its version is always the laptop's mulebox. Upgrading goes:
-upgrade mulebox on the laptop, then `mulebox setup <host>` installs that same version on the
-build machine and, at its end, updates the out-of-date skill copies on the laptop. A copy
+The skill moves with mulebox, so its version is always the laptop's mulebox: there is no
+separate download, and the newest skill is the newest mulebox's. Upgrading goes: upgrade mulebox
+on the laptop (`pipx upgrade mulebox`, or a new binary), then `mulebox setup <host>` installs that
+same version on the build machine and, at its end, updates the out-of-date skill copies on the
+laptop. A copy
 that is still old, after an upgrade without `setup`, is caught by the session: the skill tells
 the agent to run `mulebox contract` first, which says on stderr when an installed copy differs
 from this mulebox's; the agent then runs `mulebox skill update`, reads the skill again and tells

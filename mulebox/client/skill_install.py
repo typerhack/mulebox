@@ -128,17 +128,20 @@ def state_here() -> str:
     return "current" if any(copy.state == CURRENT for copy in copies) else "none"
 
 
-def refresh_here() -> list[str]:
-    """`mulebox setup`: update this user's out-of-date copies, so the skill moves with mulebox;
-    one line per copy updated or refused. Missing and linked copies are left as they are."""
+def refresh_here(install: bool = True) -> list[str]:
+    """`mulebox setup`: put this mulebox's skill into this user's Claude config folders, so the
+    skill moves with mulebox: out-of-date copies are updated and, unless `install` is off
+    (`--no-skill`), a folder with none gets one. One line per copy written or refused; current
+    and linked copies are left as they are."""
     packaged, lines = packaged_text(), []
     for copy in inspect_all(config_folders(os.environ, Path.home()), packaged):
-        if copy.state in (BEHIND, DIFFERS):
+        if copy.state in (BEHIND, DIFFERS) or (install and copy.state == MISSING):
+            done = "installed in" if copy.state == MISSING else "updated to this mulebox's in"
             try:
                 write(copy.folder, packaged)
-                lines.append(f"the mulebox skill in {copy.folder} is updated to this mulebox's")
+                lines.append(f"the mulebox skill is {done} {copy.folder}")
             except OSError as exc:
-                lines.append(f"could not update the mulebox skill in {copy.folder}: {exc}")
+                lines.append(f"could not write the mulebox skill in {copy.folder}: {exc}")
     return lines
 
 
