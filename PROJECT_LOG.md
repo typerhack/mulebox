@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.104.1 - 2026-11-11 - patch
+- Tests: the project-pause tests use `example-app`, the docs' sample name, in place of a name that echoed a real project. A scan of the whole history before going public found no addresses, MAC addresses, host or user names, home paths, keys or tokens beyond made-up test values.
+
 ## 0.104.0 - 2026-11-11 - minor
 - The CPU box has two views (the user's idea): details, a meter per core as before and the default, and compact, an All meter, the busiest cores by number (six, or four below 1101px, kept steady until another core is 10 points busier) and one line for the others with their average and highest. A small switch beside the box's note changes it, remembered per browser, shown only when compact would hide a core. Seen on the stand-in API with 32 cores: the box kept the Machines box's height at 1440px, and at 390px nothing was cut or scrolled sideways.
 - `MULEBOX_MOCK_CORES` sets the stand-in machine's core count for `npm run dev`.
