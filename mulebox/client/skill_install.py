@@ -23,6 +23,8 @@ from dataclasses import dataclass
 from importlib import resources
 from pathlib import Path
 
+from mulebox.common import upgrade
+
 SKILL_NAME = "mulebox"
 SKILL_FILE = "SKILL.md"
 ENV_FOLDER = "CLAUDE_CONFIG_DIR"
@@ -173,7 +175,7 @@ def update(copy: Copy, packaged: str) -> str:
         write(copy.folder, packaged)
         return "updated"
     if copy.state == AHEAD:
-        return "left alone: it is newer than this mulebox; upgrade mulebox"
+        return f"left alone: it is newer than this mulebox; upgrade mulebox: {upgrade.command()}"
     if copy.state == LINKED:
         return "left alone: it is a link; update what it points to"
     if copy.state == MISSING:

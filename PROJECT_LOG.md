@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.1.0 - 2026-11-11 - minor
+- mulebox goes to PyPI, the user's choice: `uv tool install mulebox` (uv brings its own Python) or `pipx install mulebox` with Python 3.12 or newer. The release workflow checks the tag against VERSION, builds the dashboard and the wheel, installs and runs it, and publishes it by trusted publishing (environment `pypi`); `tools/pypi_readme.py` points the README's links at the tag for PyPI's page. The binaries are dropped (`tools/build_binary.py`, the `binary` extra): macOS kills an unsigned binary a browser downloaded, and there is no Apple Developer ID.
+- Upgrade messages name the command: `mulebox/common/upgrade.py` says `uv tool upgrade mulebox`, `pipx upgrade mulebox` or `git pull` from how mulebox was installed, used by `doctor`, `skill update`, the dashboard's version notice and the protocol error; a machine is upgraded with `mulebox setup <host>`.
+- docs/releasing.md: a release is made when the user says so, at the version `main` is on; 1.1.0 is the first on PyPI. Install, getting-started and the README follow; the README's status says 1.x and stable. Reviewed by a second model (gpt-6.1-sol), whose points were fixed.
+
 ## 1.0.1 - 2026-11-11 - patch
 - The 1.0.0 release: CI and the release workflow passed on `v1.0.0`; both binaries were downloaded from the draft and run (macOS with no Python on the path, listing the real build machine; Linux on the build machine), and the wheel was added. The release is published by the user.
 - install.md: the macOS binary has an ad-hoc signature, not an Apple Developer ID, so macOS kills it when a browser downloaded it; `xattr -dr com.apple.quarantine` fixes that, checked on a copy given the browser's mark.

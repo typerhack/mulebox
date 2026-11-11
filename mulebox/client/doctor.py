@@ -11,10 +11,11 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
-from mulebox.common import disk
+from mulebox.common import disk, upgrade
 from mulebox.common.config import ProjectConfig
 from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
+from mulebox.common.versions import compare
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 TOPIC_WIDTH = 9
@@ -62,13 +63,16 @@ def versions(client: str, facts: Facts) -> list[Finding]:
     if machine == client:
         out = [Finding(OK, "version", f"client and build machine both run {client}")]
     else:
+        fix = ("upgrade the laptop: " + upgrade.command() if compare(client, machine) == -1
+               else "bring the machine up with `mulebox setup <host>`")
         out = [Finding(WARN, "version", f"client {client}, build machine {machine}: newer "
-                       "options may be ignored or refused; upgrade the older side")]
+                       f"options may be ignored or refused; {fix}")]
     for worker in facts.get("workers") or ():
         reported = worker.get("version")
         if reported and reported != machine:
             out.append(Finding(WARN, "version", f"worker {worker.get('worker')} runs {reported}, "
-                               f"its coordinator {machine}; upgrade the older side"))
+                               f"its coordinator {machine}; run `mulebox setup` for the "
+                               "older one from a laptop on the newer mulebox"))
     return out
 
 
@@ -157,7 +161,7 @@ def skills(copies: list[Copy], schema: int) -> list[Finding]:
                                "then read the skill again"))
         elif copy.state == AHEAD:
             out.append(Finding(WARN, "skill", f"the copy in {copy.folder} is newer than this "
-                               "mulebox; upgrade mulebox"))
+                               f"mulebox; upgrade mulebox: {upgrade.command()}"))
         elif copy.state != MISSING:
             out.append(Finding(OK, "skill", f"{copy.state} in {copy.folder}"))
     return out

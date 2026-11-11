@@ -88,19 +88,39 @@ def test_web_packages_are_pinned_to_exact_versions():
     assert (REPO / "web" / "package-lock.json").is_file()
 
 
-def test_a_release_runs_on_tags_alone_and_gives_only_its_upload_the_token():
+def test_a_release_runs_on_tags_alone_and_only_its_publish_job_can_prove_who_it_is():
     workflow = load(REPO / ".github" / "workflows" / "release.yml")
     assert workflow["on"] == {"push": {"tags": ["v*"]}}
-    with_token = [step for step in steps(workflow) if "GH_TOKEN" in step.get("env", {})]
-    assert [step["name"] for step in with_token] == ["Open a draft release",
-                                                     "Upload to the draft release"]
-    assert "--draft" in with_token[0]["run"]
-    assert workflow["jobs"]["build"]["steps"][-1] is with_token[1]
+    build, publish = workflow["jobs"]["build"], workflow["jobs"]["publish"]
+    assert "permissions" not in build and publish["permissions"] == {"id-token": "write"}
+    assert publish["environment"]["name"] == "pypi"  # the name PyPI's trusted publisher holds
+    assert all("run" not in step and "checkout" not in step["uses"] for step in publish["steps"])
+    assert publish["steps"][-1]["uses"].startswith("pypa/gh-action-pypi-publish@")
+    assert not [step for step in steps(workflow) if "GH_TOKEN" in step.get("env", {})]
 
 
-def test_a_release_file_is_named_for_its_system():
-    spec = importlib.util.spec_from_file_location("build_binary", REPO / "tools" / "build_binary.py")
+def test_a_release_checks_its_tag_and_that_the_wheel_holds_the_dashboard():
+    build = load(REPO / ".github" / "workflows" / "release.yml")["jobs"]["build"]
+    names = [step.get("name") for step in build["steps"]]
+    assert names.index("The tag is the version") < names.index("Build") < names.index("Try it")
+    tried = build["steps"][names.index("Try it")]["run"]
+    assert "mulebox/dashboard/app/index.html" in tried and "--version" in tried
+
+
+def test_the_readme_on_pypi_links_to_the_release_on_github():
+    spec = importlib.util.spec_from_file_location("pypi_readme", REPO / "tools" / "pypi_readme.py")
     tool = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tool)
-    assert tool.archive_name("1.0.0", "Darwin", "arm64") == "mulebox-1.0.0-macos-arm64.tar.gz"
-    assert tool.archive_name("1.0.0", "Linux", "x86_64") == "mulebox-1.0.0-linux-x86_64.tar.gz"
+    text = ('[Install](docs/install.md#2-install-on-the-laptop) ![q](docs/images/queue-dark.png) '
+            '<img src="docs/images/phone-dark.png"> [web](https://example.com) [up](#install)')
+    assert tool.absolute(text, "v1.1.0") == (
+        "[Install](https://github.com/typerhack/mulebox/blob/v1.1.0/docs/install.md#2-install-on-the-laptop) "
+        "![q](https://raw.githubusercontent.com/typerhack/mulebox/v1.1.0/docs/images/queue-dark.png) "
+        '<img src="https://raw.githubusercontent.com/typerhack/mulebox/v1.1.0/docs/images/phone-dark.png"> '
+        "[web](https://example.com) [up](#install)")
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    assert not re.search(r"\]\((?!https?:|#)|(?:src|srcset|href)=\"(?!https?:|#)",
+                         tool.absolute(readme, "v1.0.0"))
+    build = load(REPO / ".github" / "workflows" / "release.yml")["jobs"]["build"]
+    names = [step.get("name") for step in build["steps"]]
+    assert names.index("Point the README's links at GitHub") < names.index("Build")

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from mulebox.common import upgrade
 from mulebox.common.versions import compare
 from mulebox.coordinator.workers import is_online
 
@@ -35,7 +36,7 @@ def _client(client: dict[str, Any], version: str) -> list[dict[str, str]]:
         out.append({"kind": "client", "level": WARNING, "name": name,
                     "text": f"Laptop {name} runs mulebox {found}, the build machine {version}.",
                     "fix": ("Run `mulebox setup <host>` from it to bring the machine up."
-                            if newer else "Upgrade mulebox on it.")})
+                            if newer else f"Upgrade mulebox on it: {upgrade.EITHER}.")})
     if client["skill"] == "out_of_date":
         out.append({"kind": "skill", "level": WARNING, "name": name,
                     "text": f"The mulebox skill on {name} is out of date.",

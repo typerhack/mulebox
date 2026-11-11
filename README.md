@@ -10,8 +10,9 @@ output and the exit code as if the command had run locally.
 
 ![The mulebox dashboard: CPU, memory, disk and machines on top, the jobs running and waiting below](docs/images/queue-dark.png)
 
-Status: **in daily use on one build machine, not yet at 1.0** (version in [VERSION](VERSION)).
-Behaviour can still change between versions; what is open is in the [roadmap](docs/phases.md).
+Status: **1.x, in daily use on a real build machine** (version in [VERSION](VERSION)). The
+commands, `.mulebox.yml` and the config files are stable: a change that breaks them needs 2.0.
+What is open is in the [roadmap](docs/phases.md).
 
 ## Install
 
@@ -38,9 +39,12 @@ The page is written for this: it says which steps need you (copying an ssh key, 
 On the laptop:
 
 ```sh
-pipx install git+https://github.com/typerhack/mulebox
+uv tool install mulebox        # or, with Python 3.12 or newer: pipx install mulebox
 mulebox setup <node>           # installs mulebox on your build machine, then runs a first job
 ```
+
+mulebox is on [PyPI](https://pypi.org/project/mulebox/). uv brings its own Python, so the laptop
+needs none; to get uv: `brew install uv`, or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
 `<node>` is your build machine as you reach it with ssh, named as you like: a name from your
 `~/.ssh/config`, such as `mulebox setup homelab`, or `user@address`, such as
@@ -54,8 +58,8 @@ mulebox check                  # runs the project's checks on the build machine
 mulebox dashboard open         # the dashboard in your browser, through an ssh tunnel
 ```
 
-No Python on the laptop? There is a binary for macOS on Apple silicon and Linux on x86-64, and an
-install by hand from a clone: [install.md](docs/install.md#2-install-on-the-laptop). The whole
+To upgrade later: `uv tool upgrade mulebox` (or `pipx upgrade mulebox`), then
+`mulebox setup <node>`. From a clone, and the details: [install.md](docs/install.md#2-install-on-the-laptop). The whole
 path from nothing to a passing project, in order: [getting-started.md](docs/getting-started.md).
 
 ## How it works
@@ -365,7 +369,8 @@ mulebox skill update           # bring them up to date by hand
 ```
 
 The skill is part of mulebox, so the newest skill comes with the newest mulebox:
-`pipx upgrade mulebox`, then `mulebox setup <node>` upgrades the node and the skill together. An
+`uv tool upgrade mulebox` (or `pipx upgrade mulebox`), then `mulebox setup <node>` upgrades the
+node and the skill together. An
 agent whose skill is out of date is told so by mulebox itself and updates it. Details:
 [install.md](docs/install.md#skill-for-coding-agents).
 

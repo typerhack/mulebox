@@ -147,8 +147,8 @@ def write_client_config(target: str, say: Say) -> None:
 
 
 def _this_mulebox() -> list[str]:
-    """How to run the mulebox that is running: a downloaded one has no Python to call."""
-    return [sys.executable] if getattr(sys, "frozen", False) else [sys.executable, "-m", "mulebox"]
+    """How to run the mulebox that is running."""
+    return [sys.executable, "-m", "mulebox"]
 
 
 def _git(folder: str, *args: str) -> None:

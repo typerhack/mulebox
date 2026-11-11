@@ -88,6 +88,9 @@ def test_versions_warn_on_a_difference_only():
     assert [f.level for f in same] == ["ok"]
     other = doctor.versions("1.1.0", {"version": "1.0.0", "workers": []})
     assert other[0].level == "warn" and "client 1.1.0, build machine 1.0.0" in other[0].text
+    assert "mulebox setup <host>" in other[0].text
+    behind = doctor.versions("1.0.0", {"version": "1.1.0", "workers": []})
+    assert "upgrade the laptop: `" in behind[0].text
 
 
 def test_versions_warn_about_a_worker_behind_its_coordinator():

@@ -137,33 +137,27 @@ reads the queue's database read-only and never changes anything.
 
 ## 2. Install on the laptop
 
-Any of these three. The binary needs no Python on the laptop; the build machine always needs it.
+mulebox is on [PyPI](https://pypi.org/project/mulebox/). Install it with one of these; the build
+machine always needs its own Python 3.12 or newer, and `mulebox setup` installs mulebox there.
 
-**With pipx** (or `uv tool install`), which also updates easily:
-
-```sh
-pipx install git+https://github.com/typerhack/mulebox
-```
-
-**As a binary**, for macOS on Apple silicon and Linux on x86-64. Take the file for your system from
-the [releases page](https://github.com/typerhack/mulebox/releases). Download it with `curl` as
-below: the binaries are not signed, so macOS refuses a file a browser fetched. It is a folder,
-because a single file took 10 s to start on macOS:
+**With uv**, if you have uv, or no Python 3.12 or newer on the laptop: uv fetches a Python of its
+own for mulebox and leaves the system's alone.
 
 ```sh
-curl -fsSLO https://github.com/typerhack/mulebox/releases/download/v1.0.0/mulebox-1.0.0-macos-arm64.tar.gz
-mkdir -p ~/.local/share ~/.local/bin
-tar xzf mulebox-1.0.0-macos-arm64.tar.gz -C ~/.local/share
-ln -sf ~/.local/share/mulebox/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
+brew install uv                                      # or: curl -LsSf https://astral.sh/uv/install.sh | sh
+uv tool install mulebox
 ```
 
-The macOS binary has only an ad-hoc signature, not an Apple Developer ID, so macOS kills it
-(`zsh: killed`) when a browser downloaded it: the browser marks the file as from the internet, and
-`curl` does not. If you used a browser, remove that mark once, then it runs:
+**With pipx**, if the laptop has Python 3.12 or newer and pipx (`brew install pipx`, or
+`sudo apt install pipx` on Ubuntu):
 
 ```sh
-xattr -dr com.apple.quarantine ~/.local/share/mulebox
+pipx install mulebox
 ```
+
+Both put `mulebox` in `~/.local/bin`; if the shell does not find it, `uv tool update-shell` or
+`pipx ensurepath` adds that folder to your `PATH`. The package carries the dashboard's built
+front end, so the laptop needs no Node.js.
 
 **By hand**, from a clone. Give it a folder of its own: plain `pip install --user` is refused by
 most current Python installs, Homebrew's and Ubuntu's among them
@@ -179,7 +173,7 @@ ln -s ~/.mulebox-client/bin/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin
 A clone holds the dashboard's front end as source (`web/`), so installing from one needs Node.js
 22 and `npm` on the laptop: `mulebox setup` builds the front end before it installs a machine, and
 stops with what to install when the build is missing or out of date and `npm` is not there. The
-binary and a released wheel already carry the build and need no Node.
+package from PyPI already carries the build.
 
 Then run `mulebox setup` (section 1). It writes `~/.config/mulebox/client.toml`; to change it later, the template is
 [mulebox/machine/client.toml.example](../mulebox/machine/client.toml.example):
@@ -353,7 +347,8 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 
 ## Upgrade
 
-Update the laptop's own client (`pipx upgrade mulebox`, a new binary, or `git pull` and the same
+Update the laptop's own client to the newest release on PyPI, with the tool that installed it
+(`uv tool upgrade mulebox` or `pipx upgrade mulebox`; from a clone, `git pull` and the same
 `pip install .`), then send the same version to the machine:
 
 ```sh
@@ -473,7 +468,7 @@ in a copy, and leaves alone a skill folder that is a link.
 
 The skill moves with mulebox, so its version is always the laptop's mulebox: there is no
 separate download, and the newest skill is the newest mulebox's. Upgrading goes: upgrade mulebox
-on the laptop (`pipx upgrade mulebox`, or a new binary), then `mulebox setup <host>` installs that
+on the laptop (`uv tool upgrade mulebox` or `pipx upgrade mulebox`), then `mulebox setup <host>` installs that
 same version on the build machine and, at its end, updates the out-of-date skill copies on the
 laptop. A copy
 that is still old, after an upgrade without `setup`, is caught by the session: the skill tells

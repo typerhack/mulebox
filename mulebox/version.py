@@ -15,7 +15,7 @@ _ROOT = Path(__file__).resolve().parent.parent
 _VERSION_FILE = _ROOT / "VERSION"
 
 
-def _in_checkout() -> bool:
+def in_checkout() -> bool:
     return _VERSION_FILE.is_file() and (_ROOT / "pyproject.toml").is_file()
 
 
@@ -25,7 +25,7 @@ def source_version() -> str:
 
 
 def get_version() -> str:
-    if _in_checkout():
+    if in_checkout():
         return _VERSION_FILE.read_text(encoding="utf-8").strip()
     return _installed_version()
 

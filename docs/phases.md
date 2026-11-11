@@ -625,12 +625,14 @@ toolchains installed by hand. Done for all of it when: M6.2, a stranger, passes.
       2026-11-06 (0.61.0): on a real machine a job installed node in 48 s while a job on the other
       slot ran in 14 s, the next job started in under 2 s, a cancel took 2 s, a version that does not
       exist exited 5 with the reason, and pnpm installed once it got the machine's `[job_env]`.
-- [~] M17.4 The client installs in one line, with no clone: pipx, a binary, or by hand, the user's
-      choice on 2026-11-06. Built 2026-11-06 (0.62.0): on macOS, a pip install and the unpacked binary
-      each ran `mulebox setup` and a job on a real machine, the binary with no Python on its path.
-      The Linux binary ran in M17.5. Not run: pipx itself and the release workflow, which needs a
-      tag. Open: the repository going public, which is what makes the pipx line and the releases
-      page work; not yet, the user's call on 2026-11-06.
+- [~] M17.4 The client installs in one line, with no clone: from PyPI, `uv tool install mulebox`
+      (uv brings its own Python) or `pipx install mulebox`, the user's choice on 2026-11-11. The
+      binaries of 2026-11-06 (0.62.0) were dropped in 1.1.0: macOS kills an unsigned binary a browser
+      downloaded, there is no Apple Developer ID, and mulebox is a Python project. Built 2026-11-11
+      (1.1.0): the release workflow publishes to PyPI by trusted publishing; a wheel built the same
+      way held the dashboard, passed `twine check` and ran under `uv tool install` with uv's own
+      Python. Done when: after the first release, `uv tool install mulebox` and `pipx install
+      mulebox` from PyPI on a clean laptop each run `mulebox setup` and a job on a real machine.
 - [x] M17.5 Clean-machine run: a fresh Linux machine and a fresh project, docs only, all failures
       fixed. Done 2026-11-06 (0.62.1), with no spare machine, the user's choice: two throwaway
       containers, a blank Ubuntu with systemd and sshd as the build machine, and a laptop with no

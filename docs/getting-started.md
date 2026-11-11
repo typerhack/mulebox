@@ -10,7 +10,7 @@ the user `alice` and the project `example-app`.
 ## What you need
 
 - A Linux build machine with systemd, git, Python 3.12 or newer, and a user you can log in as.
-- A macOS or Linux laptop with git, and Python 3.12 or newer unless you use the binary.
+- A macOS or Linux laptop with git, and either uv or Python 3.12 or newer with pipx.
 - Login from the laptop to the build machine with an ssh key, and no prompts: mulebox never
   answers one. `ssh build-1 true` must print nothing and ask nothing. If your key has a
   passphrase, load it into your ssh agent first.
@@ -44,8 +44,11 @@ root. Use it for projects you trust, on a network you trust.
 
 ## 1. Install
 
-1. Get mulebox on the laptop: with pipx, as a binary, or by hand from a clone
-   ([install.md, section 2](install.md#2-install-on-the-laptop)).
+1. Get mulebox on the laptop, from PyPI ([install.md, section 2](install.md#2-install-on-the-laptop)):
+   `uv tool install mulebox` if `uv` is there or the laptop has no Python 3.12 or newer (uv
+   brings its own; get uv with `brew install uv` or
+   `curl -LsSf https://astral.sh/uv/install.sh | sh`), else `pipx install mulebox`. Check with
+   `mulebox --version`.
 2. Install the build machine, from the laptop: `mulebox setup build-1` (`build-1` is whatever
    you would type after `ssh`: a `Host` alias, an address, or `alice@192.168.1.50`, which works
    without the ssh config entry). It installs everything

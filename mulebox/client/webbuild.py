@@ -4,7 +4,7 @@ The front end lives in `web/` at the repository root and builds into `mulebox/da
 static files the dashboard serves (dashboard/pages.py). A build machine never needs Node: the
 laptop that runs `mulebox setup` builds, when it can.
 
-- No `web/` beside the package (a pip install, the binary): nothing to do; the package already
+- No `web/` beside the package (an install from PyPI): nothing to do; the package already
   holds whatever build it was shipped with.
 - The build is there and newer than every source file: nothing to do, npm or not.
 - Otherwise it is built, which needs Node.js and npm; without them this stops with how to get

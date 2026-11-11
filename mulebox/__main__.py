@@ -1,4 +1,4 @@
-"""`python -m mulebox`, and what the downloadable binary starts (tools/build_binary.py)."""
+"""`python -m mulebox`."""
 
 import sys
 

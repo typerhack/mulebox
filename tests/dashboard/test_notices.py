@@ -29,7 +29,7 @@ def test_each_kind_with_its_fix():
     assert [n["kind"] for n in found] == ["worker", "client", "skill", "client"]
     assert [n["level"] for n in found] == ["danger", "warning", "warning", "warning"]
     assert "build-1 runs mulebox 0.81.0, the coordinator 0.82.0" in found[0]["text"]
-    assert found[1]["fix"] == "Upgrade mulebox on it."
+    assert "pipx upgrade mulebox" in found[1]["fix"]
     assert "mulebox skill update" in found[2]["fix"]
     assert "mulebox setup <host>" in found[3]["fix"]
 

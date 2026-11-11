@@ -6,8 +6,8 @@ The contract for `mulebox/dashboard/`, `mulebox/common/status.py` and
 ## The front end (`dashboard/pages.py`, `web/`)
 
 - **React** (M14.10): source in `web/` at the repository root ([web/README.md](../web/README.md)),
-  built by `npm run build` into `mulebox/dashboard/app/` (not in git; in the wheel and the
-  binary). `/` serves `app/index.html` and its files are under `/app/`; it is the only
+  built by `npm run build` into `mulebox/dashboard/app/` (not in git; in the wheel on
+  PyPI). `/` serves `app/index.html` and its files are under `/app/`; it is the only
   front end.
 - **Without a build** (a checkout nobody built), `/` and `/login` answer 503 with a short page
   that says how to get one: a release, or `npm ci` and `npm run build` in `web/`. The API and

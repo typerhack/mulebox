@@ -26,7 +26,7 @@ builds it first.
 - `mulebox setup` builds it on the laptop before it makes the wheel it sends, when the build is
   missing or older than a file under `web/` (`mulebox/client/webbuild.py`). Without `npm` it
   stops and names Node.js and npm; a build that is already fresh needs neither.
-- The release workflow builds it before the binary, which carries the package's files.
+- The release workflow builds it before the wheel it publishes to PyPI.
 - A wheel made by hand needs it built first: `(cd web && npm ci && npm run build)`.
 
 Packages are pinned to exact versions in `web/package.json`, with `package-lock.json`
@@ -57,41 +57,35 @@ committed; a test holds that. To update one, change both with `npm install --sav
 `MAJOR.MINOR.PATCH`, in [VERSION](../VERSION) only. Every change bumps it in its own commit, with
 an entry in [PROJECT_LOG.md](../PROJECT_LOG.md), so a commit's subject already names its version.
 
-**Only MAJOR releases get a tag.** The user declares them; no agent or contributor bumps MAJOR on
-their own. PATCH and MINOR versions need no release step.
+**A release is made when the user says so**, at whatever version `main` is on; no agent or
+contributor releases on their own. Only the user declares a MAJOR version. The versions between
+releases need no release step: they are on `main`, and a clone installs them.
 
-## Making a MAJOR release
+## Making a release
 
-Only after the user has declared it.
+Only after the user has said to release.
 
 1. Everything for the release is merged, and `main` is green in CI.
-2. For the first public release, the open tasks of the roadmap's "Open-source readiness" are
-   done: docs, the security review and the scan of the history for personal data.
-3. Set `VERSION` (for example `1.0.0`), add the log entry, mark the roadmap and commit, with the
-   subject starting with the new version. Let CI pass on that commit.
-4. Tag that commit and push the tag:
+2. `VERSION` is the version to release, with its log entry, committed with the subject starting
+   with that version. For a new MAJOR, the user has declared it. Let CI pass on that commit.
+3. Tag that commit and push the tag:
 
    ```sh
-   git tag -a v1.0.0 -m "mulebox 1.0.0"
-   git push origin v1.0.0
+   git tag -a v1.1.0 -m "mulebox 1.1.0"
+   git push origin v1.1.0
    ```
 
-5. The tag starts [.github/workflows/release.yml](../.github/workflows/release.yml), which builds
-   the binaries for macOS on Apple silicon and Linux on x86-64 and puts them on a draft release.
-   Add the wheel, write the notes from the log, and publish it:
+4. The tag starts [.github/workflows/release.yml](../.github/workflows/release.yml). It checks
+   that the tag is `VERSION`, builds the dashboard's front end and the wheel, with the README's
+   links pointed at the tag on GitHub (`tools/pypi_readme.py`, as PyPI has none of the files),
+   installs the wheel and runs it, then publishes it to
+   [PyPI](https://pypi.org/project/mulebox/). There is no token: PyPI trusts the workflow
+   through trusted publishing, set on PyPI for `typerhack/mulebox`, `release.yml` and the
+   repository environment `pypi`, and only the publish job may ask for that identity.
+5. Install it from PyPI on a laptop, `uv tool install mulebox` or `uv tool upgrade mulebox`,
+   run `mulebox setup` from it and a real project through it: [install.md,
+   Upgrade](install.md#upgrade).
 
-   ```sh
-   (cd web && npm ci && npm run build)    # the dashboard's front end goes into the wheel
-   python -m pip wheel --no-deps -w dist .
-   gh release upload v1.0.0 dist/mulebox-1.0.0-py3-none-any.whl
-   gh release edit v1.0.0 --draft=false --notes-file notes.md
-   ```
-
-   To build a binary yourself: `pip install '.[binary]' && python tools/build_binary.py`. Update
-   the version in the example in [install.md](install.md#2-install-on-the-laptop) with the release.
-
-6. Install a binary on a laptop, run `mulebox setup` from it and run a real project through it:
-   [install.md, Upgrade](install.md#upgrade).
-
-A tag is never moved or deleted once pushed. If a release is wrong, fix it in a new version.
-mulebox is not published to a package index; that is a decision for a later release.
+A version on PyPI cannot be uploaded twice, and a tag is never moved or deleted once pushed. If
+a release is wrong, fix it in a new version. 1.0.0 was tagged before mulebox was on PyPI; 1.1.0
+is the first release there.

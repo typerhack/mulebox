@@ -16,15 +16,29 @@ dependencies = [
     "aiohttp==3.14.5",  # dashboard (M2)
 ]
 
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Software Development :: Testing",
+]
+
+[project.urls]
+Homepage = "https://github.com/typerhack/mulebox"
+Documentation = "https://github.com/typerhack/mulebox/tree/main/docs"
+Issues = "https://github.com/typerhack/mulebox/issues"
+Changelog = "https://github.com/typerhack/mulebox/blob/main/PROJECT_LOG.md"
+
 [project.optional-dependencies]
 dev = [
     "pytest==9.2.0",
     "pytest-xdist==3.8.0",
     "setuptools==84.2.1",
-]
-
-binary = [
-    "pyinstaller==6.22.3",
 ]
 
 [project.scripts]

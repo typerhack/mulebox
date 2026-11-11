@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+from mulebox.common import upgrade
 from mulebox.common.errors import MuleboxError
 
 PROTOCOL_VERSION = 1
@@ -240,7 +241,8 @@ def _check_version(v: object) -> None:
         side = "this side" if v > PROTOCOL_VERSION else "the other side"
         raise ProtocolError(
             f"protocol version mismatch: received v={v}, this mulebox speaks "
-            f"v={PROTOCOL_VERSION}; upgrade mulebox on {side} so both sides match"
+            f"v={PROTOCOL_VERSION}; upgrade mulebox on {side} so both sides match (a laptop: "
+            f"{upgrade.EITHER}; a build machine: `mulebox setup <host>` from the laptop)"
         )
 
 

@@ -35,7 +35,7 @@ function panel() {
   const live = machines.filter((m) => m.state !== "offline");
   return { machines, total: machines.length, online: live.length, free_slots: live.reduce((sum, m) => sum + m.free_slots, 0),
            notices: CLEAN ? [] : [{ kind: "client", level: "warning", name: "laptop.local",
-                       text: `Laptop laptop.local runs mulebox 0.0.1, the build machine ${VERSION}.`, fix: "Upgrade mulebox on it with `pipx upgrade mulebox`." },
+                       text: `Laptop laptop.local runs mulebox 0.0.1, the build machine ${VERSION}.`, fix: "Upgrade mulebox on it: `pipx upgrade mulebox` (or `uv tool upgrade mulebox` if uv installed it)." },
                      ...machines.filter((m) => m.version !== VERSION).map((m) => ({ kind: "worker", level: "danger", name: m.name,
                        text: `Worker ${m.name} runs mulebox ${m.version}, the coordinator ${VERSION}.`, fix: `Run \`mulebox setup ${m.name}\`.` }))] };
 }

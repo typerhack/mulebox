@@ -118,7 +118,8 @@ def upgrade(conn: sqlite3.Connection, target: int) -> int:
     if found > target:
         raise SchemaTooNew(
             f"the mulebox store has schema version {found}, this mulebox knows up to "
-            f"{target}; upgrade mulebox on this machine"
+            f"{target}; upgrade mulebox on this machine: `mulebox setup <host>` from a laptop "
+            "on the newer mulebox"
         )
     for version in range(found, target):
         for statement in _STEPS[version]:
