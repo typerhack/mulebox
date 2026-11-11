@@ -97,9 +97,9 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 130 | cancelled | - |
 
 - **Long jobs run detached.** `mulebox check --detach` uploads the snapshot, prints the job
-  id on stdout and exits; the upload has to finish first, the queueing does not. The job then
-  does not depend on your session: an attached job is cancelled about 5 minutes after its
-  client disappears, a detached one is not. `mulebox wait <job-id>` returns what an attached
+  id on stdout and exits; the upload has to finish first, the queueing does not. No job depends
+  on your session: one whose client went away, attached or not, runs to its end, and its result
+  waits for you. `mulebox wait <job-id>` returns what an attached
   `check` would have: the same log on stdout, the same failure summary and the same exit
   code, whenever you ask, also after the job ended. From the project it also gives the stale
   warning. Ctrl-C on `wait` stops the waiting, not the job. A dead build machine still ends it

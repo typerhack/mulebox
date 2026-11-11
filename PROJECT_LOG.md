@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.106.2 - 2026-11-11 - patch
+- README: the architecture picture in the design system's colours, light and dark (`tools/architecture_svg.py` draws both from tokens.css), in place of Mermaid's own colours; a prompt to let a coding agent install mulebox from getting-started.md; every everyday command with what it does; "What it does" regrouped and widened from a second opinion by another model (job ids, no duplicate runs, GitHub runners on the same line, caches, toolchains, browser tests, secrets kept out), saying plainly that a node restart interrupts a running job.
+- agents.md no longer says an attached job is cancelled 5 minutes after its client goes; since M18.1 every job runs to its end.
+
 ## 0.106.1 - 2026-11-11 - patch
 - The sign-in page's field and button are 44px on touch screens and under 520px, as every control of the app since 0.103.1; it already used the design system's tokens and fonts in both themes.
 - README: opening the dashboard from a phone, with the sign-in page in both themes and the four steps to turn `lan` mode and its password on; `tools/screenshots.py` takes the sign-in page too.

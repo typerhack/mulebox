@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="444" viewBox="0 0 760 444" font-family="Geist, system-ui, -apple-system, Segoe UI, sans-serif" role="img" aria-label="The dev machine sends jobs over ssh to the coordinator node, which hands them to worker nodes">
+<defs><marker id="head" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0b7268"/></marker></defs>
+<rect width="760" height="444" rx="8" fill="#f3f5f7" stroke="#d5dbe2"/>
+<rect x="230" y="24" width="300" height="86" rx="6" fill="#ffffff" stroke="#76838f" stroke-width="1"/>
+<text x="380.0" y="52" text-anchor="middle" font-weight="600" font-size="15" fill="#141b22">Dev machine (your laptop)</text>
+<text x="380.0" y="74" text-anchor="middle" font-size="13" fill="#46525e">you and your agents run</text>
+<text x="380.0" y="93" text-anchor="middle" font-size="13" font-family="Geist Mono, ui-monospace, SFMono-Regular, Menlo, monospace" fill="#46525e">mulebox check</text>
+<line x1="380" y1="110" x2="380" y2="186" stroke="#0b7268" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="392" y="152.0" text-anchor="start" font-size="12.5" fill="#46525e">ssh: a job goes in, its output and exit code come back</text>
+<rect x="24" y="166" width="712" height="264" rx="8" fill="none" stroke="#76838f" stroke-dasharray="4 4"/>
+<text x="40" y="190" font-size="12.5" fill="#5d6976">Nodes: Linux build machines on your LAN</text>
+<rect x="200" y="200" width="360" height="88" rx="6" fill="#ffffff" stroke="#0b7268" stroke-width="1.5"/>
+<text x="380.0" y="228" text-anchor="middle" font-weight="600" font-size="15" fill="#141b22">Node 1: coordinator + worker</text>
+<text x="380.0" y="250" text-anchor="middle" font-size="13" fill="#46525e">one line of jobs, history, the dashboard</text>
+<text x="380.0" y="269" text-anchor="middle" font-size="13" fill="#46525e">and slots that run jobs</text>
+<rect x="70" y="350" width="250" height="60" rx="6" fill="#ffffff" stroke="#76838f" stroke-width="1"/>
+<text x="195.0" y="385.0" text-anchor="middle" font-weight="600" font-size="15" fill="#141b22">Node 2: worker</text>
+<rect x="440" y="350" width="250" height="60" rx="6" fill="#ffffff" stroke="#76838f" stroke-width="1"/>
+<text x="565.0" y="385.0" text-anchor="middle" font-weight="600" font-size="15" fill="#141b22">Node 3: worker</text>
+<line x1="300" y1="288" x2="210" y2="350" stroke="#0b7268" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="248" y="323.0" text-anchor="end" font-size="12.5" fill="#46525e">a job, when it asks over ssh</text>
+<line x1="460" y1="288" x2="550" y2="350" stroke="#0b7268" stroke-width="1.5" marker-end="url(#head)"/>
+<text x="512" y="323.0" text-anchor="start" font-size="12.5" fill="#46525e">a job, when it asks over ssh</text>
+</svg>

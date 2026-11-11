@@ -16,7 +16,26 @@ Behaviour can still change between versions; what is open is in the [roadmap](do
 ## Install
 
 You need a Linux machine with systemd, git and Python 3.12 or newer, which your laptop reaches
-over ssh with a key. On the laptop:
+over ssh with a key.
+
+### Let your coding agent install it
+
+Give your agent (Claude Code, Codex, or another) this prompt, with your build machine's ssh name:
+
+```text
+Install mulebox for me and set up this project to use it. Read
+https://raw.githubusercontent.com/example-org/mulebox/main/docs/getting-started.md and follow it
+in order. My build machine is <node> (I reach it with `ssh <node>`). Ask me, in one message, only
+for the steps that need a password or sudo, then finish the rest yourself and show me a passing
+`mulebox check`.
+```
+
+The page is written for this: it says which steps need you (copying an ssh key, installing
+`python3-venv` with sudo) and which the agent can do alone.
+
+### Or by hand
+
+On the laptop:
 
 ```sh
 pipx install git+https://github.com/example-org/mulebox
@@ -49,18 +68,10 @@ Two kinds of machine:
   **worker**, which runs jobs. One node is also the **coordinator**: it holds the line of jobs
   and their history, and serves the dashboard.
 
-```mermaid
-flowchart TB
-    dev["<b>Dev machine</b> (your laptop)<br/>you and your agents run <code>mulebox check</code>"]
-    subgraph nodes["Nodes, on your LAN"]
-        coord["<b>Node 1: coordinator + worker</b><br/>one line of jobs, history, the dashboard<br/>and slots that run jobs"]
-        w2["<b>Node 2: worker</b><br/>slots that run jobs"]
-        w3["<b>Node 3: worker</b><br/>slots that run jobs"]
-    end
-    dev -- "ssh: a job goes in,<br/>its output and exit code come back" --> coord
-    coord -- "a job, when the worker<br/>asks for one over ssh" --> w2
-    coord -- "a job, when the worker<br/>asks for one over ssh" --> w3
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/architecture-dark.svg">
+  <img src="docs/images/architecture-light.svg" width="760" alt="The dev machine sends a job over ssh to node 1, the coordinator, which holds the line of jobs and the dashboard; nodes 2 and 3 are workers that get a job when they ask for one over ssh">
+</picture>
 
 - The dev machine only ever talks to the coordinator. It does not know how many nodes there are,
   so adding one changes nothing for agents or projects.
@@ -128,22 +139,121 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 
 ## What it does
 
-- **One command for agents**: `mulebox check` runs the project's checks on a node and exits with
-  the same code. `mulebox run -- <cmd>` runs any command there.
-- **One line for everything**: agent jobs and GitHub Actions runs on mulebox runners share it, so
-  a node is never overloaded.
-- **You steer**: pause or freeze a job, move it in line, boost it, pause a machine or a whole
-  project, from the CLI or the dashboard. Upgrades wait their turn (`mulebox setup <node> --queued`).
-- **No job lost**: a working job always finishes even if its agent went away, and the agent's next
-  command tells it the result. A long job asks its agent if all is well; only a job that is really
-  stuck, with no answer, stops.
-- **Fast repeats**: each project keeps a folder on the node with a git worktree per branch, a job
-  sends only the files that changed, installs run only when the lockfile changes, and on exactly
-  the same files `check` gives the earlier result.
-- **Branches side by side**: different branches run at once; a second job on the same branch waits.
-- **Docker Compose projects**: services per job with their own names, ports and networks, removed
-  on every outcome.
-- **Per-project config**: a small `.mulebox.yml` says what "check" means; `mulebox init` writes it.
+**For agents**
+
+- **One command, the same answer.** `mulebox check` runs the project's checks on a node and gives
+  back the output and the exit code a local run would. It tests your files as they are now,
+  committed or not, and warns if you changed them while the job ran.
+- **Every job has an id.** An agent can send a job with `--detach`, go on working or end its
+  session, and come back later: `mulebox wait <id>` gives the output and exit code,
+  `status <id>` where it stands, `logs <id>` its log. A job runs to its end even if its agent went
+  away, and the agent's next command tells it the result.
+- **Agents choose how to wait**: follow the job, be pinged by `mulebox events` when it ends, or check
+  back later.
+- **No duplicate work.** On exactly the same files, `check` joins the job already running or gives
+  its recent result, failures included; `--again` forces a run.
+- **Failures read fast.** A failed job ends with a short summary of the error and the stage it failed
+  in, and a job that could not start (a missing tool, an unreachable image) exits 5, apart from a
+  failed check.
+- **Long jobs ask, they do not die.** A long job asks its agent if all is well; the agent answers
+  `mulebox ok`. Only a job that is really stuck, with no answer, stops.
+- **Checked before anything is sent.** `mulebox doctor` checks the config, the node's tools and the
+  project's compose files, and runs nothing.
+- **A skill for Claude Code** that teaches any agent to work this way, installed by `mulebox setup`.
+
+**Fast**
+
+- **Only changes cross the network.** Each project keeps a folder on the node with a git worktree per
+  branch, and a job sends only the files that changed since the last one.
+- **Installs once.** Dependencies install only when the lockfile or setup changes, and package caches
+  (pnpm, npm, Composer, pip) are kept between jobs, also for fresh containers.
+- **Toolchains install themselves.** A project pins Node and pnpm versions, and the first job that
+  needs one installs it on the node, once.
+- **Branches run side by side**; a second job on the same branch waits for the first.
+
+**Your CI on the same machines**
+
+- **GitHub Actions runners** for your private repositories (`mulebox runner register`) share the
+  agents' line, so CI and agents never run more jobs than the node has slots. The dashboard shows a
+  run's steps, output and result, and runners can use the project's package caches.
+
+**Real projects**
+
+- **Docker Compose**: every job gets its own services, names, ports and networks, removed on every
+  outcome, passed or failed.
+- **Browser tests**: Playwright against the job's containers, with the browsers kept for next time.
+- **`mulebox run`** runs any command on the node; `--take <path>` brings changed files, such as a
+  lockfile, back to the laptop.
+
+**Yours to control**
+
+- **Steer the line**: pause or freeze a job, move it, boost it, pause a machine or a whole project,
+  from the CLI or the dashboard. Upgrades wait their turn (`mulebox setup <node> --queued`).
+- **On your own machines**: jobs travel over ssh to machines you own; no cloud build service, no
+  port open to the internet.
+- **Private by default**: files that look like secrets are never uploaded, and logs are scrubbed of
+  secrets before they are stored or shown.
+- **How long jobs ran**: `mulebox stats` adds up job minutes by day, project, source and machine.
+
+A job running when a node restarts or loses power ends as `interrupted` (exit 75); it is not run
+again by itself.
+
+## Commands
+
+Every command has its own help: `mulebox --help` lists them, `mulebox <command> --help` explains
+one. `<node>` is a build machine's ssh name, `<id>` a job's id, which every job gets and every
+command prints. The ones you and your agents use:
+
+**Run jobs**, from a project folder:
+
+| Command | What it does |
+| --- | --- |
+| `mulebox init` | write `.mulebox.yml` from the project's own files |
+| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested |
+| `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service |
+| `mulebox warm` | get toolchains, images, caches and installs ready ahead of a job |
+| `mulebox doctor` | check the project and the node before sending anything; changes nothing |
+| `mulebox contract` | how this project works through mulebox, written for agents |
+
+**Follow jobs**:
+
+| Command | What it does |
+| --- | --- |
+| `mulebox queue` | what is running, waiting and recently finished, and why a job waits |
+| `mulebox status <id>` | one job's state, stage, last line and usual length |
+| `mulebox wait <id>` | wait for a job and end with its result and exit code, as `check` would |
+| `mulebox events --job <id>` | a job's changes of state as lines, for agents that want to be pinged |
+| `mulebox logs <id>` | a job's log; `--summary` gives only the failure summary |
+| `mulebox ok <id>` | answer a long job's question: all is well, let it go on |
+| `mulebox projects` | every project that has run, with its folder and size on the node |
+| `mulebox stats` | how long jobs ran, today, by day and in total |
+
+**Steer the line**:
+
+| Command | What it does |
+| --- | --- |
+| `mulebox cancel <id>` | cancel a job |
+| `mulebox pause <id>`, `resume <id>` | hold a waiting job, or freeze a running one, and let it go again |
+| `mulebox first`, `up`, `down`, `last <id>` | move a waiting job in line |
+| `mulebox boost <id>`, `normal <id>` | give a job the machine first, and end that |
+| `mulebox project pause`, `resume`, `paused` | hold all of a project's jobs and CI runs for a while |
+| `mulebox project clean`, `reset` | remove old branch folders, or a project's whole folder, on the node |
+
+**Machines and setup**:
+
+| Command | What it does |
+| --- | --- |
+| `mulebox setup <node>` | install or upgrade mulebox on a node from the laptop; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker |
+| `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
+| `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |
+| `mulebox dashboard password`, `firewall`, `cert` | on the node: sign-in, firewall and HTTPS for `lan` mode |
+| `mulebox runner register`, `unregister` | add or remove a GitHub Actions runner for a private repository |
+| `mulebox skill install`, `update`, `status` | the agent skill in your Claude config folders |
+| `mulebox feedback draft`, `post` | report a problem as a GitHub issue, scrubbed of private data first |
+| `mulebox version` | this mulebox's version |
+
+The rest of `mulebox --help` (`rpc`, `worker`, `coordinator`, `runner-hook` and others) is what
+mulebox runs on the nodes itself; you do not call those.
 
 ## Documentation
 
