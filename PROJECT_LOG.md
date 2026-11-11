@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.100.2 - 2026-11-11 - patch
+- Roadmap: M14.13 done, every item of a GitHub run's menu drilled on a real CI run in Edge, Cancel on GitHub through `gh` on the build machine.
+
 ## 0.100.1 - 2026-11-10 - patch
 - Roadmap: M14.1 and M14.10 done (the React dashboard on the real machine in Edge, the classic page retired); the facts with no API data yet and the dashboard's overhead go to the parking lot.
 

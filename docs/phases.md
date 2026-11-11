@@ -410,10 +410,16 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
 - [x] M14.12 Design system: [design-system.md](design-system.md) with its tokens and specimen. Three
       proposals (Stable, Signal, Gauge) made by a Fable subagent and reviewed by a second model; the
       user picked Gauge on 2026-11-10 (0.94.0). Its open points are listed there, for M14.10.
-- [~] M14.13 A GitHub run's card and row with the three dots, like an agent job's (the user's ask,
+- [x] M14.13 A GitHub run's card and row with the three dots, like an agent job's (the user's ask,
       2026-11-10): open its page, open on GitHub, Freeze or Resume and Boost or End boost once it runs,
       Cancel on GitHub (`gh run cancel` on the machine). Built 0.95.0, with tests. Done when: on a real
-      CI run in Edge, each item does what it says on the machine and on GitHub.
+      CI run in Edge, each item does what it says on the machine and on GitHub. Done 2026-11-11
+      (0.100.2): a throwaway run on this repository's runner, in real Edge on the deployed dashboard.
+      Waiting behind two drill jobs, its row offered its page, GitHub and cancel, and "Open on GitHub"
+      opened the run's address (GitHub showed it only to an account with access). Running, Freeze set
+      the runner's unit frozen and the card a snowflake, Resume set it running, Boost gave CPU and IO
+      weight 10000 and End boost 50 again; from its page, Cancel on GitHub in two steps cancelled the
+      run on GitHub and freed the slot. The branch and run were deleted.
 - [x] M14.1 Jobs box redesign, in the design system (M14.12). Three mockups were rejected as flooded
       with data; the top row (CPU, memory, disk, machines) stays. 2026-11-10: of three layouts in Gauge
       the user picked "Monitor on top" (design-system/dashboard-mockup.html), with Memory and Disk of
