@@ -68,10 +68,12 @@ Two kinds of machine:
   **worker**, which runs jobs. One node is also the **coordinator**: it holds the line of jobs
   and their history, and serves the dashboard.
 
+<p align="center">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="docs/images/architecture-dark.svg">
   <img src="docs/images/architecture-light.svg" width="760" alt="The dev machine sends a job over ssh to node 1, the coordinator, which holds the line of jobs and the dashboard; nodes 2 and 3 are workers that get a job when they ask for one over ssh">
 </picture>
+</p>
 
 - The dev machine only ever talks to the coordinator. It does not know how many nodes there are,
   so adding one changes nothing for agents or projects.

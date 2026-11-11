@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.106.3 - 2026-11-11 - patch
+- README: the architecture picture is centred (the user's ask).
+
 ## 0.106.2 - 2026-11-11 - patch
 - README: the architecture picture in the design system's colours, light and dark (`tools/architecture_svg.py` draws both from tokens.css), in place of Mermaid's own colours; a prompt to let a coding agent install mulebox from getting-started.md; every everyday command with what it does; "What it does" regrouped and widened from a second opinion by another model (job ids, no duplicate runs, GitHub runners on the same line, caches, toolchains, browser tests, secrets kept out), saying plainly that a node restart interrupts a running job.
 - agents.md no longer says an attached job is cancelled 5 minutes after its client goes; since M18.1 every job runs to its end.
