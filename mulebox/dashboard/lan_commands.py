@@ -1,6 +1,6 @@
 """CLI `mulebox dashboard password|cert|firewall`, and the checks before `lan` mode serves.
 
-No aiohttp at import time: the laptop imports this through the CLI.
+No aiohttp at import time: the dev machine imports this through the CLI.
 """
 
 from __future__ import annotations
@@ -23,9 +23,9 @@ EXIT_CONFIG = 2
 
 
 def register(dash: argparse._SubParsersAction) -> None:
-    pw = dash.add_parser("password", help="set the LAN sign-in password (build machine)")
+    pw = dash.add_parser("password", help="set the LAN sign-in password (node)")
     pw.set_defaults(func=_guarded(_password))
-    made = dash.add_parser("cert", help="create the certificate for lan_tls (build machine)")
+    made = dash.add_parser("cert", help="create the certificate for lan_tls (node)")
     made.add_argument("--force", action="store_true", help="replace an existing certificate")
     made.set_defaults(func=_guarded(_cert))
     wall = dash.add_parser("firewall", help="print the root script for the LAN firewall rule")

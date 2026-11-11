@@ -1,4 +1,4 @@
-"""The laptop side of runner management: get a token with `gh`, run `mulebox runner` there.
+"""The dev machine side of runner management: get a token with `gh`, run `mulebox runner` there.
 
 `register` asks GitHub for a registration token
 (`gh api -X POST repos/<owner/repo>/actions/runners/registration-token --jq .token`) and
@@ -30,7 +30,7 @@ Stream = Callable[..., Iterator[bytes]]
 
 
 class GitHubError(MuleboxError):
-    """`gh` could not produce a token, or the build machine refused the runner command."""
+    """`gh` could not produce a token, or the node refused the runner command."""
 
 
 def run_gh(argv: Sequence[str]) -> subprocess.CompletedProcess:
@@ -63,13 +63,13 @@ def gh_token(repo: str, kind: str, run: GhRun = run_gh) -> str:
 
 def refuse_public(repo: str, run: GhRun = run_gh) -> None:
     """Refuse a public repository: a fork's pull request brings its own workflow file, so it
-    could name this runner and run its code on the build machine (docs/install.md). A
+    could name this runner and run its code on the node (docs/install.md). A
     visibility `gh` cannot read is left to the token request, which fails with the reason."""
     proc = run(["gh", "api", f"repos/{check_repo(repo)}", "--jq", ".visibility"])
     if proc.returncode == 0 and (proc.stdout or "").strip() == "public":
         raise GitHubError(
             f"{repo} is public, and a runner there would run any fork's pull request on the "
-            "build machine; mulebox attaches runners to private repositories only")
+            "node; mulebox attaches runners to private repositories only")
 
 
 def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,

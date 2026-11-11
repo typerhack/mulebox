@@ -1,4 +1,4 @@
-"""Add, list and remove GitHub Actions runners on this build machine (docs/interfaces-m3.md).
+"""Add, list and remove GitHub Actions runners on this node (docs/interfaces-m3.md).
 
 The token (registration or removal) is handed in by the caller, read from stdin by the
 CLI. It never goes into argv: `config.sh` gets it through `ACTIONS_RUNNER_INPUT_TOKEN`,

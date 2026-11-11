@@ -1,6 +1,6 @@
 """`mulebox setup <machine> --queued [--behind]`: an upgrade that waits its turn (M16.5).
 
-The new version goes to the machine at once and the laptop is free again: on the machine it
+The new version goes to the machine at once and the dev machine is free again: on the machine it
 is a row in the line (coordinator/upgrades.py, worker/upgrade_wait.py). By default it goes
 next, so nothing new starts there and it installs as soon as the running jobs end; `--behind`
 lets the jobs already waiting go first. It shows in `mulebox queue` and on the dashboard,

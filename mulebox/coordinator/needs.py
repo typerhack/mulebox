@@ -22,9 +22,9 @@ from mulebox.common import compose, package_cache
 from mulebox.coordinator.workers import is_online
 
 Worker = dict[str, Any]
-HOW_TO_ADD = ("add it to `capabilities` in ~/.config/mulebox/node.toml on a build machine and "
+HOW_TO_ADD = ("add it to `capabilities` in ~/.config/mulebox/node.toml on a node and "
               "restart its worker, or remove it from the project")
-HOW_TO_UPGRADE = ("the build machine runs a mulebox too old for this project's `compose:` or "
+HOW_TO_UPGRADE = ("the node runs a mulebox too old for this project's `compose:` or "
                   "package caches; upgrade it (docs/install.md, Upgrade)")
 
 
@@ -56,7 +56,7 @@ def _offers(worker: Worker) -> str:
 
 def _nobody_offers(needs: list[str], workers: list[Worker]) -> str:
     known = "; ".join(f"{w['worker']} offers {_offers(w)}" for w in workers)
-    return f"no build machine offers {', '.join(sorted(set(needs)))} ({known})"
+    return f"no node offers {', '.join(sorted(set(needs)))} ({known})"
 
 
 def _what_to_do(workers: list[Worker], needs: list[str]) -> str:
@@ -81,7 +81,7 @@ def refusal(workers: list[Worker], needs: list[str]) -> str | None:
 def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | None:
     """Why a queued job cannot start right now, or None when a worker for it is online."""
     if not workers:
-        return "no build machine has connected to this coordinator yet"
+        return "no node has connected to this coordinator yet"
     fitting = capable(workers, needs)
     if not fitting:
         return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
@@ -90,7 +90,7 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | No
         return None
     if online:
         names = ", ".join(w["worker"] for w in online)
-        return (f"every build machine for this job is draining ({names}); "
+        return (f"every node for this job is draining ({names}); "
                 f"`mulebox machine resume <name>` lets one take it")
     names = ", ".join(w["worker"] for w in fitting)
-    return f"no build machine for this job is online (offline: {names})"
+    return f"no node for this job is online (offline: {names})"

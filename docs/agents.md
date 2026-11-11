@@ -4,8 +4,8 @@ This file is written for AI coding agents. A user may tell you: "read mulebox's
 docs/agents.md and set this project up" or "use mulebox here". Follow it step by step.
 To test mulebox on a project and report back, see [agent-trial.md](agent-trial.md).
 
-mulebox runs a project's builds, type checks, lint and tests on a Linux build machine
-through one queue, instead of on the laptop you are working on. You keep editing, reading,
+mulebox runs a project's builds, type checks, lint and tests on a Linux node
+through one queue, instead of on the dev machine you are working on. You keep editing, reading,
 searching and using git locally; heavy commands go through `mulebox`.
 
 ## 0. Check that mulebox works
@@ -13,7 +13,7 @@ searching and using git locally; heavy commands go through `mulebox`.
     mulebox --version
     mulebox queue
 
-If either fails (command not found, exit code 3 "build machine unreachable"), **stop and
+If either fails (command not found, exit code 3 "node unreachable"), **stop and
 tell the user**. Do not fall back to running heavy commands locally on your own.
 
 Then read what applies here:
@@ -63,9 +63,9 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
-| list every project that has run on this build machine | `mulebox projects` |
+| list every project that has run on this node | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C). `check`, `queue`, `status` and `doctor` print its address when the machine has one on the LAN: pass it to the user | `mulebox dashboard open` |
-| read a job's log again | `mulebox logs <job-id>`; old logs expire on the build machine, and it says so when one has (`mulebox status <job-id>` still has the result) |
+| read a job's log again | `mulebox logs <job-id>`; old logs expire on the node, and it says so when one has (`mulebox status <job-id>` still has the result) |
 | see why a job failed, without its whole log | `mulebox logs <job-id> --summary` |
 | stop a job | `mulebox cancel <job-id>` (Ctrl-C on a running `check` also cancels) |
 
@@ -88,12 +88,12 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | --- | --- | --- |
 | 0 / job's code | the job ran; read its output like a local run | fix the code if it failed |
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree, no commit yet) | fix the config |
-| 3 | build machine unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
-| 4 | the build machine refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
+| 3 | node unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
+| 4 | the node refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 5 | the job could not start (toolchain would not install, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
-| 75 | the job was interrupted on the build machine (restart, crash) | run it again once |
+| 75 | the job was interrupted on the node (restart, crash) | run it again once |
 | 76 | `stopped: stuck`: it did nothing and nobody answered its question (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
-| 124 | the job hit a hard `timeout_min`, which only a build machine older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
+| 124 | the job hit a hard `timeout_min`, which only a node older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
 | 130 | cancelled | - |
 
 - **Long jobs run detached.** `mulebox check --detach` uploads the snapshot, prints the job
@@ -102,7 +102,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   waits for you. `mulebox wait <job-id>` returns what an attached
   `check` would have: the same log on stdout, the same failure summary and the same exit
   code, whenever you ask, also after the job ended. From the project it also gives the stale
-  warning. Ctrl-C on `wait` stops the waiting, not the job. A dead build machine still ends it
+  warning. Ctrl-C on `wait` stops the waiting, not the job. A dead node still ends it
   `interrupted`, and `mulebox cancel` still stops it. If you no longer want it, cancel it.
 - **Watching a job.** `mulebox events --job <job-id> --json` prints one JSON line per state
   change, with no log text but for `last_line` in a `check_in`, and exits when the job ends, with the job's exit code. A dropped
@@ -142,7 +142,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   started (the median of its last 20 with the same command). There is no estimate of the time in line. At position 2 or later,
   or for a job that usually takes 5 minutes or more, it suggests `--detach` for next time. A
   line such as
-  `queued, position 1; waiting: no build machine for this job is online` is different:
+  `queued, position 1; waiting: no node for this job is online` is different:
   nothing will start until a person fixes it, so tell the user.
 
 A job goes through stages: `toolchain` (only when it installs a pinned one), `prepare`, `environment`, `images`, `services`, `install`, `setup`,
@@ -155,7 +155,7 @@ failure summary and the `finished` event name the failed stage.
 
 Image pull progress is summarised, so a quiet log during a pull is normal (section 2a).
 
-A build machine keeps a job's log for 30 days unless its owner chose otherwise. After that
+A node keeps a job's log for 30 days unless its owner chose otherwise. After that
 `mulebox logs <id>` says the log has expired, and the job's result and stages remain.
 
 The coordinator and the workers must be upgraded together: stage rows, toolchain reports and
@@ -234,7 +234,7 @@ ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result 
 
    Rules for the values:
    - **Databases are per job.** A database a job shares with anything else, such as one
-     already running on the build machine or reached by address, needs `${MULEBOX_JOB_SLUG}`
+     already running on the node or reached by address, needs `${MULEBOX_JOB_SLUG}`
      (the job id in lowercase with `_`, safe in database names) in every name, prefix or schema.
      A database in a compose service of the job itself is that job's alone and gone afterwards,
      so its name is free, and a project's fixed name works.
@@ -244,13 +244,13 @@ ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result 
      `mulebox contract` and `mulebox doctor`). A name the file does not explain may come from the
      machine's `job_env`, so `doctor` warns about it; if nothing sets it the job cannot start
      (exit 5). Never point a job at a database
-     that already exists on the build machine.
+     that already exists on the node.
    - Values are strings: quote numbers (`CI: "1"`). `PATH`, `HOME`, `USER`, `SHELL` and
      `MULEBOX*` cannot be set.
    - **No real secrets.** Use obviously fake values (`ci-secret-at-least-32-characters`).
      If a check truly needs a real credential, stop and ask the user.
    - **Toolchain versions** must match what the project uses (`.nvmrc`, `packageManager`,
-     `engines`, the CI workflow). If the build machine lacks one, the first job that needs it
+     `engines`, the CI workflow). If the node lacks one, the first job that needs it
      installs it, once, which can take minutes on a slow network, and the job's log says so. If
      that fails, the job exits 5 with the reason and the versions the machine has. Switch to a
      listed version only if it matches the project; otherwise tell the user.
@@ -276,7 +276,7 @@ ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result 
      start a long, silent install.
    - `mulebox warm [job]` runs a job up to its command: toolchains, images, caches, `install` and
      `setup`. Use it ahead of a long wait or a slow link; it takes a build slot like any job.
-   - **A branch keeps its folder.** Jobs of a branch run in one folder on the build machine, with
+   - **A branch keeps its folder.** Jobs of a branch run in one folder on the node, with
      the project's ignored files kept between them. Only one job of a branch runs at a time.
      `mulebox projects` shows the folders and sizes. If a job only fails or passes because of what
      an earlier job left there, `mulebox project reset <project> --branch <name> --yes` starts that
@@ -310,7 +310,7 @@ ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result 
      reach the command. `env:` entries built on `MULEBOX_PORT_...`, directly or through an earlier
      entry, are not set for that job; it says so only when it has containers or `ports:` of its
      own, as one with neither has nothing such an entry could point to. `mulebox run` always uses the top-level values.
-     `ports:` needs a build machine on 0.40 or later: an older worker refuses the job at
+     `ports:` needs a node on 0.40 or later: an older worker refuses the job at
      the start, with exit 5.
    - A job may span several lines (`check: |`). The first line that fails ends it, as in a
      GitHub Actions `run:` step.
@@ -376,7 +376,7 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
 - **`env:` reaches compose**, for `${VAR}` in compose files, as it reaches commands. A service
   only sees what its `environment:` passes on, as always. `UID` and `GID` are set, so
   `user: "${UID}:${GID}"` works.
-- **The build machine's `job_env` reaches services** (settings such as `NODE_OPTIONS` for a
+- **The node's `job_env` reaches services** (settings such as `NODE_OPTIONS` for a
   slow network), and your commands. A value in a service's `environment:` or `env_file:`
   wins; a value in `.mulebox.yml` `env:` replaces it for the whole job, and may add to it
   with `${NODE_OPTIONS}`. It does not reach a `RUN` line of an image build.
@@ -384,7 +384,7 @@ the service name (`docker compose exec`), not by a tag in `docker run`.
   containers can start at 1024, and a database under test then dies with "Too many open
   files". A value in the compose file always wins, so set one if a service needs more.
 - **`.env*` files are not uploaded**, apart from tracked templates, so `env_file: .env.ci`
-  fails on the build machine. Move those throwaway values into `env:` and `environment:`.
+  fails on the node. Move those throwaway values into `env:` and `environment:`.
 - **Root-owned files** in the checkout are fine: mulebox cleans them up.
 - **A hardcoded database address** such as `localhost:27017` in a test works without changing the
   code: run the tests in a service that shares the database's network, in a CI-only compose
@@ -427,11 +427,11 @@ These are refused with the reason, because they reach past the job:
 - anything under `/run` or `/var/run`, any Unix socket, or a folder holding a known runtime's socket (Docker, containerd, CRI-O,
   podman, k3s, BuildKit), in any bind or file secret, read-only or not; writable bind
   mounts outside the checkout, except this job's package caches (section 2a-1), and any bind
-  outside it whose source does not exist on the build machine (mulebox never creates one
+  outside it whose source does not exist on the node (mulebox never creates one
   there).
 
 This stops a CI file's assumptions from reaching past the job. It does not contain a hostile
-project: a job can run any command and Docker access is root-equivalent, so a build machine
+project: a job can run any command and Docker access is root-equivalent, so a node
 is only for projects its owner trusts.
 
 `env:` may not set what changes how a job starts: `BASH_ENV`, `ENV`, `SHELLOPTS`, `BASHOPTS`,
@@ -444,21 +444,21 @@ sets one fails at the start, whichever client sent it.
 is dropped, with a note in the log; use the service name. Put CI-only changes in a separate
 compose file rather than changing how the project runs locally.
 
-If mulebox says no build machine offers `docker`, tell the user: a person has to add it
-to the build machine's `capabilities`. If it says the machine's mulebox is too old, it has to
+If mulebox says no node offers `docker`, tell the user: a person has to add it
+to the node's `capabilities`. If it says the machine's mulebox is too old, it has to
 be upgraded. `compose-v1` in `needs` comes with `compose:`; nobody sets it.
 
 ## 2a-1. Package caches
 
 Installs are slow on a slow network, and a compose job's containers start empty. Ask for a cache in `needs`
-and downloads stay on the build machine between jobs of this project. It is off unless the
+and downloads stay on the node between jobs of this project. It is off unless the
 project asks.
 
 ```yaml
 needs: [cache-pnpm, cache-composer, cache-npm, cache-pip]
 ```
 
-| `needs` | Folder on the build machine | Set for commands on the machine |
+| `needs` | Folder on the node | Set for commands on the machine |
 | --- | --- | --- |
 | `cache-pnpm` | `<cache>/packages/<project>/pnpm` | `pnpm_config_store_dir`, `npm_config_store_dir`, `MULEBOX_CACHE_PNPM` |
 | `cache-composer` | `<cache>/packages/<project>/composer` | `COMPOSER_CACHE_DIR`, `MULEBOX_CACHE_COMPOSER` |
@@ -519,7 +519,7 @@ services:
 - A pnpm install across mounts copies packages instead of linking them. That is slower than
   a link and far faster than a download.
 - A service that uses one of these variables fails at the start if the project does not ask
-  for that cache: the variable is empty. For running the same file on a laptop, give it a
+  for that cache: the variable is empty. For running the same file on a dev machine, give it a
   default, as in `${MULEBOX_CACHE_PNPM:-/tmp/example-app-pnpm}`.
 
 **What sharing means.** Every branch of a project on a machine shares its cache: every job of
@@ -529,19 +529,19 @@ that a later job of this project gets: a change on a branch can reach the next r
 checks each package against the hash in the lockfile; Composer checks a download only where
 the lockfile has a hash, and many entries have none. Another project has its own folder, and
 compose refuses a mount of it. A project's name comes from its `.mulebox.yml`, so two
-projects with the same `project:` share a cache. As everywhere on a build machine, this is
+projects with the same `project:` share a cache. As everywhere on a node, this is
 for projects its owner trusts, not a defence against a hostile one: a job with Docker
 access can reach any folder.
 
-If a cache looks wrong, a person clears it on the build machine, with no job of that project
+If a cache looks wrong, a person clears it on the node, with no job of that project
 running: `mulebox cache clear <project>`. `mulebox cache list` shows the sizes. Caches are
 never cleaned by themselves. Do this only when the user asks: do not ssh in yourself.
 
 ## 2b. Browser tests (Playwright)
 
-Add `playwright` to `needs`. The build machine must offer it: that means a person has
+Add `playwright` to `needs`. The node must offer it: that means a person has
 installed the system libraries browsers use. mulebox then sets `PLAYWRIGHT_BROWSERS_PATH` to
-one folder on the build machine, so a browser is downloaded once, not for every job.
+one folder on the node, so a browser is downloaded once, not for every job.
 
 ```yaml
 needs: [playwright]
@@ -560,23 +560,23 @@ versions stay, so keep it in the job: it is what keeps the version in step with 
 install script too: if `pnpm test:e2e:install` or a CI step says `--with-deps`, call
 `playwright install chromium` from the job directly instead of the script. The system libraries
 are already there, since a machine only offers `playwright` once a person installed them. Browsers run on the
-build machine, not in a container, so they reach containers through `127.0.0.1` and the
+node, not in a container, so they reach containers through `127.0.0.1` and the
 `MULEBOX_PORT_...` variable. Read the URL from the environment in `playwright.config`, and
 do not let Playwright's `webServer` start something on a fixed port.
 
 ## 3. Moving GitHub Actions to mulebox runners
 
-A repository's CI can run on the build machine through the same queue. Do this only when
+A repository's CI can run on the node through the same queue. Do this only when
 the user asks for it, and **never for a public repository**: anyone can open a pull request,
 GitHub takes its workflow from that pull request, so it can name the runner itself and run its
-code on the build machine, whatever the main branch's workflow says. If the repository is
+code on the node, whatever the main branch's workflow says. If the repository is
 public, or is about to be, stop and tell the user.
 
 1. **Register a runner** (needs `gh` logged in with admin rights on the repository):
 
        mulebox runner register --repo <owner>/<repo>
 
-   It installs a runner on the build machine as a service with the labels `self-hosted`,
+   It installs a runner on the node as a service with the labels `self-hosted`,
    `Linux`, `X64`, `mulebox`.
 2. **Point the workflow at it.** In `.github/workflows/*.yml`:
 
@@ -592,17 +592,17 @@ jobs:
 
    With the `CI_RUNS_ON` repository variable the user can switch back (for example to
    `["ubuntu-latest"]`) without a code change. Keep the first lines: a pull request from a
-   fork must never reach this runner. Its code would run as the build machine's user, with
+   fork must never reach this runner. Its code would run as the node's user, with
    Docker. On a public repository, ask the user before registering a runner at all.
 3. **Linux differences to check:**
-   - The build machine is Linux, not macOS: Docker is Docker Engine, not Docker Desktop.
+   - The node is Linux, not macOS: Docker is Docker Engine, not Docker Desktop.
      Containers that write into the checkout leave root-owned files. Run them with the
      runner's user id (`user: "${UID}:${GID}"`) or clean them up in a final step: `compose:`
      cleanup covers mulebox jobs, not GitHub runner jobs.
    - Steps that install system packages with `sudo` will fail: the runner has no sudo.
-     Ask the user to install such packages on the build machine once.
+     Ask the user to install such packages on the node once.
    - Use per-run database names, as in section 2.
-   - Do not hardcode the build machine's paths or host name in the workflow.
+   - Do not hardcode the node's paths or host name in the workflow.
    - **A GitHub job does not get the machine's `[job_env]`**, which mulebox gives its own jobs
      (on a slow link it often holds `NODE_OPTIONS`, for example
      `--network-family-autoselection-attempt-timeout=5000`). A step that passes in `mulebox run`
@@ -628,7 +628,7 @@ jobs:
 4. **Verify** with a pull request: the job is picked up by the mulebox runner (its log
    starts with `mulebox: waiting for a build slot` or goes straight on), passes, and a
    deliberately failing commit fails.
-5. If the project had a runner on the laptop before, tell the user it can be stopped; do
+5. If the project had a runner on the dev machine before, tell the user it can be stopped; do
    not remove it yourself.
 
 ## 4. Reporting what mulebox could not handle
@@ -654,7 +654,7 @@ to a client: then tell the user about the problem instead.
 ## 5. Things you must not do
 
 - Do not run heavy commands locally when mulebox is unavailable; tell the user.
-- Do not ssh into the build machine to change, install or delete things.
+- Do not ssh into the node to change, install or delete things.
 - Do not put real secrets, real hosts or personal paths into `.mulebox.yml` or workflows.
-- Do not use or modify databases that already exist on the build machine.
+- Do not use or modify databases that already exist on the node.
 - Do not cancel other people's jobs.

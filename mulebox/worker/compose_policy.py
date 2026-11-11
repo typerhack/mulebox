@@ -9,7 +9,7 @@ The job's own package caches (caches.py) are the one writable host path outside 
 
 Refused, not repaired: the project's owner decides what to do, and the message says why.
 With no checkout, as `mulebox doctor` calls it on a client, only what the model itself shows
-counts: this machine's paths say nothing about the build machine's.
+counts: this machine's paths say nothing about the node's.
 This guards against a CI file written for a throwaway runner, not against a hostile project:
 a job can run any command, and Docker access is root-equivalent (docs/design.md, Safety).
 """
@@ -39,7 +39,7 @@ _REFUSED_KEYS = {
     "cgroup_parent": "picks its own control group",
     "external_links": "links to containers outside the project",
     "use_api_socket": "gets the Docker API",
-    "provider": "runs a program on the build machine (provider:)",
+    "provider": "runs a program on the node (provider:)",
     "runtime": "picks its own container runtime",
 }
 _HOOKS = ("pre_start", "post_start", "pre_stop")
@@ -143,7 +143,7 @@ def _bind_problem(volume: Model, checkout: Path | None, shared: Sequence[Path]) 
         return None
     if not os.path.exists(path):
         return (f"bind-mounts {path}, outside the checkout, and it does not exist on the "
-                "build machine. mulebox does not create folders there")
+                "node. mulebox does not create folders there")
     if not volume.get("read_only"):
         return _writable_problem(path)
     if (volume.get("bind") or {}).get("selinux"):

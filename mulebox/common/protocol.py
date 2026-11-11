@@ -241,8 +241,8 @@ def _check_version(v: object) -> None:
         side = "this side" if v > PROTOCOL_VERSION else "the other side"
         raise ProtocolError(
             f"protocol version mismatch: received v={v}, this mulebox speaks "
-            f"v={PROTOCOL_VERSION}; upgrade mulebox on {side} so both sides match (a laptop: "
-            f"{upgrade.EITHER}; a build machine: `mulebox setup <host>` from the laptop)"
+            f"v={PROTOCOL_VERSION}; upgrade mulebox on {side} so both sides match (a dev machine: "
+            f"{upgrade.EITHER}; a node: `mulebox setup <host>` from the dev machine)"
         )
 
 

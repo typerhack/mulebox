@@ -1,29 +1,29 @@
 # Getting started
 
-From nothing to a project whose checks run on a build machine. This page is the order to do
+From nothing to a project whose checks run on a node. This page is the order to do
 things in; it links to the details rather than repeating them.
 
-Words used below: the **laptop** is where you and your agents edit code, and the **build
-machine** is the Linux machine that runs the jobs. Examples use the build machine `build-1`,
+Words used below: the **dev machine** is where you and your agents edit code, and the **build
+machine** is the Linux machine that runs the jobs. Examples use the node `build-1`,
 the user `alice` and the project `example-app`.
 
 ## What you need
 
-- A Linux build machine with systemd, git, Python 3.12 or newer, and a user you can log in as,
+- A Linux node with systemd, git, Python 3.12 or newer, and a user you can log in as,
   at a fixed address: reserved on the router or set static, as a new address after a reboot
   makes it unreachable ([README](../README.md#give-every-machine-a-fixed-address)). An agent
   asks a person for this; it needs the router.
-- A macOS or Linux laptop with git, and either uv or Python 3.12 or newer with pipx.
-- Login from the laptop to the build machine with an ssh key, and no prompts: mulebox never
+- A macOS or Linux dev machine with git, and either uv or Python 3.12 or newer with pipx.
+- Login from the dev machine to the node with an ssh key, and no prompts: mulebox never
   answers one. `ssh build-1 true` must print nothing and ask nothing. If your key has a
   passphrase, load it into your ssh agent first.
 - A project in a git repository with at least one commit.
 
 ### From nothing: what to ask a person for, once
 
-An agent can do everything here except what needs a password or sudo. On a laptop with no ssh
+An agent can do everything here except what needs a password or sudo. On a dev machine with no ssh
 key and a blank Ubuntu machine, the agent first makes a key (`ssh-keygen -t ed25519 -N ""` for a
-key with no passphrase) and, if the user name on the machine differs from the laptop's, adds to
+key with no passphrase) and, if the user name on the machine differs from the dev machine's, adds to
 `~/.ssh/config`:
 
 ```
@@ -33,7 +33,7 @@ Host build-1
 
 Then it asks a person for these, in one message:
 
-1. `ssh-copy-id build-1` from the laptop (it asks for alice's password once), then
+1. `ssh-copy-id build-1` from the dev machine (it asks for alice's password once), then
    `ssh build-1 true` once, answering yes to the host key after checking its fingerprint.
 2. On the machine, with sudo: `sudo apt-get install -y git python3-venv` (Ubuntu ships Python
    without `venv`; Docker too, if projects use `compose:`).
@@ -42,30 +42,30 @@ Then it asks a person for these, in one message:
 Nothing else needs a person: `mulebox setup build-1` does the rest, and says what is missing if
 something is.
 
-A build machine runs whatever its projects' jobs say, and Docker access there is as good as
+A node runs whatever its projects' jobs say, and Docker access there is as good as
 root. Use it for projects you trust, on a network you trust.
 
 ## 1. Install
 
-1. Get mulebox on the laptop, from PyPI ([install.md, section 2](install.md#2-install-on-the-laptop)):
-   `uv tool install mulebox` if `uv` is there or the laptop has no Python 3.12 or newer (uv
+1. Get mulebox on the dev machine, from PyPI ([install.md, section 2](install.md#2-install-on-the-dev-machine)):
+   `uv tool install mulebox` if `uv` is there or the dev machine has no Python 3.12 or newer (uv
    brings its own; get uv with `brew install uv` or
    `curl -LsSf https://astral.sh/uv/install.sh | sh`), else `pipx install mulebox`. Check with
    `mulebox --version`.
-2. Install the build machine, from the laptop: `mulebox setup build-1` (`build-1` is whatever
+2. Install the node, from the dev machine: `mulebox setup build-1` (`build-1` is whatever
    you would type after `ssh`: a `Host` alias, an address, or `alice@192.168.1.50`, which works
    without the ssh config entry). It installs everything
-   there, finds out what the machine offers, writes the laptop's config and runs a first job.
+   there, finds out what the machine offers, writes the dev machine's config and runs a first job.
 
 ## 2. Decide where the project's tools come from
 
-A job runs on the build machine with your project's files and nothing else from your laptop.
+A job runs on the node with your project's files and nothing else from your dev machine.
 Commands run in bash, as the mulebox service's user, with the service's `PATH`, not your login
 shell's, so tools from a shell profile (`nvm`, `~/.local/bin`) are not there.
 
 | The project uses | Do this |
 | --- | --- |
-| Node or pnpm | Pin exact versions under `toolchain:`. The first job that needs one installs it on the build machine, once. |
+| Node or pnpm | Pin exact versions under `toolchain:`. The first job that needs one installs it on the node, once. |
 | Docker containers, a database, or a language with no toolchain here | Use `compose:` ([agents.md, 2a](agents.md#2a-projects-that-need-containers-compose)). The machine must offer `docker`: [install.md, Node config](install.md#node-config) |
 | Python, or anything else already installed for all users | Nothing: jobs find it on the machine. Make a virtual environment in `setup` |
 
@@ -139,5 +139,5 @@ same error and a non-zero exit code you would get locally, and undo it.
 | Everyday commands and exit codes | [agents.md, section 1](agents.md#1-everyday-use-project-already-set-up) |
 | The live view in a browser | [install.md, Using the dashboard](install.md#using-the-dashboard) |
 | Containers, package caches, browser tests | [agents.md, 2a to 2b](agents.md#2a-projects-that-need-containers-compose) |
-| GitHub Actions on the build machine | [agents.md, section 3](agents.md#3-moving-github-actions-to-mulebox-runners) |
+| GitHub Actions on the node | [agents.md, section 3](agents.md#3-moving-github-actions-to-mulebox-runners) |
 | Something went wrong | [troubleshooting.md](troubleshooting.md) |

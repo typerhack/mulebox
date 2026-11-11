@@ -1,6 +1,6 @@
 """Names used by runner management: GitHub repositories, runner names, labels, units.
 
-Shared by the build machine side (manage.py) and the laptop side (github.py), so both
+Shared by the node side (manage.py) and the dev machine side (github.py), so both
 refuse the same input before anything runs.
 """
 

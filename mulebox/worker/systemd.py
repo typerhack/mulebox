@@ -1,4 +1,4 @@
-"""Executor that runs each job as a transient systemd user unit (Linux build machines).
+"""Executor that runs each job as a transient systemd user unit (Linux nodes).
 
 The unit is `mulebox-job-<job_id>`, with a runtime limit only if the job has one, `KillMode=control-group` (stopping
 it kills the whole process tree) and lower CPU and IO weights. Output is appended to the

@@ -32,7 +32,7 @@ from mulebox.worker import commands as worker_commands
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="mulebox",
-        description="Run your agents' builds and tests on build machines through one queue.",
+        description="Run your agents' builds and tests on nodes through one queue.",
     )
     parser.add_argument("--version", action="version", version=f"mulebox {get_version()}")
     sub = parser.add_subparsers(dest="command", metavar="<command>")

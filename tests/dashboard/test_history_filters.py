@@ -33,7 +33,7 @@ def test_each_filter_is_an_exact_value(jobs):
     kept, _ = jobs
     assert kept(project="other-app") == ["d", "c"]
     assert kept(job="check") == ["e", "c", "a"]
-    assert kept(worker="wrk-a", client="alice@laptop") == ["e", "d", "c", "b", "a"]
+    assert kept(worker="wrk-a", client="alice@dev machine") == ["e", "d", "c", "b", "a"]
     assert kept(kind="runner") == []
     assert kept(project="other-app", job="lint") == ["d"]
 

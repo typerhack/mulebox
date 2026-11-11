@@ -75,12 +75,12 @@ def test_offline_capable_worker_is_named():
 
 
 def test_no_worker_at_all_is_a_reason():
-    assert "no build machine has connected" in needs.waiting_for([], [], NOW)
+    assert "no node has connected" in needs.waiting_for([], [], NOW)
 
 
 def test_needs_that_went_away_after_queueing_are_explained():
     text = needs.waiting_for([worker(capabilities=["node"])], ["docker"], NOW)
-    assert "no build machine offers docker" in text
+    assert "no node offers docker" in text
 
 
 def status_of(store, staging, job_id, now):

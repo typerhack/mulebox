@@ -1,10 +1,10 @@
-# mulebox client config for the laptop: ~/.config/mulebox/client.toml
+# mulebox client config for the dev machine: ~/.config/mulebox/client.toml
 # (or the file named by $MULEBOX_CONFIG). Unknown keys are errors. See docs/install.md.
 
 # ssh target of the coordinator machine: a Host alias from ~/.ssh/config or user@host.
 coordinator = "build-1"
 
-# mulebox on the build machine. A path starting with ~/ is relative to its home folder.
+# mulebox on the node. A path starting with ~/ is relative to its home folder.
 remote_bin = "~/.mulebox/bin/mulebox"
 
 # Seconds to wait for the ssh connection (1..300).

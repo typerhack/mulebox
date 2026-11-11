@@ -1,6 +1,6 @@
-// The strip above the panels: what is out of step between the build machine, its workers and
-// the laptops that send jobs (dashboard/notices.py), each with the command that fixes it.
-// Two levels: `danger` (a worker, jobs can fail) in red, `warning` (a laptop, its jobs still
+// The strip above the panels: what is out of step between the node, its workers and
+// the dev machines that send jobs (dashboard/notices.py), each with the command that fixes it.
+// Two levels: `danger` (a worker, jobs can fail) in red, `warning` (a dev machine, its jobs still
 // run) in amber; the strip takes its worst line's colour. A mark in the header, with the
 // count, stays in sight when the page scrolls and brings the strip back into view. Both are
 // absent while everything is in step, the usual case.

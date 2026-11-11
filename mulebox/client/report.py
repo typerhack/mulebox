@@ -23,7 +23,7 @@ from mulebox.common.status import (
 __all__ = ["duration_of"]  # re-exported: the shared status model owns it
 
 EXIT_USAGE = 2  # usage or config error
-EXIT_UNREACHABLE = 3  # build machine unreachable
+EXIT_UNREACHABLE = 3  # node unreachable
 EXIT_REMOTE = 4  # protocol or remote error
 EXIT_NOT_STARTED = 5  # the job never ran: the machine could not set it up
 EXIT_CANCELLED = 130
@@ -112,7 +112,7 @@ def log_expired(body: dict[str, Any]) -> bool:
 
 
 def expired_line(job_id: str) -> str:
-    return (f"the log of job {job_id} has expired: build machines remove old logs (after "
+    return (f"the log of job {job_id} has expired: nodes remove old logs (after "
             f"{DEFAULT_LOG_DAYS} days by default). `mulebox status {job_id}` still has the result")
 
 

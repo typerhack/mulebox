@@ -132,7 +132,7 @@ sits beside the search.
   the unit does not restart; `lan` adds the LAN listener (below). Exit 2 is a configuration
   problem, which the unit does not retry; exit 1 is a failed bind, which it does, because
   Wi-Fi can come up after the service.
-- `mulebox dashboard open [--port N] [--remote-port N] [--no-browser]` on the laptop runs
+- `mulebox dashboard open [--port N] [--remote-port N] [--no-browser]` on the dev machine runs
   `ssh -N -L 127.0.0.1:<local>:127.0.0.1:<remote> <coordinator>`, waits for `/healthz`,
   opens the browser and holds the tunnel until Ctrl-C (exit 0). A tunnel that closes or a
   dashboard that does not answer exits 3, the "unreachable" code. The tunnel is always its
@@ -176,13 +176,13 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
   (M5.2).
 - **Out of step** (`dashboard/notices.py`, `web/src/features/header/OutOfStep.tsx`): `notices`, a list of `kind`
   (`worker`, `client`, `skill`), `level` (`danger` for a worker, as jobs can fail; `warning` for
-  a laptop), `name`, `text` and `fix`, dangers first. Shown as a strip above the panels in its
+  a dev machine), `name`, `text` and `fix`, dangers first. Shown as a strip above the panels in its
   worst level's colour, and as a mark with the count in the header that brings the strip into
   view; both hidden while empty. A notice is an online worker on another mulebox than the coordinator,
-  a laptop seen in the last 14 days on another mulebox than the build machine, or a laptop
-  whose skill differs from its mulebox's. Laptops say their `client_version` and `skill`
-  (`current`, `out_of_date`, `none`) with every `submit`; the newest word per laptop is kept in
-  the `clients` table (schema 19, coordinator/clients.py). Laptops older than 0.83.0 say neither
+  a dev machine seen in the last 14 days on another mulebox than the node, or a dev machine
+  whose skill differs from its mulebox's. Dev machines say their `client_version` and `skill`
+  (`current`, `out_of_date`, `none`) with every `submit`; the newest word per dev machine is kept in
+  the `clients` table (schema 19, coordinator/clients.py). Dev machines older than 0.83.0 say neither
   and are not listed. Nothing is compared with a release: only installs that disagree.
 
 ## `lan` mode
@@ -265,7 +265,7 @@ What the protection below keeps out is other web pages in the same browser.
   no cookie, and the token alone is what a page of this dashboard has and another page has not:
   - `SameSite=Strict` keeps the cookie off a request from another site. It does not cover a page
     on another port of this address, which browsers count as the same site, such as a project's
-    dev server on the build machine.
+    dev server on the node.
   - `Sec-Fetch-Site` must be `same-origin` when sent, which browsers do only in a secure context.
   - `Origin` must be exactly this page's origin. A form post has `null` under the page's
     `no-referrer` policy, which is why `/login` cannot use this rule; `fetch` sends the real one.
@@ -291,7 +291,7 @@ What the protection below keeps out is other web pages in the same browser.
   container count only, never names, images or inspect output. Commands are redacted.
 - **Logs are text.** They are redacted by the worker before storage. The page appends them
   as text nodes; no code path parses server data as HTML.
-- **No external resources.** No CDN, and nothing is built on a build machine: the React
+- **No external resources.** No CDN, and nothing is built on a node: the React
   build in `app/` ships in the wheel. Fonts are files of the package.
 - **File names.** Browser filter lists block some script names outright (`logview.js` was
   one), and one blocked ES module stops the whole page. Check new names in a real browser.

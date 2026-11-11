@@ -1,8 +1,8 @@
 """The version has one source: the VERSION file at the repository root.
 
 A source checkout, editable install or not, reads that file: an editable install's metadata
-keeps the version it was installed at, so it would lag behind every bump and make a laptop
-and a build machine on the same commit look like different versions. An installed package
+keeps the version it was installed at, so it would lag behind every bump and make a dev machine
+and a node on the same commit look like different versions. An installed package
 has no checkout around it and reads its metadata (setuptools copies VERSION there at build
 time).
 """

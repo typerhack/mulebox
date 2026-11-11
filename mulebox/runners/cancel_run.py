@@ -34,7 +34,7 @@ def cancel_run(run_url: object, run: GhRun = run_gh) -> str:
     proc = run(["gh", "run", "cancel", run_id, "-R", repo])
     if proc.returncode != 0:
         detail = Redactor([]).redact((proc.stderr or proc.stdout or "").strip())[-300:]
-        hint = (" Log `gh` in on the build machine: gh auth login"
+        hint = (" Log `gh` in on the node: gh auth login"
                 if "auth" in detail.lower() or "token" in detail.lower() else "")
         raise GitHubError(f"GitHub did not cancel run {run_id} of {repo}: "
                           f"{detail or 'no output'}.{hint}")

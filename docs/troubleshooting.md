@@ -9,14 +9,14 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 
 | What you see | What to do |
 | --- | --- |
-| `client.toml: file not found` | The laptop is not set up: [install.md, section 2](install.md#2-install-on-the-laptop) |
-| `build machine unreachable: cannot connect to build-1 over ssh` (exit 3) | Run `ssh build-1 true`. It must succeed and ask nothing. mulebox's ssh never prompts, so log in once by hand to accept the host key, and load a key with a passphrase into your ssh agent. Check `coordinator` in `client.toml` too: the template's `build-1` is an example |
-| `mulebox setup`: `this laptop does not know a machine called ...` | The name is not one ssh can find. Give what you would type after `ssh`: a `Host` alias from `~/.ssh/config` (with `HostName <address>` under it), an address such as `192.168.1.50`, or `alice@192.168.1.50` |
+| `client.toml: file not found` | The dev machine is not set up: [install.md, section 2](install.md#2-install-on-the-dev-machine) |
+| `node unreachable: cannot connect to build-1 over ssh` (exit 3) | Run `ssh build-1 true`. It must succeed and ask nothing. mulebox's ssh never prompts, so log in once by hand to accept the host key, and load a key with a passphrase into your ssh agent. Check `coordinator` in `client.toml` too: the template's `build-1` is an example |
+| `mulebox setup`: `this dev machine does not know a machine called ...` | The name is not one ssh can find. Give what you would type after `ssh`: a `Host` alias from `~/.ssh/config` (with `HostName <address>` under it), an address such as `192.168.1.50`, or `alice@192.168.1.50` |
 | Unreachable (exit 3) or a machine offline after a reboot or a network drop, when it worked before | Its address probably changed: give it a fixed one and update the configs, [README, Give every machine a fixed address](../README.md#give-every-machine-a-fixed-address) |
 | `mulebox setup`: `cannot reach ...` | The name is known but the machine does not answer: check it is on, on this network (or VPN), and runs an ssh server |
 | `mulebox setup`: `cannot log in to ... without a prompt` | The machine answers but refuses the login: copy a key with `ssh-copy-id`, then `ssh <host> true` once |
-| `node.toml: file not found` from `mulebox toolchain` on the laptop | That command belongs to the build machine: run it there, [install.md, Toolchains](install.md#toolchains) |
-| `mulebox doctor` warns that client and build machine differ | Upgrade the older side: [install.md, Upgrade](install.md#upgrade) |
+| `node.toml: file not found` from `mulebox toolchain` on the dev machine | That command belongs to the node: run it there, [install.md, Toolchains](install.md#toolchains) |
+| `mulebox doctor` warns that client and node differ | Upgrade the older side: [install.md, Upgrade](install.md#upgrade) |
 
 ## Setting up a project
 
@@ -25,24 +25,24 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 | `no .mulebox.yml here or in any parent directory` (exit 2) | Run it from the project, or write the file: [getting-started.md](getting-started.md#3-set-up-the-project) |
 | `is not inside a git worktree` (exit 2) | mulebox uploads the files git knows about, so the project needs `git init` |
 | `has no commits yet` (exit 2) | Commit once, then run it again. The job records the commit it came from |
-| `no build machine offers docker` or another need (exit 4) | A person adds it to `capabilities` in `node.toml` and restarts the worker: [install.md, Node config](install.md#node-config) |
-| `toolchain node ... is not installed on this worker` (exit 5) | Install that version on the build machine, or pin one it lists: [install.md, Toolchains](install.md#toolchains) |
+| `no node offers docker` or another need (exit 4) | A person adds it to `capabilities` in `node.toml` and restarts the worker: [install.md, Node config](install.md#node-config) |
+| `toolchain node ... is not installed on this worker` (exit 5) | Install that version on the node, or pin one it lists: [install.md, Toolchains](install.md#toolchains) |
 | `snapshot is ... over the 1 GiB upload limit` | Add generated folders to `.gitignore`, or to `exclude` in `.mulebox.yml` |
 
 ## Jobs
 
 | What you see | What to do |
 | --- | --- |
-| The job fails on the build machine and passes on the laptop | The usual causes: a file git ignores or a `.env` file, which are not uploaded; a tool that is only in your login shell's `PATH` (`command not found`, exit 127, and see [getting-started.md, section 2](getting-started.md#2-decide-where-the-projects-tools-come-from)); or macOS against Linux, such as the case of a file name |
-| `queued, position 1; waiting: no build machine for this job is online` | Nothing starts until the worker is back: see the build machine section below |
+| The job fails on the node and passes on the dev machine | The usual causes: a file git ignores or a `.env` file, which are not uploaded; a tool that is only in your login shell's `PATH` (`command not found`, exit 127, and see [getting-started.md, section 2](getting-started.md#2-decide-where-the-projects-tools-come-from)); or macOS against Linux, such as the case of a file name |
+| `queued, position 1; waiting: no node for this job is online` | Nothing starts until the worker is back: see the node section below |
 | Waiting with no such line | Normal: there is one line for everyone. `mulebox queue` shows it. Use `--detach` to go on working |
 | `stale` warning at the end | You edited files while it ran. The result belongs to the upload, so run it again |
-| Exit 75, `interrupted` | The build machine restarted or the worker died. Run it again once |
+| Exit 75, `interrupted` | The node restarted or the worker died. Run it again once |
 | Exit 76, `stopped: stuck` | The job did nothing and nobody answered its question. It says nothing about your code: find what hangs, and run it again. |
 | A job's log has expired | Logs are kept for 30 days by default: [install.md, Node config](install.md#node-config) |
 | Containers refused, ports or caches behave oddly | [agents.md, 2a](agents.md#2a-projects-that-need-containers-compose) lists what is refused and why, and how ports and caches work |
 
-## The build machine
+## The node
 
 | Problem | What to do |
 | --- | --- |

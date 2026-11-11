@@ -7,7 +7,7 @@ they are tracked in git. Symlinks are stored as links; a link that is absolute o
 outside the project root is skipped, because the worker refuses such links on extraction.
 
 Archive members carry the path, permission bits, size and mtime only: owner ids and names
-are zeroed so the archive never reveals the laptop's user name. The file is created with
+are zeroed so the archive never reveals the dev machine's user name. The file is created with
 `tempfile.mkstemp` (mode 0600); the caller deletes it with `Snapshot.discard()`.
 """
 

@@ -21,7 +21,7 @@ from mulebox.coordinator.validate import check_job_id
 
 MAX_LIST_BYTES = 16 << 20
 MAX_NAMED = 2000  # more than this, and the reply outgrows what a full upload would save
-_COMPRESS_LEVEL = 1  # on the build machine, for a file that crosses no slow link
+_COMPRESS_LEVEL = 1  # on the node, for a file that crosses no slow link
 
 
 def _job(store: Store, job_id: str) -> dict[str, Any]:

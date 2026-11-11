@@ -1,5 +1,5 @@
 // A live stream that notices a dead connection. EventSource reports a connection that closes,
-// but not one that goes quiet: after a Wi-Fi change or a sleeping laptop it can wait forever
+// but not one that goes quiet: after a Wi-Fi change or a sleeping dev machine it can wait forever
 // with no error. The server sends a `beat` event every few seconds, so a long silence means
 // the connection is gone, and the stream is opened again. `url` is asked each time, so a
 // reopened stream can resume where it stopped.

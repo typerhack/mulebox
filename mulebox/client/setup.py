@@ -1,7 +1,7 @@
 """`mulebox setup <host>`: from a machine you can log in to, to a job that passed on it.
 
 Each step says what it does and stops with what to do about it. It can run again at any time: an
-upgrade keeps `node.toml`, and the laptop's config is written only if there is none.
+upgrade keeps `node.toml`, and the dev machine's config is written only if there is none.
 """
 
 import json
@@ -50,16 +50,16 @@ _UNREACHABLE = ("connection refused", "timed out", "no route to host", "network 
 def _login_advice(target: str, detail: str) -> str:
     text = detail.lower()
     if any(word in text for word in _UNKNOWN_NAME):
-        return (f"this laptop does not know a machine called {target}.\n"
+        return (f"this dev machine does not know a machine called {target}.\n"
                 "Give its address, such as `mulebox setup 192.168.1.50`, or a name from "
                 f"~/.ssh/config (`Host {target}` with `HostName <address>` under it). Then check "
                 f"that `ssh {target} true` works.")
     if any(word in text for word in _UNREACHABLE):
         return (f"cannot reach {target}.\n"
-                "Check that it is on, that this laptop is on its network (or VPN), and that it "
+                "Check that it is on, that this dev machine is on its network (or VPN), and that it "
                 f"runs an ssh server; then that `ssh {target} true` works.")
     return (f"cannot log in to {target} without a prompt, and mulebox never answers one.\n"
-            f"Make `ssh {target} true` work. With no key on this laptop yet, make one: "
+            f"Make `ssh {target} true` work. With no key on this dev machine yet, make one: "
             "`ssh-keygen -t ed25519`. Copy it with `ssh-copy-id`, which asks for the password "
             f"there once, so a person runs it: `ssh-copy-id {target}` if your user name there is "
             f"the same as here, else `ssh-copy-id <user>@{target}`, or put `User <user>` under "
@@ -186,7 +186,7 @@ def _drain(target: str, seconds: int) -> list[str] | None:
 
 def wait_until_idle(target: str, say: Say) -> bool:
     """Hold new jobs back until the running ones end. True if the machine is holding them. The
-    hold is renewed while this waits, so a killed laptop stops nothing for long."""
+    hold is renewed while this waits, so a killed dev machine stops nothing for long."""
     told = None
     while True:
         running = _drain(target, HOLD_WHILE_WAITING_S)

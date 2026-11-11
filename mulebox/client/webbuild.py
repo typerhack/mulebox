@@ -1,8 +1,8 @@
 """Builds the dashboard's React front end before a wheel is made from a checkout.
 
 The front end lives in `web/` at the repository root and builds into `mulebox/dashboard/app/`,
-static files the dashboard serves (dashboard/pages.py). A build machine never needs Node: the
-laptop that runs `mulebox setup` builds, when it can.
+static files the dashboard serves (dashboard/pages.py). A node never needs Node.js: the
+dev machine that runs `mulebox setup` builds, when it can.
 
 - No `web/` beside the package (an install from PyPI): nothing to do; the package already
   holds whatever build it was shipped with.

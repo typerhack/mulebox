@@ -2,7 +2,7 @@
 
 The paths were checked before the job went (common/take_paths.py), and one that the snapshot
 would never send, such as `.env` or a key, is refused there: taking it back could overwrite a
-secret with the build machine's copy. Each file is fetched in chunks from the coordinator
+secret with the node's copy. Each file is fetched in chunks from the coordinator
 (coordinator/taken.py), written next to its place and renamed over it, and only inside the
 project: a path through a symlink is refused rather than followed.
 """
@@ -80,7 +80,7 @@ def bring_back(call: Call, request: Callable[..., Any], job_id: str, paths: Sequ
         data = _fetch(call, request, job_id, index)
         if data is None:
             report.status(err, f"not taken back: {path} (not there after the command, or the "
-                               "build machine's mulebox is older; the job's log says which)")
+                               "node's mulebox is older; the job's log says which)")
             missing += 1
             continue
         try:

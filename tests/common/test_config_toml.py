@@ -1,4 +1,4 @@
-"""Tests for the TOML configs: client.toml (laptop) and node.toml (build machine)."""
+"""Tests for the TOML configs: client.toml (dev machine) and node.toml (node)."""
 
 import pytest
 

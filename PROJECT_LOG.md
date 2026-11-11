@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.2.0 - 2026-11-11 - minor
+- One pair of names everywhere, the user's call: the **dev machine** (where you and your agents edit code: a laptop, a desktop or another Linux PC) and the **node** (a Linux machine that runs jobs), in place of "laptop" and "build machine". In the docs, CLI help and messages, the contract, the skill, the dashboard and the architecture images. Not renamed: protocol and database fields, example hostnames such as `laptop.local`, the laptop icon on a job's card, and past entries here and in phases.md. Anchors to install.md's section 2 are now `#2-install-on-the-dev-machine`.
+
 ## 1.1.5 - 2026-11-11 - patch
 - A change to docs alone runs no tests, the user's call: CI skips it (`paths-ignore` in ci.yml: the root docs, LICENSE, VERSION, `docs/**/*.md` and `.html`), and `mulebox check` gives back the last passed result (`ignore_changes:` in `.mulebox.yml`, the same list). `tokens.css` and the packaged SKILL.md stay code. A test keeps the two lists equal and code out of them; AGENTS.md and releasing.md say so.
 

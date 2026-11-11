@@ -43,7 +43,7 @@ def env_values(reader: Reader, files: tuple[str, ...]) -> dict[str, str]:
 
 
 def job_env(reader: Reader) -> dict[str, str]:
-    """`job_env` of a build machine. It reaches compose jobs too, so their names are out."""
+    """`job_env` of a node. It reaches compose jobs too, so their names are out."""
     return _names(reader, "job_env", reader.string_map("job_env"), True)
 
 

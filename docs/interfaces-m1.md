@@ -7,7 +7,7 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 
 - **Full snapshot, no worker-side clone.** The client sends a tar.gz of the worktree (tracked +
   untracked, not ignored, minus excludes). The worker extracts it; no git remote access is
-  needed on build machines. Delta uploads against a cached base are a parking-lot item.
+  needed on nodes. Delta uploads against a cached base are a parking-lot item.
 - **No coordinator socket daemon for requests.** `mulebox rpc` opens the SQLite store
   directly (WAL mode, `busy_timeout`, `BEGIN IMMEDIATE` for writes). The coordinator
   service (`mulebox coordinator serve`) only runs periodic sweeps (lease expiry, recovery).
@@ -17,7 +17,7 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 - **Leases.** Client lease 300 s (was 120 s until 0.5.2), renewed by heartbeats every 20 s on the `watch` stream.
   Worker lease 120 s per job, renewed every 20 s. Clock: coordinator `time.time()`.
 
-## Filesystem layout on a build machine (inside NodeConfig roots)
+## Filesystem layout on a node (inside NodeConfig roots)
 
 | Path | Owner | Content |
 | --- | --- | --- |
@@ -63,7 +63,7 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 | `mulebox toolchain install <name> <version>` | worker | node, pnpm |
 | `mulebox toolchain list` | worker | |
 
-Exit codes for client failures (not job failures): 2 usage/config error, 3 build machine
+Exit codes for client failures (not job failures): 2 usage/config error, 3 node
 unreachable (`SSHUnavailable`), 4 protocol/remote error, 130 cancelled by Ctrl-C.
 A finished job maps: passed -> its exit code (0), failed -> its exit code, or 5 if it could not start (no command ran),
 timed_out -> 124 (a worker older than 0.37 only), cancelled -> 130, interrupted -> 75, a
@@ -214,13 +214,13 @@ Stage rows: `steps`, see [interfaces-m4.md](interfaces-m4.md), Job steps.
 
 ## Install (`mulebox/machine/`, M1.8)
 
-- `mulebox/machine/install.sh` (run on the build machine): checks Linux, systemd, Python >= 3.12
+- `mulebox/machine/install.sh` (run on the node): checks Linux, systemd, Python >= 3.12
   and `python3 -m venv` (prints `sudo apt-get install python3-venv` if missing); creates
   `~/.mulebox/venv`, installs the given wheel, links `~/.mulebox/bin/mulebox`; writes
   `~/.config/mulebox/node.toml` from a template if missing (roots under `~/.mulebox/`);
   creates the roots; installs `mulebox-coordinator.service` and `mulebox-worker.service`
   user units; checks `loginctl show-user` Linger and prints how to enable it; never deletes.
-- `mulebox setup <ssh-target>` (run on the laptop, client/setup.py): builds a wheel from the
+- `mulebox setup <ssh-target>` (run on the dev machine, client/setup.py): builds a wheel from the
   running package (client/wheel.py), sends it with these files, runs the install, fills empty
   `capabilities` (`mulebox node-offers`, worker/offers.py), writes `client.toml` if there is none,
   and runs a first job. A failed login check names its cause from ssh's words: an unknown host

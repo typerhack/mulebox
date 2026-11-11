@@ -91,7 +91,7 @@ class LanAccess:
     password_hash: str | None  # None: `lan_password = false`, no sign-in on this listener
     sessions: Sessions
     limiter: LoginLimiter
-    # One hash at a time: scrypt takes memory and CPU from jobs on the build machine.
+    # One hash at a time: scrypt takes memory and CPU from jobs on the node.
     hashing: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     def is_lan_socket(self, sockname: object) -> bool:

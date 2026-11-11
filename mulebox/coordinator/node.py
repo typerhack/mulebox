@@ -1,4 +1,4 @@
-"""Open the coordinator's store and staging from a build machine's NodeConfig."""
+"""Open the coordinator's store and staging from a node's NodeConfig."""
 
 from pathlib import Path
 

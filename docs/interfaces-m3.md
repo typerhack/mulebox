@@ -106,7 +106,7 @@ anything else dropped. Stored as `jobs.ci_result` (schema 17); empty means not k
 
 ## Runner management (`mulebox/runners/manage.py`, `mulebox/runners/github.py`)
 
-On the build machine (CLI `mulebox runner ...`):
+On the node (CLI `mulebox runner ...`):
 - `runner add --repo <owner/repo> [--labels a,b] [--name N]`: registration token on
   **stdin** (never argv, never logged). Downloads the latest `actions/runner` release for
   linux-x64/arm64 (GitHub API `releases/latest`), verifies the tarball against the SHA-256
@@ -131,7 +131,7 @@ On the build machine (CLI `mulebox runner ...`):
   `KillSignal=SIGTERM`, `TimeoutStopSec=5min`, `Restart=always`, `RestartSec=10`. install.sh
   copies it with the others (enable is per runner).
 
-On the laptop (CLI `mulebox runner register|unregister --repo <owner/repo>`): gets a token
+On the dev machine (CLI `mulebox runner register|unregister --repo <owner/repo>`): gets a token
 with `gh api -X POST repos/<owner/repo>/actions/runners/registration-token --jq .token`
 (or `remove-token`), and runs `mulebox runner add|remove` on the coordinator over
 `common.ssh` with the token on stdin. Requires `gh` logged in with admin rights on the repo;

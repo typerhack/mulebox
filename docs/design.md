@@ -5,17 +5,17 @@ Status: implemented up to the open tasks in [phases.md](phases.md). Version: see
 ## Problem
 
 AI coding agents work in many git worktrees at once. Each runs builds, type checks, lint
-and test suites on the laptop it lives on. Several at once overheat the laptop, stall video
+and test suites on the dev machine it lives on. Several at once overheat the dev machine, stall video
 and the browser, and can crash applications. Hosted CI is slow and has minute quotas.
 Most people have, or can cheaply get, an idle Linux machine on the same network.
 
 ## Goals
 
-- Agents keep editing locally; every heavy job runs on build machines on the LAN.
+- Agents keep editing locally; every heavy job runs on nodes on the LAN.
 - One queue for all projects and all sources (agents, the user, GitHub Actions).
 - Results identical in meaning to running locally: same command, exit code, output.
 - Safe by default: jobs never touch anything outside mulebox's own folders.
-- Easy to grow: add or replace build machines without changing agents or projects.
+- Easy to grow: add or replace nodes without changing agents or projects.
 - Simple to operate for one person; no cloud services, no inbound internet access.
 
 Non-goals (for now): multi-tenant use, internet-facing access, automatic failover,
@@ -25,9 +25,9 @@ scheduling by speed or job weight, an MCP server (a thin wrapper may come later)
 
 | Role | Runs on | Does |
 | --- | --- | --- |
-| client | the laptop | `mulebox check`, `mulebox queue`, terminal live view, snapshot upload |
+| client | the dev machine | `mulebox check`, `mulebox queue`, terminal live view, snapshot upload |
 | coordinator | one always-on machine | queue, leases, history, staging of inputs, web dashboard |
-| worker | each build machine | claims jobs, prepares workspaces, runs and supervises jobs, cleanup |
+| worker | each node | claims jobs, prepares workspaces, runs and supervises jobs, cleanup |
 
 Phase 1 runs coordinator and worker on the same machine, as separate components that talk
 through the worker protocol, so more workers later are configuration, not a rewrite.
@@ -91,7 +91,7 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 
 - Client lease: renewed by a client following a job every 20 s, on the coordinator's clock. It
   says a client is there and stops nothing: a job goes on when its client goes away (agent killed,
-  laptop asleep, Wi-Fi gone), and its result waits. Ctrl-C and `mulebox cancel` stop a job.
+  dev machine asleep, Wi-Fi gone), and its result waits. Ctrl-C and `mulebox cancel` stop a job.
 - Worker lease: renewed by the worker while it executes; separate from the client lease.
 - Idempotent submit (client-chosen key): a lost reply never creates a duplicate job.
 - Restart: the coordinator reconciles stored jobs; the worker, before it claims anything,
@@ -101,7 +101,7 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
   worker lease expires, then stop and clean. A job is never reassigned just because its
   worker vanished.
 - Client disconnected after submit: the outcome is "unknown"; reconnect by job id.
-- Build machine unreachable: the client fails fast with a clear message and never falls
+- Node unreachable: the client fails fast with a clear message and never falls
   back to running locally on its own.
 
 ## Time limits
@@ -197,7 +197,7 @@ and is also given apart, a run that ended with no length (most often interrupted
 as unknown, never as zero, and frozen time is in it, as the store keeps that a job is paused,
 not when. A run is cut at a range's edges, so a job across midnight counts on both days. The
 caller sends the ranges in epoch seconds: only it knows its own midnight and summer time.
-Filters and breakdowns: project, job, source (`client`: a laptop or `github`), machine and
+Filters and breakdowns: project, job, source (`client`: a dev machine or `github`), machine and
 kind. Job rows are kept for ever, so the totals since the first job stay exact.
 
 ## Project config: `.mulebox.yml`
@@ -249,7 +249,7 @@ machine that also does other work. So the worker does not run them as they are:
 - **The boundary.** That policy stops a CI file's assumptions from reaching past the job. It
   does not contain a hostile project. A job can run any command, including `docker run
   --privileged` in a job line, and Docker access is root-equivalent. Run only projects you
-  trust on a build machine.
+  trust on a node.
 
 ## Browser tests
 
@@ -379,7 +379,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   and tooltips, Lucide icons, Geist bundled. No state library: the one event stream feeds
   small stores read with `useSyncExternalStore`, and the routes are hashes. It is built to
   static files in `mulebox/dashboard/app/` at release time and by `mulebox setup` on the
-  laptop, so a build machine never needs Node and the install stays one command. Next.js was
+  dev machine, so a node never needs Node.js and the install stays one command. Next.js was
   weighed and left out: it would need Node and a second server on every machine.
 - With no build in the package, `/` answers 503 with how to get one, and the API keeps
   working.
@@ -411,7 +411,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - The page can steer the queue: cancel, pause, resume, move in line and boost a job, and pause a
   machine. A GitHub run's slot moves in line while it waits; once it runs it can be frozen and
   boosted like a job (its runner's service and containers), and cancelled, by asking GitHub. mulebox is for its owner's own network, so these are on wherever the page opens, as
-  the same commands are from any laptop with ssh to the machine (decided by the user on
+  the same commands are from any dev machine with ssh to the machine (decided by the user on
   2026-11-10; before 0.87.0 cancelling needed a sign-in on the `lan` address and was off by
   default). Each sends what the CLI sends, by the same `mulebox rpc`, so the dashboard process
   never holds a writable store. Protection against other pages: interfaces-m2.md, Controls.
@@ -456,7 +456,7 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
 - Configured roots per worker (`jobs/`, `projects/`, `cache/`, `runners/`); the path-safety module
   resolves paths, rejects anything outside the roots, mount points and symlink escapes, and
   deletes with directory-descriptor-anchored operations (no check-then-delete race).
-- No secrets leave the laptop (excludes above); CI values in configs are throwaway.
+- No secrets leave the dev machine (excludes above); CI values in configs are throwaway.
 - Test databases are per job; jobs must not use existing databases on the machine.
 - Container ports of `compose:` projects bind to 127.0.0.1, whatever the compose file says.
 - Docker access is root-equivalent: running jobs as the machine's normal user is fine for
@@ -497,9 +497,9 @@ lines (see [../AGENTS.md](../AGENTS.md)).
 
 ## Prior measurements (anonymised)
 
-M4 Pro laptop vs a 2014 4-core/8-thread i7 with 16 GB on 2.4 GHz Wi-Fi, two real projects:
+M4 Pro dev machine vs a 2014 4-core/8-thread i7 with 16 GB on 2.4 GHz Wi-Fi, two real projects:
 
-| Workload | Laptop | Old i7 | GitHub-hosted |
+| Workload | Dev machine | Old i7 | GitHub-hosted |
 | --- | --- | --- | --- |
 | Next.js + pnpm gate (lint, types, build, 5k tests) | 60 s | 208 s | 9-10 min job |
 | Laravel + Docker + Playwright CI job | ~2.5 min | 4.5 min | ~10 min job |

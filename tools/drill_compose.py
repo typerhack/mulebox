@@ -6,7 +6,7 @@ starts it, checks what Docker made of it, and removes it with the worker's own t
 It needs a machine with Docker and an image that is already there, and pulls nothing else.
 
 It only ever removes what carries the labels of a job id it just made up, and says what
-those are first. Run it on a build machine from a checkout, or from here without one:
+those are first. Run it on a node from a checkout, or from here without one:
 
     ssh build-1 '~/.mulebox/venv/bin/python - --real-docker' < tools/drill_compose.py
 """

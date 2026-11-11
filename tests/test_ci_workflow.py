@@ -111,10 +111,10 @@ def test_the_readme_on_pypi_links_to_the_release_on_github():
     spec = importlib.util.spec_from_file_location("pypi_readme", REPO / "tools" / "pypi_readme.py")
     tool = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(tool)
-    text = ('[Install](docs/install.md#2-install-on-the-laptop) ![q](docs/images/queue-dark.png) '
+    text = ('[Install](docs/install.md#2-install-on-the-dev-machine) ![q](docs/images/queue-dark.png) '
             '<img src="docs/images/phone-dark.png"> [web](https://example.com) [up](#install)')
     assert tool.absolute(text, "v1.1.0") == (
-        "[Install](https://github.com/typerhack/mulebox/blob/v1.1.0/docs/install.md#2-install-on-the-laptop) "
+        "[Install](https://github.com/typerhack/mulebox/blob/v1.1.0/docs/install.md#2-install-on-the-dev-machine) "
         "![q](https://raw.githubusercontent.com/typerhack/mulebox/v1.1.0/docs/images/queue-dark.png) "
         '<img src="https://raw.githubusercontent.com/typerhack/mulebox/v1.1.0/docs/images/phone-dark.png"> '
         "[web](https://example.com) [up](#install)")

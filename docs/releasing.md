@@ -27,7 +27,7 @@ mulebox check
 `web/` builds into `mulebox/dashboard/app/`, which is not in git: every way a package is made
 builds it first.
 
-- `mulebox setup` builds it on the laptop before it makes the wheel it sends, when the build is
+- `mulebox setup` builds it on the dev machine before it makes the wheel it sends, when the build is
   missing or older than a file under `web/` (`mulebox/client/webbuild.py`). Without `npm` it
   stops and names Node.js and npm; a build that is already fresh needs neither.
 - The release workflow builds it before the wheel it publishes to PyPI.
@@ -86,7 +86,7 @@ Only after the user has said to release.
    [PyPI](https://pypi.org/project/mulebox/). There is no token: PyPI trusts the workflow
    through trusted publishing, set on PyPI for `typerhack/mulebox`, `release.yml` and the
    repository environment `pypi`, and only the publish job may ask for that identity.
-5. Install it from PyPI on a laptop, `uv tool install mulebox` or `uv tool upgrade mulebox`,
+5. Install it from PyPI on a dev machine, `uv tool install mulebox` or `uv tool upgrade mulebox`,
    run `mulebox setup` from it and a real project through it: [install.md,
    Upgrade](install.md#upgrade).
 

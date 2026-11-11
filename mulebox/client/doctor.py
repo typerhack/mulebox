@@ -42,10 +42,10 @@ def registries(reached: dict[str, Any]) -> list[Finding]:
     """What the machine could connect to, from a `reach` reply."""
     missing = sorted(host for host, ok in reached.items() if not ok)
     if missing:
-        return [Finding(WARN, "registry", f"the build machine cannot connect to "
+        return [Finding(WARN, "registry", f"the node cannot connect to "
                         f"{', '.join(missing)}: a job that must fetch an image from there "
                         "would not start (exit 5). Images it already has still work")]
-    return [Finding(OK, "registry", f"the build machine can connect to {host}")
+    return [Finding(OK, "registry", f"the node can connect to {host}")
             for host in sorted(reached)]
 
 
@@ -59,20 +59,20 @@ def versions(client: str, facts: Facts) -> list[Finding]:
     """Client against machine, machine against its workers."""
     machine = facts.get("version")
     if not machine:
-        return [Finding(WARN, "version", "the build machine did not say its version")]
+        return [Finding(WARN, "version", "the node did not say its version")]
     if machine == client:
-        out = [Finding(OK, "version", f"client and build machine both run {client}")]
+        out = [Finding(OK, "version", f"client and node both run {client}")]
     else:
-        fix = ("upgrade the laptop: " + upgrade.command() if compare(client, machine) == -1
+        fix = ("upgrade the dev machine: " + upgrade.command() if compare(client, machine) == -1
                else "bring the machine up with `mulebox setup <host>`")
-        out = [Finding(WARN, "version", f"client {client}, build machine {machine}: newer "
+        out = [Finding(WARN, "version", f"client {client}, node {machine}: newer "
                        f"options may be ignored or refused; {fix}")]
     for worker in facts.get("workers") or ():
         reported = worker.get("version")
         if reported and reported != machine:
             out.append(Finding(WARN, "version", f"worker {worker.get('worker')} runs {reported}, "
                                f"its coordinator {machine}; run `mulebox setup` for the "
-                               "older one from a laptop on the newer mulebox"))
+                               "older one from a dev machine on the newer mulebox"))
     return out
 
 
@@ -108,13 +108,13 @@ def _fix(project: ProjectConfig) -> str:
 def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
     """Can any machine run this project?"""
     if not workers:
-        return [Finding(WARN, "machine", "no build machine has connected to this coordinator yet, "
+        return [Finding(WARN, "machine", "no node has connected to this coordinator yet, "
                         "so a job would wait; tell the user")]
     gaps = {w.get("worker"): _missing(w, project) for w in workers}
     able = [w for w in workers if not gaps[w.get("worker")]]
     if not able:
         lacking = "; ".join(f"{name} lacks {', '.join(miss)}" for name, miss in gaps.items())
-        return [Finding(FAIL, "machine", f"no build machine can run this project: {lacking}. "
+        return [Finding(FAIL, "machine", f"no node can run this project: {lacking}. "
                         f"{_fix(project)}")]
     usable = [w for w in able if w.get("online")]
     to_install = sorted({gap for w in usable for gap in _toolchain_gaps(w, project)})

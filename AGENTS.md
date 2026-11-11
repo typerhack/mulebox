@@ -28,7 +28,7 @@ product work, not a personal script.
    private ops repo, not here. One exception: mulebox's own address,
    `github.com/typerhack/mulebox`, where docs say how to install it or file an issue (the
    user's decision, 2026-11-11).
-7. **Safety on build machines.** mulebox only writes and deletes inside its own configured
+7. **Safety on nodes.** mulebox only writes and deletes inside its own configured
    roots, through the path-safety module. No disk tools, no system-path changes from jobs.
    Never test a destructive filter against a real machine.
 8. **Track work in [docs/phases.md](docs/phases.md).** When asked "what is open?", answer

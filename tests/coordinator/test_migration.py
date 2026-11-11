@@ -36,7 +36,7 @@ INSERT INTO meta VALUES ('schema_version', '1');
 INSERT INTO jobs (job_id, idempotency_key, project, job, argv, fingerprint, base_commit,
     client, timeout_min, state, created_at, queued_at)
     VALUES ('job-01JC3X0000000000000000000', 'sub-old', 'example-app', 'check',
-            '["pnpm", "check"]', 'f', 'a', 'alice@laptop', 30, 'queued', 900.0, 900.0);
+            '["pnpm", "check"]', 'f', 'a', 'alice@dev machine', 30, 'queued', 900.0, 900.0);
 INSERT INTO workers VALUES ('build-1', '["node"]', 1, 900.0);
 """
 

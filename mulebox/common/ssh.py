@@ -1,4 +1,4 @@
-"""SSH transport: run a fixed remote executable on a build machine (docs/design.md).
+"""SSH transport: run a fixed remote executable on a node (docs/design.md).
 
 Every call is `ssh -T -o BatchMode=yes -o ConnectTimeout=<n> <target> -- <command>`, run
 with an argument list (never a local shell). The remote command is `shlex.join(argv)`, so

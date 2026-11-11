@@ -1,4 +1,4 @@
-"""CLI `mulebox dashboard serve` (build machine) and `mulebox dashboard open` (laptop).
+"""CLI `mulebox dashboard serve` (node) and `mulebox dashboard open` (dev machine).
 
 `serve` reads node.toml's `[dashboard]`: `off` exits 0 with a note (so an enabled unit
 does not restart in a loop), `local` serves on 127.0.0.1 only, and `lan` also serves
@@ -29,11 +29,11 @@ _log = get_logger(__name__)
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    p = sub.add_parser("dashboard", help="web dashboard (serve on the build machine, open "
-                       "from the laptop)")
+    p = sub.add_parser("dashboard", help="web dashboard (serve on the node, open "
+                       "from the dev machine)")
     dash = p.add_subparsers(dest="dashboard_command", metavar="<command>", required=True)
 
-    serve = dash.add_parser("serve", help="serve the dashboard (build machine)")
+    serve = dash.add_parser("serve", help="serve the dashboard (node)")
     serve.add_argument("--port", type=int, default=None, help="override node.toml's port")
     serve.add_argument("--node-config", type=Path, default=None, help=argparse.SUPPRESS)
     serve.add_argument("--log-level", default="INFO")
@@ -43,7 +43,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     opener.add_argument("--port", type=int, default=DEFAULT_DASHBOARD_PORT,
                         help=f"local port of the tunnel (default {DEFAULT_DASHBOARD_PORT})")
     opener.add_argument("--remote-port", type=int, default=DEFAULT_DASHBOARD_PORT,
-                        help="dashboard port on the build machine (node.toml, default "
+                        help="dashboard port on the node (node.toml, default "
                         f"{DEFAULT_DASHBOARD_PORT})")
     opener.add_argument("--no-browser", action="store_true", help="only print the URL")
     opener.set_defaults(func=guarded(_open))

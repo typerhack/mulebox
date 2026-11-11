@@ -42,7 +42,7 @@ _OS_NAMES = {"Darwin": "macOS"}
 
 
 def client_os() -> str:
-    """The laptop's system as people name it, for the dashboard: macOS, Linux, Windows."""
+    """The dev machine's system as people name it, for the dashboard: macOS, Linux, Windows."""
     system = platform.system() or "unknown"
     return _OS_NAMES.get(system, system)
 

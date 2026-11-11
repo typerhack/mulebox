@@ -123,7 +123,7 @@ def test_events_follow_a_real_job_through_the_queue(local, in_project, capsys, m
     second, _ = detach(capsys)
     worker = FakeWorker(local.store, local.staging, pause=0.8)
     # The first job starts only once `events` has printed the second at #2: a fixed wait was
-    # too short on a loaded build machine, and the #2 line was never seen.
+    # too short on a loaded node, and the #2 line was never seen.
     printed, handle = threading.Event(), events.EventStream.handle
 
     def noted(self, msg):

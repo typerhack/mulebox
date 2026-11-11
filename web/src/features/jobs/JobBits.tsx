@@ -28,13 +28,13 @@ export const JobId = ({ job }: { job: Job }) => (
   <span title={`Job id ${job.job_id}`} className="font-mono text-xs whitespace-nowrap text-ink-3">{shortId(job)}</span>
 );
 
-// Where a job came from: a GitHub CI run, an upgrade, or the system of the laptop that sent
-// it. Older clients do not say, and then it is only a laptop.
+// Where a job came from: a GitHub CI run, an upgrade, or the system of the dev machine that sent
+// it. Older clients do not say, and then it is only a dev machine.
 export function Source({ job, className }: { job: Job; className?: string }) {
   const [Icon, word, tip]: [LucideIcon, string, string] = job.kind === "upgrade"
     ? [Download, "Upgrade", "A mulebox upgrade: nothing new starts here before it"]
     : isCI(job) ? [Workflow, "CI", "A GitHub CI run"]
-      : [Laptop, job.client_os ?? "Laptop", `Sent from a laptop${job.client_os ? `, ${job.client_os}` : ""}`];
+      : [Laptop, job.client_os ?? "Dev machine", `Sent from a dev machine${job.client_os ? `, ${job.client_os}` : ""}`];
   return (
     <span title={tip} className={cx("inline-flex items-center gap-1 whitespace-nowrap", className)}>
       <Icon aria-hidden className="size-icon-s" />{word}

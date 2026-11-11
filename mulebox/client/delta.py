@@ -1,6 +1,6 @@
 """Send only what changed since the project's last upload (coordinator/delta.py).
 
-The link to a build machine can be far slower than the machine, so a snapshot of some size costs
+The link to a node can be far slower than the machine, so a snapshot of some size costs
 more in upload than the job's own start. Small snapshots go whole: the file list would cost as
 much. `send` returning False means nothing was sent and the whole snapshot must go; so does any
 failure here, as a job must not fail over a saving.

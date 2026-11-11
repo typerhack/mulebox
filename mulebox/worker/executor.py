@@ -1,7 +1,7 @@
 """Running a job's process tree: the Executor contract and the subprocess executor.
 
 `Executor` is what the agent loop talks to. `SystemdExecutor` (systemd.py) is the one used
-on Linux build machines; `SubprocessExecutor` here has the same behaviour with a process
+on Linux nodes; `SubprocessExecutor` here has the same behaviour with a process
 group instead of a systemd unit, for tests and development on macOS:
 
 - the job runs in a new session (its own process group), output appended to the log;

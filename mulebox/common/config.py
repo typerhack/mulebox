@@ -2,14 +2,14 @@
 
 - Project config: ``.mulebox.yml`` in the repository (YAML, ``yaml.safe_load`` only).
 - Client config: ``$MULEBOX_CONFIG`` or ``~/.config/mulebox/client.toml`` (TOML).
-- Node config: ``~/.config/mulebox/node.toml`` on a build machine (TOML).
+- Node config: ``~/.config/mulebox/node.toml`` on a node (TOML).
 
 Unknown keys are errors, and every :class:`ConfigError` names the file and the field.
 
 Choices where docs/interfaces.md is silent:
 
 - ``project`` and node ``name`` must match ``[A-Za-z0-9][A-Za-z0-9._-]*``: they end up
-  in paths and log lines on build machines.
+  in paths and log lines on nodes.
 - Toolchain versions must be YAML strings; an unquoted ``3.10`` would load as the float
   ``3.1``, so it is rejected with a hint to quote it.
 - List fields must be lists (a bare string is rejected).
@@ -183,7 +183,7 @@ def node_config_path() -> Path:
 
 
 def load_client_config(path: Path | None = None) -> ClientConfig:
-    """Load the laptop-side client config."""
+    """Load the client config of the dev machine."""
     path = Path(path) if path is not None else client_config_path()
     reader = Reader(path, load_toml(path))
     config = ClientConfig(
@@ -277,7 +277,7 @@ def _lan_address(sub, text: str, lan_range: str | None) -> str:
 
 
 def load_node_config(path: Path | None = None) -> NodeConfig:
-    """Load a build machine's node config."""
+    """Load a node's config."""
     path = Path(path) if path is not None else node_config_path()
     reader = Reader(path, load_toml(path))
     config = NodeConfig(

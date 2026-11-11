@@ -1,4 +1,4 @@
-"""Laptop side: token from a fake `gh`, remote command over a fake ssh stream."""
+"""Dev machine side: token from a fake `gh`, remote command over a fake ssh stream."""
 
 import io
 import subprocess

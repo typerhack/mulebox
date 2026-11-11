@@ -13,7 +13,7 @@ def agent_job(link, store, staging) -> dict:
     reply = link.call(request(
         MessageType.SUBMIT, project="example-app", job="check", argv=["pnpm", "check"],
         idempotency_key="sub-busy", fingerprint="f" * 64, base_commit="a" * 40,
-        client="alice@laptop"))
+        client="alice@dev machine"))
     data = b"snapshot"
     uploads.accept_upload(store, staging, reply.body["job_id"],
                           hashlib.sha256(data).hexdigest(), io.BytesIO(data), 1000.0)

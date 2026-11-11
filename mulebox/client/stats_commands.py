@@ -4,7 +4,7 @@
                   [--source NAME] [--machine NAME] [--kind job|ci] [--json]
 
 Wall time, added up: two jobs side by side for ten minutes count twenty. Days are this
-laptop's own, from local midnight; the coordinator only adds up the ranges it is given.
+dev machine's own, from local midnight; the coordinator only adds up the ranges it is given.
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     stats.add_argument("--by", choices=sorted(BY), default="project",
                        help="the breakdown since the first job (default project)")
     stats.add_argument("--project", help="only this project")
-    stats.add_argument("--source", help="only jobs from this laptop, or github")
+    stats.add_argument("--source", help="only jobs from this dev machine, or github")
     stats.add_argument("--machine", help="only jobs on this machine")
     stats.add_argument("--kind", choices=sorted(KIND_NAMES), help="mulebox's own jobs or CI runs")
     stats.add_argument("--json", action="store_true", help="the coordinator's reply as JSON")

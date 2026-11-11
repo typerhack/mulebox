@@ -1,4 +1,4 @@
-"""`mulebox project`: project folders on the build machine, from the laptop.
+"""`mulebox project`: project folders on the node, from the dev machine.
 
     mulebox project clean [--days N] [--yes]
     mulebox project reset <project> [--branch NAME] [--caches] [--yes]
@@ -24,7 +24,7 @@ from mulebox.common.protocol import MessageType
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    project = sub.add_parser("project", help="clean up project folders on the build machine")
+    project = sub.add_parser("project", help="clean up project folders on the node")
     actions = project.add_subparsers(dest="project_command", metavar="<action>", required=True)
     clean = actions.add_parser("clean", help="remove branch folders not used for a while")
     clean.add_argument("--days", type=int, default=14, help="unused for this long (default 14)")

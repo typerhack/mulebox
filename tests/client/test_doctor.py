@@ -87,10 +87,10 @@ def test_versions_warn_on_a_difference_only():
     same = doctor.versions("1.0.0", {"version": "1.0.0", "workers": [GOOD]})
     assert [f.level for f in same] == ["ok"]
     other = doctor.versions("1.1.0", {"version": "1.0.0", "workers": []})
-    assert other[0].level == "warn" and "client 1.1.0, build machine 1.0.0" in other[0].text
+    assert other[0].level == "warn" and "client 1.1.0, node 1.0.0" in other[0].text
     assert "mulebox setup <host>" in other[0].text
     behind = doctor.versions("1.0.0", {"version": "1.1.0", "workers": []})
-    assert "upgrade the laptop: `" in behind[0].text
+    assert "upgrade the dev machine: `" in behind[0].text
 
 
 def test_versions_warn_about_a_worker_behind_its_coordinator():
@@ -203,7 +203,7 @@ def test_cli_a_coordinator_too_old_to_answer_still_gives_its_version(fake, make_
     in_project(make_repo, monkeypatch)
     fake.scenario(unknown_requests=["machines"], machine_version="0.1.0")
     code, out = run(capsys)
-    assert code == 0 and "build machine 0.1.0" in out.out and "too old" in out.out
+    assert code == 0 and "node 0.1.0" in out.out and "too old" in out.out
 
 
 def test_cli_another_coordinator_error_is_not_mistaken_for_an_old_one(fake, make_repo, monkeypatch,

@@ -18,7 +18,7 @@ def submit_body(**extra) -> dict:
     body = {
         "project": "example-app", "job": "check", "argv": ["pnpm", "check"],
         "idempotency_key": f"sub-{next(_counter)}", "fingerprint": "f" * 64,
-        "base_commit": "a" * 40, "client": "alice@laptop", "branch": f"b-{next(_counter)}",
+        "base_commit": "a" * 40, "client": "alice@dev machine", "branch": f"b-{next(_counter)}",
     }
     body.update(extra)
     return body

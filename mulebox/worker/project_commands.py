@@ -1,4 +1,4 @@
-"""`mulebox project-home`, on a build machine; the client's `mulebox project` calls it over ssh.
+"""`mulebox project-home`, on a node; the client's `mulebox project` calls it over ssh.
 
     mulebox project-home list --json
     mulebox project-home clean [--days N] [--yes]
@@ -24,7 +24,7 @@ DEFAULT_DAYS = 14
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    home = sub.add_parser("project-home", help="project folders on this build machine")
+    home = sub.add_parser("project-home", help="project folders on this node")
     actions = home.add_subparsers(dest="home_command", metavar="<action>", required=True)
     shown = actions.add_parser("list", help="every project folder and its size")
     shown.add_argument("--json", action="store_true")

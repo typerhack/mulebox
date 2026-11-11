@@ -1,4 +1,4 @@
-"""Which worktree paths never leave the laptop (docs/interfaces-m1.md, Client).
+"""Which worktree paths never leave the dev machine (docs/interfaces-m1.md, Client).
 
 A pattern is matched against a path relative to the project root, written with `/`:
 

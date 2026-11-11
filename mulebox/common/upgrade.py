@@ -1,8 +1,8 @@
-"""How to upgrade mulebox on a laptop, said the same way in every message.
+"""How to upgrade mulebox on a dev machine, said the same way in every message.
 
 mulebox is published on PyPI, so an upgrade fetches the newest release there: with pipx or uv,
-whichever installed it. A checkout upgrades with git. A build machine is never upgraded this
-way: `mulebox setup <host>` sends it the laptop's own version.
+whichever installed it. A checkout upgrades with git. A node is never upgraded this
+way: `mulebox setup <host>` sends it the dev machine's own version.
 """
 
 from __future__ import annotations

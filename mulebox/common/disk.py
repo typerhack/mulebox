@@ -1,4 +1,4 @@
-"""When a build machine's disk counts as low, and what to tell someone about it.
+"""When a node's disk counts as low, and what to tell someone about it.
 
 Worker, coordinator and client share this: the worker reports the free space of the fullest disk
 holding its folders, and nothing else decides. A warning only: what can go is a person's call,

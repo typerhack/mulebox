@@ -40,7 +40,7 @@ def problem(name: str, for_compose: bool) -> str | None:
     if not _NAME.fullmatch(name):
         return "must be a shell variable name (letters, digits, _)"
     if name in _MACHINE or name.startswith("MULEBOX"):
-        return "is set by mulebox or the build machine; choose another name"
+        return "is set by mulebox or the node; choose another name"
     if name in _STARTUP or name.startswith(_STARTUP_PREFIXES):
         return "changes how the job's shell starts, so a job may not set it"
     if for_compose and name in _LOADER:
@@ -81,7 +81,7 @@ def later_reference(env: Mapping[str, str]) -> tuple[str, str] | None:
 
 
 def unknown_references(env: Mapping[str, str]) -> list[tuple[str, str]]:
-    """(entry, name) for names only the build machine's `job_env` could still provide."""
+    """(entry, name) for names only the node's `job_env` could still provide."""
     places = {key: place for place, key in enumerate(env)}
     return [(key, name) for place, key, name in _references(env)
             if places.get(name, place) >= place and name not in _SET_BY_MULEBOX

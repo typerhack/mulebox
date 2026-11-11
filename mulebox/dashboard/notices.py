@@ -1,9 +1,9 @@
 """What is out of step, for the strip above the dashboard's panels: each a problem and its fix.
 
-Three kinds, from what the build machine already knows: a worker on another mulebox than the
-coordinator, a laptop on another mulebox than the build machine (coordinator/clients.py), and a
-laptop whose agent skill is out of date. Each has a `level`: `danger` for a worker, as a worker
-and coordinator that disagree can make jobs fail, `warning` for a laptop, whose jobs still run;
+Three kinds, from what the node already knows: a worker on another mulebox than the
+coordinator, a dev machine on another mulebox than the node (coordinator/clients.py), and a
+dev machine whose agent skill is out of date. Each has a `level`: `danger` for a worker, as a worker
+and coordinator that disagree can make jobs fail, `warning` for a dev machine, whose jobs still run;
 dangers come first. Nothing here guesses at a release nobody has made: a
 notice is only ever two real installs that disagree. Empty when all is in step.
 """
@@ -25,7 +25,7 @@ def _worker(worker: dict[str, Any], version: str) -> dict[str, str] | None:
         return None
     return {"kind": "worker", "level": DANGER, "name": worker["worker"],
             "text": f"Worker {worker['worker']} runs mulebox {found}, the coordinator {version}.",
-            "fix": "Run `mulebox setup` for it from a laptop on the current mulebox."}
+            "fix": "Run `mulebox setup` for it from a dev machine on the current mulebox."}
 
 
 def _client(client: dict[str, Any], version: str) -> list[dict[str, str]]:
@@ -34,7 +34,7 @@ def _client(client: dict[str, Any], version: str) -> list[dict[str, str]]:
     if found != version:
         newer = order == 1
         out.append({"kind": "client", "level": WARNING, "name": name,
-                    "text": f"Laptop {name} runs mulebox {found}, the build machine {version}.",
+                    "text": f"Dev machine {name} runs mulebox {found}, the node {version}.",
                     "fix": ("Run `mulebox setup <host>` from it to bring the machine up."
                             if newer else f"Upgrade mulebox on it: {upgrade.EITHER}.")})
     if client["skill"] == "out_of_date":

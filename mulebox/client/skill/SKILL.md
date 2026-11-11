@@ -1,11 +1,11 @@
 ---
 name: mulebox
-description: Run a project's builds, type checks, lint and tests on a build machine through mulebox instead of on this laptop. Use when working in a repository that has a .mulebox.yml, when about to run a build or test command there, when a project's rules mention mulebox, or when asked to set a project up for mulebox.
+description: Run a project's builds, type checks, lint and tests on a node through mulebox instead of on this dev machine. Use when working in a repository that has a .mulebox.yml, when about to run a build or test command there, when a project's rules mention mulebox, or when asked to set a project up for mulebox.
 ---
 
 # mulebox
 
-mulebox runs heavy commands on a Linux build machine through one shared queue. You keep
+mulebox runs heavy commands on a Linux node through one shared queue. You keep
 editing, searching and using git here; builds and tests go through `mulebox`.
 
 ## Start here
@@ -42,7 +42,7 @@ SKILL.md it names again, as this session loaded the old text. Tell the user it w
   did, follow section 2 of mulebox's `docs/agents.md`.
 - **`mulebox` is not found, or a command exits 3:** stop and tell the user. Never fall back
   to running heavy commands on this machine. That rule matters most: it is what keeps the
-  laptop free.
+  dev machine free.
 
 ## Long jobs
 
@@ -61,7 +61,7 @@ it happens and you can do other work meanwhile. `mulebox status <job-id>` is a o
 
 When it has ended, `mulebox logs <job-id> --summary` says why it failed, and `mulebox wait
 <job-id>` gives what an attached `mulebox check` would have: the log and the exit code. Old
-logs expire on the build machine; `mulebox logs` says so when one has, and `mulebox status
+logs expire on the node; `mulebox logs` says so when one has, and `mulebox status
 <job-id>` still has the result.
 Cancel a detached job you no longer want. Three ways to wait: follow it (`mulebox events --job
 <job-id> --json`), be pinged (`mulebox wait <job-id>` as a background command), or check later
@@ -104,8 +104,8 @@ machine use them by themselves. A container sees a cache only if the compose fil
   and install again.
 - A service with a cache runs as root or `${UID}:${GID}`.
 - Every branch of a project on a machine shares its cache. Clearing it is a person's job on the
-  build machine: ask, and do not ssh in.
-- The build machine's `job_env` reaches services, and the service's own value wins.
+  node: ask, and do not ssh in.
+- The node's `job_env` reaches services, and the service's own value wins.
 - Services get 65536 open files unless they set `ulimits.nofile`.
 
 `install:` holds a project's dependency install: it runs in the project's image with `docker compose

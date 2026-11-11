@@ -1,8 +1,8 @@
-"""Can the build machine reach these registries? For `mulebox doctor`, before any job finds out.
+"""Can the node reach these registries? For `mulebox doctor`, before any job finds out.
 
 A TCP connection and no more: it needs no login, says the route and name lookup work, and that
 is what breaks on a machine behind a VPN. It says nothing about whether an image exists. It runs
-where the coordinator runs, which until there are several machines is the build machine.
+where the coordinator runs, which until there are several machines is the node.
 """
 
 from __future__ import annotations

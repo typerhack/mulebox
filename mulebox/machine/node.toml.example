@@ -1,4 +1,4 @@
-# mulebox node config for a build machine: ~/.config/mulebox/node.toml
+# mulebox node config for a node: ~/.config/mulebox/node.toml
 #
 # install.sh writes this file once, from this template, if it does not exist yet; it
 # never overwrites it. It fills in the machine's short hostname as `name` and the home

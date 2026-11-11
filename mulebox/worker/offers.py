@@ -1,6 +1,6 @@
 """What this machine can offer jobs, found out rather than typed into node.toml.
 
-`mulebox node-offers` on a build machine; `mulebox setup` runs it. It fills `capabilities` only
+`mulebox node-offers` on a node; `mulebox setup` runs it. It fills `capabilities` only
 while the list is empty, so a list a person wrote is never changed. `playwright` is not found out
 here: it needs system packages that only root installs.
 """
@@ -45,7 +45,7 @@ def fill_capabilities(path: Path, found: list[str]) -> list[str]:
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    parser = sub.add_parser("node-offers", help="find out what this build machine offers jobs")
+    parser = sub.add_parser("node-offers", help="find out what this node offers jobs")
     parser.add_argument("--config", help="node config file")
     parser.add_argument("--write", action="store_true", help="fill an empty capabilities list")
     parser.set_defaults(func=_run)

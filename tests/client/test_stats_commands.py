@@ -25,7 +25,7 @@ def test_body_maps_names_to_the_coordinators():
 def test_render():
     row = {"seconds": 3720, "runs": 3, "running": 1, "unknown": 0}
     found = {"first_started_at": 0, "total": row, "days": [{"from": 0, **row}],
-             "by": {"client": [{"key": "github", **row}, {"key": "alice@laptop", **row}]}}
+             "by": {"client": [{"key": "github", **row}, {"key": "alice@dev machine", **row}]}}
     lines = sc.render(found, "source")
     assert "1h 02m  3 runs  1 running" in lines[1]
     assert any(line.strip().startswith("GitHub") for line in lines)

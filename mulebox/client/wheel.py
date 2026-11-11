@@ -1,4 +1,4 @@
-"""A wheel of the mulebox that is running, for `mulebox setup` to send to a build machine.
+"""A wheel of the mulebox that is running, for `mulebox setup` to send to a node.
 
 Built from the package's own files, so it works the same from a checkout, a pip install or a
 future one-line install, and needs no build tool. The dependencies come from the installed

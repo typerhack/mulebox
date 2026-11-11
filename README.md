@@ -2,29 +2,29 @@
 
 Send your AI coding agents' builds and tests to the Linux machines on your network.
 
-Agents (Claude Code, Codex, and others) edit code on your laptop. Builds, type checks, linting
+Agents (Claude Code, Codex, and others) edit code on your dev machine. Builds, type checks, linting
 and test suites are slow, hot and noisy, and several agents running them at once can freeze the
-laptop. With mulebox, an agent types `mulebox check` instead. The job waits its turn in **one
-line** shared by every project and agent, runs on a Linux build machine, and the agent gets the
+dev machine. With mulebox, an agent types `mulebox check` instead. The job waits its turn in **one
+line** shared by every project and agent, runs on a Linux node, and the agent gets the
 output and the exit code as if the command had run locally.
 
 ![The mulebox dashboard: CPU, memory, disk and machines on top, the jobs running and waiting below](docs/images/queue-dark.png)
 
-Status: **1.x, in daily use on a real build machine** (version in [VERSION](VERSION)). The
+Status: **1.x, in daily use on a real node** (version in [VERSION](VERSION)). The
 commands, `.mulebox.yml` and the config files are stable: a change that breaks them needs 2.0.
 What is open is in the [roadmap](docs/phases.md).
 
 ## Install
 
-You need a Linux machine with systemd, git and Python 3.12 or newer, which your laptop reaches
+You need a Linux machine with systemd, git and Python 3.12 or newer, which your dev machine reaches
 over ssh with a key, at an address that does not change (below).
 
 ### Give every machine a fixed address
 
-mulebox remembers where each build machine is: the laptop keeps the address you set it up with,
+mulebox remembers where each node is: the dev machine keeps the address you set it up with,
 a second machine keeps its coordinator's address in its own config, and the dashboard on the LAN
 is opened at it. Most routers hand out addresses by DHCP, and a machine can get a new one after a
-reboot, a lost Wi-Fi connection or a router restart. Then the laptop cannot reach it (exit 3),
+reboot, a lost Wi-Fi connection or a router restart. Then the dev machine cannot reach it (exit 3),
 other machines show offline, and nothing runs until the address is fixed. mulebox does not work
 with an address that changes.
 
@@ -33,21 +33,21 @@ Before `mulebox setup`, make each machine's address permanent, in one of these w
 - **Reserve it on your router** (called a DHCP reservation, static lease or fixed IP): pick the
   machine by its MAC address and give it an address. Nothing changes on the machine itself.
 - **Set a static address on the machine**, outside the range the router hands out.
-- **Use a name that always finds the machine**, if every machine and the laptop can resolve it,
+- **Use a name that always finds the machine**, if every machine and the dev machine can resolve it,
   such as a VPN that keeps each device's address.
 
 Check after a reboot of the machine that `ssh <node> true` still works. If an address did change,
-put the new one in `~/.ssh/config` (or in `coordinator` in the laptop's `client.toml`), and on every
+put the new one in `~/.ssh/config` (or in `coordinator` in the dev machine's `client.toml`), and on every
 other machine in `coordinator` in `node.toml`, then `systemctl --user restart mulebox-worker` there.
 
 ### Let your coding agent install it
 
-Give your agent (Claude Code, Codex, or another) this prompt, with your build machine's ssh name:
+Give your agent (Claude Code, Codex, or another) this prompt, with your node's ssh name:
 
 ```text
 Install mulebox for me and set up this project to use it. Read
 https://raw.githubusercontent.com/typerhack/mulebox/main/docs/getting-started.md and follow it
-in order. My build machine is <node> (I reach it with `ssh <node>`). Ask me, in one message, only
+in order. My node is <node> (I reach it with `ssh <node>`). Ask me, in one message, only
 for the steps that need a password or sudo, then finish the rest yourself and show me a passing
 `mulebox check`.
 ```
@@ -57,17 +57,17 @@ The page is written for this: it says which steps need you (copying an ssh key, 
 
 ### Or by hand
 
-On the laptop:
+On the dev machine:
 
 ```sh
 uv tool install mulebox        # or, with Python 3.12 or newer: pipx install mulebox
-mulebox setup <node>           # installs mulebox on your build machine, then runs a first job
+mulebox setup <node>           # installs mulebox on your node, then runs a first job
 ```
 
-mulebox is on [PyPI](https://pypi.org/project/mulebox/). uv brings its own Python, so the laptop
+mulebox is on [PyPI](https://pypi.org/project/mulebox/). uv brings its own Python, so the dev machine
 needs none; to get uv: `brew install uv`, or `curl -LsSf https://astral.sh/uv/install.sh | sh`.
 
-`<node>` is your build machine as you reach it with ssh, named as you like: a name from your
+`<node>` is your node as you reach it with ssh, named as you like: a name from your
 `~/.ssh/config`, such as `mulebox setup homelab`, or `user@address`, such as
 `mulebox setup alice@192.168.1.50`. The dashboard shows the machine under its own hostname.
 
@@ -75,21 +75,21 @@ Then, in any project:
 
 ```sh
 mulebox init                   # writes .mulebox.yml from the project's own files
-mulebox check                  # runs the project's checks on the build machine
+mulebox check                  # runs the project's checks on the node
 mulebox dashboard open         # the dashboard in your browser, through an ssh tunnel
 ```
 
 To upgrade later: `uv tool upgrade mulebox` (or `pipx upgrade mulebox`), then
-`mulebox setup <node>`. From a clone, and the details: [install.md](docs/install.md#2-install-on-the-laptop). The whole
+`mulebox setup <node>`. From a clone, and the details: [install.md](docs/install.md#2-install-on-the-dev-machine). The whole
 path from nothing to a passing project, in order: [getting-started.md](docs/getting-started.md).
 
 ## How it works
 
 Two kinds of machine:
 
-- the **dev machine**: where you and your agents edit code, usually a laptop. It runs only the
-  `mulebox` command, which talks to the build machines over ssh.
-- **nodes**: the Linux build machines (the docs also call them build machines). Each runs a
+- the **dev machine**: where you and your agents edit code: a laptop, a desktop or another Linux PC. It runs only the
+  `mulebox` command, which talks to the nodes over ssh.
+- **nodes**: the Linux machines that run the jobs. Each runs a
   **worker**, which runs jobs. One node is also the **coordinator**: it holds the line of jobs
   and their history, and serves the dashboard.
 
@@ -230,7 +230,7 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 - **Several jobs per project**, each with its own command, setup, ports and containers or none, and
   `env:` values that build on each other.
 - **`mulebox run -- <cmd>`** runs any command on the node; `--in <service>` runs it in a compose
-  service, `--take <path>` brings a changed file, such as a lockfile, back to the laptop.
+  service, `--take <path>` brings a changed file, such as a lockfile, back to the dev machine.
 
 ### GitHub Actions on the same machines
 
@@ -285,7 +285,7 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **History** with search and filters you can share as a link, and **Statistics**: job minutes today,
   by day and since the first job, by kind, project, source and machine (also `mulebox stats`).
 - **Machines page**: every node with its state, load, network, slots, version and last contact.
-- **Out of step**: a strip says when a laptop, a worker or a skill runs another version, with the fix.
+- **Out of step**: a strip says when a dev machine, a worker or a skill runs another version, with the fix.
 - **Light and dark** themes and two meter styles, remembered per browser, and a layout that works on
   a phone.
 - **From any device on your LAN**, with a password, a firewall rule and optional HTTPS, or read-only
@@ -294,8 +294,8 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 
 ### Machines and safety
 
-- **One command to set up**: `mulebox setup <node>` installs a node from the laptop, finds what it
-  offers (Docker, Playwright, toolchains), writes the laptop's config and proves it with a first job.
+- **One command to set up**: `mulebox setup <node>` installs a node from the dev machine, finds what it
+  offers (Docker, Playwright, toolchains), writes the dev machine's config and proves it with a first job.
 - **More nodes**: `mulebox setup <node> --worker-of <coordinator>` adds a worker, with a key that can
   only ask for work. Jobs go to a node that has what they need.
 - **Survives restarts**: services come back by themselves after a reboot; a running job ends as
@@ -311,7 +311,7 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 ## Commands
 
 Every command has its own help: `mulebox --help` lists them, `mulebox <command> --help` explains
-one. `<node>` is a build machine's ssh name, `<id>` a job's id, which every job gets and every
+one. `<node>` is a node's ssh name, `<id>` a job's id, which every job gets and every
 command prints. The ones you and your agents use:
 
 **Run jobs**, from a project folder:
@@ -353,7 +353,7 @@ command prints. The ones you and your agents use:
 
 | Command | What it does |
 | --- | --- |
-| `mulebox setup <node>` | install or upgrade mulebox on a node from the laptop; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker |
+| `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker |
 | `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
 | `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |
 | `mulebox dashboard password`, `firewall`, `cert` | on the node: sign-in, firewall and HTTPS for `lan` mode |
@@ -370,7 +370,7 @@ mulebox runs on the nodes itself; you do not call those.
 | Page | For |
 | --- | --- |
 | [getting-started.md](docs/getting-started.md) | the first install and the first project, in order |
-| [install.md](docs/install.md) | build machine, laptop, upgrades, more nodes, GitHub runners, the dashboard |
+| [install.md](docs/install.md) | node, dev machine, upgrades, more nodes, GitHub runners, the dashboard |
 | [agents.md](docs/agents.md) | everyday commands, every `.mulebox.yml` field, the agent rule |
 | [troubleshooting.md](docs/troubleshooting.md) | what an error means and what to do |
 | [design.md](docs/design.md) | how it works and why |

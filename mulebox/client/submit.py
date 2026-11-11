@@ -5,7 +5,7 @@ prefix, so an agent reading the output sees what it would see running the comman
 locally. The exit code is the job's (see report.exit_code_for).
 
 Ctrl-C sends `cancel`, waits up to 15 s for the job to finish and returns 130. A watch
-stream that drops (Wi-Fi blip, laptop sleep) is reopened from the last log offset, for 4
+stream that drops (Wi-Fi blip, dev machine sleep) is reopened from the last log offset, for 4
 minutes while this client holds the job's lease, for 30 minutes when it does not.
 
 With `detach` the job is left to run once its snapshot is uploaded: the job id goes to
@@ -46,7 +46,7 @@ DETACH_HINT = ("this may take a while; next time add --detach and follow the job
 
 
 class WatchLost(MuleboxError):
-    """The job was submitted, but the live view could not reconnect to the build machine."""
+    """The job was submitted, but the live view could not reconnect to the node."""
 
 
 class RemoteLike(Protocol):
@@ -78,7 +78,7 @@ def run_job(
     options: JobOptions | None = None,
     take: tuple[str, ...] = (),
 ) -> int:
-    """Run a job on the build machines as if it ran here; return its exit code.
+    """Run a job on the nodes as if it ran here; return its exit code.
 
     With `detach`, return 0 once the job is queued, with its id on stdout. With `warm`, `target`
     runs only up to its command: toolchains, images, `install` and `setup`."""
@@ -148,7 +148,7 @@ def left_out(names: Sequence[str]) -> str:
 
 def _refuse_detach(remote: RemoteLike, job_id: str) -> None:
     remote.call(request(MessageType.CANCEL, job_id=job_id))
-    raise CoordinatorError("the build machine's mulebox is too old for --detach, so the job "
+    raise CoordinatorError("the node's mulebox is too old for --detach, so the job "
                            "was cancelled. Upgrade it (docs/install.md), or run without --detach.")
 
 
@@ -206,7 +206,7 @@ class Watcher:
                 failures += 1
                 if failures > (WATCH_RETRIES if lease else PATIENT_RETRIES):
                     raise WatchLost(
-                        f"lost the connection to the build machine ({exc}). Job "
+                        f"lost the connection to the node ({exc}). Job "
                         f"{self.job_id} may still be running there; see how it ended with "
                         f"`mulebox wait {self.job_id}`."
                     ) from exc
@@ -224,7 +224,7 @@ class Watcher:
         try:
             return self.follow(lease=False)
         except SSHUnavailable as exc:
-            raise WatchLost(f"cannot reach the build machine ({exc}). Job {self.job_id} is not "
+            raise WatchLost(f"cannot reach the node ({exc}). Job {self.job_id} is not "
                             "affected; run this again once the machine is back.") from exc
 
     def handle(self, msg: Message) -> bool:

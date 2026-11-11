@@ -1,9 +1,9 @@
 """CLI subcommands of the client package (docs/interfaces-m1.md, CLI).
 
-Exit codes for client failures: 2 usage/config error, 3 build machine unreachable,
+Exit codes for client failures: 2 usage/config error, 3 node unreachable,
 4 protocol/remote error, 5 job could not start, 76 stopped as stuck with no answer from the agent,
 130 Ctrl-C. Job failures return the job's own exit code.
-A build machine that cannot be reached is reported as such; mulebox never runs the job
+A node that cannot be reached is reported as such; mulebox never runs the job
 anywhere else instead.
 """
 
@@ -46,7 +46,7 @@ class UsageError(MuleboxError):
 
 def register(sub: argparse._SubParsersAction) -> None:
     """Add this package's subcommands. Each sets func=handler(args) -> int."""
-    check = sub.add_parser("check", help="run a job from .mulebox.yml on a build machine")
+    check = sub.add_parser("check", help="run a job from .mulebox.yml on a node")
     check.add_argument("job", nargs="?", default="check", help="job name (default: check)")
     check.add_argument("--detach", action="store_true",
                        help="print the job id once it is queued and leave it running")
@@ -61,7 +61,7 @@ def register(sub: argparse._SubParsersAction) -> None:
                       help="print the job id once it is queued and leave it running")
     warm.set_defaults(func=guarded(_warm, notices=True))
 
-    run = sub.add_parser("run", help="run an ad-hoc command on a build machine")
+    run = sub.add_parser("run", help="run an ad-hoc command on a node")
     run.add_argument("--detach", action="store_true",
                      help="print the job id once it is queued and leave it running")
     run.add_argument("--in", dest="service", metavar="SERVICE",
@@ -117,8 +117,8 @@ def guarded(handler: Handler, notices: bool = False) -> Handler:
             return _fail(str(exc), report.EXIT_UNREACHABLE)
         except (SSHUnavailable, RemoteTimeout) as exc:
             return _fail(
-                f"build machine unreachable: {exc} The job was not run; "
-                "fix the connection to the build machine and retry.",
+                f"node unreachable: {exc} The job was not run; "
+                "fix the connection to the node and retry.",
                 report.EXIT_UNREACHABLE,
             )
         except (CoordinatorError, ProtocolError, SSHError) as exc:

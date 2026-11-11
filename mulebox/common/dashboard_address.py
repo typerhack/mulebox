@@ -1,6 +1,6 @@
-"""Where a person can see the dashboard: told by the build machine, printed by the client.
+"""Where a person can see the dashboard: told by the node, printed by the client.
 
-The address lives in the build machine's `node.toml`, so the coordinator puts `where` into its
+The address lives in the node's `node.toml`, so the coordinator puts `where` into its
 replies and the client turns it into `hint`. `None` means nothing to say: the dashboard is off,
 or the coordinator is too old to send this.
 """

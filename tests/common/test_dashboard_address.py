@@ -1,4 +1,4 @@
-"""Where the dashboard is, as the build machine says it and the client prints it."""
+"""Where the dashboard is, as the node says it and the client prints it."""
 
 from mulebox.common.dashboard_address import hint, place, where
 

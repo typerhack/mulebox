@@ -1,18 +1,18 @@
 """CLI subcommands for runner management (docs/interfaces-m3.md, Runner management).
 
-On the build machine (the token is read from stdin, or prompted without echo on a TTY):
+On the node (the token is read from stdin, or prompted without echo on a TTY):
 
     mulebox runner add --repo <owner/repo> [--labels a,b] [--name N]
     mulebox runner list
     mulebox runner remove <name> | --repo <owner/repo> [--name N]
     mulebox runner caches <name> --project <project> [--only cache-npm,...] | --off
 
-On the laptop (the token comes from `gh`, the command runs on the coordinator over ssh):
+On the dev machine (the token comes from `gh`, the command runs on the coordinator over ssh):
 
     mulebox runner register --repo <owner/repo> [--labels a,b] [--name N]
     mulebox runner unregister --repo <owner/repo> [--name N]
 
-Exit codes: 0 done, 1 runner operation failed, 2 usage or config error, 3 build machine
+Exit codes: 0 done, 1 runner operation failed, 2 usage or config error, 3 node
 unreachable, 4 remote command or `gh` failed.
 """
 
@@ -40,11 +40,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     runner = sub.add_parser("runner", help="manage GitHub Actions runners")
     actions = runner.add_subparsers(dest="runner_command", metavar="<action>", required=True)
 
-    add = actions.add_parser("add", help="add a runner on this build machine (token on stdin)")
+    add = actions.add_parser("add", help="add a runner on this node (token on stdin)")
     _options(add, labels=True, config=True)
     add.set_defaults(func=_guarded(_add))
 
-    listing = actions.add_parser("list", help="list the runners on this build machine")
+    listing = actions.add_parser("list", help="list the runners on this node")
     listing.add_argument("--config", help="node config file")
     listing.set_defaults(func=_guarded(_list))
 
@@ -65,11 +65,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     shared.add_argument("--config", help="node config file")
     shared.set_defaults(func=_guarded(_caches))
 
-    reg = actions.add_parser("register", help="from the laptop: add a runner for a repo")
+    reg = actions.add_parser("register", help="from the dev machine: add a runner for a repo")
     _options(reg, labels=True, config=False)
     reg.set_defaults(func=_guarded(_register))
 
-    unreg = actions.add_parser("unregister", help="from the laptop: remove a repo's runner")
+    unreg = actions.add_parser("unregister", help="from the dev machine: remove a repo's runner")
     _options(unreg, labels=False, config=False)
     unreg.set_defaults(func=_guarded(_unregister))
 

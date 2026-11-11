@@ -3,20 +3,20 @@
 This file is for an AI coding agent. A user may say: "read mulebox's docs/agent-trial.md and test
 it on this project". No skill is needed: `docs/agents.md` and `mulebox contract` hold the rules.
 
-The goal is to find out whether mulebox beats running the same work directly on the build machine,
+The goal is to find out whether mulebox beats running the same work directly on the node,
 and what gets in the way. Report what happened, good or bad. A rough report of a real failure is
 worth more than a clean one.
 
 ## Ground rules
 
 - Do this project's normal work through mulebox. Do not fall back to running heavy commands on the
-  laptop. If the build machine cannot be reached, stop and tell the user.
+  dev machine. If the node cannot be reached, stop and tell the user.
 - Change nothing in this project's CI, runners or deployment.
 - Do not work around a mulebox problem without saying so: note it, then go on if you can.
 - `.mulebox.yml` and small changes for the test stay uncommitted unless the user says otherwise.
   Use a throwaway branch for anything else.
 - Never put secrets in `.mulebox.yml` or in a report.
-- Do not cancel a job you did not start. Do not change anything on the build machine by hand.
+- Do not cancel a job you did not start. Do not change anything on the node by hand.
 - Do not post anything anywhere. The report goes to the user.
 - Do not start long jobs just to prove a point. A real gate takes what it takes, once or twice.
 
@@ -51,7 +51,7 @@ If a step does not apply, say why and skip it.
 
 Give the user this, in plain words:
 
-- **Verdict:** would you use this for this project instead of running on the build machine directly?
+- **Verdict:** would you use this for this project instead of running on the node directly?
 - **Times:** each step above, and the same gate without mulebox if that is known.
 - **What failed:** the exact command, exit code and job id. Say whether it was mulebox or the project.
 - **What was slow or confusing:** anything that made you stop and think, or that the docs got wrong.

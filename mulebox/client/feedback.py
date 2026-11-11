@@ -129,7 +129,7 @@ def draft(summary: str, version: str, anonymizer: Anonymizer,
     """The issue as markdown, scrubbed. `logs` maps a job id to the log lines already picked."""
     lines = [f"# {title_from(summary, title)}", "", "## What happened", "", summary.strip(), "",
              "## Environment", "", f"- mulebox {version} (this client)",
-             f"- laptop: {platform.system()}, Python {platform.python_version()}"]
+             f"- dev machine: {platform.system()}, Python {platform.python_version()}"]
     if jobs:
         lines += ["", "## Jobs"]
         for job in jobs:

@@ -2,7 +2,7 @@
 
 Redraws every 2 s with plain ANSI escapes on the alternate screen; `q` or Ctrl-C quits.
 The terminal (cursor, screen, line mode) is restored on every exit, also on errors. A
-failed refresh (build machine unreachable) shows in the footer and is retried. When
+failed refresh (node unreachable) shows in the footer and is retried. When
 stdout is not a terminal the table is printed once instead.
 """
 

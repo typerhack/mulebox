@@ -24,7 +24,7 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 10 -> 11: `jobs.install`, the job's `install` line (worker/install_step.py).
 - 11 -> 12: `jobs.worker_version`, the mulebox that ran the job (reuse.py); NULL on older jobs.
 - 12 -> 13: `job_steps.network_lost`, a stage that printed a lost connection (usual.py).
-- 13 -> 14: `jobs.client_os`, the laptop's system, for the dashboard; NULL on older jobs and CI.
+- 13 -> 14: `jobs.client_os`, the dev machine's system, for the dashboard; NULL on older jobs and CI.
 - 14 -> 15: `workers.draining` (default 0): a draining worker claims no new job (machine_api.py).
 - 15 -> 16: `workers.load`, JSON of the machine's `cpu_pct`, `cores` and `mem_pct` as the worker
   last reported them (common/proc.py HostLoad); NULL until it does.
@@ -33,7 +33,7 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   whose `passed` only meant the slot was given back.
 - 17 -> 18: `jobs.take` (JSON list, default '[]'): files `mulebox run --take` brings back
   (coordinator/taken.py).
-- 18 -> 19: the `clients` table: each laptop's mulebox and skill state (clients.py).
+- 18 -> 19: the `clients` table: each dev machine's mulebox and skill state (clients.py).
 - 19 -> 20: `jobs.paused`, `jobs.priority` and `jobs.boost` (default 0): the owner's controls on
   a job (job_control.py).
 """
@@ -118,7 +118,7 @@ def upgrade(conn: sqlite3.Connection, target: int) -> int:
     if found > target:
         raise SchemaTooNew(
             f"the mulebox store has schema version {found}, this mulebox knows up to "
-            f"{target}; upgrade mulebox on this machine: `mulebox setup <host>` from a laptop "
+            f"{target}; upgrade mulebox on this machine: `mulebox setup <host>` from a dev machine "
             "on the newer mulebox"
         )
     for version in range(found, target):

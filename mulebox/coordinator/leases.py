@@ -28,7 +28,7 @@ from mulebox.coordinator.errors import BadRequest, Conflict
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import ACTIVE_STATES, Store
 
-CLIENT_LEASE_S = 300.0  # survives a few minutes of laptop Wi-Fi loss
+CLIENT_LEASE_S = 300.0  # survives a few minutes of dev machine Wi-Fi loss
 WORKER_LEASE_S = 120.0
 UPLOAD_TIMEOUT_S = 600.0
 

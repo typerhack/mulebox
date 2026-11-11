@@ -1,7 +1,7 @@
-"""`mulebox run --take <path>`: files a run brings back to the laptop (issue #4).
+"""`mulebox run --take <path>`: files a run brings back to the dev machine (issue #4).
 
 A command such as `composer update --no-install` or `npm install --package-lock-only` changes
-lockfiles on the build machine, where they stayed. With `--take`, the worker reads the named
+lockfiles on the node, where they stayed. With `--take`, the worker reads the named
 files from the job's worktree once the command passed, sends them to the coordinator in chunks
 (coordinator/taken.py), and the client writes them into the project (client/take_back.py).
 

@@ -2,7 +2,7 @@
 
 Read-only: it reads `.mulebox.yml`, the project's compose files and the installed agent
 skills, and asks the coordinator what its machines offer. It creates no job. Exit codes: 0 fine or only warnings, 1 a job
-would not run, 2 no usable `.mulebox.yml` or client config, 3 build machine unreachable.
+would not run, 2 no usable `.mulebox.yml` or client config, 3 node unreachable.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ TOO_OLD_CODE = "bad_request"  # what a coordinator answers to a request type it 
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    parser = sub.add_parser("doctor", help="check this project and the build machine before "
+    parser = sub.add_parser("doctor", help="check this project and the node before "
                             "submitting; read-only")
     parser.add_argument("--json", action="store_true", help="stable keys for tools")
     parser.set_defaults(func=guarded(_doctor, notices=True))
@@ -65,7 +65,7 @@ def machine_facts(remote: Remote) -> Facts:
 def _about_machines(project: ProjectConfig | None, facts: Facts) -> list[Finding]:
     workers = facts.get("workers")
     if workers is None:
-        return [Finding(doctor.WARN, "machine", "the build machine's mulebox is too old to say "
+        return [Finding(doctor.WARN, "machine", "the node's mulebox is too old to say "
                         "what it offers; upgrade it")]
     return doctor.machines(project, workers) if project else doctor.inventory(workers)
 
@@ -121,7 +121,7 @@ def examine() -> tuple[list[Finding], int]:
     except ConfigError as exc:
         return [*findings, Finding(FAIL, "client", str(exc))], report.EXIT_USAGE
     except (SSHUnavailable, RemoteTimeout) as exc:
-        reason = f"build machine unreachable: {exc} Tell the user; do not run heavy work here."
+        reason = f"node unreachable: {exc} Tell the user; do not run heavy work here."
         return [*findings, Finding(FAIL, "machine", reason)], code or report.EXIT_UNREACHABLE
     findings += doctor.versions(get_version(), facts)
     findings += _about_machines(project, facts) + reached

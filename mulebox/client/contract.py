@@ -2,7 +2,7 @@
 
 Generated, not written: the facts come from `.mulebox.yml` and from the tables the code
 itself uses, so there is no second copy to drift. It reads no network, so it still
-answers when the build machine is down, which is when an agent most needs its rules.
+answers when the node is down, which is when an agent most needs its rules.
 `schema` rises when a key is removed or changes meaning, and when the skill has to teach
 something new, because that is how an installed skill finds out it is behind: SKILL.md says
 which schema it was written for (tests/test_skill.py ties the two). Adding keys alone is safe.
@@ -62,16 +62,16 @@ THROUGH_MULEBOX = ("builds", "type checks", "lint", "tests")
 KEEP_LOCAL = ("git", "search", "reading files", "diffs")
 EXIT_CODES = (
     (report.EXIT_USAGE, "config or usage error", "fix .mulebox.yml or the command"),
-    (report.EXIT_UNREACHABLE, "build machine unreachable, or the live view lost it",
+    (report.EXIT_UNREACHABLE, "node unreachable, or the live view lost it",
      "tell the user; if a job id was printed, get its result with mulebox wait later"),
-    (report.EXIT_REMOTE, "the build machine refused the request",
+    (report.EXIT_REMOTE, "the node refused the request",
      "read the message and tell the user"),
     (report.EXIT_NOT_STARTED, "the job could not start, so no project code ran",
      "not a failed check: read the reason in the log; mulebox doctor checks most causes"),
-    (report.EXIT_INTERRUPTED, "interrupted on the build machine", "run it again once"),
+    (report.EXIT_INTERRUPTED, "interrupted on the node", "run it again once"),
     (report.EXIT_STOPPED, "stopped: stuck; it did nothing and nobody answered its question",
      "not a failed check: nothing is known about the code, so find what hangs and run it again"),
-    (report.EXIT_TIMED_OUT, "the job hit a hard timeout_min on a build machine older than 0.37",
+    (report.EXIT_TIMED_OUT, "the job hit a hard timeout_min on a node older than 0.37",
      "look for a hang; a current machine has no such limit, it sends check-ins"),
     (report.EXIT_CANCELLED, "cancelled", "nothing to do"),
 )
@@ -90,7 +90,7 @@ COMPOSE = (
     "or -p: the project is already selected",
     "published ports move: read MULEBOX_PORT_<SERVICE>_<PORT> or use it in env:, never a "
     "port number from a compose file; the address is 127.0.0.1",
-    "the build machine's job_env reaches services; a value the service sets itself wins",
+    "the node's job_env reaches services; a value the service sets itself wins",
     "services get 65536 open files unless they set ulimits.nofile",
 )
 CACHES = (
@@ -103,7 +103,7 @@ CACHES = (
     "and install again",
     "a service with a cache runs as root or ${UID}:${GID}",
     "every branch of a project on a machine shares its cache; clearing it is a person's job on "
-    "the build machine: ask, and do not ssh in",
+    "the node: ask, and do not ssh in",
 )
 JOB_STAGES = (
     f"a job goes through stages: {', '.join(STAGES)}; mulebox status shows steps and usual",
@@ -171,9 +171,9 @@ RULES = (
     "1 if a job would not run, and warnings alone exit 0",
     "a failed job ends with a short summary on stderr: read it first, and the full log only "
     "if it is not enough",
-    "old logs expire on the build machine: mulebox logs says so, and mulebox status still has "
+    "old logs expire on the node: mulebox logs says so, and mulebox status still has "
     "the result",
-    "do not ssh into the build machine to change, install or delete things",
+    "do not ssh into the node to change, install or delete things",
     "the coordinator and the workers must be upgraded together: if mulebox doctor reports "
     "different versions, tell the user",
     "put no real secrets, hosts or personal paths in .mulebox.yml or workflows",
@@ -257,7 +257,7 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
         run = "mulebox check" if name == FULL_GATE else f"mulebox check {name}"
         lines.append(f"- {run}: {command}{_setting_text(project, name)}")
     if project["needs"]:
-        lines += ["", f"Needs a build machine with: {', '.join(project['needs'])}"]
+        lines += ["", f"Needs a node with: {', '.join(project['needs'])}"]
     if project["compose"]:
         lines += ["", f"Compose files: {', '.join(project['compose'])}"]
     return lines

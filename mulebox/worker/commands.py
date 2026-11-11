@@ -30,7 +30,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     project_commands.register(sub)
     upgrade_wait.register(sub)
     offers.register(sub)
-    worker = sub.add_parser("worker", help="run the worker on a build machine")
+    worker = sub.add_parser("worker", help="run the worker on a node")
     worker_sub = worker.add_subparsers(dest="worker_command", metavar="<action>", required=True)
     serve = worker_sub.add_parser("serve", help="claim and run jobs (recovery first)")
     serve.add_argument("--config", help="node config file (default ~/.config/mulebox/node.toml)")
@@ -47,7 +47,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     listing.add_argument("--config", help="node config file")
     listing.set_defaults(func=_list)
 
-    cache = sub.add_parser("cache", help="list or clear package caches on this build machine")
+    cache = sub.add_parser("cache", help="list or clear package caches on this node")
     cache_sub = cache.add_subparsers(dest="cache_command", metavar="<action>", required=True)
     shown = cache_sub.add_parser("list", help="every project's package caches and their size")
     shown.add_argument("--config", help="node config file")

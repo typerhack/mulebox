@@ -1,4 +1,4 @@
-"""Runner add / list / remove on the build machine, with fake config.sh and systemctl."""
+"""Runner add / list / remove on the node, with fake config.sh and systemctl."""
 
 import logging
 import os

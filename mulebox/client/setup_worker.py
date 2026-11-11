@@ -1,4 +1,4 @@
-"""`mulebox setup <worker> --worker-of <coordinator>`: one more build machine for the queue.
+"""`mulebox setup <worker> --worker-of <coordinator>`: one more node for the queue.
 
 Both machines must take `ssh <host> true` from here. The steps, each said as it runs:
 
@@ -37,7 +37,7 @@ _NAME = ('n="$(hostname -s 2>/dev/null || hostname)"; '
 
 
 def coordinator_address(coordinator: str) -> str:
-    """`ssh -G` of the laptop's own alias -> ssh://user@host:port, which the worker can use."""
+    """`ssh -G` of the dev machine's own alias -> ssh://user@host:port, which the worker can use."""
     done = subprocess.run(["ssh", "-G", coordinator], capture_output=True, text=True, check=False)
     seen = dict(line.split(" ", 1) for line in done.stdout.splitlines() if " " in line)
     if done.returncode != 0 or "hostname" not in seen:

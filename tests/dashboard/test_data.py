@@ -90,7 +90,7 @@ def test_a_queued_job_nobody_fits_any_more_has_nowhere_to_go(data, store, stagin
     queue.claim(store, "wrk-a", [], 1, 1, now=NOW + 1)  # the capability went away
     row = data.queue_snapshot(NOW + 2)["queued"][0]
     assert row["job_id"] == job_id and row["can_run_on"] == []
-    assert "no build machine offers gpu" in row["waiting_for"]
+    assert "no node offers gpu" in row["waiting_for"]
 
 
 def test_a_pinned_reservation_carries_its_worker_not_a_placement(data, store, staging):

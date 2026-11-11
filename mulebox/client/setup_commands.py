@@ -10,7 +10,7 @@ from mulebox.client.commands import guarded
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    parser = sub.add_parser("setup", help="install mulebox on a build machine and use it from here")
+    parser = sub.add_parser("setup", help="install mulebox on a node and use it from here")
     parser.add_argument("host", help="ssh target: a Host alias or alice@192.168.1.50")
     parser.add_argument("--now", action="store_true", help="stop running jobs and upgrade now")
     parser.add_argument("--when-idle", action="store_true",
@@ -23,7 +23,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     parser.add_argument("--worker-of", metavar="COORDINATOR",
                         help="make the host one more worker of this coordinator machine")
     parser.add_argument("--coordinator-address", metavar="TARGET",
-                        help="how the worker reaches the coordinator, if not as this laptop does")
+                        help="how the worker reaches the coordinator, if not as this dev machine does")
     parser.add_argument("--no-skill", action="store_true",
                         help="do not install the agent skill where there is none; "
                              "out-of-date copies are still updated")

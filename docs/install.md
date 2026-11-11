@@ -4,17 +4,17 @@ New here? [getting-started.md](getting-started.md) gives the order; this page ha
 
 mulebox has two sides:
 
-- **Build machine** (Linux with systemd, Ubuntu first): runs the coordinator (the queue)
+- **Node** (Linux with systemd, Ubuntu first): runs the coordinator (the queue)
   and a worker (runs the jobs) as two systemd user services, on one machine, for one user.
-  Adding a second build machine is not finished yet: see the [roadmap](phases.md), M5.
-- **Laptop** (macOS or Linux): the `mulebox` client that agents call. It reaches the build
+  Adding a second node is not finished yet: see the [roadmap](phases.md), M5.
+- **Dev machine** (macOS or Linux): the `mulebox` client that agents call. It reaches the build
   machine over ssh.
 
-Examples below use the build machine `build-1` and the user `alice`.
+Examples below use the node `build-1` and the user `alice`.
 
 ## Requirements
 
-Build machine:
+Node:
 
 - Linux with systemd; `systemctl --user` must work for the user (log in over ssh or a
   desktop session; `su` does not start a user manager).
@@ -23,20 +23,20 @@ Build machine:
   python3-venv`; a fresh Ubuntu does not have it.
 - Network access to PyPI for mulebox's dependencies.
 - An address that does not change: reserve it on your router (DHCP reservation) or set a static
-  one. The laptop, other machines and the LAN dashboard reach it there, and a new address after a
+  one. The dev machine, other machines and the LAN dashboard reach it there, and a new address after a
   reboot or reconnect makes it unreachable. Details and how to recover:
   [README, Give every machine a fixed address](../README.md#give-every-machine-a-fixed-address).
 
-Laptop:
+Dev machine:
 
-- mulebox (section 2), and ssh access to the build machine with a key
+- mulebox (section 2), and ssh access to the node with a key
   (an entry in `~/.ssh/config` such as `Host build-1` keeps commands short). Log in once by
   hand so the machine's host key is known: mulebox's ssh never prompts, so a key with a
   passphrase must be in your ssh agent.
 
-## 1. Install on the build machine
+## 1. Install on the node
 
-With mulebox on the laptop (section 2), one command:
+With mulebox on the dev machine (section 2), one command:
 
 ```sh
 mulebox setup build-1      # or alice@192.168.1.50
@@ -50,7 +50,7 @@ you add `--queued` (below), `--when-idle`, which waits for them while new jobs w
 `--now`.
 
 To install by hand instead, copy `install.sh`, `node.toml.example` and `systemd/` from
-`mulebox/machine/` and a wheel into one folder on the build machine, and run
+`mulebox/machine/` and a wheel into one folder on the node, and run
 `bash install.sh mulebox-<version>-py3-none-any.whl`.
 
 What the installer does (it never uses sudo and never deletes a folder):
@@ -139,12 +139,12 @@ systemctl --user restart mulebox-coordinator mulebox-worker mulebox-dashboard
 The dashboard (`mulebox-dashboard`) is installed and started with the coordinator. It
 reads the queue's database read-only and never changes anything.
 
-## 2. Install on the laptop
+## 2. Install on the dev machine
 
 mulebox is on [PyPI](https://pypi.org/project/mulebox/). Install it with one of these; the build
 machine always needs its own Python 3.12 or newer, and `mulebox setup` installs mulebox there.
 
-**With uv**, if you have uv, or no Python 3.12 or newer on the laptop: uv fetches a Python of its
+**With uv**, if you have uv, or no Python 3.12 or newer on the dev machine: uv fetches a Python of its
 own for mulebox and leaves the system's alone.
 
 ```sh
@@ -152,7 +152,7 @@ brew install uv                                      # or: curl -LsSf https://as
 uv tool install mulebox
 ```
 
-**With pipx**, if the laptop has Python 3.12 or newer and pipx (`brew install pipx`, or
+**With pipx**, if the dev machine has Python 3.12 or newer and pipx (`brew install pipx`, or
 `sudo apt install pipx` on Ubuntu):
 
 ```sh
@@ -161,7 +161,7 @@ pipx install mulebox
 
 Both put `mulebox` in `~/.local/bin`; if the shell does not find it, `uv tool update-shell` or
 `pipx ensurepath` adds that folder to your `PATH`. The package carries the dashboard's built
-front end, so the laptop needs no Node.js.
+front end, so the dev machine needs no Node.js.
 
 **By hand**, from a clone. Give it a folder of its own: plain `pip install --user` is refused by
 most current Python installs, Homebrew's and Ubuntu's among them
@@ -175,7 +175,7 @@ ln -s ~/.mulebox-client/bin/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin
 ```
 
 A clone holds the dashboard's front end as source (`web/`), so installing from one needs Node.js
-22 and `npm` on the laptop: `mulebox setup` builds the front end before it installs a machine, and
+22 and `npm` on the dev machine: `mulebox setup` builds the front end before it installs a machine, and
 stops with what to install when the build is missing or out of date and `npm` is not there. The
 package from PyPI already carries the build.
 
@@ -203,18 +203,18 @@ ssh build-1 '~/.mulebox/bin/mulebox toolchain install node 22.22.3'
 ssh build-1 '~/.mulebox/bin/mulebox toolchain list'
 ```
 
-`mulebox toolchain` runs on the build machine only. From the laptop, `mulebox doctor` in a
+`mulebox toolchain` runs on the node only. From the dev machine, `mulebox doctor` in a
 project says which versions the machine has. They live in `<cache>/toolchains/`. A job whose
 version will not install does not start: it exits 5 with the reason and what is there.
 
 ## GitHub runners
 
-A build machine can host self-hosted GitHub Actions runners, one user service each
+A node can host self-hosted GitHub Actions runners, one user service each
 (`mulebox-runner@<name>.service`; the installer copies the template but enables nothing).
 A runner gets the same CPU and disk share as a mulebox job (`CPUWeight=50`), so CI and
 agents' jobs share the machine evenly and both give way to its own use.
 Each GitHub job then waits for a mulebox build slot, so runner jobs and agent jobs share one
-queue. From the laptop, with `gh` logged in as a user with admin rights on the repository:
+queue. From the dev machine, with `gh` logged in as a user with admin rights on the repository:
 
 ```sh
 mulebox runner register --repo example-org/example-app            # labels: mulebox
@@ -243,7 +243,7 @@ never put on a command line or in a log. `roots.runners` must stay `~/.mulebox/r
 
 **One cache for the gate and CI.** A project's mulebox jobs download through its package caches;
 a runner downloads through its own, so a package the gate already has can still fail to download
-in CI. On the build machine, point a runner at the project's caches (the name in `.mulebox.yml`):
+in CI. On the node, point a runner at the project's caches (the name in `.mulebox.yml`):
 
 ```sh
 ~/.mulebox/bin/mulebox runner caches build-1-example-app --project example-app   # all four
@@ -258,7 +258,7 @@ so do it only for a runner of a private repository whose pull requests you trust
 
 **Private repositories only.** Never attach a runner to a public repository: anyone can open a
 pull request, and its workflow file comes from that pull request, so it can ask for your runner
-whatever your own workflow says, and run its code on your build machine. `mulebox runner
+whatever your own workflow says, and run its code on your node. `mulebox runner
 register` refuses a public repository; one that turns public later keeps its runner until you
 unregister it.
 What a job can reach: [Security model](#security-model).
@@ -266,7 +266,7 @@ What a job can reach: [Security model](#security-model).
 ## More machines
 
 One machine runs the coordinator; any number of others can be workers of it. Set the first one
-up as above, then, from the laptop, with `ssh <host> true` working for both:
+up as above, then, from the dev machine, with `ssh <host> true` working for both:
 
 ```sh
 mulebox setup build-2 --worker-of build-1
@@ -275,7 +275,7 @@ mulebox setup build-2 --worker-of build-1
 It makes a key on `build-2` (`~/.config/mulebox/coordinator_key`), adds it to `build-1`'s
 `~/.ssh/authorized_keys` for mulebox requests only, installs mulebox on `build-2` with a
 `node.toml` that names `build-1` as its coordinator and runs no coordinator or dashboard, and
-waits until `build-1` lists it online. `build-2` reaches `build-1` at the address this laptop
+waits until `build-1` lists it online. `build-2` reaches `build-1` at the address this dev machine
 uses (`ssh -G build-1`); if it needs another one, add `--coordinator-address alice@192.168.1.50`.
 The first time, `build-2` trusts `build-1`'s host key as it finds it.
 
@@ -313,7 +313,7 @@ Moving the coordinator to another machine is done by hand, as it holds the queue
    `systemctl --user stop mulebox-coordinator mulebox-dashboard mulebox-worker`.
 2. Copy `~/.mulebox/staging` (the store, logs and snapshots) to the same path on the new one, with
    the services stopped there, after `mulebox setup <new>` installed it.
-3. Start the new one's services, point the laptop's `client.toml` `coordinator` at it, and run
+3. Start the new one's services, point the dev machine's `client.toml` `coordinator` at it, and run
    `mulebox setup <worker> --worker-of <new>` for each other machine, which writes their key on
    the new coordinator. A kept worker `node.toml` still names the old one: edit `coordinator`
    there, or remove that file before setup writes a new one.
@@ -327,7 +327,7 @@ crosses a bridge, so counting those would count the same bytes twice. Not yet: `
 
 mulebox is for one owner and the projects that owner trusts. It is not a sandbox.
 
-- Everyone who can `ssh` to a build machine can already run anything there, so the client commands
+- Everyone who can `ssh` to a node can already run anything there, so the client commands
   have no accounts or permissions of their own.
 - A job runs as the machine's normal user, in that user's systemd session, with Docker. A job,
   and any package a job installs, can read that user's files, including ssh keys, `node.toml`,
@@ -351,7 +351,7 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
 
 ## Upgrade
 
-Update the laptop's own client to the newest release on PyPI, with the tool that installed it
+Update the dev machine's own client to the newest release on PyPI, with the tool that installed it
 (`uv tool upgrade mulebox` or `pipx upgrade mulebox`; from a clone, `git pull` and the same
 `pip install .`), then send the same version to the machine:
 
@@ -361,10 +361,10 @@ mulebox setup build-1
 
 The installer reinstalls the wheel into the existing venv, updates the unit files and
 restarts the services. A running job is interrupted by the restart (state `interrupted`,
-never replayed), so `mulebox setup` stops if a job is running. `--when-idle` waits instead: new jobs and CI runs wait in line, the running ones finish, the upgrade runs and the line moves on, and a killed laptop holds nothing for more than 2 minutes while waiting. `--now` upgrades at once. `node.toml`
+never replayed), so `mulebox setup` stops if a job is running. `--when-idle` waits instead: new jobs and CI runs wait in line, the running ones finish, the upgrade runs and the line moves on, and a killed dev machine holds nothing for more than 2 minutes while waiting. `--now` upgrades at once. `node.toml`
 is kept.
 
-`mulebox setup <machine> --queued` does what `--when-idle` does without keeping the laptop: the
+`mulebox setup <machine> --queued` does what `--when-idle` does without keeping the dev machine: the
 new version goes to the machine and becomes a row in its line, "mulebox upgrade to X", and the
 command returns. Nothing new starts on that machine (jobs and CI runs wait), the running jobs
 end, it installs, and the line goes on. With `--behind` the jobs already waiting go first. It
@@ -392,7 +392,7 @@ systemctl --user daemon-reload
 
 Then remove `~/.mulebox/` (venv, roots with job folders, caches, queue database and logs)
 and `~/.config/mulebox/` yourself once you no longer need them. Disable lingering if you
-enabled it only for mulebox: `sudo loginctl disable-linger alice`. On the laptop, remove
+enabled it only for mulebox: `sudo loginctl disable-linger alice`. On the dev machine, remove
 `~/.config/mulebox/client.toml` and uninstall the client package.
 
 ## Checking Docker on a machine
@@ -401,7 +401,7 @@ enabled it only for mulebox: `sudo loginctl disable-linger alice`. On the laptop
 that what mulebox generates ends up labelled, private to the job and reachable by service
 name, and removes it with the worker's teardown. It pulls nothing but needs `redis:7-alpine`,
 or `--image` with `redis-cli` in it, and removes only what carries the labels of a job id it
-made up. Run it from the laptop:
+made up. Run it from the dev machine:
 
 ```sh
 ssh build-1 '~/.mulebox/venv/bin/python - --real-docker' < tools/drill_compose.py
@@ -413,7 +413,7 @@ See [troubleshooting.md](troubleshooting.md).
 
 ## Using the dashboard
 
-From the laptop:
+From the dev machine:
 
 ```sh
 mulebox dashboard open                 # opens the browser; Ctrl-C closes the tunnel
@@ -427,7 +427,7 @@ Nothing but the SSH connection is exposed: the page is reached only through the 
 ### Steering jobs and machines
 
 mulebox is meant for your own network, so whoever reaches the queue may steer it, from the
-laptop or from the dashboard:
+dev machine or from the dashboard:
 
 ```sh
 mulebox pause <job-id>      # a waiting job keeps its place and does not start;
@@ -457,7 +457,7 @@ It is short on purpose: it sends the agent to `mulebox contract`. You can read i
 [mulebox/client/skill/SKILL.md](../mulebox/client/skill/SKILL.md).
 
 For Claude Code, `mulebox setup` installs it for all your projects: into every Claude config
-folder on the laptop that has no copy yet, and it updates the copies that are out of date.
+folder on the dev machine that has no copy yet, and it updates the copies that are out of date.
 `mulebox setup <host> --no-skill` installs none (out-of-date copies are still updated). By hand:
 
 ```sh
@@ -470,19 +470,19 @@ These cover `~/.claude`, `~/.claude-work` and the folder `CLAUDE_CONFIG_DIR` nam
 exist; `--config-dir <folder>` names one instead, and may repeat. `update` replaces hand edits
 in a copy, and leaves alone a skill folder that is a link.
 
-The skill moves with mulebox, so its version is always the laptop's mulebox: there is no
+The skill moves with mulebox, so its version is always the dev machine's mulebox: there is no
 separate download, and the newest skill is the newest mulebox's. Upgrading goes: upgrade mulebox
-on the laptop (`uv tool upgrade mulebox` or `pipx upgrade mulebox`), then `mulebox setup <host>` installs that
-same version on the build machine and, at its end, updates the out-of-date skill copies on the
-laptop. A copy
+on the dev machine (`uv tool upgrade mulebox` or `pipx upgrade mulebox`), then `mulebox setup <host>` installs that
+same version on the node and, at its end, updates the out-of-date skill copies on the
+dev machine. A copy
 that is still old, after an upgrade without `setup`, is caught by the session: the skill tells
 the agent to run `mulebox contract` first, which says on stderr when an installed copy differs
 from this mulebox's; the agent then runs `mulebox skill update`, reads the skill again and tells
 you. `mulebox doctor` reports it too. Copies from before 0.82.0 lack that last step, but still
 run the contract first, so the agent sees the notice.
 
-The dashboard shows the same, for every laptop that sent a job in the last two weeks: a strip
-above the panels names a laptop on another mulebox than the build machine, a laptop whose skill
+The dashboard shows the same, for every dev machine that sent a job in the last two weeks: a strip
+above the panels names a dev machine on another mulebox than the node, a dev machine whose skill
 is out of date, and a worker on another mulebox than the coordinator, each with its fix.
 
 Agents without skills can read [agents.md](agents.md) instead.
@@ -498,7 +498,7 @@ This is plain HTTP: the password and everything on the page cross your network
 unencrypted, and browsers mark the page "Not secure". That is fine on a network where you
 trust everyone. On an office or shared network, use the tunnel, or HTTPS (below).
 
-On the build machine, add to `[dashboard]` in `node.toml`, leaving `mode` as it is for now:
+On the node, add to `[dashboard]` in `node.toml`, leaving `mode` as it is for now:
 
 ```toml
 lan_range = "192.168.1.0/24"   # who may connect; must be a private network

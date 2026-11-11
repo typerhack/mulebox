@@ -64,7 +64,7 @@ The repository's CI runs the same four (`web` job).
 `npm run build` writes static files to `mulebox/dashboard/app/` (not in git). The dashboard
 serves them at `/` and `/app/` (`mulebox/dashboard/pages.py`); without them `/` answers 503 with
 how to build. `mulebox setup` runs the build before it makes the wheel it sends, so a build
-machine needs no Node, and stops when it cannot (no npm on the laptop).
+machine needs no Node.js, and stops when it cannot (no npm on the dev machine).
 
 The sign-in page of `lan` mode is a second entry, `login.html` with `src/login/login.css`: no
 script, tokens and fonts only. It builds to fixed names, `login.css` and `fonts/<name>.woff2`,

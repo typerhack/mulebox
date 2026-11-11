@@ -1,7 +1,7 @@
 """The dashboard's page and its files: the React front end, built into `app/`.
 
 The front end lives in `web/` in the repository and is built to static files at release time
-and by `mulebox setup` (client/webbuild.py); a build machine never needs Node.
+and by `mulebox setup` (client/webbuild.py); a node never needs Node.
 
 - With `app/index.html` present, `/` is the React app and its files are under `/app/`, the
   sign-in page of `lan` mode among them (`app/login.html`, login.py).
@@ -31,7 +31,7 @@ NOT_BUILT = """<!doctype html>
 the same data.</p>
 <p>To get the page, install a release of mulebox, or build it from a checkout:
 <code>npm ci</code> and <code>npm run build</code> in <code>web/</code> (needs Node.js), then
-restart the dashboard. <code>mulebox setup</code> does this for a build machine.</p>
+restart the dashboard. <code>mulebox setup</code> does this for a node.</p>
 </body>
 </html>
 """

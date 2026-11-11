@@ -1,4 +1,4 @@
-"""The strip of what is out of step: workers, laptops and their skill, from real submits."""
+"""The strip of what is out of step: workers, dev machines and their skill, from real submits."""
 
 from mulebox.dashboard import notices
 from mulebox.version import get_version
@@ -38,7 +38,7 @@ def test_an_offline_worker_is_left_out():
     assert notices.notices(V, [worker("0.1.0", seen=NOW - 3600)], [], NOW) == []
 
 
-def test_submits_record_the_laptop_and_reach_the_panel(store, staging, data):
+def test_submits_record_the_dev_machine_and_reach_the_panel(store, staging, data):
     submit(store, staging, NOW, client="alice-laptop", client_version="0.1.0", skill="out_of_date")
     body = submit_body(client="alice-laptop", client_version=get_version(), skill="current")
     call(store, staging, "submit", now=NOW + 1, **body)
@@ -55,6 +55,6 @@ def test_a_bad_skill_state_is_refused(store, staging):
     assert reply.body["code"] == "bad_request"
 
 
-def test_a_laptop_not_seen_for_weeks_is_left_out(store, staging, data):
+def test_a_dev_machine_not_seen_for_weeks_is_left_out(store, staging, data):
     submit(store, staging, NOW, client="alice-laptop", client_version="0.1.0")
     assert data.machines(NOW + 15 * 86400)["notices"] == []

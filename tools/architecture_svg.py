@@ -54,11 +54,11 @@ def picture(theme: str) -> str:
     c = colours(theme)
     parts = [
         f'<rect width="{W}" height="{H}" rx="8" fill="{c["surface-0"]}" stroke="{c["border"]}"/>',
-        *box(c, 230, 24, 300, 86, "Dev machine (your laptop)", ["you and your agents run", "$ mulebox check"]),
+        *box(c, 230, 24, 300, 86, "Dev machine (laptop or PC)", ["you and your agents run", "$ mulebox check"]),
         *arrow(c, 380, 110, 380, 186, "ssh: a job goes in, its output and exit code come back", 392),
         f'<rect x="24" y="166" width="{W - 48}" height="{H - 180}" rx="8" fill="none" '
         f'stroke="{c["border-strong"]}" stroke-dasharray="4 4"/>',
-        f'<text x="40" y="190" font-size="12.5" fill="{c["text-3"]}">Nodes: Linux build machines on your LAN</text>',
+        f'<text x="40" y="190" font-size="12.5" fill="{c["text-3"]}">Nodes: Linux machines on your LAN</text>',
         *box(c, 200, 200, 360, 88, "Node 1: coordinator + worker",
              ["one line of jobs, history, the dashboard", "and slots that run jobs"], strong=True),
         *box(c, 70, 350, 250, 60, "Node 2: worker", []),

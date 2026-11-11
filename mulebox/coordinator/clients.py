@@ -1,8 +1,8 @@
-"""The laptops that send jobs: the mulebox each last ran, and the state of its agent skill.
+"""The dev machines that send jobs: the mulebox each last ran, and the state of its agent skill.
 
 Every `submit` says it (`client_version`, `skill`), and the newest word per client is kept, so
-the dashboard can warn when a laptop and the build machine are out of step (dashboard/notices.py).
-A client older than 0.83.0 says neither and is simply not listed. `client` is the laptop's host
+the dashboard can warn when a dev machine and the node are out of step (dashboard/notices.py).
+A client older than 0.83.0 says neither and is simply not listed. `client` is the dev machine's host
 name, as on its jobs.
 """
 
@@ -15,7 +15,7 @@ from mulebox.common.versions import parse
 from mulebox.coordinator.errors import BadRequest
 
 SKILL_STATES = ("current", "out_of_date", "none")
-RECENT_DAYS = 14  # a laptop not seen for longer is left out: it may be gone
+RECENT_DAYS = 14  # a dev machine not seen for longer is left out: it may be gone
 TABLE = """
 CREATE TABLE IF NOT EXISTS clients (
     client TEXT PRIMARY KEY,

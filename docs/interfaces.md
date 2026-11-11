@@ -35,7 +35,7 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
 - `ClientConfig` (from `$MULEBOX_CONFIG` or `~/.config/mulebox/client.toml`):
   `coordinator: str` (ssh target, e.g. `build-1`), `remote_bin: str`
   (default `~/.mulebox/bin/mulebox`), `connect_timeout_s: int` (default 10).
-- `NodeConfig` (on a build machine, `~/.config/mulebox/node.toml`): `name: str`,
+- `NodeConfig` (on a node, `~/.config/mulebox/node.toml`): `name: str`,
   `roles: tuple[str, ...]` (`coordinator`, `worker`), `roots: Roots-compatible dict`
   (`jobs`, `cache`, `staging`, `runners`, all absolute), `slots: int` (default 1),
   `capabilities: tuple[str, ...]`, `coordinator: str | None` (ssh target; None if local),

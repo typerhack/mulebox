@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install or upgrade mulebox on a Linux build machine, for the current user.
+# Install or upgrade mulebox on a Linux node, for the current user.
 #
 #   bash install.sh /path/to/mulebox-<version>-py3-none-any.whl
 #
@@ -33,7 +33,7 @@ die() { printf 'mulebox install: error: %s\n' "$*" >&2; exit 1; }
 # --- checks ------------------------------------------------------------------------
 
 check_platform() {
-    [ "$(uname -s)" = "Linux" ] || die "build machines must run Linux (found $(uname -s))"
+    [ "$(uname -s)" = "Linux" ] || die "nodes must run Linux (found $(uname -s))"
     command -v systemctl >/dev/null 2>&1 || die "systemd is required (systemctl not found)"
     systemctl --user show-environment >/dev/null 2>&1 \
         || die "'systemctl --user' does not work; log in through ssh or a desktop session, not su"
@@ -104,7 +104,7 @@ install_wheel() {
     link_on_path
 }
 
-# The same `mulebox` name on a build machine as on the laptop. A real file of that name is
+# The same `mulebox` name on a node as on the dev machine. A real file of that name is
 # someone else's, so it stays.
 link_on_path() {
     local link="$HOME/.local/bin/mulebox"

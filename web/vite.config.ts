@@ -1,5 +1,5 @@
 // Build: static files into the Python package (mulebox/dashboard/app/), which the dashboard's
-// aiohttp server serves under /app/, so a build machine needs no Node. Dev: `npm run dev`
+// aiohttp server serves under /app/, so a node needs no Node. Dev: `npm run dev`
 // against a stand-in API with made-up data (dev/mock.ts), or, with MULEBOX_DASHBOARD set to a
 // dashboard's address, against that dashboard through a proxy.
 

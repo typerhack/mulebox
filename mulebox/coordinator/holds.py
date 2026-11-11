@@ -1,4 +1,4 @@
-"""A project held still while its folder on the build machine is removed, and every job held
+"""A project held still while its folder on the node is removed, and every job held
 back while a machine waits to be upgraded (`drain`).
 
 A hold is a row in `meta`, so `queue.claim` sees it in the transaction that picks a job and a job
@@ -16,7 +16,7 @@ HOLD_S = 900.0
 _PREFIX = "hold:"
 _DRAIN = "drain"
 MAX_DRAIN_S = 3600
-DRAIN_REASON = "the build machine is waiting for its running jobs to end, to be upgraded"
+DRAIN_REASON = "the node is waiting for its running jobs to end, to be upgraded"
 
 
 def held(conn: sqlite3.Connection, now: float) -> set[str]:

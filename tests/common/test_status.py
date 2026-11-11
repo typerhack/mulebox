@@ -64,5 +64,5 @@ def test_fingerprint_sees_where_a_waiting_job_may_go_change():
     waiting = job("queued", position=1, can_run_on=["build-1"])
     assert status.fingerprint([waiting]) != status.fingerprint([{**waiting, "can_run_on": []}])
     assert status.fingerprint([waiting]) != status.fingerprint(
-        [{**waiting, "waiting_for": "no build machine for this job is online"}])
+        [{**waiting, "waiting_for": "no node for this job is online"}])
     assert status.fingerprint([waiting]) == status.fingerprint([{**waiting, "elapsed_s": 5.0}])

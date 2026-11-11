@@ -67,7 +67,7 @@ def test_filters_and_breakdowns(store, staging):
     assert total(store, 0, 2 * DAY, client="github")["total"]["seconds"] == 50.0
     assert total(store, 0, 2 * DAY, worker="build-1", project="example-app")["total"]["seconds"] == 100.0
     with store.read() as conn:
-        assert stats.choices(conn)["client"] == ["alice@laptop", "github"]
+        assert stats.choices(conn)["client"] == ["alice@dev machine", "github"]
 
 
 def test_the_request_checks_its_body_and_replies(store, staging):
