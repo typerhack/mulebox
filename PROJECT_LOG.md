@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.103.2 - 2026-11-11 - patch
+- A GitHub run's Time panel marks the run with its own result (failed, cancelled, passed, or released for an older slot with none); a failed run showed a pass mark. Found in a real CI drill on the deployed dashboard, where each step's length and result showed as built in 0.102.0.
+
 ## 0.103.1 - 2026-11-11 - patch
 - Controls on touch screens and under 520px are 44px high, up from 36px, as Apple's guidance asks (the user's choice); design-system.md has nothing left open before building.
 

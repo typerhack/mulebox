@@ -8,7 +8,7 @@ import type { JobDetail } from "./types";
 
 export interface StageRow {
   name: string;
-  state: "passed" | "failed" | "running";
+  state: "passed" | "failed" | "running" | "cancelled" | "released";
   from: number;            // seconds after the first stage started
   length: number;
   usualAt: number | null;  // where the stage usually ends, on the same scale

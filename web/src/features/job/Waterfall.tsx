@@ -82,8 +82,12 @@ export function RunTimePanel({ job, live, cores, now }: Props) {
   const usual = live?.usual_s ?? null;
   const scale = Math.max(elapsed, usual ?? 0, 1);
   const running = job.state !== "finished";
+  // The run's own result from the runner's diary; an older slot without one was only released.
+  const end = job.ci_result?.outcome;
+  const state: StageRow["state"] = running ? "running"
+    : end === "passed" || end === "failed" || end === "cancelled" ? end : "released";
   const row: StageRow = {
-    name: "CI run", state: running ? "running" : "passed", from: 0, length: elapsed, usualAt: usual,
+    name: "CI run", state, from: 0, length: elapsed, usualAt: usual,
     took: duration(elapsed), extra: null,
     tip: `This run: ${duration(elapsed)}${running ? " so far" : ""}${usual ? `, usually ${duration(usual)}` : ""}`,
   };
