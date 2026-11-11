@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.106.6 - 2026-11-11 - patch
+- README: the package caches said plainly (the user's ask): packages download once per project and the next job, a fresh container or the project's CI runner installs from the node, with the measured pnpm and Composer runs.
+
 ## 0.106.5 - 2026-11-11 - patch
 - The docs give mulebox's real address, `typerhack/mulebox`, in place of `example-org/mulebox` (install lines, the agent-install prompt, releases, the feedback repository example); AGENTS.md rule 6 names it as the one exception (the user's decision).
 - README: GitHub runners attach to private repositories only, said plainly with the reason (a fork's pull request runs its own workflow on your machine), and that open-source projects can use GitHub's hosted runners.

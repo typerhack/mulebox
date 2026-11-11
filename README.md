@@ -179,8 +179,11 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   branch, and a job sends only the files that changed since the last one.
 - **Installs once.** `install` and `setup` run only when the lockfile, manifests or toolchain change,
   and a lost network during an install is tried again.
-- **Package caches** for pnpm, npm, Composer and pip are kept per project between jobs, also for fresh
-  containers.
+- **Download once, not every job.** Packages for pnpm, npm, Composer and pip are kept in a cache per
+  project on the node, so the next job, a fresh container or the project's CI runner installs from
+  there instead of the internet (`needs: [cache-pnpm]` in `.mulebox.yml`). On one real project, a
+  second job reused all 73 packages and downloaded none; a Composer install ran with the network
+  turned off.
 - **Toolchains install themselves.** A project pins Node and pnpm, and the first job that needs a
   version installs it on the node, checked against the official checksums, once for every project.
 - **Branches side by side.** Different branches run at once; a second job on the same branch waits.
