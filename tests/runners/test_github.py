@@ -18,10 +18,13 @@ CONFIG = ClientConfig(coordinator="build-1")
 
 
 class FakeGh:
-    def __init__(self, code=0, out=TOKEN + "\n", err=""):
-        self.calls, self.result = [], (code, out, err)
+    def __init__(self, code=0, out=TOKEN + "\n", err="", visibility="private"):
+        self.calls, self.result, self.visibility = [], (code, out, err), visibility
 
     def __call__(self, argv):
+        if argv[-1] == ".visibility":
+            self.seen = list(argv)
+            return subprocess.CompletedProcess(argv, 0, self.visibility + "\n", "")
         self.calls.append(list(argv))
         return subprocess.CompletedProcess(argv, *self.result)
 
@@ -88,3 +91,17 @@ def test_unreachable_stays_unreachable():
     stream = FakeStream(lines=[], error=ssh.SSHUnavailable("cannot connect to build-1"))
     with pytest.raises(ssh.SSHUnavailable):
         github.register(CONFIG, REPO, run=FakeGh(), stream=stream, out=io.StringIO())
+
+
+def test_register_refuses_a_public_repository_before_any_token():
+    gh, stream = FakeGh(visibility="public"), FakeStream()
+    with pytest.raises(GitHubError, match="private repositories only"):
+        github.register(CONFIG, REPO, run=gh, stream=stream, out=io.StringIO())
+    assert gh.seen == ["gh", "api", f"repos/{REPO}", "--jq", ".visibility"]
+    assert gh.calls == [] and stream.calls == []
+
+
+def test_unregister_works_on_a_public_repository():
+    gh, stream = FakeGh(visibility="public"), FakeStream()
+    github.unregister(CONFIG, REPO, run=gh, stream=stream, out=io.StringIO())
+    assert stream.calls

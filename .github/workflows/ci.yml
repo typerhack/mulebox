@@ -2,8 +2,9 @@ name: ci
 
 # The repository's own gate, safe for a public repository: rules in docs/releasing.md.
 # tests/test_ci_workflow.py holds these to it.
-# - GitHub-hosted machines only. Do not add `self-hosted` here, and keep no runner registered
-#   on this repository: a pull request brings its own copy of this file.
+# - GitHub-hosted machines only. Do not add `self-hosted` here: a pull request brings its own
+#   copy of this file. While the repository is private it may have a runner for drills; remove
+#   it before the repository goes public (docs/releasing.md).
 # - `pull_request`, never `pull_request_target`, so a fork's code gets no secrets.
 # - Read-only token, not stored in the checkout; actions pinned to a full commit.
 

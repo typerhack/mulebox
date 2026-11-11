@@ -252,7 +252,9 @@ so do it only for a runner of a private repository whose pull requests you trust
 
 **Private repositories only.** Never attach a runner to a public repository: anyone can open a
 pull request, and its workflow file comes from that pull request, so it can ask for your runner
-whatever your own workflow says, and run its code on your build machine.
+whatever your own workflow says, and run its code on your build machine. `mulebox runner
+register` refuses a public repository; one that turns public later keeps its runner until you
+unregister it.
 What a job can reach: [Security model](#security-model).
 
 ## More machines

@@ -61,6 +61,17 @@ def gh_token(repo: str, kind: str, run: GhRun = run_gh) -> str:
     return token
 
 
+def refuse_public(repo: str, run: GhRun = run_gh) -> None:
+    """Refuse a public repository: a fork's pull request brings its own workflow file, so it
+    could name this runner and run its code on the build machine (docs/install.md). A
+    visibility `gh` cannot read is left to the token request, which fails with the reason."""
+    proc = run(["gh", "api", f"repos/{check_repo(repo)}", "--jq", ".visibility"])
+    if proc.returncode == 0 and (proc.stdout or "").strip() == "public":
+        raise GitHubError(
+            f"{repo} is public, and a runner there would run any fork's pull request on the "
+            "build machine; mulebox attaches runners to private repositories only")
+
+
 def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
                 labels: str | None = None) -> list[str]:
     argv = [remote_program(config.remote_bin), "runner", action, "--repo", check_repo(repo)]
@@ -89,6 +100,7 @@ def register(config: ClientConfig, repo: str, *, name: str | None = None,
              labels: str | None = None, run: GhRun = run_gh,
              stream: Stream = ssh.stream_remote, out: TextIO = sys.stdout) -> None:
     argv = remote_argv(config, "add", repo, name, labels)
+    refuse_public(repo, run)
     _run_remote(config, argv, gh_token(repo, "registration", run), out, stream)
 
 
