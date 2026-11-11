@@ -17,7 +17,28 @@ What is open is in the [roadmap](docs/phases.md).
 ## Install
 
 You need a Linux machine with systemd, git and Python 3.12 or newer, which your laptop reaches
-over ssh with a key.
+over ssh with a key, at an address that does not change (below).
+
+### Give every machine a fixed address
+
+mulebox remembers where each build machine is: the laptop keeps the address you set it up with,
+a second machine keeps its coordinator's address in its own config, and the dashboard on the LAN
+is opened at it. Most routers hand out addresses by DHCP, and a machine can get a new one after a
+reboot, a lost Wi-Fi connection or a router restart. Then the laptop cannot reach it (exit 3),
+other machines show offline, and nothing runs until the address is fixed. mulebox does not work
+with an address that changes.
+
+Before `mulebox setup`, make each machine's address permanent, in one of these ways:
+
+- **Reserve it on your router** (called a DHCP reservation, static lease or fixed IP): pick the
+  machine by its MAC address and give it an address. Nothing changes on the machine itself.
+- **Set a static address on the machine**, outside the range the router hands out.
+- **Use a name that always finds the machine**, if every machine and the laptop can resolve it,
+  such as a VPN that keeps each device's address.
+
+Check after a reboot of the machine that `ssh <node> true` still works. If an address did change,
+put the new one in `~/.ssh/config` (or in `coordinator` in the laptop's `client.toml`), and on every
+other machine in `coordinator` in `node.toml`, then `systemctl --user restart mulebox-worker` there.
 
 ### Let your coding agent install it
 

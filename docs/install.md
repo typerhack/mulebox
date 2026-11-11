@@ -22,6 +22,10 @@ Build machine:
 - Python 3.12 or newer with `venv` support. On Ubuntu/Debian: `sudo apt-get install
   python3-venv`; a fresh Ubuntu does not have it.
 - Network access to PyPI for mulebox's dependencies.
+- An address that does not change: reserve it on your router (DHCP reservation) or set a static
+  one. The laptop, other machines and the LAN dashboard reach it there, and a new address after a
+  reboot or reconnect makes it unreachable. Details and how to recover:
+  [README, Give every machine a fixed address](../README.md#give-every-machine-a-fixed-address).
 
 Laptop:
 

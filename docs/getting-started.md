@@ -9,7 +9,10 @@ the user `alice` and the project `example-app`.
 
 ## What you need
 
-- A Linux build machine with systemd, git, Python 3.12 or newer, and a user you can log in as.
+- A Linux build machine with systemd, git, Python 3.12 or newer, and a user you can log in as,
+  at a fixed address: reserved on the router or set static, as a new address after a reboot
+  makes it unreachable ([README](../README.md#give-every-machine-a-fixed-address)). An agent
+  asks a person for this; it needs the router.
 - A macOS or Linux laptop with git, and either uv or Python 3.12 or newer with pipx.
 - Login from the laptop to the build machine with an ssh key, and no prompts: mulebox never
   answers one. `ssh build-1 true` must print nothing and ask nothing. If your key has a

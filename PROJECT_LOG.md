@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.1.4 - 2026-11-11 - patch
+- Docs: a README section, "Give every machine a fixed address": mulebox keeps each machine's address (the laptop's config, a worker's coordinator, the LAN dashboard), so an address the router changes after a reboot or reconnect makes the machine unreachable. It names a DHCP reservation, a static address or a stable name, and how to recover; install.md, getting-started.md and troubleshooting.md point to it (the user's ask).
+
 ## 1.1.3 - 2026-11-11 - patch
 - Docs: releasing.md names 1.1.1 as the first release on PyPI, and the roadmap's M17.4 records how the release went and what is still open. 1.1.2 changed nothing in the package and is not released (the user's call).
 
