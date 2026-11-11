@@ -25,7 +25,9 @@ product work, not a personal script.
    commit real IP addresses, hostnames, usernames, home paths, repository names of the
    author's projects, tokens, passwords, or keys. Use examples (`192.168.1.50`, `alice`,
    `build-1`, `/home/alice`, `example-app`). Machine-specific notes belong in the user's
-   private ops repo, not here.
+   private ops repo, not here. One exception: mulebox's own address,
+   `github.com/typerhack/mulebox`, where docs say how to install it or file an issue (the
+   user's decision, 2026-11-11).
 7. **Safety on build machines.** mulebox only writes and deletes inside its own configured
    roots, through the path-safety module. No disk tools, no system-path changes from jobs.
    Never test a destructive filter against a real machine.

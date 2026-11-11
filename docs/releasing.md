@@ -40,8 +40,8 @@ committed; a test holds that. To update one, change both with `npm install --sav
   Before a repository goes public, list its runners and remove every one:
 
   ```sh
-  gh api repos/example-org/mulebox/actions/runners --jq '.runners[].name'
-  mulebox runner unregister --repo example-org/mulebox
+  gh api repos/typerhack/mulebox/actions/runners --jq '.runners[].name'
+  mulebox runner unregister --repo typerhack/mulebox
   ```
 
   Delete the `CI_RUNS_ON` repository variable too, if it exists: this workflow no longer reads it.

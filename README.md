@@ -24,7 +24,7 @@ Give your agent (Claude Code, Codex, or another) this prompt, with your build ma
 
 ```text
 Install mulebox for me and set up this project to use it. Read
-https://raw.githubusercontent.com/example-org/mulebox/main/docs/getting-started.md and follow it
+https://raw.githubusercontent.com/typerhack/mulebox/main/docs/getting-started.md and follow it
 in order. My build machine is <node> (I reach it with `ssh <node>`). Ask me, in one message, only
 for the steps that need a password or sudo, then finish the rest yourself and show me a passing
 `mulebox check`.
@@ -38,7 +38,7 @@ The page is written for this: it says which steps need you (copying an ssh key, 
 On the laptop:
 
 ```sh
-pipx install git+https://github.com/example-org/mulebox
+pipx install git+https://github.com/typerhack/mulebox
 mulebox setup <node>           # installs mulebox on your build machine, then runs a first job
 ```
 
@@ -214,7 +214,18 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   message. A run's CPU counts its containers.
 - **Steered like any job**: freeze, boost, move in line, open on GitHub, cancel on GitHub.
 - **Shared caches**: a runner can download through the project's package caches (`runner caches`).
-- **Safe by default**: runners attach to private repositories only; `register` refuses a public one.
+- **Private repositories only.** See below for why.
+
+**Why not public repositories.** On a public repository anyone can fork it and open a pull request,
+and GitHub runs the workflow file from that pull request, not yours. A stranger can write
+`runs-on: [self-hosted, mulebox]` and a step such as `curl ... | sh`, and it runs on your build
+machine as your user, with Docker (as good as root there), on your network, next to your other
+projects' runners. GitHub's own documentation advises against self-hosted runners on public
+repositories for this reason. Approving each outside contributor's run helps, but one careless
+approval is enough, and the danger can hide in a changed test script rather than the workflow.
+So `mulebox runner register` refuses a public repository, and a repository that turns public
+later keeps its runner only until you unregister it. Open-source projects can use GitHub's own
+hosted runners, which are free for public repositories; mulebox itself does.
 
 ### You steer
 
@@ -364,7 +375,7 @@ at it: "read mulebox's docs/agents.md and set this project up".
 mulebox is for one owner and the projects that owner trusts. A job runs as the node's user, with
 Docker, so it is not a sandbox: read the [security model](docs/install.md#security-model) before
 pointing it at a machine that holds anything else. mulebox attaches GitHub runners to private
-repositories only, as a public one would run any fork's pull request on your machine.
+repositories only ([why](#github-actions-on-the-same-machines)).
 
 ## Development
 

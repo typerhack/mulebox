@@ -142,16 +142,16 @@ Any of these three. The binary needs no Python on the laptop; the build machine 
 **With pipx** (or `uv tool install`), which also updates easily:
 
 ```sh
-pipx install git+https://github.com/example-org/mulebox
+pipx install git+https://github.com/typerhack/mulebox
 ```
 
 **As a binary**, for macOS on Apple silicon and Linux on x86-64. Take the file for your system from
-the [releases page](https://github.com/example-org/mulebox/releases). Download it with `curl` as
+the [releases page](https://github.com/typerhack/mulebox/releases). Download it with `curl` as
 below: the binaries are not signed, so macOS refuses a file a browser fetched. It is a folder,
 because a single file took 10 s to start on macOS:
 
 ```sh
-curl -fsSLO https://github.com/example-org/mulebox/releases/download/v1.0.0/mulebox-1.0.0-macos-arm64.tar.gz
+curl -fsSLO https://github.com/typerhack/mulebox/releases/download/v1.0.0/mulebox-1.0.0-macos-arm64.tar.gz
 mkdir -p ~/.local/share ~/.local/bin
 tar xzf mulebox-1.0.0-macos-arm64.tar.gz -C ~/.local/share
 ln -sf ~/.local/share/mulebox/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH

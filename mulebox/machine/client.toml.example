@@ -11,4 +11,4 @@ remote_bin = "~/.mulebox/bin/mulebox"
 connect_timeout_s = 10
 
 # GitHub repository for `mulebox feedback post`, as owner/name. Off until set.
-# feedback_repo = "example-org/mulebox"
+# feedback_repo = "typerhack/mulebox"
