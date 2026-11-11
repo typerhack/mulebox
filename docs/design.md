@@ -157,7 +157,8 @@ tell the user that its copy is behind; `mulebox skill update` is for that person
 may be private, so:
 
 - **Two steps.** `draft` only prints; nothing leaves the machine. An agent shows the draft
-  to its user and posts only with their approval. `post` is off until `feedback_repo` is set.
+  to its user and posts only with their approval. `post` is off until `feedback_repo` is set, and for
+  the projects listed in `feedback_off`.
 - **Enough to trace.** A draft holds the summary, the mulebox version, the operating system
   and, for every job id given, the id, its result, stages and the mulebox that ran it, plus log
   lines picked by pattern or from the end when asked. Job ids identify nobody and are how the

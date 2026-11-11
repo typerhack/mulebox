@@ -51,5 +51,6 @@ When
   Show the user the final file and post only once they approve:
     mulebox feedback post draft.md
   It needs feedback_repo in client.toml and the gh command signed in. It posts exactly the
-  file it checked, and nothing if the check fails.
+  file it checked, and nothing if the check fails. A project listed in feedback_off is
+  never posted: tell the user instead.
 """

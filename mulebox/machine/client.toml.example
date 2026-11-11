@@ -12,3 +12,5 @@ connect_timeout_s = 10
 
 # GitHub repository for `mulebox feedback post`, as owner/name. Off until set.
 # feedback_repo = "typerhack/mulebox"
+# Projects whose problems are never posted, such as one that belongs to a client:
+# feedback_off = ["example-app"]

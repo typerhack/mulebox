@@ -154,6 +154,9 @@ def _post(args: argparse.Namespace) -> int:
     project, root, config = _context()
     if config is None or not config.feedback_repo:
         raise UsageError("set feedback_repo = \"owner/name\" in client.toml first")
+    if project is not None and project.project in config.feedback_off:
+        raise UsageError(f"feedback is off for {project.project} (feedback_off in client.toml): its "
+                         "problems are not posted; tell the user instead")
     try:
         text = args.file.read_text(encoding="utf-8")
     except OSError as exc:

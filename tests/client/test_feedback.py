@@ -156,6 +156,17 @@ def test_cli_post_is_off_until_a_repository_is_configured(cli, monkeypatch, caps
     assert sent == [] and "feedback_repo" in capsys.readouterr().err
 
 
+def test_cli_post_is_off_for_a_listed_project(cli, monkeypatch, capsys):
+    folder, sent = cli
+    (folder / ".mulebox.yml").write_text("project: example-app\njobs:\n  check: make test\n")
+    monkeypatch.setattr(feedback_commands, "load_client_config", lambda: ClientConfig(
+        coordinator="build-1", feedback_repo="example-org/mulebox", feedback_off=("example-app",)))
+    path = folder / "draft.md"
+    path.write_text(CLEAN)
+    assert main(["feedback", "post", str(path)]) == 2
+    assert sent == [] and "feedback is off for example-app" in capsys.readouterr().err
+
+
 def test_cli_log_needs_a_job(cli, capsys):
     assert main(["feedback", "draft", "--log", "--summary", "x"]) == 2
 

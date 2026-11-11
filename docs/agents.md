@@ -648,6 +648,8 @@ no log. **Show the user the final file and get their approval before posting.** 
 too: the scrub replaces names, private links, addresses and secrets, but cannot recognise private
 code, customer data or internal names. `post` needs `feedback_repo` in `client.toml`; it refuses a
 file that still holds something the scrub would remove, and says on which line and what kind.
+It also refuses for a project listed in `feedback_off` in `client.toml`, such as one that belongs
+to a client: then tell the user about the problem instead.
 
 ## 5. Things you must not do
 

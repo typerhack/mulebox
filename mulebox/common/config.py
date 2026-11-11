@@ -108,6 +108,7 @@ class ClientConfig:
     remote_bin: str = DEFAULT_REMOTE_BIN
     connect_timeout_s: int = 10
     feedback_repo: str | None = None
+    feedback_off: tuple[str, ...] = ()  # projects whose problems are never posted
 
 
 @dataclass(frozen=True)
@@ -190,6 +191,7 @@ def load_client_config(path: Path | None = None) -> ClientConfig:
         remote_bin=reader.text("remote_bin", DEFAULT_REMOTE_BIN),
         connect_timeout_s=reader.integer("connect_timeout_s", 10, 1, 300),
         feedback_repo=reader.text("feedback_repo", None),
+        feedback_off=reader.strings("feedback_off"),
     )
     reader.finish()
     return config

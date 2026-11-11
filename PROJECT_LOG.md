@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.107.0 - 2026-11-11 - minor
+- `feedback_off` in `client.toml`: a list of projects whose problems `mulebox feedback post` never posts, such as one that belongs to a client, as the feedback repository is about to turn public (the user's call). The agent is told to tell the user instead; agents.md, design.md, the feedback guide and the config example say so.
+
 ## 0.106.6 - 2026-11-11 - patch
 - README: the package caches said plainly (the user's ask): packages download once per project and the next job, a fresh container or the project's CI runner installs from the node, with the measured pnpm and Composer runs.
 
