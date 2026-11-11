@@ -180,7 +180,8 @@ queue and returns the same result as running it locally.
       in UTC); this repository's own runner unregistered. `mulebox runner register` refuses a public
       repository since 0.101.0. Open: a real fork pull request on GitHub, and asking approval for
       outside contributors' workflows, which GitHub allows only once the repository is public.
-- [ ] M6.5 1.0.0 release (only when the user declares it)
+- [x] M6.5 1.0.0 release (only when the user declares it). Declared by the user 2026-11-11 (1.0.0)
+      and tagged `v1.0.0`; how the release went is in PROJECT_LOG.md.
 
 ## M7: Agents
 Order agreed with the user on 2026-11-04.
