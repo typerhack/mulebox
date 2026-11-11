@@ -201,16 +201,22 @@ Do not:
 
 Found in a review of the proposal (2026-11-10), to settle in the first React components (M14.10):
 
-- Controls are 28 to 32px with a pointer and 36px on touch screens, smaller than the common 44px.
-  Check them in real use before keeping them.
-- Not drawn yet: a running job that is also frozen or boosted, the Resume and Unboost menu
-  items, the stage waterfall and the live log as components.
+- Controls are 28 to 32px with a pointer and 36px on touch screens or under 520px
+  (`--spacing-ctl-*` in web/src/styles/theme.css). Measured on the deployed dashboard
+  (2026-11-11): 28 to 34px with a pointer, which meets WCAG 2.2 AA (24px); 36px on touch is
+  under the 44px of Apple's and the 48px of Google's guidance. Whether to raise it is the
+  user's call.
 
 Settled in the React dashboard (M14.10):
 
 - Gaps are on the scale only. The 6px and 10px gaps of the proposal became 4, 8 and 12px
   (`--space-1` to `--space-3`): 4px inside a line of facts, 8px between rows and cards, 12px
   inside a card and between a row's columns.
+- A running job that is frozen or boosted keeps its card and gets an outline snowflake or bolt
+  beside its three dots, with the word as tooltip; its menu then offers Resume or End boost
+  (web/src/lib/menu.ts). Seen on agent jobs and on a GitHub run's card in real Edge.
+- The stage waterfall and the live log are components of the job page
+  (web/src/features/job/Waterfall.tsx, LogPanel.tsx, CiSteps.tsx for a GitHub run).
 - The meter style switch is an icon button in the header, left of the theme switch, and steps
   through Auto, Gauge and Rainbow with the icons `contrast`, `gauge` and `rainbow`; its tooltip
   names the current style and the next one.

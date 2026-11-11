@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.101.3 - 2026-11-11 - patch
+- design-system.md, "Open before building": control sizes measured on the deployed dashboard (28 to 34px with a pointer, 36px on touch, under the 44 to 48px of platform guidance; raising it is the user's call); frozen and boosted cards, Resume and End boost, the waterfall and the live log recorded as settled.
+
 ## 0.101.2 - 2026-11-11 - patch
 - Dashboard overhead (parking lot): the queue, read every second, sorted every finished job to keep the last 20, 9.7 ms of 12.6 on the real store of 1273 jobs. An index `jobs_finished (state, finished_at, seq)`, made when the coordinator opens its store, brings that query to 1.5 ms. An installed package's version is read once per process, not on every machines read (about 1 ms each).
 
