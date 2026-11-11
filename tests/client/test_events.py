@@ -2,7 +2,6 @@
 
 import json
 import threading
-import time
 
 import pytest
 
@@ -119,13 +118,24 @@ def test_status_of_an_unknown_job_exits_4(fake, capsys):
     assert cli.main(["status", JOB]) == 4
 
 
-def test_events_follow_a_real_job_through_the_queue(local, in_project, capsys):
+def test_events_follow_a_real_job_through_the_queue(local, in_project, capsys, monkeypatch):
     first, _ = detach(capsys)
     second, _ = detach(capsys)
     worker = FakeWorker(local.store, local.staging, pause=0.8)
+    # The first job starts only once `events` has printed the second at #2: a fixed wait was
+    # too short on a loaded build machine, and the #2 line was never seen.
+    printed, handle = threading.Event(), events.EventStream.handle
+
+    def noted(self, msg):
+        try:
+            return handle(self, msg)
+        finally:
+            printed.set()
+
+    monkeypatch.setattr(events.EventStream, "handle", noted)
 
     def work():
-        time.sleep(0.8)
+        printed.wait(10)
         worker.run_next()
         worker.run_next()
 

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.101.1 - 2026-11-11 - patch
+- `test_events_follow_a_real_job_through_the_queue` starts the first job once `events` has printed its first line, not after a fixed 0.8 s: on the loaded build machine it missed the #2 line and failed the gate.
+
 ## 0.101.0 - 2026-11-11 - minor
 - `mulebox runner register` refuses a public repository before asking for a token, as docs/install.md already said never to attach one: a fork's pull request brings its own workflow file. `unregister` still works there.
 - ci.yml's comment no longer says this repository keeps no runner: it has one for drills while private, to remove before it goes public (docs/releasing.md, M6.4).
