@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.1.2 - 2026-11-11 - patch
+- release.yml: a comment read "No token or password: PyPI trusts ...", which GitGuardian took for a password with the value "PyPI" (a false alarm on 1.1.0; nothing secret was ever in it). Reworded so it no longer reads as a setting.
+- Released: 1.1.1 is the first mulebox on PyPI, published by the release workflow; installed from PyPI with `uv tool install` (uv's own Python 3.12) and with pipx on the Mac, each holding the dashboard. The unpublished 1.0.0 draft release was deleted (the user's call); its tag stays.
+
 ## 1.1.1 - 2026-11-11 - patch
 - A test of UDP port probing failed once in GitHub's CI (on 1.0.1): the random UDP port's TCP side was held by something else on the shared machine. The test now picks a port whose TCP side is free.
 

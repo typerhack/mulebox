@@ -3,7 +3,7 @@ name: release
 # Publishes mulebox to PyPI when a version tag is pushed: rules in docs/releasing.md.
 # - GitHub-hosted machines only, and never on a pull request.
 # - Tags are pushed by maintainers only, when the user says to release.
-# - No token or password: PyPI trusts this workflow through its own identity (trusted
+# - Nothing secret is stored: PyPI trusts this workflow through its own identity (trusted
 #   publishing), given only to the publish job, which runs nothing from the repository.
 # - Actions pinned to a full commit.
 
