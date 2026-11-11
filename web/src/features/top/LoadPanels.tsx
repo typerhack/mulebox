@@ -12,6 +12,7 @@ import { Graph } from "../../ui/Graph";
 import { Meter } from "../../ui/Meter";
 import { Fact, Panel } from "../../ui/Panel";
 import { HostMark } from "../machines/parts";
+import { CpuCores, ViewSwitch, compactable, useCpuView, useWide } from "./CpuCores";
 
 const average = (cpu: number[] | null | undefined) =>
   (cpu?.length ? cpu.reduce((a, b) => a + b, 0) / cpu.length : null);
@@ -55,8 +56,12 @@ export function CpuPanel({ shown, now }: { shown: Shown; now: number }) {
   const offline = offlineText(shown, now);
   const overall = average(cores) ?? (shown.isHost ? null : machine?.cpu_pct ?? null);
   const count = cores.length || machine?.cores || 0;
-  const note = offline ? "No live data" : overall === null ? "Waiting for the first sample"
+  const [view, setView] = useCpuView();
+  const wide = useWide();
+  const text = offline ? "No live data" : overall === null ? "Waiting for the first sample"
     : `${count ? `${count} cores, ` : ""}${percent(overall)} now`;
+  const note = !offline && compactable(cores.length, wide)
+    ? <span className="inline-flex items-center gap-2">{text}<ViewSwitch view={view} set={setView} /></span> : text;
   return (
     <Panel title="CPU" label="CPU" icon={<Cpu aria-hidden className="size-icon" />} note={note}
       head={<Scope shown={shown} back />} bodyClassName="flex flex-col gap-3">
@@ -65,12 +70,7 @@ export function CpuPanel({ shown, now }: { shown: Shown; now: number }) {
           <Graph className="flex-1" points={samples.map((s) => ({ t: s.t, v: average(s.cpu) }))} max={100}
             windowS={WINDOW_S} format={percent} scale="Last 5 min, 0 to 100%"
             label={`Average CPU${machine ? ` of ${machine.name}` : ""}, last 5 minutes: ${overall === null ? "-" : percent(overall)}`} />
-          <div className="cores">
-            {cores.map((value, index) => (
-              <Meter key={index} name={String(index)} value={value} text={percent(value)}
-                label={`Core ${index}: ${percent(value)}`} />
-            ))}
-          </div>
+          <CpuCores cores={cores} view={view} machine={machine?.name ?? ""} />
         </>
       ) : (
         <>

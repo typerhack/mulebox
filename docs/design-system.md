@@ -179,6 +179,11 @@ Drawn in the specimen, in both themes:
 - Waiting row: position, name, branch, time waited, the four move arrows as one group, three dots.
 - Warning strip (amber) and danger strip (red), each with its fix.
 - Tooltip, empty state.
+- The CPU box's two views (the user's idea, 2026-11-11), switched by a small icon button beside its
+  note and remembered per browser: details, a meter per core, the default and unchanged; compact,
+  an All meter, the busiest cores by number (six with four to a row, four on narrower screens,
+  kept steady until another is 10 points busier) and one line for the rest with their average and
+  highest. The switch shows only when compact would hide a core. Neither view scrolls.
 
 ## Rules
 

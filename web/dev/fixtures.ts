@@ -70,17 +70,20 @@ export function makeMachines(queue: ReturnType<typeof makeQueue>, set: Record<st
       name, host: n === 1, version: n === 5 ? "0.95.4" : "0.95.5", slots, capabilities: OFFERS[index % OFFERS.length], state,
       free_slots: offline ? 0 : Math.max(0, slots - jobs.length), last_seen: offline ? now() - 840 : now(),
       cpu_pct: offline ? null : n === 1 ? 41 : busy ? 77 : 3 + (n * 7) % 9,
-      mem_pct: offline ? null : n === 1 ? 62 : 15 + (n * 5) % 40, cores: 8,
+      mem_pct: offline ? null : n === 1 ? 62 : 15 + (n * 5) % 40, cores: n === 1 ? CORES : 8,
       net_in_kib_s: offline ? null : n === 1 ? 3400 : 12 + n, net_out_kib_s: offline ? null : n === 1 ? 212 : 3 + n, jobs,
     };
   });
 }
 
+// MULEBOX_MOCK_CORES=32 shows a machine with many cores (the CPU box's compact view).
+const CORES = Number(process.env.MULEBOX_MOCK_CORES) || 8;
+
 export function sample(t: number, seed = 0) {
   const wave = (k: number) => 40 + 30 * Math.sin(t / 17 + k + seed) + 12 * Math.sin(t / 3 + k * 2);
   const gib = 1024 ** 3;
   return {
-    t, cpu: Array.from({ length: 8 }, (_, k) => Math.max(1, Math.min(99, wave(k)))),
+    t, cpu: Array.from({ length: CORES }, (_, k) => Math.max(1, Math.min(99, k % 5 ? wave(k) / 6 : wave(k)))),
     memory: { total: 32 * gib, used: (18 + 2 * Math.sin(t / 40)) * gib, available: 12 * gib },
     swap: { total: 8 * gib, used: 0 }, jobs_memory: (11 + Math.sin(t / 40)) * gib, docker_disk: 65 * gib,
     self: { cpu: 0.5, rss: 44 * 1024 ** 2 }, docker: 6, viewers: 1,

@@ -38,6 +38,8 @@
   .auto-facts { display: grid; gap: var(--space-2) var(--space-5);
     grid-template-columns: repeat(auto-fill, minmax(var(--spacing-col-m), 1fr)); }
   .cores { --meter-label: 2ch; }
+  /* The compact CPU view's line for the cores it does not name, two cores wide. */
+  .meter-row.cores-rest { grid-column: span 2; grid-template-columns: max-content minmax(0, 1fr) max-content; }
   .labels-4 { --meter-label: 4ch; }
   .meter-row.labels-none { grid-template-columns: minmax(0, 1fr) max-content; }
   .meter-row.labels-none > :first-child { display: none; }

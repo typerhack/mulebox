@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.104.0 - 2026-11-11 - minor
+- The CPU box has two views (the user's idea): details, a meter per core as before and the default, and compact, an All meter, the busiest cores by number (six, or four below 1101px, kept steady until another core is 10 points busier) and one line for the others with their average and highest. A small switch beside the box's note changes it, remembered per browser, shown only when compact would hide a core. Seen on the stand-in API with 32 cores: the box kept the Machines box's height at 1440px, and at 390px nothing was cut or scrolled sideways.
+- `MULEBOX_MOCK_CORES` sets the stand-in machine's core count for `npm run dev`.
+
 ## 0.103.3 - 2026-11-11 - patch
 - Roadmap parking lot: the dashboard's overhead is back to 0.60% of a core and 46 MB, and the mockup's facts now on the dashboard are crossed off (job folders of other machines and log line times stay); the user's idea of a compact CPU view beside today's box is parked until they confirm it.
 

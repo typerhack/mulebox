@@ -700,9 +700,6 @@ each with a report of what was checked.
   step's length and result in 0.102.0, both seen on the deployed dashboard in Edge on 2026-11-11.
 - Overhead (M2.3): back to 0.60% of a core and 46 MB over 60 s with the page open (2026-11-11, 0.103.1),
   from about 2% and 72 MB, after the queue's finished jobs got an index (0.101.2).
-- A compact view for the CPU box (the user's idea, 2026-11-11): the busiest cores as meters and one line
-  for the rest, beside today's box as the details view, with a switch; on phones the details view's
-  meters might scroll inside the box. Not designed yet; the user to confirm the details first.
 - `mulebox init` on a laptop with no node, for a project that names no Node version anywhere, writes a file with no node pinned; on a machine with none
   of its own the job ends with `npm: command not found`. Found 2026-11-06.
 - Resumable browser downloads: Playwright restarts from zero. Would need a mirror of its own
