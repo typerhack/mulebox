@@ -6,10 +6,14 @@ For people who maintain mulebox. Versions, commits and the project log follow
 ## CI
 
 [.github/workflows/ci.yml](../.github/workflows/ci.yml) runs on every push to `main` and every
-pull request: the file-size check and the test suite, on the minimum supported Python and on a
+pull request that changes code: the file-size check and the test suite, on the minimum supported Python and on a
 newer one, and a `web` job for the dashboard's front end (`npm ci`, lint with the check for
 values typed in beside the design tokens, types, unit tests, build). `tests/test_ci_workflow.py` checks the rules below, and that the first Python in the
 workflow is `requires-python` from `pyproject.toml`. Change the two together.
+
+A change to docs alone runs nothing: `paths-ignore` lists the root docs, LICENSE, VERSION and
+`docs/**/*.md` and `.html`, the same files `.mulebox.yml` lists in `ignore_changes:`, and the
+test keeps the two equal. `docs/design-system/tokens.css` is not in it, as `web/` imports it.
 
 To check the workflow without pushing, lint it and run the same commands:
 

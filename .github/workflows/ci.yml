@@ -7,11 +7,24 @@ name: ci
 #   it before the repository goes public (docs/releasing.md).
 # - `pull_request`, never `pull_request_target`, so a fork's code gets no secrets.
 # - Read-only token, not stored in the checkout; actions pinned to a full commit.
+# - A change to docs alone runs nothing (paths-ignore below, the user's call, 2026-11-11).
 
 on:
   push:
     branches: [main]
+    paths-ignore: &docs
+      # Docs only: nothing here is code, so no run. Root files by name, as the packaged
+      # mulebox/client/skill/SKILL.md is code; docs/design-system/tokens.css is imported by web/.
+      - "README.md"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "PROJECT_LOG.md"
+      - "LICENSE"
+      - "VERSION"
+      - "docs/**/*.md"
+      - "docs/**/*.html"
   pull_request:
+    paths-ignore: *docs
   workflow_dispatch:
 
 permissions:

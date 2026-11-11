@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.1.5 - 2026-11-11 - patch
+- A change to docs alone runs no tests, the user's call: CI skips it (`paths-ignore` in ci.yml: the root docs, LICENSE, VERSION, `docs/**/*.md` and `.html`), and `mulebox check` gives back the last passed result (`ignore_changes:` in `.mulebox.yml`, the same list). `tokens.css` and the packaged SKILL.md stay code. A test keeps the two lists equal and code out of them; AGENTS.md and releasing.md say so.
+
 ## 1.1.4 - 2026-11-11 - patch
 - Docs: a README section, "Give every machine a fixed address": mulebox keeps each machine's address (the laptop's config, a worker's coordinator, the LAN dashboard), so an address the router changes after a reboot or reconnect makes the machine unreachable. It names a DHCP reservation, a static address or a stable name, and how to recover; install.md, getting-started.md and troubleshooting.md point to it (the user's ask).
 

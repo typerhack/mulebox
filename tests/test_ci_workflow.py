@@ -124,3 +124,14 @@ def test_the_readme_on_pypi_links_to_the_release_on_github():
     build = load(REPO / ".github" / "workflows" / "release.yml")["jobs"]["build"]
     names = [step.get("name") for step in build["steps"]]
     assert names.index("Point the README's links at GitHub") < names.index("Build")
+
+
+def test_docs_alone_run_nothing_and_code_always_runs():
+    on = load(REPO / ".github" / "workflows" / "ci.yml")["on"]
+    ignored = on["push"]["paths-ignore"]
+    assert on["pull_request"]["paths-ignore"] == ignored
+    for pattern in ignored:  # never code: no `*.md` that would reach the packaged SKILL.md
+        assert "/" not in pattern or pattern.startswith("docs/"), pattern
+        assert pattern.endswith((".md", ".html")) or pattern in ("LICENSE", "VERSION"), pattern
+    local = yaml.safe_load((REPO / ".mulebox.yml").read_text(encoding="utf-8"))["ignore_changes"]
+    assert [p.replace("**/", "") for p in ignored] == local  # mulebox check skips the same files

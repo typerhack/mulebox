@@ -40,6 +40,15 @@ product work, not a personal script.
     [tokens.css](docs/design-system/tokens.css), never typed into a component. A change to the
     system is made there first, with the user's agreement.
 
+## Tests
+
+- Only code needs tests. A change to docs alone (README, AGENTS.md, PROJECT_LOG.md, `docs/*.md`,
+  mockups, VERSION) runs no tests: CI skips it (`paths-ignore` in
+  [ci.yml](.github/workflows/ci.yml)) and `mulebox check` gives back the last passed result
+  (`ignore_changes:` in [.mulebox.yml](.mulebox.yml)). Do not run the suite for it.
+- `docs/design-system/tokens.css` and `mulebox/client/skill/SKILL.md` are code: the dashboard
+  imports the one, the package ships the other.
+
 ## Commits
 
 - One logical change per commit; the subject starts with the new version, e.g.
