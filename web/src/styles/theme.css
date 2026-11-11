@@ -72,7 +72,7 @@
   --spacing-ctl-icon: calc(var(--space-1) * 7.5);    /* 30px: an icon button */
   --spacing-ctl: calc(var(--space-1) * 8);           /* 32px: a button */
   --spacing-tab: calc(var(--space-1) * 8.5);         /* 34px: a tab */
-  --spacing-ctl-touch: calc(var(--space-1) * 9);     /* 36px: any control on touch or under 520px */
+  --spacing-ctl-touch: calc(var(--space-1) * 11);    /* 44px: any control on touch or under 520px */
   --spacing-head: calc(var(--space-3) * 4);          /* 48px: the header */
   --spacing-spark: calc(var(--space-6) * 2);         /* 48px: the small memory graph */
   --spacing-graph: calc(var(--space-6) * 5);         /* 120px: the CPU graph */

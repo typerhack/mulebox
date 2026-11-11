@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 0.103.1 - 2026-11-11 - patch
+- Controls on touch screens and under 520px are 44px high, up from 36px, as Apple's guidance asks (the user's choice); design-system.md has nothing left open before building.
+
 ## 0.103.0 - 2026-11-11 - minor
 - The Memory and Disk boxes show, for the dashboard's own machine, what the mockup asked for (parking lot): memory used by jobs, as the working set (`memory.current` less droppable page cache) of job units, of runners busy with a GitHub job and of both's containers; swap; and Docker's disk use (`GET /system/df`, every 5 minutes). On the build machine they add under 0.1 ms of CPU a second.
 

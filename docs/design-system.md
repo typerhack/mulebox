@@ -169,8 +169,8 @@ One radius per level, stepped by size:
 Drawn in the specimen, in both themes:
 
 - Buttons: primary (accent, at most one per view), secondary, ghost, danger (outlined, filled on
-  hover), icon button. Heights 32px, icon buttons 28 to 30px with a pointer, 36px on touch
-  screens or under 520px.
+  hover), icon button. Heights 32px, icon buttons 28 to 30px with a pointer, 44px on touch
+  screens or under 520px (the user's choice, 2026-11-11, from 36px).
 - Tabs with counts: a 2px accent line under the selected tab.
 - Job state icons and the frozen, paused and boosted marks.
 - Meter (6px high), live line graph, machine row with slot boxes.
@@ -199,16 +199,14 @@ Do not:
 
 ## Open before building
 
-Found in a review of the proposal (2026-11-10), to settle in the first React components (M14.10):
-
-- Controls are 28 to 32px with a pointer and 36px on touch screens or under 520px
-  (`--spacing-ctl-*` in web/src/styles/theme.css). Measured on the deployed dashboard
-  (2026-11-11): 28 to 34px with a pointer, which meets WCAG 2.2 AA (24px); 36px on touch is
-  under the 44px of Apple's and the 48px of Google's guidance. Whether to raise it is the
-  user's call.
+Found in a review of the proposal (2026-11-10), to settle in the first React components (M14.10).
+Nothing is open.
 
 Settled in the React dashboard (M14.10):
 
+- Controls are 28 to 32px with a pointer (measured 28 to 34px on the deployed dashboard,
+  2026-11-11, which meets WCAG 2.2 AA's 24px) and 44px on touch screens or under 520px, as
+  Apple's guidance asks; the user raised it from 36px on 2026-11-11.
 - Gaps are on the scale only. The 6px and 10px gaps of the proposal became 4, 8 and 12px
   (`--space-1` to `--space-3`): 4px inside a line of facts, 8px between rows and cards, 12px
   inside a card and between a row's columns.
