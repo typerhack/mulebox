@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.0.1 - 2026-11-11 - patch
+- The 1.0.0 release: CI and the release workflow passed on `v1.0.0`; both binaries were downloaded from the draft and run (macOS with no Python on the path, listing the real build machine; Linux on the build machine), and the wheel was added. The release is published by the user.
+- install.md: the macOS binary has an ad-hoc signature, not an Apple Developer ID, so macOS kills it when a browser downloaded it; `xattr -dr com.apple.quarantine` fixes that, checked on a copy given the browser's mark.
+
 ## 1.0.0 - 2026-11-11 - major
 - mulebox 1.0.0, declared by the user: the first public release. Commands, `.mulebox.yml` and the
   config files are now stable; a change that breaks them needs 2.0. In daily use on a real build

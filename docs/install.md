@@ -157,6 +157,14 @@ tar xzf mulebox-1.0.0-macos-arm64.tar.gz -C ~/.local/share
 ln -sf ~/.local/share/mulebox/mulebox ~/.local/bin/mulebox    # needs ~/.local/bin on your PATH
 ```
 
+The macOS binary has only an ad-hoc signature, not an Apple Developer ID, so macOS kills it
+(`zsh: killed`) when a browser downloaded it: the browser marks the file as from the internet, and
+`curl` does not. If you used a browser, remove that mark once, then it runs:
+
+```sh
+xattr -dr com.apple.quarantine ~/.local/share/mulebox
+```
+
 **By hand**, from a clone. Give it a folder of its own: plain `pip install --user` is refused by
 most current Python installs, Homebrew's and Ubuntu's among them
 (`externally-managed-environment`).
