@@ -785,7 +785,9 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
 - [ ] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
       the owner's desktop only when the spare machine is busy, or a Mac as the fallback.
 - [ ] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
-      takes no job for a while, and others take them.
+      takes no job for a while, and others take them. Also before any failure (from macserve,
+      2026-11-12): a node checks its own health (Docker answers, toolchains run, disk room) and
+      takes no job until the check passes again, and `mulebox machine list` says why.
 - [x] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
       job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of
@@ -823,7 +825,43 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
 - [ ] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
       session of your own, waiting in the same line so no job starts under you.
 
+## M24: Answers an agent can trust
+Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,
+crabbox, local-ci). mulebox runs builds, tests and runners only; the agent's own work stays on the dev
+machine. Its place after M23 is not settled. Each needs a design note in design.md before it is built.
+- [ ] M24.1 Proof that tests ran: mulebox reads the job's test report (JUnit XML, or the runner's own
+      summary) and counts the tests. A pass with zero tests, or with fewer tests than the last pass on
+      the branch, fails with its own exit code and says so, unless the project allows the drop.
+- [ ] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
+      (a limit, then the usual cleanup), and `mulebox check --from-stage <stage>` sends the changes and
+      runs again from there, with no new setup and no new `compose up`.
+- [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
+      coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
+      them to the dev machine, through safepath on the node, kept as long as the job's log.
+- [ ] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
+      project's single job; the line takes the projects in turn, below moving by hand (M14.3) and the
+      order rules (M23.3).
+- [ ] M24.5 One job across slots: named groups of tests (`shards:`) run side by side on free slots and
+      machines, and come back as one result with one exit code and one summary.
+- [ ] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status
+      or check run, so a PR shows it and it can be a required check, with nothing reaching in to the
+      node.
+- [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
+      the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
+
 ## Parking lot
+- From similar tools (2026-11-12), weighed and left for later:
+  - Signed results (macserve): a signed record of commit, files, toolchain, exit code and test counts.
+    Little use on a LAN; again only if M24.6 makes results count outside it.
+  - Fixed recipes for Apple jobs (macserve): mulebox writes the `xcodebuild` line from fields in the
+    project file, so a Mac job runs no shell from the repository. M23.1 isolates untrusted code better.
+  - Rules per machine on what it may run (remote-dev), such as build and test only, or some projects
+    only. When someone with mixed machines asks.
+  - Files a job changed, back as a checked patch (gatehaul `gen`). Formatters and generators belong on
+    the dev machine; the one case is Playwright screenshot updates, which must be made on Linux to
+    match CI. When a project hits it.
+  - Dropped: a Claude Code Stop hook that holds a turn until a pass; mulebox serves every agent, and a
+    hook is the user's own to write (the user's call).
 - Dashboard facts the mockup shows that no API gives yet: job folders of other machines and log line
   times (M14.10, 2026-11-10). Memory used by jobs, swap and Docker's disk use came in 0.103.0, a CI
   step's length and result in 0.102.0, both seen on the deployed dashboard in Edge on 2026-11-11.

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.10 - 2026-11-12 - patch
+- Roadmap: M24 (Answers an agent can trust), from similar tools read with the user (macserve, gatehaul, remote-dev, crabbox, local-ci): proof that tests ran, rerun from the failed stage, files back, fair turns between projects, one job across slots, a pass on GitHub, a fix on every error. M23.5 gains a health check before jobs. Signed results, fixed Apple recipes, per-machine rules and patches back parked; a Stop hook dropped (the user's call).
+
 ## 1.13.9 - 2026-11-12 - patch
 - Roadmap: M21.5 (CI on macOS) done: the `macos` job passed on GitHub's macOS machine on every run since 1.13.5.
 - Roadmap: M23.6's open point closed: a worker restart on 1.13.8 during a real CI run took under a second, and both jobs in isolated runners were taken over and passed.
