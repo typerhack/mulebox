@@ -112,7 +112,7 @@ def test_a_group_id_now_held_by_another_process_is_left_alone(tmp_path):
     ex.kill(unit_name("job-old"))
     assert group_alive(handle.pgid)  # not ours, not touched
     other.stop(handle)
-    assert not group_alive(handle.pgid)
+    assert gone(handle.pgid)
 
 
 def test_process_start_and_stop_group(tmp_path):
@@ -122,7 +122,7 @@ def test_process_start_and_stop_group(tmp_path):
     assert process_start(handle.pgid)
     stop_group(handle.pgid, 0.5)  # TERM is ignored, so KILL ends it
     handle.proc.wait(timeout=5)
-    assert not group_alive(handle.pgid)
+    assert gone(handle.pgid)
     assert process_start(handle.pgid) is None
 
 

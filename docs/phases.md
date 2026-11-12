@@ -801,6 +801,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       with no step run; removal left nothing. mulebox's own CI then passed on its isolated runner,
       4m 28s warm with the three jobs one after another (GitHub's machines: about 1 min, side by
       side); a first run spends minutes downloading each new Python or Node.
+      Open (seen 2026-11-12): a worker restart, such as a deploy, removes every isolated place's
+      container, even one whose one-job runner GitHub has just given a job; that job then hangs
+      until GitHub drops the runner (about 10 min), and cannot be cancelled meanwhile. A fix needs
+      a design: containers that outlive a worker restart, or `--when-idle` waiting for a place that
+      holds a job.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
