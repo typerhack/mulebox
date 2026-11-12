@@ -735,7 +735,9 @@ by Sol before the next starts (the user's ask).
       checksum; whether a run is alive from `ps`; its CPU and memory from the agent's process group
       and the engine; pause as SIGSTOP of that group. `runner register` still refuses a public
       repository. Tested against a stand-in launchctl, with pause on real process groups of this
-      Mac. Open: a real runner on a Mac node taking a real CI run.
+      Mac. 1.9.1, from Sol's review: the dashboard's readings kept apart from the service manager,
+      a reused pid never paused, a failed resume retried, `ps` lines matched from their start.
+      Open: a real runner on a Mac node taking a real CI run.
 - [ ] M21.5 CI runs the suite on macOS too.
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 

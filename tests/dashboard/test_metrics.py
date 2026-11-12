@@ -123,3 +123,9 @@ def test_docker_df_total_matches_docker_system_df():
             "BuildCache": [{"Size": 30, "Shared": True}, {"Size": 2}]}
     assert docker.df_total(body) == 1044
     assert docker.df_total({"Images": []}) is None and docker.df_total(None) is None
+
+
+def test_a_sampler_with_no_proc_reads_this_machine():
+    from mulebox.common.host import DarwinHost, LinuxHost
+
+    assert isinstance(Sampler().host, (DarwinHost, LinuxHost))  # not a service manager

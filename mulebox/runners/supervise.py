@@ -10,8 +10,10 @@ output also go into its log from the runner's own files, every second (live_log.
 boost asked for a running reservation are applied to its runner each round (runner_controls.py).
 
 `runner_alive` reads `/proc/<pid>/cmdline` and `/proc/<pid>/cwd`; a Mac has no /proc, so there
-`runner_alive_ps` reads the arguments of every process from one `ps` listing (a process's working
-folder is not in it, so a Worker started by a relative path is missed). The proc root, the listing
+`runner_alive_ps` reads the command line of every process from one `ps` listing and looks for one
+that is the runner's own `bin/Runner.Worker` (the listener starts it by its full path). `ps` joins
+the arguments with spaces, so the path is matched at the start of the line, where a folder with a
+space in it still matches and a `tail -f .../Runner.Worker` does not. The proc root, the listing
 and the whole check are injectable, so this runs in tests on any system.
 """
 
@@ -117,12 +119,13 @@ def runner_alive_ps(runner_dir: Path,
     """True if a `Runner.Worker` process runs from `runner_dir`, by its arguments. A failed
     listing sees nothing, as an unreadable /proc does: only 60 s of it releases a reservation."""
     lines = listing() or []
-    folders = {Path(os.path.normpath(runner_dir)), Path(os.path.realpath(runner_dir))}
+    folders = {os.path.normpath(runner_dir), os.path.realpath(runner_dir)}
+    starts = tuple(f"{folder}/bin/{name}" for folder in folders for name in WORKER_NAMES)
     for line in lines:
-        args = line.split()
-        if any(Path(arg).name in WORKER_NAMES and any(_under(arg, f) for f in folders)
-               for arg in args):
-            return True
+        line = line.strip()
+        for start in starts:
+            if line.startswith(start) and line[len(start):len(start) + 1] in ("", " "):
+                return True
     return False
 
 

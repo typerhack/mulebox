@@ -193,3 +193,10 @@ def test_runner_alive_on_a_mac_reads_the_arguments_from_ps(paths):
     assert runner_alive_ps(paths.runners / f"{RUNNER}-2", lambda: [worker]) is False
     assert runner_alive_ps(folder, lambda: [f"{folder}/bin/Runner.Listener run"]) is False
     assert runner_alive_ps(folder, lambda: None) is False  # seen as nothing, as without /proc
+    assert runner_alive_ps(folder, lambda: [f"tail -f {folder}/bin/Runner.Worker"]) is False
+    assert runner_alive_ps(folder, lambda: [f"{folder}/bin/Runner.WorkerX"]) is False
+
+
+def test_runner_alive_on_a_mac_with_a_space_in_the_folder(tmp_path):
+    folder = tmp_path / "Mac HD" / "runners" / "app-1"
+    assert runner_alive_ps(folder, lambda: [f"  {folder}/bin/Runner.Worker spawnclient 1 2"])

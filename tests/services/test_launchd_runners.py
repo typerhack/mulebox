@@ -1,7 +1,9 @@
 """GitHub runners as launchd agents (services/launchd_runners.py), against a stand-in launchctl
 and, for pause, real process groups of this machine."""
 
+import os
 import plistlib
+import signal
 import subprocess
 import time
 
@@ -30,9 +32,22 @@ class WithPid(FakeLaunchd):
         return done
 
 
-def process(own_group):
-    proc = subprocess.Popen(["sleep", "30"], start_new_session=own_group)
-    return proc
+def process(folder, own_group, script=True):
+    """A stand-in for the agent's first process: the runner's run.sh, or (script=False) a pid
+    that now belongs to some other program."""
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / "run.sh").write_text("#!/bin/sh\nsleep 30\n")
+    (folder / "run.sh").chmod(0o755)
+    argv = [str(folder / "run.sh")] if script else ["sleep", "30"]
+    return subprocess.Popen(argv, start_new_session=own_group)
+
+
+def finish(proc, own_group=True):
+    if own_group:
+        os.killpg(proc.pid, signal.SIGKILL)
+    else:
+        proc.kill()
+    proc.wait()
 
 
 def state_of(pid):
@@ -77,7 +92,7 @@ def test_a_bad_name_is_refused():
 
 
 def test_pause_stops_the_agents_own_group_and_resume_continues_it(tmp_path):
-    proc = process(own_group=True)
+    proc = process(tmp_path / NAME, own_group=True)
     try:
         fake = WithPid(proc.pid)
         manager = services(tmp_path, fake)
@@ -94,22 +109,24 @@ def test_pause_stops_the_agents_own_group_and_resume_continues_it(tmp_path):
             time.sleep(0.02)
         manager.runner_boost(NAME, True)  # nothing to raise without root; no error
     finally:
-        proc.kill()
-        proc.wait()
+        finish(proc)
 
 
-def test_a_first_process_that_leads_no_group_is_never_signalled_as_one(tmp_path):
-    proc = process(own_group=False)  # in this test's own group
+@pytest.mark.parametrize("own_group, script", [(False, True), (True, False)])
+def test_a_pid_that_is_not_the_runners_group_is_never_signalled(tmp_path, own_group, script):
+    """Leading no group of its own, or a reused pid running another program."""
+    proc = process(tmp_path / NAME, own_group=own_group, script=script)
     try:
         manager = services(tmp_path, WithPid(proc.pid))
         manager.runner_start(NAME, tmp_path / NAME)
         assert manager.runner_group(NAME) is None
         with pytest.raises(ServiceError, match="not paused"):
             manager.runner_freeze(NAME, True)
+        with pytest.raises(ServiceError, match="could not be reached"):
+            manager.runner_freeze(NAME, False)  # a running agent left paused would be worse
         assert not state_of(proc.pid).startswith("T")
     finally:
-        proc.kill()
-        proc.wait()
+        finish(proc, own_group)
 
 
 def test_no_group_when_the_agent_is_not_running(tmp_path):

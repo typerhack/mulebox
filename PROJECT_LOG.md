@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.9.1 - 2026-11-12 - patch
+- From Sol's review of 1.9.0 (M21.4): the dashboard's metrics imported the service manager's `for_platform` over the machine readings' own, so a dashboard started with no `/proc` given would have failed to sample; the two are now kept apart, with a test.
+- A runner's agent group on a Mac is signalled only when launchd's pid leads a group and runs the agent's own `run.sh`, so a reused pid is never paused; a resume that cannot reach a running agent is an error and is tried again, not taken as done.
+- Whether a run is alive on a Mac: the line must start with the runner's own `bin/Runner.Worker`, so a folder with a space in it still matches and a `tail -f` of that file does not. The agent's group is asked of launchd once and kept while it lives, rather than every round.
+
 ## 1.9.0 - 2026-11-12 - minor
 - GitHub runners on a macOS node (M21.4): each is a launchd agent, `mulebox-runner-<name>`, which runs the runner's `run.sh` as the systemd template does (`RUNNER_MANUALLY_TRAP_SIG`, kept alive, 5 min to stop, `nice 5`), written by `services/launchd_runners.py`. `runner add` downloads the `osx-arm64` or `osx-x64` runner and checks it against its own checksum in the release notes.
 - A runner's service goes through `mulebox/services/` on both systems (`runner_check|start|stop|restart|state|freeze|boost|group`), so `runner add|list|remove|caches`, pause and boost, and the worker's supervision no longer call `systemctl` themselves; `runner list` says `running` or `stopped`. On Linux the same commands run as before.

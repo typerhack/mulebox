@@ -1,5 +1,6 @@
 """A runner job's CPU, from its service's control group and its compose containers."""
 
+import os
 import time
 from pathlib import Path
 
@@ -125,3 +126,21 @@ def test_on_a_mac_the_runner_is_its_agents_process_group_and_its_containers():
     assert isinstance(mac.read, runner_meter.DarwinRunnerReading)
     assert not isinstance(RunnerMeter.for_platform(Known(), Services(), "linux").read,
                           runner_meter.DarwinRunnerReading)
+
+
+def test_on_a_mac_launchd_is_asked_for_the_group_once_while_it_lives():
+    asked = []
+
+    class Services:
+        def runner_group(self, runner):
+            asked.append(runner)
+            return os.getpgrp()  # a group that is alive: this test's own
+
+    class Known:
+        def of(self, runner):
+            return []
+
+    read = runner_meter.DarwinRunnerReading(Known(), Services(), lambda: [])
+    for _ in range(3):
+        read("r1")
+    assert asked == ["r1"]

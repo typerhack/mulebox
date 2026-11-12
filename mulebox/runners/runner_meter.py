@@ -117,23 +117,40 @@ def runner_reading(runner: str, containers: CiContainers | None = None,
 
 class DarwinRunnerReading:
     """`Reader` on a Mac: a job reader per runner (darwin_jobs.JobReader), its traffic left out,
-    as only CPU seconds are summed here."""
+    as only CPU seconds are summed here. The agent's group is asked of launchd once and kept while
+    it lives, so a round does not run `launchctl` for every runner."""
 
     def __init__(self, containers: CiContainers, services: Any,
                  listing: Callable[[], Any] = darwin_jobs.processes) -> None:
         self._containers, self._services, self._listing = containers, services, listing
         self._readers: dict[str, darwin_jobs.JobReader] = {}
+        self._groups: dict[str, int] = {}
 
     def __call__(self, runner: str) -> Reading | None:
         reader = self._readers.get(runner)
         if reader is None:
             stats = darwin_jobs.ContainerStats(lambda: self._containers.of(runner))
             reader = self._readers[runner] = darwin_jobs.JobReader(
-                lambda: self._services.runner_group(runner), stats, self._listing)
+                lambda: self._group(runner), stats, self._listing)
         reading = reader()
         if reading is None:
             return None
         return {key: value for key, value in reading.items() if not key.startswith("net:")}
+
+    def _group(self, runner: str) -> int | None:
+        known = self._groups.get(runner)
+        if known is not None:
+            try:
+                os.killpg(known, 0)
+                return known
+            except ProcessLookupError:
+                del self._groups[runner]
+            except PermissionError:
+                return known
+        found = self._services.runner_group(runner)
+        if found is not None:
+            self._groups[runner] = found
+        return found
 
 
 class RunnerMeter:

@@ -28,7 +28,7 @@ from typing import Any
 from mulebox.common.disk import usage_by_device as disk_usage
 from mulebox.common.host import Host, LinuxHost, for_platform
 from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, parse_swap, read
-from mulebox.services.manager import for_platform
+from mulebox.services import manager as service_manager
 from mulebox.worker import cgroups, darwin_jobs
 from mulebox.worker.darwin_exec import RECORDS
 from mulebox.worker.docker_stats import Engine
@@ -67,7 +67,7 @@ def mac_jobs_memory(containers: list[str], runners: list[str], records: Path,
         except (OSError, ValueError, KeyError, TypeError):
             continue
     if runners:
-        group_of = runner_group or for_platform("darwin").runner_group
+        group_of = runner_group or service_manager.for_platform("darwin").runner_group
         pgids.update(g for name in runners if (g := group_of(name)) is not None)
     total = darwin_jobs.group_memory(pgids, table)
     engine = engine or Engine()

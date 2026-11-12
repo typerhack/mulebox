@@ -12,8 +12,10 @@ runner's folder, as `mulebox-runner@.service` does on Linux:
   containers only (runners/runner_controls.py), as it does for a job.
 
 Pause stops the agent's process group (SIGSTOP), listener and job alike, as systemd's freezer does
-the unit; resume continues it. launchd makes each agent the leader of a group of its own; a runner
-whose first process is not one is never signalled as a group. A stop or restart continues the
+the unit; resume continues it. launchd makes each agent the leader of a group of its own; the group
+is signalled only when the pid launchd gives leads one and runs the agent's own `run.sh` (by its
+command line), so a pid that ended and was reused is never taken for the runner. A resume that
+cannot reach a running agent's group is an error, so it is tried again rather than left paused. A stop or restart continues the
 group first, so a paused runner can take its SIGTERM. A process of the run that starts a session of
 its own leaves the group and is neither paused nor counted.
 
@@ -24,11 +26,13 @@ mulebox deletes only inside its roots. Adding a runner of that name again replac
 from __future__ import annotations
 
 import os
+import plistlib
 import re
 import signal
 from pathlib import Path
 from typing import Any
 
+from mulebox.common import command
 from mulebox.services.base import PREFIX, RUNNING, STOPPED, ServiceError, check_runner
 
 RUNNER_THROTTLE_S = 10
@@ -82,9 +86,14 @@ class LaunchdRunners:
         return RUNNING if self._state(runner_label(name)) == RUNNING else STOPPED
 
     def runner_freeze(self, name: str, on: bool) -> None:
-        if not self._signal_group(name, signal.SIGSTOP if on else signal.SIGCONT) and on:
+        if self._signal_group(name, signal.SIGSTOP if on else signal.SIGCONT):
+            return
+        if on:
             raise ServiceError(f"runner {name} is not running in a process group of its own; "
                                "not paused")
+        if self._loaded(runner_label(name)) is not None:
+            raise ServiceError(f"runner {name} runs, but its process group could not be "
+                               "reached to continue it")
 
     def runner_boost(self, name: str, on: bool) -> None:
         """Nothing for its own processes: only root can raise a priority again on macOS."""
@@ -104,7 +113,19 @@ class LaunchdRunners:
             group = os.getpgid(pid)
         except OSError:
             return None
-        return group if group == pid else None
+        if group != pid or not self._runs_script(lbl, pid):
+            return None
+        return group
+
+    def _runs_script(self, lbl: str, pid: int) -> bool:
+        """Whether `pid` runs the agent's own program (its `run.sh`, from the definition)."""
+        try:
+            program = plistlib.loads(self._plist(lbl).read_bytes())["ProgramArguments"][0]
+            done = command.run(["ps", "-ww", "-o", "command=", "-p", str(pid)], timeout_s=5)
+        except (OSError, ValueError, KeyError, IndexError, TypeError, plistlib.InvalidFileException,
+                command.CommandError):
+            return False
+        return done.returncode == 0 and isinstance(program, str) and program in done.stdout
 
     def _signal_group(self, name: str, sig: int) -> bool:
         group = self.runner_group(name)
