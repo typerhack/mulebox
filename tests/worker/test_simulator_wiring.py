@@ -35,7 +35,7 @@ def scanned(monkeypatch, tmp_path):
     (app / "Contents" / "Developer").mkdir(parents=True)
     done = xcode.Scan({"xcode": ["27.2"], "simulator": ["iOS 26.0"]})
     done.xcodes = (xcode.Xcode("27.2", app),)
-    done.runtimes = tuple(simulator.parse_runtimes(RUNTIMES))
+    done.runtimes = {"27.2": tuple(simulator.parse_runtimes(RUNTIMES))}
     monkeypatch.setattr(xcode, "_INVENTORY", xcode.Inventory(ask=lambda: done,
                                                              start=lambda work: work()))
     xcode.report()

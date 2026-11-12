@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.11.1 - 2026-11-12 - patch
+- From Sol's review of 1.11.0 (M22.2): the scan asks each Xcode for its runtimes, and a job's simulator is of a runtime its own Xcode can use (the pinned one, else the newest), so a job pinning an older Xcode no longer gets a newer runtime it cannot run.
+- The device is the highest model number of the runtime's iPhones (or of its devices), not simctl's first: simctl can list an iPhone XS before an iPhone 16.
+- A device list from `simctl` that cannot be read is an error, so the cleanup is tried again, rather than an empty list that counted as removed and left the simulator behind.
+
 ## 1.11.0 - 2026-11-12 - minor
 - A simulator of its own per job on a macOS node (M22.2): a job with `needs: [simulator]`, or a pinned runtime (`toolchain: {simulator: "iOS 18.2"}`), gets one, made by its script's first lines (`xcrun simctl create mulebox-<job id>`), its id in `$MULEBOX_SIMULATOR`; without a pin, the newest iOS runtime's newest iPhone. A runtime the node lacks exits 5, naming the ones it has (`worker/simulator.py`).
 - The cleanup removes it by name on every outcome, before the job's containers and folder, and is tried again if `simctl` fails; a worker that starts removes every `mulebox-job-...` simulator an earlier one left, and no other. With no Xcode nothing is asked.

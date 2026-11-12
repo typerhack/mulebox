@@ -120,7 +120,8 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
 - Simulators: a job with `needs: [simulator]`, or a pinned runtime (`toolchain: {simulator:
   "iOS 18.2"}`), gets one of its own, made by its script's first lines (`xcrun simctl create
   mulebox-<job id>`, with the newest Xcode unless it pins one), its id in `$MULEBOX_SIMULATOR`.
-  Without a pin it is the newest iOS runtime's newest iPhone. It is removed by that name on every
+  It is of a runtime that Xcode can use; without a pin, the newest iOS runtime's newest iPhone
+  (the highest model number). It is removed by that name on every
   outcome, and a worker that starts removes every `mulebox-job-...` simulator an earlier one left,
   through `simctl` only; no other simulator is touched. Runtimes are installed by a person, in
   Xcode (Settings, Components) or with `xcodebuild -downloadPlatform iOS`; a Mac with one offers

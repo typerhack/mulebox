@@ -99,8 +99,30 @@ def test_the_scan_lists_versions_sdks_and_available_runtimes(tmp_path):
         "xcode-sdk": ["iphoneos27.2", "iphonesimulator27.2", "macosx27.2"],
         "simulator": ["iOS 26.0"]}
     assert asked == [("xcodebuild", "Xcode-16.4.app"), ("xcodebuild", "Xcode.app"),
-                     ("xcrun", "Xcode.app")]  # runtimes from the newest
+                     ("xcrun", "Xcode-16.4.app"), ("xcrun", "Xcode.app")]  # runtimes of each
     assert xcode.scan(found(tmp_path / "none"), run) == {}
+
+
+def test_a_job_gets_the_runtimes_its_own_xcode_can_use(tmp_path, monkeypatch):
+    apps = tmp_path / "Applications"
+    bundle(apps, "Xcode.app", "27.2")
+    bundle(apps, "Xcode-16.4.app", "16.4")
+    old = json.dumps({"runtimes": [{"isAvailable": True, "version": "18.3", "name": "iOS 18.3",
+                                    "platform": "iOS", "identifier": "iOS-18-3"}]})
+
+    def run(argv, timeout_s=None, env=None):
+        older = "16.4" in env["DEVELOPER_DIR"]
+        return subprocess.CompletedProcess(argv, 0, SDKS if argv[0] == "xcodebuild"
+                                           else old if older else RUNTIMES)
+
+    done = xcode.scan(found(apps), run)
+    assert done["simulator"] == ["iOS 18.3", "iOS 26.0"]
+    monkeypatch.setattr(xcode, "_INVENTORY", xcode.Inventory(ask=lambda: done,
+                                                             start=lambda work: work()))
+    xcode.report()
+    assert [r.name for r in xcode.runtimes("16.4.0")] == ["iOS 18.3"]
+    assert [r.name for r in xcode.runtimes(None)] == ["iOS 26.0"]  # the newest Xcode's
+    assert xcode.runtimes("15.0") == []
 
 
 def test_the_inventory_never_waits_and_is_asked_again_every_few_minutes():

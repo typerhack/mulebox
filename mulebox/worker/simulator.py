@@ -4,7 +4,8 @@ A project asks with `needs: [simulator]`, or pins the runtime, `toolchain: {simu
 "iOS 18.2"}`; without a pin it gets the newest iOS runtime the node has. Its device is the
 newest iPhone that runtime supports, or for another platform (watchOS, tvOS, visionOS) the
 newest device of it. The runtime and device are chosen from the worker's last Xcode scan
-(xcode.Inventory), so nothing slow runs in the worker's loop; a pinned runtime the node lacks
+(xcode.Inventory), of the runtimes the job's Xcode (pinned, else the newest) can use, so nothing
+slow runs in the worker's loop; a pinned runtime the node lacks
 makes the job exit 5 before it starts, naming the runtimes it has.
 
 The job's script creates it, as its first lines (`xcrun simctl create`), so a slow or stuck
@@ -96,7 +97,14 @@ def choose(runtimes: Sequence[Runtime], pinned: str | None) -> tuple[Runtime, st
     runtime = picked[-1]
     family = _FAMILY.get(runtime.platform)
     kinds = [d for d, f in runtime.devices if f == family] or [d for d, _ in runtime.devices]
-    return runtime, kinds[0]  # simctl lists the newest first
+    return runtime, max(kinds, key=_model)  # the first of the highest model number
+
+
+def _model(device_type: str) -> int:
+    """The model number in a device type's id (`iPhone-16-Pro` 16), 0 for none (`iPhone-XS`).
+    simctl's order is not the newest first, so this picks the newest."""
+    found = re.search(r"\.[A-Za-z-]*?-(\d+)(?:-|$)", device_type)
+    return int(found[1]) if found else 0
 
 
 def device_name(job_id: str) -> str:
@@ -132,12 +140,15 @@ def for_job(claim: Mapping[str, object], runtimes: Sequence[Runtime], job_id: st
 
 
 def parse_devices(text: str) -> list[tuple[str, str]]:
-    """(udid, name) of every device in `xcrun simctl list devices --json`."""
+    """(udid, name) of every device in `xcrun simctl list devices --json`. An answer it cannot
+    read is an error, never an empty list: that would count as removed (cleaner.py)."""
     try:
         data = json.loads(text)
-    except ValueError:
-        return []
+    except ValueError as exc:
+        raise MuleboxError(f"`xcrun simctl list devices` gave no JSON: {exc}") from exc
     groups = data.get("devices") if isinstance(data, dict) else None
+    if not isinstance(groups, dict):
+        raise MuleboxError("`xcrun simctl list devices` gave no device list")
     return [(d["udid"], d["name"]) for group in (groups or {}).values()
             if isinstance(group, list) for d in group
             if isinstance(d, dict) and isinstance(d.get("udid"), str)

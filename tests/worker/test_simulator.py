@@ -11,6 +11,7 @@ from mulebox.worker import jobspec, simulator
 
 IPHONE_17 = "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro"
 IPHONE_16 = "com.apple.CoreSimulator.SimDeviceType.iPhone-16"
+IPHONE_XS = "com.apple.CoreSimulator.SimDeviceType.iPhone-XS"
 IPAD = "com.apple.CoreSimulator.SimDeviceType.iPad-Air-11-inch-M3"
 WATCH = "com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-11-46mm"
 
@@ -23,9 +24,11 @@ def runtime(name, platform, version, devices, available=True):
 
 
 RUNTIMES = json.dumps({"runtimes": [
-    runtime("iOS 18.3", "iOS", "18.3.1", [(IPAD, "iPad"), (IPHONE_16, "iPhone")]),
-    runtime("iOS 26.0", "iOS", "26.0", [(IPAD, "iPad"), (IPHONE_17, "iPhone"),
-                                        (IPHONE_16, "iPhone")]),
+    # simctl's order is not the newest first: an iPhone XS can come before an iPhone 16
+    runtime("iOS 18.3", "iOS", "18.3.1", [(IPAD, "iPad"), (IPHONE_XS, "iPhone"),
+                                          (IPHONE_16, "iPhone")]),
+    runtime("iOS 26.0", "iOS", "26.0", [(IPAD, "iPad"), (IPHONE_16, "iPhone"),
+                                        (IPHONE_17, "iPhone")]),
     runtime("watchOS 26.0", "watchOS", "26.0", [(WATCH, "Apple Watch")]),
     runtime("iOS 17.0", "iOS", "17.0", [(IPHONE_16, "iPhone")], available=False),
     {"name": "broken"},
@@ -121,6 +124,15 @@ def test_a_failed_delete_is_tried_again():
     sims = simulator.Simulators(lambda: XCODE_DIR, Simctl(fail_delete=True))
     with pytest.raises(MuleboxError, match="busy"):
         sims.remove("job-01ABC")
+
+
+@pytest.mark.parametrize("answer", ["not json", "{}", '{"devices": []}'])
+def test_an_unreadable_device_list_is_tried_again_not_taken_as_removed(answer):
+    def simctl(argv, timeout_s=None, env=None):
+        return subprocess.CompletedProcess(argv, 0, answer, "")
+
+    with pytest.raises(MuleboxError, match="simctl list devices"):
+        simulator.Simulators(lambda: XCODE_DIR, simctl).remove("job-01ABC")
 
 
 XCODE_DIR = "/Applications/Xcode.app/Contents/Developer"

@@ -91,13 +91,14 @@ def _runtime_limit(claim: dict[str, Any]) -> float | None:
 
 
 def _simulator(job_id: str, claim: dict[str, Any]) -> tuple[str, ...]:
-    """The lines that make the job's own simulator, if it asks for one (simulator.py), with the
-    newest Xcode's `simctl` unless the job pins an Xcode."""
+    """The lines that make the job's own simulator, if it asks for one (simulator.py), from
+    the runtimes its Xcode can use: the pinned one (its `DEVELOPER_DIR` is the job's), else
+    the newest."""
     if not simulator.wanted(claim):
         return ()
-    pins = XCODE in (claim.get("toolchain") or {})
-    return simulator.for_job(claim, xcode.runtimes(), job_id,
-                             None if pins else xcode.newest_developer_dir())
+    pinned = (claim.get("toolchain") or {}).get(XCODE)
+    return simulator.for_job(claim, xcode.runtimes(pinned), job_id,
+                             None if pinned else xcode.newest_developer_dir())
 
 
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,

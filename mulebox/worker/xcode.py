@@ -159,23 +159,24 @@ class Scan(dict):
     (simulator.py)."""
 
     xcodes: tuple[Xcode, ...] = ()
-    runtimes: tuple[simulator.Runtime, ...] = ()
+    runtimes: dict[str, tuple[simulator.Runtime, ...]] = {}  # by Xcode version
 
 
 def scan(xcodes: Callable[[], list[Xcode]] | None = None, run: Run = command.run
          ) -> dict[str, list[str]]:
     """{`xcode`: versions, `xcode-sdk`: SDKs, `simulator`: runtimes}; {} with no Xcode. Slow:
-    one `xcodebuild` per Xcode and one `simctl`, so the worker asks it beside its loop (report)."""
+    one `xcodebuild` and one `simctl` per Xcode, so the worker asks it beside its loop (report).
+    Runtimes are asked of each Xcode, as an older one cannot use a newer runtime."""
     found = (xcodes or installed)()
     if not found:
         return {}
     sdks = sorted({sdk for x in found
                    for sdk in parse_sdks(_ask(["xcodebuild", "-showsdks", "-json"], x, run))})
-    runtimes = simulator.parse_runtimes(_ask(["xcrun", "simctl", "list", "runtimes", "--json"],
-                                             found[-1], run))
+    runtimes = {x.version: tuple(simulator.parse_runtimes(
+        _ask(["xcrun", "simctl", "list", "runtimes", "--json"], x, run))) for x in found}
     done = Scan({NAME: [x.version for x in found], "xcode-sdk": sdks,
-                 "simulator": sorted({r.name for r in runtimes})})
-    done.xcodes, done.runtimes = tuple(found), tuple(runtimes)
+                 "simulator": sorted({r.name for each in runtimes.values() for r in each})})
+    done.xcodes, done.runtimes = tuple(found), runtimes
     return done
 
 
@@ -212,9 +213,14 @@ class Inventory:
         """The Xcodes of the last finished scan; none before it."""
         return list(getattr(self._found, "xcodes", ()))
 
-    def runtimes(self) -> list[simulator.Runtime]:
-        """The simulator runtimes of the last finished scan; none before it."""
-        return list(getattr(self._found, "runtimes", ()))
+    def runtimes(self, version: str | None = None) -> list[simulator.Runtime]:
+        """The simulator runtimes the Xcode `version` (None: the newest) can use, from the
+        last finished scan; none before it."""
+        xcodes = self.xcodes()
+        chosen = next((x for x in xcodes if version and same_release(x.version, version)),
+                      None if version else (xcodes[-1] if xcodes else None))
+        by_xcode = getattr(self._found, "runtimes", {})
+        return list(by_xcode.get(chosen.version, ())) if chosen is not None else []
 
 
 _INVENTORY: Inventory | None = None
@@ -238,15 +244,15 @@ def known() -> list[Xcode]:
     return _inventory().xcodes() or installed()
 
 
-def runtimes() -> list[simulator.Runtime]:
-    """The simulator runtimes a job can have, from the last scan (a node offers `simulator`
-    only once a scan found one)."""
-    return _inventory().runtimes()
+def runtimes(version: str | None = None) -> list[simulator.Runtime]:
+    """The simulator runtimes a job pinning Xcode `version` (None: the newest Xcode) can have,
+    from the last scan (a node offers `simulator` only once a scan found one)."""
+    return _inventory().runtimes(version)
 
 
 def newest_developer_dir() -> str | None:
-    """The newest Xcode's `Contents/Developer`, whose `simctl` the scan asked for runtimes;
-    None with no Xcode."""
+    """The newest Xcode's `Contents/Developer`, for a job that pins none; None with no
+    Xcode."""
     found = known()
     return str(found[-1].developer_dir) if found else None
 
