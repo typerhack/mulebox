@@ -69,8 +69,34 @@ class CiContainers:
         return self._known.get(runner, [])
 
 
-def runner_reading(runner: str, containers: CiContainers | None = None) -> Reading | None:
+class PlaceGroups:
+    """An isolated runner's job runs in a container, not a service (place.py): its control
+    group, from the container the runner's marker names, its id asked of Docker once."""
+
+    def __init__(self, runners_root: Path, docker: Docker | None = None) -> None:
+        self.root, self.docker = runners_root, docker
+        self._ids: dict[str, str] = {}  # container name -> id
+
+    def group(self, runner: str) -> Path | None:
+        from mulebox.runners.supervise import place_container_name
+
+        name = place_container_name(self.root / runner)
+        if name is None:
+            return None
+        if name not in self._ids:
+            try:
+                self._ids = {name: (self.docker or Docker()).run(
+                    "inspect", "--format", "{{.Id}}", name).strip()}
+            except Exception:  # noqa: BLE001 - not started yet, or gone: no reading this round
+                return None
+        return cgroups.container_group(self._ids[name])
+
+
+def runner_reading(runner: str, containers: CiContainers | None = None,
+                   places: PlaceGroups | None = None) -> Reading | None:
     group = cgroups.runner_group(runner)
+    if group is None and places is not None:
+        group = places.group(runner)
     used = cgroups.cpu_seconds(group) if group is not None else None
     if used is None:
         return None
@@ -84,9 +110,10 @@ def runner_reading(runner: str, containers: CiContainers | None = None) -> Readi
 
 
 class RunnerMeter:
-    def __init__(self, read: Reader | None = None, containers: CiContainers | None = None) -> None:
+    def __init__(self, read: Reader | None = None, containers: CiContainers | None = None,
+                 places: PlaceGroups | None = None) -> None:
         self.containers = containers
-        self.read = read or (lambda runner: runner_reading(runner, self.containers))
+        self.read = read or (lambda runner: runner_reading(runner, self.containers, places))
         self._last: dict[str, tuple[Reading, float]] = {}  # job id -> (reading, at)
 
     def new_round(self) -> None:

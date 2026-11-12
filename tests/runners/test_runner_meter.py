@@ -78,3 +78,26 @@ def test_a_runner_service_is_found_in_its_template_slice(tmp_path, monkeypatch):
     assert cgroups.runner_group("build-1-app", tmp_path) == group
     assert cgroups.cpu_seconds(group) == 2.5
     assert cgroups.runner_group("build-1-other", tmp_path) is None
+
+
+def test_an_isolated_runner_is_read_from_its_container(tmp_path, monkeypatch):
+    from mulebox.runners import runner_meter
+
+    (tmp_path / "ci").mkdir()
+    (tmp_path / "ci" / ".mulebox-place").write_text("mulebox-place-ci-abcd1234\n")
+    asked = []
+
+    class Docker:
+        def run(self, *args):
+            asked.append(args)
+            return "f00d\n"
+
+    groups = {"f00d": tmp_path / "group"}
+    monkeypatch.setattr(runner_meter.cgroups, "runner_group", lambda runner: None)
+    monkeypatch.setattr(runner_meter.cgroups, "container_group", lambda cid: groups.get(cid))
+    monkeypatch.setattr(runner_meter.cgroups, "cpu_seconds", lambda group: 12.5)
+    places = runner_meter.PlaceGroups(tmp_path, Docker())
+    assert runner_meter.runner_reading("ci", None, places) == {"runner": 12.5}
+    assert runner_meter.runner_reading("ci", None, places) == {"runner": 12.5}
+    assert len(asked) == 1  # the id is asked once per container
+    assert runner_meter.runner_reading("other", None, places) is None

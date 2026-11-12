@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.4.3 - 2026-11-12 - patch
+- A CI card on an isolated runner said "Cores: measuring" for its whole run (the user's report): the meter read the runner's systemd service, which a runner in a container does not have. It now reads the job's container, found from the runner's marker, its id asked of Docker once per container.
+
 ## 1.4.2 - 2026-11-12 - patch
 - Found by mulebox's first CI run on its isolated runner: the two matrix jobs of one run share their run, attempt, job name and runner name, so the second found the first's finished reservation and was failed ("ended (passed) before it got a slot"). An isolated runner now sends a reservation key of each job's own, from its one-job runner's name. A host runner running two matrix jobs one after the other has the same key; not changed here.
 - The test of the container's hook ran the real script with a refusal, and under a real runner it found the `Runner.Worker` running the tests among its parents and killed it ("mulebox: refused"). The test's copy now looks for a name no process has.

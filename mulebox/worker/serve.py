@@ -10,7 +10,7 @@ from mulebox.common.log import get_logger
 from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.runners.place_keeper import PlaceKeeper
 from mulebox.runners.runner_controls import RunnerControls, RunnerUnit
-from mulebox.runners.runner_meter import CiContainers, RunnerMeter
+from mulebox.runners.runner_meter import CiContainers, PlaceGroups, RunnerMeter
 from mulebox.runners.supervise import Supervisor, place_container_name
 from mulebox.worker.agent import Agent
 from mulebox.worker.docker import Docker
@@ -34,7 +34,8 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
              if systemctl is not None else None)
     agent = Agent(node, link, executor, paths, docker=docker,
                   supervisor=Supervisor(node.name, paths.runners, redactor=lambda: StreamRedactor(
-                      secret_values(node.job_env)), meter=RunnerMeter(containers=ci),
+                      secret_values(node.job_env)), meter=RunnerMeter(
+                      containers=ci, places=PlaceGroups(paths.runners, docker)),
                       controls=steer))
     agent.recover()
     places = PlaceKeeper(node.name, link, paths)  # isolated runners: a container per CI job
