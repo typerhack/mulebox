@@ -55,7 +55,9 @@ def test_a_job_runs_niced_and_its_record_goes_with_it(tmp_path):
     record = tmp_path / "staging" / RECORDS / unit_name("job-a")
     assert json.loads(record.read_text())["pgid"] == handle.pgid
     assert wait(ex, handle) == 0
-    assert (tmp_path / "job-a.log").read_text().strip() == "5"
+    # `nice -n 5` adds to the worker's own niceness, which another test may have raised
+    expected = min(19, os.getpriority(os.PRIO_PROCESS, 0) + 5)
+    assert int((tmp_path / "job-a.log").read_text().strip()) == expected
     assert not record.exists()
 
 
