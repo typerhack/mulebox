@@ -54,7 +54,7 @@ def mac_jobs_memory(containers: list[str], runners: list[str], records: Path,
                     engine: Any = None) -> int | None:
     """The same on a Mac: the resident memory of the job process groups the worker recorded
     (worker/darwin_exec.py), and the engine's numbers for `containers`. None when either cannot be
-    read. Runners on a Mac are M21.4; until then their own processes are not counted."""
+    read."""
     table = listing()
     if table is None:
         return None
@@ -68,9 +68,9 @@ def mac_jobs_memory(containers: list[str], runners: list[str], records: Path,
     engine = engine or Engine()
     for container in containers:
         stats = engine.stats(container)
-        if stats is None:
-            return None
-        total += int(stats.get("memory", 0))
+        if stats is None or "memory" not in stats:
+            return None  # unknown, not none used
+        total += int(stats["memory"])
     return total
 
 

@@ -1,9 +1,10 @@
 """Where the Docker Engine API listens, as the `docker` command would find it.
 
-`DOCKER_HOST` first (only `unix://` is used: a TCP engine is not asked). Else the usual socket,
-`/var/run/docker.sock`, which Linux has and Docker Desktop and OrbStack link on a Mac. Else the
-current `docker context`'s socket, which is how Colima and a Docker Desktop without the link are
-reached. None when there is no unix socket to ask.
+`DOCKER_HOST` first (only `unix://` is used: a TCP engine is not asked). Else the current
+`docker context`'s socket (`DOCKER_CONTEXT`, else the one `docker context use` chose), as the
+`docker` command the worker runs uses it: with Colima chosen beside Docker Desktop, the readings
+come from the engine that runs the job's containers. Else, with no `docker` to ask, the usual
+socket, `/var/run/docker.sock`. None when there is no unix socket to ask.
 """
 
 from __future__ import annotations
@@ -34,6 +35,7 @@ def socket_path(environ: dict[str, str] | None = None, default: str = DEFAULT_SO
     host = (environ if environ is not None else os.environ).get("DOCKER_HOST", "")
     if host:
         return _unix(host)
-    if Path(default).exists():
-        return default
-    return context() or default
+    found = context()
+    if found:
+        return found
+    return default if Path(default).exists() else None

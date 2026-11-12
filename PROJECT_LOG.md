@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.8.2 - 2026-11-12 - patch
+- From Sol's review of 1.8.0 (M21.3): a job's CPU on a Mac counts its exited children (`ps -S` adds a reaped child's time to its parent), so a build of many short compiler runs no longer reads as idle; one `ps` listing serves every job of a round, with a 3 s limit, so a slow `ps` holds the worker loop up once rather than once a job.
+- The kernel's host port is taken once rather than at every sample, which added a reference to it each time; the 32-bit tick counters of each core are unwrapped, so a wrapping one no longer reads as an idle machine.
+- The engine's socket follows the `docker context` in use (`DOCKER_CONTEXT` included) before the usual socket, so with Colima chosen beside Docker Desktop the readings come from the engine that runs the containers. A container whose memory the engine does not give makes the dashboard's jobs' memory unknown, not smaller.
+
 ## 1.8.1 - 2026-11-12 - patch
 - From Sol's review of 1.7.0 (M21.2): a worker that restarts on a Mac stops a job's process group only while its first process is still the recorded one; a group whose first process is gone, or that `ps` cannot read, is left alone (a group id is reused, so it could be another program's), and the record kept when `ps` failed.
 - A job's command waits behind a gate until its record is on disk, so a worker killed in between leaves a shell that exits 75 and runs nothing; a record that cannot be written refuses the job.

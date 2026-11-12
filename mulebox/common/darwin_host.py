@@ -49,13 +49,25 @@ def _output(argv: list[str]) -> str | None:
     return done.stdout if done.returncode == 0 else None
 
 
+_mach: tuple[Any, Any] | None = None  # libSystem and the host port, got once: each
+# mach_host_self() call adds a reference to the port, which a sample a second would pile up
+
+
+def _host() -> tuple[Any, Any]:
+    global _mach
+    if _mach is None:
+        libc = ctypes.CDLL("/usr/lib/libSystem.dylib")
+        _mach = (libc, ctypes.c_uint(libc.mach_host_self()))
+    return _mach
+
+
 def core_ticks() -> list[list[int]] | None:
-    """[user, system, idle, nice] ticks of each core; None off macOS or when the call fails."""
+    """[user, system, idle, nice] ticks of each core, each a 32-bit counter that wraps (host.py
+    unwraps them); None off macOS or when the call fails."""
     if sys.platform != "darwin":
         return None
     try:
-        libc = ctypes.CDLL("/usr/lib/libSystem.dylib")
-        host = ctypes.c_uint(libc.mach_host_self())
+        libc, host = _host()
         count, info, size = ctypes.c_uint(), ctypes.POINTER(ctypes.c_int)(), ctypes.c_uint()
         if libc.host_processor_info(host, _PROCESSOR_CPU_LOAD_INFO, ctypes.byref(count),
                                     ctypes.byref(info), ctypes.byref(size)) != 0:

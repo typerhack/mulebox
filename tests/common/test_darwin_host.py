@@ -63,6 +63,14 @@ def test_the_mac_host_turns_ticks_into_busy_and_total(monkeypatch):
     assert mac.busy_seconds() == 1.0  # 100 ticks at 100 a second
 
 
+def test_a_wrapping_tick_counter_does_not_read_as_an_idle_core():
+    top = 0xFFFFFFFF
+    samples = iter([[[top - 4, 0, 100, 0]], [[5, 0, 110, 0]]])  # user wrapped: 10 busy ticks
+    mac = host.DarwinHost(ticks=lambda: next(samples))
+    (busy0, total0), (busy1, total1) = mac.cores()[0], mac.cores()[0]
+    assert (busy1 - busy0, total1 - total0) == (10, 20)
+
+
 def test_host_load_reads_through_a_given_host():
     class Fixed:
         def cores(self):
@@ -96,8 +104,10 @@ def test_the_docker_socket_as_the_docker_command_finds_it(tmp_path):
     ask = {"context": lambda: "/Users/alice/.colima/default/docker.sock"}
     assert docker_socket.socket_path({"DOCKER_HOST": "unix:///run/x.sock"}) == "/run/x.sock"
     assert docker_socket.socket_path({"DOCKER_HOST": "tcp://192.168.1.50:2375"}) is None
-    assert docker_socket.socket_path({}, default=str(present)) == str(present)
-    assert docker_socket.socket_path({}, default=str(tmp_path / "none"),
+    assert docker_socket.socket_path({}, default=str(present),
+                                     context=lambda: None) == str(present)
+    # the chosen context wins over the usual socket, as it does for the docker command
+    assert docker_socket.socket_path({}, default=str(present),
                                      context=ask["context"]).endswith("colima/default/docker.sock")
     assert docker_socket.socket_path({}, default=str(tmp_path / "none"),
-                                     context=lambda: None) == str(tmp_path / "none")
+                                     context=lambda: None) is None

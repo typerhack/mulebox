@@ -55,7 +55,7 @@ def test_disk_usage_lists_a_file_system_once_and_skips_missing_roots(tmp_path):
 
 
 def test_docker_socket_choice():
-    assert docker.socket_path({}) == docker.DEFAULT_SOCKET
+    assert docker.socket_path({}, default=__file__, context=lambda: None) == __file__
     assert docker.socket_path({"DOCKER_HOST": "unix:///run/x.sock"}) == "/run/x.sock"
     assert docker.socket_path({"DOCKER_HOST": "tcp://192.168.1.50:2375"}) is None
 

@@ -2,8 +2,12 @@
 
 - **Its own processes**: those in its process group (darwin_exec.py), from one `ps` listing:
   CPU time per process, keyed `unit:<pid>`, so a process that started since the last reading
-  counts from nothing and one that ended drops out (job_meter.py `_grown`). Time used by a
-  process that started and ended between two readings is not seen; output still is.
+  counts from nothing and one that ended drops out (job_meter.py `_grown`). `ps -S` adds the
+  time of exited children to their parent, so a build of many short compiler runs still shows
+  its CPU: once reaped, a child's time grows its parent's. Only a process whose parent is
+  outside the group, or not yet reaped, and that started and ended between two readings is
+  missed; output still is. One listing serves every job of a round (`LISTING_AGE_S`), with a
+  short time limit, so a slow `ps` holds the loop up once, not once a job.
 - **Its compose services**: the engine's own numbers per container (docker_stats.py), asked
   beside the loop (background.Polled), as the engine can be slow.
 
@@ -13,6 +17,7 @@ as unknown, never as idle.
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -22,6 +27,9 @@ from mulebox.worker.docker_stats import Engine
 
 Process = tuple[int, int, float, int]  # pid, pgid, CPU seconds, resident bytes
 _UNIT, _SERVICE, _NET = "unit:", "service:", "net:"  # job_meter.py's sources
+LISTING_AGE_S = 1.0
+PS_TIMEOUT_S = 3.0
+_last: tuple[float, list[Process] | None] = (float("-inf"), None)
 
 
 def cpu_time(text: str) -> float:
@@ -49,12 +57,25 @@ def parse_ps(text: str) -> list[Process]:
     return found
 
 
-def processes() -> list[Process] | None:
+def _list() -> list[Process] | None:
     try:
-        done = command.run(["ps", "-A", "-o", "pid=,pgid=,time=,rss="], timeout_s=10)
+        done = command.run(["ps", "-A", "-S", "-o", "pid=,pgid=,time=,rss="],
+                           timeout_s=PS_TIMEOUT_S)
     except command.CommandError:
         return None
     return parse_ps(done.stdout) if done.returncode == 0 else None
+
+
+def processes(clock: Callable[[], float] = time.monotonic,
+              listing: Callable[[], list[Process] | None] = _list) -> list[Process] | None:
+    """Every process, from a listing at most LISTING_AGE_S old (a failed one is not kept)."""
+    global _last
+    now = clock()
+    if now - _last[0] < LISTING_AGE_S and _last[1] is not None:
+        return _last[1]
+    table = listing()
+    _last = (now, table)
+    return table
 
 
 def group_memory(pgids: set[int], table: list[Process]) -> int:

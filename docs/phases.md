@@ -725,7 +725,9 @@ by Sol before the next starts (the user's ask).
       `common/host.py` over `/proc` and macOS (`common/darwin_host.py`), a job's group from `ps`
       and its containers from the engine's API (`worker/darwin_jobs.py`, `docker_stats.py`). The
       parsers are tested on a real Mac's output, and the kernel's core counters read on this Mac.
-      Open: the readings of a real Mac node on the dashboard.
+      1.8.2, from Sol's review: exited children's CPU counted (`ps -S`), one `ps` a round, the
+      kernel's host port taken once, 32-bit tick counters unwrapped, the engine of the docker
+      context in use. Open: the readings of a real Mac node on the dashboard.
 - [ ] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
 - [ ] M21.5 CI runs the suite on macOS too.
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.

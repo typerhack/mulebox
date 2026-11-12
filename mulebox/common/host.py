@@ -9,6 +9,7 @@ when it cannot be had, and nothing fails.
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from pathlib import Path
 from typing import Protocol
 
@@ -64,9 +65,25 @@ class LinuxHost:
 
 
 class DarwinHost:
+    """The kernel's tick counters are 32 bits each and wrap; summed as they are, one wrapping
+    state would make a core's total go back. So each state's counter is kept here as the sum of
+    its changes, each taken modulo 2^32, which only ever grows."""
+
+    def __init__(self, ticks: Callable[[], list[list[int]] | None] | None = None) -> None:
+        self._ticks = ticks
+        self._raw: list[list[int]] = []
+        self._kept: list[list[int]] = []
+
     def cores(self) -> Cores:
-        ticks = darwin_host.core_ticks() or []
-        return [(sum(t) - t[darwin_host.IDLE], sum(t)) for t in ticks]
+        raw = (self._ticks or darwin_host.core_ticks)() or []
+        if len(raw) != len(self._raw):
+            self._kept = [list(core) for core in raw]
+        else:
+            for kept, now, before in zip(self._kept, raw, self._raw, strict=True):
+                for state, value in enumerate(now):
+                    kept[state] += (value - before[state]) & 0xFFFFFFFF
+        self._raw = raw
+        return [(sum(t) - t[darwin_host.IDLE], sum(t)) for t in self._kept]
 
     def busy_seconds(self) -> float | None:
         cores = self.cores()

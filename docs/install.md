@@ -104,8 +104,9 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
 - The machine's CPU per core, memory, swap and network come from macOS itself (the kernel's
   core counters, `vm_stat`, `vm.swapusage`, the `en*` interfaces in `netstat`). A job's own CPU
   and memory are its process group's, from `ps`; its containers' come from the Docker engine's
-  API, as they run in a virtual machine the Mac cannot look into. A process that starts and ends
-  between two readings is not counted; the job's output still is.
+  API (of the `docker context` in use), as they run in a virtual machine the Mac cannot look into.
+  The time of exited processes counts once their parent reaps them (`ps -S`), so a build of many
+  short compiler runs shows its CPU.
 - Pinned toolchains are the macOS builds (`node-v<ver>-darwin-arm64`). Compose jobs need Docker
   Desktop, OrbStack or Colima; their containers run Linux in a virtual machine.
 

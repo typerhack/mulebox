@@ -112,3 +112,26 @@ def test_the_dashboard_picks_the_reader_for_its_system(monkeypatch, tmp_path, pl
     monkeypatch.setattr("mulebox.dashboard.metrics.sys.platform", platform)
     chosen = jobs_memory_for({"staging": str(tmp_path)})
     assert (chosen is not jobs_memory) == mac
+
+
+def test_one_ps_listing_serves_every_job_of_a_round(monkeypatch):
+    monkeypatch.setattr(darwin_jobs, "_last", (float("-inf"), None))
+    calls = []
+    listing = lambda: calls.append(1) or darwin_jobs.parse_ps(PS)  # noqa: E731
+    clock = iter([10.0, 10.5, 11.6]).__next__
+    for _ in range(3):
+        assert darwin_jobs.processes(clock, listing)
+    assert len(calls) == 2  # the second read came within LISTING_AGE_S of the first
+
+
+def test_a_failed_listing_is_asked_again(monkeypatch):
+    monkeypatch.setattr(darwin_jobs, "_last", (float("-inf"), None))
+    answers = iter([None, darwin_jobs.parse_ps(PS)])
+    clock = iter([10.0, 10.1]).__next__
+    assert darwin_jobs.processes(clock, lambda: next(answers)) is None
+    assert darwin_jobs.processes(clock, lambda: next(answers))
+
+
+def test_a_container_whose_memory_is_unknown_makes_the_total_unknown(tmp_path):
+    table = lambda: darwin_jobs.parse_ps(PS)  # noqa: E731
+    assert mac_jobs_memory(["c1"], [], tmp_path, table, FakeEngine({"c1": {"cpu_s": 1.0}})) is None
