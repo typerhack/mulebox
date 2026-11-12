@@ -80,6 +80,12 @@ def test_it_runs_the_gate_on_the_minimum_python():
     assert "tools/check_line_counts.py" in commands and "pytest" in commands
 
 
+def test_the_suite_also_runs_on_a_mac():
+    mac = load(REPO / ".github" / "workflows" / "ci.yml")["jobs"]["macos"]
+    assert mac["runs-on"].startswith("macos-")
+    assert any("pytest" in step.get("run", "") for step in mac["steps"])
+
+
 def test_the_web_front_end_has_its_own_gate_and_is_built_into_a_release():
     web = load(REPO / ".github" / "workflows" / "ci.yml")["jobs"]["web"]
     commands = [step.get("run", "") for step in web["steps"]]

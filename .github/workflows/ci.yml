@@ -69,6 +69,26 @@ jobs:
       - name: Tests
         run: python -m pytest -n auto
 
+  macos:
+    # A Mac can be a node (docs/install.md, A Mac as a node): the suite runs there too, on the
+    # newest Python only. A version, not macos-latest, so the machine changes only when we say.
+    name: test (macOS, Python 3.13)
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: python -m pip install --disable-pip-version-check -q -e '.[dev]'
+      - name: Tests
+        run: python -m pytest -n auto
+
   web:
     name: web (dashboard front end)
     # The owner's own runs on the node's isolated runner, every other run on GitHub's machines.

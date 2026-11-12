@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.9.2 - 2026-11-12 - patch
+- CI runs the Python suite on GitHub's macOS machine too (M21.5): a `macos` job on `macos-15` with Python 3.13, beside the Linux matrix, as a Mac can now be a node. A pinned version rather than `macos-latest`, so the machine changes only when we say; tests/test_ci_workflow.py checks the job is there.
+
 ## 1.9.1 - 2026-11-12 - patch
 - From Sol's review of 1.9.0 (M21.4): the dashboard's metrics imported the service manager's `for_platform` over the machine readings' own, so a dashboard started with no `/proc` given would have failed to sample; the two are now kept apart, with a test.
 - A runner's agent group on a Mac is signalled only when launchd's pid leads a group and runs the agent's own `run.sh`, so a reused pid is never paused; a resume that cannot reach a running agent is an error and is tried again, not taken as done.

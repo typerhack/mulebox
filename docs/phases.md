@@ -738,7 +738,8 @@ by Sol before the next starts (the user's ask).
       Mac. 1.9.1, from Sol's review: the dashboard's readings kept apart from the service manager,
       a reused pid never paused, a failed resume retried, `ps` lines matched from their start.
       Open: a real runner on a Mac node taking a real CI run.
-- [ ] M21.5 CI runs the suite on macOS too.
+- [~] M21.5 CI runs the suite on macOS too. Built 2026-11-12 (1.9.2): a `macos` job on `macos-15`,
+      Python 3.13. Open: its first run, once the branch is pushed.
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 
 ## M22: Apple platform builds
