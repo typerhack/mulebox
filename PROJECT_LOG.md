@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.1 - 2026-11-12 - patch
+- From Sol's review of 1.13.0 (M22.4): with a Podfile and no workspace yet (a fresh checkout), init tests the workspace `pod install` makes, not the bare project; a workspace's listed projects (`contents.xcworkspacedata`) give their schemes and platforms; a project with no shared scheme beside a `Package.swift` falls back to `swift test`.
+- A watchOS, tvOS or visionOS app is told to pin its simulator runtime, as a job without a pin gets an iOS one; the note on the scheme says the destination is worked out from every target. A React Native app's `ios/` or `macos/` beside a gate already found is named, not left out silently.
+- docs/install.md: each Xcode's license, first launch and runtimes with its own `DEVELOPER_DIR`, as the commands otherwise use the selected one, which can be the Command Line Tools.
+- Not changed: choosing the destination from the chosen scheme's own targets would need reading the scheme's build references; the note asks to check it instead.
+
 ## 1.13.0 - 2026-11-12 - minor
 - `mulebox init` for Apple platforms (M22.4, `client/init_apple.py`): for an `.xcworkspace` or `.xcodeproj`, `xcodebuild test` of its shared scheme (the one named after it, else the first), in the job's own simulator when a target builds for iOS, watchOS, tvOS or visionOS (`SDKROOT`, or `SUPPORTED_PLATFORMS` of an `auto` target), else on the Mac, with the job's DerivedData, the Swift package cache and no signing; `pod install` and `cache-cocoapods` for a Podfile; `swift test` for a `Package.swift` alone. It pins the Xcode the dev machine selects. `Pods/` and `DerivedData/` are not parts of a project.
 - docs/install.md: Apple builds on a Mac node, what a person prepares once (Xcode in `/Applications`, its license and first launch, simulator runtimes, CocoaPods).

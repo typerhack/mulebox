@@ -144,10 +144,13 @@ logged in as the node's user (each step needs an Apple account or an administrat
 does none of them):
 
 1. Install each Xcode the projects pin, in `/Applications` (`Xcode.app`, `Xcode-16.2.app`).
-2. Accept its license and finish its first launch, or `xcodebuild` stops and asks:
-   `sudo xcodebuild -license accept`, then `xcodebuild -runFirstLaunch`.
+2. Accept each one's license and finish its first launch, or `xcodebuild` stops and asks. For
+   each, with its own folder (these commands use the Xcode `xcode-select` points to, which can
+   be the Command Line Tools):
+   `export DEVELOPER_DIR=/Applications/Xcode-16.2.app/Contents/Developer`, then
+   `sudo -E xcodebuild -license accept` and `xcodebuild -runFirstLaunch`.
 3. Install the simulator runtimes the projects test on: Xcode, Settings, Components, or
-   `xcodebuild -downloadPlatform iOS`.
+   `xcodebuild -downloadPlatform iOS` (with `DEVELOPER_DIR` of the Xcode that is to use it).
 4. For CocoaPods projects, `brew install cocoapods`, so `pod` is on the job's `PATH`.
 
 Within 5 minutes the worker reports the Xcodes and runtimes, and `mulebox doctor` from a dev

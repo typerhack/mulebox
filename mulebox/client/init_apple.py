@@ -21,6 +21,10 @@ from mulebox.worker import xcode
 # what a target builds for: `SDKROOT = iphoneos;`, or with `auto` its SUPPORTED_PLATFORMS
 _SDK = re.compile(r"\b(?:SDKROOT|SUPPORTED_PLATFORMS) = \"?([\w ]+?)\"?;")
 _SIMULATED = frozenset({"iphoneos", "watchos", "appletvos", "xros"})
+_OTHER_PLATFORMS = {"watchos": "watchOS", "appletvos": "tvOS", "xros": "visionOS"}
+# a project a workspace lists: `location = "group:App/App.xcodeproj"` (or container:)
+_MEMBER = re.compile(r'location\s*=\s*"(?:group|container):([^"]+\.xcodeproj)"')
+_SWIFT_TEST = 'swift test --cache-path "$MULEBOX_CACHE_SPM"'
 _SPM = '-packageCachePath "$MULEBOX_CACHE_SPM"'
 _DERIVED = '-derivedDataPath "$MULEBOX_DERIVED_DATA"'
 _NO_SIGNING = "CODE_SIGNING_ALLOWED=NO"
@@ -38,6 +42,12 @@ def _bundles(root: Path, kind: str) -> list[Path]:
 def _schemes(bundle: Path) -> list[str]:
     """Shared schemes: the only ones a fresh checkout has (user schemes stay in xcuserdata)."""
     return sorted(p.stem for p in (bundle / "xcshareddata" / "xcschemes").glob("*.xcscheme"))
+
+
+def _members(workspace: Path) -> list[Path]:
+    """The projects a workspace lists, where they are."""
+    listed = _MEMBER.findall(text(workspace / "contents.xcworkspacedata"))
+    return [p for p in (workspace.parent / name for name in listed) if p.is_dir()]
 
 
 def _sdks(projects: list[Path]) -> set[str]:
@@ -59,37 +69,50 @@ def _pin_xcode(found: Detected) -> None:
 
 def apple(root: Path, found: Detected) -> None:
     workspaces, projects = _bundles(root, "xcworkspace"), _bundles(root, "xcodeproj")
-    if workspaces or projects:
-        _xcode_project(root, found, workspaces, projects)
-    elif (root / "Package.swift").is_file():
-        found.needs.append(package_cache.SPM)
-        found.jobs.setdefault("test", 'swift test --cache-path "$MULEBOX_CACHE_SPM"')
-        found.checks.append('swift test --cache-path "$MULEBOX_CACHE_SPM"')
+    package = (root / "Package.swift").is_file()
+    _pin_xcode(found)
+    found.needs.append(package_cache.SPM)
+    if (workspaces or projects) and _xcode_project(root, found, workspaces, projects):
+        return
+    if package:  # a package alone, or beside a project with no shared scheme
+        found.jobs.setdefault("test", _SWIFT_TEST)
+        found.checks.append(_SWIFT_TEST)
         found.notes.append("swift: a Swift package, tested with `swift test`; on a Mac node "
                            "that is Xcode's Swift")
-        _pin_xcode(found)
 
 
 def _xcode_project(root: Path, found: Detected, workspaces: list[Path],
-                   projects: list[Path]) -> None:
-    bundle = workspaces[0] if workspaces else projects[0]
-    flag = "-workspace" if workspaces else "-project"
-    schemes = _schemes(bundle) or [s for p in projects for s in _schemes(p)]
-    _pin_xcode(found)
-    found.needs.append(package_cache.SPM)
-    if (root / "Podfile").is_file():
+                   projects: list[Path]) -> bool:
+    """The job for a workspace or project; False when it has no shared scheme to test."""
+    pods = (root / "Podfile").is_file()
+    if workspaces:
+        bundle, flag = workspaces[0], "-workspace"
+        projects = list(dict.fromkeys([*_members(bundle), *projects]))
+    elif pods:  # `pod install` makes the workspace, named after the project, and it must be used
+        bundle, flag = root / f"{projects[0].stem}.xcworkspace", "-workspace"
+    else:
+        bundle, flag = projects[0], "-project"
+    schemes = (_schemes(bundle) if bundle.is_dir() else []) or sorted(
+        {s for p in projects for s in _schemes(p)})
+    if pods:
         found.setup.append("pod install")
         found.needs.append(package_cache.COCOAPODS)
         found.notes.append("cocoapods: the Mac node must have `pod` on its PATH")
     if not schemes:
         found.notes.append(f"xcode: {bundle.name} has no shared scheme, so no test was found; "
                            "share one in Xcode (Product, Scheme, Manage Schemes, Shared)")
-        return
+        return False
     scheme = next((s for s in schemes if s == bundle.stem), schemes[0])
-    simulated = bool(_sdks(projects) & _SIMULATED)
+    sdks = _sdks(projects) & _SIMULATED
+    simulated = bool(sdks)
     destination = '"id=$MULEBOX_SIMULATOR"' if simulated else "platform=macOS"
     if simulated:
         found.needs.append(SIMULATOR)
+    if sdks and "iphoneos" not in sdks:
+        names = ", ".join(sorted(_OTHER_PLATFORMS[s] for s in sdks))
+        found.notes.append(f"simulator: the targets build for {names}; pin its runtime, "
+                           "`toolchain: {simulator: \"<name> <version>\"}` as `mulebox doctor` "
+                           "lists them, as a job without a pin gets an iOS simulator")
     command = (f"xcodebuild test {flag} {shlex.quote(bundle.name)} -scheme "
                f"{shlex.quote(scheme)} -destination {destination} {_DERIVED} {_SPM} "
                f"{_NO_SIGNING}")
@@ -98,4 +121,7 @@ def _xcode_project(root: Path, found: Detected, workspaces: list[Path],
     found.notes.append(f"xcode: scheme {scheme} of {bundle.name}"
                        + (", in a simulator of the job's own" if simulated else ", on the Mac")
                        + (f"; other shared schemes: {', '.join(s for s in schemes if s != scheme)}"
-                          if len(schemes) > 1 else ""))
+                          if len(schemes) > 1 else "")
+                       + "; the targets of every project decide simulator or Mac, so check "
+                       "the destination fits that scheme")
+    return True

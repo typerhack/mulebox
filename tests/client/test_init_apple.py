@@ -94,3 +94,45 @@ def test_no_shared_scheme_means_no_check(project, tmp_path, monkeypatch, capsys)
     _xcodeproj(project, "ExampleApp", ["SDKROOT = iphoneos;"], schemes=())
     assert cli.main(["init"]) == 2
     assert not (project / PROJECT_FILE).exists()
+
+
+def test_a_package_beside_a_project_with_no_shared_scheme_is_tested_as_a_package(project):
+    _xcodeproj(project, "Legacy", ["SDKROOT = macosx;"], schemes=())
+    (project / "Package.swift").write_text("// swift-tools-version: 6.0\n")
+    assert _init(project).jobs["check"].startswith("swift test")
+
+
+def test_pods_before_their_workspace_exists_still_test_the_workspace(project):
+    _xcodeproj(project, "ExampleApp", ["SDKROOT = iphoneos;"])
+    (project / "Podfile").write_text("platform :ios, '17.0'\n")  # a fresh checkout: no workspace
+    config = _init(project)
+    assert "-workspace ExampleApp.xcworkspace -scheme ExampleApp" in config.jobs["check"]
+
+
+def test_a_workspace_reads_the_projects_it_lists(project):
+    nested = project / "App"
+    nested.mkdir()
+    _xcodeproj(nested, "App", ["SDKROOT = iphoneos;"], ("App",))
+    workspace = project / "Example.xcworkspace"
+    workspace.mkdir()
+    (workspace / "contents.xcworkspacedata").write_text(
+        '<Workspace version = "1.0">\n<FileRef location = "group:App/App.xcodeproj">'
+        "</FileRef>\n</Workspace>\n")
+    config = _init(project)
+    assert "-workspace Example.xcworkspace -scheme App" in config.jobs["check"]
+    assert '"id=$MULEBOX_SIMULATOR"' in config.jobs["check"]  # the nested project is for iOS
+
+
+def test_a_watch_app_is_told_to_pin_its_runtime(project):
+    _xcodeproj(project, "ExampleApp", ["SDKROOT = watchos;"])
+    _init(project)
+    assert "the targets build for watchOS; pin its runtime" in (project / PROJECT_FILE).read_text()
+
+
+def test_a_native_folder_beside_a_found_gate_is_named(project):
+    (project / "package.json").write_text('{"scripts": {"test": "jest"}}')
+    (project / "package-lock.json").write_text("{}")
+    (project / "ios").mkdir()
+    _xcodeproj(project / "ios", "App", ["SDKROOT = iphoneos;"])
+    _init(project)
+    assert "ios/ has an Xcode project, not in the gate" in (project / PROJECT_FILE).read_text()

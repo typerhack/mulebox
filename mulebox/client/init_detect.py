@@ -217,4 +217,19 @@ def detect(root: Path) -> Detected:
                 _add_folder(found, folder)
     if not found.checks and (target := _make_target(root)):
         found.checks.append(f"make {target}")
+    elif found.checks:
+        _native_folders_left_out(root, found)
     return found
+
+
+def _native_folders_left_out(root: Path, found: Detected) -> None:
+    """An app's `ios/` or `macos/` beside a gate already found (React Native): not added, as
+    the gate stands, but said."""
+    if (root / "pubspec.yaml").is_file():
+        return  # Flutter builds its own ios/ and macos/
+    for name in ("ios", "macos"):
+        folder, within = root / name, f"cd {name} && "
+        if (folder.is_dir() and init_apple.found_in(folder)
+                and not any(within in check for check in found.checks)):
+            found.notes.append(f"{name}/ has an Xcode project, not in the gate; to test it too, "
+                               f"run `mulebox init --print` in {name}/ and add its job")
