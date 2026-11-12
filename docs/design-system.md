@@ -160,7 +160,8 @@ One radius per level, stepped by size:
 - Job states: running `loader-circle`, queued `clock`, passed `circle-check`, failed `circle-x`,
   cancelled `ban`. Marks: frozen `snowflake`, paused `pause`, boosted `zap`. Alerts: warning
   `triangle-alert`, danger `octagon-alert`. Menus: `ellipsis` (three dots). Move in line:
-  `chevrons-up`, `chevron-up`, `chevron-down`, `chevrons-down`.
+  `chevrons-up`, `chevron-up`, `chevron-down`, `chevrons-down`. Copy: `copy`, then `check` for a
+  moment once copied.
 - On cards the icon stands alone and the word is its tooltip. In tables and on a job's page the
   icon comes with its word.
 
@@ -179,6 +180,10 @@ Drawn in the specimen, in both themes:
 - Waiting row: position, name, branch, time waited, the four move arrows as one group, three dots.
 - Warning strip (amber) and danger strip (red), each with its fix.
 - Tooltip, empty state.
+- A line longer than its box, such as a GitHub step on a job card (the user's ask, 2026-11-12):
+  cut with an ellipsis, the whole text in its tooltip, and a small quiet copy button beside it,
+  in `--ink-3` until hovered (`web/src/ui/Copy.tsx`). Over plain HTTP, where browsers give a
+  page no clipboard API, it copies through a hidden text field.
 - The CPU box's two views (the user's idea, 2026-11-11), switched by a small icon button beside its
   note and remembered per browser: details, a meter per core, the default and unchanged; compact,
   an All meter, the busiest cores by number (six with four to a row, four on narrower screens,

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.6 - 2026-11-12 - patch
+- docs/design-system.md names the copy button of 1.13.3 and 1.13.4: its icons (`copy`, then `check`), and the long line it sits beside, cut with an ellipsis, whole in its tooltip.
+
 ## 1.13.5 - 2026-11-12 - patch
 - The macOS test fix of 1.13.3 covered one test of a stopped process group; a second, stopping a group with a child, failed the same way on GitHub's macOS machine. Every test that checks a stopped group is gone now gives its last process a few seconds to be reaped.
 - Roadmap: M23.6 names an open issue seen while deploying 1.13.3 with CI starting: a worker restart removes isolated places' containers even when GitHub has just given their runner a job, which then hangs for about 10 minutes.
