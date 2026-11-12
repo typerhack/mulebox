@@ -465,6 +465,8 @@ needs: [cache-pnpm, cache-composer, cache-npm, cache-pip]
 | `cache-composer` | `<cache>/packages/<project>/composer` | `COMPOSER_CACHE_DIR`, `MULEBOX_CACHE_COMPOSER` |
 | `cache-npm` | `<cache>/packages/<project>/npm` | `npm_config_cache`, `MULEBOX_CACHE_NPM` |
 | `cache-pip` | `<cache>/packages/<project>/pip` | `PIP_CACHE_DIR`, `MULEBOX_CACHE_PIP` |
+| `cache-cocoapods` | `<cache>/packages/<project>/cocoapods` | `CP_CACHE_DIR`, `MULEBOX_CACHE_COCOAPODS` |
+| `cache-spm` | `<cache>/packages/<project>/spm` | `MULEBOX_CACHE_SPM` only: pass it yourself (section 2c) |
 
 Commands on the machine need nothing more. **A container sees a cache only if the compose
 file mounts it**, and that mount is yours to write. `MULEBOX_CACHE_<TOOL>` is the folder, and
@@ -576,13 +578,24 @@ made before its commands and removed on every outcome, with its id in `$MULEBOX_
 toolchain:
   xcode: "16.2"
   simulator: "iOS 18.2"         # optional; without it, the newest iOS runtime the node has
+needs: [cache-spm]               # cache-cocoapods too, for a Podfile
 jobs:
-  test: xcodebuild test -scheme App -destination "id=$MULEBOX_SIMULATOR"
+  test: >-
+    xcodebuild test -scheme App -destination "id=$MULEBOX_SIMULATOR"
+    -derivedDataPath "$MULEBOX_DERIVED_DATA" -packageCachePath "$MULEBOX_CACHE_SPM"
+    CODE_SIGNING_ALLOWED=NO
 ```
 
 Do not boot, erase or delete simulators yourself, and do not pick one by name
 (`name=iPhone 16`): another job can be using it. A pinned Xcode or runtime the node lacks
 exits 5, naming the ones it has; `mulebox doctor` lists each Mac's Xcodes, SDKs and runtimes.
+
+`$MULEBOX_DERIVED_DATA` is a folder in the job's own folder, set on every Mac job: pass it to
+`xcodebuild -derivedDataPath`, so jobs never share build products and the folder goes with the
+job. Without it xcodebuild writes to the node user's own DerivedData. SwiftPM reads no setting
+for its cache either: pass `-packageCachePath "$MULEBOX_CACHE_SPM"` to xcodebuild, or
+`--cache-path "$MULEBOX_CACHE_SPM"` to `swift build` and `swift test`. CocoaPods finds its cache
+by itself (`CP_CACHE_DIR`). A simulator test needs no signing, hence `CODE_SIGNING_ALLOWED=NO`.
 
 ## 3. Moving GitHub Actions to mulebox runners
 

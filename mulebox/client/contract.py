@@ -97,6 +97,9 @@ CACHES = (
     "needs: [cache-pnpm, cache-composer, cache-npm, cache-pip] turns package caches on; a "
     "container sees a cache only if the compose file mounts ${MULEBOX_CACHE_PNPM}, "
     "${MULEBOX_CACHE_COMPOSER}, ${MULEBOX_CACHE_NPM} or ${MULEBOX_CACHE_PIP}",
+    "on a Mac node, cache-spm and cache-cocoapods: CocoaPods uses its cache by itself; pass "
+    "-packageCachePath \"$MULEBOX_CACHE_SPM\" to xcodebuild (swift build: --cache-path), and "
+    "-derivedDataPath \"$MULEBOX_DERIVED_DATA\", the job's own folder",
     "to replace an external cache volume, mount the cache on the same container path in a "
     "CI-only compose file; external volumes stay refused",
     "mount the pnpm store at the same path as on the machine, or pnpm may recreate node_modules "

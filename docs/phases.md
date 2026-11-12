@@ -755,7 +755,11 @@ After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionO
       simctl's JSON shapes and a stand-in; on this Mac, one throwaway simulator was made by a job's
       script lines from a real scan (iOS 26.0, 0.3 s) and removed by the cleaner's code, none left.
       Open: a real job on a Mac node, with a cancel and a worker killed mid-job.
-- [ ] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`.
+- [~] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`. Built
+      2026-11-12 (1.12.0): `$MULEBOX_DERIVED_DATA` on every Mac job, in its job folder;
+      `cache-cocoapods` sets `CP_CACHE_DIR`, `cache-spm` only `$MULEBOX_CACHE_SPM`, as SwiftPM reads
+      no setting (passed as `-packageCachePath`). Tested with unit tests. Open: a real Xcode job on a
+      Mac node filling and reusing both caches.
 - [ ] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node.
 
 ## M23: Safer and fairer jobs

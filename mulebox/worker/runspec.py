@@ -115,7 +115,7 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     own = _host_ports(machine, job_id, names)
     settled = _pnpm_settled(claim)
     base = {**_capability_env(machine, needs), **cached.env, **own, **settled,
-            **xcode.env_for(claim.get("toolchain") or {})}
+            **xcode.env_for(claim.get("toolchain") or {}), **xcode.derived_data_env(scratch)}
 
     def environment(extra: dict[str, str]) -> dict[str, str]:
         return jobspec.build_env(job_id, bins, project_env=values, extra={**base, **extra},

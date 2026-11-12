@@ -108,6 +108,14 @@ machine use them by themselves. A container sees a cache only if the compose fil
 - The node's `job_env` reaches services, and the service's own value wins.
 - Services get 65536 open files unless they set `ulimits.nofile`.
 
+## Apple platforms (Mac nodes)
+
+- Pin Xcode in `toolchain:` (`xcode: "16.2"`); the node must have it. A job never installs it.
+- `needs: [simulator]` (or a pinned `simulator:` runtime) gives the job a simulator of its own:
+  `-destination "id=$MULEBOX_SIMULATOR"`. Never boot, erase, delete or name a simulator yourself.
+- Pass `-derivedDataPath "$MULEBOX_DERIVED_DATA"` and, with `cache-spm`, `-packageCachePath
+  "$MULEBOX_CACHE_SPM"` to xcodebuild; `cache-cocoapods` works by itself.
+
 `install:` holds a project's dependency install: it runs in the project's image with `docker compose
 exec`, is skipped until a lockfile, the compose files or the toolchain change, and if it fails the job
 counts as never started, as its code did not run. `mulebox warm [job]` runs a job up to its command, ahead of time.

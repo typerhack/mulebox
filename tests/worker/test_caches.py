@@ -75,6 +75,26 @@ def test_pip_uses_its_own_setting(paths, tmp_path):
     assert spec.env["PIP_CACHE_DIR"] == str(paths.cache / "packages/example-app/pip")
 
 
+def test_cocoapods_uses_its_own_setting_and_swift_packages_say_how(paths, tmp_path):
+    spec, notes = build(paths, tmp_path, ["cache-cocoapods", "cache-spm"])
+    assert spec.env["CP_CACHE_DIR"] == str(paths.cache / "packages/example-app/cocoapods")
+    assert spec.env["MULEBOX_CACHE_SPM"] == str(paths.cache / "packages/example-app/spm")
+    assert any("-packageCachePath" in note for note in notes)  # no setting reaches SwiftPM
+    assert {"cache-spm", "cache-cocoapods"} <= set(compose.worker_capabilities(()))
+
+
+def test_a_mac_job_gets_its_own_derived_data_in_its_folder(paths, tmp_path, monkeypatch):
+    from mulebox.worker import xcode  # noqa: PLC0415
+
+    assert xcode.derived_data_env(tmp_path, "linux") == {}
+    assert xcode.derived_data_env(None, "darwin") == {}
+    monkeypatch.setattr(xcode.sys, "platform", "darwin")
+    machine = runspec.Machine("mac-1", paths, None, PortPool())
+    spec, _ = runspec.build(machine, new_id("job"), claim_body(["true"]), tmp_path,
+                            tmp_path / "out.log", [], scratch=tmp_path / "job")
+    assert spec.env["MULEBOX_DERIVED_DATA"] == str(tmp_path / "job" / "DerivedData")
+
+
 def test_composer_uses_its_own_setting(paths, tmp_path):
     spec, _ = build(paths, tmp_path, ["cache-composer"])
     assert spec.env["COMPOSER_CACHE_DIR"] == str(paths.cache / "packages/example-app/composer")

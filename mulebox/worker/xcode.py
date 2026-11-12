@@ -134,6 +134,18 @@ def env_for(toolchain: Mapping[str, str], xcodes: Callable[[], list[Xcode]] | No
     return {} if xcode is None else {"DEVELOPER_DIR": str(xcode.developer_dir)}
 
 
+DERIVED_DATA = "MULEBOX_DERIVED_DATA"
+
+
+def derived_data_env(scratch: Path | None, platform: str | None = None) -> dict[str, str]:
+    """On a Mac, a DerivedData folder in the job's own folder, for `xcodebuild -derivedDataPath`:
+    jobs on one machine never share build products, and the cleanup removes it with the job.
+    xcodebuild reads no setting for it, so the project passes it."""
+    if (platform or sys.platform) != "darwin" or scratch is None:
+        return {}
+    return {DERIVED_DATA: str(scratch / "DerivedData")}
+
+
 def parse_sdks(text: str) -> list[str]:
     """`canonicalName` of each SDK in `xcodebuild -showsdks -json`."""
     try:

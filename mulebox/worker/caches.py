@@ -1,7 +1,8 @@
 """Package caches: downloads kept between jobs of one project, under the cache root.
 
 `needs: [cache-pnpm]` gives a job `<cache>/packages/<project>/pnpm`, in the spirit of the
-shared Playwright folder. It is opt-in and per project on purpose. A cache is written by
+shared Playwright folder; `cache-npm`, `cache-composer`, `cache-pip`, and on a Mac node
+`cache-spm` (Swift packages) and `cache-cocoapods` work the same way. It is opt-in and per project on purpose. A cache is written by
 jobs and read by later jobs, so a job can leave something in it for the next one. That
 stays inside one project: another project has its own folder and cannot be reached through
 this one, and a job's log says which cache it used. Within a project, every branch shares
@@ -40,6 +41,7 @@ class Tool:
     folder: str
     mount_variable: str  # the folder, for a project's compose file
     settings: tuple[str, ...]  # what makes the tool use the folder on the machine
+    hint: str = ""  # for a tool no setting reaches: what the project passes it
 
 
 TOOLS = (
@@ -49,6 +51,11 @@ TOOLS = (
     Tool(package_cache.COMPOSER, "composer", "MULEBOX_CACHE_COMPOSER", ("COMPOSER_CACHE_DIR",)),
     Tool(package_cache.NPM, "npm", "MULEBOX_CACHE_NPM", ("npm_config_cache",)),
     Tool(package_cache.PIP, "pip", "MULEBOX_CACHE_PIP", ("PIP_CACHE_DIR",)),
+    # SwiftPM reads no setting for its cache: the project passes the folder on the command line.
+    Tool(package_cache.SPM, "spm", "MULEBOX_CACHE_SPM", (),
+         "pass it as `xcodebuild -packageCachePath \"$MULEBOX_CACHE_SPM\"` or `swift build "
+         "--cache-path \"$MULEBOX_CACHE_SPM\"`"),
+    Tool(package_cache.COCOAPODS, "cocoapods", "MULEBOX_CACHE_COCOAPODS", ("CP_CACHE_DIR",)),
 )
 
 
@@ -72,8 +79,9 @@ def for_job(paths: NodePaths, project: str, needs: Sequence[str]) -> JobCaches:
         confirm_dir(folder, paths.roots)
         folders.append(folder)
         env |= {tool.mount_variable: str(folder), **dict.fromkeys(tool.settings, str(folder))}
+        hint = f"; {tool.hint}" if tool.hint else ""
         notes.append(f"package cache {tool.folder}: shared by every job of {project} on this "
-                     f"machine (${tool.mount_variable})")
+                     f"machine (${tool.mount_variable}){hint}")
         if not any(folder.iterdir()):
             notes.append(f"package cache {tool.folder} is empty, so this job downloads "
                          "everything; later jobs reuse it")

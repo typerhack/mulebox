@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.12.0 - 2026-11-12 - minor
+- DerivedData of its own per job on a macOS node (M22.3): every Mac job gets `$MULEBOX_DERIVED_DATA`, a folder in its job folder, for `xcodebuild -derivedDataPath`, so jobs never share build products and the cleanup removes it with the job (`xcode.derived_data_env`).
+- Package caches `cache-spm` (Swift packages) and `cache-cocoapods`, per project like the others: CocoaPods reads `CP_CACHE_DIR`; SwiftPM reads no setting, so the job's log says to pass `$MULEBOX_CACHE_SPM` as `-packageCachePath` or `--cache-path`. Agents' docs, the contract and the skill say how.
+
 ## 1.11.1 - 2026-11-12 - patch
 - From Sol's review of 1.11.0 (M22.2): the scan asks each Xcode for its runtimes, and a job's simulator is of a runtime its own Xcode can use (the pinned one, else the newest), so a job pinning an older Xcode no longer gets a newer runtime it cannot run.
 - The device is the highest model number of the runtime's iPhones (or of its devices), not simctl's first: simctl can list an iPhone XS before an iPhone 16.

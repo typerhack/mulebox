@@ -12,4 +12,6 @@ PNPM = "cache-pnpm"
 COMPOSER = "cache-composer"
 NPM = "cache-npm"
 PIP = "cache-pip"
-CAPABILITIES = (PNPM, COMPOSER, NPM, PIP)
+SPM = "cache-spm"  # Swift packages, for xcodebuild and swift on a Mac node
+COCOAPODS = "cache-cocoapods"
+CAPABILITIES = (PNPM, COMPOSER, NPM, PIP, SPM, COCOAPODS)

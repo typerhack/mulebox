@@ -126,6 +126,10 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   through `simctl` only; no other simulator is touched. Runtimes are installed by a person, in
   Xcode (Settings, Components) or with `xcodebuild -downloadPlatform iOS`; a Mac with one offers
   the capability `simulator`. They live in the user's own device set, the one Xcode shows.
+- Every job on a Mac gets `$MULEBOX_DERIVED_DATA`, a DerivedData folder in its own job folder,
+  removed with it; a project passes it to `xcodebuild -derivedDataPath`. `needs: [cache-spm]`
+  keeps Swift packages per project (`$MULEBOX_CACHE_SPM`, passed as `-packageCachePath`), and
+  `cache-cocoapods` CocoaPods' downloads (`CP_CACHE_DIR`).
 - GitHub runners work as on Linux (`mulebox runner add` or `register`), with the macOS runner
   (`actions-runner-osx-arm64` or `osx-x64`). Each is a launchd agent, `mulebox-runner-<name>`,
   with its output in `~/Library/Logs/mulebox/runner-<name>.log`, under `nice -n 5` like a job. Pause
