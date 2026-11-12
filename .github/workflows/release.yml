@@ -71,3 +71,8 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
+        with:
+          # PyPI never takes a file twice, so a tag pushed again (history rewritten in UTC,
+          # 2026-11-12) would fail the run and mark the pypi deployment failed. Files already
+          # there are left as they are; a new version still uploads.
+          skip-existing: true

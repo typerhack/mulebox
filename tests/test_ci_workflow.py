@@ -96,6 +96,7 @@ def test_a_release_runs_on_tags_alone_and_only_its_publish_job_can_prove_who_it_
     assert publish["environment"]["name"] == "pypi"  # the name PyPI's trusted publisher holds
     assert all("run" not in step and "checkout" not in step["uses"] for step in publish["steps"])
     assert publish["steps"][-1]["uses"].startswith("pypa/gh-action-pypi-publish@")
+    assert publish["steps"][-1]["with"] == {"skip-existing": True}  # a tag pushed again passes
     assert not [step for step in steps(workflow) if "GH_TOKEN" in step.get("env", {})]
 
 

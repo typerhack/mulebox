@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.2.4 - 2026-11-12 - patch
+- The release workflow skips files PyPI already has (`skip-existing`). Re-pushing the tags v1.1.1 and v1.2.0 in UTC this morning ran it again, PyPI refused the files it had ("400 File already exists"), and the repository showed its pypi deployment as failed, though both releases were on PyPI. A new version still uploads; a test holds the setting.
+
 ## 1.2.3 - 2026-11-12 - patch
 - The docs test reads a repeated heading's anchor as GitHub writes it (`-1`, `-2`, ...): README's link to its second "The dashboard" (`#the-dashboard-1`, from 1.2.1) works on GitHub but failed the test. CI had skipped the docs-only commit and caught it on the next full run.
 
