@@ -416,6 +416,10 @@ jobs of a run go one after another. Register again with a larger count to grow i
 has keep their caches. Each job still takes a build slot, so the node never runs more than it
 has.
 
+A worker restart, such as an upgrade, leaves a job's container running, and the restarted worker
+takes it over, so a deploy does not strand a CI job; an idle container goes only once GitHub has
+deleted its one-job runner.
+
 The guard above runs on the node before the job's first step, on what the container's hook hands
 over; a refused job's container is killed with it. The slot is reserved as for any runner, and
 pause, boost and cancel work from the dashboard. `runner list` shows it as `isolated`, and `runner

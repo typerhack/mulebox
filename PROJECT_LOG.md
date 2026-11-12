@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.7 - 2026-11-12 - patch
+- An isolated runner's container outlives a worker restart (M23.6, `runners/place_handover.py`): a deploy removed every place's container, also one whose one-job runner GitHub had just given a job, which then hung for about 10 minutes. On stop a container is now kept if its job has asked or GitHub refuses to delete its runner (it has given it a job); only one whose runner GitHub deleted is removed, so no job slips in between. It runs with `--sig-proxy=false`, so the worker's stop signal does not reach it, and the next worker follows it, answers its job if nothing has (same reservation key), and ends its round. Upgrades that wait for busy places were weighed and left out: GitHub can hand a runner a job between the check and the restart (design.md, Worker restarts).
+
 ## 1.13.6 - 2026-11-12 - patch
 - docs/design-system.md names the copy button of 1.13.3 and 1.13.4: its icons (`copy`, then `check`), and the long line it sits beside, cut with an ellipsis, whole in its tooltip.
 

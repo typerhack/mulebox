@@ -17,6 +17,9 @@ worker keeps one thread per place (place_keeper.py), which loops:
    is released with the job's result from its diary (hooks.completed), and a runner that never
    got a job is deleted from GitHub. Then again, after a pause when something failed.
 
+A worker that stops leaves a container whose job has begun, or may have, running, and the next
+worker takes it over and ends its round (place_handover.py), so a deploy strands no job.
+
 What the container wrote is owned by its user, not the node's, so before a folder of it is
 deleted the node takes it back (worker/reclaim.py). `.mulebox-place` in the folder names the
 running container, for supervision (supervise.py). A place whose metadata says `removing`
@@ -37,7 +40,7 @@ from mulebox.common.ids import new_ulid
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import ensure_dir, remove_tree
 from mulebox.runners import guard, hooks, jit, layout, place_bridge, place_container
-from mulebox.runners import place_hook, place_image, release
+from mulebox.runners import place_handover, place_hook, place_image, release
 from mulebox.runners.github import GhRun, run_gh
 from mulebox.runners.supervise import PLACE_MARKER as MARKER
 from mulebox.runners.supervise import PLACE_ROUND as ROUND
@@ -66,6 +69,7 @@ class Place:
         self.stop, self.docker, self.gh = stop, docker or Docker(), gh
         self.version_of, self.popen = version, popen
         self._version: tuple[float, str] | None = None
+        self.handed_over = False  # this round's container is left running for the next worker
 
     @property
     def name(self) -> str:
@@ -132,6 +136,9 @@ class Place:
 
     def _round(self) -> None:
         meta = self._meta()
+        self.handed_over = False
+        if self._take_over(meta):
+            return
         self._left_over()
         self._release_left()
         image = place_image.ensure(self.docker, self.paths, self.version())
@@ -140,7 +147,7 @@ class Place:
         suffix = new_ulid()[-8:].lower()
         io_dir = self._fresh(self.folder / f"{IO_PREFIX}{suffix}")
         diag = self._fresh(self.folder / "_diag")
-        container = f"mulebox-place-{self.name}-{suffix}"
+        container = place_handover.container_name(self.name, suffix)
         runner: jit.JitRunner | None = None
         asked = False
         meta = self._meta()  # once more: the image can take minutes, and removal may have begun
@@ -150,49 +157,84 @@ class Place:
             layout.write_file(self.paths, self.folder / MARKER, container + "\n")
             argv = place_container.run_argv(container, self.name, image, hooks_dir=hooks_dir,
                                             io_dir=io_dir, diag_dir=diag)
-            asked = self._start_and_watch(argv, runner, container, io_dir)
-        finally:  # each step on its own: one failing must not skip the others
-            _quietly(lambda: place_container.remove(self.docker, container), "container")
-            if runner is not None and not asked:
-                _quietly(lambda: self._delete_unused(meta["repo"], runner), "one-job runner")
-            _quietly(self._release_left, "slot")
-            _quietly(lambda: remove_tree(self.folder / MARKER, self.paths.roots), "marker")
+            asked = self._start_and_watch(argv, runner, container, io_dir, meta["repo"])
+        finally:
+            if not self.handed_over:
+                self._end_round(meta["repo"], container,
+                                [runner.id] if runner is not None and not asked else None)
 
-    def _delete_unused(self, repo: str, runner: jit.JitRunner) -> None:
-        if not jit.delete(repo, runner.id, self.gh):
-            LOG.warning("isolated runner %s: GitHub kept unused runner %s", self.name,
-                        runner.name)
+    def _end_round(self, repo: str, container: str, unused: list[int] | None) -> None:
+        """Each step on its own: one failing must not skip the others. `unused`: the ids of
+        one-job runners that never got their job, None to ask GitHub for this place's."""
+        _quietly(lambda: place_container.remove(self.docker, container), "container")
+        _quietly(lambda: self._delete_unused(repo, unused), "one-job runner")
+        _quietly(self._release_left, "slot")
+        _quietly(lambda: remove_tree(self.folder / MARKER, self.paths.roots), "marker")
+
+    def _take_over(self, meta: dict[str, Any]) -> bool:
+        """Follow a container an earlier worker left running to its end; False if none."""
+        found = place_handover.held(self.docker, self.name, self.folder, IO_PREFIX)
+        if found is None:
+            return False
+        container, io_dir = found
+        LOG.info("isolated runner %s: taking over %s from the last worker", self.name, container)
+        asked = False
+        try:
+            asked = self._watch(place_handover.Held(self.docker, container), container, io_dir,
+                                meta["repo"], None)
+        finally:
+            if not self.handed_over:
+                self._end_round(meta["repo"], container, None if not asked else [])
+        return True
+
+    def _delete_unused(self, repo: str, ids: list[int] | None) -> None:
+        for runner_id in jit.ids_of(repo, self.name, self.gh) if ids is None else ids:
+            if not jit.delete(repo, runner_id, self.gh):
+                LOG.warning("isolated runner %s: GitHub kept unused runner %s", self.name,
+                            runner_id)
 
     def _start_and_watch(self, argv: list[str], runner: jit.JitRunner, container: str,
-                         io_dir: Path) -> bool:
+                         io_dir: Path, repo: str) -> bool:
         with open(self.folder / "container.log", "wb") as log:
             proc = self.popen(argv, stdin=subprocess.PIPE, stdout=log, stderr=subprocess.STDOUT)
             try:
                 proc.stdin.write((runner.config + "\n").encode())
                 proc.stdin.close()
-                return self._watch(proc, container, io_dir)
+                return self._watch(proc, container, io_dir, repo, [runner.id])
             finally:
-                if proc.poll() is None:
+                if proc.poll() is None and not self.handed_over:
                     place_container.remove(self.docker, container)
                     try:
                         proc.wait(timeout=60)
                     except subprocess.TimeoutExpired:
                         proc.kill()
 
-    def _watch(self, proc: Any, container: str, io_dir: Path) -> bool:
+    def _watch(self, proc: Any, container: str, io_dir: Path, repo: str,
+               runner_ids: list[int] | None) -> bool:
         """Wait for the container to end, answering its hook once; True if a job asked.
 
-        A slot still being waited for when the container ends is given up (`gone`) and waited
-        for, or it would be granted later and held by the next container, which has no job."""
+        The container counts as running while its `docker` client does or Docker says it
+        does, as the client can die alone (the worker's stop signal reaches it too). A slot
+        still being waited for when the container ends is given up (`gone`) and waited for, or
+        it would be granted later and held by the next container, which has no job. When the
+        worker stops, a container whose job has begun, or may have, is left to the next worker
+        (place_handover.py), and a decision in flight is left unanswered for it."""
         decide: threading.Thread | None = None
         gone = threading.Event()
+        answered = (io_dir / place_hook.ANSWER).exists()  # by an earlier worker
         try:
-            while proc.poll() is None:
+            while proc.poll() is None or place_container.running(self.docker, container):
                 if self.stop.is_set():
+                    if place_handover.keep_on_stop(repo, self.name, io_dir, runner_ids,
+                                                   self.gh):
+                        self.handed_over = True
+                        LOG.info("isolated runner %s: %s left running for the next worker",
+                                 self.name, container)
+                        break
                     place_container.remove(self.docker, container)
                     proc.wait(timeout=60)
                     break
-                if decide is None:
+                if decide is None and not answered:
                     request = place_bridge.read_request(io_dir)
                     if request is not None:
                         decide = threading.Thread(target=self._decide,
@@ -206,7 +248,7 @@ class Place:
                 decide.join(timeout=DECIDE_WAIT_S)
                 if decide.is_alive():
                     LOG.warning("isolated runner %s: still deciding on its last job", self.name)
-        return decide is not None
+        return answered or decide is not None
 
     def _decide(self, request: dict[str, str], io_dir: Path, gone: threading.Event) -> None:
         def sleep(seconds: float) -> None:
@@ -222,6 +264,8 @@ class Place:
                                               paths=self.paths, reserve=reserve)
         except Exception as exc:  # noqa: BLE001 - the job must get an answer, a refusal
             ok, message = False, f"mulebox: the node could not decide on this job: {exc}"
+        if self.handed_over:
+            return  # the next worker decides on it again, with the same reservation key
         if gone.is_set():
             ok = False  # its container is gone: nothing may be allowed after it
         try:

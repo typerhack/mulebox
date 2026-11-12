@@ -499,6 +499,20 @@ runner, the second for public repositories:
      runner's own name, so supervision, the dashboard and release work as for a host runner. A
      refusal kills `Runner.Worker` inside the container, as on the host. Pause and boost act on the
      container (`docker pause`, CPU shares) in place of a service.
+   - Worker restarts (`place_handover.py`, 1.13.7): a deploy restarts the worker, and its stop
+     used to remove every container, also one whose one-job runner GitHub had just given a job,
+     which then hung for about 10 minutes and could not be cancelled. Two ways out were weighed:
+     upgrades that wait for busy places, and containers that outlive the worker. Waiting cannot
+     close the gap, as GitHub can hand a runner a job at any moment, also between the check and
+     the restart, so the containers outlive it. On stop, a container is kept if its job has asked
+     or GitHub refuses to delete its one-job runner (it does once it has given it a job); only a
+     runner GitHub has deleted can never get a job, so only then does its container go. The
+     container runs with `--sig-proxy=false`, so the stop signal the worker's `docker` client
+     gets does not reach it, and Docker removes it when it ends. The next worker finds it by its
+     `.mulebox-place`, follows it, answers its job if nothing has (the reservation key is the
+     job's own, so asking again finds the same reservation), and ends the round as usual;
+     supervision keeps the slot meanwhile. A worker stopped for good leaves such a job waiting for
+     an answer (up to 6 h); `mulebox runner remove` removes it.
    - Left over: the container shares the node's kernel, and can reach the node's network beyond
      what the firewall closes. A job that needs Docker itself cannot run in it. A job can write its
      own diary in `_diag`, so the result mulebox shows for it is the job's word.

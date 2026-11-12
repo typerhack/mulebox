@@ -12,6 +12,9 @@ What it gets, and only that:
   the node's own processes, as a mulebox job has.
 
 The runner's configuration comes on stdin, so neither `ps` nor `docker inspect` shows it.
+`--sig-proxy=false`: the stop signal the worker's `docker` client gets when the worker stops is
+not passed on, so the container outlives the worker (place_handover.py); Docker removes it when
+it ends.
 Containers carry the label `mulebox.place=<name>`, by which any a crash left are removed.
 """
 
@@ -53,7 +56,7 @@ def tool_volume(place: str) -> str:
 def run_argv(container: str, place: str, image: str, *, hooks_dir: Path, io_dir: Path,
              diag_dir: Path, memory_mb: int | None = None) -> list[str]:
     return [
-        "docker", "run", "--interactive", "--rm", "--name", container,
+        "docker", "run", "--interactive", "--rm", "--sig-proxy=false", "--name", container,
         "--label", f"{LABEL}={place}",
         "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
         "--pids-limit", str(PIDS), "--memory", f"{memory_mb or memory_limit_mb()}m",

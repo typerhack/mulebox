@@ -801,11 +801,12 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       with no step run; removal left nothing. mulebox's own CI then passed on its isolated runner,
       4m 28s warm with the three jobs one after another (GitHub's machines: about 1 min, side by
       side); a first run spends minutes downloading each new Python or Node.
-      Open (seen 2026-11-12): a worker restart, such as a deploy, removes every isolated place's
-      container, even one whose one-job runner GitHub has just given a job; that job then hangs
-      until GitHub drops the runner (about 10 min), and cannot be cancelled meanwhile. A fix needs
-      a design: containers that outlive a worker restart, or `--when-idle` waiting for a place that
-      holds a job.
+      Seen 2026-11-12: a worker restart, such as a deploy, removed every isolated place's
+      container, even one whose one-job runner GitHub had just given a job; that job then hung
+      until GitHub dropped the runner (about 10 min). Built 2026-11-12 (1.13.7): containers
+      outlive a worker restart and the next worker takes them over (design.md, Worker restarts),
+      with tests; on the node a container with `--sig-proxy=false` outlived its killed `docker`
+      client and was removed by Docker when it ended. Open: a deploy while a real CI job runs.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
