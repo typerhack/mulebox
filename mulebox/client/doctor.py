@@ -15,7 +15,7 @@ from mulebox.common import disk, upgrade
 from mulebox.common.config import XCODE, ProjectConfig
 from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
-from mulebox.common.versions import compare
+from mulebox.common.versions import compare, same_release
 
 OK, WARN, FAIL = "ok", "warn", "fail"
 TOPIC_WIDTH = 9
@@ -99,7 +99,7 @@ def _xcode_gap(worker: Worker, project: ProjectConfig) -> str | None:
     """The pinned Xcode, when this Mac reports others: a job there would exit 5."""
     version, tools = project.toolchain.get(XCODE), worker.get("toolchains")
     have = (tools or {}).get(XCODE) or []
-    if version is None or tools is None or version in have:
+    if version is None or tools is None or any(same_release(v, version) for v in have):
         return None
     return f"{worker.get('worker')} has {', '.join(have) or 'none'}"
 

@@ -177,3 +177,28 @@ def test_this_macs_own_xcodes_are_read():
     if not xcodes:
         pytest.skip("no Xcode in /Applications")
     assert all(x.developer_dir.is_dir() for x in xcodes)
+
+
+def test_a_pin_matches_with_trailing_zeros_and_comes_from_the_last_scan(tmp_path, monkeypatch):
+    apps = tmp_path / "Applications"
+    app = bundle(apps, "Xcode.app", "27.2")
+    assert xcode.pinned({"xcode": "27.2.0"}, found(apps)).app == app
+    with pytest.raises(xcode.XcodeMissing):
+        xcode.pinned({"xcode": "27.20"}, found(apps))
+    done = xcode.Scan({"xcode": ["27.2"]})
+    done.xcodes = (xcode.Xcode("27.2", app),)
+    monkeypatch.setattr(xcode, "_INVENTORY", xcode.Inventory(ask=lambda: done,
+                                                             start=lambda work: work()))
+    monkeypatch.setattr(xcode, "installed", lambda *a: pytest.fail("probed during a claim"))
+    xcode.report()
+    assert xcode.env_for({"xcode": "27.2"}) == {"DEVELOPER_DIR": str(app / "Contents/Developer")}
+    (app / "Contents" / "Developer").rmdir()  # removed since the scan
+    with pytest.raises(xcode.XcodeMissing):
+        xcode.pinned({"xcode": "27.2"})
+
+
+def test_doctor_takes_a_pin_written_long():
+    project = ProjectConfig(project="app", jobs={"t": "x"}, toolchain={"xcode": "16.2.0"})
+    mac = {"worker": "mac-1", "online": True, "capabilities": ["xcode"],
+           "toolchains": {"xcode": ["16.2"]}, "version": "1.0.0"}
+    assert doctor.machines(project, [mac])[0].level == "ok"

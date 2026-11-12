@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.10.1 - 2026-11-12 - patch
+- From Sol's review of 1.10.0 (M22.1): a job that pins an Xcode takes it from the worker's last scan, so a claim no longer runs `xcode-select` (twice, up to 10 s each, in the worker's loop); a bundle removed since the scan counts as missing. Before the first scan has finished, the node is looked at once, as before.
+- A pin and an Xcode's own version are one release with trailing zeros aside (`16.2` is `16.2.0`), in the job and in `mulebox doctor` (`versions.same_release`).
+
 ## 1.10.0 - 2026-11-12 - minor
 - Xcode as a toolchain on a macOS node (M22.1): a project pins one, `toolchain: {xcode: "16.2"}`, and its job gets that Xcode's `DEVELOPER_DIR`; mulebox does not install Xcode, so a version the node lacks exits 5 before anything runs, naming the versions it has (`worker/xcode.py`).
 - A Mac worker reports its Xcodes (every `/Applications/Xcode*.app` and the one `xcode-select` points into), their SDKs and the available simulator runtimes beside its toolchains, from a scan beside its loop every 5 minutes (one `xcodebuild` per Xcode can take seconds, so a claim never waits on it; a runtime added or a failed probe shows up by the next scan), and offers the capability `xcode`, which a project pinning one needs. `mulebox doctor` lists each Mac's Xcodes, SDKs and simulators, fails a pinned version no online Mac has, and says a job does not install it. The scan beside the loop and the list in doctor came from Sol's review.

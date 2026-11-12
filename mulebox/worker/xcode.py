@@ -34,6 +34,7 @@ from pathlib import Path
 from mulebox.common import command
 from mulebox.common.config import XCODE as NAME  # the toolchain, and the capability it gives
 from mulebox.common.errors import MuleboxError
+from mulebox.common.versions import same_release
 from mulebox.worker import background
 
 APPLICATIONS = Path("/Applications")
@@ -112,13 +113,15 @@ def missing_reason(version: str, xcodes: list[Xcode]) -> str:
 
 def pinned(toolchain: Mapping[str, str], xcodes: Callable[[], list[Xcode]] | None = None
            ) -> Xcode | None:
-    """The Xcode a job's toolchain map pins; None when it pins none. XcodeMissing if absent."""
+    """The Xcode a job's toolchain map pins (`16.2` is `16.2.0`); None when it pins none.
+    XcodeMissing if absent. By default from the last scan (known), so a claim runs no
+    `xcode-select`; a bundle removed since is missing too."""
     version = toolchain.get(NAME)
     if version is None:
         return None
-    found = (xcodes or installed)()
+    found = (xcodes or known)()
     for xcode in found:
-        if xcode.version == version:
+        if same_release(xcode.version, version) and xcode.developer_dir.is_dir():
             return xcode
     raise XcodeMissing(missing_reason(version, found))
 
@@ -160,6 +163,13 @@ def _ask(argv: list[str], xcode: Xcode, run: Run) -> str:
     return done.stdout if done.returncode == 0 else ""
 
 
+class Scan(dict):
+    """What a scan reports ({name: [values]}, as advert.py sends it), with the Xcodes it found
+    kept beside it for the jobs of this node (pinned)."""
+
+    xcodes: tuple[Xcode, ...] = ()
+
+
 def scan(xcodes: Callable[[], list[Xcode]] | None = None, run: Run = command.run
          ) -> dict[str, list[str]]:
     """{`xcode`: versions, `xcode-sdk`: SDKs, `simulator`: runtimes}; {} with no Xcode. Slow:
@@ -171,8 +181,10 @@ def scan(xcodes: Callable[[], list[Xcode]] | None = None, run: Run = command.run
                    for sdk in parse_sdks(_ask(["xcodebuild", "-showsdks", "-json"], x, run))})
     runtimes = parse_runtimes(_ask(["xcrun", "simctl", "list", "runtimes", "--json"],
                                    found[-1], run))
-    return {NAME: [x.version for x in found], "xcode-sdk": sdks,
-            "simulator": sorted(set(runtimes))}
+    done = Scan({NAME: [x.version for x in found], "xcode-sdk": sdks,
+                 "simulator": sorted(set(runtimes))})
+    done.xcodes = tuple(found)
+    return done
 
 
 class Inventory:
@@ -204,13 +216,27 @@ class Inventory:
             self._start(self._run)
         return self._found
 
+    def xcodes(self) -> list[Xcode]:
+        """The Xcodes of the last finished scan; none before it."""
+        return list(getattr(self._found, "xcodes", ()))
+
 
 _INVENTORY: Inventory | None = None
 
 
-def report() -> dict[str, list[str]]:
-    """This Mac's Xcodes for the worker's claims, never waiting on a scan (Inventory)."""
+def _inventory() -> Inventory:
     global _INVENTORY
     if _INVENTORY is None:
         _INVENTORY = Inventory()
-    return _INVENTORY.value()
+    return _INVENTORY
+
+
+def report() -> dict[str, list[str]]:
+    """This Mac's Xcodes for the worker's claims, never waiting on a scan (Inventory)."""
+    return _inventory().value()
+
+
+def known() -> list[Xcode]:
+    """The Xcodes a job can pin: the last scan's, or, before one has finished, a look now
+    (a node offers `xcode` only after its first scan, so a job rarely gets here)."""
+    return _inventory().xcodes() or installed()
