@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.14.1 - 2026-11-12 - patch
+- Roadmap: M23.11, CI package caches without the slow download: GitHub's cache restore over the node's VPN tunnel stalls and holds a setup step for actions/cache's 10-minute timeout; first a 1-minute timeout, then caches kept on the node per isolated place.
+
 ## 1.14.0 - 2026-11-12 - minor
 - A pass on GitHub (M24.6, `client/github_status.py`): with `github_status: true` in `.mulebox.yml`, `mulebox check` posts its result to the commit it ran on as the status `mulebox/<job>` (success, failure, or error when the job gave no result), so a pull request shows it and it can be a required check. Only when the files are exactly a pushed commit (clean worktree, HEAD on a remote-tracking branch), settled before the job is sent; posted by the dev machine's own `gh`, so nothing reaches in to the node. Not with `--detach`. A commit status, as a check run needs a GitHub App.
 
