@@ -62,6 +62,16 @@ def exit_code_from_status(returncode: int) -> int:
     return 128 - returncode if returncode < 0 else returncode
 
 
+def signal_group(pgid: int, sig: int) -> bool:
+    """Send `sig` to the group; False once nothing in it can take a signal. macOS answers EPERM,
+    not ESRCH, for a group left with exited processes nobody has reaped yet."""
+    try:
+        os.killpg(pgid, sig)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
+
+
 def group_alive(pgid: int) -> bool:
     try:
         os.killpg(pgid, 0)
@@ -93,13 +103,16 @@ class SubprocessExecutor:
     running: dict[str, ProcessHandle] = field(default_factory=dict)
 
     def start(self, spec: RunSpec) -> ProcessHandle:
+        return self._spawn(spec, subprocess.DEVNULL)
+
+    def _spawn(self, spec: RunSpec, stdin: int) -> ProcessHandle:
         if spec.name in self.running:
             raise ExecutorError(f"{spec.name} is already running")
         env = {**os.environ, **spec.env}
         try:
             with open(spec.log_path, "ab") as log:
                 proc = subprocess.Popen(
-                    list(spec.argv), cwd=spec.cwd, env=env, stdin=subprocess.DEVNULL,
+                    list(spec.argv), cwd=spec.cwd, env=env, stdin=stdin,
                     stdout=log, stderr=subprocess.STDOUT, start_new_session=True,
                 )
         except OSError as exc:
@@ -154,10 +167,12 @@ class SubprocessExecutor:
         return handle.exit_code
 
     def _terminate_group(self, handle: ProcessHandle) -> None:
-        """SIGTERM the group, wait up to grace_s for it to empty, then SIGKILL."""
+        """SIGTERM the group (and SIGCONT, so a frozen job can take it), wait up to grace_s for
+        it to empty, then SIGKILL. It blocks for that time, as `systemctl stop` does on Linux."""
         if not self._signal(handle.pgid, signal.SIGTERM):
             handle.proc.poll()
             return
+        self._signal(handle.pgid, signal.SIGCONT)
         end = time.monotonic() + self.grace_s
         while time.monotonic() < end:
             handle.proc.poll()  # reap the leader so it stops counting as a member
@@ -170,10 +185,4 @@ class SubprocessExecutor:
         while group_alive(handle.pgid) and time.monotonic() < end:
             time.sleep(0.02)
 
-    @staticmethod
-    def _signal(pgid: int, sig: int) -> bool:
-        try:
-            os.killpg(pgid, sig)
-            return True
-        except ProcessLookupError:
-            return False
+    _signal = staticmethod(signal_group)

@@ -19,8 +19,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-from mulebox.common.ids import new_ulid
-from mulebox.common.safepath import ensure_dir, remove_tree
+from mulebox.common import safefile
+from mulebox.common.safepath import ensure_dir
 from mulebox.runners.names import RunnerUsageError, check_name
 from mulebox.worker.paths import NodePaths
 
@@ -68,16 +68,7 @@ def check_unit_root(paths: NodePaths, home: Path | None = None) -> None:
 
 def write_file(paths: NodePaths, path: Path, text: str, mode: int = 0o640) -> None:
     """Write text atomically next to path (the folder must exist inside the roots)."""
-    tmp = path.with_name(f".{path.name}.tmp-{new_ulid()}")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, mode)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as fh:
-            fh.write(text)
-        os.chmod(tmp, mode)
-        os.replace(tmp, path)
-    except BaseException:
-        remove_tree(tmp, paths.roots)
-        raise
+    safefile.write_text(path, text, paths.roots, mode)
 
 
 def write_hooks(paths: NodePaths, folder: Path) -> dict[str, Path]:

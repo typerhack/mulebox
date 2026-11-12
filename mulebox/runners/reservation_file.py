@@ -7,10 +7,9 @@ the job-completed hook. The runner folder is created and the file removed only t
 
 from __future__ import annotations
 
-import os
-import secrets
 from pathlib import Path
 
+from mulebox.common import safefile
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import is_valid_id
 from mulebox.common.safepath import UnsafePath, ensure_dir, remove_tree
@@ -37,29 +36,13 @@ def write(paths: NodePaths, runner: str, job_id: str) -> Path:
     if not is_valid_id(job_id, "job"):
         raise UnsafePath(f"not a mulebox job id: {job_id!r}")
     folder = ensure_dir(runner_dir(paths, runner), paths.roots)
-    temp = folder / f"{FILE_NAME}.{secrets.token_hex(6)}.part"
-    fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC,
-                 _FILE_MODE)
-    try:
-        with os.fdopen(fd, "w", encoding="ascii") as handle:
-            handle.write(job_id + "\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temp, folder / FILE_NAME)
-    except BaseException:
-        remove_tree(temp, paths.roots)
-        raise
-    return folder / FILE_NAME
+    return safefile.write_text(folder / FILE_NAME, job_id + "\n", paths.roots, _FILE_MODE)
 
 
 def read(paths: NodePaths, runner: str) -> str | None:
     """The stored job id, or None when there is no (valid) reservation file."""
-    try:
-        fd = os.open(path_for(paths, runner), os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC)
-    except FileNotFoundError:
-        return None
-    with os.fdopen(fd, "rb") as handle:
-        text = handle.read(_MAX_BYTES).decode("ascii", errors="replace").strip()
+    text = safefile.read_text(path_for(paths, runner), paths.roots, _MAX_BYTES)
+    text = (text or "").strip()
     return text if is_valid_id(text, "job") else None
 
 

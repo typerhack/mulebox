@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.8.1 - 2026-11-12 - patch
+- From Sol's review of 1.7.0 (M21.2): a worker that restarts on a Mac stops a job's process group only while its first process is still the recorded one; a group whose first process is gone, or that `ps` cannot read, is left alone (a group id is reused, so it could be another program's), and the record kept when `ps` failed.
+- A job's command waits behind a gate until its record is on disk, so a worker killed in between leaves a shell that exits 75 and runs nothing; a record that cannot be written refuses the job.
+- `common/safefile.py`: small files written and read relative to a folder descriptor from safepath (`open_dir`), never through a symlink. The job records use it, and so do the runner folder's files and reservation, which had their own copies.
+- One `signal_group` for both executors: EPERM (a group of unreaped exited processes on macOS) counts as gone for running jobs too, not only for orphans. A stop sends SIGCONT after SIGTERM, so a frozen job can take it. A stop blocks for the grace time as `systemctl stop` does on Linux; that stays.
+
 ## 1.8.0 - 2026-11-12 - minor
 - Readings on a macOS node (M21.3): `common/host.py` gives the machine's cores, memory, swap and network the same way on both systems, from `/proc` on Linux and from macOS itself (`common/darwin_host.py`: the kernel's core counters through ctypes, `vm_stat`, `vm.swapusage`, the `en*` interfaces of `netstat`). The load a worker reports, its activity meter and the dashboard's graphs read through it; on Linux nothing changes.
 - A job's own readings on a Mac: its process group's CPU and memory from one `ps` listing, each process keyed on its own so a new one counts from nothing (`worker/darwin_jobs.py`), and its containers' CPU, memory and traffic from the Docker engine's API (`worker/docker_stats.py`), asked beside the loop. Anything unknown stays unknown, never idle. The dashboard's jobs' memory sums the recorded groups and the containers.

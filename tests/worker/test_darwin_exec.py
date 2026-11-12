@@ -2,11 +2,17 @@
 ran before. Real processes; nothing here needs macOS, so it runs on Linux too."""
 
 import json
+import os
+import signal
+import subprocess
 import time
 
+import pytest
+
+from mulebox.common.command import CommandError
 from mulebox.common.safepath import Roots
-from mulebox.worker.darwin_exec import RECORDS, DarwinExecutor, process_start, stop_group
-from mulebox.worker.executor import RunSpec, group_alive, unit_name
+from mulebox.worker.darwin_exec import GATE, RECORDS, DarwinExecutor, process_start, stop_group
+from mulebox.worker.executor import ExecutorError, RunSpec, group_alive, signal_group, unit_name
 
 
 def roots(tmp_path):
@@ -111,3 +117,87 @@ def test_without_records_it_is_the_plain_process_group_executor(tmp_path):
     ex = DarwinExecutor(grace_s=1.0)
     handle = ex.start(spec(tmp_path, "exit 3"))
     assert wait(ex, handle) == 3 and ex.list_orphans() == []
+
+
+def test_a_group_whose_first_process_is_gone_is_left_alone(tmp_path):
+    ex = executor(tmp_path)
+    handle = ex.start(spec(tmp_path, "sleep 60 & echo up"))
+    started(ex, handle, tmp_path / "job-a.log")
+    handle.proc.wait(timeout=5)  # the leader ended; its sleep lives on in the group
+    pgid = handle.pgid
+    try:
+        later = executor(tmp_path)  # a reused group id would look just like this
+        assert group_alive(pgid) and later.list_orphans() == []
+        assert not (tmp_path / "staging" / RECORDS / unit_name("job-a")).exists()
+        assert group_alive(pgid)  # not provably the job's, so not touched
+    finally:
+        os.killpg(pgid, signal.SIGKILL)
+
+
+def test_when_ps_cannot_tell_nothing_is_stopped_and_the_record_stays(tmp_path):
+    first = executor(tmp_path)
+    handle = first.start(spec(tmp_path, "echo up; sleep 60"))
+    started(first, handle, tmp_path / "job-a.log")
+
+    def broken(pid):
+        raise CommandError("ps: not allowed")
+
+    later = executor(tmp_path, start_time=broken)
+    assert later.list_orphans() == []
+    later.kill(unit_name("job-a"))
+    assert group_alive(handle.pgid)
+    assert (tmp_path / "staging" / RECORDS / unit_name("job-a")).exists()
+    first.stop(handle)
+
+
+def test_a_job_with_no_record_does_not_run(tmp_path):
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (tmp_path / "staging").mkdir()
+    (tmp_path / "staging" / RECORDS).symlink_to(outside)  # planted in place of the folder
+    ex = executor(tmp_path)
+    with pytest.raises(ExecutorError, match="no record"):
+        ex.start(spec(tmp_path, "touch ran"))
+    assert not (tmp_path / "ran").exists() and list(outside.iterdir()) == []
+    assert ex.running == {}
+
+
+def test_a_record_replaces_a_symlink_rather_than_writing_through_it(tmp_path):
+    target = tmp_path / "jobs" / "precious"
+    ex = executor(tmp_path)
+    folder = tmp_path / "staging" / RECORDS
+    folder.mkdir(parents=True)
+    target.write_text("keep")
+    (folder / unit_name("job-a")).symlink_to(target)
+    handle = ex.start(spec(tmp_path, "sleep 60"))
+    assert target.read_text() == "keep"
+    assert json.loads((folder / unit_name("job-a")).read_text())["pgid"] == handle.pgid
+    ex.stop(handle)
+
+
+def test_the_gate_runs_nothing_without_go(tmp_path):
+    proc = subprocess.Popen(["/bin/sh", "-c", GATE, "mulebox-gate", "touch", "ran"],
+                            cwd=tmp_path, stdin=subprocess.PIPE)
+    proc.stdin.close()  # the worker died before its record was written
+    assert proc.wait(timeout=5) == 75 and not (tmp_path / "ran").exists()
+
+
+def test_a_frozen_job_is_thawed_so_it_can_take_its_stop(tmp_path):
+    ex = executor(tmp_path)
+    handle = ex.start(spec(tmp_path, "trap 'echo bye; exit 0' TERM; echo up; "
+                                     "while :; do sleep 0.1; done"))
+    started(ex, handle, tmp_path / "job-a.log")
+    ex.freeze(handle, True)
+    began = time.monotonic()
+    ex.stop(handle)
+    assert time.monotonic() - began < 1.5  # its TERM trap ran; no wait for the grace
+    assert "bye" in (tmp_path / "job-a.log").read_text()
+
+
+def test_a_zombie_only_group_counts_as_gone_for_signals(monkeypatch):
+    def eperm(pgid, sig):
+        raise PermissionError("zombies only")
+
+    monkeypatch.setattr(os, "killpg", eperm)
+    assert signal_group(4242, signal.SIGTERM) is False
+    assert DarwinExecutor._signal(4242, signal.SIGTERM) is False

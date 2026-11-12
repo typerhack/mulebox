@@ -716,7 +716,10 @@ by Sol before the next starts (the user's ask).
       2026-11-12 (1.7.0): `worker/darwin_exec.py`, jobs under `nice -n 5`, records in
       `<staging>/job-groups/`; pinned Node.js as the macOS build. Tested with real processes on the
       Mac (a group left by an earlier worker found and stopped, a reused group id left alone). Boost
-      reaches only containers there, as the docs say. Open: a real job on a Mac node.
+      reaches only containers there, as the docs say. 1.8.1, from Sol's review: a group is stopped
+      only while its first process is the recorded one, the command waits for its record, records
+      never go through a symlink (`common/safefile.py`), and a frozen job is thawed to take its
+      stop. Open: a real job on a Mac node.
 - [~] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
       CPU and memory, for heartbeats, activity and the dashboard. Built 2026-11-12 (1.8.0):
       `common/host.py` over `/proc` and macOS (`common/darwin_host.py`), a job's group from `ps`

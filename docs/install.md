@@ -95,7 +95,9 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
 - A job is a process group rather than a systemd unit. Cancel, time limits and Pause work on the
   whole group; a process that starts a session of its own leaves it and is not stopped with it.
   A worker that restarts finds the groups an earlier one left (`<staging>/job-groups/`) and
-  stops them, as on Linux.
+  stops them, as on Linux, when the group's first process is still the one recorded. Leftovers
+  of a job whose main process ended while no worker ran are left alone: a group id is reused,
+  so nothing proves they are the job's. A job's command starts only once its record is written.
 - Jobs run under `nice -n 5`, so the Mac's own use comes first, as a unit's lower CPU weight
   does on Linux. Boost raises a job's containers only: macOS lets only root raise a process's
   priority again.

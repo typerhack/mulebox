@@ -5,75 +5,79 @@ stop, cancel and freeze work on the group. What a systemd unit gives for free is
 
 - **Orphans.** A unit outlives the worker and `list_orphans` finds it by name. A process group
   has no name, so each job leaves a record, `<staging>/job-groups/<unit name>`, holding its
-  group id and the start time of its first process. A worker started again reads them: a group
-  still alive whose first process is the one recorded (or gone, as the group id cannot be
-  reused while the group exists) is the job's, and is stopped. A record of a group that ended,
-  or whose id now belongs to another process, is only removed.
+  group id and the start time of its first process. The job's command does not run before
+  that record is on disk: it starts behind a gate, a shell that waits for "go" on its stdin,
+  so a worker killed in between leaves a shell that exits (75) and runs nothing. A worker
+  started again reads the records: a group whose first process is still the recorded one is
+  the job's, and is stopped. A record of a group that ended, whose id now belongs to another
+  process, or whose first process is gone, is only removed: a group id is reused once a
+  group ends, so with its first process gone nothing proves the group is still the job's,
+  and leftovers of a job whose main process ended while no worker ran are left alone (systemd
+  would have stopped them). When `ps` cannot be run, the record is kept and nothing stopped.
 - **A lower priority.** Units get a CPU weight of 50, half the default, so the machine's own use
   comes first. Here the job starts under `nice -n 5`. Boost cannot undo that: macOS lets only
   root raise a priority. So boost changes the job's containers only (controls.py), not its own
   processes, and the docs say so.
 
 A process that starts a session of its own leaves the group and is not stopped with it; systemd
-would have caught it. Records go through safepath, inside the staging root.
+would have caught it. Records are written and read through safefile.py, inside the staging
+root, never through a symlink.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
-import os
 import signal
+import subprocess
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from mulebox.common import command, safepath
+from mulebox.common import command, safefile, safepath
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.worker.executor import (
     STOP_GRACE_S,
     UNIT_PREFIX,
+    ExecutorError,
     ProcessHandle,
     RunSpec,
     SubprocessExecutor,
     group_alive,
+    signal_group,
 )
 
 LOG = get_logger("worker.darwin_exec")
 NICE = 5
 RECORDS = "job-groups"
+# Runs the job's command only once the worker writes "go" (after its record is on disk).
+GATE = 'read -r go || exit 75; [ "$go" = go ] || exit 75; exec "$@" </dev/null'
 
 StartTime = Callable[[int], str | None]
 
 
 def process_start(pid: int) -> str | None:
-    """When process `pid` started, as `ps` prints it; None when there is no such process."""
-    try:
-        done = command.run(["ps", "-o", "lstart=", "-p", str(pid)], timeout_s=10)
-    except command.CommandError:
-        return None
+    """When process `pid` started, as `ps` prints it; None when there is no such process.
+    Raises CommandError when `ps` cannot tell (it could not run, or printed an error)."""
+    done = command.run(["ps", "-o", "lstart=", "-p", str(pid)], timeout_s=10)
     text = done.stdout.strip() if done.returncode == 0 else ""
+    if not text and done.returncode != 0 and done.stderr.strip():
+        raise command.CommandError(f"ps failed: {done.stderr.strip()}")
     return text or None
 
 
-def _signalled(pgid: int, sig: int) -> bool:
-    """Send `sig` to the group; False once nothing in it can take a signal. macOS answers EPERM,
-    not ESRCH, for a group left with exited processes nobody has reaped yet."""
-    try:
-        os.killpg(pgid, sig)
-    except (ProcessLookupError, PermissionError):
-        return False
-    return True
-
-
 def stop_group(pgid: int, grace_s: float, sleep=time.sleep, clock=time.monotonic) -> None:
-    """SIGTERM the group, SIGKILL whatever is left after `grace_s`."""
+    """SIGTERM the group (then SIGCONT, so a frozen job can take it), SIGKILL whatever is left
+    after `grace_s`."""
     for sig in (signal.SIGTERM, signal.SIGKILL):
-        if not _signalled(pgid, sig):
+        if not signal_group(pgid, sig):
             return
+        if sig == signal.SIGTERM:
+            signal_group(pgid, signal.SIGCONT)
         end = clock() + grace_s
-        while _signalled(pgid, 0):
+        while signal_group(pgid, 0):
             if clock() >= end:
                 break
             sleep(0.05)
@@ -90,13 +94,24 @@ class DarwinExecutor(SubprocessExecutor):
     _stop: Callable[[int, float], None] = field(default=stop_group, repr=False)
 
     def start(self, spec: RunSpec) -> ProcessHandle:
-        niced = RunSpec(spec.name, ("nice", "-n", str(self.nice), *spec.argv), spec.cwd,
-                        spec.env, spec.log_path, spec.timeout_s)
-        handle = super().start(niced)
+        gated = RunSpec(spec.name, ("/bin/sh", "-c", GATE, "mulebox-gate", "nice", "-n",
+                                    str(self.nice), *spec.argv),
+                        spec.cwd, spec.env, spec.log_path, spec.timeout_s)
+        handle = self._spawn(gated, subprocess.PIPE)
+        gate = handle.proc.stdin
         try:
             self._record(spec.name, handle.pgid)
-        except (OSError, MuleboxError) as exc:  # it runs; only a restart's clean-up misses it
-            LOG.warning("could not record the process group of %s: %s", spec.name, exc)
+            gate.write(b"go\n")
+            gate.close()
+        except (OSError, MuleboxError) as exc:  # no record: the job must not run
+            with contextlib.suppress(OSError):
+                gate.close()  # the gate reads nothing and exits 75
+            handle.proc.wait()
+            self.running.pop(spec.name, None)
+            with contextlib.suppress(OSError, MuleboxError):
+                self._forget(spec.name)
+            raise ExecutorError(f"cannot start {spec.name}: no record of its process group "
+                                f"({exc})") from exc
         return handle
 
     def _finish(self, handle: ProcessHandle, returncode: int) -> int:
@@ -113,9 +128,10 @@ class DarwinExecutor(SubprocessExecutor):
         for name, (pgid, started) in self._recorded().items():
             if name in self.running:
                 continue
-            if self._ours(pgid, started):
+            verdict = self._ours(pgid, started)
+            if verdict:
                 names.add(name)
-            else:
+            elif verdict is False:
                 self._forget(name)
         return sorted(names)
 
@@ -124,21 +140,33 @@ class DarwinExecutor(SubprocessExecutor):
             super().kill(name)
             return
         found = self._recorded().get(name)
-        if found is not None and self._ours(*found):
+        verdict = None if found is None else self._ours(*found)
+        if verdict:
             LOG.warning("stopping the process group %d of %s", found[0], name)
             self._stop(found[0], self.grace_s)
-        self._forget(name)
+        if verdict is not None or found is None:
+            self._forget(name)
 
     def pgid_of(self, name: str) -> int | None:
         """The process group of a job this executor runs, for its readings (darwin_jobs.py)."""
         handle = self.running.get(name)
         return handle.pgid if handle is not None else None
 
-    def _ours(self, pgid: int, started: str | None) -> bool:
+    def _ours(self, pgid: int, started: str | None) -> bool | None:
+        """True: the job's group, its first process still the recorded one. False: gone, or not
+        provably the job's. None: `ps` could not tell, so the record is kept for a later try."""
         if not group_alive(pgid):
             return False
-        now = self.start_time(pgid)
-        return now is None or now == started  # first process gone: the id is still the group's
+        try:
+            now = self.start_time(pgid)
+        except MuleboxError as exc:
+            LOG.warning("cannot tell whether process group %d is a job's: %s", pgid, exc)
+            return None
+        if now is None:
+            LOG.warning("process group %d lives on without its first process; it cannot be "
+                        "proven to be the job's, so it is left alone", pgid)
+            return False
+        return started is not None and now == started
 
     # --- records -------------------------------------------------------------------------
 
@@ -146,26 +174,24 @@ class DarwinExecutor(SubprocessExecutor):
         if self.records is None or self.roots is None:
             return
         folder = safepath.ensure_dir(self.records, self.roots)
-        draft = folder / f".{name}.new"
-        draft.write_text(json.dumps({"pgid": pgid, "started": self.start_time(pgid)}),
-                         encoding="utf-8")
-        draft.replace(folder / name)
+        record = {"pgid": pgid, "started": self.start_time(pgid)}
+        safefile.write_text(folder / name, json.dumps(record), self.roots, 0o600)
 
     def _forget(self, name: str) -> None:
         if self.records is not None and self.roots is not None:
             safepath.remove_tree(self.records / name, self.roots)
 
     def _recorded(self) -> dict[str, tuple[int, str | None]]:
-        if self.records is None or not self.records.is_dir():
+        if self.records is None or self.roots is None or not self.records.is_dir():
             return {}
         found = {}
         for path in sorted(self.records.iterdir()):
-            if not path.name.startswith(UNIT_PREFIX) or path.is_symlink():
+            if not path.name.startswith(UNIT_PREFIX):
                 continue
             try:
-                data = json.loads(path.read_text(encoding="utf-8"))
+                data = json.loads(safefile.read_text(path, self.roots, 4096) or "")
                 found[path.name] = (int(data["pgid"]), data.get("started"))
-            except (OSError, ValueError, KeyError, TypeError):
+            except (OSError, MuleboxError, ValueError, KeyError, TypeError):
                 LOG.warning("unreadable job record %s; left alone", path)
         return found
 

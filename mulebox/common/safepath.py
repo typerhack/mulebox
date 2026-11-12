@@ -29,7 +29,7 @@ from mulebox.common.roots import (
 
 __all__ = [
     "DIR_MODE", "PathOutsideRoots", "RemovalDenied", "Roots", "UnsafePath", "confirm_dir",
-    "ensure_dir", "remove_tree", "resolve_inside",
+    "ensure_dir", "open_dir", "remove_tree", "resolve_inside",
 ]
 
 DIR_MODE = 0o750
@@ -265,13 +265,9 @@ def _spelled_under_root(path: Path, roots: Roots) -> tuple[Path, int, Path]:
     return path, index, root
 
 
-def confirm_dir(path: Path, roots: Roots) -> Path:
-    """Prove path is a real directory strictly inside a root, and return it.
-
-    For handing a path to something that cannot use descriptors, such as a bind mount: it
-    must be spelled under a root, no component below the root may be a symlink, and no mount
-    may be in or above it. The caller must make sure nothing can change it afterwards.
-    """
+def open_dir(path: Path, roots: Roots) -> int:
+    """A descriptor of path (the caller closes it): spelled under a root, no symlink below the
+    root, no mount in or above it. Files made relative to it (safefile.py) stay put."""
     path, index, root = _spelled_under_root(path, roots)
     _refuse_mounts(path, root)
     try:
@@ -280,7 +276,13 @@ def confirm_dir(path: Path, roots: Roots) -> Path:
         raise os_error(f"could not open {path}", exc) from exc
     if opened is None:
         raise UnsafePath(f"{path} does not exist")
-    os.close(opened[0])
+    return opened[0]
+
+
+def confirm_dir(path: Path, roots: Roots) -> Path:
+    """Prove path is a real directory strictly inside a root, for something that cannot use
+    descriptors, such as a bind mount; the caller must keep it from changing afterwards."""
+    os.close(open_dir(path, roots))
     return path
 
 
