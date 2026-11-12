@@ -38,17 +38,19 @@ committed; a test holds that. To update one, change both with `npm install --sav
 
 ## Keeping CI safe in a public repository
 
-- **GitHub-hosted machines only.** A workflow file that says so is not enough: a pull request
-  runs the workflow from its own branch, so a fork can change `runs-on` to name a self-hosted
-  runner and run anything on it. The only protection is that the repository has no such runner.
-  Before a repository goes public, list its runners and remove every one:
-
-  ```sh
-  gh api repos/typerhack/mulebox/actions/runners --jq '.runners[].name'
-  mulebox runner unregister --repo typerhack/mulebox
-  ```
-
-  Delete the `CI_RUNS_ON` repository variable too, if it exists: this workflow no longer reads it.
+- **Only an isolated runner, and only for the owner's runs.** A workflow file alone protects
+  nothing: a pull request runs the workflow from its own branch, so a fork can change `runs-on`
+  to name a self-hosted runner. So the repository has one runner only, an isolated one
+  (`mulebox runner register --isolated --repo typerhack/mulebox --labels mulebox-ci`): its hook
+  refuses a fork's pull request and any run an account other than the owner started, before
+  any step, and every job runs in a fresh container with no folder of the node, no Docker
+  socket and no privileges (docs/install.md, GitHub runners). `ci.yml` sends only the owner's
+  own runs there and the rest to GitHub's machines, so a contributor's CI still runs. The
+  release always runs on GitHub's machines. Never register a plain runner here; list them with
+  `gh api repos/typerhack/mulebox/actions/runners --jq '.runners[].name'`.
+- **Back to GitHub's machines** with no code change: set the repository variable `CI_RUNS_ON` to
+  `["ubuntu-24.04"]` (`gh variable set CI_RUNS_ON -R typerhack/mulebox --body '["ubuntu-24.04"]'`),
+  and remove the runner with `mulebox runner unregister --repo typerhack/mulebox --name mulebox-ci`.
 - **Ask before running a stranger's workflow.** In the repository's settings, under Actions,
   require approval for all external contributors.
 - **`pull_request`, never `pull_request_target`.** The first gives a fork's code no secrets and

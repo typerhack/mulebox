@@ -2,9 +2,12 @@ name: ci
 
 # The repository's own gate, safe for a public repository: rules in docs/releasing.md.
 # tests/test_ci_workflow.py holds these to it.
-# - GitHub-hosted machines only. Do not add `self-hosted` here: a pull request brings its own
-#   copy of this file. While the repository is private it may have a runner for drills; remove
-#   it before the repository goes public (docs/releasing.md).
+# - The owner's own runs go to the node's isolated runner (`mulebox runner register
+#   --isolated`, a fresh confined container per job); a fork's pull request and every run
+#   another account started go to GitHub's machines. A pull request brings its own copy of
+#   this file, so this routing is a convenience: the runner itself refuses anyone else's run
+#   before any step (docs/releasing.md). `CI_RUNS_ON` (a repository variable, JSON) moves the
+#   owner's runs elsewhere, such as `["ubuntu-24.04"]`, with no code change.
 # - `pull_request`, never `pull_request_target`, so a fork's code gets no secrets.
 # - Read-only token, not stored in the checkout; actions pinned to a full commit.
 # - A change to docs alone runs nothing (paths-ignore below, the user's call, 2026-11-11).
@@ -37,7 +40,13 @@ concurrency:
 jobs:
   test:
     name: test (Python ${{ matrix.python }})
-    runs-on: ubuntu-24.04
+    # The owner's own runs on the node's isolated runner, every other run on GitHub's machines.
+    runs-on: >-
+      ${{ github.triggering_actor == github.repository_owner
+      && (github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name == github.repository)
+      && fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox-ci"]')
+      || 'ubuntu-24.04' }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -62,7 +71,13 @@ jobs:
 
   web:
     name: web (dashboard front end)
-    runs-on: ubuntu-24.04
+    # The owner's own runs on the node's isolated runner, every other run on GitHub's machines.
+    runs-on: >-
+      ${{ github.triggering_actor == github.repository_owner
+      && (github.event_name != 'pull_request'
+      || github.event.pull_request.head.repo.full_name == github.repository)
+      && fromJSON(vars.CI_RUNS_ON || '["self-hosted","Linux","X64","mulebox-ci"]')
+      || 'ubuntu-24.04' }}
     timeout-minutes: 15
     defaults:
       run:

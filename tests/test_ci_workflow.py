@@ -1,7 +1,8 @@
 """The repository's workflow stays safe for a public repository, and on the minimum Python.
 
 This keeps honest edits honest. It cannot stop a hostile pull request, which can change this
-test too: that protection is having no self-hosted runner at all (docs/releasing.md).
+test too: that protection is the runner's own, an isolated runner that refuses anyone else's
+run before any step and runs each job in a fresh container (docs/releasing.md).
 """
 
 import importlib.util
@@ -31,13 +32,24 @@ def test_there_is_a_workflow():
     assert WORKFLOWS
 
 
-def test_only_github_hosted_machines():
+OWNER_ROUTE = (
+    "${{ github.triggering_actor == github.repository_owner "
+    "&& (github.event_name != 'pull_request' "
+    "|| github.event.pull_request.head.repo.full_name == github.repository) "
+    "&& fromJSON(vars.CI_RUNS_ON || '[\"self-hosted\",\"Linux\",\"X64\",\"mulebox-ci\"]') "
+    "|| 'ubuntu-24.04' }}")
+
+
+def test_self_hosted_only_for_the_owners_own_runs():
+    """A GitHub machine, or exactly the route that sends a fork's pull request and any other
+    account's run there; the release never runs on the node."""
     for path in WORKFLOWS:
-        assert "self-hosted" not in yaml.safe_dump(load(path)["jobs"]), path
-        for job in load(path)["jobs"].values():
-            machines = job.get("strategy", {}).get("matrix", {}).get("os", [job["runs-on"]])
-            for machine in machines:
-                assert re.fullmatch(r"(ubuntu|macos)-[\d.]+", machine), path  # no ${{ }} either
+        for name, job in load(path)["jobs"].items():
+            machine = job["runs-on"]
+            if path.name == "release.yml" or "self-hosted" not in str(machine):
+                assert re.fullmatch(r"(ubuntu|macos)-[\d.]+", machine), (path, name)
+            else:
+                assert machine == OWNER_ROUTE, (path, name)
 
 
 def test_no_trigger_gives_a_fork_secrets_or_write_access():
