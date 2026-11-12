@@ -28,6 +28,7 @@ from typing import Any
 from mulebox.common.disk import usage_by_device as disk_usage
 from mulebox.common.host import Host, LinuxHost, for_platform
 from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, parse_swap, read
+from mulebox.services.manager import for_platform
 from mulebox.worker import cgroups, darwin_jobs
 from mulebox.worker.darwin_exec import RECORDS
 from mulebox.worker.docker_stats import Engine
@@ -51,10 +52,11 @@ def jobs_memory(containers: list[str], runners: list[str], root: Path = cgroups.
 
 def mac_jobs_memory(containers: list[str], runners: list[str], records: Path,
                     listing: Callable[[], Any] = darwin_jobs.processes,
-                    engine: Any = None) -> int | None:
+                    engine: Any = None, runner_group: Callable[[str], int | None] | None = None
+                    ) -> int | None:
     """The same on a Mac: the resident memory of the job process groups the worker recorded
-    (worker/darwin_exec.py), and the engine's numbers for `containers`. None when either cannot be
-    read."""
+    (worker/darwin_exec.py) and of the launchd agents of `runners` (services/launchd_runners.py),
+    and the engine's numbers for `containers`. None when either cannot be read."""
     table = listing()
     if table is None:
         return None
@@ -64,6 +66,9 @@ def mac_jobs_memory(containers: list[str], runners: list[str], records: Path,
             pgids.add(int(json.loads(path.read_text(encoding="utf-8"))["pgid"]))
         except (OSError, ValueError, KeyError, TypeError):
             continue
+    if runners:
+        group_of = runner_group or for_platform("darwin").runner_group
+        pgids.update(g for name in runners if (g := group_of(name)) is not None)
     total = darwin_jobs.group_memory(pgids, table)
     engine = engine or Engine()
     for container in containers:

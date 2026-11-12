@@ -20,7 +20,8 @@ from mulebox.common import package_cache
 from mulebox.common.config_reader import NAME_RE
 from mulebox.runners import layout
 from mulebox.runners.manage import Machine, RunnerError
-from mulebox.runners.names import RunnerUsageError, unit_name
+from mulebox.runners.names import RunnerUsageError
+from mulebox.services.base import ServiceError
 from mulebox.worker import caches
 
 ALL = tuple(package_cache.CAPABILITIES)
@@ -49,8 +50,8 @@ def share(m: Machine, name: str, project: str | None, tools: Sequence[str] = ())
     layout.set_env(m.paths, folder, env, drop=_OWN)
     meta = layout.read_meta(folder)
     layout.write_meta(m.paths, folder, {**meta, "caches_of": project})
-    proc = m.systemctl(["systemctl", "--user", "restart", unit_name(name)])
-    if proc.returncode != 0:
-        raise RunnerError(f"`systemctl --user restart {unit_name(name)}` failed: "
-                          f"{(proc.stderr or '').strip()[-500:]}; the settings are written")
+    try:
+        m.services.runner_restart(name)
+    except ServiceError as exc:
+        raise RunnerError(f"{exc}; the settings are written") from exc
     return env

@@ -7,7 +7,8 @@ import pytest
 
 from mulebox.common.protocol import JobState, MessageType, Outcome
 from mulebox.runners import hooks, reservation_file
-from mulebox.runners.supervise import GONE_S, SUPERVISE_S, Supervisor, runner_alive
+from mulebox.runners.supervise import (GONE_S, SUPERVISE_S, Supervisor, runner_alive,
+                                       runner_alive_ps)
 from mulebox.worker.agent import Agent
 from mulebox.worker.executor import SubprocessExecutor
 from mulebox.worker.link import LinkError, request
@@ -183,3 +184,12 @@ def test_a_heartbeat_carries_the_runner_jobs_cpu_and_step(gh_env, link, paths, s
     supervisor.tick(T0 + SUPERVISE_S, link.call)
     activity = store.get_job(job_id)["activity"]
     assert activity == {"job_cpu_pct": 200.0, "step": "Run pnpm check"}
+
+
+def test_runner_alive_on_a_mac_reads_the_arguments_from_ps(paths):
+    folder = paths.runners / RUNNER
+    worker = f"{folder}/bin/Runner.Worker spawnclient 115 118"
+    assert runner_alive_ps(folder, lambda: ["/sbin/launchd", worker]) is True
+    assert runner_alive_ps(paths.runners / f"{RUNNER}-2", lambda: [worker]) is False
+    assert runner_alive_ps(folder, lambda: [f"{folder}/bin/Runner.Listener run"]) is False
+    assert runner_alive_ps(folder, lambda: None) is False  # seen as nothing, as without /proc

@@ -15,13 +15,12 @@ Every file is written to a temporary name in the same folder and renamed into pl
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
 from mulebox.common import safefile
 from mulebox.common.safepath import ensure_dir
-from mulebox.runners.names import RunnerUsageError, check_name
+from mulebox.runners.names import check_name
 from mulebox.worker.paths import NodePaths
 
 HOOKS_DIR = "mulebox-hooks"
@@ -49,21 +48,10 @@ esac
 while kill -0 "$PPID" 2>/dev/null; do sleep 2; done
 exit 1
 """
-# The unit template (install/systemd/mulebox-runner@.service) runs %h/.mulebox/runners/%i.
-UNIT_RUNNERS = Path(".mulebox") / "runners"
 
 
 def runner_dir(paths: NodePaths, name: str) -> Path:
     return paths.runners / check_name(name)
-
-
-def check_unit_root(paths: NodePaths, home: Path | None = None) -> None:
-    """The unit template only knows ~/.mulebox/runners; refuse another runners root."""
-    expected = Path(os.path.realpath((home or Path.home()) / UNIT_RUNNERS))
-    if paths.runners != expected:
-        raise RunnerUsageError(
-            f"the runners root is {paths.runners}, but mulebox-runner@.service runs runners "
-            f"from {expected}; set roots.runners to {expected} in node.toml")
 
 
 def write_file(paths: NodePaths, path: Path, text: str, mode: int = 0o640) -> None:

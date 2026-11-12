@@ -728,7 +728,14 @@ by Sol before the next starts (the user's ask).
       1.8.2, from Sol's review: exited children's CPU counted (`ps -S`), one `ps` a round, the
       kernel's host port taken once, 32-bit tick counters unwrapped, the engine of the docker
       context in use. Open: the readings of a real Mac node on the dashboard.
-- [ ] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
+- [~] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
+      Built 2026-11-12 (1.9.0): runners are services through `mulebox/services/` on both systems
+      (`runner_start|stop|restart|state|freeze|boost|group`), on a Mac the agent
+      `mulebox-runner-<name>` (`services/launchd_runners.py`); the `osx-<arch>` download and its
+      checksum; whether a run is alive from `ps`; its CPU and memory from the agent's process group
+      and the engine; pause as SIGSTOP of that group. `runner register` still refuses a public
+      repository. Tested against a stand-in launchctl, with pause on real process groups of this
+      Mac. Open: a real runner on a Mac node taking a real CI run.
 - [ ] M21.5 CI runs the suite on macOS too.
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 

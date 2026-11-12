@@ -99,8 +99,8 @@ def test_bad_token_refused_without_echo(machine):
 
 
 def test_runners_root_must_match_the_unit_template(machine, tmp_path):
-    machine.home = tmp_path / "elsewhere"
-    with pytest.raises(RunnerUsageError, match="roots.runners"):
+    machine.services.home = tmp_path / "elsewhere"
+    with pytest.raises(RunnerError, match="roots.runners"):
         add(machine)
 
 
@@ -122,7 +122,7 @@ def test_list_shows_service_state_and_busy(machine, paths):
     (paths.runners / NAME / layout.RESERVATION_FILE).write_text("job_x")
     (paths.runners / ".tmp-leftover").mkdir()
     [row] = manage.list_runners(machine)
-    assert (row.name, row.repo, row.state, row.busy) == (NAME, REPO, "active", True)
+    assert (row.name, row.repo, row.state, row.busy) == (NAME, REPO, "running", True)
 
 
 def test_find_by_repo(machine):

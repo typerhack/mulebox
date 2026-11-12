@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.9.0 - 2026-11-12 - minor
+- GitHub runners on a macOS node (M21.4): each is a launchd agent, `mulebox-runner-<name>`, which runs the runner's `run.sh` as the systemd template does (`RUNNER_MANUALLY_TRAP_SIG`, kept alive, 5 min to stop, `nice 5`), written by `services/launchd_runners.py`. `runner add` downloads the `osx-arm64` or `osx-x64` runner and checks it against its own checksum in the release notes.
+- A runner's service goes through `mulebox/services/` on both systems (`runner_check|start|stop|restart|state|freeze|boost|group`), so `runner add|list|remove|caches`, pause and boost, and the worker's supervision no longer call `systemctl` themselves; `runner list` says `running` or `stopped`. On Linux the same commands run as before.
+- On a Mac, whether a run is alive is read from `ps` (no /proc), its CPU from the agent's process group and the engine's numbers for its containers, its memory in the dashboard's jobs' memory too; pause stops the agent's group (SIGSTOP), and a stop or restart continues it first. A first process that leads no group of its own is never signalled as a group. Boost raises only the run's containers there.
+
 ## 1.8.2 - 2026-11-12 - patch
 - From Sol's review of 1.8.0 (M21.3): a job's CPU on a Mac counts its exited children (`ps -S` adds a reaped child's time to its parent), so a build of many short compiler runs no longer reads as idle; one `ps` listing serves every job of a round, with a 3 s limit, so a slow `ps` holds the worker loop up once rather than once a job.
 - The kernel's host port is taken once rather than at every sample, which added a reference to it each time; the 32-bit tick counters of each core are unwrapped, so a wrapping one no longer reads as an idle machine.

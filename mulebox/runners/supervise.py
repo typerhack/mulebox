@@ -9,8 +9,10 @@ gone for 60 s the reservation is released as `interrupted`. A granted reservatio
 output also go into its log from the runner's own files, every second (live_log.py). Pause and
 boost asked for a running reservation are applied to its runner each round (runner_controls.py).
 
-`runner_alive` reads `/proc/<pid>/cmdline` and `/proc/<pid>/cwd`; the proc root and the
-whole check are injectable, so this runs in tests on any system.
+`runner_alive` reads `/proc/<pid>/cmdline` and `/proc/<pid>/cwd`; a Mac has no /proc, so there
+`runner_alive_ps` reads the arguments of every process from one `ps` listing (a process's working
+folder is not in it, so a Worker started by a relative path is missed). The proc root, the listing
+and the whole check are injectable, so this runs in tests on any system.
 """
 
 from __future__ import annotations
@@ -20,6 +22,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from mulebox.common import command
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.log import get_logger
 from mulebox.common.mounts import is_within
@@ -98,6 +101,34 @@ def place_alive(runner_dir: Path) -> bool:
 
     name = place_container_name(runner_dir)
     return name is not None and place_container.running(Docker(), name)
+
+
+def ps_commands() -> list[str] | None:
+    """The argument line of every process, from `ps`; None when it cannot be had."""
+    try:
+        done = command.run(["ps", "-A", "-ww", "-o", "command="], timeout_s=5)
+    except command.CommandError:
+        return None
+    return done.stdout.splitlines() if done.returncode == 0 else None
+
+
+def runner_alive_ps(runner_dir: Path,
+                    listing: Callable[[], list[str] | None] = ps_commands) -> bool:
+    """True if a `Runner.Worker` process runs from `runner_dir`, by its arguments. A failed
+    listing sees nothing, as an unreadable /proc does: only 60 s of it releases a reservation."""
+    lines = listing() or []
+    folders = {Path(os.path.normpath(runner_dir)), Path(os.path.realpath(runner_dir))}
+    for line in lines:
+        args = line.split()
+        if any(Path(arg).name in WORKER_NAMES and any(_under(arg, f) for f in folders)
+               for arg in args):
+            return True
+    return False
+
+
+def alive_for_platform() -> Callable[[Path], bool]:
+    """`/proc` where the machine has one (Linux), else `ps` (macOS)."""
+    return runner_alive if PROC_ROOT.is_dir() else runner_alive_ps
 
 
 class Supervisor:

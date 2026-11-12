@@ -1,5 +1,6 @@
 """A runner job's CPU, from its service's control group and its compose containers."""
 
+import time
 from pathlib import Path
 
 from mulebox.runners import runner_meter
@@ -101,3 +102,26 @@ def test_an_isolated_runner_is_read_from_its_container(tmp_path, monkeypatch):
     assert runner_meter.runner_reading("ci", None, places) == {"runner": 12.5}
     assert len(asked) == 1  # the id is asked once per container
     assert runner_meter.runner_reading("other", None, places) is None
+def test_on_a_mac_the_runner_is_its_agents_process_group_and_its_containers():
+    class Services:
+        def runner_group(self, runner):
+            return 500 if runner == "r1" else None
+
+    class Known:
+        def of(self, runner):
+            return []
+
+    table = [(500, 500, 2.0, 1024), (501, 500, 3.0, 1024), (600, 600, 9.0, 1)]
+    read = runner_meter.DarwinRunnerReading(Known(), Services(), lambda: table)
+    first = read("r1")
+    for _ in range(100):  # the engine is asked beside the loop: wait for its first answer
+        if first is not None:
+            break
+        time.sleep(0.02)
+        first = read("r1")
+    assert first == {"unit:500": 2.0, "unit:501": 3.0}
+    assert read("r2") is None  # no agent running: unknown
+    mac = RunnerMeter.for_platform(Known(), Services(), platform="darwin")
+    assert isinstance(mac.read, runner_meter.DarwinRunnerReading)
+    assert not isinstance(RunnerMeter.for_platform(Known(), Services(), "linux").read,
+                          runner_meter.DarwinRunnerReading)

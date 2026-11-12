@@ -1,9 +1,10 @@
 """The GitHub Actions runner package: find the latest release, download, verify, extract.
 
 - `latest_release(arch)`: asks `api.github.com/repos/actions/runner/releases/latest`
-  (no token needed) and picks the `actions-runner-linux-<arch>-<version>.tar.gz` asset.
-  Its SHA-256 comes from the release body, between `<!-- BEGIN SHA linux-<arch> -->` and
-  `<!-- END SHA linux-<arch> -->`; a release without that checksum is refused.
+  (no token needed) and picks the `actions-runner-<os>-<arch>-<version>.tar.gz` asset, where
+  `<os>` is `linux`, or `osx` on a Mac. Its SHA-256 comes from the release body, between
+  `<!-- BEGIN SHA <os>-<arch> -->` and `<!-- END SHA <os>-<arch> -->`; a release without that
+  checksum is refused.
 - `fetch_verified(paths, release)`: the tarball, cached as
   `<cache>/actions-runner/<asset>` and verified on every use; a cached file that no
   longer matches is removed and downloaded again. Downloads go to a temporary name and
@@ -32,6 +33,7 @@ API_HEADERS = {"Accept": "application/vnd.github+json", "X-GitHub-Api-Version": 
 DOWNLOAD_PREFIX = "https://github.com/actions/runner/releases/download/"
 CACHE_DIR = "actions-runner"
 ARCHES = ("x64", "arm64")
+SYSTEMS = {"linux": "linux", "darwin": "osx"}  # download.system_name() -> GitHub's name
 _VERSION_RE = re.compile(r"\d{1,4}\.\d{1,4}\.\d{1,4}")
 _SHA_RE = re.compile(r"[0-9a-f]{64}")
 
@@ -55,27 +57,36 @@ def _api_json(url: str) -> Any:
     return download.fetch_json(url, API_HEADERS)
 
 
-def body_sha(body: str, arch: str) -> str:
-    """The checksum between the release body's BEGIN/END SHA markers for linux-<arch>."""
-    key = re.escape(f"linux-{arch}")
+def build_name(arch: str, system: str = "linux") -> str:
+    """GitHub's name of a runner build, `linux-x64` or `osx-arm64`."""
+    if arch not in ARCHES:
+        raise ReleaseError(f"no runner build for {arch}; known: {', '.join(ARCHES)}")
+    if system not in SYSTEMS:
+        raise ReleaseError(f"no runner build for {system}; known: {', '.join(SYSTEMS)}")
+    return f"{SYSTEMS[system]}-{arch}"
+
+
+def body_sha(body: str, arch: str, system: str = "linux") -> str:
+    """The checksum between the release body's BEGIN/END SHA markers for that build."""
+    build = build_name(arch, system)
+    key = re.escape(build)
     match = re.search(rf"<!--\s*BEGIN SHA {key}\s*-->\s*([0-9A-Fa-f]{{64}})\s*"
                       rf"<!--\s*END SHA {key}\s*-->", body)
     if match is None:
-        raise ReleaseError(f"the runner release notes carry no SHA-256 for linux-{arch}")
+        raise ReleaseError(f"the runner release notes carry no SHA-256 for {build}")
     return match.group(1).lower()
 
 
-def parse_release(data: Any, arch: str) -> Release:
-    """Pick the linux-<arch> tarball and its checksum from a `releases/latest` reply."""
-    if arch not in ARCHES:
-        raise ReleaseError(f"no runner build for linux-{arch}; known: {', '.join(ARCHES)}")
+def parse_release(data: Any, arch: str, system: str = "linux") -> Release:
+    """Pick the tarball of this build and its checksum from a `releases/latest` reply."""
+    build = build_name(arch, system)
     if not isinstance(data, dict):
         raise ReleaseError("the runner release reply is not a JSON object")
     tag = data.get("tag_name")
     version = tag[1:] if isinstance(tag, str) and tag.startswith("v") else tag
     if not isinstance(version, str) or not _VERSION_RE.fullmatch(version):
         raise ReleaseError(f"the runner release has an unexpected tag {tag!r}")
-    asset = f"actions-runner-linux-{arch}-{version}.tar.gz"
+    asset = f"actions-runner-{build}-{version}.tar.gz"
     url = None
     for item in data.get("assets") or []:
         if isinstance(item, dict) and item.get("name") == asset:
@@ -83,13 +94,16 @@ def parse_release(data: Any, arch: str) -> Release:
     if not isinstance(url, str) or not url.startswith(DOWNLOAD_PREFIX):
         raise ReleaseError(f"runner release {version} has no download for {asset}")
     body = data.get("body")
-    return Release(version, asset, url, body_sha(body if isinstance(body, str) else "", arch))
+    return Release(version, asset, url,
+                   body_sha(body if isinstance(body, str) else "", arch, system))
 
 
-def latest_release(arch: str | None = None, fetch_json: FetchJson = _api_json) -> Release:
+def latest_release(arch: str | None = None, fetch_json: FetchJson = _api_json,
+                   system: str | None = None) -> Release:
+    """The latest runner for this machine's (or the given) CPU and system."""
     try:
         arch = arch or download.cpu_arch()
-        return parse_release(fetch_json(LATEST_URL), arch)
+        return parse_release(fetch_json(LATEST_URL), arch, system or download.system_name())
     except download.DownloadError as exc:
         raise ReleaseError(f"cannot look up the latest runner release: {exc}") from exc
 

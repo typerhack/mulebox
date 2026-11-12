@@ -11,7 +11,9 @@ from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.runners.place_keeper import PlaceKeeper
 from mulebox.runners.runner_controls import RunnerControls, RunnerUnit
 from mulebox.runners.runner_meter import CiContainers, PlaceGroups, RunnerMeter
-from mulebox.runners.supervise import Supervisor, place_container_name
+from mulebox.runners.supervise import Supervisor, alive_for_platform, place_container_name
+from mulebox.services.base import Manager
+from mulebox.services.manager import for_platform
 from mulebox.worker.agent import Agent
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor
@@ -23,20 +25,22 @@ LOG = get_logger("worker.serve")
 
 def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
           paths: NodePaths | None = None, stop: threading.Event | None = None,
-          docker: Docker | None = None) -> None:
+          docker: Docker | None = None, services: Manager | None = None) -> None:
     """Recovery first, then the claim loop until `stop` is set."""
     paths = paths or NodePaths.from_config(node.roots)
     stop = stop or threading.Event()
     ci = CiContainers(paths.runners, docker)
-    systemctl = getattr(executor, "systemctl", None)  # runners are services: systemd only
-    steer = (RunnerControls(RunnerUnit(systemctl), docker or Docker(), ci.of,
-                            place=lambda runner: place_container_name(paths.runners / runner))
-             if systemctl is not None else None)
+    services = services or for_platform()
+    steer = RunnerControls(RunnerUnit(services), docker or Docker(), ci.of,
+                           place=lambda runner: place_container_name(paths.runners / runner))
     agent = Agent(node, link, executor, paths, docker=docker,
-                  supervisor=Supervisor(node.name, paths.runners, redactor=lambda: StreamRedactor(
-                      secret_values(node.job_env)), meter=RunnerMeter(
-                      containers=ci, places=PlaceGroups(paths.runners, docker)),
-                      controls=steer))
+                  supervisor=Supervisor(node.name, paths.runners, alive=alive_for_platform(),
+                                        redactor=lambda: StreamRedactor(
+                                            secret_values(node.job_env)),
+                                        meter=RunnerMeter.for_platform(
+                                            ci, services,
+                                            places=PlaceGroups(paths.runners, docker)),
+                                        controls=steer))
     agent.recover()
     places = PlaceKeeper(node.name, link, paths)  # isolated runners: a container per CI job
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)

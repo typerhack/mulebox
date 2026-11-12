@@ -45,15 +45,25 @@ def test_parse_release_refuses_incomplete_releases(change):
 
 
 def test_unknown_arch_refused():
-    with pytest.raises(ReleaseError, match="linux-s390x"):
+    with pytest.raises(ReleaseError, match="s390x"):
         release.parse_release(release_json(SHA), "s390x")
+    with pytest.raises(ReleaseError, match="win32"):
+        release.parse_release(release_json(SHA), "x64", "win32")
 
 
 def test_latest_release_asks_the_releases_latest_endpoint():
     urls = []
-    found = release.latest_release("x64", lambda url: urls.append(url) or release_json(SHA))
+    found = release.latest_release("x64", lambda url: urls.append(url) or release_json(SHA),
+                                   system="linux")
     assert urls == ["https://api.github.com/repos/actions/runner/releases/latest"]
     assert found.sha256 == SHA
+
+
+def test_a_mac_gets_the_osx_build_and_its_own_checksum():
+    found = release.latest_release("x64", lambda url: release_json(SHA), system="darwin")
+    assert found.asset == "actions-runner-osx-x64-2.321.0.tar.gz"
+    assert found.sha256 == "2" * 64  # from the osx-x64 markers, not linux-x64's
+    assert found.url.endswith("/v2.321.0/actions-runner-osx-x64-2.321.0.tar.gz")
 
 
 def test_fetch_verified_downloads_and_caches(paths, fakes):

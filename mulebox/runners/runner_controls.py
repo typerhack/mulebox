@@ -1,10 +1,12 @@
 """Pause and boost of a GitHub run on its runner, as the owner asked (coordinator/job_control.py).
 
-A run does not live in a mulebox unit: it runs in the runner's own service,
-`mulebox-runner@<name>.service`, and its Compose containers run in Docker's groups, found by their
-Compose folder inside the runner's `_work` (runner_meter.CiContainers). So pausing freezes that
-service, listener and all, and pauses the containers; boosting raises the service's CPU and disk
-weight and the containers' shares. The rest is the job's own code (worker/controls.JobControls).
+A run does not live in a mulebox unit: it runs in the runner's own service (services/: the unit
+`mulebox-runner@<name>.service` on Linux, the agent `mulebox-runner-<name>` on a Mac), and its
+Compose containers run in Docker's groups, found by their Compose folder inside the runner's
+`_work` (runner_meter.CiContainers). So pausing freezes that service, listener and all (systemd's
+freezer, or SIGSTOP to the agent's process group), and pauses the containers; boosting raises the
+service's CPU and disk weight (Linux only: on a Mac only root can raise a priority again) and the
+containers' shares. The rest is the job's own code (worker/controls.JobControls).
 
 A frozen listener stops answering GitHub, which may give up on the runner and fail the run if the
 freeze lasts long; the owner chose to have it anyway.
@@ -26,27 +28,25 @@ from typing import Any
 
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState
-from mulebox.runners.names import RunnerUsageError, unit_name
-from mulebox.worker.controls import BOOST_WEIGHT, JobControls, Wanted
+from mulebox.runners.names import RunnerUsageError, check_name
+from mulebox.services.base import Manager
+from mulebox.worker.controls import JobControls, Wanted
 
 LOG = get_logger("runners.controls")
-SERVICE_WEIGHT = 50  # the runner unit's own (machine/systemd/mulebox-runner@.service)
 _RUNNING = (JobState.STARTING, JobState.RUNNING)
 
 
 class RunnerUnit:
-    """The runner's service in the shape JobControls drives: `handle` is the unit's name."""
+    """The runner's service in the shape JobControls drives: `handle` is the runner's name."""
 
-    def __init__(self, systemctl: Callable[..., Any]) -> None:
-        self._systemctl = systemctl
+    def __init__(self, services: Manager) -> None:
+        self._services = services
 
     def freeze(self, handle: str, on: bool) -> None:
-        self._systemctl("freeze" if on else "thaw", handle)
+        self._services.runner_freeze(handle, on)
 
     def prioritize(self, handle: str, on: bool) -> None:
-        weight = BOOST_WEIGHT if on else SERVICE_WEIGHT
-        self._systemctl("set-property", "--runtime", handle, f"CPUWeight={weight}",
-                        f"IOWeight={weight}")
+        self._services.runner_boost(handle, on)
 
 
 class ContainerUnit:
@@ -86,7 +86,7 @@ class RunnerControls:
             if job.get("state") not in _RUNNING or not isinstance(runner, str):
                 continue
             try:
-                handle = unit_name(runner)
+                handle = check_name(runner)
             except RunnerUsageError:  # a name the runner tools would refuse: leave it alone
                 continue
             seen.add(job_id)

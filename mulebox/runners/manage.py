@@ -8,9 +8,10 @@ and no log line or error message is built from the token.
 
 `add`: refuse an existing folder, download and verify the runner (release.py), extract it
 into a hidden temporary folder and rename it to `<runners>/<name>`, run `config.sh`, write
-the hook scripts and `.env` lines, then enable and start `mulebox-runner@<name>.service`.
-A failure before the unit starts removes the folder again (through safepath).
-`remove`: stop and disable the unit, `config.sh remove`, remove the folder (safepath).
+the hook scripts and `.env` lines, then start the runner's service: the systemd unit
+`mulebox-runner@<name>.service` on Linux, the launchd agent `mulebox-runner-<name>` on a Mac
+(services/). A failure before the service starts removes the folder again (through safepath).
+`remove`: stop and disable the service, `config.sh remove`, remove the folder (safepath).
 """
 
 from __future__ import annotations
@@ -27,23 +28,16 @@ from mulebox.common.ids import new_ulid
 from mulebox.common.redact import Redactor
 from mulebox.common.safepath import remove_tree
 from mulebox.runners import layout, release
-from mulebox.runners.names import (
-    RunnerUsageError,
-    check_name,
-    check_repo,
-    repo_url,
-    unit_name,
-)
+from mulebox.runners.names import RunnerUsageError, check_name, check_repo, repo_url
+from mulebox.services.base import Manager, ServiceError
+from mulebox.services.manager import for_platform
 from mulebox.worker.paths import NodePaths
-from mulebox.worker.systemd import default_runner
 
 TOKEN_ENV = "ACTIONS_RUNNER_INPUT_TOKEN"
 CONFIG_TIMEOUT_S = 300
 OUTPUT_CHARS = 2000
-TEMPLATE = "mulebox-runner@.service"
 
 ConfigRun = Callable[[Sequence[str], Path, Mapping[str, str]], subprocess.CompletedProcess]
-Systemctl = Callable[[Sequence[str]], subprocess.CompletedProcess]
 Say = Callable[[str], None]
 
 
@@ -70,10 +64,9 @@ class Machine:
     paths: NodePaths
     node: str
     config_run: ConfigRun = run_config
-    systemctl: Systemctl = default_runner
-    home: Path = field(default_factory=Path.home)
-    unit_dir: Path | None = None  # default: <home>/.config/systemd/user
+    services: Manager = field(default_factory=for_platform)
     arch: str | None = None
+    system: str | None = None  # `linux` or `darwin`; default this machine's
     fetch_json: release.FetchJson | None = None
     fetch_file: release.FetchFile | None = None
     say: Say = print
@@ -99,10 +92,6 @@ def _config(m: Machine, argv: list[str], folder: Path, token: str, what: str) ->
                           f"{redactor.redact(output) or 'no output'}")
 
 
-def _systemctl(m: Machine, *args: str) -> subprocess.CompletedProcess:
-    return m.systemctl(["systemctl", "--user", *args])
-
-
 def _check_token(token: str) -> str:
     if not isinstance(token, str) or not token or len(token) > 1024 or any(
             c.isspace() or not c.isprintable() for c in token):
@@ -112,7 +101,7 @@ def _check_token(token: str) -> str:
 
 def _download(m: Machine, folder: Path) -> str:
     kwargs = {"fetch_json": m.fetch_json} if m.fetch_json else {}
-    found = release.latest_release(m.arch, **kwargs)
+    found = release.latest_release(m.arch, system=m.system, **kwargs)
     m.say(f"Runner {found.version} ({found.asset})")
     file_kwargs = {"fetch": m.fetch_file} if m.fetch_file else {}
     tarball = release.fetch_verified(m.paths, found, **file_kwargs)
@@ -135,10 +124,10 @@ def add(m: Machine, repo: str, token: str, *, name: str, labels: Sequence[str],
     check_repo(repo)
     _check_token(token)
     folder = layout.runner_dir(m.paths, name)
-    layout.check_unit_root(m.paths, m.home)
-    template = (m.unit_dir or m.home / ".config" / "systemd" / "user") / TEMPLATE
-    if not template.is_file():
-        raise RunnerError(f"{template} is missing; rerun the mulebox installer")
+    try:
+        m.services.runner_check(m.paths.runners)
+    except ServiceError as exc:
+        raise RunnerError(str(exc)) from exc
     if folder.exists() or folder.is_symlink():
         raise RunnerUsageError(f"runner {name} already exists in {folder}; "
                                f"remove it first with `mulebox runner remove {name}`")
@@ -153,14 +142,13 @@ def add(m: Machine, repo: str, token: str, *, name: str, labels: Sequence[str],
     except BaseException:
         remove_tree(folder, m.paths.roots)
         raise
-    unit = unit_name(name)
-    for args in (("daemon-reload",), ("enable", "--now", unit)):
-        proc = _systemctl(m, *args)
-        if proc.returncode != 0:
-            raise RunnerError(f"`systemctl --user {' '.join(args)}` failed: "
-                              f"{(proc.stderr or '').strip()[-500:]}. The runner is "
-                              f"registered; start it with `systemctl --user enable --now {unit}`")
-    m.say(f"Started {unit}")
+    try:
+        m.services.runner_start(name, folder)
+    except ServiceError as exc:
+        raise RunnerError(f"{exc}. The runner is registered but its service did not start; "
+                          f"remove it with `mulebox runner remove {name}` and add it "
+                          "again") from exc
+    m.say(f"Started the {m.services.kind} service of runner {name}")
     return folder
 
 
@@ -177,14 +165,13 @@ def list_runners(m: Machine) -> list[RunnerInfo]:
     for folder in layout.runner_folders(m.paths):
         meta = layout.read_meta(folder)
         try:
-            unit = unit_name(folder.name)
+            state = m.services.runner_state(check_name(folder.name))
         except RunnerUsageError:
             continue  # not a folder runner add could have made
+        except ServiceError as exc:
+            state = f"unknown ({exc})"
         if meta.get("isolated") is True:  # no service: a container per job (place.py)
             state = "isolated"
-        else:
-            proc = _systemctl(m, "is-active", unit)
-            state = (proc.stdout or "").strip() or "unknown"
         found.append(RunnerInfo(folder.name, str(meta.get("repo", "-")), state,
                                 layout.is_busy(folder)))
     return found
@@ -216,16 +203,13 @@ def remove(m: Machine, name: str, token: str) -> None:
     folder = layout.runner_dir(m.paths, name)
     if not folder.is_dir() or folder.is_symlink():
         raise RunnerUsageError(f"no runner {name} in {m.paths.runners}")
-    unit = unit_name(name)
-    proc = _systemctl(m, "disable", "--now", unit)
-    if proc.returncode != 0:
-        raise RunnerError(f"`systemctl --user disable --now {unit}` failed: "
-                          f"{(proc.stderr or '').strip()[-500:]}")
-    m.say(f"Stopped {unit}")
+    try:
+        m.services.runner_stop(name)
+    except ServiceError as exc:
+        raise RunnerError(str(exc)) from exc
+    m.say(f"Stopped the service of runner {name}")
     if (folder / ".runner").exists():
         _config(m, remove_argv(folder), folder, token, "config.sh remove")
         m.say(f"Unregistered {name} from GitHub")
     remove_tree(folder, m.paths.roots)
     m.say(f"Removed {folder}")
-    # A runner stopped mid-listen can leave its unit `failed`, which systemd would go on listing.
-    _systemctl(m, "reset-failed", unit)

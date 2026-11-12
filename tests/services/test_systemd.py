@@ -86,3 +86,34 @@ def test_the_boot_note_is_about_lingering(tmp_path, linger, enable, note):
     assert (got is not None) == note
     if note:
         assert "sudo loginctl enable-linger" in got
+
+
+def test_a_runner_is_an_instance_of_the_template(tmp_path):
+    fake = FakeCommands(active("mulebox-runner@app-1.service"))
+    manager = SystemdServices(home=tmp_path, run=fake)
+    with pytest.raises(ServiceError, match="rerun the mulebox installer"):
+        manager.runner_check(tmp_path / ".mulebox" / "runners")
+    (tmp_path / ".config/systemd/user").mkdir(parents=True)
+    (tmp_path / ".config/systemd/user/mulebox-runner@.service").write_text("")
+    (tmp_path / ".mulebox" / "runners").mkdir(parents=True)
+    manager.runner_check(tmp_path / ".mulebox" / "runners")
+    with pytest.raises(ServiceError, match="roots.runners"):
+        manager.runner_check(tmp_path / "elsewhere")
+    manager.runner_start("app-1", tmp_path / ".mulebox" / "runners" / "app-1")
+    assert manager.runner_state("app-1") == RUNNING and manager.runner_state("app-2") == STOPPED
+    manager.runner_freeze("app-1", True)
+    manager.runner_boost("app-1", True)
+    manager.runner_boost("app-1", False)
+    manager.runner_restart("app-1")
+    manager.runner_stop("app-1")
+    unit = "mulebox-runner@app-1.service"
+    assert [c for c in fake.joined() if "is-active" not in c] == [
+        "systemctl --user daemon-reload", f"systemctl --user enable --now {unit}",
+        f"systemctl --user freeze {unit}",
+        f"systemctl --user set-property --runtime {unit} CPUWeight=10000 IOWeight=10000",
+        f"systemctl --user set-property --runtime {unit} CPUWeight=50 IOWeight=50",
+        f"systemctl --user restart {unit}", f"systemctl --user disable --now {unit}",
+        f"systemctl --user reset-failed {unit}"]
+    assert manager.runner_group("app-1") is None
+    with pytest.raises(ServiceError, match="not a runner name"):
+        manager.runner_start("a b", tmp_path)

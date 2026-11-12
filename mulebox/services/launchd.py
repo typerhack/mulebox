@@ -11,7 +11,8 @@ with nobody logged in runs no agents, so a node that must come back after a rebo
 login (boot_note). `KeepAlive` with `SuccessfulExit = false` is systemd's `Restart=on-failure`.
 
 launchd starts agents with a bare PATH, so each gets the places Homebrew, Docker and mulebox put
-their commands, then the PATH the installer ran with.
+their commands, then the PATH the installer ran with. GitHub runners are agents too, one each
+(launchd_runners.py).
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from typing import Any
 from mulebox.common import command
 from mulebox.services.base import MISSING, PREFIX, RUNNING, SERVICES, STOPPED, ServiceError, \
     Say, check_name, wanted
+from mulebox.services.launchd_runners import LaunchdRunners
 
 THROTTLE_S = 5  # as RestartSec=5 in the systemd units
 GONE_WAIT_S = 10.0
@@ -45,8 +47,12 @@ def search_path(home: Path, inherited: str) -> str:
     return ":".join(dict.fromkeys(p for p in parts if p))
 
 
+def logs_dir(home: Path) -> Path:
+    return home / "Library" / "Logs" / "mulebox"
+
+
 def definition(name: str, home: Path, path: str) -> dict[str, Any]:
-    logs = home / "Library" / "Logs" / "mulebox"
+    logs = logs_dir(home)
     plist: dict[str, Any] = {
         "Label": label(name),
         "ProgramArguments": [str(home / ".mulebox" / "bin" / "mulebox"), name, "serve"],
@@ -64,7 +70,7 @@ def definition(name: str, home: Path, path: str) -> dict[str, Any]:
     return plist
 
 
-class LaunchdServices:
+class LaunchdServices(LaunchdRunners):
     kind = "launchd"
 
     def __init__(self, home: Path | None = None, run: command.Runner = command.run,
@@ -97,53 +103,94 @@ class LaunchdServices:
             raise ServiceError(f"`launchctl {' '.join(args)}` failed: "
                                f"{(done.stderr or done.stdout or '').strip()}")
 
-    def plist_path(self, name: str) -> Path:
-        return self.agent_dir / f"{label(name)}.plist"
+    def _env_path(self) -> str:
+        return search_path(self.home, self.path)
 
-    def _target(self, name: str, domain: str | None = None) -> str:
-        return f"{domain or self.domain}/{label(name)}"
+    def _logs(self) -> Path:
+        return logs_dir(self.home)
+
+    def plist_path(self, name: str) -> Path:
+        return self._plist(label(name))
+
+    def _plist(self, lbl: str) -> Path:
+        return self.agent_dir / f"{lbl}.plist"
+
+    def _target(self, lbl: str, domain: str | None = None) -> str:
+        return f"{domain or self.domain}/{lbl}"
 
     def _domains(self) -> tuple[str, str]:
         return f"gui/{self.uid}", f"user/{self.uid}"
 
-    def _where(self, name: str) -> dict[str, str]:
+    def _where(self, lbl: str) -> dict[str, str]:
         """`launchctl print` of the agent in each domain it is loaded in. Both are looked at: an
         agent loaded over ssh with nobody at the screen stays in `user/` after someone logs in."""
         found = {}
         for domain in self._domains():
-            done = self._launchctl("print", self._target(name, domain))
+            done = self._launchctl("print", self._target(lbl, domain))
             if done.returncode == 0:
                 found[domain] = done.stdout or ""
         return found
 
-    def _loaded(self, name: str) -> str | None:
+    def _loaded(self, lbl: str) -> str | None:
         """`launchctl print` of a loaded agent, or None when it is not loaded anywhere."""
-        return next(iter(self._where(name).values()), None)
+        return next(iter(self._where(lbl).values()), None)
 
-    def _write(self, name: str) -> None:
+    def _write(self, lbl: str, plist: dict[str, Any]) -> None:
         self.agent_dir.mkdir(parents=True, exist_ok=True)
-        (self.home / "Library" / "Logs" / "mulebox").mkdir(parents=True, exist_ok=True)
-        draft = self.agent_dir / f"{label(name)}.plist.new.{os.getpid()}"
-        draft.write_bytes(plistlib.dumps(definition(name, self.home,
-                                                    search_path(self.home, self.path))))
+        self._logs().mkdir(parents=True, exist_ok=True)
+        draft = self.agent_dir / f"{lbl}.plist.new.{os.getpid()}"
+        draft.write_bytes(plistlib.dumps(plist))
         draft.chmod(0o644)
-        draft.replace(self.plist_path(name))
+        draft.replace(self._plist(lbl))
 
-    def _unload(self, name: str) -> None:
-        loaded = self._where(name)
+    def _unload(self, lbl: str, wait_s: float = GONE_WAIT_S) -> None:
+        loaded = self._where(lbl)
         if not loaded:
             return
         for domain in loaded:
-            self._launchctl("bootout", self._target(name, domain))
-        end = self._clock() + GONE_WAIT_S
-        while self._loaded(name) is not None:
+            self._launchctl("bootout", self._target(lbl, domain))
+        end = self._clock() + wait_s
+        while self._loaded(lbl) is not None:
             if self._clock() >= end:
-                raise ServiceError(f"{label(name)} did not stop within {GONE_WAIT_S:.0f} s")
+                raise ServiceError(f"{lbl} did not stop within {wait_s:.0f} s")
             self._sleep(0.2)
 
-    def _load(self, name: str) -> None:
-        self._must("enable", self._target(name))
-        self._must("bootstrap", self.domain, str(self.plist_path(name)))
+    def _load(self, lbl: str) -> None:
+        self._must("enable", self._target(lbl))
+        self._must("bootstrap", self.domain, str(self._plist(lbl)))
+
+    def _reload(self, lbl: str, plist: dict[str, Any]) -> bool:
+        """Write the definition and load it afresh; True if it was loaded before."""
+        was_loaded = self._loaded(lbl) is not None
+        self._write(lbl, plist)
+        self._unload(lbl)  # a loaded agent keeps its old definition until it is reloaded
+        self._load(lbl)
+        return was_loaded
+
+    def _restart(self, lbl: str) -> None:
+        loaded = self._where(lbl)
+        if not loaded:
+            if not self._plist(lbl).is_file():
+                raise ServiceError(f"{lbl} is not installed on this machine")
+            self._load(lbl)
+            return
+        for domain in loaded:
+            self._must("kickstart", "-k", self._target(lbl, domain))
+
+    def _stop(self, lbl: str, wait_s: float = GONE_WAIT_S) -> None:
+        """Stop it wherever it is loaded, and keep it from loading in either domain."""
+        self._unload(lbl, wait_s)
+        self._must("disable", self._target(lbl))
+        for domain in self._domains():
+            if domain != self.domain:
+                self._launchctl("disable", self._target(lbl, domain))  # may not exist now
+
+    def _state(self, lbl: str) -> str:
+        shown = self._loaded(lbl)
+        if shown is None:
+            return STOPPED if self._plist(lbl).is_file() else MISSING
+        lines = (line.strip() for line in shown.splitlines())
+        return RUNNING if "state = running" in lines else STOPPED
 
     def install(self, roles: Sequence[str], say: Say) -> None:
         runs = wanted(roles)
@@ -151,40 +198,21 @@ class LaunchdServices:
             if name not in runs and self.plist_path(name).is_file():
                 self.stop(name)  # a role this node no longer has
         for name in runs:
-            was_running = self._loaded(name) is not None
-            self._write(name)
-            self._unload(name)  # a loaded agent keeps its old definition until it is reloaded
-            self._load(name)
+            plist = definition(name, self.home, self._env_path())
+            was_running = self._reload(label(name), plist)
             say(f"{'Restarted' if was_running else 'Started'} {label(name)} ({self.domain}).")
 
     def restart(self, name: str) -> None:
-        loaded = self._where(name)
-        if not loaded:
-            if not self.plist_path(name).is_file():
-                raise ServiceError(f"{label(name)} is not installed on this machine")
-            self._load(name)
-            return
-        for domain in loaded:
-            self._must("kickstart", "-k", self._target(name, domain))
+        self._restart(label(name))
 
     def stop(self, name: str) -> None:
-        """Stop it wherever it is loaded, and keep it from loading in either domain."""
-        self._unload(name)
-        self._must("disable", self._target(name))
-        for domain in self._domains():
-            if domain != self.domain:
-                self._launchctl("disable", self._target(name, domain))  # may not exist now
+        self._stop(label(name))
 
     def state(self, name: str) -> str:
-        shown = self._loaded(name)
-        if shown is None:
-            return STOPPED if self.plist_path(name).is_file() else MISSING
-        lines = (line.strip() for line in shown.splitlines())
-        return RUNNING if "state = running" in lines else STOPPED
+        return self._state(label(name))
 
     def logs_argv(self, names: Sequence[str], follow: bool) -> list[str]:
-        files = [str(self.home / "Library" / "Logs" / "mulebox" / f"{check_name(n)}.log")
-                 for n in names]
+        files = [str(logs_dir(self.home) / f"{check_name(n)}.log") for n in names]
         return ["tail", "-n", "200", *(["-F"] if follow else []), *files]
 
     def detach(self, name: str, argv: Sequence[str]) -> None:

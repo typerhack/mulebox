@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from mulebox.runners.manage import Machine
+from mulebox.services.systemd import SystemdServices
 from mulebox.worker.paths import NodePaths
 
 TOKEN = "AABBCCDDEEFFGGHHIIJJKKLLMM0"  # shaped like a registration token
@@ -125,8 +126,7 @@ class Fakes:
     def systemctl(self, argv):
         self.systemctl_calls.append(list(argv))
         code = self.systemctl_codes.get(argv[2], 0)
-        out = "active\n" if argv[2] == "is-active" else ""
-        return subprocess.CompletedProcess(argv, code, out, "unit failed" if code else "")
+        return subprocess.CompletedProcess(argv, code, "", "unit failed" if code else "")
 
 
 @pytest.fixture
@@ -136,6 +136,7 @@ def fakes(tarball):
 
 @pytest.fixture
 def machine(paths, home, fakes):
-    return Machine(paths, "build-1", config_run=fakes.config_run, systemctl=fakes.systemctl,
-                   home=home, arch="x64", fetch_json=fakes.fetch_json,
-                   fetch_file=fakes.fetch_file, say=fakes.said.append)
+    return Machine(paths, "build-1", config_run=fakes.config_run,
+                   services=SystemdServices(home=home, run=fakes.systemctl), arch="x64",
+                   system="linux", fetch_json=fakes.fetch_json, fetch_file=fakes.fetch_file,
+                   say=fakes.said.append)

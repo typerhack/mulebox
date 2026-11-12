@@ -8,6 +8,10 @@ work there: a real CI job kept 8 cores busy while its card read 0.0 cores. So th
 whose Compose working folder (the label Compose puts on each) is inside the runner's `_work`
 folder count too. Docker is asked beside the worker loop (background.Polled), once a round.
 
+On a Mac there are no control groups: the runner's own processes are its launchd agent's process
+group, from one `ps` listing (worker/darwin_jobs.py, as for a job), and its containers' CPU comes
+from the engine's API, asked beside the loop.
+
 Not counted: a container started with plain `docker run`, which says nothing of where it came
 from. A container counts from its second reading, so one that just appeared never adds the CPU
 it used before it was seen. A first reading, or a runner group that cannot be read, gives None:
@@ -17,11 +21,13 @@ unknown, never zero.
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from mulebox.common.mounts import is_within
-from mulebox.worker import cgroups
+from mulebox.worker import cgroups, darwin_jobs
 from mulebox.worker.background import Polled
 from mulebox.worker.docker import Docker
 
@@ -109,7 +115,38 @@ def runner_reading(runner: str, containers: CiContainers | None = None,
     return reading
 
 
+class DarwinRunnerReading:
+    """`Reader` on a Mac: a job reader per runner (darwin_jobs.JobReader), its traffic left out,
+    as only CPU seconds are summed here."""
+
+    def __init__(self, containers: CiContainers, services: Any,
+                 listing: Callable[[], Any] = darwin_jobs.processes) -> None:
+        self._containers, self._services, self._listing = containers, services, listing
+        self._readers: dict[str, darwin_jobs.JobReader] = {}
+
+    def __call__(self, runner: str) -> Reading | None:
+        reader = self._readers.get(runner)
+        if reader is None:
+            stats = darwin_jobs.ContainerStats(lambda: self._containers.of(runner))
+            reader = self._readers[runner] = darwin_jobs.JobReader(
+                lambda: self._services.runner_group(runner), stats, self._listing)
+        reading = reader()
+        if reading is None:
+            return None
+        return {key: value for key, value in reading.items() if not key.startswith("net:")}
+
+
 class RunnerMeter:
+    @classmethod
+    def for_platform(cls, containers: CiContainers, services: Any,
+                     platform: str = sys.platform,
+                     places: PlaceGroups | None = None) -> "RunnerMeter":
+        """cgroups on Linux (and an isolated runner's container), the agent's process group and
+        the engine on a Mac."""
+        if platform == "darwin":
+            return cls(read=DarwinRunnerReading(containers, services), containers=containers)
+        return cls(containers=containers, places=places)
+
     def __init__(self, read: Reader | None = None, containers: CiContainers | None = None,
                  places: PlaceGroups | None = None) -> None:
         self.containers = containers

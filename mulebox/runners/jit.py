@@ -26,7 +26,7 @@ _SUFFIX = re.compile(r"[0-9a-z]{8}")
 
 def arch_label() -> str:
     """The label GitHub gives a runner on this machine's processor."""
-    return _ARCH_LABELS.get(download.linux_arch(), "X64")
+    return _ARCH_LABELS.get(download.cpu_arch(), "X64")
 
 
 @dataclass(frozen=True)

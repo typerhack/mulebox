@@ -34,7 +34,8 @@ gone for 60 s the worker releases it.
 - A waiting reservation can be moved in line (`job_control` `first|up|down|last`, the
   dashboard's arrows and three dots), and nothing else. A granted one can be paused, resumed,
   boosted and set back (`pause|resume|boost|normal`): the worker's supervisor freezes or thaws the
-  runner's service `mulebox-runner@<name>.service` and pauses its Compose containers (those whose
+  runner's service `mulebox-runner@<name>.service` (on a Mac stops or continues the process group
+  of its launchd agent, and boosts nothing of its own) and pauses its Compose containers (those whose
   Compose folder is in the runner's `_work`), or raises their CPU and disk weight
   (runners/runner_controls.py); a boost keeps new jobs off the machine, as for an agent job. A
   frozen listener stops answering GitHub, so a long freeze can fail the run. When the
@@ -109,7 +110,8 @@ anything else dropped. Stored as `jobs.ci_result` (schema 17); empty means not k
 
 - Every 10 s: `runner_jobs` for this worker. For each active reservation: if the runner's
   job process is alive (`Runner.Worker` process whose cwd or argv is under
-  `<runners>/<runner>/`, found through `/proc`; injectable for tests), send a worker
+  `<runners>/<runner>/`, found through `/proc`, or by argv in `ps` on a Mac; injectable for
+  tests), send a worker
   heartbeat; if it has been gone for 60 s, `release` with outcome `interrupted`.
 - The worker's own claim loop is unchanged otherwise.
 
@@ -118,34 +120,40 @@ anything else dropped. Stored as `jobs.ci_result` (schema 17); empty means not k
 On the node (CLI `mulebox runner ...`):
 - `runner add --repo <owner/repo> --actors a,b [--labels a,b] [--name N]`: registration token on
   **stdin** (never argv, never logged). Downloads the latest `actions/runner` release for
-  linux-x64/arm64 (GitHub API `releases/latest`), verifies the tarball against the SHA-256
+  linux-x64/arm64, or osx-x64/arm64 on a Mac (GitHub API `releases/latest`), verifies the
+  tarball against the SHA-256
   published in the release body (`<!-- BEGIN SHA linux-x64 -->...<!-- END SHA linux-x64 -->`),
   extracts into `<runners>/<name>/` (safe extraction, shared `worker/archive.py`), runs
   `./config.sh --unattended --url https://github.com/<owner/repo> --token <t> --name <name>
   --labels <labels> --work _work --replace`, writes the hook variables into the runner's
   `.env` (`ACTIONS_RUNNER_HOOK_JOB_STARTED=...`, `ACTIONS_RUNNER_HOOK_JOB_COMPLETED=...`),
-  installs and starts `mulebox-runner@<name>.service`.
+  starts the runner's service through `mulebox/services/` (`runner_start`): the unit
+  `mulebox-runner@<name>.service`, or on a Mac the launchd agent `mulebox-runner-<name>`
+  (services/launchd_runners.py).
   Default name `<node>-<repo>`; default labels `mulebox` (GitHub adds `self-hosted`,
   `Linux`, `X64`).
 - `runner add --isolated --repo <owner/repo> --actors a,b [--labels a,b] [--name N]`: no token.
-  Checks with the node's `gh` that it is an admin of the repository (`permissions.admin`), builds
-  the runner image (`place_image.py`), creates the `mulebox-isolated` network and writes
-  `<runners>/<name>/.mulebox-runner.json` with `isolated: true` and `public`. The worker's
-  `PlaceKeeper` starts a thread for it within 10 s (`place.py`): per job, `gh api -X POST
-  repos/<owner/repo>/actions/runners/generate-jitconfig` (name `<name>-<8 chars>`, group 1, labels
-  `self-hosted`, `Linux`, the arch, the given ones), a container on stdin, the hook's request in
-  `io/request.json`, the answer in `io/answer.json`, the reservation under `<name>`.
+  Linux nodes only. Checks with the node's `gh` that it is an admin of the repository
+  (`permissions.admin`), builds the runner image (`place_image.py`), creates the
+  `mulebox-isolated` network and writes `<runners>/<name>/.mulebox-runner.json` with
+  `isolated: true` and `public`. The worker's `PlaceKeeper` starts a thread for it within 10 s
+  (`place.py`): per job, `gh api -X POST repos/<owner/repo>/actions/runners/generate-jitconfig`
+  (name `<name>-<8 chars>`, group 1, labels `self-hosted`, `Linux`, the arch, the given ones), a
+  container on stdin, the hook's request in `io-<id>/request.json`, the answer in
+  `io-<id>/answer.json`, the reservation under `<name>`.
   `--count N` (1 to 8) makes a group: `<name>`, `<name>-2`, ..., each a place of its own whose
   metadata has `group: <name>`; an existing group gains only its missing members. `runner remove
   <name>` and `--repo` remove the whole group.
-- `runner list`: name, repo, service state (`isolated` for an isolated runner), busy/idle.
+- `runner list`: name, repo, service state (`running` or `stopped`, `isolated` for an isolated
+  runner), busy/idle.
 - `runner caches <name> --project <project> [--only cache-npm,...] | --off`: writes the project's
   package cache settings (worker/caches.py `for_job`) into the runner's `.env`, drops them with
-  `--off`, records `caches_of` in `.mulebox-runner.json`, restarts the unit. Refused while busy.
-- `runner remove <name>`: removal token on stdin; stops and disables the unit, runs
+  `--off`, records `caches_of` in `.mulebox-runner.json`, restarts the service. Refused while
+  busy.
+- `runner remove <name>`: removal token on stdin; stops and disables the service, runs
   `./config.sh remove --token <t>`, removes the runner folder through safepath. An isolated
   runner needs no token: its containers (label `mulebox.place=<name>`), its one-job runners left
-  on GitHub (named `<name>-...`), its tool volume and its folder are removed.
+  on GitHub (named `<name>-<8 chars>`), its tool volume and its folder are removed.
 - Unit template `mulebox/machine/systemd/mulebox-runner@.service`: `ExecStart=%h/.mulebox/runners/
   %i/run.sh`, `WorkingDirectory=%h/.mulebox/runners/%i`, `Environment=RUNNER_MANUALLY_TRAP_SIG=1` (so
   run.sh passes a stop on to the listener), `KillMode=mixed` (anything left is killed: a restart

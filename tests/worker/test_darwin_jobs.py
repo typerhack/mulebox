@@ -135,3 +135,11 @@ def test_a_failed_listing_is_asked_again(monkeypatch):
 def test_a_container_whose_memory_is_unknown_makes_the_total_unknown(tmp_path):
     table = lambda: darwin_jobs.parse_ps(PS)  # noqa: E731
     assert mac_jobs_memory(["c1"], [], tmp_path, table, FakeEngine({"c1": {"cpu_s": 1.0}})) is None
+
+
+def test_jobs_memory_on_a_mac_counts_the_runners_agent_groups(tmp_path):
+    table = lambda: darwin_jobs.parse_ps(PS)  # noqa: E731
+    groups = {"r1": 600, "r2": None}
+    got = mac_jobs_memory([], ["r1", "r2"], tmp_path, table, FakeEngine({}),
+                          runner_group=groups.get)
+    assert got == 10 * 1024  # the one process of group 600; r2 is not running

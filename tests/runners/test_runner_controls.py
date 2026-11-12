@@ -1,6 +1,10 @@
 """Pause and boost of a GitHub run on its runner's service (runners/runner_controls.py)."""
 
-from mulebox.runners.runner_controls import SERVICE_WEIGHT, RunnerControls, RunnerUnit
+import subprocess
+
+from mulebox.runners.runner_controls import RunnerControls, RunnerUnit
+from mulebox.services.systemd import RUNNER_WEIGHT as SERVICE_WEIGHT
+from mulebox.services.systemd import SystemdServices
 from mulebox.worker.controls import BOOST_SHARES, BOOST_WEIGHT, NORMAL_SHARES
 from mulebox.worker.docker import DockerError
 
@@ -28,7 +32,12 @@ def job(state="running", runner="build-1-example-app", **controls):
 
 
 def steer(calls):
-    return RunnerControls(RunnerUnit(calls.systemctl), calls, lambda runner: calls.ids)
+    def systemctl(argv):  # through the real systemd manager: ["systemctl", "--user", ...]
+        calls.systemctl(*argv[2:])
+        return subprocess.CompletedProcess(argv, 0, "", "")
+
+    services = SystemdServices(run=systemctl)
+    return RunnerControls(RunnerUnit(services), calls, lambda runner: calls.ids)
 
 
 def follow(controls, jobs):

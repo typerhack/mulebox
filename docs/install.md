@@ -109,6 +109,12 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   short compiler runs shows its CPU.
 - Pinned toolchains are the macOS builds (`node-v<ver>-darwin-arm64`). Compose jobs need Docker
   Desktop, OrbStack or Colima; their containers run Linux in a virtual machine.
+- GitHub runners work as on Linux (`mulebox runner add` or `register`), with the macOS runner
+  (`actions-runner-osx-arm64` or `osx-x64`). Each is a launchd agent, `mulebox-runner-<name>`,
+  with its output in `~/Library/Logs/mulebox/runner-<name>.log`, under `nice -n 5` like a job. Pause
+  stops the agent's process group; boost raises only the run's containers. Whether a run is alive
+  is read from `ps`. A removed runner's agent definition stays, disabled, in
+  `~/Library/LaunchAgents`; delete the file by hand if you like.
 
 ### Node config
 
@@ -247,7 +253,8 @@ version will not install does not start: it exits 5 with the reason and what is 
 ## GitHub runners
 
 A node can host self-hosted GitHub Actions runners, one user service each
-(`mulebox-runner@<name>.service`; the installer copies the template but enables nothing).
+(`mulebox-runner@<name>.service`; the installer copies the template but enables nothing; on a
+Mac a launchd agent, see [A Mac as a node](#a-mac-as-a-node)).
 A runner gets the same CPU and disk share as a mulebox job (`CPUWeight=50`), so CI and
 agents' jobs share the machine evenly and both give way to its own use.
 Each GitHub job then waits for a mulebox build slot, so runner jobs and agent jobs share one
@@ -286,11 +293,12 @@ gh api -X POST repos/example-org/example-app/actions/runners/registration-token 
 ~/.mulebox/bin/mulebox runner remove build-1-example-app    # removal token on stdin
 ```
 
-`runner add` downloads the latest `actions/runner` release for linux-x64 or linux-arm64,
+`runner add` downloads the latest `actions/runner` release for linux-x64 or linux-arm64
+(osx-arm64 or osx-x64 on a Mac),
 checks its SHA-256 against the release notes, unpacks it into
 `~/.mulebox/runners/<name>/` (default name `<node>-<repo>`), registers it with
 `config.sh`, sets the job hooks in the runner's `.env` and starts the service. The token is
-never put on a command line or in a log. `roots.runners` must stay `~/.mulebox/runners`
+never put on a command line or in a log. On Linux `roots.runners` must stay `~/.mulebox/runners`
 (the unit template runs runners from there). In workflows, use
 `runs-on: [self-hosted, mulebox]`.
 
