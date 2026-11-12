@@ -14,6 +14,35 @@ Status: **1.x, in daily use on a real node** (version in [VERSION](VERSION)). Th
 commands, `.mulebox.yml` and the config files are stable: a change that breaks them needs 2.0.
 What is open is in the [roadmap](docs/phases.md).
 
+## Why mulebox
+
+Most tools that put your own machines to work run CI. mulebox is built for the agent at your dev
+machine, here and now, and it takes your CI along in the same line.
+
+- **Made for agents.** `check` gives the output and exit code a local run would. An agent can send
+  a job with `--detach`, come back with `wait`, and answer a long job's check-in with `mulebox ok`.
+  The same files never run twice: a repeat gets the earlier result, and a second agent joins the job
+  already running. ([For agents](#for-agents))
+- **Your working copy, not a push.** Committed or not, the files as they are now go to the node.
+  Secrets stay behind, each branch has its own git worktree there, and only changed files are sent.
+  ([Fast](#fast))
+- **Real projects, not just a command.** Every job gets its own Docker Compose services and ports,
+  removed on every outcome (files root wrote included). Package caches, Playwright browsers and the
+  environment are built once and reused. ([Real projects](#real-projects))
+- **Tools an agent can use alone.** `mulebox contract` tells an agent how this project runs. The skill
+  keeps itself current. `doctor` checks everything before a job is sent, `init` writes the config,
+  `warm` gets a project ready ahead of time, and `feedback` files a scrubbed issue.
+  ([For agents](#for-agents))
+- **One line for agents and CI.** GitHub Actions runners wait for a slot in the same line as your
+  agents' jobs, so a node never runs more than it has room for.
+  ([GitHub Actions](#github-actions-on-the-same-machines))
+- **You see and steer everything.** A live dashboard has logs, resource graphs, stages as a
+  waterfall, a CI run's steps as they happen, and job minutes. From it or the CLI you can freeze,
+  boost, move or cancel a job, and pause a machine. ([The dashboard](#the-dashboard-1),
+  [You steer](#you-steer))
+- **Upgrades that wait their turn.** An upgrade queues like a job or waits until the node is idle, so
+  no running job is cut short. ([You steer](#you-steer))
+
 ## Install
 
 You need a Linux machine with systemd, git and Python 3.12 or newer, which your dev machine reaches

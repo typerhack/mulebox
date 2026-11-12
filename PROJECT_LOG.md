@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.2.1 - 2026-11-12 - patch
+- Docs: a "Why mulebox" section near the top of the README (the user's ask): what sets mulebox apart in seven points (made for agents, the working copy sent as it is, Compose projects, tools an agent uses alone, one line for agents and CI, the dashboard and controls, upgrades in line), each linking to its part of Features.
+
 ## 1.2.0 - 2026-11-11 - minor
 - One pair of names everywhere, the user's call: the **dev machine** (where you and your agents edit code: a laptop, a desktop or another Linux PC) and the **node** (a Linux machine that runs jobs), in place of "laptop" and "build machine". In the docs, CLI help and messages, the contract, the skill, the dashboard and the architecture images. Not renamed: protocol and database fields, example hostnames such as `laptop.local`, the laptop icon on a job's card, and past entries here and in phases.md. Anchors to install.md's section 2 are now `#2-install-on-the-dev-machine`.
 
