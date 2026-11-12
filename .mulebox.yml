@@ -7,3 +7,4 @@ jobs:
 # Docs alone never need a run: an edit there gives back the last passed result (the same list as
 # paths-ignore in .github/workflows/ci.yml; tests/test_ci_workflow.py keeps the two equal).
 ignore_changes: [README.md, AGENTS.md, CLAUDE.md, PROJECT_LOG.md, LICENSE, VERSION, "docs/*.md", "docs/*.html"]
+github_status: true
