@@ -74,6 +74,37 @@ def test_the_services_are_left_to_mulebox_itself():
         assert step not in text
 
 
+def fake_python(folder, name, minor):
+    tool = folder / name
+    tool.write_text(f"#!/bin/sh\n# {name}: Python 3.{minor}\n"
+                    f"case \"$2\" in *3,\\ 12*) [ {minor} -ge 12 ] && exit 0; exit 1;; esac\n"
+                    f"echo 3.{minor}\n")
+    tool.chmod(0o755)
+
+
+@pytest.mark.parametrize("found, picked", [
+    ({"python3": 9, "python3.13": 13}, "python3.13"),  # a Mac's own python3 and Homebrew's
+    ({"python3": 12, "python3.13": 13}, "python3"),
+    ({"python3": 9}, "python3"),  # nothing newer: check_python then says what to install
+])
+def test_an_old_python3_gives_way_to_a_newer_python3_n(tmp_path, found, picked):
+    for name, minor in found.items():
+        fake_python(tmp_path, name, minor)
+    env = {**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin"}
+    env.pop("MULEBOX_PYTHON", None)
+    done = subprocess.run(["bash", "-c", 'source "$1"; pick_python; echo "$PYTHON"', "t",
+                           str(INSTALL_SH)], capture_output=True, text=True, env=env, check=True)
+    assert done.stdout.strip() == picked
+
+
+def test_mulebox_python_is_never_second_guessed(tmp_path):
+    fake_python(tmp_path, "python3.13", 13)
+    env = {**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin", "MULEBOX_PYTHON": "python3.9"}
+    done = subprocess.run(["bash", "-c", 'source "$1"; pick_python; echo "$PYTHON"', "t",
+                           str(INSTALL_SH)], capture_output=True, text=True, env=env, check=True)
+    assert done.stdout.strip() == "python3.9"
+
+
 @pytest.mark.parametrize("system, ok", [("Linux", None), ("Darwin", None), ("FreeBSD", False)])
 def test_the_platform_check_takes_linux_and_macos(tmp_path, system, ok):
     """With stand-ins for uname, systemctl and git, only the system's own branch runs."""

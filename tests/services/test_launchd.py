@@ -13,9 +13,12 @@ class FakeLaunchd:
 
     def __init__(self, gui: bool = True) -> None:
         self.gui = gui
-        self.loaded: set[str] = set()
+        self.loaded: set[str] = set()  # "<domain>/<label>"
         self.disabled: set[str] = set()
         self.calls: list[list[str]] = []
+
+    def labels(self) -> set[str]:
+        return {target.split("/")[-1] for target in self.loaded}
 
     def __call__(self, argv):
         argv = list(argv)
@@ -28,22 +31,21 @@ class FakeLaunchd:
             if target.count("/") == 1:
                 code = 0 if self.gui or target.startswith("user/") else 113
             else:
-                label = target.split("/")[-1]
-                code, out = (0, "\tstate = running\n") if label in self.loaded else (113, "")
+                code, out = (0, "\tstate = running\n") if target in self.loaded else (113, "")
         elif verb == "bootout":
-            self.loaded.discard(args[0].split("/")[-1])
+            self.loaded.discard(args[0])
         elif verb == "bootstrap":
-            label = plistlib.loads(Path(args[1]).read_bytes())["Label"]
-            if label in self.disabled or label in self.loaded:
+            target = f"{args[0]}/{plistlib.loads(Path(args[1]).read_bytes())['Label']}"
+            if target in self.disabled or target in self.loaded:
                 code, out = 5, "Bootstrap failed: 5: Input/output error"
             else:
-                self.loaded.add(label)
+                self.loaded.add(target)
         elif verb == "enable":
-            self.disabled.discard(args[0].split("/")[-1])
+            self.disabled.discard(args[0])
         elif verb == "disable":
-            self.disabled.add(args[0].split("/")[-1])
+            self.disabled.add(args[0])
         elif verb == "kickstart":
-            code = 0 if args[-1].split("/")[-1] in self.loaded else 113
+            code = 0 if args[-1] in self.loaded else 113
         return subprocess.CompletedProcess(argv, code, out, out if code else "")
 
 
@@ -77,7 +79,7 @@ def test_install_writes_and_starts_only_what_the_roles_run(tmp_path):
     services(tmp_path, fake).install(["worker"], said.append)
     agents = tmp_path / "Library" / "LaunchAgents"
     assert sorted(p.name for p in agents.iterdir()) == ["mulebox-worker.plist"]
-    assert fake.loaded == {"mulebox-worker"}
+    assert fake.labels() == {"mulebox-worker"}
     assert said == ["Started mulebox-worker (gui/501)."]
     assert (tmp_path / "Library" / "Logs" / "mulebox").is_dir()
 
@@ -88,7 +90,7 @@ def test_a_second_install_reloads_the_new_definition(tmp_path):
     manager.install(["coordinator", "worker"], lambda _: None)
     said = []
     manager.install(["coordinator", "worker"], said.append)
-    assert fake.loaded == {"mulebox-coordinator", "mulebox-dashboard", "mulebox-worker"}
+    assert fake.labels() == {"mulebox-coordinator", "mulebox-dashboard", "mulebox-worker"}
     assert said[0] == "Restarted mulebox-coordinator (gui/501)."
     verbs = [c[1] for c in fake.calls if c[1] in ("bootout", "bootstrap")]
     assert verbs.count("bootout") == 3 and verbs.count("bootstrap") == 6
@@ -99,8 +101,8 @@ def test_a_role_the_node_no_longer_has_is_stopped_and_disabled(tmp_path):
     manager = services(tmp_path, fake)
     manager.install(["coordinator", "worker"], lambda _: None)
     manager.install(["worker"], lambda _: None)
-    assert fake.loaded == {"mulebox-worker"}
-    assert {"mulebox-coordinator", "mulebox-dashboard"} <= fake.disabled
+    assert fake.labels() == {"mulebox-worker"}
+    assert {"gui/501/mulebox-coordinator", "gui/501/mulebox-dashboard"} <= fake.disabled
     assert manager.state("coordinator") == STOPPED  # its file stays, nothing is deleted
 
 
@@ -114,6 +116,24 @@ def test_without_a_screen_login_the_agents_go_to_the_user_domain(tmp_path):
             str(tmp_path / "Library/LaunchAgents/mulebox-worker.plist")] in fake.calls
 
 
+def test_an_agent_loaded_over_ssh_is_still_found_after_a_screen_login(tmp_path):
+    """Installed with nobody at the screen (user/), then someone logs in (gui/ exists)."""
+    fake = FakeLaunchd(gui=False)
+    services(tmp_path, fake).install(["worker"], lambda _: None)
+    assert fake.loaded == {"user/501/mulebox-worker"}
+    fake.gui = True
+    later = services(tmp_path, fake)
+    assert later.state("worker") == RUNNING
+    later.restart("worker")
+    assert ["launchctl", "kickstart", "-k", "user/501/mulebox-worker"] in fake.calls
+    said = []
+    later.install(["worker"], said.append)  # moves it to the screen session, never two copies
+    assert fake.loaded == {"gui/501/mulebox-worker"} and said[0].startswith("Restarted")
+    later.stop("worker")
+    assert fake.loaded == set()
+    assert {"gui/501/mulebox-worker", "user/501/mulebox-worker"} <= fake.disabled
+
+
 def test_state_restart_and_stop(tmp_path):
     fake = FakeLaunchd()
     manager = services(tmp_path, fake)
@@ -125,7 +145,7 @@ def test_state_restart_and_stop(tmp_path):
     manager.restart("worker")
     assert ["launchctl", "kickstart", "-k", "gui/501/mulebox-worker"] in fake.calls
     manager.stop("worker")
-    assert manager.state("worker") == STOPPED and "mulebox-worker" in fake.disabled
+    assert manager.state("worker") == STOPPED and "gui/501/mulebox-worker" in fake.disabled
     manager.restart("worker")  # a stopped service starts again
     assert manager.state("worker") == RUNNING
 
@@ -134,7 +154,7 @@ def test_an_agent_that_does_not_stop_is_an_error(tmp_path):
     fake = FakeLaunchd()
     manager = services(tmp_path, fake, clock=iter(range(0, 100, 5)).__next__)
     manager.install(["worker"], lambda _: None)
-    fake.loaded.add("mulebox-worker")
+    fake.loaded.add("gui/501/mulebox-worker")
     original = fake.__call__
 
     def stuck(argv):

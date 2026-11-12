@@ -100,13 +100,25 @@ class LaunchdServices:
     def plist_path(self, name: str) -> Path:
         return self.agent_dir / f"{label(name)}.plist"
 
-    def _target(self, name: str) -> str:
-        return f"{self.domain}/{label(name)}"
+    def _target(self, name: str, domain: str | None = None) -> str:
+        return f"{domain or self.domain}/{label(name)}"
+
+    def _domains(self) -> tuple[str, str]:
+        return f"gui/{self.uid}", f"user/{self.uid}"
+
+    def _where(self, name: str) -> dict[str, str]:
+        """`launchctl print` of the agent in each domain it is loaded in. Both are looked at: an
+        agent loaded over ssh with nobody at the screen stays in `user/` after someone logs in."""
+        found = {}
+        for domain in self._domains():
+            done = self._launchctl("print", self._target(name, domain))
+            if done.returncode == 0:
+                found[domain] = done.stdout or ""
+        return found
 
     def _loaded(self, name: str) -> str | None:
-        """`launchctl print` of a loaded agent, or None when it is not loaded."""
-        done = self._launchctl("print", self._target(name))
-        return done.stdout or "" if done.returncode == 0 else None
+        """`launchctl print` of a loaded agent, or None when it is not loaded anywhere."""
+        return next(iter(self._where(name).values()), None)
 
     def _write(self, name: str) -> None:
         self.agent_dir.mkdir(parents=True, exist_ok=True)
@@ -118,9 +130,11 @@ class LaunchdServices:
         draft.replace(self.plist_path(name))
 
     def _unload(self, name: str) -> None:
-        if self._loaded(name) is None:
+        loaded = self._where(name)
+        if not loaded:
             return
-        self._launchctl("bootout", self._target(name))
+        for domain in loaded:
+            self._launchctl("bootout", self._target(name, domain))
         end = self._clock() + GONE_WAIT_S
         while self._loaded(name) is not None:
             if self._clock() >= end:
@@ -144,16 +158,22 @@ class LaunchdServices:
             say(f"{'Restarted' if was_running else 'Started'} {label(name)} ({self.domain}).")
 
     def restart(self, name: str) -> None:
-        if self._loaded(name) is None:
+        loaded = self._where(name)
+        if not loaded:
             if not self.plist_path(name).is_file():
                 raise ServiceError(f"{label(name)} is not installed on this machine")
             self._load(name)
             return
-        self._must("kickstart", "-k", self._target(name))
+        for domain in loaded:
+            self._must("kickstart", "-k", self._target(name, domain))
 
     def stop(self, name: str) -> None:
+        """Stop it wherever it is loaded, and keep it from loading in either domain."""
         self._unload(name)
         self._must("disable", self._target(name))
+        for domain in self._domains():
+            if domain != self.domain:
+                self._launchctl("disable", self._target(name, domain))  # may not exist now
 
     def state(self, name: str) -> str:
         shown = self._loaded(name)

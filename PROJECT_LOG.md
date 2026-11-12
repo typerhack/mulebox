@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.6.1 - 2026-11-12 - patch
+- From Sol's review of 1.6.0: a launchd agent is looked for in both the screen session (`gui/<uid>`) and the background one (`user/<uid>`), so one loaded over ssh with nobody at the screen is still restarted, stopped and moved after someone logs in, never left running beside a second copy.
+- install.sh, with no `MULEBOX_PYTHON`, takes `python3` only if it is 3.12 or newer, else the newest `python3.14`, `python3.13` or `python3.12` on PATH: Homebrew's `python@3.13` installs `python3.13` alone, and a Mac's own `python3` is older.
+
 ## 1.6.0 - 2026-11-12 - minor
 - A Mac can hold mulebox's services (M21.1, the user's ask): `mulebox service install|restart|stop|status|logs` drives systemd user units on Linux and launchd agents on macOS (`mulebox/services/`). install.sh accepts macOS (Homebrew's folders on PATH, `xcode-select` and `brew` hints, bash 3.2) and hands the services to `mulebox service install`, so the bundle no longer carries `systemd/`. Every message and doc names `mulebox service ...` rather than `systemctl` or `journalctl`; the upgrade waiter starts through the same module. `common/command.py` runs short system commands for both.
 

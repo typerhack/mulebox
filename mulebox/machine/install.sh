@@ -51,9 +51,30 @@ check_platform() {
     esac
 }
 
+new_enough() {  # is $1 a Python 3.12 or newer?
+    command -v "$1" >/dev/null 2>&1 \
+        && "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' 2>/dev/null
+}
+
+# With no MULEBOX_PYTHON, python3 if it is new enough, else the newest python3.N found: Homebrew's
+# python@3.13 installs `python3.13` only, and a Mac's own `python3` is older.
+pick_python() {
+    local name
+    [ -z "${MULEBOX_PYTHON:-}" ] || return 0
+    new_enough "$PYTHON" && return 0
+    for name in python3.14 python3.13 python3.12; do
+        if new_enough "$name"; then
+            PYTHON="$name"
+            return 0
+        fi
+    done
+    return 0
+}
+
 check_python() {
     local how="install Python 3.12 or newer"
     [ "$OS" = "Darwin" ] && how="$how, such as with Homebrew: brew install python@3.13"
+    pick_python
     command -v "$PYTHON" >/dev/null 2>&1 || die "$PYTHON not found; $how"
     "$PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' \
         || die "Python 3.12 or newer is required ($PYTHON is $("$PYTHON" -V 2>&1)); $how"
