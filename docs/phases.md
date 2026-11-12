@@ -738,8 +738,10 @@ by Sol before the next starts (the user's ask).
       Mac. 1.9.1, from Sol's review: the dashboard's readings kept apart from the service manager,
       a reused pid never paused, a failed resume retried, `ps` lines matched from their start.
       Open: a real runner on a Mac node taking a real CI run.
-- [~] M21.5 CI runs the suite on macOS too. Built 2026-11-12 (1.9.2): a `macos` job on `macos-15`,
-      Python 3.13. Open: its first run, once the branch is pushed.
+- [x] M21.5 CI runs the suite on macOS too. Built 2026-11-12 (1.9.2): a `macos` job on `macos-15`,
+      Python 3.13. Done 2026-11-12 (1.13.5): on main it ran on GitHub's macOS machine; two racy
+      tests of stopped process groups failed there first (fixed 1.13.3 and 1.13.5), and it has
+      passed on every run since.
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 
 ## M22: Apple platform builds
@@ -809,8 +811,10 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       client and was removed by Docker when it ended. Run 2026-11-12: a worker restart during this
       repository's CI, two jobs in isolated runners: both containers left running, taken over by
       the new worker, and a job finished and passed with its slot released as passed; the stop
-      took systemd's 90 s, as the `docker` client ignored SIGTERM (fixed 1.13.8). Open: a quick
-      restart on 1.13.8 during a real CI job.
+      took systemd's 90 s, as the `docker` client ignored SIGTERM (fixed 1.13.8). Done 2026-11-12
+      (1.13.8): a worker restart during this repository's CI, two jobs running in isolated runners,
+      took under a second; both containers were taken over, both jobs passed with their slots
+      released as passed, fresh places took the next job, and the run passed.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's

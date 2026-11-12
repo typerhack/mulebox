@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.9 - 2026-11-12 - patch
+- Roadmap: M21.5 (CI on macOS) done: the `macos` job passed on GitHub's macOS machine on every run since 1.13.5.
+- Roadmap: M23.6's open point closed: a worker restart on 1.13.8 during a real CI run took under a second, and both jobs in isolated runners were taken over and passed.
+
 ## 1.13.8 - 2026-11-12 - patch
 - A worker restart with a CI job in an isolated runner took systemd's full 90 s and ended in a timeout (seen in the drill of 1.13.7 on the node): with `--sig-proxy=false` the `docker run` client ignores SIGTERM, so it held the worker's stop. The worker now kills its own client when it leaves a container to the next worker; that ends only the client, the container runs on (checked on the node) and Docker still removes it when it ends.
 
