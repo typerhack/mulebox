@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.2.2 - 2026-11-12 - patch
+- Roadmap: M23, safer and fairer jobs (the user's ask), ten tasks to start after the macOS phases: isolation per project, job sizes in place of fixed slots, order rules, node priority levels, a failing node rests, fresh CI runners, upgrades on trial, usage against size, config reload, and a slot reserved for yourself.
+
 ## 1.2.1 - 2026-11-12 - patch
 - Docs: a "Why mulebox" section near the top of the README (the user's ask): what sets mulebox apart in seven points (made for agents, the working copy sent as it is, Compose projects, tools an agent uses alone, one line for agents and CI, the dashboard and controls, upgrades in line), each linking to its part of Features.
 

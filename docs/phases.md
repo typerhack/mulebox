@@ -701,6 +701,34 @@ each with a report of what was checked.
       runs `mulebox skill update` (the user's choice over a plugin marketplace), `mulebox setup`
       updates the laptop's copies. 0.82.0: setup updated two real copies.
 
+## M23: Safer and fairer jobs
+Decided by the user on 2026-11-12, to start after M21 and M22 (macOS nodes, Apple builds). Ideas taken
+from other self-hosted runner tools and made to serve agent jobs first, not only CI. Ranked by benefit
+to the core; 1, 2 and 5 first. Each needs a design note in design.md before it is built.
+- [ ] M23.1 Isolation per project: `isolation: container` (later `vm`) runs a job in a fresh
+      container or virtual machine, not under systemd as the node's user, so code an agent wrote
+      cannot read the node's home folder. The trade-offs of each level written down.
+- [ ] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
+      out its budget, keeps room for its owner (for a node that is also someone's PC), and the
+      first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
+      lot's job weights.
+- [ ] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
+      go ahead, a branch (such as `main`), a workflow or a project first.
+- [ ] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
+      the owner's desktop only when the spare machine is busy, or a Mac as the fallback.
+- [ ] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
+      takes no job for a while, and others take them.
+- [ ] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
+      removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
+      job-started hook, the private-repositories-only rule can be weighed again.
+- [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
+      version back by itself.
+- [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
+      sizes come from measurements.
+- [ ] M23.9 Config reload: an edited `node.toml` applies to the next job with no service restart.
+- [ ] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
+      session of your own, waiting in the same line so no job starts under you.
+
 ## Parking lot
 - Dashboard facts the mockup shows that no API gives yet: job folders of other machines and log line
   times (M14.10, 2026-11-10). Memory used by jobs, swap and Docker's disk use came in 0.103.0, a CI
