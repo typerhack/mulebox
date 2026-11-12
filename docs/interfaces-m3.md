@@ -135,6 +135,9 @@ On the node (CLI `mulebox runner ...`):
   repos/<owner/repo>/actions/runners/generate-jitconfig` (name `<name>-<8 chars>`, group 1, labels
   `self-hosted`, `Linux`, the arch, the given ones), a container on stdin, the hook's request in
   `io/request.json`, the answer in `io/answer.json`, the reservation under `<name>`.
+  `--count N` (1 to 8) makes a group: `<name>`, `<name>-2`, ..., each a place of its own whose
+  metadata has `group: <name>`; an existing group gains only its missing members. `runner remove
+  <name>` and `--repo` remove the whole group.
 - `runner list`: name, repo, service state (`isolated` for an isolated runner), busy/idle.
 - `runner caches <name> --project <project> [--only cache-npm,...] | --off`: writes the project's
   package cache settings (worker/caches.py `for_job`) into the runner's `.env`, drops them with

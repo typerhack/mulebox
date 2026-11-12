@@ -301,7 +301,7 @@ For a public repository, register an isolated runner, which runs every job in a 
 container:
 
 ```sh
-mulebox runner register --isolated --repo example-org/example-app --labels mulebox-ci
+mulebox runner register --isolated --repo example-org/example-app --labels mulebox-ci --count 2
 ~/.mulebox/bin/mulebox runner add --isolated --repo example-org/example-app --actors alice  # on the node
 ```
 
@@ -319,6 +319,12 @@ gets:
   weight of the node's own processes, and a network of its own;
 - one volume per runner for `/opt/hostedtoolcache`, so setup-python and setup-node download a
   version once. Only runs the guard let in write to it.
+
+`--count 2` runs two jobs at once, as two places, `mulebox-ci` and `mulebox-ci-2`, each with its
+own container, slot and tool cache (so each downloads a new Python or Node once). Without it the
+jobs of a run go one after another. Register again with a larger count to grow it; the places it
+has keep their caches. Each job still takes a build slot, so the node never runs more than it
+has.
 
 The guard above runs on the node before the job's first step, on what the container's hook hands
 over; a refused job's container is killed with it. The slot is reserved as for any runner, and

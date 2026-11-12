@@ -4,10 +4,10 @@ import threading
 
 import pytest
 
-from mulebox.runners import layout, place, place_keeper, place_manage
+from mulebox.runners import layout, manage, place, place_keeper, place_manage
 from mulebox.runners.manage import RunnerError
 
-from .test_place_parts import FakeDocker
+from .test_place_parts import REPO, FakeDocker
 from .test_place_run import FakeGh, add, make_place
 
 
@@ -98,3 +98,15 @@ def test_remove_refuses_to_delete_under_a_running_round(machine, paths):
         place_manage.remove_isolated(machine, "place-1", gh=FakeGh(), docker=FakeDocker(),
                                      wait_s=0.0, sleep=lambda s: None)
     assert folder.exists() and layout.read_meta(folder)["removing"] is True
+
+
+def test_a_group_grows_and_goes_as_one(machine, paths):
+    first = add(machine, FakeGh())
+    (first / "_diag").mkdir()  # the first place's state stays when the group grows
+    second = add(machine, FakeGh(), count=2)
+    assert second.name == "place-1-2" and (first / "_diag").is_dir()
+    assert layout.read_meta(second)["group"] == "place-1"
+    assert sorted(f.name for f in place_keeper.place_folders(paths)) == ["place-1", "place-1-2"]
+    assert manage.find_by_repo(machine, REPO) == "place-1"  # the group, by its first
+    place_manage.remove_isolated(machine, "place-1", gh=FakeGh(), docker=FakeDocker())
+    assert not first.exists() and not second.exists()

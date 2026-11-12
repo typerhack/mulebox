@@ -95,6 +95,9 @@ def _isolated(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--isolated", action="store_true", help="run each job in a fresh, confined container "
         "(needs Docker, and the node's `gh` signed in as an admin of the repository)")
+    parser.add_argument(
+        "--count", type=int, default=1, help="isolated: how many jobs it runs at once "
+        "(default 1); run again with a larger count to grow an existing one")
 
 
 def _guarded(handler: Handler) -> Handler:
@@ -156,7 +159,8 @@ def _add(args: argparse.Namespace) -> int:
     if args.isolated:
         from mulebox.runners import place_manage
 
-        place_manage.add_isolated(machine, args.repo, name=name, labels=labels, actors=actors)
+        place_manage.add_isolated(machine, args.repo, name=name, labels=labels, actors=actors,
+                                  count=args.count)
         return 0
     token = read_token("GitHub runner registration token: ")
     manage.add(machine, args.repo, token, name=name, labels=labels, actors=actors)
@@ -220,7 +224,7 @@ def _register(args: argparse.Namespace) -> int:
     from mulebox.runners import github
 
     github.register(load_client_config(), args.repo, name=args.name, labels=args.labels,
-                    actors=args.actors, isolated=args.isolated)
+                    actors=args.actors, isolated=args.isolated, count=args.count)
     return 0
 
 

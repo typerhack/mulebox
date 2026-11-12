@@ -194,7 +194,8 @@ def find_by_repo(m: Machine, repo: str) -> str:
     """The one runner registered for repo."""
     check_repo(repo)
     names = [f.name for f in layout.runner_folders(m.paths)
-             if layout.read_meta(f).get("repo") == repo]
+             if layout.read_meta(f).get("repo") == repo
+             and layout.read_meta(f).get("group", f.name) == f.name]  # a group by its first
     if not names:
         raise RunnerUsageError(f"no runner for {repo} on this machine")
     if len(names) > 1:

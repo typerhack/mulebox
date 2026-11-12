@@ -41,7 +41,7 @@ committed; a test holds that. To update one, change both with `npm install --sav
 - **Only an isolated runner, and only for the owner's runs.** A workflow file alone protects
   nothing: a pull request runs the workflow from its own branch, so a fork can change `runs-on`
   to name a self-hosted runner. So the repository has one runner only, an isolated one
-  (`mulebox runner register --isolated --repo typerhack/mulebox --labels mulebox-ci`): its hook
+  (`mulebox runner register --isolated --repo typerhack/mulebox --labels mulebox-ci --count 2`): its hook
   refuses a fork's pull request and any run an account other than the owner started, before
   any step, and every job runs in a fresh container with no folder of the node, no Docker
   socket and no privileges (docs/install.md, GitHub runners). `ci.yml` sends only the owner's

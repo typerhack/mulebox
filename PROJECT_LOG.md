@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.5.0 - 2026-11-12 - minor
+- An isolated runner can run several jobs at once (the user's ask): `--count N` on `runner register --isolated` and `runner add --isolated` makes a group of places, `<name>`, `<name>-2`, ..., each with its own container, slot and tool cache. Registering again with a larger count adds only the missing places, so the existing one keeps its warm cache; removing the runner removes the whole group. mulebox's own CI ran its three jobs one after another, 4m 28s warm against about 1 min on GitHub's machines.
+
 ## 1.4.4 - 2026-11-12 - patch
 - Roadmap: M23.6 done. mulebox's own CI passed on its isolated runner, 4m 28s warm with its three jobs one after another; the first run took 20 min, most of it downloading Python 3.13 and Node 22 into the new runner's tool cache over the node's link.
 

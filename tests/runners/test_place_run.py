@@ -36,9 +36,11 @@ class FakeGh:
 
 
 def add(machine, gh, docker=None, **kw):
-    return place_manage.add_isolated(machine, REPO, name=kw.get("name", "place-1"),
+    made = place_manage.add_isolated(machine, REPO, name=kw.get("name", "place-1"),
                                      labels=("mulebox",), actors=("alice",), gh=gh,
-                                     docker=docker or FakeDocker(), version=lambda: "2.338.2")
+                                     count=kw.get("count", 1), docker=docker or FakeDocker(),
+                                     version=lambda: "2.338.2")
+    return made[0] if made else None
 
 
 def test_add_writes_meta_and_builds_the_image(machine, paths):
@@ -58,8 +60,12 @@ def test_add_refuses_without_admin_or_actors(machine):
     with pytest.raises(RunnerUsageError):
         place_manage.add_isolated(machine, REPO, name="p", labels=(), actors=(), gh=FakeGh())
     add(machine, FakeGh())
+    assert add(machine, FakeGh()) is None  # the same again: nothing to add
+    plain = machine.paths.runners / "plain"
+    plain.mkdir()
+    layout.write_meta(machine.paths, plain, {"repo": REPO})
     with pytest.raises(RunnerUsageError, match="already exists"):
-        add(machine, FakeGh())
+        add(machine, FakeGh(), name="plain")
 
 
 def test_remove_cleans_containers_runners_volume_and_folder(machine, paths):

@@ -86,10 +86,12 @@ def signed_in(run: GhRun = run_gh) -> str:
 
 def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
                 labels: str | None = None, actors: str | None = None,
-                isolated: bool = False) -> list[str]:
+                isolated: bool = False, count: int = 1) -> list[str]:
     argv = [remote_program(config.remote_bin), "runner", action, "--repo", check_repo(repo)]
     if isolated:
         argv.append("--isolated")
+        if count != 1:
+            argv += ["--count", str(int(count))]
     if name is not None:
         argv += ["--name", check_name(name)]
     if labels is not None:
@@ -115,7 +117,7 @@ def _run_remote(config: ClientConfig, argv: list[str], token: str, out: TextIO,
 
 def register(config: ClientConfig, repo: str, *, name: str | None = None,
              labels: str | None = None, actors: str | None = None, isolated: bool = False,
-             run: GhRun = run_gh, stream: Stream = ssh.stream_remote,
+             count: int = 1, run: GhRun = run_gh, stream: Stream = ssh.stream_remote,
              out: TextIO = sys.stdout) -> None:
     """Add a runner for repo on the coordinator. It takes runs of `actors` only, by default of
     the account `gh` is signed in as (guard.py). An isolated one needs no token from here: the
@@ -124,7 +126,12 @@ def register(config: ClientConfig, repo: str, *, name: str | None = None,
     remote_argv(config, "add", repo, name, labels, actors)  # refuse bad input before `gh`
     if not isolated:
         refuse_public(repo, run)
-    argv = remote_argv(config, "add", repo, name, labels, actors or signed_in(run), isolated)
+    if count != 1 and not isolated:
+        from mulebox.runners.names import RunnerUsageError
+
+        raise RunnerUsageError("--count is for an isolated runner")
+    argv = remote_argv(config, "add", repo, name, labels, actors or signed_in(run), isolated,
+                       count)
     _run_remote(config, argv, "" if isolated else gh_token(repo, "registration", run), out,
                 stream)
 
