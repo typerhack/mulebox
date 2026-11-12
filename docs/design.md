@@ -469,23 +469,31 @@ runner, the second for public repositories:
    runner's `Runner.Worker` while the hook still runs inside it. A comment on a pull request is
    refused too, as the event does not say where that pull request came from. The fork rules are
    runner-up's (github.com/kunchenguid/runner-up).
-2. **A fresh container per job** (next). The guard can be wrong, and an allowed run can still pull
-   in a bad dependency, so on a public repository no job runs as the node's user:
-   - The node gets a one-job runner from GitHub for each job (`generate-jitconfig`, with the
-     node's own `gh` signed in as the repository's admin, or a token in a file of mode 600). GitHub
-     lets only an admin create a runner; the containers never see that sign-in.
-   - The runner runs in a container from the project's runner image: GitHub's runner image with
-     the project's tools, built once on the node and rebuilt only when its recipe changes, so a job
-     starts in seconds, not after an install. The container is removed when its job ends.
-   - Confined: no folder of the node mounted, no Docker socket, all capabilities dropped,
-     `no-new-privileges`, its own user, limits on CPU, memory and processes, a network of its own.
-     The project's package caches are mounted read-only: the project's own mulebox jobs fill them,
-     so CI reads what the gate downloaded and cannot leave anything in them for the next job.
-   - The slot: the container's hook hands the event to the node and waits; the node runs the
-     guard on it and reserves the slot as today, so the guard stays one module and runs outside
-     the job's reach.
-   - Left over: the container shares the node's kernel, and can reach the node's network. A job
-     that needs Docker itself cannot run in it.
+2. **A fresh container per job** (built, 1.4.0, `runners/place*.py`, `runners/jit.py`). The guard
+   can be wrong, and an allowed run can still pull in a bad dependency, so on a public repository
+   no job runs as the node's user. An isolated runner is a folder whose `.mulebox-runner.json`
+   says `isolated`; the worker keeps a thread for each (`place_keeper.py`), which loops:
+   - A one-job runner from GitHub (`generate-jitconfig`), made with the node's own `gh` signed in
+     as the repository's admin: GitHub lets only an admin make a runner. A token file was weighed
+     and left out, as the node's `gh` already is that admin (the user's call). Its configuration
+     goes to the container on stdin, so neither `ps` nor `docker inspect` shows it; one never given
+     a job is deleted when its container stops.
+   - The container, from GitHub's runner image with git, curl, shellcheck and archivers, built once
+     per runner release (`place_image.py`), so a job starts in about 10 s. Removed when it ends.
+   - Confined (`place_container.py`): no folder of the node but the runner's `hooks` (read-only),
+     `io` and `_diag`, no Docker socket, all capabilities dropped, `no-new-privileges`, the image's
+     own user, limits on memory and processes, half the CPU weight, a network of its own. One tool
+     cache volume per runner, written only by runs the guard let in. The project's package caches
+     are not mounted: the node's caches are its own jobs', and a read-only mount was left for later.
+   - The slot (`place_hook.py`, `place_bridge.py`): the container's job-started hook writes the
+     job's GitHub values and its event to `io` and waits. The node reads them before any step (no
+     symlink, a size limit, GitHub's names only), runs the guard and reserves the slot under the
+     runner's own name, so supervision, the dashboard and release work as for a host runner. A
+     refusal kills `Runner.Worker` inside the container, as on the host. Pause and boost act on the
+     container (`docker pause`, CPU shares) in place of a service.
+   - Left over: the container shares the node's kernel, and can reach the node's network beyond
+     what the firewall closes. A job that needs Docker itself cannot run in it. A job can write its
+     own diary in `_diag`, so the result mulebox shows for it is the job's word.
 
 ## Safety
 

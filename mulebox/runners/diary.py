@@ -18,11 +18,13 @@ The diary is only read, never changed. Anything not found is unknown (None), nev
 from __future__ import annotations
 
 import json
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
 
 from mulebox.common.protocol import Outcome
+from mulebox.runners.diag_files import open_diag
 
 STEP = re.compile(r"Processing step: DisplayName='(.*)'\s*$")
 FAILED = re.compile(r"Step result: (Failed|Cancell?ed)\b")
@@ -46,6 +48,9 @@ class JobResult:
         Never empty, as an empty one is how a reservation of an older mulebox reads."""
         found = {"outcome": self.outcome.value, "step": self.step, "message": self.message}
         return {name: value for name, value in found.items() if value}
+
+
+MAX_DIARY_BYTES = 64 * 1024 * 1024
 
 
 def newest(runner_dir: Path) -> Path | None:
@@ -103,8 +108,14 @@ def read_result(runner_dir: Path) -> JobResult | None:
     path = newest(runner_dir)
     if path is None:
         return None
+    fh = open_diag(runner_dir, path.name)  # never through a link (diag_files.py)
+    if fh is None:
+        return None
     try:
-        text = path.read_text(encoding="utf-8", errors="replace")
+        with fh:  # its end, where the final state is: a longer diary loses only its start
+            size = os.fstat(fh.fileno()).st_size
+            fh.seek(max(0, size - MAX_DIARY_BYTES))
+            data = fh.read(MAX_DIARY_BYTES)
     except OSError:
         return None
-    return job_result(text)
+    return job_result(data.decode("utf-8", errors="replace"))

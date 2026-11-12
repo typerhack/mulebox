@@ -66,8 +66,8 @@ def read_event(path: str | None) -> dict[str, Any] | None:
     """The event file as one JSON object, or None when missing or anything else."""
     if not path:
         return None
-    try:
-        with open(path, "rb") as fh:
+    try:  # never through a symlink: an isolated runner's copy sits in a folder its job can write
+        with os.fdopen(os.open(path, os.O_RDONLY | os.O_NOFOLLOW), "rb") as fh:
             data = fh.read(MAX_EVENT_BYTES + 1)
     except OSError:
         return None

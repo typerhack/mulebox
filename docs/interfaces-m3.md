@@ -127,12 +127,22 @@ On the node (CLI `mulebox runner ...`):
   installs and starts `mulebox-runner@<name>.service`.
   Default name `<node>-<repo>`; default labels `mulebox` (GitHub adds `self-hosted`,
   `Linux`, `X64`).
-- `runner list`: name, repo, service state, busy/idle.
+- `runner add --isolated --repo <owner/repo> --actors a,b [--labels a,b] [--name N]`: no token.
+  Checks with the node's `gh` that it is an admin of the repository (`permissions.admin`), builds
+  the runner image (`place_image.py`), creates the `mulebox-isolated` network and writes
+  `<runners>/<name>/.mulebox-runner.json` with `isolated: true` and `public`. The worker's
+  `PlaceKeeper` starts a thread for it within 10 s (`place.py`): per job, `gh api -X POST
+  repos/<owner/repo>/actions/runners/generate-jitconfig` (name `<name>-<8 chars>`, group 1, labels
+  `self-hosted`, `Linux`, the arch, the given ones), a container on stdin, the hook's request in
+  `io/request.json`, the answer in `io/answer.json`, the reservation under `<name>`.
+- `runner list`: name, repo, service state (`isolated` for an isolated runner), busy/idle.
 - `runner caches <name> --project <project> [--only cache-npm,...] | --off`: writes the project's
   package cache settings (worker/caches.py `for_job`) into the runner's `.env`, drops them with
   `--off`, records `caches_of` in `.mulebox-runner.json`, restarts the unit. Refused while busy.
 - `runner remove <name>`: removal token on stdin; stops and disables the unit, runs
-  `./config.sh remove --token <t>`, removes the runner folder through safepath.
+  `./config.sh remove --token <t>`, removes the runner folder through safepath. An isolated
+  runner needs no token: its containers (label `mulebox.place=<name>`), its one-job runners left
+  on GitHub (named `<name>-...`), its tool volume and its folder are removed.
 - Unit template `mulebox/machine/systemd/mulebox-runner@.service`: `ExecStart=%h/.mulebox/runners/
   %i/run.sh`, `WorkingDirectory=%h/.mulebox/runners/%i`, `Environment=RUNNER_MANUALLY_TRAP_SIG=1` (so
   run.sh passes a stop on to the listener), `KillMode=mixed` (anything left is killed: a restart
@@ -145,7 +155,9 @@ with `gh api -X POST repos/<owner/repo>/actions/runners/registration-token --jq 
 (or `remove-token`), and runs `mulebox runner add|remove` on the coordinator over
 `common.ssh` with the token on stdin. Requires `gh` logged in with admin rights on the repo;
 clear error otherwise. `--actors` defaults to the account `gh` is signed in as (`gh api user`),
-stored as `actors` in the runner's `.mulebox-runner.json`.
+stored as `actors` in the runner's `.mulebox-runner.json`. `register --isolated` asks for no
+token and allows a public repository; the command runs `runner add --isolated` with an empty
+stdin line.
 
 ## Module ownership for the parallel build
 

@@ -728,7 +728,9 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       whose last step is `if: always()` and leaves a marker: the user's own runs passed with every
       step; with the runner's accounts set to another name, the same run failed in 3 s with no
       step run and no marker, GitHub showing the refusal as its annotation, nothing left running;
-      the runner took the next job normally. Open: the containers.
+      the runner took the next job normally. The containers built 2026-11-12 (1.4.0), with tests:
+      `runner register --isolated`, a fresh confined container per job (install.md). Open: a real
+      drill of an isolated runner, then mulebox's own CI on it.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's

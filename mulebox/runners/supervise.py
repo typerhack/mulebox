@@ -37,6 +37,8 @@ FOLLOW_S = 1.0
 CLOCK_SLACK_S = 120.0  # the coordinator's clock may differ from this machine's
 PROC_ROOT = Path("/proc")
 WORKER_NAMES = frozenset({"Runner.Worker", "Runner.Worker.dll"})
+PLACE_MARKER = ".mulebox-place"  # place.py: the container an isolated runner's job runs in
+PLACE_ROUND = ".mulebox-round"  # place.py: there while a round of it runs
 
 
 def _under(value: str, folder: Path) -> bool:
@@ -74,8 +76,28 @@ def worker_pids(runner_dir: Path, proc_root: Path = PROC_ROOT) -> list[int]:
 
 
 def runner_alive(runner_dir: Path, proc_root: Path = PROC_ROOT) -> bool:
-    """True if a `Runner.Worker` process runs with its cwd or an argument in `runner_dir`."""
-    return bool(worker_pids(runner_dir, proc_root))
+    """True if a `Runner.Worker` process runs with its cwd or an argument in `runner_dir`, or,
+    for an isolated runner, while the container named in its `.mulebox-place` runs."""
+    if worker_pids(runner_dir, proc_root):
+        return True
+    return place_alive(runner_dir)
+
+
+def place_container_name(runner_dir: Path) -> str | None:
+    """The container an isolated runner's job runs in now, from its marker (place.py)."""
+    try:
+        name = (runner_dir / PLACE_MARKER).read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return name or None
+
+
+def place_alive(runner_dir: Path) -> bool:
+    from mulebox.runners import place_container
+    from mulebox.worker.docker import Docker
+
+    name = place_container_name(runner_dir)
+    return name is not None and place_container.running(Docker(), name)
 
 
 class Supervisor:

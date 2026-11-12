@@ -69,7 +69,8 @@ def refuse_public(repo: str, run: GhRun = run_gh) -> None:
     if proc.returncode == 0 and (proc.stdout or "").strip() == "public":
         raise GitHubError(
             f"{repo} is public, and a runner there would run any fork's pull request on the "
-            "node; mulebox attaches runners to private repositories only")
+            "node; for a public repository, register it --isolated (a fresh confined container "
+            "per job)")
 
 
 def signed_in(run: GhRun = run_gh) -> str:
@@ -84,8 +85,11 @@ def signed_in(run: GhRun = run_gh) -> str:
 
 
 def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
-                labels: str | None = None, actors: str | None = None) -> list[str]:
+                labels: str | None = None, actors: str | None = None,
+                isolated: bool = False) -> list[str]:
     argv = [remote_program(config.remote_bin), "runner", action, "--repo", check_repo(repo)]
+    if isolated:
+        argv.append("--isolated")
     if name is not None:
         argv += ["--name", check_name(name)]
     if labels is not None:
@@ -97,7 +101,7 @@ def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
 
 def _run_remote(config: ClientConfig, argv: list[str], token: str, out: TextIO,
                 stream: Stream) -> None:
-    redactor = Redactor([token])
+    redactor = Redactor([token] if token else [])
     try:
         for line in stream(config.coordinator, argv, stdin=(token + "\n").encode(),
                            connect_timeout_s=config.connect_timeout_s):
@@ -110,14 +114,19 @@ def _run_remote(config: ClientConfig, argv: list[str], token: str, out: TextIO,
 
 
 def register(config: ClientConfig, repo: str, *, name: str | None = None,
-             labels: str | None = None, actors: str | None = None, run: GhRun = run_gh,
-             stream: Stream = ssh.stream_remote, out: TextIO = sys.stdout) -> None:
+             labels: str | None = None, actors: str | None = None, isolated: bool = False,
+             run: GhRun = run_gh, stream: Stream = ssh.stream_remote,
+             out: TextIO = sys.stdout) -> None:
     """Add a runner for repo on the coordinator. It takes runs of `actors` only, by default of
-    the account `gh` is signed in as (guard.py)."""
+    the account `gh` is signed in as (guard.py). An isolated one needs no token from here: the
+    node's own `gh` makes a one-job runner for each job (place.py), and only it may serve a
+    public repository."""
     remote_argv(config, "add", repo, name, labels, actors)  # refuse bad input before `gh`
-    refuse_public(repo, run)
-    argv = remote_argv(config, "add", repo, name, labels, actors or signed_in(run))
-    _run_remote(config, argv, gh_token(repo, "registration", run), out, stream)
+    if not isolated:
+        refuse_public(repo, run)
+    argv = remote_argv(config, "add", repo, name, labels, actors or signed_in(run), isolated)
+    _run_remote(config, argv, "" if isolated else gh_token(repo, "registration", run), out,
+                stream)
 
 
 def unregister(config: ClientConfig, repo: str, *, name: str | None = None,

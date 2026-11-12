@@ -3,6 +3,8 @@
 On the node (the token is read from stdin, or prompted without echo on a TTY):
 
     mulebox runner add --repo <owner/repo> --actors a,b [--labels a,b] [--name N]
+    mulebox runner add --isolated --repo <owner/repo> --actors a,b [--labels a,b] [--name N]
+        (no token: the node's `gh`, an admin of the repository, makes a one-job runner per job)
     mulebox runner list
     mulebox runner remove <name> | --repo <owner/repo> [--name N]
     mulebox runner caches <name> --project <project> [--only cache-npm,...] | --off
@@ -10,6 +12,7 @@ On the node (the token is read from stdin, or prompted without echo on a TTY):
 On the dev machine (the token comes from `gh`, the command runs on the coordinator over ssh):
 
     mulebox runner register --repo <owner/repo> [--labels a,b] [--name N] [--actors a,b]
+        [--isolated]  (a fresh container per job; the only way for a public repository)
     mulebox runner unregister --repo <owner/repo> [--name N]
 
 Exit codes: 0 done, 1 runner operation failed, 2 usage or config error, 3 node
@@ -42,6 +45,7 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     add = actions.add_parser("add", help="add a runner on this node (token on stdin)")
     _options(add, labels=True, config=True)
+    _isolated(add)
     add.set_defaults(func=_guarded(_add))
 
     listing = actions.add_parser("list", help="list the runners on this node")
@@ -67,6 +71,7 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     reg = actions.add_parser("register", help="from the dev machine: add a runner for a repo")
     _options(reg, labels=True, config=False)
+    _isolated(reg)
     reg.set_defaults(func=_guarded(_register))
 
     unreg = actions.add_parser("unregister", help="from the dev machine: remove a repo's runner")
@@ -84,6 +89,12 @@ def _options(parser: argparse.ArgumentParser, *, labels: bool, config: bool) -> 
             "refused before anything runs (register: default the account `gh` is signed in as)")
     if config:
         parser.add_argument("--config", help="node config file")
+
+
+def _isolated(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--isolated", action="store_true", help="run each job in a fresh, confined container "
+        "(needs Docker, and the node's `gh` signed in as an admin of the repository)")
 
 
 def _guarded(handler: Handler) -> Handler:
@@ -142,6 +153,11 @@ def _add(args: argparse.Namespace) -> int:
         raise RunnerUsageError("name the GitHub accounts whose runs it takes, --actors alice "
                                "(`runner register` fills in the account `gh` is signed in as)")
     actors = parse_actors(args.actors)
+    if args.isolated:
+        from mulebox.runners import place_manage
+
+        place_manage.add_isolated(machine, args.repo, name=name, labels=labels, actors=actors)
+        return 0
     token = read_token("GitHub runner registration token: ")
     manage.add(machine, args.repo, token, name=name, labels=labels, actors=actors)
     return 0
@@ -174,6 +190,11 @@ def _remove(args: argparse.Namespace) -> int:
         name = manage.find_by_repo(machine, args.repo)
     elif args.repo is not None:
         manage.check_runner_repo(machine, name, args.repo)
+    from mulebox.runners import place_manage
+
+    if place_manage.is_isolated(machine, name):
+        place_manage.remove_isolated(machine, name)
+        return 0
     token = read_token("GitHub runner removal token: ")
     manage.remove(machine, name, token)
     return 0
@@ -199,7 +220,7 @@ def _register(args: argparse.Namespace) -> int:
     from mulebox.runners import github
 
     github.register(load_client_config(), args.repo, name=args.name, labels=args.labels,
-                    actors=args.actors)
+                    actors=args.actors, isolated=args.isolated)
     return 0
 
 

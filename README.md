@@ -275,18 +275,19 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   message. A run's CPU counts its containers.
 - **Steered like any job**: freeze, boost, move in line, open on GitHub, cancel on GitHub.
 - **Shared caches**: a runner can download through the project's package caches (`runner caches`).
-- **Private repositories only.** See below for why.
+- **Public repositories only in a container** (`runner register --isolated`). See below for why.
 
-**Why not public repositories.** On a public repository anyone can fork it and open a pull request,
+**Public repositories.** On a public repository anyone can fork it and open a pull request,
 and GitHub runs the workflow file from that pull request, not yours. A stranger can write
-`runs-on: [self-hosted, mulebox]` and a step such as `curl ... | sh`, and it runs on your build
-machine as your user, with Docker (as good as root there), on your network, next to your other
-projects' runners. GitHub's own documentation advises against self-hosted runners on public
-repositories for this reason. Approving each outside contributor's run helps, but one careless
-approval is enough, and the danger can hide in a changed test script rather than the workflow.
-So `mulebox runner register` refuses a public repository, and a repository that turns public
-later keeps its runner only until you unregister it. Open-source projects can use GitHub's own
-hosted runners, which are free for public repositories; mulebox itself does.
+`runs-on: [self-hosted, mulebox]` and a step such as `curl ... | sh`, and on a plain runner it runs
+on your node as your user, with Docker (as good as root there), next to your other projects'
+runners. GitHub's own documentation advises against self-hosted runners on public repositories
+for this reason. So a plain runner refuses a public repository. An isolated runner
+(`mulebox runner register --isolated`) takes it: the guard refuses other people's runs before
+anything runs, and every job runs in a fresh container with no folder of the node, no Docker
+socket and no privileges, removed when the job ends. It needs Docker on the node and the node's
+`gh` signed in as the repository's admin; what it does not cover (a shared kernel, your network)
+is in [install.md](docs/install.md#github-runners).
 
 ### You steer
 

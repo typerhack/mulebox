@@ -33,7 +33,7 @@ def steer(calls):
 
 def follow(controls, jobs):
     controls.follow(jobs)
-    for held, _ in controls.held.values():
+    for held, *_ in controls.held.values():
         assert held.task is None or held.task.wait(5.0)
         assert held.task is None or held.task.error is None, held.task.error
 

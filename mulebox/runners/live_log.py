@@ -31,6 +31,7 @@ from typing import BinaryIO
 
 from mulebox.common.redact import StreamRedactor
 from mulebox.runners import diary
+from mulebox.runners.diag_files import open_diag
 from mulebox.runners.diary import STEP
 from mulebox.worker.logtail import LogTailer, MakeRequest, Send
 
@@ -110,13 +111,16 @@ class RunnerLog:
     def _find_worker_log(self, started_after: float) -> Path | None:
         newest = diary.newest(self.diag.parent)
         try:
-            return newest if newest and newest.stat().st_mtime >= started_after else None
+            return newest if newest and newest.lstat().st_mtime >= started_after else None
         except OSError:
             return None
 
     def _read_worker_log(self) -> None:
+        fh = open_diag(self.diag.parent, self._worker_log.name)
+        if fh is None:
+            return
         try:
-            with open(self._worker_log, "rb") as fh:
+            with fh:
                 fh.seek(self._worker_pos)
                 data = fh.read(READ_BYTES)
         except OSError:
@@ -152,9 +156,8 @@ class RunnerLog:
             if record == self._job:
                 continue
             if name not in self._pages and name not in self._done and len(self._pages) < MAX_OPEN:
-                try:
-                    fh = open(self.diag / "pages" / name, "rb")
-                except OSError:
+                fh = open_diag(self.diag.parent, "pages", name)
+                if fh is None:
                     continue
                 self._pages[name] = _Page(fh, record)
         for name, page in list(self._pages.items()):

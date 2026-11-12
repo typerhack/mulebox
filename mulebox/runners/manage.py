@@ -180,8 +180,11 @@ def list_runners(m: Machine) -> list[RunnerInfo]:
             unit = unit_name(folder.name)
         except RunnerUsageError:
             continue  # not a folder runner add could have made
-        proc = _systemctl(m, "is-active", unit)
-        state = (proc.stdout or "").strip() or "unknown"
+        if meta.get("isolated") is True:  # no service: a container per job (place.py)
+            state = "isolated"
+        else:
+            proc = _systemctl(m, "is-active", unit)
+            state = (proc.stdout or "").strip() or "unknown"
         found.append(RunnerInfo(folder.name, str(meta.get("repo", "-")), state,
                                 layout.is_busy(folder)))
     return found

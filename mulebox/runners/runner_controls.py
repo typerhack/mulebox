@@ -13,6 +13,9 @@ When a run's reservation is gone (its run ended, or was released) while it was p
 its service is thawed and set back at once, or the runner would stay frozen with no job to show
 for it. After a worker restart nothing is known of what was applied, so the first round sets the
 service as the coordinator says, undoing a freeze or boost left from before.
+
+An isolated runner (place.py) has no service: its job runs in one container, which is paused and
+given CPU shares in its place (ContainerUnit), found by `place(runner)`.
 """
 
 from __future__ import annotations
@@ -46,13 +49,35 @@ class RunnerUnit:
                         f"IOWeight={weight}")
 
 
+class ContainerUnit:
+    """An isolated runner's container in the same shape: `handle` is the container's name."""
+
+    def __init__(self, docker: Any) -> None:
+        self.docker = docker
+
+    def freeze(self, handle: str, on: bool) -> None:
+        self.docker.run("pause" if on else "unpause", handle)
+
+    def prioritize(self, handle: str, on: bool) -> None:
+        from mulebox.runners.place_container import CPU_SHARES
+        from mulebox.worker.controls import BOOST_SHARES
+
+        self.docker.run("update", "--cpu-shares", str(BOOST_SHARES if on else CPU_SHARES), handle)
+
+
+def _no_place(runner: str) -> str | None:
+    return None
+
+
 class RunnerControls:
     """Called once a supervision round with the reservations the coordinator listed."""
 
     def __init__(self, unit: RunnerUnit, docker: Any,
-                 containers: Callable[[str], list[str]]) -> None:
-        self.unit, self.docker, self.containers = unit, docker, containers
-        self.held: dict[str, tuple[JobControls, Any]] = {}  # job id -> its controls, its target
+                 containers: Callable[[str], list[str]],
+                 place: Callable[[str], str | None] = _no_place) -> None:
+        self.unit, self.docker, self.containers, self.place = unit, docker, containers, place
+        # job id -> its controls, its target, what steers it (the service or the container)
+        self.held: dict[str, tuple[JobControls, Any, Any]] = {}
 
     def follow(self, jobs: list[dict[str, Any]]) -> None:
         seen = set()
@@ -66,16 +91,23 @@ class RunnerControls:
                 continue
             seen.add(job_id)
             if job_id not in self.held:  # nothing known: set it as asked, whatever was left
-                controls = JobControls(find=lambda r=runner: self.containers(r),
-                                       applied=Wanted(paused=True, boost=True))
-                self.held[job_id] = (controls, SimpleNamespace(job_id=job_id, handle=handle))
-            controls, target = self.held[job_id]
-            controls.follow(job, target, self.unit, self.docker)
+                container = self.place(runner)
+                if container:
+                    controls = JobControls(find=list, applied=Wanted())
+                    target, steer = container, ContainerUnit(self.docker)
+                else:
+                    controls = JobControls(find=lambda r=runner: self.containers(r),
+                                           applied=Wanted(paused=True, boost=True))
+                    target, steer = handle, self.unit
+                self.held[job_id] = (controls, SimpleNamespace(job_id=job_id, handle=target),
+                                     steer)
+            controls, target, steer = self.held[job_id]
+            controls.follow(job, target, steer, self.docker)
         for job_id in [job_id for job_id in self.held if job_id not in seen]:
-            controls, target = self.held.pop(job_id)
+            controls, target, steer = self.held.pop(job_id)
             if controls.applied.boost:
                 try:
-                    self.unit.prioritize(target.handle, False)
+                    steer.prioritize(target.handle, False)
                 except Exception as exc:  # noqa: BLE001 - the next run starts at the default
                     LOG.warning("could not end the boost of %s: %s", target.handle, exc)
-            controls.release(target, self.unit, self.docker)
+            controls.release(target, steer, self.docker)

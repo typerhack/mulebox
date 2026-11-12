@@ -567,10 +567,11 @@ do not let Playwright's `webServer` start something on a fixed port.
 ## 3. Moving GitHub Actions to mulebox runners
 
 A repository's CI can run on the node through the same queue. Do this only when
-the user asks for it, and **never for a public repository**: anyone can open a pull request,
-GitHub takes its workflow from that pull request, so it can name the runner itself and run its
-code on the node, whatever the main branch's workflow says. If the repository is
-public, or is about to be, stop and tell the user.
+the user asks for it. On a **public repository** only an isolated runner may serve it
+(`mulebox runner register --isolated`, a fresh container per job): anyone can open a pull
+request, GitHub takes its workflow from that pull request, so it can name the runner itself,
+whatever the main branch's workflow says. If the repository is public, or is about to be, tell
+the user and ask before registering anything.
 
 1. **Register a runner** (needs `gh` logged in with admin rights on the repository):
 
@@ -596,7 +597,8 @@ jobs:
    With the `CI_RUNS_ON` repository variable the user can switch back (for example to
    `["ubuntu-latest"]`) without a code change. Keep the first lines: a pull request from a
    fork must never reach this runner. Its code would run as the node's user, with
-   Docker. On a public repository, ask the user before registering a runner at all.
+   Docker. On a public repository, ask the user before registering a runner at all, and then
+   only `--isolated`; a job there has no Docker, `services:` or `container:`.
 3. **Linux differences to check:**
    - The node is Linux, not macOS: Docker is Docker Engine, not Docker Desktop.
      Containers that write into the checkout leave root-owned files. Run them with the

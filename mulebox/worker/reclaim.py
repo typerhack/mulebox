@@ -27,6 +27,7 @@ import os
 from pathlib import Path
 
 from mulebox.common import compose
+from mulebox.common.ids import new_id
 from mulebox.common.safepath import Roots, UnsafePath, confirm_dir
 from mulebox.worker.docker import Docker
 from mulebox.worker.paths import NodePaths
@@ -80,3 +81,9 @@ def reclaim_cache(docker: Docker, paths: NodePaths, project: str, job_id: str,
     """Make the worker's user own everything in this project's package caches."""
     source = confirm_dir(paths.packages_dir(project), Roots((paths.cache,)))
     _run(docker, source, job_id, worker)
+
+
+def reclaim_runner_dir(docker: Docker, paths: NodePaths, folder: Path, worker: str) -> None:
+    """Make the worker's user own everything an isolated runner's container wrote in one of
+    its folders (`io-*`, `_diag`), as the container's user is not the node's."""
+    _run(docker, confirm_dir(folder, Roots((paths.runners,))), new_id("job"), worker)

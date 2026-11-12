@@ -99,7 +99,7 @@ def test_unreachable_stays_unreachable():
 
 def test_register_refuses_a_public_repository_before_any_token():
     gh, stream = FakeGh(visibility="public"), FakeStream()
-    with pytest.raises(GitHubError, match="private repositories only"):
+    with pytest.raises(GitHubError, match="--isolated"):
         github.register(CONFIG, REPO, run=gh, stream=stream, out=io.StringIO())
     assert gh.seen == ["gh", "api", f"repos/{REPO}", "--jq", ".visibility"]
     assert gh.calls == [] and stream.calls == []

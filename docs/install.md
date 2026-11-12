@@ -293,11 +293,44 @@ reads either: GitHub's runner gives the hook GitHub's own data about the run, ne
 `env:`. Keep forks' pull requests on GitHub's machines in the
 workflow too (see [docs/agents.md](agents.md)), so a contributor's CI still runs and is not refused.
 
-**Private repositories only.** Never attach a runner to a public repository: anyone can open a
-pull request, and its workflow file comes from that pull request, so it can ask for your runner
-whatever your own workflow says, and run its code on your node. `mulebox runner
-register` refuses a public repository; one that turns public later keeps its runner until you
-unregister it.
+**Public repositories: isolated runners only.** On a public repository anyone can open a pull
+request, and its workflow file comes from that pull request, so it can ask for your runner whatever
+your own workflow says. A plain runner runs as the node's user, so `mulebox runner register`
+refuses a public repository; one that turns public later keeps its runner until you unregister it.
+For a public repository, register an isolated runner, which runs every job in a fresh, confined
+container:
+
+```sh
+mulebox runner register --isolated --repo example-org/example-app --labels mulebox-ci
+~/.mulebox/bin/mulebox runner add --isolated --repo example-org/example-app --actors alice  # on the node
+```
+
+It needs Docker on the node, and the node's own `gh` signed in as an admin of the repository
+(`gh auth login` there; `gh api repos/example-org/example-app --jq .permissions.admin` prints
+`true`): for each job the node asks GitHub for a one-job runner, which only an admin may make. No
+token is sent from the dev machine, and the container never sees the node's sign-in. What a job
+gets:
+
+- a fresh container from GitHub's runner image with git, curl and shellcheck added, built once per
+  runner release on the node (the first `add` takes a few minutes; then a job starts in about
+  10 s), removed when the job ends;
+- no folder of the node, no Docker socket, no capabilities, `no-new-privileges` (so `sudo` in a
+  workflow fails), limits on memory (three quarters of the node's) and processes, half the CPU
+  weight of the node's own processes, and a network of its own;
+- one volume per runner for `/opt/hostedtoolcache`, so setup-python and setup-node download a
+  version once. Only runs the guard let in write to it.
+
+The guard above runs on the node before the job's first step, on what the container's hook hands
+over; a refused job's container is killed with it. The slot is reserved as for any runner, and
+pause, boost and cancel work from the dashboard. `runner list` shows it as `isolated`, and `runner
+remove` (no token) removes its containers, its leftover one-job runner on GitHub, its tool volume
+and its folder.
+
+What it does not cover: the container shares the node's kernel, and can reach the internet and,
+unless the firewall says otherwise, the machines on your network (mulebox's LAN mode closes the
+dashboard to it). A job that needs Docker itself, `services:` or `container:`, cannot run there;
+keep such jobs on GitHub's machines. A job can write its own diary in the container, so the
+result the dashboard shows for it is the job's word; GitHub's is the real one.
 What a job can reach: [Security model](#security-model).
 
 ## More machines
