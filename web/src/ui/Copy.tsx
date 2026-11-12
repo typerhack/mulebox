@@ -1,5 +1,7 @@
 // A line that may be longer than its box: cut with an ellipsis, the whole text in its tooltip,
 // and a small button beside it that copies the whole text (a check for a moment once copied).
+// The dashboard is often plain HTTP on a LAN address, where browsers give no clipboard API, so
+// the copy falls back to a hidden text field.
 
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -15,7 +17,11 @@ export function CopyText({ text, title, className }: { text: string; title?: str
     return () => clearTimeout(timer);
   }, [copied]);
   const copy = () => {
-    navigator.clipboard?.writeText(text).then(() => setCopied(true), () => undefined);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => setCopied(true), () => setCopied(copyByField(text)));
+    } else {
+      setCopied(copyByField(text));
+    }
   };
   const Icon = copied ? Check : Copy;
   return (
@@ -31,4 +37,21 @@ export function CopyText({ text, title, className }: { text: string; title?: str
       </Tip>
     </span>
   );
+}
+
+function copyByField(text: string): boolean {
+  const field = document.createElement("textarea");
+  field.value = text;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.appendChild(field);
+  field.select();
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    field.remove();
+  }
 }

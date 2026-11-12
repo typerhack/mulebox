@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.4 - 2026-11-12 - patch
+- The copy button of 1.13.3 did nothing on the dashboard's LAN address: over plain HTTP the page is not a secure context and browsers give it no clipboard API (seen in Edge on the node). It now falls back to copying through a hidden text field.
+
 ## 1.13.3 - 2026-11-12 - patch
 - Dashboard: a running job's card cut a long GitHub step name (such as `Run actions/setup-python@` and a 40-character commit) only past the card's edge, which also pushed its Cores meter out. The step now ends in an ellipsis inside the card, its whole name in the tooltip, with a small button beside it that copies the whole name (`web/src/ui/Copy.tsx`, reusable for any long line).
 - A macOS test of stopping a group left by an earlier worker read the group as alive while its last process, reparented, was still a zombie waiting for launchd (seen once on GitHub's macOS machine). It now gives the group a few seconds to go.

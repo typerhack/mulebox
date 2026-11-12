@@ -17,4 +17,15 @@ describe("a line that may be longer than its box", () => {
     expect(writeText).toHaveBeenCalledWith(step);
     expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
   });
+
+  it("copies through a hidden field where the page has no clipboard API (plain HTTP)", async () => {
+    vi.stubGlobal("navigator", {});
+    const exec = vi.fn(() => true);
+    Object.defineProperty(document, "execCommand", { value: exec, configurable: true });
+    render(<TipProvider><CopyText text="Run tests" title="GitHub step" /></TipProvider>);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Copy GitHub step" })); });
+    expect(exec).toHaveBeenCalledWith("copy");
+    expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
+    expect(document.querySelector("textarea")).toBeNull();
+  });
 });
