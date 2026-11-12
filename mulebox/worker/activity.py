@@ -3,7 +3,7 @@
 - **Output**: bytes reaching the job's raw log (the agent notes when).
 - **The job's CPU and traffic**: worker/job_meter.py. These, with output, decide `idle_s`, the
   number that can stop a job.
-- **The machine's CPU and network**: `/proc/stat` and `/proc/net/dev`, every SAMPLE_S, for whoever
+- **The machine's CPU and network**: `/proc/stat` and `/proc/net/dev` (macOS: common/host.py), every SAMPLE_S, for whoever
   reads the job's status. They never decide anything: on a real machine a desktop and a VPN kept
   them far above any idle level.
 
@@ -14,28 +14,23 @@ no output. Null is never read as idle (coordinator/attendance.py).
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.common.proc import IDLE, PROC, core_times
+from mulebox.common.host import DarwinHost
+from mulebox.common.proc import PROC, busy_seconds
 from mulebox.common.status import IMAGES
 from mulebox.worker.cgroups import net_bytes
 from mulebox.worker.job_meter import SAMPLE_S, JobMeter
-
-USER_HZ = 100.0  # the unit of /proc/stat on every Linux this runs on
 
 Counters = tuple[float, int]  # busy CPU seconds, network bytes
 Reader = Callable[[], Counters | None]
 
 
-def busy_seconds(text: str) -> float:
-    """Busy time of all cores, waiting for a disk included."""
-    return sum(sum(values) - values[IDLE] for values in core_times(text)) / USER_HZ
-
-
 def read_counters(proc: Path = PROC) -> Counters | None:
-    """The machine's counters now; None where there is no /proc (macOS in development)."""
+    """The machine's counters now, from Linux's /proc; None where there is none."""
     try:
         cpu = (proc / "stat").read_text(encoding="ascii", errors="replace")
         net = (proc / "net" / "dev").read_text(encoding="ascii", errors="replace")
@@ -44,10 +39,21 @@ def read_counters(proc: Path = PROC) -> Counters | None:
         return None
 
 
+def mac_counters() -> Counters | None:
+    """The same from macOS (common/darwin_host.py), over its physical interfaces."""
+    reading = DarwinHost()
+    busy, net = reading.busy_seconds(), reading.net()
+    return None if busy is None or net is None else (busy, net[0] + net[1])
+
+
+def machine_counters() -> Counters | None:
+    return mac_counters() if sys.platform == "darwin" else read_counters()
+
+
 class MachineMeter:
     """The machine's last reading; shared by a worker's jobs."""
 
-    def __init__(self, read: Reader = read_counters) -> None:
+    def __init__(self, read: Reader = machine_counters) -> None:
         self._read = read
         self._last: Counters | None = None
         self._at = 0.0

@@ -1,8 +1,7 @@
 """Machine metrics for the dashboard graphs: CPU per core, memory, disk, own overhead.
 
-Read from `/proc` on Linux. The proc root, the disk-usage function and the clocks are
-injectable, so tests feed fixed files; on a machine without `/proc` (macOS during
-development) CPU and memory are None and nothing fails.
+Read through common/host.py: `/proc` on Linux, the system's own readings on macOS. The proc
+root, the disk-usage function and the clocks are injectable, so tests feed fixed files.
 
 - CPU: busy share per core between two samples of `/proc/stat` (busy = total - idle -
   iowait), in percent. The first sample has no previous one, so it reports None.
@@ -17,6 +16,7 @@ development) CPU and memory are None and nothing fails.
 
 from __future__ import annotations
 
+import json
 import os
 import resource
 import sys
@@ -26,8 +26,12 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.disk import usage_by_device as disk_usage
+from mulebox.common.host import Host, LinuxHost, for_platform
 from mulebox.common.proc import PROC, cpu_percent, parse_cpu, parse_memory, parse_swap, read
-from mulebox.worker import cgroups
+from mulebox.worker import cgroups, darwin_jobs
+from mulebox.worker.darwin_exec import RECORDS
+from mulebox.worker.docker_stats import Engine
+from mulebox.worker.executor import UNIT_PREFIX
 
 __all__ = ["Sampler", "cpu_percent", "disk_usage", "jobs_memory", "parse_cpu", "parse_memory",
            "parse_swap"]
@@ -45,30 +49,63 @@ def jobs_memory(containers: list[str], runners: list[str], root: Path = cgroups.
     return sum(cgroups.memory_bytes(group) or 0 for group in groups)
 
 
+def mac_jobs_memory(containers: list[str], runners: list[str], records: Path,
+                    listing: Callable[[], Any] = darwin_jobs.processes,
+                    engine: Any = None) -> int | None:
+    """The same on a Mac: the resident memory of the job process groups the worker recorded
+    (worker/darwin_exec.py), and the engine's numbers for `containers`. None when either cannot be
+    read. Runners on a Mac are M21.4; until then their own processes are not counted."""
+    table = listing()
+    if table is None:
+        return None
+    pgids = set()
+    for path in records.glob(f"{UNIT_PREFIX}*") if records.is_dir() else []:
+        try:
+            pgids.add(int(json.loads(path.read_text(encoding="utf-8"))["pgid"]))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    total = darwin_jobs.group_memory(pgids, table)
+    engine = engine or Engine()
+    for container in containers:
+        stats = engine.stats(container)
+        if stats is None:
+            return None
+        total += int(stats.get("memory", 0))
+    return total
+
+
+def jobs_memory_for(roots: dict[str, str]) -> Callable[[list[str], list[str]], int | None]:
+    """This machine's way of reading jobs' memory."""
+    if sys.platform == "darwin" and roots.get("staging"):
+        records = Path(roots["staging"]) / RECORDS
+        return lambda containers, runners: mac_jobs_memory(containers, runners, records)
+    return jobs_memory
+
+
 class Sampler:
     """Keeps the previous CPU sample and the process times between calls."""
 
-    def __init__(self, proc: Path = PROC, *, wall: Callable[[], float] = time.monotonic,
-                 cpu_time: Callable[[], float] = time.process_time) -> None:
-        self.proc = proc
+    def __init__(self, proc: Path | None = None, *, wall: Callable[[], float] = time.monotonic,
+                 cpu_time: Callable[[], float] = time.process_time, host: Host | None = None
+                 ) -> None:
+        self.proc = proc or PROC  # this process's own memory (`self/statm`, Linux)
+        # A /proc folder given is Linux's, as tests give one; else this machine's own readings.
+        self.host = host or (LinuxHost(proc) if proc is not None else for_platform())
         self.wall, self.cpu_time = wall, cpu_time
         self._cpu: list[tuple[int, int]] = []
         self._self = (wall(), cpu_time())
 
     def cpu(self) -> list[float] | None:
-        text = read(self.proc / "stat")
-        now = parse_cpu(text) if text else []
+        now = self.host.cores()
         result = cpu_percent(self._cpu, now)
         self._cpu = now
         return result
 
     def memory(self) -> dict[str, int] | None:
-        text = read(self.proc / "meminfo")
-        return parse_memory(text) if text else None
+        return self.host.memory()
 
     def memory_and_swap(self) -> tuple[dict[str, int] | None, dict[str, int] | None]:
-        text = read(self.proc / "meminfo")
-        return (parse_memory(text), parse_swap(text)) if text else (None, None)
+        return self.host.memory(), self.host.swap()
 
     def own(self) -> dict[str, float | int | None]:
         """CPU percent of one core used by this process since the last call, and its RSS."""

@@ -717,8 +717,12 @@ by Sol before the next starts (the user's ask).
       `<staging>/job-groups/`; pinned Node.js as the macOS build. Tested with real processes on the
       Mac (a group left by an earlier worker found and stopped, a reused group id left alone). Boost
       reaches only containers there, as the docs say. Open: a real job on a Mac node.
-- [ ] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
-      CPU and memory, for heartbeats, activity and the dashboard.
+- [~] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
+      CPU and memory, for heartbeats, activity and the dashboard. Built 2026-11-12 (1.8.0):
+      `common/host.py` over `/proc` and macOS (`common/darwin_host.py`), a job's group from `ps`
+      and its containers from the engine's API (`worker/darwin_jobs.py`, `docker_stats.py`). The
+      parsers are tested on a real Mac's output, and the kernel's core counters read on this Mac.
+      Open: the readings of a real Mac node on the dashboard.
 - [ ] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
 - [ ] M21.5 CI runs the suite on macOS too.
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.

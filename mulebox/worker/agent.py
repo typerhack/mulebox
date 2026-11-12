@@ -144,7 +144,7 @@ class Agent(Ending, Skipping):
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}),
                         take=[p for p in claim.get("take") or [] if isinstance(p, str)])
-        job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker)
+        job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker, self.executor)
         self.active[job_id] = job
         job.steps.begin(PREPARE, now)
         LOG.info("claimed %s (%s, attempt %s)", job_id, project, attempt_id)

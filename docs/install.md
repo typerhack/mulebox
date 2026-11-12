@@ -79,8 +79,8 @@ sudo loginctl enable-linger alice
 
 ### A Mac as a node
 
-Being built ([roadmap](phases.md), M21): the services install and run, and so do jobs;
-readings and runners follow. `mulebox setup` installs a Mac the same way, with these differences:
+Being built ([roadmap](phases.md), M21): the services install and run, and so do jobs, with
+their readings; GitHub runners follow. `mulebox setup` installs a Mac the same way, with these differences:
 
 - Python 3.12 or newer, such as `brew install python@3.13` (the Mac's own `python3` is older), and
   git (`xcode-select --install`). The installer looks in Homebrew's folders, which an ssh login
@@ -99,6 +99,11 @@ readings and runners follow. `mulebox setup` installs a Mac the same way, with t
 - Jobs run under `nice -n 5`, so the Mac's own use comes first, as a unit's lower CPU weight
   does on Linux. Boost raises a job's containers only: macOS lets only root raise a process's
   priority again.
+- The machine's CPU per core, memory, swap and network come from macOS itself (the kernel's
+  core counters, `vm_stat`, `vm.swapusage`, the `en*` interfaces in `netstat`). A job's own CPU
+  and memory are its process group's, from `ps`; its containers' come from the Docker engine's
+  API, as they run in a virtual machine the Mac cannot look into. A process that starts and ends
+  between two readings is not counted; the job's output still is.
 - Pinned toolchains are the macOS builds (`node-v<ver>-darwin-arm64`). Compose jobs need Docker
   Desktop, OrbStack or Colima; their containers run Linux in a virtual machine.
 

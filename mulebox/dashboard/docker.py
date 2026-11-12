@@ -1,7 +1,7 @@
 """Ask Docker through the Engine API socket: its containers, and how much disk it uses.
 
-Asks on the Unix socket (DOCKER_HOST when it is `unix://...`, else /var/run/docker.sock) with a
-short timeout. No docker CLI process per sample. Any problem (no socket, no permission, daemon
+Asks on the Unix socket (common/docker_socket.py: DOCKER_HOST, /var/run/docker.sock, else the
+docker context) with a short timeout. No docker CLI process per sample. Any problem (no socket, no permission, daemon
 down, odd reply) yields None, shown as "not available"; the dashboard never fails because of
 Docker. Only what the Memory and Disk boxes need is kept: the count of running containers, the
 ids of those mulebox started for a job or a GitHub runner started from its work folder, and
@@ -10,28 +10,17 @@ Docker's disk use. No names, images, environment or inspect output reach the das
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
 import aiohttp
 
 from mulebox.common.compose import LABEL_JOB
+from mulebox.common.docker_socket import DEFAULT_SOCKET, socket_path
 from mulebox.runners.runner_meter import WORKDIR_LABEL, runner_containers
 
-DEFAULT_SOCKET = "/var/run/docker.sock"
 TIMEOUT_S = 2.0
 DF_TIMEOUT_S = 30.0  # `/system/df` sizes every image layer: 0.7 s on a machine with 59 images
-
-
-def socket_path(environ: dict[str, str] | None = None) -> str | None:
-    """The Docker socket to ask, or None when DOCKER_HOST points somewhere else (tcp)."""
-    host = (environ if environ is not None else os.environ).get("DOCKER_HOST", "")
-    if not host:
-        return DEFAULT_SOCKET
-    if host.startswith("unix://"):
-        return host[len("unix://"):]
-    return None
 
 
 async def _get(path: str | None, url: str, timeout_s: float = TIMEOUT_S) -> Any:

@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.8.0 - 2026-11-12 - minor
+- Readings on a macOS node (M21.3): `common/host.py` gives the machine's cores, memory, swap and network the same way on both systems, from `/proc` on Linux and from macOS itself (`common/darwin_host.py`: the kernel's core counters through ctypes, `vm_stat`, `vm.swapusage`, the `en*` interfaces of `netstat`). The load a worker reports, its activity meter and the dashboard's graphs read through it; on Linux nothing changes.
+- A job's own readings on a Mac: its process group's CPU and memory from one `ps` listing, each process keyed on its own so a new one counts from nothing (`worker/darwin_jobs.py`), and its containers' CPU, memory and traffic from the Docker engine's API (`worker/docker_stats.py`), asked beside the loop. Anything unknown stays unknown, never idle. The dashboard's jobs' memory sums the recorded groups and the containers.
+- `common/docker_socket.py`: one place that finds the engine's socket, `DOCKER_HOST`, `/var/run/docker.sock`, else the docker context (Colima), for the dashboard and the readings.
+
 ## 1.7.0 - 2026-11-12 - minor
 - Jobs on a macOS node (M21.2): `worker/darwin_exec.py` builds on the process-group executor. Each job leaves a record of its group in `<staging>/job-groups/` (through safepath), so a worker that restarts finds and stops the groups an earlier one left, and a record whose group id now belongs to another process is only removed. Jobs run under `nice -n 5`, the Mac's counterpart of a unit's lower CPU weight; boost reaches only a job's containers there, as only root can raise a priority again. A group of exited, unreaped processes (EPERM on macOS) counts as stopped.
 - Pinned Node.js installs the build for the node's own system (`node_build`: `linux-x64`, `darwin-arm64`); `download.linux_arch` is now `cpu_arch`, beside `system_name`.

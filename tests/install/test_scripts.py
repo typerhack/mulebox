@@ -88,11 +88,15 @@ def fake_python(folder, name, minor):
     ({"python3": 9}, "python3"),  # nothing newer: check_python then says what to install
 ])
 def test_an_old_python3_gives_way_to_a_newer_python3_n(tmp_path, found, picked):
+    """Only the fakes are on PATH: a machine's own python3.12 in /usr/bin must not count."""
     for name, minor in found.items():
         fake_python(tmp_path, name, minor)
-    env = {**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin"}
+    uname = tmp_path / "uname"
+    uname.write_text("#!/bin/sh\necho Linux\n")
+    uname.chmod(0o755)
+    env = {**os.environ, "PATH": str(tmp_path)}
     env.pop("MULEBOX_PYTHON", None)
-    done = subprocess.run(["bash", "-c", 'source "$1"; pick_python; echo "$PYTHON"', "t",
+    done = subprocess.run(["/bin/bash", "-c", 'source "$1"; pick_python; echo "$PYTHON"', "t",
                            str(INSTALL_SH)], capture_output=True, text=True, env=env, check=True)
     assert done.stdout.strip() == picked
 

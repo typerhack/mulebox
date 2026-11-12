@@ -30,7 +30,7 @@ from mulebox.dashboard import docker, machines
 from mulebox.dashboard.data import DashboardData
 from mulebox.dashboard.events import EventBus
 from mulebox.dashboard.machine_history import MachineHistory
-from mulebox.dashboard.metrics import Sampler, disk_usage, jobs_memory
+from mulebox.dashboard.metrics import Sampler, disk_usage, jobs_memory_for
 
 _log = get_logger(__name__)
 QUEUE_S = 1.0
@@ -47,7 +47,7 @@ class Hub:
                  sampler: Sampler | None = None,
                  docker_list: Callable[[], Awaitable[list[dict] | None]] | None = None,
                  docker_disk: Callable[[], Awaitable[int | None]] | None = None,
-                 job_memory: Callable[[list[str], list[str]], int | None] = jobs_memory,
+                 job_memory: Callable[[list[str], list[str]], int | None] | None = None,
                  clock: Callable[[], float] = time.time, local_name: str | None = None) -> None:
         self.data, self.bus, self.roots, self.clock = data, bus, roots, clock
         # The worker on this machine; by default the one the data names.
@@ -57,7 +57,7 @@ class Hub:
         socket = docker.socket_path()
         self.docker_list = docker_list or (lambda: docker.containers(socket))
         self.docker_disk = docker_disk or (lambda: docker.disk_use(socket))
-        self.job_memory = job_memory
+        self.job_memory = job_memory or jobs_memory_for(roots)
         self.history: deque[dict[str, Any]] = deque(maxlen=HISTORY)
         self.disk: list[dict[str, Any]] = []
         self.docker: int | None = None

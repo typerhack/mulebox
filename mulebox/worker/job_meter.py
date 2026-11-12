@@ -17,6 +17,7 @@ and runs outside the unit. It counts only through its output.
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Any
 
 from mulebox.common import compose
 from mulebox.worker import background, cgroups
@@ -37,8 +38,7 @@ class ContainerList(background.Polled[list[str]]):
     """The job's containers, by label, asked of Docker beside the loop (background.Polled)."""
 
     def __init__(self, docker: Docker, job_id: str) -> None:
-        super().__init__(lambda: docker.lines(
-            "ps", "--quiet", "--no-trunc", "--filter", f"label={compose.LABEL_JOB}={job_id}"))
+        super().__init__(labelled(docker, job_id))
 
     def ids(self) -> list[str] | None:
         return self.value()
@@ -104,6 +104,19 @@ class JobMeter:
             self.busy_at = before
 
 
-def for_job(job_id: str, uses_docker: bool, docker: Docker) -> JobMeter:
+def labelled(docker: Docker, job_id: str) -> Callable[[], list[str]]:
+    return lambda: docker.lines("ps", "--quiet", "--no-trunc", "--filter",
+                                f"label={compose.LABEL_JOB}={job_id}")
+
+
+def for_job(job_id: str, uses_docker: bool, docker: Docker, executor: Any = None) -> JobMeter:
+    """The job's meter: from cgroups on Linux; on a Mac, from its process group, which only the
+    executor knows (darwin_exec.py `pgid_of`), and the engine's numbers (darwin_jobs.py)."""
+    pgid_of = getattr(executor, "pgid_of", None)
+    if pgid_of is not None:
+        from mulebox.worker import darwin_jobs
+
+        stats = darwin_jobs.ContainerStats(labelled(docker, job_id)) if uses_docker else None
+        return JobMeter(darwin_jobs.JobReader(lambda: pgid_of(unit_name(job_id)), stats))
     containers = ContainerList(docker, job_id) if uses_docker else None
     return JobMeter(lambda: read_job(job_id, containers))

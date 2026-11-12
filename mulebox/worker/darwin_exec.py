@@ -129,6 +129,11 @@ class DarwinExecutor(SubprocessExecutor):
             self._stop(found[0], self.grace_s)
         self._forget(name)
 
+    def pgid_of(self, name: str) -> int | None:
+        """The process group of a job this executor runs, for its readings (darwin_jobs.py)."""
+        handle = self.running.get(name)
+        return handle.pgid if handle is not None else None
+
     def _ours(self, pgid: int, started: str | None) -> bool:
         if not group_alive(pgid):
             return False

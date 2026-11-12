@@ -1,6 +1,6 @@
 """Reading `/proc`: what the dashboard's graphs, the worker's activity meter and the load a
-worker reports with its claims (`HostLoad`, M5.3) share. Without `/proc` (macOS) the readers
-give nothing and nothing fails."""
+worker reports with its claims (`HostLoad`, M5.3) share on Linux. `HostLoad` itself reads through
+common/host.py, so on macOS it reports that system's own readings."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from mulebox.common import disk, netdev
 
 PROC = Path("/proc")
 IDLE, IOWAIT = 3, 4
+USER_HZ = 100.0  # the unit of /proc/stat on every Linux this runs on
 
 
 def core_times(text: str) -> Iterator[list[int]]:
@@ -76,6 +77,11 @@ def parse_swap(text: str) -> dict[str, int] | None:
             "used": max(0, fields["SwapTotal"] - fields["SwapFree"])}
 
 
+def busy_seconds(text: str) -> float:
+    """Busy time of all cores from /proc/stat, waiting for a disk included."""
+    return sum(sum(values) - values[IDLE] for values in core_times(text)) / USER_HZ
+
+
 def read(path: Path) -> str | None:
     try:
         return path.read_text(encoding="ascii", errors="replace")
@@ -93,10 +99,15 @@ class HostLoad:
     CPU and network are the change between two samples, so the first call has neither. Calls closer together
     than `min_span_s` give the last answer again: a worker asks on every claim and heartbeat."""
 
-    def __init__(self, proc: Path = PROC, min_span_s: float = 2.0,
-                 clock: Callable[[], float] = time.monotonic, net: Path = netdev.SYS_NET,
-                 roots: dict[str, str] | None = None) -> None:
-        self.proc, self.min_span_s, self.clock, self.net = proc, min_span_s, clock, net
+    def __init__(self, proc: Path | None = None, min_span_s: float = 2.0,
+                 clock: Callable[[], float] = time.monotonic, net: Path | None = None,
+                 roots: dict[str, str] | None = None, host: Any = None) -> None:
+        from mulebox.common import host as hosts  # host.py builds on this module
+
+        if host is None:  # a /proc or /sys folder given: Linux's, as tests give them
+            host = (hosts.LinuxHost(proc or PROC, net or netdev.SYS_NET)
+                    if proc is not None or net is not None else hosts.for_platform())
+        self.host, self.min_span_s, self.clock = host, min_span_s, clock
         self.roots = roots or {}
         self._cpu: list[tuple[int, int]] = []
         self._net: tuple[int, int] | None = None
@@ -110,13 +121,11 @@ class HostLoad:
         if self._at is not None and now - self._at < self.min_span_s:
             return self._last
         span, self._at = (now - self._at if self._at is not None else 0.0), now
-        stat = read(self.proc / "stat")
-        cores = parse_cpu(stat) if stat else []
+        cores = self.host.cores()
         shares = cpu_percent(self._cpu, cores)
         self._cpu = cores
-        meminfo = read(self.proc / "meminfo")
-        memory = parse_memory(meminfo) if meminfo else None
-        net = netdev.totals(self.net)
+        memory = self.host.memory()
+        net = self.host.net()
         flow = netdev.rates(self._net, net, span)
         self._net = net
         self._last = {
