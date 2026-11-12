@@ -16,12 +16,16 @@ FENCE = re.compile(r"^```.*?^```", re.S | re.M)
 
 
 def anchors(page: Path) -> set[str]:
-    """GitHub's anchors for a page's headings, and explicit `<a id>` ones."""
+    """GitHub's anchors for a page's headings, and explicit `<a id>` ones. A heading that repeats
+    gets `-1`, `-2`, ... on GitHub, in page order (README has two "The dashboard")."""
     text = FENCE.sub("", page.read_text(encoding="utf-8"))
     found = set(re.findall(r'<a id="([^"]+)"', text))
+    seen: dict[str, int] = {}
     for title in re.findall(r"^#+ (.+)$", text, re.M):
-        plain = re.sub(r"[^\w\- ]", "", title.lower().replace("`", ""))
-        found.add(plain.replace(" ", "-"))
+        slug = re.sub(r"[^\w\- ]", "", title.lower().replace("`", "")).replace(" ", "-")
+        count = seen.get(slug, 0)
+        seen[slug] = count + 1
+        found.add(f"{slug}-{count}" if count else slug)
     return found
 
 

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.2.3 - 2026-11-12 - patch
+- The docs test reads a repeated heading's anchor as GitHub writes it (`-1`, `-2`, ...): README's link to its second "The dashboard" (`#the-dashboard-1`, from 1.2.1) works on GitHub but failed the test. CI had skipped the docs-only commit and caught it on the next full run.
+
 ## 1.2.2 - 2026-11-12 - patch
 - Roadmap: M23, safer and fairer jobs (the user's ask), ten tasks to start after the macOS phases: isolation per project, job sizes in place of fixed slots, order rules, node priority levels, a failing node rests, fresh CI runners, upgrades on trial, usage against size, config reload, and a slot reserved for yourself.
 
