@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.3 - 2026-11-12 - patch
+- Dashboard: a running job's card cut a long GitHub step name (such as `Run actions/setup-python@` and a 40-character commit) only past the card's edge, which also pushed its Cores meter out. The step now ends in an ellipsis inside the card, its whole name in the tooltip, with a small button beside it that copies the whole name (`web/src/ui/Copy.tsx`, reusable for any long line).
+- A macOS test of stopping a group left by an earlier worker read the group as alive while its last process, reparented, was still a zombie waiting for launchd (seen once on GitHub's macOS machine). It now gives the group a few seconds to go.
+
 ## 1.13.2 - 2026-11-12 - patch
 - The macOS node work (built in its own branch as 1.3.0 to 1.10.1) and the isolated runners (1.3.0 to 1.5.0) were merged into one line: the Mac commits were replayed after 1.5.0 as 1.6.0 to 1.13.1, each keeping its kind of bump, with the versions in their log entries, roadmap lines and docs renumbered to match. The conflicts were in runner management, where both sides changed the same code: the Mac side moved runner services behind `mulebox/services/`, the isolated side added runners with no service; both kept.
 - A Mac test checked that a job runs at niceness 5, which holds only when the test process itself is not niced; under a parallel run another test had raised it, and the job read 10. It now checks five above its own.

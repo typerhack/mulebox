@@ -42,6 +42,17 @@ def wait(ex, handle, limit=20.0):
     raise AssertionError("the job did not end")
 
 
+def gone(pgid, limit=5.0):
+    """The killed group's last process, reparented, may stay a zombie until launchd or init
+    reaps it, which can take a moment on a busy machine."""
+    end = time.monotonic() + limit
+    while group_alive(pgid):
+        if time.monotonic() >= end:
+            return False
+        time.sleep(0.05)
+    return True
+
+
 def started(ex, handle, log, limit=10.0):
     end = time.monotonic() + limit
     while not (log.exists() and log.read_text().strip()):
@@ -70,7 +81,7 @@ def test_a_group_left_by_an_earlier_worker_is_found_and_stopped(tmp_path):
     assert later.list_orphans() == [unit_name("job-a")]
     later.kill(unit_name("job-a"))
     handle.proc.wait(timeout=5)  # reap the leader the test itself started
-    assert not group_alive(pgid)
+    assert gone(pgid)
     assert not (tmp_path / "staging" / RECORDS / unit_name("job-a")).exists()
     assert later.list_orphans() == []
 

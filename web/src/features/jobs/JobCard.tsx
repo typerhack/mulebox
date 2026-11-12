@@ -6,6 +6,7 @@ import { coresText, doingWord } from "../../lib/doing";
 import { waitReason } from "../../lib/lanes";
 import type { Job } from "../../lib/types";
 import { WithCode } from "../../ui/Code";
+import { CopyText } from "../../ui/Copy";
 import { Meter } from "../../ui/Meter";
 import { Status } from "../../ui/Status";
 import { Branch, Elapsed, JobId, JobName, Marks, OfUsual, QuestionMark, Source } from "./JobBits";
@@ -23,9 +24,9 @@ export function JobCard({ job, cores, total }: { job: Job; cores: number | null 
       <div className="grid min-w-0 flex-1 gap-1">
         <JobName job={job} />
         <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1"><Branch name={job.branch} /><JobId job={job} /></span>
-        <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
+        <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-2">
           <Source job={job} />
-          {job.doing && <span title={job.kind === "runner" ? "GitHub step" : "Stage"} className="truncate">{word}</span>}
+          {job.doing && <CopyText text={word} title={job.kind === "runner" ? "GitHub step" : "Stage"} />}
           <OfUsual job={job} />
         </span>
         {job.doing && (typeof pct === "number" && cores ? (
@@ -34,7 +35,7 @@ export function JobCard({ job, cores, total }: { job: Job; cores: number | null 
         ) : <p className="num text-sm text-ink-2">Cores: {coresText(pct)}</p>)}
         <QuestionMark job={job} />
       </div>
-      <div className="flex items-center gap-2"><Marks job={job} /><JobMenu job={job} total={total} /></div>
+      <div className="flex flex-none items-center gap-2"><Marks job={job} /><JobMenu job={job} total={total} /></div>
     </article>
   );
 }
