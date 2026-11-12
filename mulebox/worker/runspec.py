@@ -17,7 +17,7 @@ from typing import Any
 
 from mulebox.common import compose, config_jobs, env_rules
 from mulebox.common.safepath import ensure_dir
-from mulebox.worker import caches, compose_job, jobspec, steps
+from mulebox.worker import caches, compose_job, jobspec, steps, xcode
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import ExecutorError, RunSpec, unit_name
 from mulebox.worker.paths import NodePaths
@@ -102,7 +102,8 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     cached = caches.for_job(machine.paths, claim["project"], needs)
     own = _host_ports(machine, job_id, names)
     settled = _pnpm_settled(claim)
-    base = {**_capability_env(machine, needs), **cached.env, **own, **settled}
+    base = {**_capability_env(machine, needs), **cached.env, **own, **settled,
+            **xcode.env_for(claim.get("toolchain") or {})}
 
     def environment(extra: dict[str, str]) -> dict[str, str]:
         return jobspec.build_env(job_id, bins, project_env=values, extra={**base, **extra},

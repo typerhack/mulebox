@@ -744,8 +744,11 @@ Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 
 ## M22: Apple platform builds
 After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionOS.
-- [ ] M22.1 Xcode as a toolchain: the worker reports its Xcode versions, SDKs and simulator runtimes;
+- [~] M22.1 Xcode as a toolchain: the worker reports its Xcode versions, SDKs and simulator runtimes;
       a job pins one (`xcode:`), chosen with `DEVELOPER_DIR`; a missing one exits 5 with what is there.
+      Built 2026-11-12 (1.10.0): `worker/xcode.py`, the capability `xcode`, `doctor` fails a pinned
+      version no online Mac has. Tested with Xcode bundles made in tests and the JSON shapes of this
+      Mac's `xcodebuild` and `simctl`; this Mac's own Xcodes read. Open: a real job on a Mac node.
 - [ ] M22.2 A simulator of its own per job, made before and removed on every outcome.
 - [ ] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`.
 - [ ] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node.

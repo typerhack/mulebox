@@ -8,7 +8,7 @@ caller reads `returncode`, as many of these commands use it to answer a question
 from __future__ import annotations
 
 import subprocess
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 from mulebox.common.errors import MuleboxError
 
@@ -22,9 +22,12 @@ class CommandError(MuleboxError):
 
 
 def run(argv: Sequence[str], timeout_s: float = TIMEOUT_S,
-        error: type[MuleboxError] = CommandError) -> subprocess.CompletedProcess:
+        error: type[MuleboxError] = CommandError,
+        env: Mapping[str, str] | None = None) -> subprocess.CompletedProcess:
+    """`env`, when given, is the whole environment of the command."""
     try:
         return subprocess.run(list(argv), capture_output=True, text=True, timeout=timeout_s,
-                              stdin=subprocess.DEVNULL, check=False)
+                              stdin=subprocess.DEVNULL, check=False,
+                              env=None if env is None else dict(env))
     except (OSError, subprocess.TimeoutExpired) as exc:
         raise error(f"`{' '.join(argv[:3])}` failed: {exc}") from exc

@@ -5,6 +5,7 @@
   that release's `SHASUMS256.txt`, extracted safely (archive.py).
 - pnpm: `npm install -g --prefix <cache>/toolchains/pnpm/<ver> pnpm@<ver>`, run with an
   installed node toolchain (the newest one).
+- xcode: found on a Mac node, never installed (xcode.py); a missing one fails the job at once.
 
 Installs go to a temporary folder next to the final one and are renamed into place, so a
 half-finished install is never picked up. Temporary folders are removed through safepath. A lost
@@ -26,6 +27,7 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_ulid
 from mulebox.common.network_errors import REGISTRY
 from mulebox.common.safepath import ensure_dir, remove_tree
+from mulebox.worker import xcode
 from mulebox.worker.archive import extract_tar
 from mulebox.worker.paths import NodePaths
 
@@ -77,10 +79,15 @@ def toolchain_dir(paths: NodePaths, name: str, version: str) -> Path:
     return paths.toolchains_dir() / name / version
 
 
+def _installable(toolchain: Mapping[str, str]) -> dict[str, str]:
+    """The toolchain map without what the machine has or lacks by itself (Xcode)."""
+    return {name: version for name, version in toolchain.items() if name != xcode.NAME}
+
+
 def path_for(paths: NodePaths, toolchain: Mapping[str, str]) -> list[Path]:
     """`bin` folders for a project's toolchain map, in its order; error if one is missing."""
     bins = []
-    for name, version in toolchain.items():
+    for name, version in _installable(toolchain).items():
         bin_dir = toolchain_dir(paths, name, version) / "bin"
         if not bin_dir.is_dir():
             raise ToolchainError(_not_installed(paths, name, version))
@@ -89,8 +96,10 @@ def path_for(paths: NodePaths, toolchain: Mapping[str, str]) -> list[Path]:
 
 
 def missing(paths: NodePaths, toolchain: Mapping[str, str]) -> list[tuple[str, str]]:
-    """What a job's toolchain map still needs, node first: pnpm installs through it."""
-    gaps = [(name, version) for name, version in toolchain.items()
+    """What a job's toolchain map still needs, node first: pnpm installs through it. A pinned
+    Xcode the machine lacks cannot be installed, so it is an error here (xcode.XcodeMissing)."""
+    xcode.pinned(toolchain)
+    gaps = [(name, version) for name, version in _installable(toolchain).items()
             if not (toolchain_dir(paths, name, version) / "bin").is_dir()]
     return sorted(gaps, key=lambda gap: gap[0] != "node")
 

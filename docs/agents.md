@@ -216,6 +216,7 @@ project: example-app            # letters, digits, '.', '_', '-'
 toolchain:                      # exact versions, quoted
   node: "22.22.3"
   pnpm: "11.22.0"
+  # xcode: "16.2"               # Mac nodes only; the node must have it, a job never installs it
 needs: []                       # worker capabilities, e.g. [playwright]
 env:                            # throwaway CI values only, never real secrets
   CI: "1"

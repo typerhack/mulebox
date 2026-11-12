@@ -109,6 +109,14 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   short compiler runs shows its CPU.
 - Pinned toolchains are the macOS builds (`node-v<ver>-darwin-arm64`). Compose jobs need Docker
   Desktop, OrbStack or Colima; their containers run Linux in a virtual machine.
+- Xcode is a toolchain a project pins, `toolchain: {xcode: "16.2"}`, but mulebox does not install
+  it: put each version the node needs in `/Applications` (`Xcode.app`, `Xcode-16.2.app`). The
+  worker finds every `/Applications/Xcode*.app` and the one `xcode-select -p` points into, and
+  reports their versions, SDKs and available simulator runtimes, read again every 5 minutes, which
+  `mulebox doctor` lists. A job
+  gets `DEVELOPER_DIR` of its pinned Xcode, so `xcodebuild`, `xcrun` and `swift` use it whatever
+  `xcode-select` says; a version the node lacks exits 5 with the versions it has. A project that
+  pins one runs only on a Mac with an Xcode (capability `xcode`).
 - GitHub runners work as on Linux (`mulebox runner add` or `register`), with the macOS runner
   (`actions-runner-osx-arm64` or `osx-x64`). Each is a launchd agent, `mulebox-runner-<name>`,
   with its output in `~/Library/Logs/mulebox/runner-<name>.log`, under `nice -n 5` like a job. Pause

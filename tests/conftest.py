@@ -1,0 +1,14 @@
+"""For every test: the Xcode of the machine the suite runs on is not seen (worker/xcode.py), so
+a Mac with Xcode, such as GitHub's, gives the same results as Linux. Tests of xcode.py pass
+their own folders."""
+
+import pytest
+
+from mulebox.worker import xcode
+
+
+@pytest.fixture(autouse=True)
+def no_xcode_of_this_machine(monkeypatch, tmp_path_factory):
+    monkeypatch.setattr(xcode, "APPLICATIONS", tmp_path_factory.getbasetemp() / "no-applications")
+    monkeypatch.setattr(xcode, "SELECTED", lambda: None)
+    monkeypatch.setattr(xcode, "_INVENTORY", xcode.Inventory(ask=dict, start=lambda work: work()))

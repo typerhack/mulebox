@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.10.0 - 2026-11-12 - minor
+- Xcode as a toolchain on a macOS node (M22.1): a project pins one, `toolchain: {xcode: "16.2"}`, and its job gets that Xcode's `DEVELOPER_DIR`; mulebox does not install Xcode, so a version the node lacks exits 5 before anything runs, naming the versions it has (`worker/xcode.py`).
+- A Mac worker reports its Xcodes (every `/Applications/Xcode*.app` and the one `xcode-select` points into), their SDKs and the available simulator runtimes beside its toolchains, from a scan beside its loop every 5 minutes (one `xcodebuild` per Xcode can take seconds, so a claim never waits on it; a runtime added or a failed probe shows up by the next scan), and offers the capability `xcode`, which a project pinning one needs. `mulebox doctor` lists each Mac's Xcodes, SDKs and simulators, fails a pinned version no online Mac has, and says a job does not install it. The scan beside the loop and the list in doctor came from Sol's review.
+- `tests/conftest.py` keeps the tests from reading the dev machine's own Xcode; `command.run` takes an environment.
+
 ## 1.9.2 - 2026-11-12 - patch
 - CI runs the Python suite on GitHub's macOS machine too (M21.5): a `macos` job on `macos-15` with Python 3.13, beside the Linux matrix, as a Mac can now be a node. A pinned version rather than `macos-latest`, so the machine changes only when we say; tests/test_ci_workflow.py checks the job is there.
 

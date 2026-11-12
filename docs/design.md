@@ -219,6 +219,9 @@ exclude: [reports/]      # added to the built-in secret excludes
 
 Toolchains are pinned per project with explicit paths; workers keep package caches,
 container images and browsers warm between jobs.
+Xcode is pinned the same way (`xcode: "16.2"`), on a Mac node only, but never installed by a job:
+the worker reports the Xcodes it has, and the job gets the pinned one's `DEVELOPER_DIR`
+(worker/xcode.py).
 
 ## Docker Compose projects
 

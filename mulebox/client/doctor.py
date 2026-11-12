@@ -6,13 +6,13 @@ is too old to report its toolchains is a warning, not a failure: doctor does not
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
 from mulebox.common import disk, upgrade
-from mulebox.common.config import ProjectConfig
+from mulebox.common.config import XCODE, ProjectConfig
 from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
 from mulebox.common.versions import compare
@@ -87,10 +87,21 @@ def _toolchain_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
     tools = worker.get("toolchains")
     gaps = []
     for name, version in project.toolchain.items() if tools is not None else ():
+        if name == XCODE:
+            continue  # never installed by a job: _xcode_gap
         have = tools.get(name) or []
         if version not in have:
             gaps.append(f"{name} {version} (has {', '.join(have) or 'none'})")
     return gaps
+
+
+def _xcode_gap(worker: Worker, project: ProjectConfig) -> str | None:
+    """The pinned Xcode, when this Mac reports others: a job there would exit 5."""
+    version, tools = project.toolchain.get(XCODE), worker.get("toolchains")
+    have = (tools or {}).get(XCODE) or []
+    if version is None or tools is None or version in have:
+        return None
+    return f"{worker.get('worker')} has {', '.join(have) or 'none'}"
 
 
 def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
@@ -102,7 +113,9 @@ def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
 
 
 def _fix(project: ProjectConfig) -> str:
-    return "a capability goes into `capabilities` in the machine's node.toml"
+    mac = (f"; `{XCODE}` is offered by a Mac node with Xcode installed, by itself"
+           if XCODE in project.all_needs else "")
+    return f"a capability goes into `capabilities` in the machine's node.toml{mac}"
 
 
 def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
@@ -126,6 +139,11 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
     if unsure and project.toolchain:
         return [Finding(WARN, "machine", f"{', '.join(unsure)} did not report its toolchains (its "
                         f"mulebox is older), so {_wanted(project)} is unconfirmed")]
+    xcode_gaps = [gap for w in usable if (gap := _xcode_gap(w, project)) is not None]
+    if xcode_gaps and len(xcode_gaps) == len(usable):
+        return [Finding(FAIL, "machine", f"Xcode {project.toolchain[XCODE]} is on no online Mac "
+                        f"node ({'; '.join(xcode_gaps)}), and mulebox does not install Xcode: a "
+                        "job would exit 5. Pin one of those, or install it on a Mac node")]
     names = ", ".join(str(w.get("worker")) for w in usable)
     ready = any(not _toolchain_gaps(w, project) for w in usable)
     found = [Finding(OK, "machine", f"{names} offers what this project needs: "
@@ -133,6 +151,21 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
     if to_install:
         found.append(Finding(OK, "machine", f"{'; '.join(to_install)}: the first job installs it, "
                              "once, which can take minutes"))
+    if XCODE in project.toolchain:
+        found += _xcodes(w for w in usable if _xcode_gap(w, project) is None)
+    return found
+
+
+def _xcodes(workers: Iterable[Worker]) -> list[Finding]:
+    """Each Mac's Xcodes with their SDKs and simulator runtimes, as its worker reports them."""
+    found = []
+    for w in workers:
+        tools = w.get("toolchains") or {}
+        if tools.get(XCODE):
+            found.append(Finding(OK, "xcode", f"{w.get('worker')}: Xcode "
+                                 f"{', '.join(tools[XCODE])}; SDKs "
+                                 f"{', '.join(tools.get('xcode-sdk') or ()) or 'none reported'}; "
+                                 f"simulators {', '.join(tools.get('simulator') or ()) or 'none'}"))
     return found
 
 
@@ -140,7 +173,7 @@ def inventory(workers: list[Worker]) -> list[Finding]:
     """Outside a project: what each machine offers, with nothing to compare it to."""
     return [Finding(OK, "machine", f"{w.get('worker')} ({'online' if w.get('online') else 'offline'})"
                     f": {', '.join(w.get('capabilities') or ()) or 'no capabilities'}")
-            for w in workers]
+            for w in workers] + _xcodes(workers)
 
 
 def disks(workers: list[Worker]) -> list[Finding]:
