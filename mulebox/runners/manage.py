@@ -128,8 +128,10 @@ def _download(m: Machine, folder: Path) -> str:
     return found.version
 
 
-def add(m: Machine, repo: str, token: str, *, name: str, labels: Sequence[str]) -> Path:
-    """Register a runner for repo and start its service; return its folder."""
+def add(m: Machine, repo: str, token: str, *, name: str, labels: Sequence[str],
+        actors: Sequence[str] = ()) -> Path:
+    """Register a runner for repo and start its service; return its folder. With actors,
+    its hook refuses a run any other account started (guard.py)."""
     check_repo(repo)
     _check_token(token)
     folder = layout.runner_dir(m.paths, name)
@@ -147,7 +149,7 @@ def add(m: Machine, repo: str, token: str, *, name: str, labels: Sequence[str]) 
         layout.set_env_hooks(m.paths, folder, layout.write_hooks(m.paths, folder))
         layout.write_meta(m.paths, folder, {
             "name": name, "repo": repo, "labels": list(labels), "version": version,
-            "added_at": int(time.time())})
+            "added_at": int(time.time()), "actors": list(actors)})
     except BaseException:
         remove_tree(folder, m.paths.roots)
         raise

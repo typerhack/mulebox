@@ -214,7 +214,23 @@ A node can host self-hosted GitHub Actions runners, one user service each
 A runner gets the same CPU and disk share as a mulebox job (`CPUWeight=50`), so CI and
 agents' jobs share the machine evenly and both give way to its own use.
 Each GitHub job then waits for a mulebox build slot, so runner jobs and agent jobs share one
-queue. From the dev machine, with `gh` logged in as a user with admin rights on the repository:
+queue.
+
+**What a runner needs on GitHub.** GitHub lets only an admin of a repository attach a runner to
+it, whatever tool does it. So you need admin rights on the repository, and on the dev machine the
+GitHub CLI signed in as that account:
+
+```sh
+gh auth login                                                     # once, as the repository's admin
+gh api repos/example-org/example-app --jq .permissions.admin      # must print true
+```
+
+`register` uses that sign-in once, to get a registration token that lasts an hour; the runner keeps
+its own credentials from then on. Without admin rights on someone else's repository you cannot
+attach a runner to it, but `mulebox check` needs no GitHub access at all, and on your own fork you
+are the admin.
+
+From the dev machine:
 
 ```sh
 mulebox runner register --repo example-org/example-app            # labels: mulebox
@@ -223,12 +239,12 @@ mulebox runner unregister --repo example-org/example-app
 ```
 
 `register` gets a short-lived registration token with `gh api`, then runs
-`mulebox runner add` on the coordinator over ssh with the token on stdin. On the build
-machine itself, pipe the token in (or paste it at the hidden prompt):
+`mulebox runner add` on the coordinator over ssh with the token on stdin. On the node
+itself, pipe the token in (or paste it at the hidden prompt):
 
 ```sh
 gh api -X POST repos/example-org/example-app/actions/runners/registration-token --jq .token \
-  | ~/.mulebox/bin/mulebox runner add --repo example-org/example-app
+  | ~/.mulebox/bin/mulebox runner add --repo example-org/example-app --actors alice
 ~/.mulebox/bin/mulebox runner list
 ~/.mulebox/bin/mulebox runner remove build-1-example-app    # removal token on stdin
 ```
@@ -255,6 +271,27 @@ It sets `npm_config_cache`, `pnpm_config_store_dir`, `COMPOSER_CACHE_DIR`, `PIP_
 `MULEBOX_CACHE_<TOOL>` (for a workflow's compose file) in the runner's `.env` and restarts its
 service; a runner with a job running is refused. CI then writes into the cache the gate reads,
 so do it only for a runner of a private repository whose pull requests you trust.
+
+**Only your own runs.** Every runner's job-started hook first checks where the job came from, and
+fails it before anything of it runs (no step, no container, no Docker build) when it is:
+
+- a pull request from a fork, or a follow-on (`workflow_run`) run of one;
+- started by a comment on a pull request, as its workflow may build that pull request;
+- started, or re-run, by an account the runner was not registered for. `register` records the
+  account `gh` is signed in as; name others with `--actors alice,dependabot[bot]`. A runner added
+  before 1.3.0 has no accounts and gets the other checks only; to add them, `mulebox runner
+  unregister` it and `register` it again.
+
+A failed hook alone would not be enough: GitHub's runner goes on to every later step whose `if:`
+still holds, such as `if: always()`. So on a refusal the hook also kills the runner's job process,
+and GitHub marks the job failed with none of its steps run. The check is the hook's first step,
+before mulebox reads its config, and it fails closed: a runner with no readable
+`.mulebox-runner.json` refuses every job, the hook script kills the job when mulebox fails in any
+other way, and a job whose process cannot be found is held in the hook until GitHub cancels it.
+Runners added before 1.3.0 have the older hook script without that last step: register them again. A workflow cannot change what the hook
+reads either: GitHub's runner gives the hook GitHub's own data about the run, never the workflow's
+`env:`. Keep forks' pull requests on GitHub's machines in the
+workflow too (see [docs/agents.md](agents.md)), so a contributor's CI still runs and is not refused.
 
 **Private repositories only.** Never attach a runner to a public repository: anyone can open a
 pull request, and its workflow file comes from that pull request, so it can ask for your runner

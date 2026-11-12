@@ -28,6 +28,11 @@ def _run(args: argparse.Namespace) -> int:
     from mulebox.worker.commands import open_link
     from mulebox.worker.paths import NodePaths
 
+    if args.event == "started":
+        from mulebox.runners import guard
+
+        if not guard.admit(os.environ, sys.stdout):  # first, before anything that can fail
+            return 1
     setup_logging()
     failed = 1 if args.event == "started" else 0  # a completed hook never fails the job
     try:

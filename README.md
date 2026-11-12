@@ -265,7 +265,11 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 
 - **Runners for your private repositories** (`mulebox runner register --repo <owner>/<repo>`), with
   their own labels. A CI job waits for a slot in the same line as the agents, so the node never runs
-  more than its slots.
+  more than its slots. It needs admin rights on the repository, as GitHub lets only admins attach a
+  runner, and `gh auth login` as that account on the dev machine
+  ([what a runner needs](docs/install.md#github-runners)).
+- **Only your own runs**: a runner refuses a fork's pull request, and a run anyone but you started,
+  before any of it runs.
 - **CI runs in the dashboard**: each step live, its output as the runner writes it, its length and
   result; passed, failed or cancelled from the runner's own record, with the failed step and GitHub's
   message. A run's CPU counts its containers.

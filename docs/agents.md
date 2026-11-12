@@ -577,7 +577,10 @@ public, or is about to be, stop and tell the user.
        mulebox runner register --repo <owner>/<repo>
 
    It installs a runner on the node as a service with the labels `self-hosted`,
-   `Linux`, `X64`, `mulebox`.
+   `Linux`, `X64`, `mulebox`. It takes only runs that the account `gh` is signed in as
+   started; a run by anyone else (a bot such as `dependabot[bot]` too) fails at its first
+   step unless the user names it with `--actors`. Send such runs to GitHub's machines in the
+   workflow, as forks are below.
 2. **Point the workflow at it.** In `.github/workflows/*.yml`:
 
 ```yaml

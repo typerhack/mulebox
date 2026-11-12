@@ -18,13 +18,17 @@ CONFIG = ClientConfig(coordinator="build-1")
 
 
 class FakeGh:
-    def __init__(self, code=0, out=TOKEN + "\n", err="", visibility="private"):
+    def __init__(self, code=0, out=TOKEN + "\n", err="", visibility="private", login="alice"):
         self.calls, self.result, self.visibility = [], (code, out, err), visibility
+        self.login = login
 
     def __call__(self, argv):
         if argv[-1] == ".visibility":
             self.seen = list(argv)
             return subprocess.CompletedProcess(argv, 0, self.visibility + "\n", "")
+        if argv[-1] == ".login":
+            return subprocess.CompletedProcess(argv, 0 if self.login else 1,
+                                               (self.login or "") + "\n", "not signed in")
         self.calls.append(list(argv))
         return subprocess.CompletedProcess(argv, *self.result)
 
@@ -48,7 +52,7 @@ def test_register_gets_a_token_and_sends_it_on_stdin():
     [(target, argv, stdin, _)] = stream.calls
     assert target == "build-1"
     assert argv == [".mulebox/bin/mulebox", "runner", "add", "--repo", REPO,
-                    "--labels", "mulebox,gpu"]
+                    "--labels", "mulebox,gpu", "--actors", "alice"]
     assert stdin == (TOKEN + "\n").encode()
     assert all(TOKEN not in arg for arg in argv)
     assert "Started" in out.getvalue()
@@ -105,3 +109,24 @@ def test_unregister_works_on_a_public_repository():
     gh, stream = FakeGh(visibility="public"), FakeStream()
     github.unregister(CONFIG, REPO, run=gh, stream=stream, out=io.StringIO())
     assert stream.calls
+
+
+def test_register_names_the_accounts_given():
+    stream = FakeStream()
+    github.register(CONFIG, REPO, actors="bob,carol", run=FakeGh(login=None), stream=stream,
+                    out=io.StringIO())
+    assert stream.calls[0][1][-2:] == ["--actors", "bob,carol"]
+
+
+def test_register_stops_when_gh_cannot_name_its_account():
+    stream = FakeStream()
+    with pytest.raises(GitHubError, match="--actors"):
+        github.register(CONFIG, REPO, run=FakeGh(login=None), stream=stream, out=io.StringIO())
+    assert stream.calls == []
+
+
+def test_a_bad_account_is_refused_before_gh_runs():
+    gh = FakeGh()
+    with pytest.raises(RunnerUsageError):
+        github.register(CONFIG, REPO, actors="x y", run=gh, stream=FakeStream())
+    assert gh.calls == []

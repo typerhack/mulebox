@@ -78,7 +78,16 @@ anything else dropped. Stored as `jobs.ci_result` (schema 17); empty means not k
 
 - `mulebox runner-hook started`: reads `GITHUB_REPOSITORY`, `GITHUB_RUN_ID`,
   `GITHUB_RUN_ATTEMPT`, `GITHUB_JOB`, `GITHUB_REF_NAME`, `GITHUB_SERVER_URL`, `RUNNER_NAME`
-  from the environment; sends `reserve`, then `acquire` every 2 s until granted, printing
+  from the environment. First, before the node config is read, the guard (`runners/guard.py`
+  `admit`), which finds the runner folder from `ACTIONS_RUNNER_HOOK_JOB_STARTED` or the job's
+  working directory, on `GITHUB_EVENT_PATH`,
+  `GITHUB_ACTOR`, `GITHUB_TRIGGERING_ACTOR` and the runner's `actors` in `.mulebox-runner.json`:
+  a fork's pull request, a follow-on run of one, a comment on a pull request, an unreadable
+  event, missing or unreadable metadata, or another account's run kills the runner's
+  `Runner.Worker` (as supervise.py finds it, and among the hook's own parents; a failed hook alone
+  lets `if: always()` steps run) and exits 1 with `mulebox: this runner refuses ...`, reserving
+  nothing; with no such process found it holds the job until GitHub ends it. `started.sh` kills
+  its parent `Runner.Worker` when mulebox exits with any failure. Then it sends `reserve`, then `acquire` every 2 s until granted, printing
   `mulebox: waiting for a build slot (position N)` at most every 30 s. Writes the job id to
   `<runners>/<runner>/.mulebox-reservation` (atomic). Exit 0 once granted. Gives up after
   `MULEBOX_HOOK_TIMEOUT_MIN` (default 120) with exit 1 and a clear message. Talks to the
@@ -107,7 +116,7 @@ anything else dropped. Stored as `jobs.ci_result` (schema 17); empty means not k
 ## Runner management (`mulebox/runners/manage.py`, `mulebox/runners/github.py`)
 
 On the node (CLI `mulebox runner ...`):
-- `runner add --repo <owner/repo> [--labels a,b] [--name N]`: registration token on
+- `runner add --repo <owner/repo> --actors a,b [--labels a,b] [--name N]`: registration token on
   **stdin** (never argv, never logged). Downloads the latest `actions/runner` release for
   linux-x64/arm64 (GitHub API `releases/latest`), verifies the tarball against the SHA-256
   published in the release body (`<!-- BEGIN SHA linux-x64 -->...<!-- END SHA linux-x64 -->`),
@@ -135,7 +144,8 @@ On the dev machine (CLI `mulebox runner register|unregister --repo <owner/repo>`
 with `gh api -X POST repos/<owner/repo>/actions/runners/registration-token --jq .token`
 (or `remove-token`), and runs `mulebox runner add|remove` on the coordinator over
 `common.ssh` with the token on stdin. Requires `gh` logged in with admin rights on the repo;
-clear error otherwise.
+clear error otherwise. `--actors` defaults to the account `gh` is signed in as (`gh api user`),
+stored as `actors` in the runner's `.mulebox-runner.json`.
 
 ## Module ownership for the parallel build
 

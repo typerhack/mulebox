@@ -7,7 +7,7 @@ import pytest
 from mulebox import cli
 from mulebox.common.protocol import JobState, MessageType, Outcome
 from mulebox.coordinator import store as st
-from mulebox.runners import hooks, reservation_file
+from mulebox.runners import guard, hooks, reservation_file
 from mulebox.worker.link import LinkError, request
 
 from .conftest import RUNNER
@@ -157,6 +157,7 @@ def test_cli_runner_hook(gh_env, node, store, monkeypatch, tmp_path, capsys):
                       f"[roots]\n{roots}\n", encoding="utf-8")
     for key, value in gh_env.items():
         monkeypatch.setenv(key, value)
+    monkeypatch.setattr(guard, "admit", lambda env, out: True)  # its own tests: test_guard_admit
     assert cli.main(["runner-hook", "started", "--config", str(config)]) == 0
     assert "build slot granted" in capsys.readouterr().out
     assert cli.main(["runner-hook", "completed", "--config", str(config)]) == 0
@@ -169,3 +170,4 @@ def test_cli_runner_hook(gh_env, node, store, monkeypatch, tmp_path, capsys):
 def _reservations(store):
     with store.read() as conn:
         return st.select_jobs(conn, "kind = 'runner'")
+

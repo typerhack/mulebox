@@ -43,13 +43,14 @@ def _under(value: str, folder: Path) -> bool:
     return value.startswith("/") and is_within(Path(os.path.normpath(value)), folder)
 
 
-def runner_alive(runner_dir: Path, proc_root: Path = PROC_ROOT) -> bool:
-    """True if a `Runner.Worker` process runs with its cwd or an argument in `runner_dir`."""
+def worker_pids(runner_dir: Path, proc_root: Path = PROC_ROOT) -> list[int]:
+    """The `Runner.Worker` processes with their cwd or an argument in `runner_dir`."""
     folder = Path(os.path.realpath(runner_dir))
     try:
         entries = list(proc_root.iterdir())
     except OSError:
-        return False
+        return []
+    found = []
     for entry in entries:
         if not entry.name.isdigit():
             continue
@@ -61,14 +62,20 @@ def runner_alive(runner_dir: Path, proc_root: Path = PROC_ROOT) -> bool:
         if not any(Path(arg).name in WORKER_NAMES for arg in args):
             continue
         if any(_under(arg, folder) for arg in args):
-            return True
+            found.append(int(entry.name))
+            continue
         try:
             cwd = os.readlink(entry / "cwd")
         except OSError:
             continue
         if _under(cwd, folder):
-            return True
-    return False
+            found.append(int(entry.name))
+    return found
+
+
+def runner_alive(runner_dir: Path, proc_root: Path = PROC_ROOT) -> bool:
+    """True if a `Runner.Worker` process runs with its cwd or an argument in `runner_dir`."""
+    return bool(worker_pids(runner_dir, proc_root))
 
 
 class Supervisor:

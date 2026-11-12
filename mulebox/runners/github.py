@@ -20,7 +20,7 @@ from mulebox.common import ssh
 from mulebox.common.config import ClientConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.redact import Redactor
-from mulebox.runners.names import check_name, check_repo, parse_labels
+from mulebox.runners.names import check_name, check_repo, parse_actors, parse_labels
 
 GH_TIMEOUT_S = 60
 KINDS = {"registration": "registration-token", "remove": "remove-token"}
@@ -72,13 +72,26 @@ def refuse_public(repo: str, run: GhRun = run_gh) -> None:
             "node; mulebox attaches runners to private repositories only")
 
 
+def signed_in(run: GhRun = run_gh) -> str:
+    """The GitHub account `gh` is signed in as: by default the only one a runner takes runs of."""
+    proc = run(["gh", "api", "user", "--jq", ".login"])
+    login = (proc.stdout or "").strip()
+    if proc.returncode != 0 or not login:
+        raise GitHubError("gh could not say which account it is signed in as "
+                          f"({(proc.stderr or '').strip()[-300:] or 'no output'}); run "
+                          "`gh auth login`, or name the accounts with --actors")
+    return ",".join(parse_actors(login))
+
+
 def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
-                labels: str | None = None) -> list[str]:
+                labels: str | None = None, actors: str | None = None) -> list[str]:
     argv = [remote_program(config.remote_bin), "runner", action, "--repo", check_repo(repo)]
     if name is not None:
         argv += ["--name", check_name(name)]
     if labels is not None:
         argv += ["--labels", ",".join(parse_labels(labels))]
+    if actors is not None:
+        argv += ["--actors", ",".join(parse_actors(actors))]
     return argv
 
 
@@ -97,10 +110,13 @@ def _run_remote(config: ClientConfig, argv: list[str], token: str, out: TextIO,
 
 
 def register(config: ClientConfig, repo: str, *, name: str | None = None,
-             labels: str | None = None, run: GhRun = run_gh,
+             labels: str | None = None, actors: str | None = None, run: GhRun = run_gh,
              stream: Stream = ssh.stream_remote, out: TextIO = sys.stdout) -> None:
-    argv = remote_argv(config, "add", repo, name, labels)
+    """Add a runner for repo on the coordinator. It takes runs of `actors` only, by default of
+    the account `gh` is signed in as (guard.py)."""
+    remote_argv(config, "add", repo, name, labels, actors)  # refuse bad input before `gh`
     refuse_public(repo, run)
+    argv = remote_argv(config, "add", repo, name, labels, actors or signed_in(run))
     _run_remote(config, argv, gh_token(repo, "registration", run), out, stream)
 
 

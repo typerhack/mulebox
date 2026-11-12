@@ -48,13 +48,20 @@ def test_hook_scripts_and_env_lines(machine):
     hooks = folder / "mulebox-hooks"
     for kind in ("started", "completed"):
         script = hooks / f"{kind}.sh"
-        assert f'exec "$HOME/.mulebox/bin/mulebox" runner-hook {kind}' in script.read_text()
+        assert f'"$HOME/.mulebox/bin/mulebox" runner-hook {kind}' in script.read_text()
         assert os.stat(script).st_mode & 0o100
+    assert "kill -9" in (hooks / "started.sh").read_text()  # fails closed
     lines = (folder / ".env").read_text().splitlines()
     assert lines == ["LANG=C.UTF-8",
                      f"ACTIONS_RUNNER_HOOK_JOB_STARTED={hooks / 'started.sh'}",
                      f"ACTIONS_RUNNER_HOOK_JOB_COMPLETED={hooks / 'completed.sh'}"]
     assert layout.read_meta(folder)["repo"] == REPO
+    assert layout.read_meta(folder)["actors"] == []
+
+
+def test_add_keeps_the_accounts_it_runs_for(machine):
+    folder = manage.add(machine, REPO, TOKEN, name=NAME, labels=("mulebox",), actors=("alice",))
+    assert layout.read_meta(folder)["actors"] == ["alice"]
 
 
 def test_token_never_in_output_logs_or_errors(machine, fakes, caplog, capsys):
@@ -163,3 +170,4 @@ def test_remove_refuses_a_symlinked_runner(machine, paths, tmp_path):
     with pytest.raises(RunnerUsageError):
         manage.remove(machine, "evil", TOKEN)
     assert (outside / "keep.txt").exists()
+

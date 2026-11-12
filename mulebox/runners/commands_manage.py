@@ -2,14 +2,14 @@
 
 On the node (the token is read from stdin, or prompted without echo on a TTY):
 
-    mulebox runner add --repo <owner/repo> [--labels a,b] [--name N]
+    mulebox runner add --repo <owner/repo> --actors a,b [--labels a,b] [--name N]
     mulebox runner list
     mulebox runner remove <name> | --repo <owner/repo> [--name N]
     mulebox runner caches <name> --project <project> [--only cache-npm,...] | --off
 
 On the dev machine (the token comes from `gh`, the command runs on the coordinator over ssh):
 
-    mulebox runner register --repo <owner/repo> [--labels a,b] [--name N]
+    mulebox runner register --repo <owner/repo> [--labels a,b] [--name N] [--actors a,b]
     mulebox runner unregister --repo <owner/repo> [--name N]
 
 Exit codes: 0 done, 1 runner operation failed, 2 usage or config error, 3 node
@@ -28,7 +28,7 @@ from mulebox.common.config import ConfigError, load_client_config, load_node_con
 from mulebox.common.errors import MuleboxError
 from mulebox.common.redact import Redactor
 from mulebox.common.ssh import RemoteTimeout, SSHUnavailable
-from mulebox.runners.names import RunnerUsageError, default_name, parse_labels
+from mulebox.runners.names import RunnerUsageError, default_name, parse_actors, parse_labels
 
 EXIT_FAILED = 1
 Handler = Callable[[argparse.Namespace], int]
@@ -79,6 +79,9 @@ def _options(parser: argparse.ArgumentParser, *, labels: bool, config: bool) -> 
     parser.add_argument("--name", help="runner name (default <node>-<repo name>)")
     if labels:
         parser.add_argument("--labels", help="comma-separated labels (default mulebox)")
+        parser.add_argument(
+            "--actors", help="comma-separated GitHub accounts whose runs it takes; others are "
+            "refused before anything runs (register: default the account `gh` is signed in as)")
     if config:
         parser.add_argument("--config", help="node config file")
 
@@ -135,8 +138,12 @@ def _add(args: argparse.Namespace) -> int:
     machine = _machine(args)
     name = args.name or default_name(machine.node, args.repo)
     labels = parse_labels(args.labels)
+    if not args.actors:
+        raise RunnerUsageError("name the GitHub accounts whose runs it takes, --actors alice "
+                               "(`runner register` fills in the account `gh` is signed in as)")
+    actors = parse_actors(args.actors)
     token = read_token("GitHub runner registration token: ")
-    manage.add(machine, args.repo, token, name=name, labels=labels)
+    manage.add(machine, args.repo, token, name=name, labels=labels, actors=actors)
     return 0
 
 
@@ -191,7 +198,8 @@ def _caches(args: argparse.Namespace) -> int:
 def _register(args: argparse.Namespace) -> int:
     from mulebox.runners import github
 
-    github.register(load_client_config(), args.repo, name=args.name, labels=args.labels)
+    github.register(load_client_config(), args.repo, name=args.name, labels=args.labels,
+                    actors=args.actors)
     return 0
 
 

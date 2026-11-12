@@ -718,9 +718,17 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       the owner's desktop only when the spare machine is busy, or a Mac as the fallback.
 - [ ] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
       takes no job for a while, and others take them.
-- [ ] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
+- [~] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
-      job-started hook, the private-repositories-only rule can be weighed again.
+      job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of
+      M21 and M22 by the user on 2026-11-12, to run mulebox's own CI on its own runner; a fresh
+      container per job, no VM (the user's call). Design: design.md, Runners for public
+      repositories. Built 2026-11-12 (1.3.0): the guard, on every runner, with tests. Run
+      2026-11-12 on a real runner of a throwaway private repository on the node, with a workflow
+      whose last step is `if: always()` and leaves a marker: the user's own runs passed with every
+      step; with the runner's accounts set to another name, the same run failed in 3 s with no
+      step run and no marker, GitHub showing the refusal as its annotation, nothing left running;
+      the runner took the next job normally. Open: the containers.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's

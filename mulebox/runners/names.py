@@ -19,6 +19,8 @@ DEFAULT_LABELS = ("mulebox",)
 _OWNER_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}")
 _REPO_RE = re.compile(r"[A-Za-z0-9._-]{1,100}")
 _LABEL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
+# GitHub logins, and apps' bot accounts such as `dependabot[bot]`.
+_ACTOR_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:\[bot\])?")
 
 
 class RunnerUsageError(MuleboxError):
@@ -60,6 +62,17 @@ def parse_labels(text: str | None) -> tuple[str, ...]:
             raise RunnerUsageError(
                 f"label {label!r} may only contain letters, digits, '.', '_' and '-'")
     return labels
+
+
+def parse_actors(text: str) -> tuple[str, ...]:
+    """`alice,bob` -> ("alice", "bob"): the accounts whose runs a runner takes (guard.py)."""
+    actors = tuple(part.strip() for part in text.split(",") if part.strip())
+    if not actors:
+        raise RunnerUsageError("name at least one GitHub account")
+    for actor in actors:
+        if not _ACTOR_RE.fullmatch(actor):
+            raise RunnerUsageError(f"{actor!r} is not a GitHub account name")
+    return actors
 
 
 def unit_name(name: str) -> str:

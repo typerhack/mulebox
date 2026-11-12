@@ -1,6 +1,7 @@
 """GitHub Actions job hooks: hold a mulebox build slot for the length of a runner job.
 
-`started` (ACTIONS_RUNNER_HOOK_JOB_STARTED) sends `reserve`, stores the job id in the
+`started` (ACTIONS_RUNNER_HOOK_JOB_STARTED) runs after the guard (guard.py `admit`, called first
+by the CLI) has let the job in. It sends `reserve`, stores the job id in the
 runner folder, then sends `acquire` every 2 s until the slot is granted, printing the
 queue position at most every 30 s. It gives up after MULEBOX_HOOK_TIMEOUT_MIN minutes
 (default 120): it cancels the reservation and exits 1, which fails the GitHub job.

@@ -451,6 +451,42 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   completed hook, so the hook reads it from the runner's own diary: passed, failed or
   cancelled, the first failed step and GitHub's message on it.
 
+### Runners for public repositories (M23.6, the user's ask, 2026-11-12)
+
+On a public repository anyone can open a pull request, and GitHub runs the workflow file from it,
+so a stranger can name the runner and run anything on the node. Two layers, the first for every
+runner, the second for public repositories:
+
+1. **The guard** (built, 1.3.0, `runners/guard.py`). The job-started hook's first step refuses a
+   fork's pull request, a follow-on run of one, a run with no readable event, and, on a runner
+   registered with accounts, a run any other account started or re-ran. Read in
+   actions/runner (`JobExtension.cs`, `JobHookProvider.cs`, `GitHubContext.cs`): the hook runs
+   after the job's actions are downloaded, before Docker actions are built, before `container:`
+   and `services:` start and before any step; its environment is built empty and filled from the
+   `github` context's allowlist, so a workflow's `env:` cannot fake the actor or the event path.
+   A failed hook does not end the job, though: the runner goes on to every step whose `if:` holds,
+   `if: always()` included (`StepsRunner.cs`; found by Sol's review). So a refusal kills the
+   runner's `Runner.Worker` while the hook still runs inside it. A comment on a pull request is
+   refused too, as the event does not say where that pull request came from. The fork rules are
+   runner-up's (github.com/kunchenguid/runner-up).
+2. **A fresh container per job** (next). The guard can be wrong, and an allowed run can still pull
+   in a bad dependency, so on a public repository no job runs as the node's user:
+   - The node gets a one-job runner from GitHub for each job (`generate-jitconfig`, with the
+     node's own `gh` signed in as the repository's admin, or a token in a file of mode 600). GitHub
+     lets only an admin create a runner; the containers never see that sign-in.
+   - The runner runs in a container from the project's runner image: GitHub's runner image with
+     the project's tools, built once on the node and rebuilt only when its recipe changes, so a job
+     starts in seconds, not after an install. The container is removed when its job ends.
+   - Confined: no folder of the node mounted, no Docker socket, all capabilities dropped,
+     `no-new-privileges`, its own user, limits on CPU, memory and processes, a network of its own.
+     The project's package caches are mounted read-only: the project's own mulebox jobs fill them,
+     so CI reads what the gate downloaded and cannot leave anything in them for the next job.
+   - The slot: the container's hook hands the event to the node and waits; the node runs the
+     guard on it and reserves the slot as today, so the guard stays one module and runs outside
+     the job's reach.
+   - Left over: the container shares the node's kernel, and can reach the node's network. A job
+     that needs Docker itself cannot run in it.
+
 ## Safety
 
 - Configured roots per worker (`jobs/`, `projects/`, `cache/`, `runners/`); the path-safety module

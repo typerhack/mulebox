@@ -27,10 +27,34 @@ def test_add_reads_the_token_from_stdin(monkeypatch, node_toml):
     monkeypatch.setattr(manage, "add", lambda m, repo, token, **kw: seen.update(
         repo=repo, token=token, node=m.node, **kw))
     code = cli.main(["runner", "add", "--repo", REPO, "--labels", "mulebox,gpu",
-                     "--config", str(node_toml)])
+                     "--actors", "alice", "--config", str(node_toml)])
     assert code == 0
     assert seen == {"repo": REPO, "token": TOKEN, "node": "build-1",
-                    "name": "build-1-example-app", "labels": ("mulebox", "gpu")}
+                    "name": "build-1-example-app", "labels": ("mulebox", "gpu"),
+                    "actors": ("alice",)}
+
+
+def test_add_without_accounts_is_a_usage_error(monkeypatch, node_toml):
+    called = []
+    monkeypatch.setattr("sys.stdin", io.StringIO(TOKEN + "\n"))
+    monkeypatch.setattr(manage, "add", lambda *a, **kw: called.append(1))
+    assert cli.main(["runner", "add", "--repo", REPO, "--config", str(node_toml)]) == 2
+    assert called == []
+
+
+def test_add_takes_the_accounts_it_runs_for(monkeypatch, node_toml):
+    seen = {}
+    monkeypatch.setattr("sys.stdin", io.StringIO(TOKEN + "\n"))
+    monkeypatch.setattr(manage, "add", lambda m, repo, token, **kw: seen.update(kw))
+    assert cli.main(["runner", "add", "--repo", REPO, "--actors", "alice, dependabot[bot]",
+                     "--config", str(node_toml)]) == 0
+    assert seen["actors"] == ("alice", "dependabot[bot]")
+
+
+def test_a_bad_account_name_is_a_usage_error(monkeypatch, node_toml):
+    monkeypatch.setattr("sys.stdin", io.StringIO(TOKEN + "\n"))
+    assert cli.main(["runner", "add", "--repo", REPO, "--actors", "alice;rm",
+                     "--config", str(node_toml)]) == 2
 
 
 def test_errors_are_redacted_and_mapped(monkeypatch, node_toml, capsys):
@@ -40,7 +64,8 @@ def test_errors_are_redacted_and_mapped(monkeypatch, node_toml, capsys):
         raise manage.RunnerError(f"failed with {token}")
 
     monkeypatch.setattr(manage, "add", fail)
-    code = cli.main(["runner", "add", "--repo", REPO, "--config", str(node_toml)])
+    code = cli.main(["runner", "add", "--repo", REPO, "--actors", "alice",
+                     "--config", str(node_toml)])
     assert code == 1
     err = capsys.readouterr().err
     assert TOKEN not in err and "[redacted]" in err
@@ -48,7 +73,8 @@ def test_errors_are_redacted_and_mapped(monkeypatch, node_toml, capsys):
 
 def test_empty_stdin_is_a_usage_error(monkeypatch, node_toml):
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
-    assert cli.main(["runner", "add", "--repo", REPO, "--config", str(node_toml)]) == 2
+    assert cli.main(["runner", "add", "--repo", REPO, "--actors", "alice",
+                     "--config", str(node_toml)]) == 2
 
 
 def test_bad_repo_is_a_usage_error(monkeypatch, node_toml):

@@ -34,6 +34,21 @@ HOOK_SCRIPT = """#!/bin/sh
 # Installed by `mulebox runner add`: GitHub job-{kind} hook (reserves the build slot).
 exec "$HOME/.mulebox/bin/mulebox" runner-hook {kind}
 """
+# The started hook fails closed: a failed hook alone lets the job's `if: always()` steps run.
+# The guard (guard.py) kills the job's runner process itself when it refuses; this covers mulebox
+# failing in any other way, even failing to start: the job's runner process, this script's
+# parent, is killed. A parent it cannot tell is the runner's is waited out instead: the job
+# stays in the hook until GitHub ends it, and the script ends with it.
+STARTED_SCRIPT = """#!/bin/sh
+# Installed by `mulebox runner add`: GitHub job-started hook (the guard, then the build slot).
+"$HOME/.mulebox/bin/mulebox" runner-hook started && exit 0
+parent=$(tr '\\000' ' ' 2>/dev/null < "/proc/$PPID/cmdline" || ps -o command= -p "$PPID" 2>/dev/null)
+case "$parent" in
+  *Runner.Worker*) kill -9 "$PPID"; exit 1 ;;
+esac
+while kill -0 "$PPID" 2>/dev/null; do sleep 2; done
+exit 1
+"""
 # The unit template (install/systemd/mulebox-runner@.service) runs %h/.mulebox/runners/%i.
 UNIT_RUNNERS = Path(".mulebox") / "runners"
 
@@ -71,7 +86,8 @@ def write_hooks(paths: NodePaths, folder: Path) -> dict[str, Path]:
     scripts = {}
     for kind, variable in HOOKS.items():
         script = hooks / f"{kind}.sh"
-        write_file(paths, script, HOOK_SCRIPT.format(kind=kind), 0o750)
+        text = STARTED_SCRIPT if kind == "started" else HOOK_SCRIPT.format(kind=kind)
+        write_file(paths, script, text, 0o750)
         scripts[variable] = script
     return scripts
 
