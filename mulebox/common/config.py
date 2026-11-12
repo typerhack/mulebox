@@ -77,8 +77,11 @@ DEFAULT_LOG_DAYS = 30
 DEFAULT_STEP_DAYS = 365
 DEFAULT_UNATTENDED_IDLE_MIN = 15
 DEFAULT_UNATTENDED_MAX_HOURS = 24
-# A toolchain a Mac node has or lacks by itself (worker/xcode.py), and the capability it offers.
+# Toolchains a Mac node has or lacks by itself, never installed by a job, each also the
+# capability it offers: Xcode (worker/xcode.py) and a simulator runtime (worker/simulator.py).
 XCODE = "xcode"
+SIMULATOR = "simulator"
+FOUND_ON_NODE = (XCODE, SIMULATOR)
 
 
 @dataclass(frozen=True)
@@ -100,10 +103,9 @@ class ProjectConfig:
     @property
     def all_needs(self) -> tuple[str, ...]:
         """`needs`, plus what a `compose:` project cannot run without (common/compose.py), and
-        `xcode` for one that pins an Xcode: a Mac node with one reports it (worker/xcode.py)."""
+        `xcode` or `simulator` for one that pins it: a Mac node that has it offers it."""
         implied = (compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY) if self.compose else ()
-        if XCODE in self.toolchain:
-            implied = (*implied, XCODE)
+        implied = (*implied, *(name for name in FOUND_ON_NODE if name in self.toolchain))
         return tuple(dict.fromkeys((*self.needs, *implied)))
 
 

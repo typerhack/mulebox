@@ -42,7 +42,8 @@ class Ending:
 
     def _clean(self, job: ActiveJob) -> None:
         if self.paths.is_safe_job(job.project, job.job_id):
-            self.cleaner.clean(job.project, job.job_id, job.uses_docker, job.tree)
+            self.cleaner.clean(job.project, job.job_id, job.uses_docker, job.tree,
+                               uses_simulator=job.uses_simulator)
 
     def _cleanup(self, job: ActiveJob) -> None:
         """Start the job's cleanup, or take its outcome; a failed one starts again next step."""

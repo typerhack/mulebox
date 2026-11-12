@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.11.0 - 2026-11-12 - minor
+- A simulator of its own per job on a macOS node (M22.2): a job with `needs: [simulator]`, or a pinned runtime (`toolchain: {simulator: "iOS 18.2"}`), gets one, made by its script's first lines (`xcrun simctl create mulebox-<job id>`), its id in `$MULEBOX_SIMULATOR`; without a pin, the newest iOS runtime's newest iPhone. A runtime the node lacks exits 5, naming the ones it has (`worker/simulator.py`).
+- The cleanup removes it by name on every outcome, before the job's containers and folder, and is tried again if `simctl` fails; a worker that starts removes every `mulebox-job-...` simulator an earlier one left, and no other. With no Xcode nothing is asked.
+- The Xcode scan keeps the runtimes it found (with their device types) for the jobs, so choosing one runs nothing in the worker's loop. A Mac with a runtime offers the capability `simulator`; `mulebox doctor` fails a pinned runtime no online Mac has. `xcode.parse_runtimes` is gone: one parser, in simulator.py.
+
 ## 1.10.1 - 2026-11-12 - patch
 - From Sol's review of 1.10.0 (M22.1): a job that pins an Xcode takes it from the worker's last scan, so a claim no longer runs `xcode-select` (twice, up to 10 s each, in the worker's loop); a bundle removed since the scan counts as missing. Before the first scan has finished, the node is looked at once, as before.
 - A pin and an Xcode's own version are one release with trailing zeros aside (`16.2` is `16.2.0`), in the job and in `mulebox doctor` (`versions.same_release`).

@@ -30,7 +30,7 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import RemovalDenied, remove_tree
 from mulebox.common.status import ENVIRONMENT, PREPARE, TOOLCHAIN
 from mulebox.worker import activity, advert, background, job_meter, runspec
-from mulebox.worker import project_home, reclaim, toolchains, workspace
+from mulebox.worker import project_home, reclaim, simulator, toolchains, workspace, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
 from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.cleaner import Cleaner
@@ -59,7 +59,7 @@ class Agent(Ending, Skipping):
         self.clock = clock
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
         self.docker = docker or Docker()
-        self.cleaner = Cleaner(paths, node.name, docker)
+        self.cleaner = Cleaner(paths, node.name, docker, xcode.simulators())
         self.ports = PortPool()
         self.meter = activity.MachineMeter()
         # The machine's CPU, memory and fullest disk, sent with claims and heartbeats.
@@ -143,7 +143,8 @@ class Agent(Ending, Skipping):
                            StreamRedactor(secret_values(self.node.job_env)))
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}),
-                        take=[p for p in claim.get("take") or [] if isinstance(p, str)])
+                        take=[p for p in claim.get("take") or [] if isinstance(p, str)],
+                        uses_simulator=simulator.wanted(claim))
         job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker, self.executor)
         self.active[job_id] = job
         job.steps.begin(PREPARE, now)

@@ -113,10 +113,18 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   it: put each version the node needs in `/Applications` (`Xcode.app`, `Xcode-16.2.app`). The
   worker finds every `/Applications/Xcode*.app` and the one `xcode-select -p` points into, and
   reports their versions, SDKs and available simulator runtimes, read again every 5 minutes, which
-  `mulebox doctor` lists. A job
-  gets `DEVELOPER_DIR` of its pinned Xcode, so `xcodebuild`, `xcrun` and `swift` use it whatever
-  `xcode-select` says; a version the node lacks exits 5 with the versions it has. A project that
-  pins one runs only on a Mac with an Xcode (capability `xcode`).
+  `mulebox doctor` lists. A job gets `DEVELOPER_DIR` of its pinned Xcode, so `xcodebuild`, `xcrun`
+  and `swift` use it whatever `xcode-select` says; a version the node lacks exits 5 with the
+  versions it has (`16.2` and `16.2.0` are one). A project that pins one runs only on a Mac with
+  an Xcode (capability `xcode`).
+- Simulators: a job with `needs: [simulator]`, or a pinned runtime (`toolchain: {simulator:
+  "iOS 18.2"}`), gets one of its own, made by its script's first lines (`xcrun simctl create
+  mulebox-<job id>`, with the newest Xcode unless it pins one), its id in `$MULEBOX_SIMULATOR`.
+  Without a pin it is the newest iOS runtime's newest iPhone. It is removed by that name on every
+  outcome, and a worker that starts removes every `mulebox-job-...` simulator an earlier one left,
+  through `simctl` only; no other simulator is touched. Runtimes are installed by a person, in
+  Xcode (Settings, Components) or with `xcodebuild -downloadPlatform iOS`; a Mac with one offers
+  the capability `simulator`. They live in the user's own device set, the one Xcode shows.
 - GitHub runners work as on Linux (`mulebox runner add` or `register`), with the macOS runner
   (`actions-runner-osx-arm64` or `osx-x64`). Each is a launchd agent, `mulebox-runner-<name>`,
   with its output in `~/Library/Logs/mulebox/runner-<name>.log`, under `nice -n 5` like a job. Pause

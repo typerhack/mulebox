@@ -11,7 +11,7 @@ import sys
 from typing import Any
 
 from mulebox.common import compose, disk
-from mulebox.common.config import NodeConfig
+from mulebox.common.config import FOUND_ON_NODE, NodeConfig
 from mulebox.common.proc import HostLoad
 from mulebox.version import get_version
 from mulebox.worker import toolchains, xcode
@@ -37,8 +37,8 @@ def fields(node: NodeConfig, paths: NodePaths, load: HostLoad | None = None) -> 
     free = fullest["free"] if fullest else disk.free_bytes(node.roots.values())
     tools = by_name(paths)
     offers = compose.worker_capabilities(node.capabilities)
-    if tools.get(xcode.NAME):  # what a project pinning an Xcode needs (config.py all_needs)
-        offers = list(dict.fromkeys((*offers, xcode.NAME)))
+    # an Xcode or a simulator runtime, as a project pinning one needs it (config.py all_needs)
+    offers = list(dict.fromkeys((*offers, *(name for name in FOUND_ON_NODE if tools.get(name)))))
     return {"worker": node.name, "capabilities": offers,
             "toolchains": tools, "version": get_version(), "disk_free": free,
             **({"load": sample} if sample is not None else {})}

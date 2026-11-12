@@ -15,8 +15,8 @@ seconds each, so the worker asks them beside its loop and gives its claims the l
 
 The worker reports them beside its toolchains (advert.py): `xcode` the versions, `xcode-sdk` the
 SDKs (`iphoneos18.2`), `simulator` the available runtimes (`iOS 18.2`), from a scan beside its loop
-every 5 minutes (Inventory); and the capability `xcode`
-while one is installed, which a project that pins one needs, so only such a Mac claims its jobs.
+every 5 minutes (Inventory); and the capability `xcode` while one is installed, which a project
+that pins one needs, so only such a Mac claims its jobs, and `simulator` while a runtime is.
 """
 
 from __future__ import annotations
@@ -26,6 +26,7 @@ import os
 import plistlib
 import re
 import subprocess
+import sys
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -35,7 +36,7 @@ from mulebox.common import command
 from mulebox.common.config import XCODE as NAME  # the toolchain, and the capability it gives
 from mulebox.common.errors import MuleboxError
 from mulebox.common.versions import same_release
-from mulebox.worker import background
+from mulebox.worker import background, simulator
 
 APPLICATIONS = Path("/Applications")
 _VERSION = re.compile(r"\d{1,3}(\.\d{1,3}){0,2}")
@@ -143,17 +144,6 @@ def parse_sdks(text: str) -> list[str]:
             and isinstance(sdk.get("canonicalName"), str)] if isinstance(data, list) else []
 
 
-def parse_runtimes(text: str) -> list[str]:
-    """`name` of each available runtime in `xcrun simctl list runtimes --json`."""
-    try:
-        data = json.loads(text)
-    except ValueError:
-        return []
-    runtimes = data.get("runtimes") if isinstance(data, dict) else None
-    return [r["name"] for r in runtimes or [] if isinstance(r, dict) and r.get("isAvailable")
-            and isinstance(r.get("name"), str)]
-
-
 def _ask(argv: list[str], xcode: Xcode, run: Run) -> str:
     env = {**os.environ, "DEVELOPER_DIR": str(xcode.developer_dir)}
     try:
@@ -165,9 +155,11 @@ def _ask(argv: list[str], xcode: Xcode, run: Run) -> str:
 
 class Scan(dict):
     """What a scan reports ({name: [values]}, as advert.py sends it), with the Xcodes it found
-    kept beside it for the jobs of this node (pinned)."""
+    kept beside it for the jobs of this node: the Xcodes (pinned) and the simulator runtimes
+    (simulator.py)."""
 
     xcodes: tuple[Xcode, ...] = ()
+    runtimes: tuple[simulator.Runtime, ...] = ()
 
 
 def scan(xcodes: Callable[[], list[Xcode]] | None = None, run: Run = command.run
@@ -179,11 +171,11 @@ def scan(xcodes: Callable[[], list[Xcode]] | None = None, run: Run = command.run
         return {}
     sdks = sorted({sdk for x in found
                    for sdk in parse_sdks(_ask(["xcodebuild", "-showsdks", "-json"], x, run))})
-    runtimes = parse_runtimes(_ask(["xcrun", "simctl", "list", "runtimes", "--json"],
-                                   found[-1], run))
+    runtimes = simulator.parse_runtimes(_ask(["xcrun", "simctl", "list", "runtimes", "--json"],
+                                             found[-1], run))
     done = Scan({NAME: [x.version for x in found], "xcode-sdk": sdks,
-                 "simulator": sorted(set(runtimes))})
-    done.xcodes = tuple(found)
+                 "simulator": sorted({r.name for r in runtimes})})
+    done.xcodes, done.runtimes = tuple(found), tuple(runtimes)
     return done
 
 
@@ -220,6 +212,10 @@ class Inventory:
         """The Xcodes of the last finished scan; none before it."""
         return list(getattr(self._found, "xcodes", ()))
 
+    def runtimes(self) -> list[simulator.Runtime]:
+        """The simulator runtimes of the last finished scan; none before it."""
+        return list(getattr(self._found, "runtimes", ()))
+
 
 _INVENTORY: Inventory | None = None
 
@@ -240,3 +236,21 @@ def known() -> list[Xcode]:
     """The Xcodes a job can pin: the last scan's, or, before one has finished, a look now
     (a node offers `xcode` only after its first scan, so a job rarely gets here)."""
     return _inventory().xcodes() or installed()
+
+
+def runtimes() -> list[simulator.Runtime]:
+    """The simulator runtimes a job can have, from the last scan (a node offers `simulator`
+    only once a scan found one)."""
+    return _inventory().runtimes()
+
+
+def newest_developer_dir() -> str | None:
+    """The newest Xcode's `Contents/Developer`, whose `simctl` the scan asked for runtimes;
+    None with no Xcode."""
+    found = known()
+    return str(found[-1].developer_dir) if found else None
+
+
+def simulators(platform: str = sys.platform) -> simulator.Simulators | None:
+    """What removes jobs' simulators, on a Mac; None elsewhere."""
+    return simulator.Simulators(newest_developer_dir) if platform == "darwin" else None

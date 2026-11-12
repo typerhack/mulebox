@@ -1,4 +1,5 @@
-"""Cleaning up after a job: its Docker resources, then its folder, in that order.
+"""Cleaning up after a job: its simulator (a Mac's, simulator.py), its Docker resources, then
+its folder, in that order.
 
 The order matters: a running container can still write into the folder, and a bind mount
 holds it open. Package caches a container wrote to are given back in between; a failure there
@@ -18,18 +19,24 @@ from mulebox.common.safepath import RemovalDenied
 from mulebox.worker import caches, docker_cleanup, reclaim, workspace
 from mulebox.worker.docker import Docker, DockerMissing
 from mulebox.worker.paths import NodePaths
+from mulebox.worker.simulator import Simulators
 
 LOG = get_logger("worker.cleaner")
 
 
 class Cleaner:
-    def __init__(self, paths: NodePaths, worker: str, docker: Docker | None = None) -> None:
+    def __init__(self, paths: NodePaths, worker: str, docker: Docker | None = None,
+                 simulators: Simulators | None = None) -> None:
         self.paths, self.worker, self.docker = paths, worker, docker
+        self.simulators = simulators  # on a Mac node only
 
     def clean(self, project: str, job_id: str, uses_docker: bool,
-              tree: Path | None = None) -> None:
-        """Remove the job's Docker resources and its folder; MuleboxError means try again. The
-        project's worktree stays, and containers' files in it become the worker's user's."""
+              tree: Path | None = None, uses_simulator: bool = False) -> None:
+        """Remove the job's simulator, Docker resources and folder; MuleboxError means try
+        again. The project's worktree stays, and containers' files in it become the worker's
+        user's."""
+        if uses_simulator and self.simulators is not None:
+            self.simulators.remove(job_id)
         if uses_docker and self.docker is not None:
             docker_cleanup.teardown(self.docker, job_id)
             self._give_back_caches(project, job_id)
@@ -75,6 +82,8 @@ class Cleaner:
     def recover(self) -> list[str]:
         """Clean what earlier runs left; return what was cleaned, for the log."""
         cleaned: list[str] = []
+        if self.simulators is not None:  # no job runs yet, so every job simulator is left over
+            cleaned += self._leftover_simulators()
         folders = workspace.leftover_job_dirs(self.paths)
         with_folder = {entry.name for entry in folders}
         for job_id in self._labelled_jobs():
@@ -83,6 +92,11 @@ class Cleaner:
         for entry in folders:
             cleaned += self._attempt(str(entry), lambda e=entry: self._leftover(e))
         return cleaned
+
+    def _leftover_simulators(self) -> list[str]:
+        removed: list[int] = []
+        self._attempt("job simulators", lambda: removed.append(self.simulators.remove_leftovers()))
+        return [f"{removed[0]} job simulators"] if removed and removed[0] else []
 
     def _teardown(self, job_id: str) -> None:
         if self.docker is not None:

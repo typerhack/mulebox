@@ -12,7 +12,7 @@ from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
 from mulebox.common import disk, upgrade
-from mulebox.common.config import XCODE, ProjectConfig
+from mulebox.common.config import FOUND_ON_NODE, SIMULATOR, XCODE, ProjectConfig
 from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
 from mulebox.common.versions import compare, same_release
@@ -87,21 +87,27 @@ def _toolchain_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
     tools = worker.get("toolchains")
     gaps = []
     for name, version in project.toolchain.items() if tools is not None else ():
-        if name == XCODE:
-            continue  # never installed by a job: _xcode_gap
+        if name in FOUND_ON_NODE:
+            continue  # never installed by a job: _node_gaps
         have = tools.get(name) or []
         if version not in have:
             gaps.append(f"{name} {version} (has {', '.join(have) or 'none'})")
     return gaps
 
 
-def _xcode_gap(worker: Worker, project: ProjectConfig) -> str | None:
-    """The pinned Xcode, when this Mac reports others: a job there would exit 5."""
-    version, tools = project.toolchain.get(XCODE), worker.get("toolchains")
-    have = (tools or {}).get(XCODE) or []
-    if version is None or tools is None or any(same_release(v, version) for v in have):
-        return None
-    return f"{worker.get('worker')} has {', '.join(have) or 'none'}"
+_LABEL = {XCODE: "Xcode", SIMULATOR: "the simulator runtime"}
+
+
+def _node_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
+    """A pinned Xcode or simulator runtime this Mac lacks: a job there would exit 5."""
+    tools = worker.get("toolchains")
+    gaps = []
+    for name in FOUND_ON_NODE if tools is not None else ():
+        version, have = project.toolchain.get(name), tools.get(name) or []
+        if version is not None and not any(same_release(v, version) for v in have):
+            gaps.append(f"{_LABEL[name]} {version} ({worker.get('worker')} has "
+                        f"{', '.join(have) or 'none'})")
+    return gaps
 
 
 def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
@@ -113,8 +119,9 @@ def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
 
 
 def _fix(project: ProjectConfig) -> str:
-    mac = (f"; `{XCODE}` is offered by a Mac node with Xcode installed, by itself"
-           if XCODE in project.all_needs else "")
+    mac = (f"; `{XCODE}` and `{SIMULATOR}` are offered by a Mac node with Xcode and a "
+           "simulator runtime installed, by themselves"
+           if set(FOUND_ON_NODE) & set(project.all_needs) else "")
     return f"a capability goes into `capabilities` in the machine's node.toml{mac}"
 
 
@@ -139,11 +146,12 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
     if unsure and project.toolchain:
         return [Finding(WARN, "machine", f"{', '.join(unsure)} did not report its toolchains (its "
                         f"mulebox is older), so {_wanted(project)} is unconfirmed")]
-    xcode_gaps = [gap for w in usable if (gap := _xcode_gap(w, project)) is not None]
-    if xcode_gaps and len(xcode_gaps) == len(usable):
-        return [Finding(FAIL, "machine", f"Xcode {project.toolchain[XCODE]} is on no online Mac "
-                        f"node ({'; '.join(xcode_gaps)}), and mulebox does not install Xcode: a "
-                        "job would exit 5. Pin one of those, or install it on a Mac node")]
+    node_gaps = {str(w.get("worker")): _node_gaps(w, project) for w in usable}
+    if all(node_gaps.values()):
+        lacking = "; ".join(gap for gaps in node_gaps.values() for gap in gaps)
+        return [Finding(FAIL, "machine", f"no online Mac node has all of it: {lacking}; mulebox "
+                        "installs neither Xcode nor simulator runtimes, so a job would exit 5. "
+                        "Pin one of those, or install it on a Mac node")]
     names = ", ".join(str(w.get("worker")) for w in usable)
     ready = any(not _toolchain_gaps(w, project) for w in usable)
     found = [Finding(OK, "machine", f"{names} offers what this project needs: "
@@ -151,8 +159,8 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
     if to_install:
         found.append(Finding(OK, "machine", f"{'; '.join(to_install)}: the first job installs it, "
                              "once, which can take minutes"))
-    if XCODE in project.toolchain:
-        found += _xcodes(w for w in usable if _xcode_gap(w, project) is None)
+    if set(FOUND_ON_NODE) & set(project.all_needs):
+        found += _xcodes(w for w in usable if not node_gaps[str(w.get("worker"))])
     return found
 
 

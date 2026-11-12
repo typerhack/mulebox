@@ -5,7 +5,8 @@
   that release's `SHASUMS256.txt`, extracted safely (archive.py).
 - pnpm: `npm install -g --prefix <cache>/toolchains/pnpm/<ver> pnpm@<ver>`, run with an
   installed node toolchain (the newest one).
-- xcode: found on a Mac node, never installed (xcode.py); a missing one fails the job at once.
+- xcode and simulator: found on a Mac node, never installed (xcode.py, simulator.py); a
+  missing one fails the job at once.
 
 Installs go to a temporary folder next to the final one and are renamed into place, so a
 half-finished install is never picked up. Temporary folders are removed through safepath. A lost
@@ -27,6 +28,7 @@ from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_ulid
 from mulebox.common.network_errors import REGISTRY
 from mulebox.common.safepath import ensure_dir, remove_tree
+from mulebox.common.config import FOUND_ON_NODE
 from mulebox.worker import xcode
 from mulebox.worker.archive import extract_tar
 from mulebox.worker.paths import NodePaths
@@ -80,8 +82,8 @@ def toolchain_dir(paths: NodePaths, name: str, version: str) -> Path:
 
 
 def _installable(toolchain: Mapping[str, str]) -> dict[str, str]:
-    """The toolchain map without what the machine has or lacks by itself (Xcode)."""
-    return {name: version for name, version in toolchain.items() if name != xcode.NAME}
+    """The toolchain map without what the machine has or lacks by itself (Xcode, a runtime)."""
+    return {name: version for name, version in toolchain.items() if name not in FOUND_ON_NODE}
 
 
 def path_for(paths: NodePaths, toolchain: Mapping[str, str]) -> list[Path]:

@@ -565,6 +565,25 @@ node, not in a container, so they reach containers through `127.0.0.1` and the
 `MULEBOX_PORT_...` variable. Read the URL from the environment in `playwright.config`, and
 do not let Playwright's `webServer` start something on a fixed port.
 
+## 2c. Apple platforms (Mac nodes)
+
+A project that builds for macOS, iOS, watchOS, tvOS or visionOS runs on a Mac node. Pin its
+Xcode as a toolchain; the node must have it, as a job never installs Xcode. For tests in a
+simulator, add `simulator` to `needs`, or pin the runtime: each job gets a simulator of its own,
+made before its commands and removed on every outcome, with its id in `$MULEBOX_SIMULATOR`.
+
+```yaml
+toolchain:
+  xcode: "16.2"
+  simulator: "iOS 18.2"         # optional; without it, the newest iOS runtime the node has
+jobs:
+  test: xcodebuild test -scheme App -destination "id=$MULEBOX_SIMULATOR"
+```
+
+Do not boot, erase or delete simulators yourself, and do not pick one by name
+(`name=iPhone 16`): another job can be using it. A pinned Xcode or runtime the node lacks
+exits 5, naming the ones it has; `mulebox doctor` lists each Mac's Xcodes, SDKs and runtimes.
+
 ## 3. Moving GitHub Actions to mulebox runners
 
 A repository's CI can run on the node through the same queue. Do this only when

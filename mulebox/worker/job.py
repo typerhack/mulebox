@@ -23,6 +23,7 @@ class ActiveJob:
     last_output: float = 0.0  # agent clock: the last bytes in the job's raw log
     handle: Any = None  # executor handle once the process runs
     uses_docker: bool = False  # a `compose:` job: its Docker resources are torn down
+    uses_simulator: bool = False  # its simulator is removed (simulator.py)
     outcome: Outcome | None = None  # set when the job ended
     exit_code: int | None = None
     duration_s: float = 0.0

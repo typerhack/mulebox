@@ -17,7 +17,8 @@ from typing import Any
 
 from mulebox.common import compose, config_jobs, env_rules
 from mulebox.common.safepath import ensure_dir
-from mulebox.worker import caches, compose_job, jobspec, steps, xcode
+from mulebox.common.config import XCODE
+from mulebox.worker import caches, compose_job, jobspec, simulator, steps, xcode
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import ExecutorError, RunSpec, unit_name
 from mulebox.worker.paths import NodePaths
@@ -89,6 +90,16 @@ def _runtime_limit(claim: dict[str, Any]) -> float | None:
     return jobspec.timeout_seconds(claim["timeout_min"])
 
 
+def _simulator(job_id: str, claim: dict[str, Any]) -> tuple[str, ...]:
+    """The lines that make the job's own simulator, if it asks for one (simulator.py), with the
+    newest Xcode's `simctl` unless the job pins an Xcode."""
+    if not simulator.wanted(claim):
+        return ()
+    pins = XCODE in (claim.get("toolchain") or {})
+    return simulator.for_job(claim, xcode.runtimes(), job_id,
+                             None if pins else xcode.newest_developer_dir())
+
+
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,
           bins: Sequence[Path], marker: str = "", scratch: Path | None = None
           ) -> tuple[RunSpec, tuple[str, ...]]:
@@ -119,6 +130,7 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
                                     src, values, environment, cached.folders,
                                     (*machine.job_env, *settled), scratch)
         first, extra, notes = ready.script, ready.extra_env, ready.notes
+    first = (*_simulator(job_id, claim), *first)
     spec = RunSpec(name=unit_name(job_id),
                    argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first,
                                            marker or steps.new_marker(), claim.get("install")),

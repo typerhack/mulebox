@@ -11,7 +11,7 @@ import pytest
 
 from mulebox.client import doctor
 from mulebox.common.config import ProjectConfig
-from mulebox.worker import advert, toolchains, xcode
+from mulebox.worker import advert, simulator, toolchains, xcode
 
 SDKS = json.dumps([
     {"canonicalName": "iphoneos27.2", "displayName": "iOS 27.2", "platform": "iphoneos",
@@ -142,7 +142,7 @@ def test_a_failed_scan_keeps_the_last_answer_and_is_tried_again():
 
 def test_unreadable_answers_give_nothing():
     assert xcode.parse_sdks("not json") == [] and xcode.parse_sdks('{"a": 1}') == []
-    assert xcode.parse_runtimes("[]") == [] and xcode.parse_runtimes("x") == []
+    assert simulator.parse_runtimes("[]") == [] and simulator.parse_runtimes("x") == []
 
 
 def test_a_mac_with_xcode_offers_it_and_a_project_pinning_one_needs_it(monkeypatch, paths):

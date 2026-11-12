@@ -749,7 +749,12 @@ After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionO
       Built 2026-11-12 (1.10.0): `worker/xcode.py`, the capability `xcode`, `doctor` fails a pinned
       version no online Mac has. Tested with Xcode bundles made in tests and the JSON shapes of this
       Mac's `xcodebuild` and `simctl`; this Mac's own Xcodes read. Open: a real job on a Mac node.
-- [ ] M22.2 A simulator of its own per job, made before and removed on every outcome.
+- [~] M22.2 A simulator of its own per job, made before and removed on every outcome. Built
+      2026-11-12 (1.11.0): `worker/simulator.py`, `needs: [simulator]` or a pinned runtime,
+      `$MULEBOX_SIMULATOR`, removed by name in the cleanup and on a worker's start. Tested with
+      simctl's JSON shapes and a stand-in; on this Mac, one throwaway simulator was made by a job's
+      script lines from a real scan (iOS 26.0, 0.3 s) and removed by the cleaner's code, none left.
+      Open: a real job on a Mac node, with a cancel and a worker killed mid-job.
 - [ ] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`.
 - [ ] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node.
 

@@ -221,7 +221,12 @@ Toolchains are pinned per project with explicit paths; workers keep package cach
 container images and browsers warm between jobs.
 Xcode is pinned the same way (`xcode: "16.2"`), on a Mac node only, but never installed by a job:
 the worker reports the Xcodes it has, and the job gets the pinned one's `DEVELOPER_DIR`
-(worker/xcode.py).
+(worker/xcode.py). A simulator runtime is found the same way (`simulator: "iOS 18.2"`), and a job
+that asks for one gets a simulator of its own (worker/simulator.py): its script makes it, so a
+slow CoreSimulator holds up that job only and a cancel stops it; the cleanup removes it by its name
+on every outcome, as it tears down a compose job's containers, and a worker that starts removes
+any an earlier one left. Only simulators named `mulebox-job-...` are ever removed, through `simctl`,
+as the device set is the user's own, shared with Xcode.
 
 ## Docker Compose projects
 
