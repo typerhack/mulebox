@@ -36,7 +36,7 @@ def node_dist(tmp_path):
 
 
 def test_install_node(paths, node_dist):
-    final = toolchains.install(paths, "node", VERSION, fetch=node_dist, arch="x64")
+    final = toolchains.install(paths, "node", VERSION, fetch=node_dist, build="linux-x64")
     assert final == paths.cache / "toolchains" / "node" / VERSION
     assert (final / "bin" / "node").exists()
     assert node_dist.urls == [f"https://nodejs.org/dist/v{VERSION}/SHASUMS256.txt",
@@ -50,7 +50,7 @@ def test_install_node(paths, node_dist):
 def test_checksum_mismatch(paths, node_dist):
     (node_dist.dist / f"{STEM}.tar.xz").write_bytes(b"tampered")
     with pytest.raises(ToolchainError, match="does not match"):
-        toolchains.install(paths, "node", VERSION, fetch=node_dist, arch="x64")
+        toolchains.install(paths, "node", VERSION, fetch=node_dist, build="linux-x64")
     assert not (paths.cache / "toolchains" / "node" / VERSION).exists()
     assert list((paths.cache / "toolchains" / "node").iterdir()) == []
 
@@ -58,7 +58,7 @@ def test_checksum_mismatch(paths, node_dist):
 def test_not_listed_in_shasums(paths, node_dist):
     (node_dist.dist / "SHASUMS256.txt").write_text("")
     with pytest.raises(ToolchainError, match="not listed"):
-        toolchains.install(paths, "node", VERSION, fetch=node_dist, arch="x64")
+        toolchains.install(paths, "node", VERSION, fetch=node_dist, build="linux-x64")
 
 
 def test_missing_version_lists_what_the_machine_has(paths):
@@ -95,7 +95,7 @@ def test_pnpm_needs_node(paths):
 
 
 def test_pnpm_install_uses_node_npm(paths, node_dist):
-    node = toolchains.install(paths, "node", VERSION, fetch=node_dist, arch="x64")
+    node = toolchains.install(paths, "node", VERSION, fetch=node_dist, build="linux-x64")
     calls = []
 
     def run(argv, env):
@@ -115,17 +115,30 @@ def test_pnpm_install_uses_node_npm(paths, node_dist):
 
 
 def test_pnpm_install_failure(paths, node_dist):
-    toolchains.install(paths, "node", VERSION, fetch=node_dist, arch="x64")
+    toolchains.install(paths, "node", VERSION, fetch=node_dist, build="linux-x64")
     run = lambda argv, env: subprocess.CompletedProcess(argv, 1, "", "E404")  # noqa: E731
     with pytest.raises(ToolchainError, match="E404"):
         toolchains.install(paths, "pnpm", "11.22.0", run=run)
 
 
-def test_node_arch():
-    assert toolchains.node_arch("x86_64") == "x64"
-    assert toolchains.node_arch("aarch64") == "arm64"
+def test_node_build():
+    assert toolchains.node_build("x86_64", "linux") == "linux-x64"
+    assert toolchains.node_build("aarch64", "linux") == "linux-arm64"
+    assert toolchains.node_build("arm64", "darwin") == "darwin-arm64"  # a Mac node
     with pytest.raises(ToolchainError):
-        toolchains.node_arch("sparc")
+        toolchains.node_build("sparc", "linux")
+    with pytest.raises(ToolchainError):
+        toolchains.node_build("x86_64", "win32")
+
+
+def test_install_node_on_a_mac(paths, node_dist):
+    stem = f"node-v{VERSION}-darwin-arm64"
+    make_tar(node_dist.dist / f"{stem}.tar.xz", {f"{stem}/bin/node": "#!/bin/sh\n"}, mode="w:xz")
+    digest = hashlib.sha256((node_dist.dist / f"{stem}.tar.xz").read_bytes()).hexdigest()
+    (node_dist.dist / "SHASUMS256.txt").write_text(f"{digest}  {stem}.tar.xz\n")
+    final = toolchains.install(paths, "node", VERSION, fetch=node_dist, build="darwin-arm64")
+    assert (final / "bin" / "node").exists()
+    assert node_dist.urls[-1].endswith(f"/{stem}.tar.xz")
 
 
 def test_missing_is_what_is_not_there_node_first(paths):
@@ -168,7 +181,7 @@ def test_a_lost_network_is_tried_again(paths, node_dist):
             raise ToolchainNetwork("connection reset")
         node_dist(url, dest)
 
-    final = toolchains.install(paths, "node", VERSION, fetch=flaky, arch="x64", sleep=waits.append)
+    final = toolchains.install(paths, "node", VERSION, fetch=flaky, build="linux-x64", sleep=waits.append)
     assert (final / "bin").is_dir() and waits == [5, 10]
 
 
@@ -177,7 +190,7 @@ def test_a_network_that_stays_lost_says_so_and_offers_no_other_version(paths):
         raise ToolchainNetwork("connection reset")
 
     def install_one(paths, name, version):
-        return toolchains.install(paths, name, version, fetch=down, arch="x64", sleep=lambda _: None)
+        return toolchains.install(paths, name, version, fetch=down, build="linux-x64", sleep=lambda _: None)
 
     with pytest.raises(ToolchainNetwork) as found:
         toolchains.install_missing(paths, [("node", VERSION)], install_one)
@@ -193,5 +206,5 @@ def test_a_version_that_does_not_exist_is_not_tried_again(paths):
         raise ToolchainError("HTTP Error 404")
 
     with pytest.raises(ToolchainError):
-        toolchains.install(paths, "node", VERSION, fetch=missing, arch="x64", sleep=calls.append)
+        toolchains.install(paths, "node", VERSION, fetch=missing, build="linux-x64", sleep=calls.append)
     assert len(calls) == 1

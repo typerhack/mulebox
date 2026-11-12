@@ -131,11 +131,15 @@ def open_link(node: NodeConfig, paths: NodePaths) -> Any:
     return LocalLink(store, staging, cluster_slots=node.slots)
 
 
-def _executor() -> Any:
+def _executor(paths: NodePaths) -> Any:
     if sys.platform.startswith("linux"):
         from mulebox.worker.systemd import SystemdExecutor
 
         return SystemdExecutor()
+    if sys.platform == "darwin":
+        from mulebox.worker.darwin_exec import for_node
+
+        return for_node(paths.staging, paths.roots)
     from mulebox.worker.executor import SubprocessExecutor
 
     return SubprocessExecutor()
@@ -155,5 +159,5 @@ def _serve(args: argparse.Namespace) -> int:
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    serve(node, link, _executor(), paths=paths, stop=stop, docker=Docker())
+    serve(node, link, _executor(paths), paths=paths, stop=stop, docker=Docker())
     return 0

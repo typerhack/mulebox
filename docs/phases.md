@@ -711,8 +711,12 @@ by Sol before the next starts (the user's ask).
       (1.6.0), with tests for both managers against stand-ins for systemctl and launchctl, and the
       installer's platform check run under the Mac's own bash 3.2. Open: a real Mac, and a real Linux
       upgrade through the new path.
-- [ ] M21.2 Jobs on macOS: the process-group executor kept across a worker restart (orphans found
-      and stopped), freeze and its limits, and what a Mac node cannot do said, not faked.
+- [~] M21.2 Jobs on macOS: the process-group executor kept across a worker restart (orphans found
+      and stopped), freeze and its limits, and what a Mac node cannot do said, not faked. Built
+      2026-11-12 (1.7.0): `worker/darwin_exec.py`, jobs under `nice -n 5`, records in
+      `<staging>/job-groups/`; pinned Node.js as the macOS build. Tested with real processes on the
+      Mac (a group left by an earlier worker found and stopped, a reused group id left alone). Boost
+      reaches only containers there, as the docs say. Open: a real job on a Mac node.
 - [ ] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
       CPU and memory, for heartbeats, activity and the dashboard.
 - [ ] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.

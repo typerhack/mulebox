@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.7.0 - 2026-11-12 - minor
+- Jobs on a macOS node (M21.2): `worker/darwin_exec.py` builds on the process-group executor. Each job leaves a record of its group in `<staging>/job-groups/` (through safepath), so a worker that restarts finds and stops the groups an earlier one left, and a record whose group id now belongs to another process is only removed. Jobs run under `nice -n 5`, the Mac's counterpart of a unit's lower CPU weight; boost reaches only a job's containers there, as only root can raise a priority again. A group of exited, unreaped processes (EPERM on macOS) counts as stopped.
+- Pinned Node.js installs the build for the node's own system (`node_build`: `linux-x64`, `darwin-arm64`); `download.linux_arch` is now `cpu_arch`, beside `system_name`.
+
 ## 1.6.1 - 2026-11-12 - patch
 - From Sol's review of 1.6.0: a launchd agent is looked for in both the screen session (`gui/<uid>`) and the background one (`user/<uid>`), so one loaded over ssh with nobody at the screen is still restarted, stopped and moved after someone logs in, never left running beside a second copy.
 - install.sh, with no `MULEBOX_PYTHON`, takes `python3` only if it is 3.12 or newer, else the newest `python3.14`, `python3.13` or `python3.12` on PATH: Homebrew's `python@3.13` installs `python3.13` alone, and a Mac's own `python3` is older.

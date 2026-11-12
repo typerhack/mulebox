@@ -8,7 +8,8 @@ says `paused` and `boost` while they are on, and this brings the machine in line
   container is up again before the job's commands talk to it.
 - Boost raises the CPU and disk weight of the job's unit and its containers far above everything
   else on the machine, which keeps the default; the coordinator stops giving the machine new
-  jobs meanwhile. Containers that start later are boosted with the next reply.
+  jobs meanwhile. Containers that start later are boosted with the next reply. On a macOS node
+  only the containers are boosted (darwin_exec.py: only root can raise a priority again).
 
 The same class steers a GitHub run on its runner (runners/runner_controls.py): there the "unit"
 is the runner's service and the containers are found by their Compose folder, not by a label.

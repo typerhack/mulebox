@@ -79,8 +79,8 @@ sudo loginctl enable-linger alice
 
 ### A Mac as a node
 
-Being built ([roadmap](phases.md), M21): the services install and run; jobs, readings and
-runners follow. `mulebox setup` installs a Mac the same way, with these differences:
+Being built ([roadmap](phases.md), M21): the services install and run, and so do jobs;
+readings and runners follow. `mulebox setup` installs a Mac the same way, with these differences:
 
 - Python 3.12 or newer, such as `brew install python@3.13` (the Mac's own `python3` is older), and
   git (`xcode-select --install`). The installer looks in Homebrew's folders, which an ssh login
@@ -92,6 +92,15 @@ runners follow. `mulebox setup` installs a Mac the same way, with these differen
   must be off for that. With nobody logged in on the screen, setup starts them in the user's
   background session (`user/<uid>`) instead; whether they outlive the ssh login there has not been
   seen on a real Mac yet.
+- A job is a process group rather than a systemd unit. Cancel, time limits and Pause work on the
+  whole group; a process that starts a session of its own leaves it and is not stopped with it.
+  A worker that restarts finds the groups an earlier one left (`<staging>/job-groups/`) and
+  stops them, as on Linux.
+- Jobs run under `nice -n 5`, so the Mac's own use comes first, as a unit's lower CPU weight
+  does on Linux. Boost raises a job's containers only: macOS lets only root raise a process's
+  priority again.
+- Pinned toolchains are the macOS builds (`node-v<ver>-darwin-arm64`). Compose jobs need Docker
+  Desktop, OrbStack or Colima; their containers run Linux in a virtual machine.
 
 ### Node config
 

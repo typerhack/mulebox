@@ -88,7 +88,7 @@ def parse_release(data: Any, arch: str) -> Release:
 
 def latest_release(arch: str | None = None, fetch_json: FetchJson = _api_json) -> Release:
     try:
-        arch = arch or download.linux_arch()
+        arch = arch or download.cpu_arch()
         return parse_release(fetch_json(LATEST_URL), arch)
     except download.DownloadError as exc:
         raise ReleaseError(f"cannot look up the latest runner release: {exc}") from exc

@@ -3,7 +3,8 @@
 - `fetch_file(url, dest)`: stream a URL into a new file (`dest` must not exist).
 - `fetch_json(url)`: a small JSON document (API replies), with a size cap.
 - `sha256_file(path)`: hex digest of a file.
-- `linux_arch(machine)`: the `x64` / `arm64` name used by Node and GitHub release assets.
+- `cpu_arch(machine)`: the `x64` / `arm64` name used by Node and GitHub release assets;
+  `system_name()`: `linux` or `darwin`.
 
 Errors raise DownloadError; callers wrap it in their own error type if they need one.
 """
@@ -14,6 +15,7 @@ import hashlib
 import json
 import http.client
 import platform
+import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -82,9 +84,19 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def linux_arch(machine: str | None = None) -> str:
+def cpu_arch(machine: str | None = None) -> str:
     """`x64` or `arm64` for this (or the given) CPU; DownloadError for anything else."""
     machine = (machine or platform.machine()).lower()
     if machine not in _ARCH:
         raise DownloadError(f"no build for CPU architecture {machine!r}")
     return _ARCH[machine]
+
+
+def system_name(system: str | None = None) -> str:
+    """`linux` or `darwin` for this (or the given) `sys.platform`, as Node.js names its builds;
+    DownloadError for a system nodes do not run on."""
+    system = system or sys.platform
+    for prefix in ("linux", "darwin"):
+        if system.startswith(prefix):
+            return prefix
+    raise DownloadError(f"no build for the system {system!r}")

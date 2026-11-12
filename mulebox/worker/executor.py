@@ -1,8 +1,8 @@
 """Running a job's process tree: the Executor contract and the subprocess executor.
 
 `Executor` is what the agent loop talks to. `SystemdExecutor` (systemd.py) is the one used
-on Linux nodes; `SubprocessExecutor` here has the same behaviour with a process
-group instead of a systemd unit, for tests and development on macOS:
+on Linux nodes, `DarwinExecutor` (darwin_exec.py) on macOS nodes. `SubprocessExecutor` here, which
+the macOS one builds on, has the same behaviour with a process group instead of a systemd unit:
 
 - the job runs in a new session (its own process group), output appended to the log;
 - `poll` enforces the timeout; when the main process ends, whatever is left in the group

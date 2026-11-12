@@ -1,6 +1,7 @@
 """Pinned toolchains under `<cache>/toolchains/<name>/<version>`, prepended to a job's PATH.
 
-- node: the official `node-v<ver>-linux-<arch>.tar.xz` from nodejs.org, verified against
+- node: the official `node-v<ver>-<system>-<cpu>.tar.xz` from nodejs.org (`linux-x64`,
+  `darwin-arm64`, ...: `node_build`), verified against
   that release's `SHASUMS256.txt`, extracted safely (archive.py).
 - pnpm: `npm install -g --prefix <cache>/toolchains/pnpm/<ver> pnpm@<ver>`, run with an
   installed node toolchain (the newest one).
@@ -118,9 +119,10 @@ def _version_key(version: str) -> tuple[int, ...]:
     return tuple(int(part) for part in version.split("."))
 
 
-def node_arch(machine: str | None = None) -> str:
+def node_build(machine: str | None = None, system: str | None = None) -> str:
+    """The build of Node.js for this machine, as nodejs.org names it: `linux-x64`, `darwin-arm64`."""
     try:
-        return download.linux_arch(machine)
+        return f"{download.system_name(system)}-{download.cpu_arch(machine)}"
     except download.DownloadError as exc:
         raise ToolchainError(f"node: {exc}") from exc
 
@@ -133,8 +135,8 @@ def _expected_sha(sums: str, filename: str) -> str:
     raise ToolchainError(f"{filename} is not listed in SHASUMS256.txt")
 
 
-def _install_node(paths: NodePaths, version: str, tmp: Path, fetch: Fetch, arch: str) -> Path:
-    stem = f"node-v{version}-linux-{arch}"
+def _install_node(paths: NodePaths, version: str, tmp: Path, fetch: Fetch, build: str) -> Path:
+    stem = f"node-v{version}-{build}"
     base = f"{NODE_DIST}/v{version}"
     downloads = ensure_dir(tmp / "download", paths.roots)
     sums_file, tarball = downloads / "SHASUMS256.txt", downloads / f"{stem}.tar.xz"
@@ -186,7 +188,7 @@ def install_missing(paths: NodePaths, gaps: list[tuple[str, str]],
 
 
 def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fetch,
-            run: Run = run_command, arch: str | None = None,
+            run: Run = run_command, build: str | None = None,
             machine_env: Mapping[str, str] | None = None,
             sleep: Callable[[float], None] = time.sleep) -> Path:
     """Install a toolchain; return its folder. Already installed: return it unchanged.
@@ -194,7 +196,7 @@ def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fe
     `NODE_OPTIONS`, a job's installs need as well."""
     for attempt in range(1, TRIES + 1):
         try:
-            return _install_once(paths, name, version, fetch, run, arch, machine_env)
+            return _install_once(paths, name, version, fetch, run, build, machine_env)
         except ToolchainNetwork:
             if attempt == TRIES:
                 raise
@@ -203,7 +205,7 @@ def install(paths: NodePaths, name: str, version: str, *, fetch: Fetch = http_fe
 
 
 def _install_once(paths: NodePaths, name: str, version: str, fetch: Fetch, run: Run,
-                  arch: str | None, machine_env: Mapping[str, str] | None) -> Path:
+                  build: str | None, machine_env: Mapping[str, str] | None) -> Path:
     final = toolchain_dir(paths, name, version)
     if (final / "bin").is_dir():
         return final
@@ -211,7 +213,7 @@ def _install_once(paths: NodePaths, name: str, version: str, fetch: Fetch, run: 
     tmp = ensure_dir(parent / f".tmp-{version}-{new_ulid()}", paths.roots)
     try:
         if name == "node":
-            tree = _install_node(paths, version, tmp, fetch, arch or node_arch())
+            tree = _install_node(paths, version, tmp, fetch, build or node_build())
         else:
             tree = _install_pnpm(paths, version, tmp, run, machine_env or {})
         if final.exists():  # a leftover without bin/ from an older, broken install
