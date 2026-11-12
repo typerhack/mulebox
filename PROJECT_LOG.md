@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.4.4 - 2026-11-12 - patch
+- Roadmap: M23.6 done. mulebox's own CI passed on its isolated runner, 4m 28s warm with its three jobs one after another; the first run took 20 min, most of it downloading Python 3.13 and Node 22 into the new runner's tool cache over the node's link.
+
 ## 1.4.3 - 2026-11-12 - patch
 - A CI card on an isolated runner said "Cores: measuring" for its whole run (the user's report): the meter read the runner's systemd service, which a runner in a container does not have. It now reads the job's container, found from the runner's marker, its id asked of Docker once per container.
 
