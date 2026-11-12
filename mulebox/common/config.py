@@ -96,6 +96,7 @@ class ProjectConfig:
     timeout_min: int = DEFAULT_TIMEOUT_MIN
     exclude: tuple[str, ...] = ()
     ignore_changes: tuple[str, ...] = ()  # paths whose changes never change a result
+    github_status: bool = False  # post check results to the pushed commit (client/github_status.py)
     env: dict[str, str] = field(default_factory=dict)
     job_options: dict[str, config_jobs.JobOptions] = field(default_factory=dict)
     host_ports: tuple[str, ...] = ()  # of the one job `for_job` gave this for
@@ -170,6 +171,7 @@ def load_project_config(path: Path) -> ProjectConfig:
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
         exclude=reader.strings("exclude"),
         ignore_changes=reader.strings("ignore_changes"),
+        github_status=reader.boolean("github_status", False),
         env=config_project.env_values(reader, files),
     )
     reader.finish()

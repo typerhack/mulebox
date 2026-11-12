@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.14.0 - 2026-11-12 - minor
+- A pass on GitHub (M24.6, `client/github_status.py`): with `github_status: true` in `.mulebox.yml`, `mulebox check` posts its result to the commit it ran on as the status `mulebox/<job>` (success, failure, or error when the job gave no result), so a pull request shows it and it can be a required check. Only when the files are exactly a pushed commit (clean worktree, HEAD on a remote-tracking branch), settled before the job is sent; posted by the dev machine's own `gh`, so nothing reaches in to the node. Not with `--detach`. A commit status, as a check run needs a GitHub App.
+
 ## 1.13.10 - 2026-11-12 - patch
 - Roadmap: M24 (Answers an agent can trust), from similar tools read with the user (macserve, gatehaul, remote-dev, crabbox, local-ci): proof that tests ran, rerun from the failed stage, files back, fair turns between projects, one job across slots, a pass on GitHub, a fix on every error. M23.5 gains a health check before jobs. Signed results, fixed Apple recipes, per-machine rules and patches back parked; a Stop hook dropped (the user's call).
 

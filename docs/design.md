@@ -178,6 +178,25 @@ may be private, so:
   it has no name for, so `--log` is a choice, and reading the draft is a real step.
 - **No screenshots.** They cannot be scrubbed, and `gh issue create` cannot attach them.
 
+## Results on GitHub (M24.6, 2026-11-12)
+
+A pass on a node counts on GitHub too, as a commit status, so a pull request shows it and branch
+protection can require it. Opt-in per project, `github_status: true` in `.mulebox.yml`
+(`client/github_status.py`):
+- **Only on a pushed commit, exactly.** Before the job is sent, the dev machine checks that the
+  worktree is clean (no change, no untracked file) and that a remote-tracking branch holds HEAD. Then
+  the files the node gets are that commit's, so a status on it tells the truth; anything else posts
+  nothing and says why. Settled before sending, as files can change while the job runs.
+- **From the dev machine, not the node.** Its own `gh` posts `repos/{owner}/{repo}/statuses/<sha>`
+  after the job ends, so the node holds no GitHub token and nothing reaches in to it.
+- **One status per job**, context `mulebox/<job>`: `success` on exit 0, `error` when the job gave no
+  verdict (could not start, cancelled, interrupted, stopped, mulebox's own errors), else `failure`.
+  A result given back for the same files (Results an agent need not repeat) is posted the same way.
+- **Not with `--detach`**: nothing is left on the dev machine to post at the end. Posting from a later
+  `mulebox wait` was left out for now: `wait` does not know the commit.
+- A commit status, not a check run: check runs can only be made by a GitHub App, which mulebox
+  does not have. Who set the status is the account `gh` is signed in as.
+
 ## Projects
 
 There is no project registry. What a project needs lives in its `.mulebox.yml`, and which

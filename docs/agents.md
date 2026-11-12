@@ -232,7 +232,15 @@ jobs:
 timeout_min: 30                 # how often a running job checks in; not a limit (section 1a)
 exclude: [reports/]             # extra paths never uploaded (secrets are excluded already)
 ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result (below)
+github_status: true             # post `check`'s result to the pushed commit on GitHub (below)
 ```
+
+   `github_status: true` makes `mulebox check` post its result as the commit status
+   `mulebox/<job>` (`success`, `failure`, or `error` when the job gave no result), so a pull
+   request shows it and it can be a required check. Only when the files sent are exactly a pushed
+   commit: no change in the worktree, no untracked file, and a remote-tracking branch holds HEAD;
+   else nothing is posted and `check` says why. Not with `--detach`. It goes out through the dev
+   machine's own `gh`, which must be signed in with write access to the repository.
 
    Rules for the values:
    - **Databases are per job.** A database a job shares with anything else, such as one

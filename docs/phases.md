@@ -843,9 +843,11 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       order rules (M23.3).
 - [ ] M24.5 One job across slots: named groups of tests (`shards:`) run side by side on free slots and
       machines, and come back as one result with one exit code and one summary.
-- [ ] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status
+- [~] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status
       or check run, so a PR shows it and it can be a required check, with nothing reaching in to the
-      node.
+      node. Built 2026-11-12 (1.14.0): `github_status: true` in `.mulebox.yml`, a commit status
+      `mulebox/<job>` posted by the dev machine's `gh` after `check` (design.md, Results on GitHub),
+      with tests. Done when: a real pull request shows the status from a real `check`.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
 

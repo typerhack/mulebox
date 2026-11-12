@@ -16,8 +16,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import (attention, contract, queue_view, report, skill_install, summary,
-                            take_back, tui)
+from mulebox.client import (attention, contract, github_status, queue_view, report,
+                            skill_install, summary, take_back, tui)
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -164,8 +164,9 @@ def _named_job(name: str) -> tuple[ProjectConfig, Path]:
 
 def _check(args: argparse.Namespace) -> int:
     project, root = _named_job(args.job)
-    return run_job(project, args.job, root, connect(), detach=args.detach,
-                   again=args.again)
+    return github_status.around(
+        project, root, args.job, args.detach, sys.stderr,
+        lambda: run_job(project, args.job, root, connect(), detach=args.detach, again=args.again))
 
 
 def _warm(args: argparse.Namespace) -> int:
