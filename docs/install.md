@@ -137,6 +137,27 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   is read from `ps`. A removed runner's agent definition stays, disabled, in
   `~/Library/LaunchAgents`; delete the file by hand if you like.
 
+#### Apple builds on a Mac node
+
+To build and test for macOS, iOS, watchOS, tvOS or visionOS, a person prepares the Mac once,
+logged in as the node's user (each step needs an Apple account or an administrator, so mulebox
+does none of them):
+
+1. Install each Xcode the projects pin, in `/Applications` (`Xcode.app`, `Xcode-16.2.app`).
+2. Accept its license and finish its first launch, or `xcodebuild` stops and asks:
+   `sudo xcodebuild -license accept`, then `xcodebuild -runFirstLaunch`.
+3. Install the simulator runtimes the projects test on: Xcode, Settings, Components, or
+   `xcodebuild -downloadPlatform iOS`.
+4. For CocoaPods projects, `brew install cocoapods`, so `pod` is on the job's `PATH`.
+
+Within 5 minutes the worker reports the Xcodes and runtimes, and `mulebox doctor` from a dev
+machine lists them. In a project, `mulebox init` writes the job: for an `.xcworkspace` or
+`.xcodeproj`, `xcodebuild test` of its shared scheme (a scheme only on one person's Mac is not in
+the checkout: share it in Xcode, Product, Scheme, Manage Schemes), in a simulator of the job's own
+when a target builds for a device platform, else on the Mac; for a `Package.swift` alone, `swift
+test`. It pins the Xcode the dev machine selects. Simulator tests need no signing, so the job
+passes `CODE_SIGNING_ALLOWED=NO`; signing for a device or the App Store stays with a person.
+
 ### Node config
 
 `~/.config/mulebox/node.toml` (template: [mulebox/machine/node.toml.example](../mulebox/machine/node.toml.example)):

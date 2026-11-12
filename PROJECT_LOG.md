@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.13.0 - 2026-11-12 - minor
+- `mulebox init` for Apple platforms (M22.4, `client/init_apple.py`): for an `.xcworkspace` or `.xcodeproj`, `xcodebuild test` of its shared scheme (the one named after it, else the first), in the job's own simulator when a target builds for iOS, watchOS, tvOS or visionOS (`SDKROOT`, or `SUPPORTED_PLATFORMS` of an `auto` target), else on the Mac, with the job's DerivedData, the Swift package cache and no signing; `pod install` and `cache-cocoapods` for a Podfile; `swift test` for a `Package.swift` alone. It pins the Xcode the dev machine selects. `Pods/` and `DerivedData/` are not parts of a project.
+- docs/install.md: Apple builds on a Mac node, what a person prepares once (Xcode in `/Applications`, its license and first launch, simulator runtimes, CocoaPods).
+- From Sol's review of 1.12.0 (M22.3): the CocoaPods cache is shared by a project's branches, and CocoaPods empties one another version wrote, so agents' docs say to keep one CocoaPods version per project. SwiftPM locks its own cache, so a shared one is safe.
+
 ## 1.12.0 - 2026-11-12 - minor
 - DerivedData of its own per job on a macOS node (M22.3): every Mac job gets `$MULEBOX_DERIVED_DATA`, a folder in its job folder, for `xcodebuild -derivedDataPath`, so jobs never share build products and the cleanup removes it with the job (`xcode.derived_data_env`).
 - Package caches `cache-spm` (Swift packages) and `cache-cocoapods`, per project like the others: CocoaPods reads `CP_CACHE_DIR`; SwiftPM reads no setting, so the job's log says to pass `$MULEBOX_CACHE_SPM` as `-packageCachePath` or `--cache-path`. Agents' docs, the contract and the skill say how.

@@ -209,7 +209,8 @@ and pull requests.
    the project's files, and `mulebox init --print` shows it without writing; then correct it
    with what step 1 found. It takes the compose files and the Node version the project's CI uses
    (`.github/workflows/`), and runs Composer and PHP tests in the compose service built from that
-   folder. It cannot know CI's environment variables. The fields:
+   folder. For an Xcode project or a Swift package it writes `xcodebuild test` or `swift test`
+   (section 2c). It cannot know CI's environment variables. The fields:
 
 ```yaml
 project: example-app            # letters, digits, '.', '_', '-'
@@ -595,7 +596,9 @@ exits 5, naming the ones it has; `mulebox doctor` lists each Mac's Xcodes, SDKs 
 job. Without it xcodebuild writes to the node user's own DerivedData. SwiftPM reads no setting
 for its cache either: pass `-packageCachePath "$MULEBOX_CACHE_SPM"` to xcodebuild, or
 `--cache-path "$MULEBOX_CACHE_SPM"` to `swift build` and `swift test`. CocoaPods finds its cache
-by itself (`CP_CACHE_DIR`). A simulator test needs no signing, hence `CODE_SIGNING_ALLOWED=NO`.
+by itself (`CP_CACHE_DIR`); every branch shares it, and CocoaPods empties a cache another version
+wrote, so keep the project's branches on one CocoaPods version (a `Gemfile.lock` pins it, run as
+`bundle exec pod install`). A simulator test needs no signing, hence `CODE_SIGNING_ALLOWED=NO`.
 
 ## 3. Moving GitHub Actions to mulebox runners
 

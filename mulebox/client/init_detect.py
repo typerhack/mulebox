@@ -18,7 +18,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import gitinfo, init_ci
+from mulebox.client import gitinfo, init_apple, init_ci
 from mulebox.client.init_files import IN_SERVICE, Detected, json_file, mapping, text
 from mulebox.client.init_langs import PYTHON_FILES, composer, flutter, python
 from mulebox.common import package_cache
@@ -31,7 +31,8 @@ SCRIPTS = (("lint", "lint"), ("typecheck", "typecheck"), ("type-check", "typeche
            ("test", "test"))
 COMPOSE_FILES = ("compose.yaml", "compose.yml", "docker-compose.yaml", "docker-compose.yml")
 NO_TEST_SCRIPT = "no test specified"
-NOT_PROJECTS = frozenset({"node_modules", "vendor", "dist", "build", "target", "docs"})
+NOT_PROJECTS = frozenset({"node_modules", "vendor", "dist", "build", "target", "docs", "Pods",
+                          "DerivedData"})
 VERSION_TIMEOUT_S = 5
 _EXACT = re.compile(r"v?(\d+\.\d+\.\d+)")
 _MAJOR = re.compile(r"\D*(\d+)")
@@ -154,6 +155,8 @@ def _languages(root: Path, found: Detected, top: Path) -> None:
         _node(root, found, top)
     if (root / "pubspec.yaml").is_file():
         flutter(root, found)
+    elif init_apple.found_in(root):  # a Flutter app's ios/ folder is Flutter's to build
+        init_apple.apple(root, found)
     for manifest, command, tool in (("go.mod", "go test ./...", "go"),
                                     ("Cargo.toml", "cargo test", "cargo")):
         if (root / manifest).is_file():

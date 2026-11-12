@@ -760,7 +760,12 @@ After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionO
       `cache-cocoapods` sets `CP_CACHE_DIR`, `cache-spm` only `$MULEBOX_CACHE_SPM`, as SwiftPM reads
       no setting (passed as `-packageCachePath`). Tested with unit tests. Open: a real Xcode job on a
       Mac node filling and reusing both caches.
-- [ ] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node.
+- [~] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node. Built
+      2026-11-12 (1.13.0): `client/init_apple.py` writes `xcodebuild test` of a workspace's or
+      project's shared scheme, in the job's own simulator for a device platform, else on the Mac,
+      with `pod install` for a Podfile, or `swift test` for a package, and pins the dev machine's
+      selected Xcode; docs/install.md, Apple builds on a Mac node. Tested with project files made in
+      tests. Open: a real Xcode project's file run as a job on a Mac node.
 
 ## M23: Safer and fairer jobs
 Decided by the user on 2026-11-12, to start after M21 and M22 (macOS nodes, Apple builds). Ideas taken
