@@ -174,6 +174,7 @@ def test_bridge_reserves_under_the_place_name(paths):
     assert ok and message == "mulebox: slot granted"
     assert seen[0]["RUNNER_NAME"] == "place-1"
     assert seen[0]["GITHUB_EVENT_PATH"] == str(io_dir / "event.json")
+    assert seen[0]["MULEBOX_RESERVATION_KEY"].endswith("-place-1-abcd")
 
 
 def run_hook(tmp_path, answer):
@@ -185,7 +186,10 @@ def run_hook(tmp_path, answer):
     if answer is not None:
         (io_dir / "answer.json").write_text(json.dumps(answer))
     script = tmp_path / "started.py"
-    script.write_text(place_hook.STARTED_PY.replace(place_hook.IO_MOUNT, str(io_dir)))
+    # Not the real name: under a real runner (mulebox's own CI) the script would find the
+    # Runner.Worker running these tests among its parents and kill it.
+    script.write_text(place_hook.STARTED_PY.replace(place_hook.IO_MOUNT, str(io_dir))
+                      .replace('"Runner.Worker"', '"no-such-worker"'))
     env = {"PATH": os.environ.get("PATH", ""), "GITHUB_ACTOR": "alice", "SECRET": "x",
            "GITHUB_EVENT_PATH": str(event)}
     proc = subprocess.run([sys.executable, str(script)], env=env, capture_output=True,

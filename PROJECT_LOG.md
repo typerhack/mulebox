@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.4.2 - 2026-11-12 - patch
+- Found by mulebox's first CI run on its isolated runner: the two matrix jobs of one run share their run, attempt, job name and runner name, so the second found the first's finished reservation and was failed ("ended (passed) before it got a slot"). An isolated runner now sends a reservation key of each job's own, from its one-job runner's name. A host runner running two matrix jobs one after the other has the same key; not changed here.
+- The test of the container's hook ran the real script with a refusal, and under a real runner it found the `Runner.Worker` running the tests among its parents and killed it ("mulebox: refused"). The test's copy now looks for a name no process has.
+
 ## 1.4.1 - 2026-11-12 - patch
 - mulebox's own CI runs on the node (the user's ask, M23.6): the owner's own runs of `ci.yml` go to an isolated runner, `mulebox-ci`, and a fork's pull request or any run another account started stays on GitHub's machines, so a contributor's CI still runs. The release stays on GitHub's machines. The repository variable `CI_RUNS_ON` moves the owner's runs back with no code change. The rules test and docs/releasing.md now allow exactly that route and nothing else self-hosted.
 - Drilled on a throwaway private repository first: a job with checkout and setup-python passed in its container with no Docker socket, no capabilities, `sudo` refused, only its three folders mounted and the dashboard out of reach; the second run took 31 s, setup-python 0 s from the tool volume. With the runner's accounts set to another name, the run failed in 13 s with no step run, `if: always()` included, GitHub showing mulebox's reason, and the next run passed. `runner unregister` left no container, folder, volume or runner on GitHub.

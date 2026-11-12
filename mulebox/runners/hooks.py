@@ -44,6 +44,11 @@ class HookError(MuleboxError):
     """The hook cannot do its job (missing environment, refused request)."""
 
 
+# Set by the node for an isolated runner's job only, never read from a job: the jobs of one
+# matrix share their run, attempt, job name and the runner's name, so the derived key would
+# give the second the first's reservation. A one-job runner's name is new for every job.
+KEY_ENV = "MULEBOX_RESERVATION_KEY"
+
 @dataclass(frozen=True)
 class GitHubJob:
     repository: str
@@ -53,6 +58,7 @@ class GitHubJob:
     runner: str
     branch: str | None = None
     run_url: str | None = None
+    key: str | None = None  # an isolated runner's own (place_bridge.KEY_ENV), else derived
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> GitHubJob:
@@ -67,7 +73,7 @@ class GitHubJob:
                    f"{env['GITHUB_RUN_ID']}") if server else None
         return cls(env["GITHUB_REPOSITORY"], env["GITHUB_RUN_ID"], env["GITHUB_RUN_ATTEMPT"],
                    env["GITHUB_JOB"], env["RUNNER_NAME"], env.get("GITHUB_REF_NAME") or None,
-                   run_url)
+                   run_url, env.get(KEY_ENV) or None)
 
 
 def timeout_minutes(env: Mapping[str, str]) -> float:
@@ -125,7 +131,8 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
         return 1
     reserve = request(MessageType.RESERVE, worker=worker, repository=gh.repository,
                       job=gh.job, run_id=gh.run_id, run_attempt=gh.run_attempt,
-                      runner=gh.runner, branch=gh.branch, run_url=gh.run_url)
+                      runner=gh.runner, branch=gh.branch, run_url=gh.run_url,
+                      **({"idempotency_key": gh.key} if gh.key else {}))
     # No idempotency_key: the coordinator derives it from the run, so a retried hook
     # finds its reservation (reservations.default_key).
     job_id: str | None = None

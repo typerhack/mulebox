@@ -55,8 +55,13 @@ def answer(paths: NodePaths, io_dir: Path, ok: bool, message: str) -> None:
 
 def job_env(request: dict[str, str], io_dir: Path, place: str) -> dict[str, str]:
     """The job's values as the guard and the slot see them: the event read from the node's
-    copy, and the place's name, not the one-job runner's, as the runner."""
-    return {**request, "GITHUB_EVENT_PATH": str(io_dir / EVENT), "RUNNER_NAME": place}
+    copy, the place's name, not the one-job runner's, as the runner, and a reservation key of
+    this one job's own, from the one-job runner's name (hooks.KEY_ENV)."""
+    key = "-".join(["gh", *(request.get(k, "") for k in (
+        "GITHUB_REPOSITORY", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB")),
+        request.get("RUNNER_NAME", "")])
+    return {**request, "GITHUB_EVENT_PATH": str(io_dir / EVENT), "RUNNER_NAME": place,
+            hooks.KEY_ENV: key}
 
 
 def handle(request: dict[str, str], *, folder: Path, io_dir: Path, worker: str,
