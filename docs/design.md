@@ -508,7 +508,8 @@ runner, the second for public repositories:
      or GitHub refuses to delete its one-job runner (it does once it has given it a job); only a
      runner GitHub has deleted can never get a job, so only then does its container go. The
      container runs with `--sig-proxy=false`, so the stop signal the worker's `docker` client
-     gets does not reach it, and Docker removes it when it ends. The next worker finds it by its
+     gets does not reach it, and Docker removes it when it ends; that client then ignores
+     SIGTERM, so the worker kills it itself (1.13.8), or it holds the stop for systemd's 90 s. The next worker finds it by its
      `.mulebox-place`, follows it, answers its job if nothing has (the reservation key is the
      job's own, so asking again finds the same reservation), and ends the round as usual;
      supervision keeps the slot meanwhile. A worker stopped for good leaves such a job waiting for

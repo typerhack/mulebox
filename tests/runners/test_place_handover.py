@@ -58,13 +58,17 @@ class StopOnStart:
         pass
 
     def poll(self):
-        return 1  # the client died at once
+        return self.code  # the client lives on: it ignores the stop signal
 
     def wait(self, timeout=None):
-        return 1
+        return self.code
+
+    def kill(self):
+        self.code = -9
 
 
 def run_round(machine, paths, monkeypatch, gh, ask):
+    """One round in which the worker is told to stop; returns its parts and the client."""
     folder = add(machine, FakeGh())
     released = []
     monkeypatch.setattr(place.hooks, "completed", lambda *a, **k: released.append(1))
@@ -76,8 +80,15 @@ def run_round(machine, paths, monkeypatch, gh, ask):
         io_dir = folder / ("io-" + name.rsplit("-", 1)[1])
         return StopOnStart(stop, docker, name, io_dir, ask)
 
+    clients = []
+
+    def popen_kept(argv, **kw):
+        clients.append(popen(argv, **kw))
+        return clients[-1]
+
     runner = place.Place(folder, "build-1", None, paths, stop=stop, docker=docker, gh=gh,
-                         version=lambda: "2.338.2", popen=popen)
+                         version=lambda: "2.338.2", popen=popen_kept)
+    runner.clients = clients
     released.clear()
     runner.round()
     return folder, runner, docker, released
@@ -95,6 +106,7 @@ def test_a_job_that_asked_outlives_the_worker(machine, paths, monkeypatch):
     assert (folder / ".mulebox-place").exists()  # supervision keeps its slot
     assert released == [1]  # only the one before the round: its reservation stays
     assert not (folder / ".mulebox-round").exists()
+    assert runner.clients[0].code == -9  # its client is killed, so the worker's stop is quick
 
 
 def test_a_runner_github_gave_a_job_outlives_the_worker(machine, paths, monkeypatch):

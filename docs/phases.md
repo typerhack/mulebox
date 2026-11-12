@@ -806,7 +806,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       until GitHub dropped the runner (about 10 min). Built 2026-11-12 (1.13.7): containers
       outlive a worker restart and the next worker takes them over (design.md, Worker restarts),
       with tests; on the node a container with `--sig-proxy=false` outlived its killed `docker`
-      client and was removed by Docker when it ended. Open: a deploy while a real CI job runs.
+      client and was removed by Docker when it ended. Run 2026-11-12: a worker restart during this
+      repository's CI, two jobs in isolated runners: both containers left running, taken over by
+      the new worker, and a job finished and passed with its slot released as passed; the stop
+      took systemd's 90 s, as the `docker` client ignored SIGTERM (fixed 1.13.8). Open: a quick
+      restart on 1.13.8 during a real CI job.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's

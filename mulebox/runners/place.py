@@ -202,7 +202,10 @@ class Place:
                 proc.stdin.close()
                 return self._watch(proc, container, io_dir, repo, [runner.id])
             finally:
-                if proc.poll() is None and not self.handed_over:
+                if proc.poll() is None and self.handed_over:
+                    proc.kill()  # only the client: with --sig-proxy=false it ignores SIGTERM and
+                    proc.wait(timeout=10)  # would hold the worker's stop for systemd's 90 s
+                elif proc.poll() is None:
                     place_container.remove(self.docker, container)
                     try:
                         proc.wait(timeout=60)
