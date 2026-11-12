@@ -6,7 +6,8 @@
 
 `mulebox setup <machine> --queued` unpacks the new version into ~/.mulebox/tmp and runs
 `upgrade-queue`, which moves it into `<staging>/upgrades/`, puts the upgrade in line and
-starts the waiter as its own systemd unit, so it outlives the ssh session and the service
+starts the waiter apart (services `detach`: a systemd unit of its own, or a session of its own on
+macOS), so it outlives the ssh session and the service
 restarts the install makes. The waiter asks for its turn every few seconds; on it, it runs the
 bundle's install.sh. The installed `mulebox` (the new one, as the waiter's own code is now
 replaced) reports the result with the installer's output, and the bundle goes through safepath.
@@ -29,6 +30,7 @@ from mulebox.common.protocol import Message, MessageType
 from mulebox.common.redact import Redactor, secret_values
 from mulebox.coordinator.validate import check_job_id
 from mulebox.worker.link import request
+from mulebox.services.manager import for_platform
 from mulebox.worker.paths import NodePaths
 
 ASK_EVERY_S = 5.0
@@ -91,15 +93,13 @@ def _queue(args: argparse.Namespace) -> int:
         shutil.move(str(source), str(bundle))
         made = _call(link, action="queue", worker=node.name, version=version,
                      first=not args.behind, client=args.client)
-        unit = f"mulebox-upgrade-{made['job_id'].lower()}"
-        started = subprocess.run(
-            ["systemd-run", "--user", f"--unit={unit}", "--collect", "--quiet",
-             _PROGRAM, "upgrade-wait", made["job_id"], "--bundle", str(bundle)],
-            capture_output=True, text=True, check=False)
-        if started.returncode != 0:
+        try:
+            for_platform().detach(f"mulebox-upgrade-{made['job_id'].lower()}", [
+                _PROGRAM, "upgrade-wait", made["job_id"], "--bundle", str(bundle)])
+        except MuleboxError as exc:
             link.call(request(MessageType.CANCEL, job_id=made["job_id"]))
             safepath.remove_tree(bundle, paths.roots)
-            raise MuleboxError(f"could not start the waiter: {started.stderr.strip()}")
+            raise MuleboxError(f"could not start the waiter: {exc}") from exc
     except (MuleboxError, OSError) as exc:
         print(f"mulebox: {exc}", file=sys.stderr)
         return 2

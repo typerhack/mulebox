@@ -67,7 +67,7 @@ def _password(args: argparse.Namespace) -> int:
         raise LanNotReady(problem)
     password.save(lan_dir(args.node_config), new)
     print("Password saved. Restart the service to apply it and sign everyone out:\n"
-          "  systemctl --user restart mulebox-dashboard")
+          "  mulebox service restart dashboard")
     return 0
 
 

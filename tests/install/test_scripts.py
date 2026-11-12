@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from .helpers import INSTALL_SH, UNIT_DIR, call_install_function
+from .helpers import INSTALL_SH, call_install_function
 
 SCRIPTS = [INSTALL_SH]
 # A command position: line start, or after ; & | ( ` or a shell keyword.
@@ -59,18 +59,34 @@ def test_install_rm_only_on_exact_files():
             assert re.fullmatch(r' -f "\$[a-z_]+"', match.group(1)), f"line {number}: {line}"
 
 
-def test_install_prints_git_venv_and_linger_hints():
+def test_install_prints_git_and_venv_hints_for_both_systems():
     text = INSTALL_SH.read_text(encoding="utf-8")
     assert "sudo apt-get install python3-venv" in text
     assert "sudo apt-get install git" in text
-    assert "sudo loginctl enable-linger" in text
-    assert 'loginctl show-user "$user" -p Linger' in text
+    assert "xcode-select --install" in text and "brew install python" in text
 
 
-def test_install_ships_every_unit_it_names():
+def test_the_services_are_left_to_mulebox_itself():
+    """Units and agents, lingering and the summary of what runs: mulebox/services/, tested there."""
     text = INSTALL_SH.read_text(encoding="utf-8")
-    for unit in UNIT_DIR.glob("*.service"):
-        assert unit.name in text
+    assert '"$BIN" service install --config "$NODE_TOML"' in text
+    for step in ("daemon-reload", "enable", "systemctl --user restart", "launchctl", "loginctl"):
+        assert step not in text
+
+
+@pytest.mark.parametrize("system, ok", [("Linux", None), ("Darwin", None), ("FreeBSD", False)])
+def test_the_platform_check_takes_linux_and_macos(tmp_path, system, ok):
+    """With stand-ins for uname, systemctl and git, only the system's own branch runs."""
+    for name, body in (("uname", f"echo {system}"), ("systemctl", "exit 0"), ("git", "exit 0")):
+        tool = tmp_path / name
+        tool.write_text(f"#!/bin/sh\n{body}\n")
+        tool.chmod(0o755)
+    env = {**os.environ, "PATH": f"{tmp_path}:/usr/bin:/bin"}
+    done = subprocess.run(["bash", "-c", 'source "$1"; check_platform', "t", str(INSTALL_SH)],
+                          capture_output=True, text=True, env=env, check=False)
+    assert (done.returncode == 0) == (ok is None), done.stderr
+    if ok is False:
+        assert "nodes run Linux or macOS (found FreeBSD)" in done.stderr
 
 
 def test_the_command_is_linked_on_the_path(tmp_path):

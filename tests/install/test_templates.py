@@ -125,19 +125,6 @@ def test_runner_unit_template():
     assert "/home/" not in text and "User=" not in text
 
 
-def test_install_copies_but_does_not_enable_the_runner_template():
-    copied = call_install_function("printf '%s\\n' \"${UNITS[@]}\"").split()
-    assert "mulebox-runner@.service" in copied
-    script = 'ROLES=(coordinator worker); wanted_units'
-    assert call_install_function(script).split() == [
-        "mulebox-coordinator.service", "mulebox-dashboard.service", "mulebox-worker.service"]
-
-
-def test_only_a_coordinator_machine_runs_the_dashboard():
-    script = 'ROLES=(worker); wanted_units'
-    assert call_install_function(script).split() == ["mulebox-worker.service"]
-
-
 def test_a_worker_of_another_coordinator_renders_and_validates(tmp_path):
     env = {**os.environ, "MULEBOX_COORDINATOR": "ssh://alice@192.168.1.50:22",
            "MULEBOX_COORDINATOR_KEY": "/home/alice/.config/mulebox/coordinator_key"}

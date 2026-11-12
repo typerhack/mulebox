@@ -78,4 +78,4 @@ def test_a_dashboard_that_never_answers_is_explained():
     proc = FakeProc()
     code, text, _, urls = opened(proc, lambda url: False)
     assert code == report.EXIT_UNREACHABLE and urls == []
-    assert "mulebox-dashboard" in text and proc.stopped
+    assert "mulebox service status dashboard" in text and proc.stopped

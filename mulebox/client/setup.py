@@ -33,7 +33,7 @@ HOLD_WHILE_WAITING_S = 120
 HOLD_WHILE_INSTALLING_S = 1500  # past INSTALL_TIMEOUT_S; ended as soon as the install is
 POLL_IDLE_S = 10.0
 _UNPACK = 'mkdir -p "$HOME/.mulebox/tmp" && tar xzf - -C "$HOME/.mulebox/tmp"'
-_RESTART = "systemctl --user restart mulebox-worker"
+_RESTART = f'"$HOME/{PROGRAM}" service restart worker'
 Say = Callable[[str], None]
 
 
@@ -97,7 +97,7 @@ def _pack(folder: Path) -> tuple[Path, str]:
     bundle = folder / "bundle.tar.gz"
     with tarfile.open(bundle, "w:gz") as tar:
         tar.add(built, built.name)
-        for name in ("install.sh", "node.toml.example", "systemd"):
+        for name in ("install.sh", "node.toml.example"):
             tar.add(str(machine / name), name)
     return bundle, built.name
 

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.6.0 - 2026-11-12 - minor
+- A Mac can hold mulebox's services (M21.1, the user's ask): `mulebox service install|restart|stop|status|logs` drives systemd user units on Linux and launchd agents on macOS (`mulebox/services/`). install.sh accepts macOS (Homebrew's folders on PATH, `xcode-select` and `brew` hints, bash 3.2) and hands the services to `mulebox service install`, so the bundle no longer carries `systemd/`. Every message and doc names `mulebox service ...` rather than `systemctl` or `journalctl`; the upgrade waiter starts through the same module. `common/command.py` runs short system commands for both.
+
 ## 1.5.0 - 2026-11-12 - minor
 - An isolated runner can run several jobs at once (the user's ask): `--count N` on `runner register --isolated` and `runner add --isolated` makes a group of places, `<name>`, `<name>-2`, ..., each with its own container, slot and tool cache. Registering again with a larger count adds only the missing places, so the existing one keeps its warm cache; removing the runner removes the whole group. mulebox's own CI ran its three jobs one after another, 4m 28s warm against about 1 min on GitHub's machines.
 

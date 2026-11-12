@@ -701,6 +701,32 @@ each with a report of what was checked.
       runs `mulebox skill update` (the user's choice over a plugin marketplace), `mulebox setup`
       updates the laptop's copies. 0.82.0: setup updated two real copies.
 
+## M21: macOS nodes
+Decided by the user on 2026-11-12: a Mac can be a node, a worker, the coordinator or both, beside
+Linux nodes, with the architecture unchanged. There is no second Mac, so this is built and tested in
+code, and on GitHub's macOS machines in CI; a drill on a real Mac stays open. Each part is reviewed
+by Sol before the next starts (the user's ask).
+- [~] M21.1 Services: `mulebox service install|restart|stop|status|logs`, systemd on Linux and launchd
+      on macOS, one module; install.sh and every message name it, not `systemctl`. Built 2026-11-12
+      (1.6.0), with tests for both managers against stand-ins for systemctl and launchctl, and the
+      installer's platform check run under the Mac's own bash 3.2. Open: a real Mac, and a real Linux
+      upgrade through the new path.
+- [ ] M21.2 Jobs on macOS: the process-group executor kept across a worker restart (orphans found
+      and stopped), freeze and its limits, and what a Mac node cannot do said, not faked.
+- [ ] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
+      CPU and memory, for heartbeats, activity and the dashboard.
+- [ ] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
+- [ ] M21.5 CI runs the suite on macOS too.
+Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
+
+## M22: Apple platform builds
+After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionOS.
+- [ ] M22.1 Xcode as a toolchain: the worker reports its Xcode versions, SDKs and simulator runtimes;
+      a job pins one (`xcode:`), chosen with `DEVELOPER_DIR`; a missing one exits 5 with what is there.
+- [ ] M22.2 A simulator of its own per job, made before and removed on every outcome.
+- [ ] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`.
+- [ ] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node.
+
 ## M23: Safer and fairer jobs
 Decided by the user on 2026-11-12, to start after M21 and M22 (macOS nodes, Apple builds). Ideas taken
 from other self-hosted runner tools and made to serve agent jobs first, not only CI. Ranked by benefit
@@ -757,4 +783,4 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
   nor in the job history (reasoning: docs/design.md, Projects)
 - MCP wrapper over the client commands
 - Job weights, once measurements justify them
-- macOS or Windows workers
+- Windows workers (macOS: M21)

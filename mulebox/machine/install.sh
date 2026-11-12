@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# Install or upgrade mulebox on a Linux node, for the current user.
+# Install or upgrade mulebox on a node (Linux with systemd, or macOS), for the current user.
 #
 #   bash install.sh /path/to/mulebox-<version>-py3-none-any.whl
 #
 # Safe to rerun: an upgrade installs the new wheel and restarts the services.
 # Never uses sudo and never deletes a directory: an old venv is moved into
-# ~/.mulebox/tmp, and only exact, known temp files are removed. node.toml.example and
-# systemd/ must sit next to this script (`mulebox setup` sends them).
+# ~/.mulebox/tmp, and only exact, known temp files are removed. node.toml.example must sit
+# next to this script (`mulebox setup` sends it). The services (systemd units or launchd agents)
+# are mulebox's own: `mulebox service install` writes and starts them (mulebox/services/).
+# Runs on the bash a Mac has (3.2), so nothing newer than that is used.
 # Environment: MULEBOX_PYTHON picks the Python to use (default python3). MULEBOX_COORDINATOR
 # (an ssh target) and MULEBOX_COORDINATOR_KEY (an absolute key path) make a new node.toml a
 # worker of that coordinator, with no coordinator or dashboard of its own (`setup --worker-of`).
@@ -18,12 +20,6 @@ VENV="$MB_HOME/venv"
 BIN="$MB_HOME/bin/mulebox"
 CONFIG_DIR="$HOME/.config/mulebox"
 NODE_TOML="$CONFIG_DIR/node.toml"
-UNIT_DIR="$HOME/.config/systemd/user"
-# All units are copied. The coordinator, worker and dashboard are enabled here (the
-# dashboard runs with the coordinator); the runner template is enabled per runner by
-# `mulebox runner add`.
-UNITS=(mulebox-coordinator.service mulebox-worker.service mulebox-dashboard.service
-       mulebox-runner@.service)
 PYTHON="${MULEBOX_PYTHON:-python3}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -32,19 +28,35 @@ die() { printf 'mulebox install: error: %s\n' "$*" >&2; exit 1; }
 
 # --- checks ------------------------------------------------------------------------
 
+OS="$(uname -s)"
+
 check_platform() {
-    [ "$(uname -s)" = "Linux" ] || die "nodes must run Linux (found $(uname -s))"
-    command -v systemctl >/dev/null 2>&1 || die "systemd is required (systemctl not found)"
-    systemctl --user show-environment >/dev/null 2>&1 \
-        || die "'systemctl --user' does not work; log in through ssh or a desktop session, not su"
-    command -v git >/dev/null 2>&1 \
-        || die "git is required, as jobs run from a project's repository here; on Ubuntu or Debian: sudo apt-get install git"
+    case "$OS" in
+        Linux)
+            command -v systemctl >/dev/null 2>&1 || die "systemd is required (systemctl not found)"
+            systemctl --user show-environment >/dev/null 2>&1 \
+                || die "'systemctl --user' does not work; log in through ssh or a desktop session, not su"
+            git --version >/dev/null 2>&1 \
+                || die "git is required, as jobs run from a project's repository here; on Ubuntu or Debian: sudo apt-get install git"
+            ;;
+        Darwin)
+            # An ssh login reads no shell profile, so Homebrew's folders are not on PATH yet.
+            PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+            export PATH
+            # /usr/bin/git is there even without git: it only offers to install the tools.
+            git --version >/dev/null 2>&1 \
+                || die "git is required, as jobs run from a project's repository here; on the Mac: xcode-select --install"
+            ;;
+        *) die "nodes run Linux or macOS (found $OS)" ;;
+    esac
 }
 
 check_python() {
-    command -v "$PYTHON" >/dev/null 2>&1 || die "$PYTHON not found; install Python 3.12 or newer"
+    local how="install Python 3.12 or newer"
+    [ "$OS" = "Darwin" ] && how="$how, such as with Homebrew: brew install python@3.13"
+    command -v "$PYTHON" >/dev/null 2>&1 || die "$PYTHON not found; $how"
     "$PYTHON" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 12) else 1)' \
-        || die "Python 3.12 or newer is required ($PYTHON is $("$PYTHON" -V 2>&1))"
+        || die "Python 3.12 or newer is required ($PYTHON is $("$PYTHON" -V 2>&1)); $how"
 }
 
 python_minor() {  # major.minor of $PYTHON, e.g. 3.12
@@ -163,7 +175,7 @@ write_node_config() {
     say "Wrote $NODE_TOML (edit it to change roots, slots or capabilities)."
 }
 
-# Validate a node.toml with mulebox itself; print "roles <role>..." and "root <path>" lines.
+# Validate a node.toml with mulebox itself; print a "root <path>" line per root.
 node_info() {
     "$VENV/bin/python" - "$1" <<'PY'
 import sys
@@ -173,7 +185,6 @@ try:
     node = load_node_config(Path(sys.argv[1]))
 except ConfigError as exc:
     sys.exit(f"mulebox install: error: {exc}")
-print("roles", *node.roles)
 for path in node.roots.values():
     print("root", path)
 PY
@@ -193,19 +204,15 @@ except MuleboxError as exc:
 PY
 }
 
-ROLES=()
 ROOTS=()
-read_node_config() {
+read_node_config() {  # the roles are read by `mulebox service install` itself
     local kind rest info
     info="$(node_info "$NODE_TOML")" || die "fix $NODE_TOML and run the installer again"
-    ROLES=()
     ROOTS=()
     while read -r kind rest; do
-        case "$kind" in
-            roles) read -r -a ROLES <<<"$rest" ;;
-            root) ROOTS+=("$rest") ;;
-        esac
+        [ "$kind" = "root" ] && ROOTS+=("$rest")
     done <<<"$info"
+    return 0
 }
 
 make_roots() {
@@ -219,77 +226,17 @@ make_roots() {
 
 # --- services --------------------------------------------------------------------------
 
-has_role() {
-    local role
-    for role in "${ROLES[@]}"; do [ "$role" = "$1" ] && return 0; done
-    return 1
-}
-
-wanted_units() {
-    has_role coordinator && printf '%s\n' mulebox-coordinator.service mulebox-dashboard.service
-    has_role worker && printf '%s\n' mulebox-worker.service
-    return 0
-}
-
-install_units() {
-    local unit
-    mkdir -p "$UNIT_DIR"
-    for unit in "${UNITS[@]}"; do
-        cp "$SCRIPT_DIR/systemd/$unit" "$UNIT_DIR/$unit.new.$$"
-        chmod 644 "$UNIT_DIR/$unit.new.$$"
-        mv "$UNIT_DIR/$unit.new.$$" "$UNIT_DIR/$unit"
-    done
-    systemctl --user daemon-reload
-    # A runner may be in a job: its new CPU share is set in place, never by a restart.
-    systemctl --user list-units --plain --no-legend 'mulebox-runner@*' 2>/dev/null \
-        | awk '{print $1}' | while read -r unit; do
-            if [ -n "$unit" ]; then
-                systemctl --user set-property --runtime "$unit" \
-                    CPUWeight=50 IOWeight=50 2>/dev/null || true
-            fi
-        done
-}
-
-start_units() {
-    local unit
-    while read -r unit; do
-        [ -n "$unit" ] || continue
-        if systemctl --user is-active --quiet "$unit"; then
-            systemctl --user enable --quiet "$unit"
-            systemctl --user restart "$unit"
-            say "Restarted $unit."
-        else
-            systemctl --user enable --now --quiet "$unit"
-            say "Enabled and started $unit."
-        fi
-    done < <(wanted_units)
-}
-
-check_linger() {
-    local user linger
-    user="${USER:-$(id -un)}"
-    linger="$(loginctl show-user "$user" -p Linger 2>/dev/null || true)"
-    if [ "${linger#Linger=}" = "no" ] && ! loginctl --no-ask-password enable-linger "$user" 2>/dev/null; then
-        say ""
-        say "Lingering is off for $user, so the mulebox services stop when you log out."
-        say "To keep them running after logout (and start them at boot), run once:"
-        say "    sudo loginctl enable-linger $user"
-    fi
+install_services() {  # systemd units or launchd agents, by mulebox itself (mulebox/services/)
+    "$BIN" service install --config "$NODE_TOML" || die "the services did not start (see above)"
 }
 
 summary() {
-    local unit
     say ""
     say "mulebox installed: $("$BIN" --version)"
     say "  command:  $BIN"
     say "  venv:     $VENV"
     say "  config:   $NODE_TOML"
     say "  roots:    ${ROOTS[*]}"
-    while read -r unit; do
-        [ -n "$unit" ] || continue
-        say "  service:  $unit ($(systemctl --user is-active "$unit" 2>/dev/null || true))"
-    done < <(wanted_units)
-    say "Logs: journalctl --user -u mulebox-worker -u mulebox-coordinator"
 }
 
 main() {
@@ -310,10 +257,8 @@ main() {
     write_node_config
     read_node_config
     make_roots
-    install_units
-    start_units
     summary
-    check_linger
+    install_services
 }
 
 # Run main unless sourced (the tests source this file to call single functions).

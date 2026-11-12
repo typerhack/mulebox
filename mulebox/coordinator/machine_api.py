@@ -41,7 +41,7 @@ def machine(req: Request) -> Message:
         if action == "remove":
             if workers.is_online(found, req.now):
                 raise Conflict(f"{name} is online; stop it first, on that machine: "
-                               "`systemctl --user disable --now mulebox-worker`")
+                               "`mulebox service stop worker`")
             if running:
                 raise Conflict(f"{name} still has {len(running)} job(s): {', '.join(running)}")
             workers.forget(conn, name)

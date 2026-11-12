@@ -124,8 +124,8 @@ def run(worker: str, coordinator: str, say: Say, address: str | None = None,
     row = wait_online(coordinator, name)
     if row is None:
         raise SetupError(
-            f"{coordinator} does not see {name}. On {worker}, `journalctl --user -u "
-            f"mulebox-worker` says why; often {address} cannot be reached from there "
+            f"{coordinator} does not see {name}. On {worker}, `mulebox service logs "
+            f"worker` says why; often {address} cannot be reached from there "
             "(give another with --coordinator-address)")
     say(f"{name} is in the queue: {row.get('slots')} slot(s), offers "
         f"{', '.join(row.get('capabilities') or []) or 'plain jobs'}")

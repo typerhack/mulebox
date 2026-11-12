@@ -52,8 +52,9 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 | `'systemctl --user' does not work` | log in as the user over ssh or a desktop session; `su`/`sudo -u` sessions have no user manager |
 | Services stop after logout or do not start at boot | `loginctl show-user alice -p Linger`; if `Linger=no`, run `sudo loginctl enable-linger alice` |
 | Generated or edited `node.toml` does not validate | the error names the file and the field; fix it and rerun the installer |
-| A service is not running | `systemctl --user status mulebox-worker mulebox-coordinator` |
-| Job or worker errors | `journalctl --user -u mulebox-worker -e` and `journalctl --user -u mulebox-coordinator -e` |
+| A service is not running | `mulebox service status` on the node, then `mulebox service restart worker` (or the one that stopped) |
+| Job or worker errors | `mulebox service logs worker coordinator` (journalctl on Linux, `~/Library/Logs/mulebox/` on a Mac); `-f` follows |
+| A Mac node runs nothing after a restart | its services start when its user logs in: turn on automatic login for that user, or log in once |
 | `pip` inside the venv | use `~/.mulebox/venv/bin/python -m pip ...` (the venv is built in a temp folder and moved, so its `bin/pip` script may point at the old path) |
 | Old venvs and copied wheels pile up | everything in `~/.mulebox/tmp/` is safe to delete by hand |
 | `compose:` services cannot reach each other (`Host is unreachable`), or a published port resets, while `docker0` containers work | NetworkManager is managing Docker's `br-*` bridges and detaches their ports. Check with `journalctl -u NetworkManager \| grep detached`; `docker network create` with no mulebox shows the same thing. Fix, as root: put `[keyfile]` and `unmanaged-devices=interface-name:br-*;interface-name:veth*` in a file in `/etc/NetworkManager/conf.d/` and reload NetworkManager. New bridges then work; profiles left from before do no harm |

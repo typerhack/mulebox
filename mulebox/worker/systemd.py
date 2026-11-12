@@ -26,6 +26,7 @@ import subprocess
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
+from mulebox.common import command
 from mulebox.worker.executor import UNIT_PREFIX, ExecutorError, RunSpec
 
 SYSTEMCTL_TIMEOUT_S = 60
@@ -39,11 +40,7 @@ Runner = Callable[[Sequence[str]], subprocess.CompletedProcess]
 
 
 def default_runner(argv: Sequence[str]) -> subprocess.CompletedProcess:
-    try:
-        return subprocess.run(list(argv), capture_output=True, text=True,
-                              timeout=SYSTEMCTL_TIMEOUT_S, stdin=subprocess.DEVNULL)
-    except (OSError, subprocess.TimeoutExpired) as exc:
-        raise ExecutorError(f"`{' '.join(argv[:3])}` failed: {exc}") from exc
+    return command.run(argv, SYSTEMCTL_TIMEOUT_S, ExecutorError)
 
 
 def _check_unit(name: str) -> str:

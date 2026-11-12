@@ -4,9 +4,9 @@ New here? [getting-started.md](getting-started.md) gives the order; this page ha
 
 mulebox has two sides:
 
-- **Node** (Linux with systemd, Ubuntu first): runs the coordinator (the queue)
-  and a worker (runs the jobs) as two systemd user services, on one machine, for one user.
-  Adding a second node is not finished yet: see the [roadmap](phases.md), M5.
+- **Node** (Linux with systemd, Ubuntu first; a Mac is being added, see "A Mac as a node"): runs
+  the coordinator (the queue) and a worker (runs the jobs) as user services, on one machine, for
+  one user. More nodes join as workers of that coordinator (section "More machines").
 - **Dev machine** (macOS or Linux): the `mulebox` client that agents call. It reaches the build
   machine over ssh.
 
@@ -49,7 +49,7 @@ again at any time, also to upgrade: `node.toml` is kept, and it stops if jobs ar
 you add `--queued` (below), `--when-idle`, which waits for them while new jobs wait in line, or
 `--now`.
 
-To install by hand instead, copy `install.sh`, `node.toml.example` and `systemd/` from
+To install by hand instead, copy `install.sh` and `node.toml.example` from
 `mulebox/machine/` and a wheel into one folder on the node, and run
 `bash install.sh mulebox-<version>-py3-none-any.whl`.
 
@@ -57,13 +57,13 @@ What the installer does (it never uses sudo and never deletes a folder):
 
 | Step | Result |
 | --- | --- |
-| Checks | Linux, `systemctl --user`, git, Python >= 3.12, a working `python3 -m venv` |
+| Checks | Linux with `systemctl --user`, or macOS; git, Python >= 3.12, a working `python3 -m venv` |
 | venv | `~/.mulebox/venv`, rebuilt only when the Python minor version changed |
 | Command | `~/.mulebox/bin/mulebox` (symlink into the venv), and `~/.local/bin/mulebox` so plain `mulebox` works in a login shell; a real file of that name is left alone |
 | Node config | `~/.config/mulebox/node.toml`, written once from the template, then validated |
 | Roots | `~/.mulebox/{jobs,projects,cache,staging,runners}`, mode 750 |
-| Services | `~/.config/systemd/user/mulebox-coordinator.service` and `mulebox-worker.service`, enabled and started; `mulebox-runner@.service` copied only |
-| Linger | prints how to enable it if it is off |
+| Services | `mulebox service install`: on Linux `~/.config/systemd/user/mulebox-coordinator.service`, `mulebox-dashboard.service` and `mulebox-worker.service`, enabled and started for the node's roles, `mulebox-runner@.service` copied only; on a Mac launchd agents (below) |
+| Linger | Linux: prints how to enable it if it is off |
 
 Set `MULEBOX_PYTHON=python3.12` (or another interpreter) before running the installer to
 use a Python other than `python3`.
@@ -76,6 +76,22 @@ it on if the machine allows that without a password. If it says it could not, ru
 ```sh
 sudo loginctl enable-linger alice
 ```
+
+### A Mac as a node
+
+Being built ([roadmap](phases.md), M21): the services install and run; jobs, readings and
+runners follow. `mulebox setup` installs a Mac the same way, with these differences:
+
+- Python 3.12 or newer, such as `brew install python@3.13` (the Mac's own `python3` is older), and
+  git (`xcode-select --install`). The installer looks in Homebrew's folders, which an ssh login
+  does not put on `PATH`.
+- The services are launchd agents, `~/Library/LaunchAgents/mulebox-<name>.plist`, written only
+  for the node's roles, with their output in `~/Library/Logs/mulebox/<name>.log`.
+- They start when the user logs in, not at boot. For a node that comes back by itself after a
+  restart, turn on automatic login for that user (System Settings, Users & Groups); FileVault
+  must be off for that. With nobody logged in on the screen, setup starts them in the user's
+  background session (`user/<uid>`) instead; whether they outlive the ssh login there has not been
+  seen on a real Mac yet.
 
 ### Node config
 
@@ -133,8 +149,12 @@ The installer never overwrites this file. After editing it, check it and restart
 
 ```sh
 ~/.mulebox/venv/bin/python -c 'from mulebox.common.config import load_node_config; print(load_node_config())'
-systemctl --user restart mulebox-coordinator mulebox-worker mulebox-dashboard
+mulebox service restart coordinator worker dashboard
 ```
+
+`mulebox service` drives mulebox's own services the same way on Linux (systemd) and on a Mac
+(launchd): `install`, `restart <name>...`, `stop <name>...` (and keep them stopped), `status`, and
+`logs [-f] <name>...`.
 
 The dashboard (`mulebox-dashboard`) is installed and started with the coordinator. It
 reads the queue's database read-only and never changes anything.
@@ -377,7 +397,7 @@ A drained machine still runs its GitHub runners, which take CI jobs from GitHub 
 stop them too (`mulebox runner remove` there) before taking the machine away. To take one away:
 
 1. `mulebox machine drain build-2 --wait`.
-2. On `build-2`: `systemctl --user disable --now mulebox-worker`.
+2. On `build-2`: `mulebox service stop worker`.
 3. `mulebox machine remove build-2`. It is refused while the machine is online or has jobs.
 
 A removed machine whose worker starts again joins again with its next claim, unless its key is
@@ -386,7 +406,7 @@ gone, as it is after `remove` for a machine set up with `--worker-of`.
 Moving the coordinator to another machine is done by hand, as it holds the queue's history:
 
 1. On the old one, wait for no running job (`mulebox machine drain <name> --wait` for each), then
-   `systemctl --user stop mulebox-coordinator mulebox-dashboard mulebox-worker`.
+   `mulebox service stop coordinator dashboard worker`.
 2. Copy `~/.mulebox/staging` (the store, logs and snapshots) to the same path on the new one, with
    the services stopped there, after `mulebox setup <new>` installed it.
 3. Start the new one's services, point the dev machine's `client.toml` `coordinator` at it, and run
@@ -456,14 +476,15 @@ When the Python minor version changed, the old venv is moved to
 
 ## Uninstall (manual)
 
-There is no uninstall script on purpose: removing files is your decision. On the build
-machine:
+There is no uninstall script on purpose: removing files is your decision. On the node:
 
 ```sh
-systemctl --user disable --now mulebox-worker mulebox-coordinator
-rm ~/.config/systemd/user/mulebox-worker.service ~/.config/systemd/user/mulebox-coordinator.service
-rm ~/.config/systemd/user/mulebox-runner@.service   # after removing every runner
+mulebox service stop worker coordinator dashboard
+# Linux:
+rm ~/.config/systemd/user/mulebox-*.service   # after removing every runner
 systemctl --user daemon-reload
+# macOS:
+rm ~/Library/LaunchAgents/mulebox-*.plist
 ```
 
 Then remove `~/.mulebox/` (venv, roots with job folders, caches, queue database and logs)
@@ -589,8 +610,8 @@ mulebox dashboard firewall > firewall.sh       # read it, then:
 sudo sh firewall.sh
 ```
 
-Now set `mode = "lan"` and run `systemctl --user restart mulebox-dashboard`. If a step is
-missing, the service stops and says which: see `journalctl --user -u mulebox-dashboard`.
+Now set `mode = "lan"` and run `mulebox service restart dashboard`. If a step is
+missing, the service stops and says which: see `mulebox service logs dashboard`.
 
 The firewall script adds one nftables table that only affects the dashboard's port, and a root unit,
 `mulebox-dashboard-firewall`, that loads it at boot. If the port changes, run the two

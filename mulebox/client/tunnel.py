@@ -60,8 +60,8 @@ def open_dashboard(
                 return report.EXIT_UNREACHABLE
             if clock() >= deadline:
                 report.status(out, f"error: no dashboard answers on port {remote_port} of "
-                              f"{config.coordinator}. Check `systemctl --user status "
-                              "mulebox-dashboard` there (and the port in node.toml).")
+                              f"{config.coordinator}. Check `mulebox service status "
+                              "dashboard` there (and the port in node.toml).")
                 return report.EXIT_UNREACHABLE
             sleep(PROBE_EVERY_S)
         report.status(out, f"dashboard at {url} (Ctrl-C closes the tunnel)")

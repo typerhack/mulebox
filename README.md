@@ -67,7 +67,7 @@ Before `mulebox setup`, make each machine's address permanent, in one of these w
 
 Check after a reboot of the machine that `ssh <node> true` still works. If an address did change,
 put the new one in `~/.ssh/config` (or in `coordinator` in the dev machine's `client.toml`), and on every
-other machine in `coordinator` in `node.toml`, then `systemctl --user restart mulebox-worker` there.
+other machine in `coordinator` in `node.toml`, then `mulebox service restart worker` there.
 
 ### Let your coding agent install it
 
@@ -186,7 +186,7 @@ turn on `lan` mode on the coordinator node; the page then asks for a password:
    node's own address: `lan_range = "192.168.1.0/24"` and `lan_address = "192.168.1.50"`.
 2. On the node: `mulebox dashboard password` (asks twice, at least 10 characters), then
    `mulebox dashboard firewall > firewall.sh`, read it, and `sudo sh firewall.sh`.
-3. Set `mode = "lan"` under `[dashboard]` and `systemctl --user restart mulebox-dashboard`.
+3. Set `mode = "lan"` under `[dashboard]` and `mulebox service restart dashboard`.
 4. Open `http://192.168.1.50:8090` (the node's address) on any device in that range.
 
 A sign-in lasts 24 hours; restarting the dashboard signs everyone out. It is plain HTTP unless you
