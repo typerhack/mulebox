@@ -74,6 +74,48 @@ export interface Job {
   can_run_on?: string[];
   waiting_for?: string | null;
   branch_busy?: string | null;
+  workflow?: string | null;
+  // Why a waiting row stands where it does, while an order rule is on or it was moved
+  // (docs/design.md, Order of the line).
+  place_reason?: string | null;
+  order?: Order | null;
+  moved?: "front" | "before" | "after" | null;
+}
+
+export interface OrderPart {
+  rule: "project" | "branch" | "github" | "workflow" | "waited" | string;
+  name?: string;
+  minutes?: number;
+  over?: number;
+  level: number;
+}
+
+export interface Order {
+  by_hand?: boolean;
+  moved?: { side: string; job_id?: string | null; in_line?: boolean } | null;
+  level?: number;
+  levels?: OrderPart[];
+  turn?: number | null;
+  usual_s?: number | null;
+  counted_as_s?: number | null;
+}
+
+// The order rules of the line (`GET|POST /api/queue/rules`).
+export interface Rules {
+  projects: Record<string, number>;
+  branches: Record<string, number>;
+  workflows: Record<string, number>;
+  github: number;
+  aging_min: number;
+  shortest_first: boolean;
+  fair_turns: boolean;
+}
+
+export interface RulesBody {
+  rules: Rules;
+  defaults: Rules;
+  levels: { min: number; max: number; words: Record<string, number> };
+  projects: string[];
 }
 
 export interface Step {

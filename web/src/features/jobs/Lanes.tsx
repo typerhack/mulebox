@@ -12,6 +12,7 @@ import type { MachinesPanel, QueueSnapshot } from "../../lib/types";
 import { Empty } from "../../ui/Panel";
 import { Status } from "../../ui/Status";
 import { MachineState } from "../machines/parts";
+import { OrderButton } from "../order/OrderButton";
 import { JobCard } from "./JobCard";
 import { WaitList } from "./WaitList";
 
@@ -20,14 +21,16 @@ interface LaneBoxProps {
   state?: ReactNode;
   note: ReactNode;
   sub?: string | null;
+  order?: boolean;         // a waiting line: its heading carries the Order button
   children?: ReactNode;
 }
 
-const LaneBox = ({ title, state, note, sub, children }: LaneBoxProps) => (
+const LaneBox = ({ title, state, note, sub, order, children }: LaneBoxProps) => (
   <section aria-label={title} className="grid min-w-0 gap-2 border-t border-line pt-4 first:border-t-0 first:pt-0">
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="pop-host flex flex-wrap items-center gap-x-3 gap-y-1">
       <strong className="text-lg font-semibold">{title}</strong>{state}
-      <span className="num ml-auto text-sm text-ink-2 max-md:ml-0 max-md:basis-full">{note}</span>
+      <span className="num ml-auto text-sm text-ink-2 max-md:order-last max-md:ml-0 max-md:basis-full">{note}</span>
+      {order && <OrderButton className="max-md:ml-auto" />}
     </div>
     {sub && <p className="text-sm text-ink-2">{sub}</p>}
     {children}
@@ -48,7 +51,7 @@ function MachineLane({ lane, total, now }: { lane: Lane; total: number; now: num
   const cards = lane.running.map((job) => <JobCard key={job.job_id} job={job} cores={m?.cores} total={total} />);
   const line = <WaitList jobs={lane.waiting} total={total} machineCount={null} label={`Waiting for ${lane.name}`} />;
   return (
-    <LaneBox title={lane.name} note={laneNote(lane)}
+    <LaneBox title={lane.name} note={laneNote(lane)} order={lane.waiting.length > 0}
       state={m ? <MachineState machine={m} /> : <Status state="unknown" word="Not listed yet" />}
       sub={offline ? `Offline, last seen ${ago(m.last_seen, now)}. What waits for it starts when it is back.` : null}>
       {both ? (
@@ -76,19 +79,25 @@ export function Lanes({ snapshot, machines }: Props) {
   return (
     <div className="@container grid gap-5">
       {stuck.length > 0 && (
-        <LaneBox title="No machine fits" note={`${stuck.length} waiting`}
+        <LaneBox title="No machine fits" note={`${stuck.length} waiting`} order
           state={<Status state="stuck" word="Stuck" />} sub="Nothing offers what these need.">
           <WaitList jobs={stuck} total={total} machineCount={null} label="Waiting, no machine fits" />
         </LaneBox>
       )}
       {lanes.map((lane) => <MachineLane key={lane.name} lane={lane} total={total} now={now} />)}
       {shared.length > 0 && (
-        <LaneBox title="Next free machine" note={`${shared.length} waiting`}
+        <LaneBox title="Next free machine" note={`${shared.length} waiting`} order
           sub="Whichever machine is free first takes these, in this order.">
           <WaitList jobs={shared} total={total} machineCount={count} label="Waiting for the next free machine" />
         </LaneBox>
       )}
       {nothing && <Empty title="Nothing is running or waiting." hint="Send a job with `mulebox check` from a project." />}
+      {snapshot.queued.length === 0 && (
+        <div className="pop-host flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line pt-4">
+          <p className="text-sm text-ink-2">Nothing is waiting. The order rules apply to the next line.</p>
+          <OrderButton />
+        </div>
+      )}
       {quiet.length > 0 && !nothing && (
         <LaneBox title={`Nothing running on ${quiet.length === 1 ? quiet[0].name : plural(quiet.length, "machine")}`}
           note={quiet.length > 1 ? <a href="#/machines">All machines</a> : ""} state={quiet.length === 1 && quiet[0].machine ? <MachineState machine={quiet[0].machine} /> : undefined}>

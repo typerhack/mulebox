@@ -183,6 +183,13 @@ dev machine (`mulebox queue rules`, `mulebox project priority <project> <level>`
 dashboard, both sending `queue_rules`. Never in a project's `.mulebox.yml`: a project must not be
 able to raise itself above the others, and an agent can edit that file.
 
+**On the dashboard (M14.15).** Every waiting line's heading has an Order button; its panel lists
+the rules in the order of precedence above, with their switches, and the levels (High, Normal, Low;
+another stored number is shown as it is). The page edits a copy and sends only what differs on Save
+(`web/src/lib/order.ts`, `changeOf`); Reset sends `{reset: true}` after asking twice. A waiting row
+shows a short reason built from `order` (`placeOf`), with `place_reason` in full as its tooltip and
+on the job's page. With the controls off the panel is read-only.
+
 **Explainable.** While any rule is on, every waiting row says why it is where it is: `place_reason`
 (such as `project example-app +1; waited 30m or more +1; turn 2 of example-app; then by arrival`)
 and `order` (`by_hand`, `level`, `levels` with the rule each came from, `turn`, `usual_s`,

@@ -1,7 +1,7 @@
 // A stand-in for the dashboard's API, for `npm run dev` with no dashboard: the routes and
 // events of docs/interfaces-m2.md over the made-up data of fixtures.ts. Controls change that
 // data and publish it, so menus, arrows, Pause and Cancel can be tried without touching a
-// real queue.
+// real queue. MULEBOX_MOCK_CONTROLS=off answers as a dashboard whose controls are off.
 
 import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
@@ -9,6 +9,7 @@ import type { Plugin } from "vite";
 import { makeScene } from "./scenes.ts";
 import { answerSettings, withSettings } from "./settings.ts";
 import { answerHistory, historyRows } from "./history.ts";
+import { changeRules, rulesBody } from "./order.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
 const CONTROLS = process.env.MULEBOX_MOCK_CONTROLS !== "off";
@@ -76,7 +77,7 @@ function cancel(row: MockJob) {
   machines = makeMachines(queue, scene?.machines).map((m, index) => ({ ...m, state: machines[index].state === "draining" ? "draining" : m.state }));
 }
 
-function body(req: IncomingMessage): Promise<Record<string, string>> {
+function body(req: IncomingMessage): Promise<Record<string, any>> {  // eslint-disable-line @typescript-eslint/no-explicit-any
   return new Promise((resolve) => {
     let raw = "";
     req.on("data", (chunk) => { raw += chunk; });
@@ -108,11 +109,17 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
   const url = new URL(req.url ?? "/", "http://mock");
   const path = url.pathname;
   const post = req.method === "POST";
+  if (post && !CONTROLS) return text(res, "405: Method Not Allowed", 405);
   if (post && req.headers["x-mulebox-token"] !== TOKEN) return text(res, "the page's token is missing or old", 403);
   const jobMatch = /^\/api\/jobs\/([^/]+)(?:\/(.*))?$/.exec(path);
   const machineMatch = /^\/api\/machines\/([^/]+)\/control$/.exec(path);
   if (path === "/healthz") return json(res, { ok: true, version: VERSION, lan: false, sign_in: false });
   if (path === "/api/session") return json(res, { action_token: CONTROLS ? TOKEN : null, cancel_token: null });
+  if (path === "/api/queue/rules") {
+    if (!post) return json(res, rulesBody());
+    const refusal = changeRules(await body(req));
+    return refusal ? text(res, refusal, 409) : json(res, rulesBody());
+  }
   if (path === "/api/queue") return json(res, snapshot());
   if (path === "/api/machines") return json(res, panel());
   if (path === "/api/history") {

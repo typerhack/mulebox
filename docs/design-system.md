@@ -207,6 +207,17 @@ Drawn in the specimen, in both themes:
   turns into a card per setting under 640px of its own width. While a save is on its way its
   controls take no edit, and an open window reads its node again every few seconds, keeping
   what the viewer has changed and not saved.
+  A panel is 380px wide or as wide as the row it hangs under, whichever is less, and at most 640px
+  tall: its head and foot stay and its body scrolls. In code: `web/src/ui/Controls.tsx` (switch,
+  segmented choice, stepper) and `web/src/ui/Float.tsx` (the panel).
+- Queue order (the user's pick, 2026-11-13, option A of
+  [design-system/queue-order-mockup.html](design-system/queue-order-mockup.html)): an Order button
+  on a waiting line's heading opens the rules in a panel. The rules are a numbered ladder,
+  strongest first, because their order is the fact to show; a rule that is always on carries a
+  lock. A waiting row says why it stands where it does on a second line, in `--text-2`, led by the
+  rule's icon: by hand `hand`, a project's level `flag` (a low one `arrow-down`), a branch
+  `git-branch`, a workflow or GitHub runs `workflow`, time waited `hourglass`, fair turns `repeat`,
+  shortest first `timer`, arrival `clock`. The Order button itself is `list-ordered`.
 - A line longer than its box, such as a GitHub step on a job card (the user's ask, 2026-11-12):
   cut with an ellipsis, the whole text in its tooltip, and a small quiet copy button beside it,
   in `--ink-3` until hovered (`web/src/ui/Copy.tsx`). Over plain HTTP, where browsers give a

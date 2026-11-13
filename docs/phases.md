@@ -532,11 +532,15 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       held by drill jobs, a real CI run's waiting slot sat at #2 behind a drill job; its up arrow
       put it at #1, and when a slot came free it started ahead of the job that had queued first.
 
-- [ ] M14.15 Queue order settings on the dashboard (the user's ask, 2026-11-13): the order rules of
+- [~] M14.15 Queue order settings on the dashboard (the user's ask, 2026-11-13): the order rules of
       M23.3 and M24.4 (project levels, branch levels, GitHub runs' level, aging, fair turns, shortest
       first) shown and set from the page, and each waiting row's `place_reason`, on
       `GET|POST /api/queue/rules` (interfaces-m2.md). Mockups to pick from first. Done when: a rule set
       on the deployed dashboard in Edge reorders a real line and the rows say why.
+      Built 2026-11-13 (1.17.2): option A of the mockup, an Order button on the line, with the rules'
+      precedence shown, workflow levels, Save and Reset, read-only with the controls off; component
+      tests, and seen with stand-in data at 390 and 1440 px in both themes in headless Chrome.
+      Open: on the real dashboard in Edge.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it

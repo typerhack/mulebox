@@ -163,4 +163,39 @@
   .day-axis { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; text-align: center; }
   .share-bar { height: var(--spacing-meter); border-radius: var(--radius-meter); background: var(--meter-track); }
   .share-bar > i { display: block; height: 100%; width: var(--v); border-radius: var(--radius-meter); }
+
+  /* A switch: the track and its knob; the button around it is the target (ui/Controls.tsx). */
+  .switch { position: relative; display: block; width: calc(var(--space-1) * 9); height: var(--space-5);
+    border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--surface-1);
+    transition: background var(--dur-fast) var(--ease); }
+  .switch::after { content: ""; position: absolute; top: var(--spacing-hair); left: var(--spacing-hair);
+    width: calc(var(--space-4) - var(--spacing-hair)); height: calc(var(--space-4) - var(--spacing-hair));
+    border-radius: var(--radius-full); background: var(--text-2); transition: transform var(--dur-base) var(--ease); }
+  [aria-checked="true"] > .switch { background: var(--accent); border-color: var(--accent); }
+  [aria-checked="true"] > .switch::after { background: var(--accent-ink); transform: translateX(var(--space-4)); }
+  :disabled > .switch { border-color: var(--border); background: var(--surface-2); }
+  :disabled > .switch::after { background: var(--text-3); }
+  :disabled[aria-checked="true"] > .switch { border-color: var(--text-3); background: var(--text-3); }
+  :disabled[aria-checked="true"] > .switch::after { background: var(--surface-1); }
+
+  /* A panel opened from a button: under its host's right edge, never wider than the host. Its
+     head and foot stay; the body scrolls when the panel would be taller than the window. */
+  .pop-host { position: relative; }
+  .pop { position: absolute; z-index: 5; top: calc(100% + var(--space-1)); right: 0;
+    display: flex; flex-direction: column; width: min(var(--spacing-pop), 100%);
+    max-height: min(var(--spacing-pop-tall), 100vh - var(--spacing-head) * 2); }
+  .pop > .pop-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+
+  /* The rules of the line as a ladder, strongest first: rank, icon, what it does, its control. */
+  .ladder > li { display: grid; grid-template-columns: var(--space-3) auto minmax(0, 1fr) auto;
+    gap: var(--space-1) var(--space-3); align-items: center; padding: var(--space-2) 0;
+    border-top: 1px solid var(--border); }
+  .ladder > li:last-child { border-bottom: 1px solid var(--border); }
+  .ladder > li > svg { align-self: start; margin-top: var(--spacing-hair); }
+  .ladder > li > .rank { align-self: start; }
+  .ladder > li > .under { grid-column: 3 / -1; }
+  /* Aging, inside the Levels step: its icon, what it does, its switch; the minutes under them. */
+  .rule-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2) var(--space-3);
+    align-items: center; }
+  .rule-row > .wide { grid-column: 2 / -1; }
 }

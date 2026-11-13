@@ -5,7 +5,7 @@ import { ArrowLeft, ExternalLink, Server } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { tokenStore } from "../../lib/api";
-import { clock, isCI, nameParts, repository, safeUrl, stateOf } from "../../lib/format";
+import { WAITING, clock, isCI, nameParts, repository, safeUrl, stateOf } from "../../lib/format";
 import { quietText } from "../../lib/quiet";
 import { useStore } from "../../lib/store";
 import type { JobDetail } from "../../lib/types";
@@ -74,6 +74,7 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
         {!token && run && <LinkButton href={run} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden className="size-icon-s" />Open the GitHub run</LinkButton>}
         {line && steers(job) && <p role="status" className="basis-full text-sm text-ink-2">{line}</p>}
         {result && <p role="status" className="basis-full text-sm text-ink-2">{result}</p>}
+        {job.place_reason && WAITING.has(job.state) && <p className="basis-full text-sm text-ink-2">Its place in line: {job.place_reason}.</p>}
         <p className="flex basis-full flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-2">
           <Branch name={job.branch} /><JobId job={job} /><Source job={job} />
           {job.worker && <span className="inline-flex items-center gap-1 whitespace-nowrap"><Server aria-hidden className="size-icon-s" />{job.worker}</span>}

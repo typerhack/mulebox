@@ -18,9 +18,10 @@ npm run dev          # http://localhost:5173/app/ with made-up data
 kind of row, and controls that change it, so menus, arrows, Pause and Cancel can be tried without
 touching a real queue, and a history of 120 jobs to search, filter and page (`dev/history.ts`).
 `MULEBOX_MOCK_MACHINES=20 npm run dev` gives twenty machines.
-`MULEBOX_MOCK_SCENE=split|wide|downloads|settings` picks another queue (`dev/scenes.ts`); `downloads`
-has the Down meter in each state, `settings` has node settings in every state the settings window
-shows, and `MULEBOX_MOCK_CONTROLS=off` turns the controls off.
+`MULEBOX_MOCK_SCENE=split|wide|downloads|settings|order` picks another queue (`dev/scenes.ts`);
+`downloads` has the Down meter in each state, `settings` has node settings in every state the
+settings window shows, `order` has the order rules on (`dev/order.ts`), and
+`MULEBOX_MOCK_CONTROLS=off` turns the controls off.
 
 To see real data, point it at a dashboard; requests go through Vite's proxy:
 

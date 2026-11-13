@@ -5,6 +5,7 @@
 import { stateOf, stateText } from "../../lib/format";
 import { coresText, doingWord } from "../../lib/doing";
 import { waitReason } from "../../lib/lanes";
+import { placeOf } from "../../lib/order";
 import type { Job } from "../../lib/types";
 import { WithCode } from "../../ui/Code";
 import { CopyText } from "../../ui/Copy";
@@ -47,8 +48,21 @@ const Reason = ({ text }: { text: string }) => (
   <span className="basis-full text-sm text-ink-2"><WithCode text={text} codeClassName="text-xs text-ink-1" /></span>
 );
 
-// A waiting row: its real queue position, the job, why it waits, how long it has waited, the
-// four move arrows as one group, and the three dots.
+// Why a row stands where it does under the order rules, with the rule's icon; the server's own
+// full sentence is its tooltip and is on the job's page. It wraps inside the job's column, so
+// the arrows keep their place.
+function Place({ job }: { job: Job }) {
+  const place = placeOf(job);
+  if (!place) return null;
+  return (
+    <span title={job.place_reason ?? undefined} className="place flex basis-full items-start gap-1 text-sm text-ink-2">
+      <place.Icon aria-hidden className="mt-hair size-icon-s" /><span className="min-w-0 break-words">{place.text}</span>
+    </span>
+  );
+}
+
+// A waiting row: its real queue position, the job, why it waits, why it stands there, how long
+// it has waited, the four move arrows as one group, and the three dots.
 export function WaitRow({ job, total, machineCount }: { job: Job; total: number; machineCount: number | null }) {
   const reason = waitReason(job, machineCount);
   return (
@@ -59,6 +73,7 @@ export function WaitRow({ job, total, machineCount }: { job: Job; total: number;
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
         <JobName job={job} /><Branch name={job.branch} /><Source job={job} className="text-sm text-ink-2" />
         {reason && <Reason text={reason} />}
+        <Place job={job} />
         <QuestionMark job={job} />
       </div>
       <div className="wait-side flex items-center gap-2">

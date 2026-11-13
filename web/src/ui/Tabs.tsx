@@ -52,21 +52,3 @@ export function Tabs<T extends string>({ items, value, onChange, label, panelId,
     </div>
   );
 }
-
-interface SegmentedProps<T extends string> { options: [T, string][]; value: T; onChange: (id: T) => void; label: string }
-
-// Two or three choices of one thing, as joined buttons.
-export function Segmented<T extends string>({ options, value, onChange, label }: SegmentedProps<T>) {
-  return (
-    <div role="group" aria-label={label} className="inline-flex">
-      {options.map(([id, text], index) => (
-        <button key={id} type="button" aria-pressed={id === value} onClick={() => onChange(id)}
-          className={cx("h-ctl-s touch:h-ctl-touch border border-line-strong px-3 text-sm font-medium transition-colors",
-                        "hover:bg-surface-2 on:relative on:border-ink-1 on:bg-surface-3 on:font-semibold",
-                        index > 0 && "-ml-px", index === 0 && "rounded-l-m", index === options.length - 1 && "rounded-r-m")}>
-          {text}
-        </button>
-      ))}
-    </div>
-  );
-}

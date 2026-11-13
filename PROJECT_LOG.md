@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.2 - 2026-11-13 - patch
+- Dashboard: the queue order settings (M14.15), option A of the mockup the user picked. An Order button on every waiting line's heading (and under the lanes when nothing waits) opens a panel anchored to it (`web/src/features/order/`, `ui/Float.tsx`): the rules as a ladder, strongest first, so which rule wins is on the page (by hand, levels added up, fair turns, shortest first, arrival; Sol's point), with the switches for fair turns and shortest first at their rank and aging with its minutes inside Levels; then a level per project, branch pattern and GitHub workflow and one for GitHub runs, High, Normal or Low, a level the CLI stored outside those shown as its number. Changes are a copy until Save ("Unsaved changes"), which posts only what differs; "Reset to defaults" asks twice; with the dashboard's controls off the panel opens read-only.
+- Each waiting row says why it stands where it does, as a second line with the rule's icon ("ahead: project high; fair turn 1; usually 4m"), from `order`; the coordinator's full `place_reason` is its tooltip and on the job's page.
+- Design system in code: a switch, the segmented choice as a radio group with arrow keys (the Statistics page's period choice uses it too) and a number stepper (`web/src/ui/Controls.tsx`).
+- The stand-in API for `npm run dev` answers `/api/queue/rules` and has an `order` scene; `MULEBOX_MOCK_CONTROLS=off` (from the node settings window) also makes the rules read only.
+
 ## 1.17.1 - 2026-11-13 - patch
 - The order of the line, as the user decided (design.md, Order of the line): a move by hand pins only the moved job (`front`, or just ahead of or behind another job's place, in new columns `pin_side`, `pin_job`, `pin_order`, coordinator/line_moves.py), so a later rule change still orders the rest; 1.17.0 wrote the whole visible order into every waiting job. A pinned job whose neighbour left the line keeps that place. GitHub slots, upgrades and `boost` move the same way.
 - Shortest first counts a job with no past runs as the median of the known lengths in line (none known: arrival), not after every known job.
