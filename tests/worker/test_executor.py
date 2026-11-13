@@ -47,6 +47,14 @@ def test_exit_codes_and_output(tmp_path):
     assert (tmp_path / "out.log").read_text().splitlines() == ["out 1", "err"]
 
 
+def test_a_job_does_not_get_the_service_marker(tmp_path, monkeypatch):
+    monkeypatch.setenv("MULEBOX_SERVICE", "launchd")  # set on the worker by its launchd plist
+    ex = SubprocessExecutor()
+    handle = ex.start(_spec(tmp_path, 'echo "[${MULEBOX_SERVICE-unset}]"'))
+    assert _wait(ex, handle) == 0
+    assert (tmp_path / "out.log").read_text() == "[unset]\n"
+
+
 def test_signal_exit_code(tmp_path):
     ex = SubprocessExecutor()
     handle = ex.start(_spec(tmp_path, "kill -KILL $$"))

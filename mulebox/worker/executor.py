@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from mulebox.common import disclaim
 from mulebox.common.errors import MuleboxError
 
 UNIT_PREFIX = "mulebox-job-"
@@ -108,7 +109,9 @@ class SubprocessExecutor:
     def _spawn(self, spec: RunSpec, stdin: int) -> ProcessHandle:
         if spec.name in self.running:
             raise ExecutorError(f"{spec.name} is already running")
-        env = {**os.environ, **spec.env}
+        # The service marker stays the worker's: a job's own ssh is not started disclaimed.
+        inherited = {k: v for k, v in os.environ.items() if k != disclaim.SERVICE_ENV}
+        env = {**inherited, **spec.env}
         try:
             with open(spec.log_path, "ab") as log:
                 proc = subprocess.Popen(
