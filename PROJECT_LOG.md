@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.16.1 - 2026-11-13 - patch
+- node.toml written from afar (`worker/node_file.py`), from Sol's review: a file over 1 MiB is refused with the reason rather than read in part, as the write would have replaced it with its first MiB; a setting's trailing comment is kept (`slots = 2 # leave room` becomes `slots = 3 # leave room`); a quoted key (`"slots" = 2`, `'slots' = 2`) is taken for its setting, where before a second `slots` line was added and the change stayed pending with an error.
+- design.md, Node settings: the slot suggestion, the level names with the 30 s wait, and slots and priority alone from afar marked as the user's decisions of 2026-11-13.
+
 ## 1.16.0 - 2026-11-13 - minor
 - Node settings from afar (M23.9, M23.4; the user's ask for a settings window per node, M14.14): `mulebox machine config <name> [--slots N] [--priority preferred|normal|fallback] [--cancel] [--wait]`, the `node_settings` request and `GET|POST /api/machines/<name>/settings` show a node's slots and priority, what waits, and a suggestion from its cores and memory (about 4 cores and 6 GB a job), and change them. The truth stays in each node's node.toml: the coordinator holds the change (`workers.wanted`, schema 21), the worker gets it with its next claim or heartbeat reply, writes it into its own node.toml through safefile (a symlink refused, comments kept, checked with the service's own reader) and reports what it has (`settings` in claims and heartbeats), which clears it. Only slots and priority: capabilities and `[job_env]` stay hand edits, as a wrong one fails jobs and `[job_env]` reaches every job's processes. A worker older than this one is refused with "upgrade it first".
 - Config reload (M23.9): the worker reads node.toml again within 2 s of a hand edit and takes `slots`, `priority` and `capabilities` from the next claim, with no restart; a lower count stops no running job, a file that does not read keeps the old values, other changed fields are logged as needing a restart.

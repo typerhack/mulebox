@@ -39,7 +39,7 @@ def test_slots_is_replaced_and_priority_added_before_the_first_table(toml):
     config = node_file.apply(toml, {"slots": 3, "priority": "preferred"})
     assert config.slots == 3 and config.priority == "preferred"
     text = toml.read_text()
-    assert "slots = 3\n" in text and "# the default" not in text
+    assert "slots = 3  # the default\n" in text
     assert "# the node's own comments stay" in text and "# Jobs at once." in text
     assert text.index('priority = "preferred"') < text.index("[roots]")
     assert load_node_config(toml) == config
@@ -127,3 +127,32 @@ def test_a_hand_edit_applies_live_and_a_broken_one_keeps_the_old_values(toml, ca
     node = live.check(node)
     assert node.slots == 1 and node.roles == ("coordinator", "worker")  # roles need a restart
     assert "restart" in caplog.text
+
+
+def test_a_trailing_comment_on_the_line_is_kept():
+    text = 'slots = 2 # leave room for my own work\npriority = "normal"\t# "quoted # inside"\n'
+    out = node_file.with_settings(text, {"slots": 3, "priority": "fallback"})
+    assert out == 'slots = 3 # leave room for my own work\npriority = "fallback"\t# "quoted # inside"\n'
+    hashed = "priority = 'a#b'  # note\n"
+    assert node_file.with_settings(hashed, {"priority": "preferred"}) == 'priority = "preferred"  # note\n'
+
+
+@pytest.mark.parametrize("key", ['"slots"', "'slots'", '"\\u0073lots"'])
+def test_a_quoted_key_is_taken_for_its_setting(toml, key):
+    toml.write_text(toml.read_text().replace("slots = 2", f"{key} = 2"))
+    config = node_file.apply(toml, {"slots": 3})
+    assert config.slots == 3
+    assert f"{key} = 3  # the default\n" in toml.read_text()
+
+
+def test_a_quoted_key_of_another_name_is_left_alone():
+    text = '"slots.x" = 1\n"slot" = 2\n'
+    assert node_file.with_settings(text, {"slots": 3}) == text + "slots = 3\n"
+
+
+def test_a_node_toml_too_big_to_read_whole_is_refused_and_not_cut(toml):
+    big = toml.read_text() + "# " + "x" * (node_file.MAX_BYTES + 10) + "\n"
+    toml.write_text(big)
+    with pytest.raises(node_file.NodeFileError, match="too big"):
+        node_file.apply(toml, {"slots": 3})
+    assert toml.read_text() == big

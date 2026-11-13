@@ -502,7 +502,8 @@ mulebox suggests how a node is set up and does that by default, and the owner de
 with 2 slots may serve its owner better with 3. So a node's settings can be read and changed from
 the dev machine (`mulebox machine config`) and from the dashboard, with no hand edit and no
 restart.
-- **What can be changed from afar: `slots` and `priority`.** Both only change how much work a
+- **What can be changed from afar: `slots` and `priority`** (the user's decision, 2026-11-13;
+  the rest is shown read-only). Both only change how much work a
   node takes and when; a wrong value slows the queue and is undone the same way. Left out:
   `capabilities`, which say what the machine really has (Docker, Playwright's system packages),
   so a wrong one fails jobs, and `mulebox setup` finds them; `[job_env]`, which reaches every job's
@@ -514,9 +515,10 @@ restart.
   another machine cannot be written by the coordinator, and should not be: it reaches the
   coordinator, never the other way round. So the change travels back on what the worker already
   asks: a claim's or heartbeat's reply carries `node_settings` while a change waits, the worker
-  writes it into its own `node.toml` (the one line of each setting, comments and the rest kept;
-  read and written through safefile, so a symlink is refused and the file is replaced whole, never
-  half written), checks the result with the same reader the service uses, and reports what it now
+  writes it into its own `node.toml` (only the value on each setting's line, its key bare or
+  quoted, its comment and every other line kept; read and written through safefile, so a symlink
+  is refused and the file is replaced whole, never half written; a file over 1 MiB is refused,
+  never cut), checks the result with the same reader the service uses, and reports what it now
   has with its next claim or heartbeat, which clears the request. A worker that cannot write it
   reports why, and the request stays with that reason until the owner changes or drops it. A
   machine that is offline gets it when it comes back. A worker older than this never reports
@@ -530,10 +532,10 @@ restart.
 - **A suggestion beside the value.** From the cores and memory the worker last reported: about 4
   cores and 6 GB a job, at least 1, `max(1, min(cores // 4, memory_gb // 6))` (8 cores and 16 GB
   give 2, today's default; 16 and 32 give 4). It is shown next to the current value with its
-  reason, and never applied by itself: the owner's value stays until the owner changes it. From
+  reason (the formula is the user's decision, 2026-11-13), and never applied by itself: the owner's value stays until the owner changes it. From
   afar slots go from 1 to 64; a hand edit may set more, as a big machine may want it.
 - **Node priority (M23.4).** `priority = "preferred" | "normal" | "fallback"` in `node.toml`,
-  `normal` when left out. A node takes a job only when no node ranked above it could take that job
+  `normal` when left out (the names and the 30 s wait below are the user's decision, 2026-11-13). A node takes a job only when no node ranked above it could take that job
   now: online, not paused, not running a boosted job, with a free slot and the job's `needs`. So
   the spare machine is `preferred`, the owner's desktop `normal`, a Mac `fallback`, and the
   desktop runs jobs only while the spare one is full. Within a level the order is as before:
