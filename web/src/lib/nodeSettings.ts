@@ -27,6 +27,7 @@ export interface NodeSettings {
   editable: boolean;
 }
 
+export const POLL_MS = 5000;  // how often an open window asks the node's settings again
 export const SLOTS_RANGE = { min: 1, max: 64 };
 // node.toml's own default when it names no priority (docs/design.md, Node settings).
 export const SUGGESTED_PRIORITY = "normal";
@@ -60,6 +61,15 @@ export function changes(view: NodeSettings, draft: Draft): Draft {
   if (rowOf(view, draft, "slots").mark === "unsaved") body.slots = draft.slots;
   if (rowOf(view, draft, "priority").mark === "unsaved") body.priority = draft.priority;
   return body;
+}
+
+// The edits left once `sent` was saved: one that is still what was sent is done with, one the
+// viewer changed since stays an edit.
+export function unsent(draft: Draft, sent: Draft): Draft {
+  const left: Draft = { ...draft };
+  if (left.slots === sent.slots) delete left.slots;
+  if (left.priority === sent.priority) delete left.priority;
+  return left;
 }
 
 // "All as suggested": the suggestion as fixed values of the viewer's own, still to be saved.

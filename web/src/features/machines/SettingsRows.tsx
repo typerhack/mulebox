@@ -19,7 +19,7 @@ interface Props {
   view: NodeSettings;
   draft: Draft;
   locked: boolean;                          // nothing here can be changed
-  busy: boolean;
+  busy: boolean;                            // a save is on its way: no edit until it is back
   onEdit: (change: Draft) => void;
   onDrop: (key: SettingKey) => void;        // take a pending change back
 }
@@ -90,9 +90,9 @@ export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDro
                        : <>None yet<small>the node has not reported its cores and memory</small></>}
           </span>
           <span role="cell" data-label="Yours" className="flex flex-wrap items-start gap-2">
-            <Stepper value={mine} min={range.min} max={range.max} label="Slots" unit="slot" disabled={locked}
+            <Stepper value={mine} min={range.min} max={range.max} label="Slots" unit="slot" disabled={locked || busy}
               onChange={(next) => onEdit({ slots: next })} />
-            {!locked && suggested !== undefined && suggested !== mine && (
+            {!locked && !busy && suggested !== undefined && suggested !== mine && (
               <IconButton label={`Use the suggested ${suggested}`} className="size-ctl"
                 tip={`Sets ${suggested} as your value: a fixed number, kept until you change it`}
                 onClick={() => onEdit({ slots: suggested })}>
@@ -109,7 +109,7 @@ export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDro
             <span className="font-medium">{priorityLabel(SUGGESTED_PRIORITY)}</span><small>the default for every node</small>
           </span>
           <span role="cell" data-label="Yours" className="grid gap-1">
-            <Segmented label="Priority" describedBy={says} disabled={locked} value={priority.yours}
+            <Segmented label="Priority" describedBy={says} disabled={locked || busy} value={priority.yours}
               choices={PRIORITIES.filter((choice) => known.includes(choice.value))}
               onChange={(next) => onEdit({ priority: next })} />
             <small id={says}>{PRIORITIES.find((choice) => choice.value === priority.yours)?.says ?? "Not reported by the node."}</small>

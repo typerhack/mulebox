@@ -1,45 +1,26 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { tokenStore } from "../../lib/api";
 import type { NodeSettings } from "../../lib/nodeSettings";
-import type { Machine } from "../../lib/types";
-import { TipProvider } from "../../ui/Tip";
-import { NodeSettingsButton } from "./NodeSettings";
+import { cell, machine, open, reply, row, view } from "./testing";
 
-const machine = (more: Partial<Machine> = {}): Machine =>
-  ({ name: "build-2", state: "available", slots: 2, free_slots: 2, capabilities: ["docker"], jobs: [], cores: 16,
-     version: "1.17.2", priority: "normal", settings_pending: false, ...more });
-const view = (more: Partial<NodeSettings> = {}): NodeSettings => ({
-  worker: "build-2", online: true, draining: false, version: "1.17.2", running: 0, applies: true,
-  current: { slots: 2, priority: "normal" }, pending: null, pending_since: null, error: null,
-  suggested: { slots: 4, reason: "16 cores and 32 GB of memory, at about 4 cores and 6 GB a job" },
-  choices: { slots: { min: 1, max: 64 }, priority: ["preferred", "normal", "fallback"] }, editable: true, ...more,
-});
-const reply = (body: unknown, status = 200) => Promise.resolve(new Response(
-  typeof body === "string" ? body : JSON.stringify(body), { status }));
-
-// The server: GET answers `first`; a POST is kept and answered with `after`.
+// The server: GET answers `first`, and `after` once a POST was taken; a POST is kept and
+// answered with `after`. A refused POST ([status, text]) changes nothing.
 function serve(first: NodeSettings, after: NodeSettings | [number, string] = first) {
   const posts: { body: unknown; token: string | null }[] = [];
+  let has = first;
   vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
     if (url === "/api/session") return reply({ action_token: "token" });
     expect(url).toBe("/api/machines/build-2/settings");
-    if (init?.method !== "POST") return reply(first);
+    if (init?.method !== "POST") return reply(has);
     posts.push({ body: JSON.parse(String(init.body)), token: new Headers(init.headers).get("X-Mulebox-Token") });
-    return Array.isArray(after) ? reply(after[1], after[0]) : reply(after);
+    if (Array.isArray(after)) return reply(after[1], after[0]);
+    has = after;
+    return reply(after);
   }));
   return posts;
 }
-
-async function open(row = machine()) {
-  const shown = render(<TipProvider><NodeSettingsButton machine={row} /></TipProvider>);
-  fireEvent.click(screen.getByRole("button", { name: "Settings of build-2" }));
-  await screen.findByRole("table", { name: "Settings" });
-  return shown;
-}
-const cell = (row: string, label: string) =>
-  screen.getByRole("rowheader", { name: new RegExp(`^${row}`) }).parentElement?.querySelector(`[data-label="${label}"]`)?.textContent;
 
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); tokenStore.set(undefined); });
 
@@ -169,7 +150,7 @@ describe("a node's settings window", () => {
     const shown = await open(machine({ settings_pending: true }));
     expect(screen.getByRole("img", { name: "Settings change pending" })).toBeTruthy();
     serve(view({ current: { slots: 3, priority: "normal" } }));
-    shown.rerender(<TipProvider><NodeSettingsButton machine={machine({ slots: 3 })} /></TipProvider>);
+    shown.rerender(row(machine({ slots: 3 })));
     await waitFor(() => expect(cell("Slots", "Runs with")).toBe("3 now"));
     expect(screen.queryByRole("img", { name: "Settings change pending" })).toBeNull();
   });

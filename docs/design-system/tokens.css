@@ -40,9 +40,15 @@
   --dur-base: 180ms;
   --ease: cubic-bezier(0.3, 0, 0.2, 1);
 
-  /* Elevation: only a menu floats. */
+  /* Elevation: only what floats above the page has a shadow (a menu, a panel, a window). */
   --shadow-1: none;
   --shadow-2: 0 8px 24px -6px rgba(10, 14, 18, 0.28), 0 2px 6px rgba(10, 14, 18, 0.12);
+
+  /* Floating surfaces and settings controls (design-system.md, Components).
+     The scrim follows the theme through --surface-0, so it is not repeated per theme. */
+  --scrim: color-mix(in srgb, var(--surface-0) 72%, transparent);  /* dims the page behind a window */
+  --window-width: 800px;                                           /* a window, at most */
+  --chosen-line: inset 0 -2px 0 var(--accent);                     /* the accent line under a chosen part */
 }
 
 /* Light colors. */

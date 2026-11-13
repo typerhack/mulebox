@@ -198,10 +198,15 @@ Drawn in the specimen, in both themes:
   dimmed behind). Both `--surface` with a hairline and `--shadow-2`, dialog semantics, Escape and a
   close button, focus moves in on open and back to the opener on close. A change is "Unsaved" until
   Save, and "Pending" only after Save while a node has yet to take it.
+  Their tokens: `--scrim` dims the page under a window (the page colour, part see-through, so it
+  follows the theme), `--window-width` is the widest a window gets, and `--chosen-line` is the
+  accent line under the chosen part of a segmented choice.
   In code: `web/src/ui/Stepper.tsx`, `Segmented.tsx` and `Window.tsx`; the page under a window
-  is dimmed with `--surface-0` at 72% and cannot be reached while it is open. First used by the
+  cannot be reached while it is open. First used by the
   node settings window (`web/src/features/machines/NodeSettings.tsx`), which is one table that
-  turns into a card per setting under 640px of its own width.
+  turns into a card per setting under 640px of its own width. While a save is on its way its
+  controls take no edit, and an open window reads its node again every few seconds, keeping
+  what the viewer has changed and not saved.
 - A line longer than its box, such as a GitHub step on a job card (the user's ask, 2026-11-12):
   cut with an ellipsis, the whole text in its tooltip, and a small quiet copy button beside it,
   in `--ink-3` until hovered (`web/src/ui/Copy.tsx`). Over plain HTTP, where browsers give a

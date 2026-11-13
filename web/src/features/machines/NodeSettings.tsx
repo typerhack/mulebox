@@ -1,14 +1,14 @@
 // A node's settings window (the user's pick, "Suggested and yours"): opened from the settings
 // button on a machine's row. It reads the node's settings (docs/interfaces-m2.md, Node
-// settings), holds the viewer's edits until Save, and reads again when the machines event says
-// the node took a change. With the dashboard's controls off, or a node on an older mulebox,
+// settings), holds the viewer's edits until Save, and reads again when the machine's row changes and every
+// few seconds while it is open. With the dashboard's controls off, or a node on an older mulebox,
 // it only shows.
 
 import { Clock, Lock, OctagonAlert, RotateCcw, Server, Settings2, TriangleAlert } from "lucide-react";
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 
 import { problemText } from "../../lib/api";
-import { asSuggested, changes, dropPending, readSettings, saveSettings,
+import { POLL_MS, asSuggested, changes, dropPending, readSettings, saveSettings, unsent,
          type Draft, type NodeSettings, type SettingKey } from "../../lib/nodeSettings";
 import type { Machine } from "../../lib/types";
 import { Button, IconButton } from "../../ui/Button";
@@ -44,32 +44,63 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
   const [view, setView] = useState<NodeSettings | null>(null);
   const [draft, setDraft] = useState<Draft>({});
   const [busy, setBusy] = useState(false);
-  const [problem, setProblem] = useState<string | null>(null);
+  const [problem, setProblem] = useState<{ text: string; read?: boolean } | null>(null);
+  // Answers can come back in any order. Every request takes the next turn, and an answer is
+  // shown only while its turn is still the newest: a read asked before a save never undoes it.
+  const turn = useRef(0);
+  const reading = useRef(0);    // the turn of a read still on its way, to not pile a second on it
+  const saving = useRef(false);
 
-  // Again whenever the row changes: that is how the page hears the node took a change.
+  const read = useCallback(() => {
+    if (saving.current) return;  // the save reads again when it is done
+    const mine = turn.current += 1;
+    reading.current = mine;
+    readSettings(name).then((next) => {
+      if (mine !== turn.current) return;
+      setView(next);
+      setProblem((had) => (had?.read ? null : had));
+    }).catch((failure) => {
+      if (mine === turn.current) setProblem({ text: `Not read. ${problemText(failure)}`, read: true });
+    }).finally(() => { if (reading.current === mine) reading.current = 0; });
+  }, [name]);
+
+  // Again whenever the row changes: that is how the page hears the node took a change, went
+  // away, was paused or upgraded, or started a job.
+  useEffect(read, [read, machine.settings_pending, machine.slots, machine.priority, machine.state,
+                   machine.version, machine.jobs.length]);
+  // And every few seconds, as the row cannot say that the node failed to write a change: it
+  // reads "pending" before and after. Edits are kept, they live apart from what was read.
   useEffect(() => {
-    let stale = false;
-    readSettings(name).then((next) => { if (!stale) setView(next); })
-      .catch((failure) => { if (!stale) setProblem(`Not read. ${problemText(failure)}`); });
-    return () => { stale = true; };
-  }, [name, machine.settings_pending, machine.slots, machine.priority]);
+    const timer = setInterval(() => { if (!reading.current && !document.hidden) read(); }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [read]);
 
-  const send = async (ask: () => Promise<NodeSettings>, failed: string, done?: () => void) => {
+  // A save, or a pending change dropped. Nothing can be edited meanwhile (`busy`); of the
+  // edits, only what was sent is forgotten. Its answer is shown, then the node is read again,
+  // as that answer may be older than what the row has said since.
+  const send = async (ask: () => Promise<NodeSettings>, failed: string, sent?: Draft) => {
+    if (saving.current) return;
+    saving.current = true;
+    turn.current += 1;
     setBusy(true);
     setProblem(null);
     try {
-      setView(await ask());
-      done?.();
+      const next = await ask();
+      turn.current += 1;
+      setView(next);
+      if (sent) setDraft((had) => unsent(had, sent));
     } catch (failure) {
-      setProblem(`${failed} ${problemText(failure)}`);
+      setProblem({ text: `${failed} ${problemText(failure)}` });
     } finally {
+      saving.current = false;
       setBusy(false);
+      read();
     }
   };
   const body = view ? changes(view, draft) : {};
   const dirty = Object.keys(body).length > 0;
   const locked = !view || !view.editable || !view.applies;
-  const save = () => send(() => saveSettings(name, body), "Not saved.", () => setDraft({}));
+  const save = () => send(() => saveSettings(name, body), "Not saved.", body);
   // One setting's pending change goes when the node is asked for what it already has.
   const dropOne = (key: SettingKey) => {
     const now = view?.current?.[key];
@@ -83,7 +114,7 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
       foot={(
         <>
           <p className="mr-auto min-w-0 flex-1 basis-col-m text-sm text-ink-2">
-            {problem ? <strong role="alert" className="font-semibold text-ink-1">{problem}</strong>
+            {problem ? <strong role="alert" className="font-semibold text-ink-1">{problem.text}</strong>
               : locked ? "Nothing here can be changed from this page."
               : "Applies to the next job; running jobs keep their slot. A suggestion you take is saved as a fixed value of yours."}
           </p>

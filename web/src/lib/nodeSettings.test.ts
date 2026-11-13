@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { asSuggested, changes, rowOf, type NodeSettings } from "./nodeSettings";
+import { asSuggested, changes, rowOf, unsent, type NodeSettings } from "./nodeSettings";
 
 const view = (more: Partial<NodeSettings> = {}): NodeSettings => ({
   worker: "build-2", online: true, applies: true, editable: true, error: null,
@@ -33,5 +33,11 @@ describe("a node's settings", () => {
 
   it("show nothing to run with for a node that has not reported", () => {
     expect(rowOf(view({ applies: false, current: null }), {}, "slots")).toEqual({ now: null, yours: null, mark: null });
+  });
+
+  it("forgets only the edits a save sent, and keeps one changed since", () => {
+    expect(unsent({ slots: 3, priority: "fallback" }, { slots: 3 })).toEqual({ priority: "fallback" });
+    expect(unsent({ slots: 5 }, { slots: 3 })).toEqual({ slots: 5 });
+    expect(unsent({ slots: 3 }, { slots: 3 })).toEqual({});
   });
 });
