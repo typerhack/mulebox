@@ -1,7 +1,9 @@
-// A segmented choice: one of a few (design-system.md, Settings controls). A radio group: Tab
-// reaches the chosen part, arrow keys move the choice, Home and End take the ends. The chosen
-// part carries the accent line and a heavier word, never colour alone. `small` is the 28px
-// inline kind for dense rows (the order rules, a period choice); the default fills its row.
+// A segmented choice: one of a few (design-system.md, Settings controls), drawn as radio marks:
+// no box, a ring before each word, the chosen ring filled in the accent with a heavier word,
+// never colour alone. A radio group: Tab reaches the chosen part, arrow keys move the choice,
+// Home and End take the ends. Each word holds a hidden heavier copy of itself (`.seg-word`), so
+// a part keeps its width when chosen. `small` is the 28px kind for dense rows (the order rules,
+// a period choice). Its look is `.seg` in styles/components.css.
 
 import { useRef } from "react";
 
@@ -35,18 +37,13 @@ export function Segmented<T extends Id>({ choices, value, label, labelledBy, des
   };
   return (
     <div ref={group} role="radiogroup" aria-label={label} aria-labelledby={labelledBy} aria-describedby={describedBy}
-      className={cx("max-w-full", small ? "inline-flex" : "flex")}>
+      className={cx("seg", small && "seg-small")}>
       {choices.map((choice, index) => (
         <button key={String(choice.value)} type="button" role="radio" aria-checked={index === chosen} disabled={disabled}
           tabIndex={index === chosen || (chosen < 0 && index === 0) ? 0 : -1}
-          onClick={() => onChange(choice.value)} onKeyDown={(event) => move(event, index)}
-          className={cx("-ml-px inline-flex items-center justify-center border px-3 text-sm whitespace-nowrap",
-                        small ? "h-ctl-s touch:min-w-ctl-touch" : "h-ctl min-w-0 flex-1",
-                        "first:ml-0 first:rounded-l-m last:rounded-r-m focus-visible:relative touch:h-ctl-touch off:border-line off:text-ink-3",
-                        index === chosen
-                          ? "relative border-ink-1 bg-surface-3 font-semibold text-ink-1 shadow-chosen off:bg-surface-2 off:shadow-none"
-                          : "border-line-strong bg-surface-1 font-medium text-ink-2 hover:bg-surface-2 hover:text-ink-1 off:bg-surface-2")}>
-          {choice.label}
+          onClick={() => onChange(choice.value)} onKeyDown={(event) => move(event, index)}>
+          <span aria-hidden className="seg-ring" data-on={index === chosen || undefined} />
+          <span className="seg-word" data-word={choice.label}>{choice.label}</span>
         </button>
       ))}
     </div>

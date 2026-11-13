@@ -111,7 +111,7 @@
   .data-table { width: 100%; border-collapse: collapse; }
   .data-table th { text-align: left; padding: var(--space-2) var(--space-4) var(--space-2) 0;
     border-bottom: 1px solid var(--border-strong); color: var(--text-2); font-size: var(--text-sm);
-    font-weight: 600; white-space: nowrap; }
+    font-weight: var(--font-weight-semibold); white-space: nowrap; }
   .data-table td { padding: var(--space-1) var(--space-4) var(--space-1) 0; border-bottom: 1px solid var(--border);
     vertical-align: middle; }
   /* The ends of a row keep off its edges, so a shaded row does not have its name and its
@@ -128,6 +128,41 @@
     .data-table.stacks td[data-label]::before { content: attr(data-label); display: block;
       color: var(--text-2); font-size: var(--text-xs); }
     .data-table.stacks td.wide { grid-column: 1 / -1; }
+  }
+
+  /* The segmented choice as radio marks (ui/Segmented.tsx; the user's pick, 2026-11-13): no box,
+     a ring before each word, the chosen ring filled in the accent. The group hangs out by a
+     part's padding, so the first ring and the last word sit on their row's edges, and its parts
+     wrap, so a narrow row never pushes them past its edge. */
+  .seg { display: inline-flex; flex-wrap: wrap; gap: 0 var(--space-1); max-width: calc(100% + var(--space-4));
+    margin-inline: calc(var(--space-2) * -1); }
+  .seg > button { display: inline-flex; flex: none; align-items: center; gap: var(--space-2); height: var(--spacing-ctl);
+    padding: 0 var(--space-2); border-radius: var(--radius-m); color: var(--text-2); font-size: var(--text-sm);
+    font-weight: var(--font-weight-medium); white-space: nowrap;
+    transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+  .seg-small > button { height: var(--spacing-ctl-s); }
+  .seg > button:focus-visible { position: relative; }
+  .seg > button[aria-checked="true"] { color: var(--text-1); font-weight: var(--font-weight-semibold); }
+  .seg-ring { flex: none; width: var(--spacing-icon-s); height: var(--spacing-icon-s); padding: var(--spacing-hair);
+    border: calc(var(--icon-stroke) * 1px) solid var(--border-strong); border-radius: var(--radius-full);
+    background-clip: content-box;
+    transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease); }
+  .seg-ring[data-on] { border-color: var(--accent); background-color: var(--accent); }
+  /* The word over a hidden heavier copy of itself: a part is as wide chosen as not. */
+  .seg-word { display: inline-grid; justify-items: center; }
+  .seg-word::after { content: attr(data-word); height: 0; overflow: hidden; visibility: hidden; font-weight: var(--font-weight-semibold); }
+  .seg > button:enabled[aria-checked="false"]:hover { background: var(--surface-3); color: var(--text-1); }
+  .seg > button:enabled[aria-checked="false"]:hover > .seg-ring { border-color: var(--text-1); }
+  /* Off or read only: no accent, and the chosen part still told by its filled ring and weight. */
+  .seg > button:disabled { color: var(--text-3); }
+  .seg > button:disabled[aria-checked="true"] { color: var(--text-2); }
+  .seg > button:disabled > .seg-ring { border-color: var(--border); }
+  .seg > button:disabled > .seg-ring[data-on] { border-color: var(--text-3); background-color: var(--text-3); }
+  @variant touch {
+    .seg > button { height: var(--spacing-ctl-touch); min-width: var(--spacing-ctl-touch); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .seg > button, .seg-ring { transition: none; }
   }
 
   /* A node's settings window: the settings' panels beside the node's own facts, as the top row

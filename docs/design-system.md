@@ -199,16 +199,26 @@ Drawn in the specimen, in both themes:
   2026-11-13).
 - Settings controls (the user's agreement, 2026-11-13, for node settings and queue order): a
   switch (on in `--accent`, a visible label beside it, 44px touch target), a segmented choice (one
-  of a few, such as High, Normal, Low; the chosen part in `--accent`, arrow keys move between
-  parts), and a number stepper (minus, value in mono, plus; typed values allowed, out-of-range
+  of a few, such as High, Normal, Low; arrow keys move between parts), and a number stepper (minus, value in mono, plus; typed values allowed, out-of-range
   refused with the range said).
+- The segmented choice is radio marks (the user's pick, 2026-11-13, option C of
+  [design-system/segmented-options.html](design-system/segmented-options.html), after the first
+  one, an outlined group with an accent line under the chosen part: "especially the underline
+  border, it's pretty bad"). No box and no line: a ring before each word (`--border-strong`), the
+  chosen ring filled in `--accent` with its word heavier and in `--text-1`, so the choice is
+  never colour alone. A part is as wide chosen as not. Hover shades the part (`--surface-3`) and
+  darkens its ring; keyboard focus is the page's own ring around the part, a different mark from
+  the chosen one. Off or read only, nothing is in the accent: the chosen ring is filled in
+  `--text-3`. Parts are 32px high, 28px in dense rows (`small`), 44px on touch or under 520px,
+  and wrap under their row's name when the row is narrow, never past its edge. Used for a node's
+  Priority, the levels of the queue order and the period of the Statistics table. In code:
+  `web/src/ui/Segmented.tsx`, `.seg` in `web/src/styles/components.css`.
 - Floating surfaces: a panel opened from a button (anchored to it) and a window (centred, page
   dimmed behind). Both `--surface` with a hairline and `--shadow-2`, dialog semantics, Escape and a
   close button, focus moves in on open and back to the opener on close. A change is "Unsaved" until
   Save, and "Pending" only after Save while a node has yet to take it.
   Their tokens: `--scrim` dims the page under a window (the page colour, part see-through, so it
-  follows the theme), `--window-width` is the widest a window gets, and `--chosen-line` is the
-  accent line under the chosen part of a segmented choice.
+  follows the theme), and `--window-width` is the widest a window gets.
   In code: `web/src/ui/Stepper.tsx`, `Segmented.tsx` and `Window.tsx`; the page under a window
   cannot be reached while it is open. First used by the
   node settings window (`web/src/features/machines/NodeSettings.tsx`), whose body is the page's
@@ -224,7 +234,7 @@ Drawn in the specimen, in both themes:
   `--pop-height` (640px) tall: its head and foot stay and its body scrolls. It hangs under the
   button that opened it (CSS anchor positioning), and at its host's top right where that button
   has gone or the browser cannot anchor; the panel itself stays open, so what is typed in it is
-  kept. The chosen part of a segmented choice carries `--chosen-line` everywhere. In code:
+  kept. In code:
   `web/src/ui/Float.tsx` (the panel), `Switch.tsx`, and the same `Segmented.tsx` (`small`, 28px
   and inline, for dense rows) and `Stepper.tsx` (`step`) as the window.
 - Queue order (the user's pick, 2026-11-13, option A of

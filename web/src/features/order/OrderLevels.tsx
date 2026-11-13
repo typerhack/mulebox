@@ -33,11 +33,13 @@ const GROUP = "mt-3 text-sm text-ink-2";
 interface RowProps { name: string; note?: string; mono?: boolean; lead?: boolean; value: number; saved: number; words: Record<string, number>;
                      onChange: (level: number) => void; readOnly: boolean }
 
+// The choice keeps to the row's right edge, also when it wraps under a long name: the rings of
+// stacked rows stay in columns.
 function LevelRow({ name, note, mono, lead, value, saved, words, onChange, readOnly }: RowProps) {
   const id = useId();
   return (
-    <li className={cx("flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2", !lead && "border-t border-line first:border-t-0")}>
-      <span id={id} className="min-w-0 font-medium break-words">
+    <li className={cx("flex flex-wrap items-center justify-end gap-x-3 py-2", !lead && "border-t border-line first:border-t-0")}>
+      <span id={id} className="mr-auto min-w-0 font-medium break-words">
         <span className={mono ? "font-mono text-sm" : undefined}>{name}</span>
         {note && <small className="num ml-2 text-sm font-normal text-ink-2">{note}</small>}
       </span>
@@ -141,8 +143,8 @@ export function OrderLevels({ body, draft, edit, readOnly, busy = false }: Props
       <h4 className={HEAD}>GitHub runs</h4>
       <p className={NOTE}>Every GitHub run, against the jobs sent from dev machines.</p>
       <ul>
-        <li className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2">
-          <span id={`${id}-github`} className="min-w-0 font-medium">Every GitHub run</span>
+        <li className="flex flex-wrap items-center justify-end gap-x-3 py-2">
+          <span id={`${id}-github`} className="mr-auto min-w-0 font-medium">Every GitHub run</span>
           <Segmented small choices={levelChoices(body.rules.github, words)} value={draft.github} labelledBy={`${id}-github`} disabled={locked}
             onChange={(level) => edit((rules) => ({ ...rules, github: level }))} />
         </li>

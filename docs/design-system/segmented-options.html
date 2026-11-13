@@ -118,7 +118,9 @@ details[open] > summary { margin-bottom: var(--space-4); }
   .seg.small > button { min-width: var(--ctl-touch); }
 }
 
-/* Today: a grey fill and the accent line under it, in an outlined group. */
+/* Before 1.17.12: a grey fill and the accent line under it, in an outlined group. The line was the
+   token --chosen-line, retired with the user's pick of C; it is kept here for the comparison only. */
+.opt-now { --chosen-line: inset 0 -2px 0 var(--accent); }
 .opt-now .seg > button { margin-left: -1px; border: 1px solid var(--border-strong); background: var(--surface-1); }
 .opt-now .seg > button:first-child { margin-left: 0; border-radius: var(--radius-m) 0 0 var(--radius-m); }
 .opt-now .seg > button:last-child { border-radius: 0 var(--radius-m) var(--radius-m) 0; }
@@ -207,7 +209,7 @@ details[open] > summary { margin-bottom: var(--space-4); }
       <p class="sm dim">Any of the three retires <code>--chosen-line</code> from the segmented choice; tabs keep their own line. A and B show the chosen part in ink, so the design system's sentence "the chosen part in <code>--accent</code>" would change with them; C keeps it. A part keeps its width when chosen, which it does not today.</p>
     </div>
     <details class="opt-now">
-      <summary>The control as it is today, for comparison</summary>
+      <summary>The control as it was before the pick, for comparison</summary>
       <div class="opt-body" data-fill></div>
     </details>
   </section>

@@ -103,7 +103,6 @@
   --radius-meter: calc(var(--space-1) * 0.75);       /* 3px: half a meter's height */
   --shadow-menu: var(--shadow-2);
   --shadow-window: var(--shadow-2);
-  --shadow-chosen: var(--chosen-line);               /* the accent line of a chosen part */
 
   --default-transition-duration: var(--dur-fast);
   --default-transition-timing-function: var(--ease);
