@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.16.4 - 2026-11-13 - patch
+- Roadmap: M14.14 (node settings window) and M23.9 (config reload) done on the real node from the dashboard in real Edge: slots 2 to 3 reached node.toml with no restart, three jobs ran at once, and back to 2 showed pending until the node's next check-in. M23.4 (node priority) still needs a second node.
+
 ## 1.16.3 - 2026-11-13 - patch
 - Node settings window, from Sol's review, each fault first shown by a component test (`NodeSettings.live.test.tsx`, with answers given in a chosen order):
 - An edit made while a save was on its way was lost: the controls stayed usable, and the save's end emptied all edits. Now the stepper, the priority choice and "use the suggested" take nothing until the save is back, and a save forgets only the edits it sent (`unsent` in `web/src/lib/nodeSettings.ts`).
