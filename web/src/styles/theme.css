@@ -41,6 +41,8 @@
   --color-meter-fill: var(--meter-fill);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
+  /* What dims the page behind a window (design-system.md, Floating surfaces). */
+  --color-scrim: color-mix(in srgb, var(--surface-0) 72%, transparent);
   --color-transparent: transparent;
   --color-current: currentColor;
 
@@ -83,6 +85,7 @@
   --spacing-col-l: calc(var(--space-7) * 7);         /* 280px */
   --spacing-col-xl: calc(var(--space-7) * 8.25);     /* 330px */
   --spacing-col-2xl: calc(var(--space-7) * 11);      /* 440px */
+  --spacing-window: calc(var(--space-7) * 20);       /* 800px: a window */
   --spacing-read: 76ch;                              /* a line of prose */
 
   /* Three weights only. */
@@ -97,6 +100,8 @@
 
   --radius-meter: calc(var(--space-1) * 0.75);       /* 3px: half a meter's height */
   --shadow-menu: var(--shadow-2);
+  --shadow-window: var(--shadow-2);
+  --shadow-chosen: inset 0 calc(var(--space-1) / -2) 0 var(--accent);  /* the accent line of a chosen part */
 
   --default-transition-duration: var(--dur-fast);
   --default-transition-timing-function: var(--ease);

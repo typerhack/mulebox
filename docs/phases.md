@@ -467,12 +467,15 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       while Wi-Fi moved 1205 and the VPN tunnel 1098, so the tunnel was not added again. Done 2026-11-10
       (0.85.0): a `net` line under each machine's meters, the user's pick; in real Edge on the deployed
       dashboard it changed live (657 KB/s in, then 166) and fit at 390 px.
-- [ ] M14.14 Node settings window (the user's ask, 2026-11-13: "a setting modal per node", so
+- [~] M14.14 Node settings window (the user's ask, 2026-11-13: "a setting modal per node", so
       the owner decides slots while mulebox keeps suggesting and doing the default). The backend
       is M23.9 and M23.4: `GET|POST /api/machines/<name>/settings` (interfaces-m2.md, Node
       settings). UI mockups made for the user to pick from. Done when: the picked window runs on
       the real dashboard in Edge, shows a node's slots and priority with the suggestion, and a
       change made there reaches the node's node.toml and counts from its next job.
+      Built 2026-11-13 (1.16.2): option C, "Suggested and yours", in the React dashboard, with
+      component tests; seen in headless Edge on made-up data at 390 and 1440 px in both themes.
+      Open: on the real dashboard in Edge.
 - [x] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
       slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
       time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its

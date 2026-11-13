@@ -1,5 +1,5 @@
 // The Machines box of the top row. With one or two machines each gets a full row: state,
-// Pause, CPU and memory meters, slots, network and what it offers. With more, one line per
+// Pause, the settings button, CPU and memory meters, slots, network and what it offers. With more, one line per
 // machine scrolling inside the box, and a link to the Machines page at its foot, so the top
 // row never changes size with the number of machines. Clicking a machine's name shows that
 // machine in CPU, Memory and Disk (docs/design-system.md, More than one machine).
@@ -13,6 +13,7 @@ import { cx } from "../../ui/cx";
 import { Meter } from "../../ui/Meter";
 import { Empty, Panel } from "../../ui/Panel";
 import { QuestionMark } from "../jobs/JobBits";
+import { NodeSettingsButton } from "../machines/NodeSettings";
 import { HostMark, MachinePause, MachineState, Net, Offers, Slots, StepMark, isLive } from "../machines/parts";
 
 const FULL_ROWS = 2;
@@ -42,7 +43,7 @@ function FullRow({ machine, panel, picked, now }: RowProps) {
           <PickName machine={machine} picked={picked} /><HostMark machine={machine} />
           <StepMark machine={machine} notices={panel.notices} />
         </span>
-        <span className="inline-flex items-center gap-2"><MachineState machine={machine} /><MachinePause machine={machine} /></span>
+        <span className="inline-flex items-center gap-2"><MachineState machine={machine} /><MachinePause machine={machine} /><NodeSettingsButton machine={machine} /></span>
       </div>
       <QuestionMark job={alone.job} count={alone.count} />
       {readings.length ? (
@@ -73,7 +74,7 @@ function SlimRow({ machine, panel, picked }: RowProps) {
         <PickName machine={machine} picked={picked}><MachineState machine={machine} iconOnly /></PickName>
         <HostMark machine={machine} /><StepMark machine={machine} notices={panel.notices} />
       </span>
-      <span className="inline-flex items-center gap-2"><Slots machine={machine} words={false} /><MachinePause machine={machine} /></span>
+      <span className="inline-flex items-center gap-2"><Slots machine={machine} words={false} /><MachinePause machine={machine} /><NodeSettingsButton machine={machine} /></span>
     </div>
   );
 }

@@ -7,16 +7,18 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Plugin } from "vite";
 
 import { makeScene } from "./scenes.ts";
+import { answerSettings, withSettings } from "./settings.ts";
 import { answerHistory, historyRows } from "./history.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
+const CONTROLS = process.env.MULEBOX_MOCK_CONTROLS !== "off";
 const TOKEN = "mock-token";
 const now = () => Date.now() / 1000;
 const scene = makeScene(process.env.MULEBOX_MOCK_SCENE);
 const queue = scene?.queue ?? makeQueue();
 let machines = makeMachines(queue, scene?.machines);
 const viewers = new Set<ServerResponse>();
-// A scene has no finished jobs of its own; the History page keeps the default ones.
+// A scene has no finished jobs of its own: the History page then shows the default queue's.
 const history = historyRows(queue.recent.length ? queue.recent : makeQueue().recent, now());
 
 const send = (res: ServerResponse, event: string, data: unknown, id?: number) =>
@@ -34,7 +36,7 @@ const sse = (res: ServerResponse) => res.writeHead(200, { "Content-Type": "text/
 const snapshot = () => ({ now: now(), ...queue });
 function panel() {
   const live = machines.filter((m) => m.state !== "offline");
-  return { machines, total: machines.length, online: live.length, free_slots: live.reduce((sum, m) => sum + m.free_slots, 0),
+  return { machines: machines.map(withSettings), total: machines.length, online: live.length, free_slots: live.reduce((sum, m) => sum + m.free_slots, 0),
            notices: CLEAN ? [] : [{ kind: "client", level: "warning", name: "laptop.local",
                        text: `Dev machine laptop.local runs mulebox 0.0.1, the node ${VERSION}.`, fix: "Upgrade mulebox on it: `pipx upgrade mulebox` (or `uv tool upgrade mulebox` if uv installed it)." },
                      ...machines.filter((m) => m.version !== VERSION).map((m) => ({ kind: "worker", level: "danger", name: m.name,
@@ -110,7 +112,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
   const jobMatch = /^\/api\/jobs\/([^/]+)(?:\/(.*))?$/.exec(path);
   const machineMatch = /^\/api\/machines\/([^/]+)\/control$/.exec(path);
   if (path === "/healthz") return json(res, { ok: true, version: VERSION, lan: false, sign_in: false });
-  if (path === "/api/session") return json(res, { action_token: TOKEN, cancel_token: TOKEN });
+  if (path === "/api/session") return json(res, { action_token: CONTROLS ? TOKEN : null, cancel_token: null });
   if (path === "/api/queue") return json(res, snapshot());
   if (path === "/api/machines") return json(res, panel());
   if (path === "/api/history") {
@@ -135,6 +137,15 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
     const timer = setInterval(() => send(res, "metrics", sample(now())), 2000);
     res.on("close", () => { clearInterval(timer); viewers.delete(res); });
     return undefined;
+  }
+  const settingsMatch = /^\/api\/machines\/([^/]+)\/settings$/.exec(path);
+  if (settingsMatch) {
+    const row = machines.find((m) => m.name === decodeURIComponent(settingsMatch[1]));
+    if (!row) return text(res, "no such machine", 404);
+    if (post && !CONTROLS) return text(res, "405: Method Not Allowed", 405);
+    const { status, body: answer } = answerSettings(row, post ? await body(req) : null, CONTROLS, publish);
+    if (post) publish();
+    return typeof answer === "string" ? text(res, answer, status) : json(res, answer, status);
   }
   if (machineMatch && post) {
     const row = machines.find((m) => m.name === decodeURIComponent(machineMatch[1]));

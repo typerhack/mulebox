@@ -7,6 +7,11 @@
 //   downloads: the Down meter in each state, on agent jobs and GitHub runs: a known total, no
 //          total, no bytes for a while (each), the node's traffic only, a long name, a size alone,
 //          and a GitHub run frozen and boosted (the narrowest card).
+//   settings: the split queue, with node settings in every state the window shows: build-1
+//          as suggested, build-2 with a saved change it could not take, build-3 (with
+//          MULEBOX_MOCK_MACHINES=3 or more) on an older mulebox. A change saved in the window
+//          is pending for 6 s, then the node has it. MULEBOX_MOCK_CONTROLS=off turns the
+//          controls off, so the window is read only.
 
 import { job, type MockJob } from "./fixtures.ts";
 
@@ -87,8 +92,14 @@ function downloads() {
   return { running, queued: [] as MockJob[], machines: { "build-1": { slots: 4, state: "busy" }, "build-2": { slots: 2, state: "busy" } } };
 }
 
+// What each node's settings start as (dev/settings.ts fills in the rest).
+export const SETTINGS_SCENE: Record<string, More> = {
+  "build-2": { pending: { slots: 3, priority: "fallback" }, error: "node.toml is a symlink, which is never written through" },
+  "build-3": { old: true },
+};
+
 export function makeScene(name: string | undefined) {
-  const made = name === "split" ? split() : name === "wide" ? wide() : name === "downloads" ? downloads() : null;
+  const made = name === "split" || name === "settings" ? split() : name === "wide" ? wide() : name === "downloads" ? downloads() : null;
   if (!made) return null;
   made.queued.forEach((row: MockJob, index) => { row.position = index + 1; row.elapsed_s = 25 * (index + 1); });
   return { queue: { running: made.running as MockJob[], queued: made.queued as MockJob[], recent: [] as MockJob[] }, machines: made.machines };

@@ -1,5 +1,5 @@
 // The Machines page: every machine with its state, readings, slots, offers, version and when
-// it was last seen, sortable, with its Pause button and a way to show it in the top row. On a
+// it was last seen, sortable, with its Pause and settings buttons and a way to show it in the top row. On a
 // narrow screen each machine is a card and the sort is a select.
 
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
@@ -13,6 +13,7 @@ import { hostOf, pick, pickStore } from "../../state/picked";
 import { IconButton } from "../../ui/Button";
 import { MeterBar } from "../../ui/Meter";
 import { Empty, Panel } from "../../ui/Panel";
+import { NodeSettingsButton } from "./NodeSettings";
 import { HostMark, MachinePause, MachineState, Net, Offers, Slots, StepMark, isLive, shownState } from "./parts";
 
 const ORDER = ["busy", "draining", "paused", "idle", "offline"];
@@ -108,7 +109,7 @@ export function MachinesPage() {
                         label={`Show ${m.name} in CPU, Memory and Disk`}>
                         <Eye aria-hidden className="size-icon-s" />
                       </IconButton>
-                      <MachinePause machine={m} />
+                      <MachinePause machine={m} /><NodeSettingsButton machine={m} />
                     </span>
                   </td>
                 </tr>

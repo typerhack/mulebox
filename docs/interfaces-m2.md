@@ -357,6 +357,9 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 - GET reads the dashboard's read-only store; POST sends `node_settings` through the canceller's
   `mulebox rpc`, as `mulebox machine config` does. While a change waits, `/api/events` sends a
   `machines` event with `settings_pending` true, and another once it applied.
+- The page's window for it is `web/src/features/machines/NodeSettings.tsx`: it reads on open
+  and again when the machine's row changes, and sends only the settings that differ from what
+  was last sent; one pending setting is dropped by asking for the value the node has.
 
 ## Server-Sent Events
 

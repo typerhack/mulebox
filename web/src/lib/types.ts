@@ -133,6 +133,8 @@ export interface Machine {
   jobs: Job[];
   host?: boolean;
   version?: string | null;
+  priority?: string | null;       // null before the worker reported its settings
+  settings_pending?: boolean;     // a change from afar waits for the node (Node settings)
 }
 
 export interface Notice {
