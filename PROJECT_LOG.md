@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.16.5 - 2026-11-13 - patch
+- AGENTS.md hard rule 11 (the user's): every model loads the frontend-design skill before any UI step, the lead agent too when it merges or checks UI work, and every subagent prompt that touches UI says so.
+
 ## 1.16.4 - 2026-11-13 - patch
 - Roadmap: M14.14 (node settings window) and M23.9 (config reload) done on the real node from the dashboard in real Edge: slots 2 to 3 reached node.toml with no restart, three jobs ran at once, and back to 2 showed pending until the node's next check-in. M23.4 (node priority) still needs a second node.
 

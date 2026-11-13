@@ -39,6 +39,13 @@ product work, not a personal script.
     colors, type, space, corners and motion come only from its
     [tokens.css](docs/design-system/tokens.css), never typed into a component. A change to the
     system is made there first, with the user's agreement.
+11. **Load the frontend-design skill before any UI step.** Whatever model you are, before you
+    design, build, fix, port, review or check anything on a screen (the dashboard, a page, a
+    mockup, a design option), load Anthropic's frontend-design skill
+    (`frontend-design:frontend-design`) first, then follow the design system (rule 10). This holds
+    for the lead agent too, also when it only merges or checks UI work in a browser. Every
+    subagent prompt that touches UI tells it to load the skill as its first step. No exceptions
+    (the user's rule, 2026-11-13).
 
 ## Tests
 
