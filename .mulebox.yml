@@ -2,8 +2,10 @@
 project: mulebox
 needs: [cache-pip]
 setup: python3 -m venv .venv && .venv/bin/pip install -q --disable-pip-version-check -e '.[dev]'
+github_status: true
 jobs:
   check: .venv/bin/python -m pytest -n auto
+  broken: "false"
 # Docs alone never need a run: an edit there gives back the last passed result (the same list as
 # paths-ignore in .github/workflows/ci.yml; tests/test_ci_workflow.py keeps the two equal).
 ignore_changes: [README.md, AGENTS.md, CLAUDE.md, PROJECT_LOG.md, LICENSE, VERSION, "docs/*.md", "docs/*.html"]
