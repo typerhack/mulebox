@@ -237,6 +237,29 @@ def test_rules_merge_entry_by_entry_normal_removes_and_reset_clears(store, stagi
         assert conn.execute("SELECT 1 FROM meta WHERE key = 'line_rules'").fetchone() is None
 
 
+def test_the_rules_say_each_projects_last_run_and_its_runs_of_the_last_seven_days(store, staging):
+    day, now = 24 * HOUR, 100 * 24 * HOUR
+    queued(store, staging, now=now - 40 * day, project="old-drill")
+    queued(store, staging, now=now - 8 * day, project="example-app")
+    for age in (6 * day, 2 * HOUR):
+        queued(store, staging, now=now - age, project="example-app")
+    waited = queued(store, staging, now=now - 9 * day, project="example-api")  # sent 9 days ago,
+    with store.write() as conn:                                                # started 3 days ago
+        conn.execute("UPDATE jobs SET started_at = ? WHERE job_id = ?", (now - 3 * day, waited))
+    reserve(store, staging, now=now - HOUR)                                      # a GitHub run
+    body = rules(store, staging, now=now, projects={"never-ran": 1})
+    assert body["now"] == now
+    assert body["project_activity"] == [
+        {"name": "example-api", "last_run": now - 3 * day, "runs_7d": 1},
+        {"name": "example-app", "last_run": now - 2 * HOUR, "runs_7d": 2},
+        {"name": "example-org__example-app", "last_run": now - HOUR, "runs_7d": 1},
+        {"name": "old-drill", "last_run": now - 40 * day, "runs_7d": 0},
+    ]
+    # The names alone, as before; a level for a project with no job has no entry in either.
+    assert body["projects"] == [entry["name"] for entry in body["project_activity"]]
+    assert body["rules"]["projects"] == {"never-ran": 1}
+
+
 def test_an_unreadable_stored_value_falls_back_to_the_defaults(store, staging):
     with store.write() as conn:
         conn.execute("INSERT INTO meta (key, value) VALUES ('line_rules', 'not json')")

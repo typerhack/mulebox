@@ -49,6 +49,12 @@ export function ago(seconds: number | null | undefined, now: number): string {
   return `${Math.round(gone / 86400)} days ago`;
 }
 
+// A day short enough for a row: "3 Oct", with its year once that is not this one.
+export function day(seconds: number, now: number): string {
+  const date = new Date(seconds * 1000), sameYear = date.getFullYear() === new Date(now * 1000).getFullYear();
+  return date.toLocaleDateString([], { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }) });
+}
+
 // A link target only when it is really http(s): stored values never become script URLs.
 export function safeUrl(text: string | null | undefined): string | null {
   if (!text) return null;

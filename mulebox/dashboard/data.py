@@ -71,10 +71,10 @@ class DashboardData:
     def queue_snapshot(self, now: float) -> dict[str, Any]:
         return snapshot(self.queue_jobs(now), now)
 
-    def queue_rules(self) -> dict[str, Any]:
+    def queue_rules(self, now: float) -> dict[str, Any]:
         """The order rules and the projects to set them for (line_rules.body)."""
         with self.store.read() as conn:
-            return line_rules.body(conn)
+            return line_rules.body(conn, now)
 
     def machines(self, now: float) -> dict[str, Any]:
         return self.fleet(now)[0]

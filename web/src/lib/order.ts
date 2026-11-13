@@ -5,7 +5,7 @@
 import { ArrowDown, Clock, Flag, GitBranch, Hand, Hourglass, Repeat, Timer, Workflow, type LucideIcon } from "lucide-react";
 
 import type { Choice } from "../ui/Segmented";
-import { roughly, shortId } from "./format";
+import { ago, day, roughly, shortId } from "./format";
 import type { Job, OrderPart, Rules, RulesBody } from "./types";
 
 export type LevelMap = "projects" | "branches" | "workflows";
@@ -57,6 +57,36 @@ export function applyChange(rules: Rules, change: Partial<Rules>): Rules {
 
 export const isDirty = (saved: Rules, draft: Rules) => Object.keys(changeOf(saved, draft)).length > 0;
 export const isDefault = (body: RulesBody) => !isDirty(body.defaults, body.rules);
+
+// The projects to set a level for, every one the node has seen and every one with a level, in
+// two lists: those with a job or a GitHub run in the last seven days (or one waiting now), by
+// name, then the rest, the latest run first and one that never ran last. `flat` when the answer
+// does not say how the projects were used: then there is one list, as before.
+export interface ProjectRow { name: string; last_run: number | null; runs_7d: number; waiting: number }
+export const OTHER_SHOWN = 3;
+
+export function projectGroups(body: RulesBody, draft: Rules, waiting: Record<string, number> = {}) {
+  const used = new Map((body.project_activity ?? []).map((entry) => [entry.name, entry]));
+  const names = [...new Set([...body.projects, ...used.keys(), ...Object.keys(body.rules.projects), ...Object.keys(draft.projects)])];
+  const rows: ProjectRow[] = names.map((name) =>
+    ({ name, last_run: used.get(name)?.last_run ?? null, runs_7d: used.get(name)?.runs_7d ?? 0, waiting: waiting[name] ?? 0 }));
+  if (!body.project_activity) return { flat: true, active: rows, other: [] };
+  const isActive = (row: ProjectRow) => row.runs_7d > 0 || row.waiting > 0;
+  const byName = (a: ProjectRow, b: ProjectRow) => a.name.localeCompare(b.name);
+  return { flat: false, active: rows.filter(isActive).sort(byName),
+           other: rows.filter((row) => !isActive(row)).sort((a, b) => (b.last_run ?? 0) - (a.last_run ?? 0) || byName(a, b)) };
+}
+
+// The one fact beside a project's name: what waits now, else how much it ran this week and when
+// last; for a project not used this week, the day of its last run.
+export function projectNote(row: ProjectRow, now: number, flat = false): string | undefined {
+  const waits = row.waiting ? `${row.waiting} waiting` : undefined;
+  if (flat) return waits;
+  const runs = `${row.runs_7d} ${row.runs_7d === 1 ? "run" : "runs"}`;
+  if (waits) return row.runs_7d ? `${waits}, ${runs}` : waits;
+  if (row.runs_7d) return `${runs}, last ${ago(row.last_run, now).replace(/^now$/, "just now")}`;
+  return row.last_run ? `last run ${day(row.last_run, now)}` : "no run yet";
+}
 
 // How many levels are set: the entries that are not normal, and GitHub runs when not normal.
 export function levelsSet(rules: Rules): number {

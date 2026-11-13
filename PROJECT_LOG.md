@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.7 - 2026-11-13 - patch
+- The Order panel's project levels listed every project the node had ever seen in one flat list, about twenty of them old drills on the user's node. The user (2026-11-13): "I'd rather have all the projects here. Maybe a user wants to work on a project 2 years from now; he needs to have a record. But we say: these are used in the past 7 days, these are active. You still can use the others." So nothing is hidden or dropped: the list is split into "Active in the last 7 days" (a job or a GitHub run in that time, or one waiting now; by name, each with its fact, such as "12 runs, last 2 h ago" or "1 waiting, 6 runs") and "Other projects" (the latest run first, "last run 3 Oct", with the year once it is another one; a project with a level that never sent a job says "no run yet"). Every row is as settable as before, and a level shows wherever its project's use puts it.
+- A rest of more than four shows its latest three and a button, "Show 15 more", that opens the others in place (`aria-expanded`, `aria-controls`, like the waiting list's); it starts open when a level is set among the hidden ones, and then stays as the viewer left it.
+- API, backwards compatible: `queue_rules_ok` and `GET|POST /api/queue/rules` keep `projects` as the list of names and gain `project_activity: [{name, last_run, runs_7d}]` and `now` (`line_rules.project_activity`). One pass over the job history in place of the pass that listed the names, measured on a store of 20000 jobs of 25 projects: 7 ms against 5. No schema change. A page given no `project_activity` shows the one list it showed before.
+- Tests: the query (a project last used 40 days ago, runs 8 and 6 days and 2 hours old, a job sent 9 days ago and started 3 days ago, a GitHub run, a project with a level and no job), the dashboard's API, and the panel (`order.projects.test.tsx`: the split and its order, a level given to an old project, the long rest closed and open, a waiting project as active, the answer without activity). The `order` scene of `npm run dev` has six active projects and eighteen others.
+- Seen in headless Chrome on the `order` scene at 1440 and 390 px in both themes: the rest closed and, opened with Enter on its button, all eighteen rows; nothing past the edge, every control 44 px at 390, no console errors but the stand-in server's missing favicon.
+- Docs: design.md (Order of the line), interfaces-m1.md and interfaces-m2.md.
+
 ## 1.17.6 - 2026-11-13 - patch
 - A floating panel keeps the focus when its focused control turns disabled (`ui/Float.tsx`): after Save in the Order panel the focus dropped to the page, so Escape no longer closed it (seen on the deployed dashboard). Roadmap: M14.15 done, a project level set in the panel reordered a real line on the node with each row saying why.
 

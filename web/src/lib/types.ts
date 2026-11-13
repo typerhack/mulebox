@@ -111,11 +111,17 @@ export interface Rules {
   fair_turns: boolean;
 }
 
+// A known project's use: when its latest job or GitHub run started, and how many it had in the
+// last seven days.
+export interface ProjectActivity { name: string; last_run: number | null; runs_7d: number }
+
 export interface RulesBody {
   rules: Rules;
   defaults: Rules;
   levels: { min: number; max: number; words: Record<string, number> };
   projects: string[];
+  project_activity?: ProjectActivity[];  // absent from a coordinator before 1.17.7
+  now?: number;
 }
 
 export interface Step {

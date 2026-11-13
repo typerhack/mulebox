@@ -20,7 +20,23 @@ def test_the_rules_are_read_from_the_store_with_their_defaults(call, store, stag
     assert status == 200 and body["rules"] == body["defaults"]
     assert body["defaults"]["aging_min"] == 30 and body["rules"]["fair_turns"] is False
     assert body["projects"] == ["example-app"]
+    assert body["project_activity"] == [{"name": "example-app", "last_run": NOW, "runs_7d": 1}]
+    assert body["now"] == NOW
     assert body["levels"] == {"min": -3, "max": 3, "words": {"low": -1, "normal": 0, "high": 1}}
+
+
+def test_a_project_last_used_long_ago_is_still_listed_with_no_runs_this_week(call, store, staging):
+    queued(store, staging, now=NOW - 30 * 86400, project="old-drill")
+    queued(store, staging, now=NOW - 3600, project="example-app")
+
+    async def go(client):
+        return await (await client.get("/api/queue/rules")).json()
+
+    body = call(go)
+    assert body["projects"] == ["example-app", "old-drill"]
+    assert body["project_activity"] == [
+        {"name": "example-app", "last_run": NOW - 3600, "runs_7d": 1},
+        {"name": "old-drill", "last_run": NOW - 30 * 86400, "runs_7d": 0}]
 
 
 def test_a_change_and_a_reset_go_through_the_coordinator(lan):

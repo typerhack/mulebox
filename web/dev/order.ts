@@ -10,10 +10,25 @@ const MAPS = ["projects", "branches", "workflows"] as const;
 const defaults = (): Rules => ({ projects: {}, branches: {}, workflows: {}, github: 0, aging_min: 30, shortest_first: false, fair_turns: false });
 const PROJECTS = ["docs-site", "example-api", "example-app", "example-org__example-api", "example-worker"];
 
+// What the node remembers of each project: [runs in the last seven days, hours since the last
+// one]. Five in use, then the long tail a node gathers: drills and projects set aside.
+const DAY = 24;
+const USED: Record<string, [number, number]> = {
+  "docs-site": [4, 0.2], "example-api": [1, 5 * DAY], "example-app": [12, 2], "example-org__example-api": [31, 0.01],
+  "example-worker": [3, 26], "example-storefront-checkout": [6, 0.01], "example-reports": [0, 9 * DAY], "example-billing": [0, 16 * DAY],
+  "example-org__example-billing": [0, 23 * DAY], "example-mobile-api": [0, 41 * DAY], "example-search": [0, 44 * DAY],
+  ...Object.fromEntries(Array.from({ length: 12 }, (_, i) => [`drill-compose-${String(i + 1).padStart(2, "0")}`, [0, (60 + 9 * i) * DAY]])),
+  "example-legacy-importer": [0, 420 * DAY],
+};
+
 let rules = defaults();
 
-export const rulesBody = () =>
-  ({ rules, defaults: defaults(), levels: { min: -3, max: 3, words: { low: -1, normal: 0, high: 1 } }, projects: PROJECTS });
+export function rulesBody() {
+  const now = Date.now() / 1000;
+  const names = [...new Set([...PROJECTS, ...Object.keys(USED)])].sort();
+  return { rules, defaults: defaults(), levels: { min: -3, max: 3, words: { low: -1, normal: 0, high: 1 } }, projects: names, now,
+           project_activity: names.map((name) => ({ name, last_run: now - USED[name][1] * 3600, runs_7d: USED[name][0] })) };
+}
 
 // The new rules, or the coordinator's refusal as text.
 export function changeRules(body: Record<string, unknown>): string | null {

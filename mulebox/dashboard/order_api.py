@@ -1,6 +1,7 @@
 """The order rules of the line on the dashboard (interfaces-m2.md, HTTP API).
 
-    GET  /api/queue/rules   the rules, their defaults, the levels and the known projects
+    GET  /api/queue/rules   the rules, their defaults, the levels and the known projects,
+                            each with its last run and its runs of the last seven days
     POST /api/queue/rules   {"rules": {...}} changes some (maps merge entry by entry, a level of
                             0 removes one), or {"reset": true} brings back the defaults
 
@@ -24,7 +25,8 @@ _log = get_logger(__name__)
 
 
 async def rules(request: web.Request) -> web.Response:
-    return web.json_response(await asyncio.to_thread(request.app[keys.DATA].queue_rules))
+    return web.json_response(await asyncio.to_thread(request.app[keys.DATA].queue_rules,
+                                                      request.app[keys.CLOCK]()))
 
 
 async def change(request: web.Request) -> web.Response:

@@ -195,6 +195,16 @@ another stored number is shown as it is). The page edits a copy and sends only w
 shows a short reason built from `order` (`placeOf`), with `place_reason` in full as its tooltip and
 on the job's page. With the controls off the panel is read-only.
 
+**Every project keeps its level row (the user, 2026-11-13).** The node never forgets a project: one
+last used two years ago can still be given a level. The panel only says which are in use. Projects
+with a job or a GitHub run in the last seven days (or one waiting now) come first, under "Active in
+the last 7 days", by name, each with its runs and how long ago the last one was; the rest follow
+under "Other projects", the latest run first, with the day of that run, and one with a level that
+never sent a job last. A rest of more than four shows its latest three and a button that opens the
+others in place; it starts open when a level is set among them, so a set level is never out of
+sight. The facts come with the rules (`project_activity`, `line_rules.project_activity`): one pass
+over the job history per read, 7 ms on 20000 jobs.
+
 **Explainable.** While any rule is on, every waiting row says why it is where it is: `place_reason`
 (such as `project example-app +1; waited 30m or more +1; turn 2 of example-app; then by arrival`)
 and `order` (`by_hand`, `level`, `levels` with the rule each came from, `turn`, `usual_s`,
