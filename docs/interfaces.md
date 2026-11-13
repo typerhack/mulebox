@@ -71,8 +71,9 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
 - `SSHUnavailable(MuleboxError)` (connection failed, ssh exit 255),
   `RemoteError(MuleboxError)` (remote command failed; carries `exit_code`, `stderr`).
 - `ssh_base_argv(target: str, connect_timeout_s: int = 10) -> list[str]`:
-  `ssh -T -o BatchMode=yes -o ConnectTimeout=<n> <target>` (ControlMaster is left to the
-  user's ssh config).
+  `ssh -T -o BatchMode=yes -o ConnectTimeout=<n> -o ServerAliveInterval=10
+  -o ServerAliveCountMax=3 <target>`: a node that vanishes fails the call in about 30 s, so the
+  reconnect starts (ControlMaster is left to the user's ssh config).
 - `run_remote(target: str, argv: Sequence[str], *, stdin: bytes | None = None,
   timeout_s: float | None = None, connect_timeout_s: int = 10) -> RemoteResult`
   where `RemoteResult(exit_code: int, stdout: bytes, stderr: bytes)`. The remote command is

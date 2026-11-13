@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.14.2 - 2026-11-13 - patch
+- ssh calls send a keepalive every 10 s and give up after 3 unanswered (`common/ssh.py`): when the node went down mid-check, `mulebox check` sat silent for over 10 minutes waiting for the operating system to drop the connection; now the call fails in about 30 s and the client's "connection lost, reconnecting" shows. A quiet job is not affected, as the node's ssh answers the keepalive.
+
 ## 1.14.1 - 2026-11-12 - patch
 - Roadmap: M23.11, CI package caches without the slow download: GitHub's cache restore over the node's VPN tunnel stalls and holds a setup step for actions/cache's 10-minute timeout; first a 1-minute timeout, then caches kept on the node per isolated place.
 

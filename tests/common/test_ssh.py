@@ -78,9 +78,10 @@ def py(code: str, *args: str) -> list[str]:
 
 def test_base_argv_matches_contract():
     assert ssh.ssh_base_argv("build-1") == [
-        "ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10", "build-1",
-    ]
-    assert ssh.ssh_base_argv("alice@build-1", 3)[-2:] == ["ConnectTimeout=3", "alice@build-1"]
+        "ssh", "-T", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+        "-o", "ServerAliveInterval=10", "-o", "ServerAliveCountMax=3", "build-1",
+    ]  # the keepalive: a node gone mid-job fails the call in ~30 s, not 10+ min
+    assert "ConnectTimeout=3" in ssh.ssh_base_argv("alice@build-1", 3)
 
 
 @pytest.mark.parametrize(
@@ -153,7 +154,8 @@ def test_nasty_arguments_arrive_unchanged(fake_ssh, tmp_path):
     assert json.loads(result.stdout) == NASTY
     assert not (tmp_path / "PWNED").exists()
     logged = json.loads(fake_ssh.read_text())
-    assert logged[:7] == ssh.ssh_base_argv("build-1")[1:] + ["--"]
+    base = ssh.ssh_base_argv("build-1")[1:] + ["--"]
+    assert logged[:len(base)] == base
 
 
 def test_run_remote_passes_stdin_and_collects_output(fake_ssh):

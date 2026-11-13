@@ -1,6 +1,7 @@
 """SSH transport: run a fixed remote executable on a node (docs/design.md).
 
-Every call is `ssh -T -o BatchMode=yes -o ConnectTimeout=<n> <target> -- <command>`, run
+Every call is `ssh -T -o BatchMode=yes -o ConnectTimeout=<n> -o ServerAliveInterval=10
+-o ServerAliveCountMax=3 <target> -- <command>`, run
 with an argument list (never a local shell). The remote command is `shlex.join(argv)`, so
 each argument reaches the remote program unchanged after the remote POSIX shell parses it.
 Never build a remote command string any other way.
@@ -8,6 +9,11 @@ Never build a remote command string any other way.
 Exit code 255 from ssh means the connection failed (SSHUnavailable). Any other non-zero exit
 is the remote command failing (RemoteError). A remote program that itself exits 255 is
 indistinguishable from a connection failure; mulebox executables do not use that code.
+
+The keepalive makes a connection whose node vanished (powered off, off the network) fail in
+about 30 s with 255, so the caller's reconnect and its message start; without it, ssh waited for
+the operating system to give up on the connection, which took over 10 minutes (2026-11-12). A
+quiet job is not affected: the keepalive is answered by the node's ssh, not the job.
 """
 
 from __future__ import annotations
@@ -20,6 +26,9 @@ from dataclasses import dataclass
 from typing import IO
 
 from mulebox.common.errors import MuleboxError
+
+ALIVE_INTERVAL_S = 10  # a keepalive every 10 s; 3 unanswered end the connection (~30 s)
+ALIVE_COUNT = 3
 
 SSH_BINARY = "ssh"  # tests point this at a fake script
 STDERR_KEEP_BYTES = 64 * 1024  # stderr kept by stream_remote (the last part)
@@ -76,6 +85,8 @@ def ssh_base_argv(target: str, connect_timeout_s: int = 10,
         SSH_BINARY, "-T",
         "-o", "BatchMode=yes",
         "-o", f"ConnectTimeout={connect_timeout_s}",
+        "-o", f"ServerAliveInterval={ALIVE_INTERVAL_S}",
+        "-o", f"ServerAliveCountMax={ALIVE_COUNT}",
         *options,
         target,
     ]
