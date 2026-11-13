@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.17 - 2026-11-13 - patch
+- A Mac node's worker could not reach its coordinator on the local network: `ssh: connect to host ... port 22: No route to host`, while the same ssh from Terminal worked. macOS asks a person before a program reaches the local network, and for a launchd agent it asks about the agent's program, Homebrew's Python, without ever showing the question; turning on the "Python" entry in Privacy & Security, Local Network did not help. Seen on the first real Mac node (M21), with every Homebrew Python (3.13 to 3.15) refused from launchd and Apple's `nc` let through.
+- `common/disclaim.py`: in a mulebox launchd service on a Mac (the plist now sets `MULEBOX_SERVICE=launchd`), `ssh` is started through `python -m mulebox.common.disclaim`, which spawns it with `responsibility_spawnattrs_setdisclaim`, as Terminal starts a shell, so Apple's `ssh` answers for itself and needs no permission. It keeps stdin, stdout and stderr, passes on SIGTERM, SIGINT and SIGHUP, and gives back the exit code (255 if it cannot start). Nothing changes on Linux or for a dev machine's own commands. On the real Mac the worker then came online through it. Tests in `tests/common/test_disclaim.py` (real spawns on macOS) and `tests/services/test_launchd.py`; docs/install.md and docs/interfaces.md.
+
 ## 1.17.16 - 2026-11-13 - patch
 - A Mac node with Docker Desktop was set up as offering "plain jobs" and "no Docker": `mulebox node-offers` ran `docker` with the ssh login's `PATH`, which on a Mac lacks `/usr/local/bin`, where Docker Desktop puts it. It now runs with the `PATH` the services get (`services/manager.py`, `service_path()`, the launchd agents' search path on a Mac, the inherited one on Linux), so it finds what a job finds. Seen on the first real Mac node (M21): after the fix setup said "it offers: docker". Test in `tests/worker/test_offers.py`; docs/install.md, A Mac as a node.
 

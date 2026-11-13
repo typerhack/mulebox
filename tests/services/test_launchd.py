@@ -62,6 +62,8 @@ def test_the_definition_runs_the_service_and_restarts_it_only_on_failure(tmp_pat
     assert plist["RunAtLoad"] is True
     assert plist["StandardOutPath"] == "/Users/alice/Library/Logs/mulebox/worker.log"
     assert plist["EnvironmentVariables"]["PYTHONUNBUFFERED"] == "1"
+    assert plist["EnvironmentVariables"]["MULEBOX_SERVICE"] == "launchd"  # ssh disclaimed
+
     assert "Nice" not in plist and definition("dashboard", Path("/x"), "")["Nice"] == 10
 
 

@@ -25,7 +25,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from mulebox.common import command
+from mulebox.common import command, disclaim
 from mulebox.services.base import MISSING, PREFIX, RUNNING, SERVICES, STOPPED, ServiceError, \
     Say, check_name, wanted
 from mulebox.services.launchd_runners import LaunchdRunners
@@ -56,7 +56,8 @@ def definition(name: str, home: Path, path: str) -> dict[str, Any]:
     plist: dict[str, Any] = {
         "Label": label(name),
         "ProgramArguments": [str(home / ".mulebox" / "bin" / "mulebox"), name, "serve"],
-        "EnvironmentVariables": {"PYTHONUNBUFFERED": "1", "PATH": path},
+        "EnvironmentVariables": {"PYTHONUNBUFFERED": "1", "PATH": path,
+                                 disclaim.SERVICE_ENV: "launchd"},
         "WorkingDirectory": str(home),
         "RunAtLoad": True,
         "KeepAlive": {"SuccessfulExit": False},

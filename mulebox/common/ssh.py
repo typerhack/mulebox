@@ -25,6 +25,7 @@ from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from typing import IO
 
+from mulebox.common import disclaim
 from mulebox.common.errors import MuleboxError
 
 ALIVE_INTERVAL_S = 10  # a keepalive every 10 s; 3 unanswered end the connection (~30 s)
@@ -82,6 +83,7 @@ def ssh_base_argv(target: str, connect_timeout_s: int = 10,
     if connect_timeout_s < 1:
         raise SSHError(f"connect timeout must be at least 1 second, got {connect_timeout_s}")
     return [
+        *disclaim.prefix(),  # a Mac service's ssh reaches the local network (common/disclaim.py)
         SSH_BINARY, "-T",
         "-o", "BatchMode=yes",
         "-o", f"ConnectTimeout={connect_timeout_s}",

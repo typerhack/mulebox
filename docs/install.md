@@ -89,6 +89,13 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   for the node's roles, with their output in `~/Library/Logs/mulebox/<name>.log`.
 - Docker Desktop's `docker` is in `/usr/local/bin`, which an ssh login does not have on `PATH`
   either; setup looks for it with the `PATH` the services get, so it finds what a job will find.
+- macOS lets a program reach the local network only once a person allows it (Privacy & Security,
+  Local Network), and for a launchd agent it asks about the agent's program, Homebrew's Python,
+  without ever showing the question: the worker's ssh to the coordinator failed with `No route to
+  host`. So a service starts `ssh` as its own responsible process (`common/disclaim.py`), as
+  Terminal does for its shell; Apple's `ssh` needs no permission. A job's own processes are still
+  the agent's, so a job that reaches another machine on the local network (the internet is not
+  asked about) may be refused the same way; not seen yet.
 - They start when the user logs in, not at boot. For a node that comes back by itself after a
   restart, turn on automatic login for that user (System Settings, Users & Groups); FileVault
   must be off for that. With nobody logged in on the screen, setup starts them in the user's

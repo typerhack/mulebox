@@ -76,7 +76,9 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
 - `ssh_base_argv(target: str, connect_timeout_s: int = 10) -> list[str]`:
   `ssh -T -o BatchMode=yes -o ConnectTimeout=<n> -o ServerAliveInterval=10
   -o ServerAliveCountMax=3 <target>`: a node that vanishes fails the call in about 30 s, so the
-  reconnect starts (ControlMaster is left to the user's ssh config).
+  reconnect starts (ControlMaster is left to the user's ssh config). In a launchd service on a Mac, the argv
+  starts with `python -m mulebox.common.disclaim`, which starts `ssh` as its own responsible
+  process, so macOS lets it reach the local network (install.md, A Mac as a node).
 - `run_remote(target: str, argv: Sequence[str], *, stdin: bytes | None = None,
   timeout_s: float | None = None, connect_timeout_s: int = 10) -> RemoteResult`
   where `RemoteResult(exit_code: int, stdout: bytes, stderr: bytes)`. The remote command is
