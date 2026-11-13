@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: segmented choice, three options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<style>
+/* A mockup for the user to pick from (2026-11-13). Every colour, space, corner and duration is a
+   token of tokens.css; the sizes below are the ones web/src/styles/theme.css derives from tokens. */
+:root {
+  color-scheme: light;
+  --hair: calc(var(--space-1) / 2);          /* 2px */
+  --icon-s: calc(var(--icon) - 2px);         /* 14px */
+  --ctl-s: calc(var(--space-1) * 7);         /* 28px */
+  --ctl: calc(var(--space-1) * 8);           /* 32px */
+  --tab: calc(var(--space-1) * 8.5);         /* 34px */
+  --ctl-touch: calc(var(--space-1) * 11);    /* 44px */
+  --phone: calc(var(--space-1) * 97.5);      /* 390px */
+  --panel-w: calc(var(--space-7) * 11.5);    /* 460px: a setting's panel in the window */
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; background: var(--surface-0); color: var(--text-1); font: var(--text-base)/1.5 var(--font-ui); }
+h1, h2, h3, h4, p, ul { margin: 0; padding: 0; }
+ul { list-style: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+code { font-family: var(--font-mono); font-size: 0.92em; }
+svg { flex: none; width: var(--icon); height: var(--icon); fill: none; stroke: currentColor; stroke-width: var(--icon-stroke); stroke-linecap: round; stroke-linejoin: round; }
+:focus-visible, .is-focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sm { font-size: var(--text-sm); }
+.dim { color: var(--text-2); }
+
+/* The page around the options. */
+.page { max-width: calc(var(--space-8) * 25); margin: 0 auto; padding: var(--space-5) var(--gutter) var(--space-8); display: grid; gap: var(--space-7); }
+.top { display: flex; flex-wrap: wrap; align-items: start; justify-content: space-between; gap: var(--space-3); }
+.top h1 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+.lede { max-width: 76ch; display: grid; gap: var(--space-2); margin-top: var(--space-2); color: var(--text-2); }
+.lede q { color: var(--text-1); }
+.plain-btn { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--ctl); padding: 0 var(--space-3); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-m); background: var(--surface-1); font-size: var(--text-sm); font-weight: 500; }
+.plain-btn:hover { background: var(--surface-3); }
+.opt { display: grid; gap: var(--space-4); }
+.opt-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1) var(--space-4); align-items: baseline; padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-strong); }
+.letter { grid-row: span 3; align-self: start; font: 600 var(--text-display)/1 var(--font-mono); }
+.opt-head h2 { font-size: var(--text-xl); font-weight: 600; line-height: 1.2; }
+.opt-head p { max-width: 76ch; }
+.opt-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-5); align-items: start; }
+.col { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); min-width: 0; }
+.cap { font-size: var(--text-sm); font-weight: 600; color: var(--text-2); }
+.states { display: flex; flex-wrap: wrap; gap: var(--space-4) var(--space-6); padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-l); background: var(--surface-1); }
+.states > div { display: grid; gap: var(--space-2); justify-items: start; }
+.states small { font-size: var(--text-sm); color: var(--text-2); }
+.desk { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: start; }
+.desk > .ground { flex: 1 1 var(--panel-w); max-width: calc(var(--panel-w) + var(--space-6)); }
+.desk > .pop { flex: 0 1 var(--pop-width); }
+.desk > .stats { flex: 1 1 100%; }
+.phone { width: var(--phone); max-width: 100%; display: grid; gap: var(--space-3); padding: var(--space-2); border: 1px dashed var(--border-strong); border-radius: var(--radius-l); }
+@media (min-width: 1101px) { .opt-body { grid-template-columns: minmax(0, 1fr) var(--phone); } }
+details > summary { cursor: pointer; font-weight: 600; width: fit-content; }
+details[open] > summary { margin-bottom: var(--space-4); }
+
+/* The real surroundings, as the dashboard draws them (ui/Panel.tsx, ui/Float.tsx, SettingsRows.tsx,
+   OrderLevels.tsx, StatsPage.tsx, ui/Tabs.tsx). */
+.ground { padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-l); background: var(--surface-0); min-width: 0; }
+.phone > .ground { padding: var(--space-2); }
+.panel { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-l); background: var(--surface-1); }
+.panel > header { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-3) var(--space-3) 0; font-size: var(--text-sm); font-weight: 600; color: var(--text-2); }
+.panel > .body { padding: var(--space-3); min-width: 0; }
+.rows > * + * { border-top: 1px solid var(--border); }
+.meaning { padding-bottom: var(--space-3); font-size: var(--text-sm); color: var(--text-2); }
+.row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-3) 0; font-size: var(--text-sm); }
+.row:last-child { padding-bottom: 0; }
+.row > .name { color: var(--text-2); }
+.row > .val { font-weight: 500; }
+.row > small { flex-basis: 100%; font-size: var(--text-sm); color: var(--text-2); }
+.pop { display: flex; flex-direction: column; min-width: 0; width: 100%; max-width: var(--pop-width); border: 1px solid var(--border-strong); border-radius: var(--radius-l); background: var(--surface-1); box-shadow: var(--shadow-2); }
+:root[data-theme="dark"] .pop { background: var(--surface-2); }
+.pop > header { display: flex; align-items: start; justify-content: space-between; gap: var(--space-3); padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4); border-bottom: 1px solid var(--border); }
+.pop > header h3 { font-size: var(--text-lg); font-weight: 600; }
+.pop > .body { padding: var(--space-4); }
+.x { display: inline-grid; place-items: center; width: var(--ctl-s); height: var(--ctl-s); padding: 0; border: 1px solid var(--border-strong); border-radius: var(--radius-m); background: none; }
+.pop h4 { font-size: var(--text-sm); font-weight: 600; color: var(--text-2); }
+.levels > li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border); }
+.levels > li:first-child { border-top: 0; }
+.levels .name { min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+.levels small { margin-left: var(--space-2); font-size: var(--text-sm); font-weight: 400; color: var(--text-2); }
+.stats > .body { display: grid; gap: var(--space-2); }
+.stats-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.stats-head h3 { font-size: var(--text-base); font-weight: 600; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0 var(--space-5); border-bottom: 1px solid var(--border); }
+.tabs > span { display: inline-flex; align-items: center; height: var(--tab); margin-bottom: -1px; border-bottom: var(--hair) solid transparent; font-weight: 500; color: var(--text-2); white-space: nowrap; }
+.tabs > span.on { border-bottom-color: var(--accent); color: var(--text-1); font-weight: 600; }
+.fact { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) 0; font-size: var(--text-sm); }
+.fact + .fact { border-top: 1px solid var(--border); }
+
+/* The segmented choice: what every option shares (ui/Segmented.tsx). `small` is the 28px inline
+   kind of dense rows. Each word holds a hidden semibold copy of itself, so a part keeps its width
+   when it becomes the chosen one. */
+.seg { display: flex; max-width: 100%; }
+.seg.small { display: inline-flex; }
+.seg > button { display: inline-flex; flex: 1 1 0; min-width: 0; align-items: center; justify-content: center; height: var(--ctl); padding: 0 var(--space-3);
+  border: 0; background: none; color: var(--text-2); font-size: var(--text-sm); font-weight: 500; white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.seg.small > button { flex: none; height: var(--ctl-s); }
+.seg > button > span { display: inline-grid; justify-items: center; }
+.seg > button > span::after { content: attr(data-l); height: 0; overflow: hidden; visibility: hidden; font-weight: 600; }
+.seg > button[aria-checked="true"] { color: var(--text-1); font-weight: 600; }
+.seg > button:focus-visible, .seg > button.is-focus { position: relative; z-index: 1; }
+.phone .seg > button { height: var(--ctl-touch); }
+.phone .seg.small > button { min-width: var(--ctl-touch); }
+@media (max-width: 520px), (pointer: coarse) {
+  .seg > button, .seg.small > button { height: var(--ctl-touch); }
+  .seg.small > button { min-width: var(--ctl-touch); }
+}
+
+/* Today: a grey fill and the accent line under it, in an outlined group. */
+.opt-now .seg > button { margin-left: -1px; border: 1px solid var(--border-strong); background: var(--surface-1); }
+.opt-now .seg > button:first-child { margin-left: 0; border-radius: var(--radius-m) 0 0 var(--radius-m); }
+.opt-now .seg > button:last-child { border-radius: 0 var(--radius-m) var(--radius-m) 0; }
+.opt-now .seg > button[aria-checked="true"] { position: relative; border-color: var(--text-1); background: var(--surface-3); box-shadow: var(--chosen-line); }
+.opt-now .seg > button[aria-checked="false"]:is(:hover, .is-hover) { background: var(--surface-2); color: var(--text-1); }
+
+/* A: a tile in a track. A part fills the track's height, so it is all target; its tile is drawn
+   2px inside it (a clear border, and the ink edge as a line inside the padding box). */
+.opt-a .seg { border: 1px solid var(--border-strong); border-radius: var(--radius-m); background: var(--surface-3); }
+.opt-a .seg > button { height: calc(var(--ctl) - 2px); border: var(--hair) solid transparent; border-radius: var(--radius-m); background-clip: padding-box; }
+.opt-a .seg.small > button { height: calc(var(--ctl-s) - 2px); }
+.opt-a .seg > button[aria-checked="true"] { background-color: var(--surface-1); box-shadow: inset 0 0 0 1px var(--text-1); }
+.opt-a .seg > button[aria-checked="false"]:is(:hover, .is-hover) { box-shadow: inset 0 0 0 1px var(--border-strong); color: var(--text-1); }
+.opt-a .phone .seg > button { height: var(--ctl-touch); }
+@media (max-width: 520px), (pointer: coarse) {
+  .opt-a .seg > button, .opt-a .seg.small > button { height: var(--ctl-touch); }
+}
+
+/* B: ink fill. */
+.opt-b .seg > button { margin-left: -1px; border: 1px solid var(--border-strong); background: var(--surface-1); }
+.opt-b .seg > button:first-child { margin-left: 0; border-radius: var(--radius-m) 0 0 var(--radius-m); }
+.opt-b .seg > button:last-child { border-radius: 0 var(--radius-m) var(--radius-m) 0; }
+.opt-b .seg > button[aria-checked="true"] { position: relative; border-color: var(--text-1); background: var(--text-1); color: var(--surface-1); }
+.opt-b .seg > button[aria-checked="false"]:is(:hover, .is-hover) { background: var(--surface-3); color: var(--text-1); }
+
+/* C: radio marks. */
+.opt-c .seg { gap: var(--space-1); }
+.opt-c .seg > button { flex: none; gap: var(--space-2); padding: 0 var(--space-2); border-radius: var(--radius-m); }
+.opt-c .seg > button::before { content: ""; flex: none; width: var(--icon-s); height: var(--icon-s); padding: var(--hair);
+  border: calc(var(--icon-stroke) * 1px) solid var(--border-strong); border-radius: var(--radius-full); background-clip: content-box;
+  transition: border-color var(--dur-fast) var(--ease), background-color var(--dur-fast) var(--ease); }
+.opt-c .seg > button[aria-checked="true"]::before { border-color: var(--accent); background-color: var(--accent); }
+.opt-c .seg > button[aria-checked="false"]:is(:hover, .is-hover) { background: var(--surface-3); color: var(--text-1); }
+.opt-c .seg > button[aria-checked="false"]:is(:hover, .is-hover)::before { border-color: var(--text-1); }
+.opt-c .row > .seg, .opt-c .levels .seg, .opt-c .stats-head .seg { margin-right: calc(var(--space-2) * -1); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <div>
+      <h1>The segmented choice: three ways to show the chosen part</h1>
+      <div class="lede">
+        <p>Of the dashboard on 2026-11-13: <q>the pattern [of the choice] in the machine settings is looking pretty bad. I don't like it at all. Especially the underline border, it's pretty bad.</q> The window around it stays as it is.</p>
+        <p>Each option is drawn where the control is used today: the Priority panel of a node's settings window, the project levels of the Order panel, and the period switch of the Statistics page, at desktop size and in a 390 px frame with 44 px targets. None has an underline. Every control here works: click a part, or focus one and use the arrow keys.</p>
+      </div>
+    </div>
+    <button type="button" class="plain-btn" id="theme">Show in light</button>
+  </div>
+
+  <section class="opt opt-a" aria-label="Option A">
+    <div class="opt-head">
+      <span class="letter">A</span>
+      <h2 id="a-h">A tile in a track</h2>
+      <p>The group is one grey track, and the chosen part is a tile outlined in ink that sits in it, like the knob of a slide switch.</p>
+      <p class="sm dim">Chosen: tile edge in <code>--text-1</code> on a <code>--surface-3</code> track, 13.9:1 light and 10.9:1 dark, plus a heavier word. No divider lines. No new token; in the dark theme the tile is darker than its track, and a lighter tile would need one new token for it.</p>
+    </div>
+    <div class="opt-body" data-fill></div>
+  </section>
+
+  <section class="opt opt-b" aria-label="Option B">
+    <div class="opt-head">
+      <span class="letter">B</span>
+      <h2 id="b-h">Ink fill</h2>
+      <p>The outlined group stays, and the chosen part is filled with the text colour, its word reversed: the darkest thing in the row, so it is read first.</p>
+      <p class="sm dim">Chosen: <code>--text-1</code> fill beside <code>--surface-1</code> parts, 17.4:1 light and 14.6:1 dark, the word in <code>--surface-1</code> at the same ratio. No teal, so it never competes with Save changes. No new token.</p>
+    </div>
+    <div class="opt-body" data-fill></div>
+  </section>
+
+  <section class="opt opt-c" aria-label="Option C">
+    <div class="opt-head">
+      <span class="letter">C</span>
+      <h2 id="c-h">Radio marks</h2>
+      <p>No box at all: every part has a ring before its word, and the chosen ring is filled in teal, as on a paper form. Stacked rows line up as columns of rings.</p>
+      <p class="sm dim">Chosen: a filled <code>--accent</code> ring against empty <code>--border-strong</code> rings, 5.8:1 light and 8.6:1 dark on a panel, plus a heavier word. The quietest of the three, and the widest: about 30 px more per row. No new token.</p>
+    </div>
+    <div class="opt-body" data-fill></div>
+  </section>
+
+  <section class="opt" aria-labelledby="n-h">
+    <div class="opt-head">
+      <span class="letter" aria-hidden="true">+</span>
+      <h2 id="n-h">For all three</h2>
+      <p>Keyboard focus is the page's own 2 px teal ring, 2 px off the part, so it is never the same mark as the chosen state. Hover darkens the word and shows where a press would land.</p>
+      <p class="sm dim">Any of the three retires <code>--chosen-line</code> from the segmented choice; tabs keep their own line. A and B show the chosen part in ink, so the design system's sentence "the chosen part in <code>--accent</code>" would change with them; C keeps it. A part keeps its width when chosen, which it does not today.</p>
+    </div>
+    <details class="opt-now">
+      <summary>The control as it is today, for comparison</summary>
+      <div class="opt-body" data-fill></div>
+    </details>
+  </section>
+</div>
+
+<template id="seg-priority">
+  <div class="seg" role="radiogroup" aria-label="Priority">
+    <button type="button" role="radio" aria-checked="false" tabindex="-1"><span data-l="Preferred">Preferred</span></button>
+    <button type="button" role="radio" aria-checked="true" tabindex="0"><span data-l="Normal">Normal</span></button>
+    <button type="button" role="radio" aria-checked="false" tabindex="-1"><span data-l="Fallback">Fallback</span></button>
+  </div>
+</template>
+
+<template id="seg-level">
+  <div class="seg small" role="radiogroup">
+    <button type="button" role="radio" aria-checked="false" tabindex="-1"><span data-l="High">High</span></button>
+    <button type="button" role="radio" aria-checked="false" tabindex="-1"><span data-l="Normal">Normal</span></button>
+    <button type="button" role="radio" aria-checked="false" tabindex="-1"><span data-l="Low">Low</span></button>
+  </div>
+</template>
+
+<template id="contexts">
+  <div class="ground">
+    <section class="panel" aria-label="Priority">
+      <header>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 12h11"/><path d="M10 18h11"/><path d="M10 6h11"/><path d="M4 10h2"/><path d="M4 6h1v4"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
+        Priority
+      </header>
+      <div class="body rows">
+        <p class="meaning">Which node a job goes to first</p>
+        <div class="row"><span class="name">Suggested</span><span class="val">Normal</span><small>the default for every node</small></div>
+        <div class="row"><span class="name">Yours</span><span data-seg="priority"></span><small data-says>Takes a job when no preferred node can within 30 s.</small></div>
+        <div class="row"><span class="name">Runs with</span><span class="val num">Normal now</span><small>as suggested</small></div>
+      </div>
+    </section>
+  </div>
+  <section class="pop" aria-label="Order of the line">
+    <header>
+      <h3>Order of the line</h3>
+      <button type="button" class="x" aria-label="Close" tabindex="-1"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+    </header>
+    <div class="body">
+      <h4>Project levels</h4>
+      <ul class="levels">
+        <li><span class="name">example-app<small class="num">2 waiting</small></span><span data-seg="level" data-chosen="0" data-name="example-app"></span></li>
+        <li><span class="name">example-api</span><span data-seg="level" data-chosen="1" data-name="example-api"></span></li>
+        <li><span class="name">docs-site<small class="num">1 waiting</small></span><span data-seg="level" data-chosen="2" data-name="docs-site"></span></li>
+      </ul>
+    </div>
+  </section>
+  <section class="panel stats" aria-label="Where the time went">
+    <div class="body">
+      <div class="stats-head">
+        <h3>Where the time went</h3>
+        <div class="seg small" role="radiogroup" aria-label="Period for the table">
+          <button type="button" role="radio" aria-checked="true" tabindex="0"><span data-l="Today">Today</span></button>
+          <button type="button" role="radio" aria-checked="false" tabindex="-1"><span data-l="All time">All time</span></button>
+        </div>
+      </div>
+      <div class="tabs" aria-hidden="true"><span>Kind</span><span class="on">Project</span><span>Source</span><span>Machine</span></div>
+      <div>
+        <p class="fact"><span>example-app</span><span class="num">1h 42m in 31 runs</span></p>
+        <p class="fact"><span>example-api</span><span class="num">38m in 12 runs</span></p>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+// Fills each option with the same three surroundings, so only the control's own style differs.
+const SAYS = ["Jobs come here first, while it has a free slot.", "Takes a job when no preferred node can within 30 s.",
+              "Takes a job only when better nodes cannot within 30 s."];
+const copy = (id) => document.getElementById(id).content.cloneNode(true);
+
+function seg(kind, chosen, name) {
+  const group = copy(`seg-${kind}`).firstElementChild;
+  if (name) group.setAttribute("aria-label", `Level of ${name}`);
+  if (chosen !== undefined) choose(group, Number(chosen));
+  return group;
+}
+
+function choose(group, index) {
+  [...group.children].forEach((part, at) => {
+    part.setAttribute("aria-checked", String(at === index));
+    part.tabIndex = at === index ? 0 : -1;
+  });
+  const says = group.closest(".row")?.querySelector("[data-says]");
+  if (says) says.textContent = SAYS[index];
+}
+
+function contexts() {
+  const all = copy("contexts");
+  all.querySelectorAll("[data-seg]").forEach((slot) => slot.replaceWith(seg(slot.dataset.seg, slot.dataset.chosen, slot.dataset.name)));
+  return all;
+}
+
+function still(caption, kind, mark) {
+  const box = document.createElement("div"), group = seg(kind, kind === "level" ? 1 : undefined), text = document.createElement("small");
+  group.dataset.still = "";
+  group.setAttribute("aria-hidden", "true");
+  [...group.children].forEach((part) => { part.tabIndex = -1; });
+  if (mark) group.children[mark.at].classList.add(mark.name);
+  text.textContent = caption;
+  box.append(group, text);
+  return box;
+}
+
+for (const body of document.querySelectorAll("[data-fill]")) {
+  const desk = document.createElement("div"), phone = document.createElement("div"), states = document.createElement("div");
+  desk.className = "col"; phone.className = "col";
+  states.className = "states";
+  states.append(still("At rest", "priority"), still("Pointer over Preferred", "priority", { at: 0, name: "is-hover" }),
+                still("Keyboard focus", "priority", { at: 1, name: "is-focus" }),
+                still("Small, at rest", "level"), still("Small, pointer over Low", "level", { at: 2, name: "is-hover" }),
+                still("Small, keyboard focus", "level", { at: 1, name: "is-focus" }));
+  const real = document.createElement("div"); real.className = "desk"; real.append(contexts());
+  const frame = document.createElement("div"); frame.className = "phone"; frame.append(contexts());
+  const cap = (text) => { const p = document.createElement("p"); p.className = "cap"; p.textContent = text; return p; };
+  desk.append(cap("States"), states, cap("Desktop: node settings, Order panel, Statistics"), real);
+  phone.append(cap("390 px, 44 px targets"), frame);
+  body.append(desk, phone);
+}
+
+document.addEventListener("click", (event) => {
+  const part = event.target.closest(".seg > button");
+  if (part && !("still" in part.parentElement.dataset)) choose(part.parentElement, [...part.parentElement.children].indexOf(part));
+});
+document.addEventListener("keydown", (event) => {
+  const part = event.target.closest?.(".seg > button");
+  if (!part) return;
+  const parts = [...part.parentElement.children], from = parts.indexOf(part);
+  const by = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[event.key];
+  const to = event.key === "Home" ? 0 : event.key === "End" ? parts.length - 1 : by ? (from + by + parts.length) % parts.length : -1;
+  if (to < 0) return;
+  event.preventDefault();
+  choose(part.parentElement, to);
+  parts[to].focus();
+});
+
+// The theme: dark, the system's home theme; `#light` in the address opens the light one.
+const theme = document.getElementById("theme");
+const show = (dark) => {
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+  theme.textContent = dark ? "Show in light" : "Show in dark";
+};
+theme.addEventListener("click", () => show(document.documentElement.dataset.theme !== "dark"));
+show(location.hash !== "#light");
+</script>
+</body>
+</html>

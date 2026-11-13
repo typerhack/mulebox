@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.11 - 2026-11-13 - patch
+- Mockup only, no product code: [docs/design-system/segmented-options.html](docs/design-system/segmented-options.html), three ways to show the chosen part of the segmented choice (`web/src/ui/Segmented.tsx`), for the user to pick from. The user of the deployed dashboard on 2026-11-13: "the pattern [of the choice] in the machine settings is looking pretty bad. I don't like it at all. Especially the underline border, it's pretty bad." The window around it stays ("the new modal for each machine setting is pretty good, I like that").
+- A, a tile in a track: a grey track with the chosen part as a tile edged in ink. B, ink fill: the outlined group with the chosen part filled in the text colour, its word reversed. C, radio marks: no box, a ring before each word, the chosen one filled in teal. None has an underline, none needs a new token; any of them retires `--chosen-line` from the segmented choice.
+- Each is drawn in the control's three places (the Priority panel of the node settings window, three project rows of the Order panel, the Statistics period switch) at desktop size and in a 390 px frame with 44 px targets, with its rest, hover and keyboard focus states, a light and dark switch, and the control as it is today for comparison.
+- Seen in headless Chrome at 1440 and 390 px in both themes: nothing past the edge, every part 44 px high and at least 44 px wide at 390, no console errors.
+
 ## 1.17.10 - 2026-11-13 - patch
 - One rule everywhere, as the user confirmed ("one rule everywhere"): memory is shown in decimal GB too, RAM, swap and job memory alike, so a 16 GiB machine reads 17.2 GB. Nothing shown is 1024-based any more; what is left of 1024 converts inputs (`/proc`, `ps`, the `*_kib_s` fields) into bytes.
 - The slot suggestion counted 6 x 2^30 bytes a job beside a decimal total; its budget is now 6 decimal GB (`node_settings.GB`), with the same text, "at about 4 cores and 6 GB a job". 8 cores and 16 GiB still give 2, 16 and 32 GiB still give 4 (tests). docs/design.md and the dashboard's test data say so.
