@@ -22,7 +22,8 @@ describe("format", () => {
     expect(bytes(906_400_000)).toBe("906.4 MB");
     expect(bytes(41_040_441)).toBe("41.0 MB");
     expect(bytes(999)).toBe("999 B");
-    expect(bytes(999_600)).toBe("1.0 MB");
+    expect(bytes(999_600)).toBe("999.6 KB");
+    expect(bytes(999_960)).toBe("1.0 MB");  // never "1000.0 KB"
     expect(bytes(215 * 1000 ** 3)).toBe("215.0 GB");
     expect(ago(1000, 1005)).toBe("now");
     expect(ago(1000, 1000 + 14 * 60)).toBe("14 min ago");

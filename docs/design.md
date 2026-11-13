@@ -644,8 +644,9 @@ restart.
   `priority` and `capabilities` from it live; a file that does not read is logged and the old
   values stay; other changed fields are logged as needing `mulebox service restart worker`.
 - **A suggestion beside the value.** From the cores and memory the worker last reported: about 4
-  cores and 6 GB a job, at least 1, `max(1, min(cores // 4, memory_gb // 6))` (8 cores and 16 GB
-  give 2, today's default; 16 and 32 give 4). It is shown next to the current value with its
+  cores and 6 GB a job, at least 1, `max(1, min(cores // 4, memory_gb // 6))` with memory in
+  decimal GB like every size shown (8 cores and 16 GiB, 17.2 GB, give 2, today's default; 16 and
+  32 GiB, 34.4 GB, give 4). It is shown next to the current value with its
   reason (the formula is the user's decision, 2026-11-13), and never applied by itself: the owner's value stays until the owner changes it. From
   afar slots go from 1 to 64; a hand edit may set more, as a big machine may want it.
 - **Node priority (M23.4).** `priority = "preferred" | "normal" | "fallback"` in `node.toml`,

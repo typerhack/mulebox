@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.10 - 2026-11-13 - patch
+- One rule everywhere, as the user confirmed ("one rule everywhere"): memory is shown in decimal GB too, RAM, swap and job memory alike, so a 16 GiB machine reads 17.2 GB. Nothing shown is 1024-based any more; what is left of 1024 converts inputs (`/proc`, `ps`, the `*_kib_s` fields) into bytes.
+- The slot suggestion counted 6 x 2^30 bytes a job beside a decimal total; its budget is now 6 decimal GB (`node_settings.GB`), with the same text, "at about 4 cores and 6 GB a job". 8 cores and 16 GiB still give 2, 16 and 32 GiB still give 4 (tests). docs/design.md and the dashboard's test data say so.
+- From Sol's review of 1.17.8: `format.test.ts` expected `bytes(999_600)` to read "1.0 MB"; it is 999.6 KB, and that test had been failing in 1.17.8. It now expects "999.6 KB", with 999_960 -> "1.0 MB" as the boundary case beside it.
+
 ## 1.17.9 - 2026-11-13 - patch
 - Sizes and rates in decimal SI units everywhere a person reads them, the user's call of 2026-11-13: "Make everything consistent. Megabytes make more sense to me; MiB I don't have any sense of. Percent is perfect too." And: always one decimal, "906.4 MB", not "906 MB" ("that's two characters, why not show it").
 - One rule each side: `mulebox/common/units.py` (`size`, `rate`, `rate_kib`) for the terminal and the logs, `bytes` and `rate` in `web/src/lib/format.ts` for the dashboard. B, KB, MB, GB, TB, 1000-based, whole bytes under 1 KB and one decimal above. The dashboard divided by 1024 but said MB, so pip's 906.4 MB wheel showed as 864 MB; it now reads 906.4 MB.

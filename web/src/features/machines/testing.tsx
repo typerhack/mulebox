@@ -14,7 +14,7 @@ export const machine = (more: Partial<Machine> = {}): Machine =>
 export const view = (more: Partial<NodeSettings> = {}): NodeSettings => ({
   worker: "build-2", online: true, draining: false, version: "1.16.2", running: 0, applies: true,
   current: { slots: 2, priority: "normal" }, pending: null, pending_since: null, error: null,
-  suggested: { slots: 4, reason: "16 cores and 32 GB of memory, at about 4 cores and 6 GB a job" },
+  suggested: { slots: 4, reason: "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job" },
   choices: { slots: { min: 1, max: 64 }, priority: ["preferred", "normal", "fallback"] }, editable: true, ...more,
 });
 export { reply } from "../../lib/heldServer.testing";

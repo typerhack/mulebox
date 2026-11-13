@@ -5,7 +5,7 @@ import { asSuggested, changes, rowOf, unsent, type NodeSettings } from "./nodeSe
 const view = (more: Partial<NodeSettings> = {}): NodeSettings => ({
   worker: "build-2", online: true, applies: true, editable: true, error: null,
   current: { slots: 2, priority: "normal" }, pending: null,
-  suggested: { slots: 4, reason: "16 cores and 32 GB of memory" }, ...more,
+  suggested: { slots: 4, reason: "16 cores and 34.4 GB of memory" }, ...more,
 });
 
 describe("a node's settings", () => {

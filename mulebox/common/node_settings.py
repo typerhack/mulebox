@@ -19,7 +19,7 @@ DEFAULT_PRIORITY = "normal"
 EDITABLE = ("slots", "priority")
 CORES_PER_JOB = 4
 GB_PER_JOB = 6
-GB = 1 << 30
+GB = 1_000_000_000  # decimal, as every size shown (common/units.py)
 
 
 def rank(priority: str | None) -> int:

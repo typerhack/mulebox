@@ -29,7 +29,7 @@ describe("a node's settings window", () => {
     serve(view());
     await open();
     expect(screen.getByRole("dialog", { name: "build-2" })).toBeTruthy();
-    expect(cell("Slots", "Suggested")).toContain("4from 16 cores and 32 GB");
+    expect(cell("Slots", "Suggested")).toContain("4from 16 cores and 34.4 GB");
     expect(cell("Slots", "Runs with")).toBe("2 now");
     expect(cell("Priority", "Runs with")).toBe("Normal nowas suggested");
     expect(screen.getByRole("radio", { name: "Normal" }).getAttribute("aria-checked")).toBe("true");
