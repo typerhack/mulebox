@@ -164,7 +164,7 @@
   .share-bar { height: var(--spacing-meter); border-radius: var(--radius-meter); background: var(--meter-track); }
   .share-bar > i { display: block; height: 100%; width: var(--v); border-radius: var(--radius-meter); }
 
-  /* A switch: the track and its knob; the button around it is the target (ui/Controls.tsx). */
+  /* A switch: the track and its knob; the button around it is the target (ui/Switch.tsx). */
   .switch { position: relative; display: block; width: calc(var(--space-1) * 9); height: var(--space-5);
     border: 1px solid var(--border-strong); border-radius: var(--radius-full); background: var(--surface-1);
     transition: background var(--dur-fast) var(--ease); }
@@ -178,12 +178,19 @@
   :disabled[aria-checked="true"] > .switch { border-color: var(--text-3); background: var(--text-3); }
   :disabled[aria-checked="true"] > .switch::after { background: var(--surface-1); }
 
-  /* A panel opened from a button: under its host's right edge, never wider than the host. Its
-     head and foot stay; the body scrolls when the panel would be taller than the window. */
+  /* A panel opened from a button: under the button that opened it (`.pop-opener`), at its right
+     edge, never wider than its host; at the host's top right when that button is gone or the
+     browser cannot anchor. Its head and foot stay; the body scrolls when the panel would be
+     taller than the window. */
   .pop-host { position: relative; }
-  .pop { position: absolute; z-index: 5; top: calc(100% + var(--space-1)); right: 0;
+  .pop-opener { anchor-name: --pop-opener; }
+  .pop { position: absolute; z-index: 5; top: 0; right: 0;
     display: flex; flex-direction: column; width: min(var(--spacing-pop), 100%);
     max-height: min(var(--spacing-pop-tall), 100vh - var(--spacing-head) * 2); }
+  @supports (anchor-name: --pop-opener) {
+    .pop { position-anchor: --pop-opener;
+      top: calc(anchor(bottom, 0%) + var(--space-1)); right: anchor(right, 0%); }
+  }
   .pop > .pop-body { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 
   /* The rules of the line as a ladder, strongest first: rank, icon, what it does, its control. */

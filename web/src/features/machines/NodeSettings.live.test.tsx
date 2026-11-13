@@ -6,27 +6,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { tokenStore } from "../../lib/api";
 import { POLL_MS, type NodeSettings } from "../../lib/nodeSettings";
+import { heldServer } from "../../lib/heldServer.testing";
 import { cell, machine, open, reply, row, view } from "./testing";
 
-interface Held { post: boolean; body: unknown; answer: (with_: NodeSettings) => Promise<void> }
-
-// A server whose answers the test gives one by one, in the order it chooses. Until `hold()`,
-// every request is answered at once with `first`.
-function server(first: NodeSettings) {
-  const asked: Held[] = [];
-  let held = false;
-  vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
-    if (url === "/api/session") return reply({ action_token: "token" });
-    const post = init?.method === "POST";
-    if (!held) { asked.push({ post, body: null, answer: async () => {} }); return reply(first); }
-    return new Promise<Response>((resolve) => {
-      asked.push({ post, body: post ? JSON.parse(String(init?.body)) : null,
-                   answer: (with_) => act(async () => { resolve(await reply(with_)); }) });
-    });
-  }));
-  return { asked, hold: () => { held = true; asked.length = 0; },
-           gets: () => asked.filter((one) => !one.post), posts: () => asked.filter((one) => one.post) };
-}
+// Until `hold()`, every request is answered at once with `first`.
+const server = (first: NodeSettings) => heldServer(() => first);
 
 const disabled = (role: string, name: string) => (screen.getByRole(role, { name }) as HTMLButtonElement).disabled;
 const save = () => act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save changes" })); });

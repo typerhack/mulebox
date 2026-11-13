@@ -12,6 +12,8 @@ interface Props {
   max: number;
   label: string;                 // what is counted, as the field's accessible name: "Slots"
   unit: string;                  // one of them, for the buttons: "slot"
+  units?: string;                // more than one, when `step` is: "minutes" (default unit + "s")
+  step?: number;                 // how far a button moves the value (1)
   disabled?: boolean;
   onChange: (next: number) => void;
 }
@@ -19,7 +21,7 @@ interface Props {
 const SIDE = "inline-grid size-ctl touch:size-ctl-touch place-items-center border border-line-strong bg-surface-1 " +
   "hover:relative hover:border-ink-1 hover:bg-surface-3 focus-visible:relative off:border-line off:bg-surface-2 off:text-ink-3";
 
-export function Stepper({ value, min, max, label, unit, disabled, onChange }: Props) {
+export function Stepper({ value, min, max, label, unit, units = `${unit}s`, step: by = 1, disabled, onChange }: Props) {
   const [typed, setTyped] = useState<string | null>(null);  // while it differs from a good value
   const refusal = useId();
   const range = `From ${min} to ${max}.`;
@@ -29,11 +31,12 @@ export function Stepper({ value, min, max, label, unit, disabled, onChange }: Pr
     setTyped(good ? null : text);
     if (good) onChange(n);
   };
-  const step = (by: number) => { setTyped(null); onChange(Math.min(max, Math.max(min, value + by))); };
+  const step = (sign: number) => { setTyped(null); onChange(Math.min(max, Math.max(min, value + sign * by))); };
+  const many = by === 1 ? `One ${unit}` : `${by} ${units}`;
   return (
     <span className="inline-grid gap-1">
       <span className="inline-flex items-stretch">
-        <button type="button" aria-label={`One ${unit} fewer`} disabled={disabled || value <= min}
+        <button type="button" aria-label={`${many} fewer`} disabled={disabled || value <= min}
           onClick={() => step(-1)} className={cx(SIDE, "rounded-l-m")}>
           <Minus aria-hidden className="size-icon" />
         </button>
@@ -41,7 +44,7 @@ export function Stepper({ value, min, max, label, unit, disabled, onChange }: Pr
           aria-invalid={typed !== null || undefined} aria-describedby={typed !== null ? refusal : undefined}
           value={typed ?? String(value)} onChange={(event) => type(event.target.value)} onBlur={() => setTyped(null)}
           className="num -mx-px h-ctl w-ctl-touch min-w-0 border border-line-strong bg-surface-1 text-center font-mono text-lg font-semibold focus-visible:relative off:border-line off:bg-surface-2 off:text-ink-3 touch:h-ctl-touch" />
-        <button type="button" aria-label={`One ${unit} more`} disabled={disabled || value >= max}
+        <button type="button" aria-label={`${many} more`} disabled={disabled || value >= max}
           onClick={() => step(1)} className={cx(SIDE, "rounded-r-m")}>
           <Plus aria-hidden className="size-icon" />
         </button>

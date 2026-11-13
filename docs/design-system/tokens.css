@@ -48,6 +48,8 @@
      The scrim follows the theme through --surface-0, so it is not repeated per theme. */
   --scrim: color-mix(in srgb, var(--surface-0) 72%, transparent);  /* dims the page behind a window */
   --window-width: 800px;                                           /* a window, at most */
+  --pop-width: 380px;                                              /* a panel opened from a button, at most */
+  --pop-height: 640px;                                             /* that panel, before its body scrolls */
   --chosen-line: inset 0 -2px 0 var(--accent);                     /* the accent line under a chosen part */
 }
 

@@ -17,8 +17,7 @@ export const view = (more: Partial<NodeSettings> = {}): NodeSettings => ({
   suggested: { slots: 4, reason: "16 cores and 32 GB of memory, at about 4 cores and 6 GB a job" },
   choices: { slots: { min: 1, max: 64 }, priority: ["preferred", "normal", "fallback"] }, editable: true, ...more,
 });
-export const reply = (body: unknown, status = 200) => Promise.resolve(new Response(
-  typeof body === "string" ? body : JSON.stringify(body), { status }));
+export { reply } from "../../lib/heldServer.testing";
 
 export const row = (shown: Machine) => <TipProvider><NodeSettingsButton machine={shown} /></TipProvider>;
 

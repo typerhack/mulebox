@@ -540,6 +540,8 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       Built 2026-11-13 (1.17.2): option A of the mockup, an Order button on the line, with the rules'
       precedence shown, workflow levels, Save and Reset, read-only with the controls off; component
       tests, and seen with stand-in data at 390 and 1440 px in both themes in headless Chrome.
+      1.17.4, from Sol's review: no edit lost to a save, another viewer's change kept, answers in
+      order, a read every 5 s while open, and one panel that stays open when its lane goes.
       Open: on the real dashboard in Edge.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project

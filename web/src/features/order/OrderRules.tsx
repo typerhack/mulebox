@@ -7,7 +7,8 @@ import { useId, type ReactNode } from "react";
 
 import { MAX_AGING_MIN, levelsSet } from "../../lib/order";
 import type { Rules, RulesBody } from "../../lib/types";
-import { Stepper, Switch } from "../../ui/Controls";
+import { Stepper } from "../../ui/Stepper";
+import { Switch } from "../../ui/Switch";
 
 interface Props { body: RulesBody; draft: Rules; edit: (change: (rules: Rules) => Rules) => void; readOnly: boolean }
 
@@ -63,7 +64,7 @@ export function OrderRules({ body, draft, edit, readOnly }: Props) {
             {aging && (
               <span className="wide">
                 <Stepper value={draft.aging_min} min={1} max={MAX_AGING_MIN} step={5} disabled={readOnly}
-                  label="Minutes in line for one level" unit="minutes"
+                  label="Minutes in line for one level" unit="minute"
                   onChange={(minutes) => edit((rules) => ({ ...rules, aging_min: minutes }))} />
               </span>
             )}

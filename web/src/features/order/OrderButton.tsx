@@ -1,22 +1,33 @@
-// "Order" on a waiting line's heading: opens the order rules in a panel anchored under it
+// "Order" on a waiting line's heading opens the order rules in a panel
 // (design-system/queue-order-mockup.html, option A). Changes are a copy until Save, and say
 // "Unsaved" until then; Reset asks twice, as it drops every rule. Where this page has no
-// controls the panel still opens, to read. Its host element needs the class `pop-host`.
+// controls the panel still opens, to read.
+//
+// One panel (`OrderPanel`), mounted once where the lanes are, not in a lane: a lane goes when
+// its last waiting job starts, and the open panel, its focus and what is typed in it must not go
+// with it. It hangs under the button it was opened from (CSS anchor positioning, `.pop-opener`),
+// and at the top of the lanes when that button is gone or the browser cannot anchor. Closing
+// gives the focus back to that button, else to another Order button, else to `home`. While open,
+// it reads the rules again every few seconds, keeping what the viewer has not saved.
 
 import { ListOrdered } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
 
 import { tokenStore } from "../../lib/api";
 import { isDefault, isDirty } from "../../lib/order";
 import { useStore } from "../../lib/store";
-import { discardRules, editRules, loadRules, orderStore, resetRules, saveRules } from "../../state/order";
+import { REREAD_MS } from "../../lib/turns";
+import { closeRules, discardRules, editRules, isReading, loadRules, openRules, orderStore, resetRules,
+         saveRules } from "../../state/order";
 import { Button } from "../../ui/Button";
 import { WithCode } from "../../ui/Code";
+import { cx } from "../../ui/cx";
 import { FloatPanel } from "../../ui/Float";
 import { OrderLevels } from "./OrderLevels";
 import { OrderRules } from "./OrderRules";
 
 const READ_ONLY = "This dashboard's controls are off, so the rules can only be read here. Change them with `mulebox queue rules`.";
+const BUTTON = "data-order-button";
 
 function Foot({ readOnly, dirty, plain }: { readOnly: boolean; dirty: boolean; plain: boolean }) {
   const { busy, said, problem } = useStore(orderStore);
@@ -52,37 +63,58 @@ function Foot({ readOnly, dirty, plain }: { readOnly: boolean; dirty: boolean; p
   );
 }
 
-export function OrderButton({ className }: { className?: string }) {
-  const [open, setOpen] = useState(false);
-  const opener = useRef<HTMLButtonElement>(null);
-  const token = useStore(tokenStore);
-  const { body, draft, problem, closed } = useStore(orderStore);
-  const readOnly = !token || closed;
-  const dirty = Boolean(body && draft && isDirty(body.rules, draft));
-  const toggle = () => {
-    if (!open) void loadRules();
-    setOpen(!open);
+// The Order button the panel was opened from, while it is on the page; else another; else `home`.
+function openerOf(from: string | null, home: RefObject<HTMLElement | null>): RefObject<HTMLElement | null> {
+  return {
+    get current() {
+      const buttons = [...document.querySelectorAll<HTMLElement>(`[${BUTTON}]`)];
+      return buttons.find((button) => button.getAttribute(BUTTON) === from) ?? buttons[0] ?? home.current;
+    },
   };
+}
+
+export function OrderButton({ className }: { className?: string }) {
+  const id = useId();
+  const { body, draft, openedBy } = useStore(orderStore);
+  const open = openedBy === id;
+  const dirty = Boolean(body && draft && isDirty(body.rules, draft));
   return (
-    <>
-      <Button ref={opener} aria-haspopup="dialog" aria-expanded={open} onClick={toggle} className={className}>
-        <ListOrdered aria-hidden className="size-icon-s" />Order
-        {dirty && !open && <span className="text-sm font-normal text-ink-2">, unsaved</span>}
-      </Button>
-      {open && (
-        <FloatPanel title="Order of the line" opener={opener} onClose={() => setOpen(false)}
-          note={!body ? null : isDefault(body) ? "Defaults: first come, first served, moved by hand with the arrows."
-            : "Rules are on. Each waiting row says why it stands where it does."}
-          foot={body && draft ? <Foot readOnly={readOnly} dirty={dirty} plain={isDefault(body)} /> : null}>
-          {body && draft ? (
-            <div className="grid">
-              <OrderRules body={body} draft={draft} edit={editRules} readOnly={readOnly} />
-              <OrderLevels body={body} draft={draft} edit={editRules} readOnly={readOnly} />
-            </div>
-          ) : problem ? <p role="alert" className="font-medium">{problem}</p>
-            : <p role="status" className="text-ink-2">Loading the rules</p>}
-        </FloatPanel>
-      )}
-    </>
+    <Button aria-haspopup="dialog" aria-expanded={open} {...{ [BUTTON]: id }}
+      onClick={() => (open ? closeRules() : openRules(id))} className={cx(className, open && "pop-opener")}>
+      <ListOrdered aria-hidden className="size-icon-s" />Order
+      {dirty && !openedBy && <span className="text-sm font-normal text-ink-2">, unsaved</span>}
+    </Button>
+  );
+}
+
+// The panel itself. Its host element needs the class `pop-host` and holds every Order button.
+export function OrderPanel({ home }: { home: RefObject<HTMLElement | null> }) {
+  const token = useStore(tokenStore);
+  const { body, draft, problem, closed, busy, openedBy } = useStore(orderStore);
+  const opener = useMemo(() => openerOf(openedBy, home), [openedBy, home]);
+  const shown = openedBy !== null;
+  useEffect(() => closeRules, []);  // the lanes went (another tab): the panel does not wait for them
+  useEffect(() => {
+    if (!shown) return;
+    const timer = setInterval(() => { if (!document.hidden && !isReading()) void loadRules(); }, REREAD_MS);
+    return () => clearInterval(timer);
+  }, [shown]);
+  if (!shown) return null;
+  const readOnly = !token || closed;
+  const saving = busy === "saving";
+  const dirty = Boolean(body && draft && isDirty(body.rules, draft));
+  return (
+    <FloatPanel title="Order of the line" opener={opener} onClose={closeRules}
+      note={!body ? null : isDefault(body) ? "Defaults: first come, first served, moved by hand with the arrows."
+        : "Rules are on. Each waiting row says why it stands where it does."}
+      foot={body && draft ? <Foot readOnly={readOnly} dirty={dirty} plain={isDefault(body)} /> : null}>
+      {body && draft ? (
+        <div className="grid">
+          <OrderRules body={body} draft={draft} edit={editRules} readOnly={readOnly || saving} />
+          <OrderLevels body={body} draft={draft} edit={editRules} readOnly={readOnly} busy={saving} />
+        </div>
+      ) : problem ? <p role="alert" className="font-medium">{problem}</p>
+        : <p role="status" className="text-ink-2">Loading the rules</p>}
+    </FloatPanel>
   );
 }

@@ -10,7 +10,7 @@ import type { Stats } from "../../lib/types";
 import { cx } from "../../ui/cx";
 import { FilterSelect } from "../../ui/FilterSelect";
 import { Panel } from "../../ui/Panel";
-import { Segmented } from "../../ui/Controls";
+import { Segmented } from "../../ui/Segmented";
 import { Tabs } from "../../ui/Tabs";
 import { Tip } from "../../ui/Tip";
 import { Breakdown } from "./Breakdown";
@@ -140,7 +140,7 @@ export function StatsPage() {
         <section aria-label="Where the time went" className="grid min-w-0 gap-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h3 className="font-semibold">Where the time went</h3>
-            <Segmented options={[["today", "Today"], ["all", "All time"]]} value={range} label="Period for the table"
+            <Segmented small choices={[{ value: "today", label: "Today" }, { value: "all", label: "All time" }]} value={range} label="Period for the table"
               onChange={(next) => { kept.range = next; setRange(next); }} />
           </div>
           <Tabs items={DIMS.map(([id, text]) => ({ id, label: text }))} value={by} label="Break down by"

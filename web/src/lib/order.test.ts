@@ -10,8 +10,8 @@ const job = (more: Partial<Job>): Job => ({ job_id: "job-1", state: "queued", ki
 describe("the order rules", () => {
   it("names a level by its word, and any other by its number", () => {
     expect([1, 0, -1, 2, -3].map((level) => levelName(level))).toEqual(["high", "normal", "low", "+2", "-3"]);
-    expect(levelChoices(0).map(([, text]) => text)).toEqual(["High", "Normal", "Low"]);
-    expect(levelChoices(-2)).toEqual([[1, "High"], [0, "Normal"], [-1, "Low"], [-2, "-2"]]);
+    expect(levelChoices(0).map(({ label }) => label)).toEqual(["High", "Normal", "Low"]);
+    expect(levelChoices(-2)).toEqual([{ value: 1, label: "High" }, { value: 0, label: "Normal" }, { value: -1, label: "Low" }, { value: -2, label: "-2" }]);
   });
 
   it("sends only what differs, and 0 for an entry that goes", () => {

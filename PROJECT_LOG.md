@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.4 - 2026-11-13 - patch
+- The Order panel, from Sol's review of 1.17.2, each with a component test (`order.live.test.tsx`, with answers given in a chosen order): an edit made while a save was on its way was lost, as only the footer was disabled and the answer replaced the whole copy; now nothing takes an edit until the save is back, and a save forgets only what it sent (`unsent`, now `web/src/lib/edits.ts`, shared with the node settings window).
+- Reading the rules again over unsaved edits sent other viewers' changes back: edit, close, someone turns fair turns on, reopen, Save sent fair turns off. The edits are now a change to the rules they were made on, laid over every fresh read, so Save sends only what this viewer changed.
+- Answers in any order: a read asked before a save and answered after it brought the old rules back and cleared "Saving". Every request takes a turn (`web/src/lib/turns.ts`, shared with the node settings window), a save takes one, an older answer is dropped, and the rules are read again after a save.
+- The rules were read only on opening; an open panel now reads them every 5 s while the page is visible, keeping the viewer's edits.
+- When the last waiting job of a lane started, the lane and the panel open under it went, with its focus and what was typed. One panel is now mounted where the lanes are (`OrderPanel`), hanging under the button it was opened from by CSS anchor positioning (`.pop-opener`), at the top right of the lanes where that button has gone or the browser cannot anchor; closing gives the focus to that button, else another Order button, else the lanes.
+- Design system: the panel's sizes are tokens (`--pop-width`, `--pop-height` in tokens.css, within the user's agreement of 2026-11-13 on panels and windows), and the order rules' chosen parts use `--chosen-line`. One segmented choice and one stepper for the window, the panel and the Statistics page (`ui/Segmented.tsx` with `small`, `ui/Stepper.tsx` with `step`); the switch in `ui/Switch.tsx`; `ui/Controls.tsx` and `--shadow-mark` are gone.
+- Seen with the `order` scene of `npm run dev` in Chrome at 1440 px (the panel 4 px under its button, right edges equal) and 390 px (in a 390 px frame, nothing past the edge), no console errors.
+
 ## 1.17.3 - 2026-11-13 - patch
 - The line, fixes from Sol's review of 1.17.1, each first shown by a failing test: a move cleared the `priority` a row had from a move before pins existed, so a row others were pinned to lost its place (A, B, C, D at 4, 3, 2, 1, A down, then C first gave C, B, D, A, not C, B, A, D); a move now leaves `priority` alone, as the pin already sets the moved row's place.
 - Moving two rows of one place back and forth halved the room between their `pin_order`s each time, and on the 52nd move the middle was one of the ends, so the line came out wrong. When there is no middle left, the rows of that place are numbered 0, 1, 2 again in the same write (`line_moves.OTHERS`, `line_moves.write`); a test moves two rows 200 times.

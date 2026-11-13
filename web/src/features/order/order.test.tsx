@@ -4,10 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { tokenStore } from "../../lib/api";
 import type { Job, Rules, RulesBody } from "../../lib/types";
 import { machinesStore, queueStore } from "../../state/live";
-import { orderStore } from "../../state/order";
+import { EMPTY_ORDER, orderStore } from "../../state/order";
 import { TipProvider } from "../../ui/Tip";
 import { JobsBox } from "../jobs/JobsBox";
-import { OrderButton } from "./OrderButton";
+import { OrderHarness } from "./testing";
 
 const rules = (more: Partial<Rules> = {}): Rules =>
   ({ projects: {}, branches: {}, workflows: {}, github: 0, aging_min: 30, shortest_first: false, fair_turns: false, ...more });
@@ -15,12 +15,17 @@ const reply = (stored: Rules): RulesBody =>
   ({ rules: stored, defaults: rules(), levels: { min: -3, max: 3, words: { low: -1, normal: 0, high: 1 } },
      projects: ["docs-site", "example-app"] });
 
-// The dashboard's answers: the stored rules to a read, `after` to a change.
+// The dashboard's answers: the stored rules to a read, `after` to a change, which is then stored.
 function serve(stored: Rules, after: Rules = rules(), status = 200) {
+  let now = stored;
   const fetched = vi.fn(async (url: string, init?: RequestInit) => {
     if (url === "/api/session") return new Response(JSON.stringify({ action_token: "tok" }));
-    if (init?.method === "POST") return new Response(status === 200 ? JSON.stringify(reply(after)) : "level must be low, normal or high", { status });
-    return new Response(JSON.stringify(reply(stored)));
+    if (init?.method === "POST") {
+      if (status !== 200) return new Response("level must be low, normal or high", { status });
+      now = after;
+      return new Response(JSON.stringify(reply(after)));
+    }
+    return new Response(JSON.stringify(reply(now)));
   });
   vi.stubGlobal("fetch", fetched);
   return fetched;
@@ -31,7 +36,7 @@ const sent = (fetched: ReturnType<typeof serve>) => {
 };
 
 async function openPanel() {
-  render(<TipProvider><div className="pop-host"><OrderButton /></div></TipProvider>);
+  render(<OrderHarness />);
   fireEvent.click(screen.getByRole("button", { name: "Order" }));
   const panel = await screen.findByRole("dialog", { name: "Order of the line" });
   await within(panel).findByRole("switch", { name: "Fair turns" });
@@ -44,7 +49,7 @@ afterEach(() => {
   tokenStore.set(undefined);
   queueStore.set({ snapshot: null, at: 0 });
   machinesStore.set(null);
-  orderStore.set({ body: null, draft: null, busy: null, said: null, problem: null, closed: false });
+  orderStore.set(EMPTY_ORDER);
 });
 
 describe("the Order panel", () => {
@@ -129,11 +134,10 @@ describe("the Order panel", () => {
     fireEvent.keyDown(document.activeElement!, { key: "ArrowRight" });
     expect(document.activeElement?.textContent).toBe("Low");
     expect(within(group).getByRole("radio", { name: "Low" }).getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(within(panel).getByRole("button", { name: "More: Minutes in line for one level" }));
+    fireEvent.click(within(panel).getByRole("button", { name: "5 minutes more" }));
     const minutes = within(panel).getByRole("textbox", { name: "Minutes in line for one level" });
     fireEvent.change(minutes, { target: { value: "5000" } });
-    fireEvent.blur(minutes);
-    expect(within(panel).getByRole("alert").textContent).toBe("From 1 to 1440 minutes.");
+    expect(within(panel).getByRole("alert").textContent).toBe("Not taken. From 1 to 1440.");
     fireEvent.click(within(panel).getByRole("button", { name: "Save" }));
     await waitFor(() => expect(sent(fetched)?.body).toEqual({ rules: { branches: { "release/*": -1 }, aging_min: 35 } }));
   });

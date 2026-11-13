@@ -80,8 +80,8 @@
   --spacing-graph: calc(var(--space-6) * 5);         /* 120px: the CPU graph */
   --spacing-log: calc(var(--space-7) * 10.5);        /* 420px: the log before it scrolls */
   --spacing-menu: calc(var(--space-7) * 8);          /* 320px: a menu */
-  --spacing-pop: calc(var(--space-7) * 9.5);         /* 380px: a panel opened from a button */
-  --spacing-pop-tall: calc(var(--space-7) * 16);     /* 640px: that panel before its body scrolls */
+  --spacing-pop: var(--pop-width);                   /* a panel opened from a button, a token of its own */
+  --spacing-pop-tall: var(--pop-height);             /* that panel before its body scrolls */
   --spacing-col-s: calc(var(--space-7) * 3.75);      /* 150px */
   --spacing-col-m: calc(var(--space-7) * 6);         /* 240px */
   --spacing-col-l: calc(var(--space-7) * 7);         /* 280px */
@@ -104,7 +104,6 @@
   --shadow-menu: var(--shadow-2);
   --shadow-window: var(--shadow-2);
   --shadow-chosen: var(--chosen-line);               /* the accent line of a chosen part */
-  --shadow-mark: inset 0 calc(var(--space-1) / -2) 0 var(--accent);  /* the chosen part of a segmented choice */
 
   --default-transition-duration: var(--dur-fast);
   --default-transition-timing-function: var(--ease);

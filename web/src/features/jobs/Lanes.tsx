@@ -4,7 +4,7 @@
 // two it takes the whole width. Stuck jobs come first: they are the
 // one thing here that needs a person. Slots, offers and readings are the Machines box's job.
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 import { ago, plural } from "../../lib/format";
 import { groupLanes, type Lane } from "../../lib/lanes";
@@ -12,7 +12,7 @@ import type { MachinesPanel, QueueSnapshot } from "../../lib/types";
 import { Empty } from "../../ui/Panel";
 import { Status } from "../../ui/Status";
 import { MachineState } from "../machines/parts";
-import { OrderButton } from "../order/OrderButton";
+import { OrderButton, OrderPanel } from "../order/OrderButton";
 import { JobCard } from "./JobCard";
 import { WaitList } from "./WaitList";
 
@@ -27,7 +27,7 @@ interface LaneBoxProps {
 
 const LaneBox = ({ title, state, note, sub, order, children }: LaneBoxProps) => (
   <section aria-label={title} className="grid min-w-0 gap-2 border-t border-line pt-4 first:border-t-0 first:pt-0">
-    <div className="pop-host flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <strong className="text-lg font-semibold">{title}</strong>{state}
       <span className="num ml-auto text-sm text-ink-2 max-md:order-last max-md:ml-0 max-md:basis-full">{note}</span>
       {order && <OrderButton className="max-md:ml-auto" />}
@@ -70,6 +70,7 @@ interface Props { snapshot: QueueSnapshot; machines: MachinesPanel | null }
 
 export function Lanes({ snapshot, machines }: Props) {
   const { lanes, quiet, shared, stuck, total } = groupLanes(snapshot, machines);
+  const home = useRef<HTMLDivElement>(null);  // where the focus goes back when no Order button is left
   const now = Date.now() / 1000;
   const count = (machines?.machines ?? []).length;
   if (!lanes.length && !quiet.length && !shared.length && !stuck.length) {
@@ -77,7 +78,7 @@ export function Lanes({ snapshot, machines }: Props) {
   }
   const nothing = !lanes.length && !shared.length && !stuck.length;
   return (
-    <div className="@container grid gap-5">
+    <div ref={home} tabIndex={-1} className="pop-host @container grid gap-5 focus:outline-none">
       {stuck.length > 0 && (
         <LaneBox title="No machine fits" note={`${stuck.length} waiting`} order
           state={<Status state="stuck" word="Stuck" />} sub="Nothing offers what these need.">
@@ -93,7 +94,7 @@ export function Lanes({ snapshot, machines }: Props) {
       )}
       {nothing && <Empty title="Nothing is running or waiting." hint="Send a job with `mulebox check` from a project." />}
       {snapshot.queued.length === 0 && (
-        <div className="pop-host flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-line pt-4">
           <p className="text-sm text-ink-2">Nothing is waiting. The order rules apply to the next line.</p>
           <OrderButton />
         </div>
@@ -112,6 +113,7 @@ export function Lanes({ snapshot, machines }: Props) {
           )}
         </LaneBox>
       )}
+      <OrderPanel home={home} />
     </div>
   );
 }

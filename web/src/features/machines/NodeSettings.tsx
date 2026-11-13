@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObjec
 import { problemText } from "../../lib/api";
 import { POLL_MS, asSuggested, changes, dropPending, readSettings, saveSettings, unsent,
          type Draft, type NodeSettings, type SettingKey } from "../../lib/nodeSettings";
+import { createTurns } from "../../lib/turns";
 import type { Machine } from "../../lib/types";
 import { Button, IconButton } from "../../ui/Button";
 import { WithCode } from "../../ui/Code";
@@ -45,24 +46,24 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
   const [draft, setDraft] = useState<Draft>({});
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ text: string; read?: boolean } | null>(null);
-  // Answers can come back in any order. Every request takes the next turn, and an answer is
-  // shown only while its turn is still the newest: a read asked before a save never undoes it.
-  const turn = useRef(0);
+  // Answers can come back in any order: one is shown only while its turn is the newest
+  // (lib/turns.ts), so a read asked before a save never undoes it.
+  const [turns] = useState(createTurns);
   const reading = useRef(0);    // the turn of a read still on its way, to not pile a second on it
   const saving = useRef(false);
 
   const read = useCallback(() => {
     if (saving.current) return;  // the save reads again when it is done
-    const mine = turn.current += 1;
+    const mine = turns.take();
     reading.current = mine;
     readSettings(name).then((next) => {
-      if (mine !== turn.current) return;
+      if (!turns.newest(mine)) return;
       setView(next);
       setProblem((had) => (had?.read ? null : had));
     }).catch((failure) => {
-      if (mine === turn.current) setProblem({ text: `Not read. ${problemText(failure)}`, read: true });
+      if (turns.newest(mine)) setProblem({ text: `Not read. ${problemText(failure)}`, read: true });
     }).finally(() => { if (reading.current === mine) reading.current = 0; });
-  }, [name]);
+  }, [name, turns]);
 
   // Again whenever the row changes: that is how the page hears the node took a change, went
   // away, was paused or upgraded, or started a job.
@@ -81,12 +82,12 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
   const send = async (ask: () => Promise<NodeSettings>, failed: string, sent?: Draft) => {
     if (saving.current) return;
     saving.current = true;
-    turn.current += 1;
+    turns.take();
     setBusy(true);
     setProblem(null);
     try {
       const next = await ask();
-      turn.current += 1;
+      turns.take();
       setView(next);
       if (sent) setDraft((had) => unsent(had, sent));
     } catch (failure) {

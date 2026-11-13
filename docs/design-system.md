@@ -207,9 +207,13 @@ Drawn in the specimen, in both themes:
   turns into a card per setting under 640px of its own width. While a save is on its way its
   controls take no edit, and an open window reads its node again every few seconds, keeping
   what the viewer has changed and not saved.
-  A panel is 380px wide or as wide as the row it hangs under, whichever is less, and at most 640px
-  tall: its head and foot stay and its body scrolls. In code: `web/src/ui/Controls.tsx` (switch,
-  segmented choice, stepper) and `web/src/ui/Float.tsx` (the panel).
+  A panel is `--pop-width` (380px) wide or as wide as its host, whichever is less, and at most
+  `--pop-height` (640px) tall: its head and foot stay and its body scrolls. It hangs under the
+  button that opened it (CSS anchor positioning), and at its host's top right where that button
+  has gone or the browser cannot anchor; the panel itself stays open, so what is typed in it is
+  kept. The chosen part of a segmented choice carries `--chosen-line` everywhere. In code:
+  `web/src/ui/Float.tsx` (the panel), `Switch.tsx`, and the same `Segmented.tsx` (`small`, 28px
+  and inline, for dense rows) and `Stepper.tsx` (`step`) as the window.
 - Queue order (the user's pick, 2026-11-13, option A of
   [design-system/queue-order-mockup.html](design-system/queue-order-mockup.html)): an Order button
   on a waiting line's heading opens the rules in a panel. The rules are a numbered ladder,

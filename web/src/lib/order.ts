@@ -4,6 +4,7 @@
 
 import { ArrowDown, Clock, Flag, GitBranch, Hand, Hourglass, Repeat, Timer, Workflow, type LucideIcon } from "lucide-react";
 
+import type { Choice } from "../ui/Segmented";
 import { roughly, shortId } from "./format";
 import type { Job, OrderPart, Rules, RulesBody } from "./types";
 
@@ -21,10 +22,10 @@ export function levelName(level: number, words: Record<string, number> = WORDS):
 }
 
 // The choices a level offers: High, Normal, Low, and the stored number when it is none of them.
-export function levelChoices(saved: number, words: Record<string, number> = WORDS): [number, string][] {
-  const named: [number, string][] = [["high", "High"], ["normal", "Normal"], ["low", "Low"]]
-    .filter(([word]) => word in words).map(([word, text]) => [words[word], text]);
-  return named.some(([level]) => level === saved) ? named : [...named, [saved, signed(saved)]];
+export function levelChoices(saved: number, words: Record<string, number> = WORDS): Choice<number>[] {
+  const named = [["high", "High"], ["normal", "Normal"], ["low", "Low"]]
+    .filter(([word]) => word in words).map(([word, label]) => ({ value: words[word], label }));
+  return named.some(({ value }) => value === saved) ? named : [...named, { value: saved, label: signed(saved) }];
 }
 
 // What to send so the stored rules become the edited ones: only what differs. Maps merge entry
@@ -44,6 +45,14 @@ export function changeOf(saved: Rules, draft: Rules): Partial<Rules> {
   if (saved.shortest_first !== draft.shortest_first) change.shortest_first = draft.shortest_first;
   if (saved.fair_turns !== draft.fair_turns) change.fair_turns = draft.fair_turns;
   return change;
+}
+
+// The rules with `change` (changeOf's shape) laid over them: maps entry by entry, a level of 0
+// kept as an entry so its row stays in the list while it is being edited.
+export function applyChange(rules: Rules, change: Partial<Rules>): Rules {
+  const out: Rules = { ...rules, ...change };
+  for (const map of LEVEL_MAPS) out[map] = { ...rules[map], ...change[map] };
+  return out;
 }
 
 export const isDirty = (saved: Rules, draft: Rules) => Object.keys(changeOf(saved, draft)).length > 0;
