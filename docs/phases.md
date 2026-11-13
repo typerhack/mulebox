@@ -152,7 +152,7 @@ queue and returns the same result as running it locally.
       online one was refused. Then a second drill worker was drained, stopped and removed: its key
       was taken off the coordinator and refused from then on.
       Moving the coordinator is written down, not done.
-- [~] M5.3 Workers report CPU and memory; the dashboard shows them per machine. Built 2026-11-07
+- [x] M5.3 Workers report CPU and memory; the dashboard shows them per machine. Built 2026-11-07
       (0.75.0): with every claim and heartbeat (schema 16), on the dashboard and in `mulebox machine
       list`. Run 2026-11-07 (0.75.0): a second drill worker running busy jobs reported 70% CPU
       beside the build machine's 73% in `mulebox machine list`, from the same stored readings the
@@ -161,6 +161,8 @@ queue and returns the same result as running it locally.
       2026-11-10: Edge reaches the dashboard again, but the dashboard's own machine shows its live
       sample, so this needs a second worker, and a throwaway one could not be built: the build machine
       could not reach the Ubuntu archive.
+      Done 2026-11-13 (1.17.18): with the first real Mac node (macOS 27.2, Apple silicon), a worker of the Linux node, its CPU, memory and network
+      moved live on the deployed dashboard in real Edge (9 to 10%, 65 to 66%, 31.8 to 15.2 KB/s).
 
 ## M6: Open-source readiness
 - [x] M6.1 License: MIT, chosen by the user. (2026-11-04, 0.25.2)
@@ -740,7 +742,11 @@ by Sol before the next starts (the user's ask).
       (1.6.0), with tests for both managers against stand-ins for systemctl and launchctl, and the
       installer's platform check run under the Mac's own bash 3.2. Open: a real Mac, and a real Linux
       upgrade through the new path.
-- [~] M21.2 Jobs on macOS: the process-group executor kept across a worker restart (orphans found
+      Run 2026-11-13 (1.17.18) on the first real Mac node (macOS 27.2, Apple silicon), a worker of the Linux node: `mulebox setup <mac> --worker-of
+      <node>` installed the launchd agent, and launchd restarted a worker killed with `kill -9`. Found
+      there: setup missed Docker Desktop (fixed 1.17.16), and the agent's ssh got `No route to host` from
+      macOS's Local Network privacy (fixed 1.17.17, ssh started disclaimed). Open: a Linux upgrade.
+- [x] M21.2 Jobs on macOS: the process-group executor kept across a worker restart (orphans found
       and stopped), freeze and its limits, and what a Mac node cannot do said, not faked. Built
       2026-11-12 (1.7.0): `worker/darwin_exec.py`, jobs under `nice -n 5`, records in
       `<staging>/job-groups/`; pinned Node.js as the macOS build. Tested with real processes on the
@@ -749,7 +755,11 @@ by Sol before the next starts (the user's ask).
       only while its first process is the recorded one, the command waits for its record, records
       never go through a symlink (`common/safefile.py`), and a frozen job is thawed to take its
       stop. Open: a real job on a Mac node.
-- [~] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
+      Done 2026-11-13 (1.17.18) on the first real Mac node (macOS 27.2, Apple silicon), a worker of the Linux node: jobs passed; a cancel stopped
+      the job's whole group; a `kill -9` of the worker mid-job left the group, which the restarted worker
+      found and stopped, the job `interrupted`; no process, record or job folder left. mulebox's own suite
+      ran there too: 3192 passed, 3 failed on the service marker reaching jobs (fixed 1.17.18).
+- [x] M21.3 Readings on macOS: the machine's CPU per core, memory, swap and network, and a job's own
       CPU and memory, for heartbeats, activity and the dashboard. Built 2026-11-12 (1.8.0):
       `common/host.py` over `/proc` and macOS (`common/darwin_host.py`), a job's group from `ps`
       and its containers from the engine's API (`worker/darwin_jobs.py`, `docker_stats.py`). The
@@ -757,6 +767,7 @@ by Sol before the next starts (the user's ask).
       1.8.2, from Sol's review: exited children's CPU counted (`ps -S`), one `ps` a round, the
       kernel's host port taken once, 32-bit tick counters unwrapped, the engine of the docker
       context in use. Open: the readings of a real Mac node on the dashboard.
+      Done 2026-11-13 (1.17.18): the Mac node's readings in `mulebox machine list` and on the dashboard (M5.3).
 - [~] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
       Built 2026-11-12 (1.9.0): runners are services through `mulebox/services/` on both systems
       (`runner_start|stop|restart|state|freeze|boost|group`), on a Mac the agent
@@ -771,32 +782,45 @@ by Sol before the next starts (the user's ask).
       Python 3.13. Done 2026-11-12 (1.13.5): on main it ran on GitHub's macOS machine; two racy
       tests of stopped process groups failed there first (fixed 1.13.3 and 1.13.5), and it has
       passed on every run since.
+Found on the first Mac node (2026-11-13), not fixed yet: `mulebox project reset` and `clean` reach only
+the coordinator's machine, not a project folder on another worker; setup reads the worker's service as
+`stopped` right after starting it; the worker logs "removed 1 simulators".
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 
 ## M22: Apple platform builds
 After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionOS.
-- [~] M22.1 Xcode as a toolchain: the worker reports its Xcode versions, SDKs and simulator runtimes;
+- [x] M22.1 Xcode as a toolchain: the worker reports its Xcode versions, SDKs and simulator runtimes;
       a job pins one (`xcode:`), chosen with `DEVELOPER_DIR`; a missing one exits 5 with what is there.
       Built 2026-11-12 (1.10.0): `worker/xcode.py`, the capability `xcode`, `doctor` fails a pinned
       version no online Mac has. Tested with Xcode bundles made in tests and the JSON shapes of this
       Mac's `xcodebuild` and `simctl`; this Mac's own Xcodes read. Open: a real job on a Mac node.
-- [~] M22.2 A simulator of its own per job, made before and removed on every outcome. Built
+      Done 2026-11-13 (1.17.18) on the first real Mac node (macOS 27.2, Apple silicon), a worker of the Linux node: `doctor` listed its Xcode 27.2,
+      SDKs and iOS 18.3 and 26.0 runtimes; jobs pinning `xcode: '27.2'` passed.
+- [x] M22.2 A simulator of its own per job, made before and removed on every outcome. Built
       2026-11-12 (1.11.0): `worker/simulator.py`, `needs: [simulator]` or a pinned runtime,
       `$MULEBOX_SIMULATOR`, removed by name in the cleanup and on a worker's start. Tested with
       simctl's JSON shapes and a stand-in; on this Mac, one throwaway simulator was made by a job's
       script lines from a real scan (iOS 26.0, 0.3 s) and removed by the cleaner's code, none left.
       Open: a real job on a Mac node, with a cancel and a worker killed mid-job.
+      Done 2026-11-13 (1.17.18) on the real Mac node: `xcodebuild test` of a Swift package in the job's own
+      iOS 26.0 simulator passed, the simulator gone after; a cancel with it booted, and a `kill -9` of the
+      worker with it booted (removed by the next worker's start), left none.
 - [~] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`. Built
       2026-11-12 (1.12.0): `$MULEBOX_DERIVED_DATA` on every Mac job, in its job folder;
       `cache-cocoapods` sets `CP_CACHE_DIR`, `cache-spm` only `$MULEBOX_CACHE_SPM`, as SwiftPM reads
       no setting (passed as `-packageCachePath`). Tested with unit tests. Open: a real Xcode job on a
       Mac node filling and reusing both caches.
+      Run 2026-11-13 (1.17.18) on the real Mac node: `cache-spm` filled (6.7 MB, a 3.6 s fetch) and, in a
+      fresh branch tree, gave the package back "from cache" in 0.02 s; DerivedData in the job folder, removed
+      with it. Open: `cache-cocoapods`, with no CocoaPods project yet.
 - [~] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node. Built
       2026-11-12 (1.13.0): `client/init_apple.py` writes `xcodebuild test` of a workspace's or
       project's shared scheme, in the job's own simulator for a device platform, else on the Mac,
       with `pod install` for a Podfile, or `swift test` for a package, and pins the dev machine's
       selected Xcode; docs/install.md, Apple builds on a Mac node. Tested with project files made in
       tests. Open: a real Xcode project's file run as a job on a Mac node.
+      Run 2026-11-13 (1.17.18): `mulebox init` on a new Swift package wrote `swift test`, the selected
+      Xcode pinned and `cache-spm`; it passed on the Mac node unedited. Open: an Xcode project.
 
 ## M23: Safer and fairer jobs
 Decided by the user on 2026-11-12, to start after M21 and M22 (macOS nodes, Apple builds). Ideas taken
@@ -821,13 +845,16 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       sends GITHUB_WORKFLOW, schema 22), and a long line read in a fixed number of queries (6000
       waiting jobs: 4.4 s inside the claim before, 0.2 s after). Open: real jobs on the node with a rule
       on, their order and `place:` in `mulebox queue`, and the settings on the dashboard (M14.15).
-- [~] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
+- [x] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
       the owner's desktop only when the spare machine is busy, or a Mac as the fallback. Built
       2026-11-13 (1.16.0), with M23.9 (the user's ask for a settings window per node, M14.14):
       `priority = "preferred" | "normal" | "fallback"` in node.toml, also set from afar; a node
       leaves a job to a free node ranked above it that offers what the job needs, for 30 s at
       most (design.md, Node settings), with tests on the real coordinator code. Open: two real
       nodes of different priority, the lower one taking jobs only while the better one is full.
+      Done 2026-11-13 (1.17.18): the Mac node `fallback`, the Linux node `normal`, real drill jobs: with a
+      slot free on the Linux node it took the job, twice, and the Mac none; with it full the Mac took the
+      job in 7 s.
 - [ ] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
       takes no job for a while, and others take them. Also before any failure (from macserve,
       2026-11-12): a node checks its own health (Docker answers, toolchains run, disk room) and
