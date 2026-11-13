@@ -65,8 +65,9 @@ def _decoded(row: sqlite3.Row) -> dict[str, Any]:
     data["capabilities"] = json.loads(data["capabilities"])
     tools = data.get("toolchains")  # absent in a read-only view of a store not yet upgraded
     data["toolchains"] = json.loads(tools) if tools else None
-    load = data.get("load")
-    data["load"] = json.loads(load) if load else None
+    for name in ("load", "settings", "wanted"):  # settings and wanted: node_settings.py
+        value = data.get(name)
+        data[name] = json.loads(value) if value else None
     return data
 
 
@@ -86,6 +87,8 @@ def report(worker: dict[str, Any], now: float) -> dict[str, Any]:
             "capabilities": worker["capabilities"], "toolchains": worker["toolchains"],
             "version": worker.get("version"), "slots": worker["slots"],
             "disk_free": worker.get("disk_free"), "draining": bool(worker.get("draining")),
+            "priority": (worker.get("settings") or {}).get("priority"),
+            "pending": worker.get("wanted") or None,
             "load": worker.get("load") if is_online(worker, now) else None}
 
 

@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.16.0 - 2026-11-13 - minor
+- Node settings from afar (M23.9, M23.4; the user's ask for a settings window per node, M14.14): `mulebox machine config <name> [--slots N] [--priority preferred|normal|fallback] [--cancel] [--wait]`, the `node_settings` request and `GET|POST /api/machines/<name>/settings` show a node's slots and priority, what waits, and a suggestion from its cores and memory (about 4 cores and 6 GB a job), and change them. The truth stays in each node's node.toml: the coordinator holds the change (`workers.wanted`, schema 21), the worker gets it with its next claim or heartbeat reply, writes it into its own node.toml through safefile (a symlink refused, comments kept, checked with the service's own reader) and reports what it has (`settings` in claims and heartbeats), which clears it. Only slots and priority: capabilities and `[job_env]` stay hand edits, as a wrong one fails jobs and `[job_env]` reaches every job's processes. A worker older than this one is refused with "upgrade it first".
+- Config reload (M23.9): the worker reads node.toml again within 2 s of a hand edit and takes `slots`, `priority` and `capabilities` from the next claim, with no restart; a lower count stops no running job, a file that does not read keeps the old values, other changed fields are logged as needing a restart.
+- Node priority (M23.4): `priority` in node.toml (`normal` if left out); a node leaves a job to a free, online, unpaused node ranked above it that offers what the job needs, for 30 s at most. Shown in `mulebox machine list` and the dashboard's machine rows (`priority`, `settings_pending`).
+- `common/config_node.py`: node.toml's `[dashboard]`, `slots` and `priority` reading, out of config.py to keep it under 300 lines; `node_config_from` reads a node config from parsed TOML.
+
 ## 1.15.4 - 2026-11-13 - patch
 - Roadmap: the Down meter seen on the deployed dashboard in real Edge with a drill job's large pip download (M23.11); a real CI cache restore stays open.
 

@@ -38,6 +38,8 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
 - `NodeConfig` (on a node, `~/.config/mulebox/node.toml`): `name: str`,
   `roles: tuple[str, ...]` (`coordinator`, `worker`), `roots: Roots-compatible dict`
   (`jobs`, `cache`, `staging`, `runners`, all absolute), `slots: int` (default 1),
+  `priority: str` (`preferred`, `normal` (default), `fallback`; slots from afar are 1..64, both in
+  `common/node_settings.py` and editable from afar, docs/design.md, Node settings),
   `capabilities: tuple[str, ...]`, `coordinator: str | None` (ssh target; None if local),
   `dashboard: dict` (`mode`: `off|local|lan`, `port`: 8090, `lan_range`: private CIDR or
   None, `lan_address`: IPv4 inside `lan_range` or None, `lan_port`: same as `port`, `lan_tls`: false),
@@ -45,7 +47,8 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   overrides it), `retention: dict` (`log_days`: 30, `step_days`: 365), `limits: dict`
   (`unattended_idle_min`: 15, `unattended_max_hours`: 24).
 - `load_client_config(path: Path | None = None) -> ClientConfig`,
-  `load_node_config(path: Path | None = None) -> NodeConfig`
+  `load_node_config(path: Path | None = None) -> NodeConfig`, `node_config_from(path, data)`
+  (from parsed TOML, for a change checked before it is written, worker/node_file.py)
 - YAML via PyYAML (`yaml.safe_load` only), TOML via `tomllib`. Unknown keys are errors.
 
 ## protocol.py

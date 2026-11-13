@@ -163,8 +163,10 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
   `free_slots`, `capabilities`, `last_seen`, `jobs`, `cpu_pct`, `mem_pct`, `cores`,
   `net_in_kib_s`, `net_out_kib_s`, `host` (true on the row of the worker on the dashboard's own
   machine, `node.toml`'s `name`; none is when no worker runs there) and `version` (the mulebox
-  the worker last reported, null before it did; a change publishes a `machines` event). Plus
-  `total`, `online` and `free_slots` for the cluster.
+  the worker last reported, null before it did; a change publishes a `machines` event),
+  `priority` (`preferred`, `normal` or `fallback` as the worker last reported it, null before)
+  and `settings_pending` (true while a change of its settings waits for it; both publish a
+  `machines` event when they change). Plus `total`, `online` and `free_slots` for the cluster.
 - **Readings.** `cpu_pct` (average over the cores), `mem_pct` and `cores` are what each worker
   last reported with a claim or heartbeat (`workers.load`, M5.3), at most every 2 s; null while
   it is offline or has not reported, and then the box reads `no live data`, never a guess. The
@@ -312,6 +314,8 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /api/jobs/{id}/cancel` | `{job_id, state, outcome, cancel_requested}`; rules in Controls |
 | `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, priority}` |
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
+| `GET /api/machines/{name}/settings` | the settings window (Node settings, below); 404 for a name the store does not know |
+| `POST /api/machines/{name}/settings` | body `{slots}`, `{priority}`, both, or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for` |
 | `GET /api/machines` | machines panel snapshot (above) |
 | `GET /api/history?limit=&before=&project=&job=&client=&worker=&kind=&result=&q=` | `{jobs, next_before}`, finished jobs newest first, and on the first page (no `before`) `choices`, every value of each filter as `/api/stats` gives it; `limit` 1..200, default 50; page with `before = next_before`, which keeps the filters. `project`, `job`, `client`, `worker` and `kind` (job or runner) are exact values; `result` is passed, failed (timed out and interrupted too) or cancelled (stopped as stuck too), as `shown_state` shows them, a GitHub run with no result of its own matching none; `q` is part of the project, job name or branch in any case, `%` and `_` taken as typed. Values up to 200 characters; 400 on a bad value |
@@ -323,6 +327,36 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/stats?from=&to=&day_starts=&by=&project=&job=&client=&worker=&kind=` | job minutes, the `stats_ok` body of interfaces-m1.md (`day_starts` and `by` comma-separated); 400 on a bad value |
 
 Bad numbers in `limit` or `before` give 400. An unusable offset or event id is ignored.
+
+## Node settings (`dashboard/node_settings.py`, `coordinator/node_settings.py`)
+
+A machine's settings window: the values it has, what waits, the suggestion. Rules: docs/design.md,
+Node settings. Both GET and POST answer the same body, the coordinator's `node_settings_ok`
+(interfaces-m1.md), plus `editable`:
+
+```json
+{"worker": "build-1", "online": true, "draining": false, "version": "1.16.0", "running": 1,
+ "applies": true,
+ "current": {"slots": 2, "priority": "normal"},
+ "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
+ "suggested": {"slots": 4, "reason": "16 cores and 32 GB of memory, at about 4 cores and 6 GB a job"},
+ "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"]},
+ "editable": true}
+```
+
+- `current` is what the node's node.toml holds, as its worker last reported; null (`applies`
+  false) for a worker older than this or not yet claimed, which cannot take a change: a POST is 409.
+- `pending` is a change the coordinator holds until the worker writes it, within seconds while it
+  is online, else when it is back (`online`); null once applied. `error` says why it could not be
+  written (for example a node.toml that is a symlink); it stays until a new change or `cancel`.
+- `suggested` comes from the cores and memory the worker last reported, null before it did. It
+  is never applied by itself.
+- `running` counts jobs and GitHub slots on it now. A lower `slots` stops no job: the node takes
+  no new one until it is under the new count.
+- `editable` is false when the dashboard's controls are off; there is no POST route then (405).
+- GET reads the dashboard's read-only store; POST sends `node_settings` through the canceller's
+  `mulebox rpc`, as `mulebox machine config` does. While a change waits, `/api/events` sends a
+  `machines` event with `settings_pending` true, and another once it applied.
 
 ## Server-Sent Events
 

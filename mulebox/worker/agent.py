@@ -29,7 +29,7 @@ from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.safepath import RemovalDenied, remove_tree
 from mulebox.common.status import ENVIRONMENT, PREPARE, TOOLCHAIN
-from mulebox.worker import activity, advert, background, job_meter, runspec
+from mulebox.worker import activity, advert, background, job_meter, live_config, runspec
 from mulebox.worker import project_home, reclaim, simulator, toolchains, workspace, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
 from mulebox.worker.agent_skip import Skipping
@@ -54,8 +54,10 @@ SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 class Agent(Ending, Skipping):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
-                 supervisor: Any = None, docker: Docker | None = None) -> None:
+                 supervisor: Any = None, docker: Docker | None = None,
+                 live: live_config.LiveConfig | None = None) -> None:
         self.node, self.link, self.executor, self.paths = node, link, executor, paths
+        self.live = live  # node.toml followed while running (live_config.py), or None
         self.clock = clock
         self.supervisor = supervisor  # runners.supervise.Supervisor, or None
         self.docker = docker or Docker()
@@ -102,6 +104,7 @@ class Agent(Ending, Skipping):
 
     def step(self, now: float | None = None) -> None:
         now = self.clock() if now is None else now
+        self._settings()
         for job in list(self.active.values()):
             self._tend(job, now)
         for job in list(self.finishing):
@@ -114,6 +117,14 @@ class Agent(Ending, Skipping):
         if self._free_slots() > 0 and self._online(now):
             self._claim(now)
 
+    def _settings(self, reply: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Take a hand edit of node.toml, or a change in a coordinator's `reply`; what to report."""
+        if self.live is not None:
+            self.node = self.live.follow(self.node, reply) if reply else self.live.check(self.node)
+            if hasattr(self.link, "cluster_slots"):
+                self.link.cluster_slots = self.node.slots  # the local coordinator's least (link.py)
+        return live_config.report(self.node, self.live.error if self.live else None)
+
     def _free_slots(self) -> int:
         """A slot is free only after its job's cleanup and result."""
         return self.node.slots - len(self.active) - len(self.finishing)
@@ -124,11 +135,13 @@ class Agent(Ending, Skipping):
 
     def _claim(self, now: float) -> None:
         msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths, self.host),
-                      free_slots=self._free_slots(), restarted=self.fresh)
+                      free_slots=self._free_slots(), restarted=self.fresh,
+                      settings=self._settings())
         try:
             reply = self._call(msg, now)
         except LinkError:
             return
+        self._settings(reply.body)
         if reply.type is not MessageType.ERROR:
             self.fresh = False  # the coordinator has released our old jobs
         if reply.type is MessageType.CLAIM_OK:
@@ -252,7 +265,8 @@ class Agent(Ending, Skipping):
     def _ping(self, job: ActiveJob, now: float) -> Message | None:
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
-                      attempt_id=job.attempt_id, load=self.host.sample(), activity=activity.report(
+                      attempt_id=job.attempt_id, load=self.host.sample(), settings=self._settings(),
+                      activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
                           job.steps.stage, job.steps.last_line, now, job.tailer.download))
         try:
@@ -264,6 +278,7 @@ class Agent(Ending, Skipping):
         reply = self._ping(job, now)
         if reply is None:
             return
+        self._settings(reply.body)
         if reply.body.get("cancel"):
             LOG.info("cancel requested for %s", job.job_id)
             self._end(job, Outcome.CANCELLED, None, now)

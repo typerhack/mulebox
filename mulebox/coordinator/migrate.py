@@ -36,6 +36,9 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 18 -> 19: the `clients` table: each dev machine's mulebox and skill state (clients.py).
 - 19 -> 20: `jobs.paused`, `jobs.priority` and `jobs.boost` (default 0): the owner's controls on
   a job (job_control.py).
+- 20 -> 21: `workers.settings` (JSON: the `slots` and `priority` a worker last reported, and why a
+  change could not be written), `workers.wanted` (JSON, a change its owner asked for that the
+  worker has yet to apply) and `workers.wanted_at` (node_settings.py); NULL until set.
 """
 
 import sqlite3
@@ -92,6 +95,9 @@ _STEPS: dict[int, tuple[str, ...]] = {
     19: ("ALTER TABLE jobs ADD COLUMN paused INTEGER NOT NULL DEFAULT 0",
          "ALTER TABLE jobs ADD COLUMN priority INTEGER NOT NULL DEFAULT 0",
          "ALTER TABLE jobs ADD COLUMN boost INTEGER NOT NULL DEFAULT 0"),
+    20: ("ALTER TABLE workers ADD COLUMN settings TEXT",
+         "ALTER TABLE workers ADD COLUMN wanted TEXT",
+         "ALTER TABLE workers ADD COLUMN wanted_at REAL"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

@@ -122,6 +122,8 @@ class MessageType(StrEnum):
     PROJECT_PAUSE_OK = "project_pause_ok"
     STATS = "stats"
     STATS_OK = "stats_ok"
+    NODE_SETTINGS = "node_settings"
+    NODE_SETTINGS_OK = "node_settings_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -190,6 +192,10 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: job minutes in a range (coordinator/stats.py).
     MessageType.STATS: frozenset(),
     MessageType.STATS_OK: frozenset({"total", "by", "days"}),
+    # client -> coordinator: read a node's settings, or ask for `slots` and `priority` (or
+    # `cancel` a waiting change); replied with node_settings_ok (coordinator/node_settings.py).
+    MessageType.NODE_SETTINGS: frozenset({"worker"}),
+    MessageType.NODE_SETTINGS_OK: frozenset({"worker", "current", "pending", "suggested"}),
     # client -> coordinator: log bytes from `offset`; replied with one log_chunk.
     MessageType.LOGS: frozenset({"job_id", "offset"}),
     # client -> coordinator: stream log_chunk / status_ok until a final result.

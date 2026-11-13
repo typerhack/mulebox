@@ -57,6 +57,7 @@ SAMPLE_VALUES = {
     "repository": "example-org/example-app",
     "run_id": "123456789", "run_attempt": "1", "runner": "build-1-example-app",
     "index": 0, "size": 18, "eof": True,
+    "current": {"slots": 2, "priority": "normal"}, "pending": None, "suggested": None,
 }
 
 
@@ -92,6 +93,7 @@ def test_enum_values_match_contract():
         "passed", "failed", "cancelled", "timed_out", "interrupted"]
     assert {t.value for t in MessageType} == {
         "job_ok", "job_control", "upgrade", "project_pause", "project_pause_ok", "stats", "stats_ok",
+        "node_settings", "node_settings_ok",
         "submit", "submit_ok", "upload_done", "status", "status_ok", "upload_plan_ok", "cancel",
         "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "steps", "error",

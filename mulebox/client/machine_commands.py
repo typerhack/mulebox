@@ -4,6 +4,7 @@
     mulebox machine drain <name> [--wait]    (also `machine pause`)
     mulebox machine resume <name>
     mulebox machine remove <name>
+    mulebox machine config <name> [--slots N] [--priority P] [--cancel] [--wait]  (machine_config.py)
 
 `drain` lets a machine finish its jobs and take no new ones; `--wait` returns once they ended.
 `remove` makes the coordinator forget a machine that is stopped and has no jobs, and takes its
@@ -16,6 +17,7 @@ import argparse
 import sys
 import time
 
+from mulebox.client import machine_config
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import Remote, request
 from mulebox.client.report import format_size
@@ -28,7 +30,8 @@ KEY_TIMEOUT_S = 30
 
 
 def register(sub: argparse._SubParsersAction) -> None:
-    machine = sub.add_parser("machine", help="list, pause (drain), resume or remove nodes")
+    machine = sub.add_parser("machine",
+                             help="list, pause (drain), resume, configure or remove nodes")
     actions = machine.add_subparsers(dest="machine_command", metavar="<action>", required=True)
     actions.add_parser("list", help="every machine, online or not").set_defaults(
         func=guarded(_list))
@@ -43,6 +46,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     remove = actions.add_parser("remove", help="forget a stopped machine and take its key off")
     remove.add_argument("name")
     remove.set_defaults(func=guarded(_remove))
+    machine_config.register(actions)
 
 
 def _say(line: str) -> None:
@@ -74,11 +78,12 @@ def _list(args: argparse.Namespace) -> int:
     if not rows:
         print("no machines yet")
         return 0
-    print(f"{'NAME':<20} {'STATE':<17} {'SLOTS':>5} {'CPU':>5} {'MEM':>5} {'NET IN':>13} "
+    print(f"{'NAME':<20} {'STATE':<17} {'SLOTS':>5} {'PRIORITY':<9} {'CPU':>5} {'MEM':>5} {'NET IN':>13} "
           f"{'NET OUT':>13}  {'VERSION':<9} OFFERS")
     for row in rows:
         load = row.get("load") or {}
         print(f"{row['worker']:<20} {state(row):<17} {row.get('slots') or '-':>5} "
+              f"{row.get('priority') or '-':<9} "
               f"{percent(load.get('cpu_pct')):>5} {percent(load.get('mem_pct')):>5} "
               f"{per_second(load.get('net_in_kib_s')):>13} "
               f"{per_second(load.get('net_out_kib_s')):>13}  "

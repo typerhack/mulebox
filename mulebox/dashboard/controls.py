@@ -35,7 +35,7 @@ async def _action(request: web.Request, allowed: Any) -> str:
     return action
 
 
-def _refused(exc: CoordinatorError, what: str) -> web.HTTPException:
+def refused(exc: CoordinatorError, what: str) -> web.HTTPException:
     if exc.code == "not_found":
         return web.HTTPNotFound(text=f"no such {what}\n")
     if exc.code in ("conflict", "bad_request"):
@@ -51,7 +51,7 @@ async def job_control(request: web.Request) -> web.Response:
     try:
         reply = await request.app[keys.CANCELLER].control(job_id, action)
     except CoordinatorError as exc:
-        raise _refused(exc, "job") from None
+        raise refused(exc, "job") from None
     _log.info("job %s: %s from the dashboard by %s", job_id, action, request.remote)
     body = reply.body
     return web.json_response({"job_id": job_id, "action": action, "state": body.get("state"),
@@ -67,7 +67,7 @@ async def machine_control(request: web.Request) -> web.Response:
     try:
         reply = await request.app[keys.CANCELLER].machine(name, MACHINE_ACTIONS[action])
     except CoordinatorError as exc:
-        raise _refused(exc, "machine") from None
+        raise refused(exc, "machine") from None
     _log.info("machine %s: %s from the dashboard by %s", name, action, request.remote)
     return web.json_response({"machine": name, "action": action,
                               "running": reply.body.get("running", [])})

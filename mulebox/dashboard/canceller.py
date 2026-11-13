@@ -44,6 +44,11 @@ class Canceller:
         """`machine` drain or resume (coordinator/machine_api.py); its `machine_ok` reply."""
         return await self.send(request(MessageType.MACHINE, worker=worker, action=action))
 
+    async def node_settings(self, worker: str, **change: object) -> Message:
+        """`node_settings` with `slots`, `priority` or `cancel` (coordinator/node_settings.py);
+        its `node_settings_ok` reply."""
+        return await self.send(request(MessageType.NODE_SETTINGS, worker=worker, **change))
+
     async def send(self, msg: Message) -> Message:
         """One request through a `mulebox rpc` of its own; its reply, or CoordinatorError."""
         process = await asyncio.create_subprocess_exec(

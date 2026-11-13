@@ -42,6 +42,9 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float,
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
             "host": host is not None and worker["worker"] == host, "version": worker.get("version"),
+            # node settings (coordinator/node_settings.py): null priority before a worker reports
+            "priority": (worker.get("settings") or {}).get("priority"),
+            "settings_pending": bool(worker.get("wanted")),
             **_load(worker.get("load") if online else None),
             "jobs": [_job(job) for job in jobs]}
 
@@ -88,6 +91,7 @@ def fingerprint(panel: dict[str, Any]) -> tuple:
     a waiting question's time left to the whole minute: browsers tick it."""
     whole = (lambda v: None if v is None else round(v))
     return tuple((row["name"], row["state"], row["slots"], row["free_slots"], row.get("version"),
+                  row.get("priority"), row.get("settings_pending"),
                   tuple(row["capabilities"]), tuple((j["job_id"], left_mark(j)) for j in row["jobs"]),
                   *(whole(row.get(key)) for key in READINGS))
                  for row in panel["machines"]) + tuple(

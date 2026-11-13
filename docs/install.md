@@ -171,9 +171,16 @@ passes `CODE_SIGNING_ALLOWED=NO`; signing for a device or the App Store stays wi
 - `roots`: the only folders mulebox writes to and deletes in. They must be separate,
   absolute, and not a system folder or your home folder itself. `projects` is optional: left
   out, as in a `node.toml` from before 0.56.0, it is `projects` beside `jobs`.
-- `slots`: jobs at the same time, 2 in a new install (1 if left out). Two heavy jobs share the
-  machine's CPU and memory, so 1 suits a small machine. A job with a fixed port of its own needs
-  `ports:` to run beside another; compose ports are moved already.
+- `slots`: jobs at the same time, 2 in a new install (1 if left out). Two heavy jobs
+  share the machine's CPU and memory, so 1 suits a small machine. A job with a fixed port of its
+  own needs `ports:` to run beside another; compose ports are moved already. `mulebox machine
+  config <name>` shows a suggestion from the machine's cores and memory (about 4 cores and 6 GB a
+  job) and changes it from the dev machine; see "Settings from the dev machine" below.
+- `priority`: `"preferred"`, `"normal"` (if left out) or `"fallback"`. A node takes a job only
+  when no node ranked above it could take that job now (online, not paused, with a free slot and
+  what the job needs). For example the spare machine `preferred` and your own desktop `normal`:
+  the desktop runs jobs only while the spare one is full. A job a better node leaves waiting 30 s
+  goes to the next one.
 - `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
   in `capabilities` of some worker, or its jobs are refused with that message. Add `docker`
   on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to
@@ -213,7 +220,10 @@ passes `CODE_SIGNING_ALLOWED=NO`; signing for a device or the App Store stays wi
   `"off"` turns it off; `"lan"` also serves it to your network, see "Dashboard on the LAN"
   below. Contract: [interfaces-m2.md](interfaces-m2.md).
 
-The installer never overwrites this file. After editing it, check it and restart:
+The installer never overwrites this file. `slots`, `priority` and `capabilities` apply without a
+restart: the worker reads the file again within 2 s of a change and counts them from its next job,
+and a file that does not read leaves the old values (the worker's log says why). For anything
+else, check it and restart:
 
 ```sh
 ~/.mulebox/venv/bin/python -c 'from mulebox.common.config import load_node_config; print(load_node_config())'
@@ -461,7 +471,7 @@ coordinator_key = "/home/alice/.config/mulebox/coordinator_key"
 ### Draining, removing and moving machines
 
 ```sh
-mulebox machine list               # every machine: online, offline or draining, slots, version
+mulebox machine list               # every machine: online, offline or draining, slots, priority
 mulebox machine drain build-2      # finish its jobs, take no new ones; --wait until they end
 mulebox machine resume build-2     # take jobs again
 mulebox machine remove build-2     # forget a stopped machine and take its key off
@@ -492,6 +502,23 @@ Each machine's CPU and memory show on the dashboard and in `mulebox machine list
 reports them. `machine list` also shows each machine's network in and out, over its physical
 interfaces only (Wi-Fi, Ethernet): a VPN tunnel's traffic also crosses Wi-Fi, and a container's
 crosses a bridge, so counting those would count the same bytes twice. Not yet: `mulebox project clean` or `reset` on another worker's folders.
+
+### Settings from the dev machine
+
+```sh
+mulebox machine config build-2                    # slots, priority, the suggestion, what waits
+mulebox machine config build-2 --slots 3          # --priority preferred|normal|fallback; --wait
+mulebox machine config build-2 --cancel           # drop a change that has not applied yet
+```
+
+The dashboard serves the same settings to its pages (`/api/machines/<name>/settings`, with its
+controls on); a window for them there is still to come. The change waits on the coordinator
+until the machine writes it into its own `node.toml`, within seconds while it is online, or when it
+is back; there is no restart, and it counts from the next job. Fewer slots than jobs running stops
+no job: the machine takes no new one until it is under the new count. Only `slots` and `priority`
+can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
+this cannot take a change: upgrade it first.
 
 ## Security model
 

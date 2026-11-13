@@ -15,9 +15,11 @@ import argparse
 import signal
 import sys
 import threading
+from pathlib import Path
 from typing import Any
 
-from mulebox.common.config import DEFAULT_REMOTE_BIN, NodeConfig, load_node_config
+from mulebox.common.config import (DEFAULT_REMOTE_BIN, NodeConfig, load_node_config,
+                                   node_config_path)
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
 from mulebox.worker import offers, project_commands, upgrade_wait
@@ -146,6 +148,7 @@ def _executor(paths: NodePaths) -> Any:
 
 
 def _serve(args: argparse.Namespace) -> int:
+    from mulebox.worker.live_config import LiveConfig
     from mulebox.worker.serve import serve
 
     setup_logging()
@@ -159,5 +162,6 @@ def _serve(args: argparse.Namespace) -> int:
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    serve(node, link, _executor(paths), paths=paths, stop=stop, docker=Docker())
+    live = LiveConfig(Path(args.config) if args.config else node_config_path())
+    serve(node, link, _executor(paths), paths=paths, stop=stop, docker=Docker(), live=live)
     return 0

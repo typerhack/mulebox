@@ -478,7 +478,8 @@ heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no p
 ## Multiple machines
 
 - Workers declare capabilities (`slots`, `docker`, `arch`, toolchains) and claim the
-  oldest compatible job. No speed scores or weights yet.
+  oldest compatible job, in the order of their priority (Node settings, below). No speed
+  scores or weights yet.
 - A job whose `needs` no known worker offers is refused at submit, with what to change. A
   queued job whose capable workers are all offline stays queued and says so.
 - Add a machine: `mulebox setup <worker> --worker-of <coordinator>` (docs/install.md, More
@@ -494,6 +495,53 @@ heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no p
   it is online or has jobs, as its next claim would bring it back. A drain leaves its GitHub
   runners alone: GitHub hands them jobs, and a reservation refused would leave a CI run hanging.
   Moving the coordinator is a documented manual step (docs/install.md).
+
+## Node settings (M23.9, M23.4, the user's ask, 2026-11-13)
+
+mulebox suggests how a node is set up and does that by default, and the owner decides: a node
+with 2 slots may serve its owner better with 3. So a node's settings can be read and changed from
+the dev machine (`mulebox machine config`) and from the dashboard, with no hand edit and no
+restart.
+- **What can be changed from afar: `slots` and `priority`.** Both only change how much work a
+  node takes and when; a wrong value slows the queue and is undone the same way. Left out:
+  `capabilities`, which say what the machine really has (Docker, Playwright's system packages),
+  so a wrong one fails jobs, and `mulebox setup` finds them; `[job_env]`, which reaches every job's
+  processes, so writing it from a page with no sign-in would let anyone on the network run code
+  on every node (`PATH`, `NODE_OPTIONS`, `LD_PRELOAD`); and roots, roles, the coordinator and the
+  dashboard, which need the services restarted.
+- **The truth stays in each node's `node.toml`.** The coordinator holds only a requested change,
+  `workers.wanted` (schema 21), and what the worker last reported, `workers.settings`. A worker on
+  another machine cannot be written by the coordinator, and should not be: it reaches the
+  coordinator, never the other way round. So the change travels back on what the worker already
+  asks: a claim's or heartbeat's reply carries `node_settings` while a change waits, the worker
+  writes it into its own `node.toml` (the one line of each setting, comments and the rest kept;
+  read and written through safefile, so a symlink is refused and the file is replaced whole, never
+  half written), checks the result with the same reader the service uses, and reports what it now
+  has with its next claim or heartbeat, which clears the request. A worker that cannot write it
+  reports why, and the request stays with that reason until the owner changes or drops it. A
+  machine that is offline gets it when it comes back. A worker older than this never reports
+  settings, so a change for it is refused with "upgrade it first" rather than left waiting.
+- **The next job, no restart (M23.9).** The worker reads its `slots` before every claim, so a new
+  value counts from the next claim. Running jobs keep their slot: a lower value than what runs
+  only stops new claims until enough jobs end, it never stops a job. A hand edit of `node.toml`
+  applies the same way: the worker looks at the file's time every 2 s and takes `slots`,
+  `priority` and `capabilities` from it live; a file that does not read is logged and the old
+  values stay; other changed fields are logged as needing `mulebox service restart worker`.
+- **A suggestion beside the value.** From the cores and memory the worker last reported: about 4
+  cores and 6 GB a job, at least 1, `max(1, min(cores // 4, memory_gb // 6))` (8 cores and 16 GB
+  give 2, today's default; 16 and 32 give 4). It is shown next to the current value with its
+  reason, and never applied by itself: the owner's value stays until the owner changes it. From
+  afar slots go from 1 to 64; a hand edit may set more, as a big machine may want it.
+- **Node priority (M23.4).** `priority = "preferred" | "normal" | "fallback"` in `node.toml`,
+  `normal` when left out. A node takes a job only when no node ranked above it could take that job
+  now: online, not paused, not running a boosted job, with a free slot and the job's `needs`. So
+  the spare machine is `preferred`, the owner's desktop `normal`, a Mac `fallback`, and the
+  desktop runs jobs only while the spare one is full. Within a level the order is as before:
+  whoever claims first. The rule is per job, so a job only the lower node can run is not held
+  back. A job left waiting 30 s in spite of a free better node (one that cannot claim it for a
+  reason of its own, such as an upgrade or a GitHub slot ahead of it on that node) goes to the
+  next node, so a ranked node can never leave a job stranded. Runner reservations are pinned to
+  their machine and do not use it.
 
 ## GitHub Actions
 

@@ -17,7 +17,8 @@ from mulebox.common.download_watch import clean as clean_download
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
-from mulebox.coordinator import api, attendance, clients, queue, stats, stats_api, steps, usual, workers
+from mulebox.coordinator import (api, attendance, clients, node_settings, queue, stats, stats_api,
+                                 steps, usual, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -82,6 +83,12 @@ class DashboardData:
             panel = machines.snapshot(found, active, now, self.local_name)
             panel["notices"] = notices.notices(get_version(), found, clients.recent(conn, now), now)
             return panel, found
+
+    def node_settings(self, name: str, now: float) -> dict[str, Any] | None:
+        """A machine's settings window (coordinator/node_settings.py `view`), or None if unknown."""
+        with self.store.read() as conn:
+            found = workers.get(conn, name)
+            return None if found is None else node_settings.view(conn, found, now)
 
     def job(self, job_id: str, now: float | None = None) -> dict[str, Any] | None:
         """The detail view of one job, or None when the id is malformed or unknown."""

@@ -33,6 +33,9 @@ Choices where docs/interfaces.md is silent:
   ``lan_tls`` defaults to false, ``lan_password`` to true. ``controls`` (default true) gives the
   dashboard its buttons: cancel, pause, resume, first, boost, and pausing a machine.
   ``cancel_button``, from before 0.87.0, is read and ignored.
+- ``slots`` is at least 1 (default 1; 1..64 when set from afar) and ``priority`` one of
+  ``preferred``, ``normal`` (default) and ``fallback`` (common/node_settings.py); both can be changed from afar (worker/node_file.py).
+  ``[dashboard]`` is read in config_node.py.
 - ``retention`` has ``log_days`` (default 30, at least 1) and ``step_days`` (default 365, at
   least ``log_days``).
 - ``limits`` has ``unattended_idle_min`` (default 15, at least 1) and ``unattended_max_hours``
@@ -43,13 +46,13 @@ Choices where docs/interfaces.md is silent:
 
 from __future__ import annotations
 
-import ipaddress
 import os
 from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from mulebox.common import compose, config_jobs, config_project
+from mulebox.common import compose, config_jobs, config_node, config_project
+from mulebox.common.config_node import DASHBOARD_MODES, DEFAULT_DASHBOARD_PORT  # noqa: F401
 from mulebox.common.config_reader import ConfigError, Reader, load_toml, load_yaml
 
 __all__ = [
@@ -69,10 +72,8 @@ PROJECT_FILE = ".mulebox.yml"
 CLIENT_ENV = "MULEBOX_CONFIG"
 ROLES = ("coordinator", "worker")
 ROOT_KEYS = ("jobs", "cache", "staging", "runners")
-DASHBOARD_MODES = ("off", "local", "lan")
 DEFAULT_TIMEOUT_MIN = 30
 DEFAULT_REMOTE_BIN = "~/.mulebox/bin/mulebox"
-DEFAULT_DASHBOARD_PORT = 8090
 DEFAULT_LOG_DAYS = 30
 DEFAULT_STEP_DAYS = 365
 DEFAULT_UNATTENDED_IDLE_MIN = 15
@@ -125,6 +126,7 @@ class NodeConfig:
     roles: tuple[str, ...]
     roots: dict[str, str]
     slots: int = 1
+    priority: str = "normal"  # common/node_settings.py
     capabilities: tuple[str, ...] = ()
     coordinator: str | None = None
     coordinator_key: str | None = None  # a worker's own key for it (`mulebox setup --worker-of`)
@@ -233,71 +235,25 @@ def _roots(reader: Reader) -> dict[str, str]:
     return roots
 
 
-def _dashboard(reader: Reader) -> dict[str, Any]:
-    sub = reader.table("dashboard")
-    mode = sub.text("mode", "local")
-    if mode not in DASHBOARD_MODES:
-        sub.fail("mode", f"must be one of {', '.join(DASHBOARD_MODES)}, got {mode!r}")
-    port = sub.integer("port", DEFAULT_DASHBOARD_PORT, 1, 65535)
-    lan_range = sub.text("lan_range", None)
-    lan_address = sub.text("lan_address", None)
-    lan_port = sub.integer("lan_port", port, 1, 65535)
-    lan_tls = sub.boolean("lan_tls", False)
-    lan_password = sub.boolean("lan_password", True)
-    controls = sub.boolean("controls", True)
-    sub.boolean("cancel_button", False)  # before 0.87.0; the controls replaced it
-    if lan_range is not None:
-        if "/" not in lan_range:
-            hint = f"needs a prefix length, e.g. 192.168.1.0/24, got {lan_range!r}"
-            sub.fail("lan_range", hint)
-        try:
-            lan_range = str(ipaddress.ip_network(lan_range, strict=True))
-        except ValueError as exc:
-            sub.fail("lan_range", f"must be a network in CIDR form: {exc}")
-        if not ipaddress.ip_network(lan_range).is_private:
-            sub.fail("lan_range", f"must be a private network, got {lan_range!r}")
-    elif mode == "lan":
-        sub.fail("lan_range", "is required when mode is 'lan'")
-    if lan_address is not None:
-        lan_address = _lan_address(sub, lan_address, lan_range)
-    elif mode == "lan":
-        sub.fail("lan_address", "is required when mode is 'lan'")
-    sub.finish()
-    return {"mode": mode, "port": port, "lan_range": lan_range, "lan_address": lan_address,
-            "lan_port": lan_port, "lan_tls": lan_tls, "lan_password": lan_password,
-            "controls": controls}
-
-
-def _lan_address(sub, text: str, lan_range: str | None) -> str:
-    """This machine's address on the LAN: one IPv4 address, inside `lan_range`."""
-    try:
-        address = ipaddress.IPv4Address(text)
-    except ValueError:
-        sub.fail("lan_address", f"must be an IPv4 address, got {text!r}")
-    if lan_range is None:
-        sub.fail("lan_range", "is required when lan_address is set")
-    network = ipaddress.ip_network(lan_range)
-    if network.version != 4 or address not in network:
-        sub.fail("lan_address", f"{text} is not inside lan_range {lan_range}")
-    if address.is_unspecified or address.is_loopback:
-        # The sign-in applies by the listener's address: on these it would not apply at all.
-        sub.fail("lan_address", f"must be this machine's address on the LAN, got {text}")
-    return str(address)
-
-
 def load_node_config(path: Path | None = None) -> NodeConfig:
     """Load a node's config."""
     path = Path(path) if path is not None else node_config_path()
-    reader = Reader(path, load_toml(path))
+    return node_config_from(path, load_toml(path))
+
+
+def node_config_from(path: Path, data: Any) -> NodeConfig:
+    """A node's config from parsed TOML; `path` names the file in errors."""
+    reader = Reader(path, data)
     config = NodeConfig(
         name=reader.name("name"),
         roles=_roles(reader),
         roots=_roots(reader),
-        slots=reader.integer("slots", 1, 1),
+        slots=config_node.slots(reader),
+        priority=config_node.priority(reader),
         capabilities=reader.strings("capabilities"),
         coordinator=reader.ssh_target("coordinator", None),
         coordinator_key=reader.absolute_path("coordinator_key"),
-        dashboard=_dashboard(reader),
+        dashboard=config_node.dashboard(reader),
         job_env=config_project.job_env(reader),
         retention=config_project.retention(reader, DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS),
         limits=config_project.limits(reader, DEFAULT_UNATTENDED_IDLE_MIN,

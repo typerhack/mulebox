@@ -134,6 +134,12 @@ class FakeCanceller:
         return self._answer((worker, action), MessageType.MACHINE_OK,
                             {"worker": worker, "action": action, "running": []})
 
+    async def node_settings(self, worker, **change):
+        return self._answer((worker, change), MessageType.NODE_SETTINGS_OK,
+                            {"worker": worker, "current": {"slots": 2, "priority": "normal"},
+                             "pending": {k: v for k, v in change.items() if k != "cancel"} or None,
+                             "suggested": None})
+
 
 @pytest.fixture(scope="module")
 def stored_password(tmp_path_factory):

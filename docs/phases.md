@@ -467,6 +467,12 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       while Wi-Fi moved 1205 and the VPN tunnel 1098, so the tunnel was not added again. Done 2026-11-10
       (0.85.0): a `net` line under each machine's meters, the user's pick; in real Edge on the deployed
       dashboard it changed live (657 KB/s in, then 166) and fit at 390 px.
+- [ ] M14.14 Node settings window (the user's ask, 2026-11-13: "a setting modal per node", so
+      the owner decides slots while mulebox keeps suggesting and doing the default). The backend
+      is M23.9 and M23.4: `GET|POST /api/machines/<name>/settings` (interfaces-m2.md, Node
+      settings). UI mockups made for the user to pick from. Done when: the picked window runs on
+      the real dashboard in Edge, shows a node's slots and priority with the suggestion, and a
+      change made there reaches the node's node.toml and counts from its next job.
 - [x] M14.6 Where a job came from and how long it usually takes, on its card: GitHub's mark for a CI
       slot, a laptop and the laptop's system for an agent's job, and "usually 4m" beside the time, never a
       time left (the user's choice on 2026-11-07, over an Apple logo). A CI job's page says GitHub has its
@@ -782,8 +788,13 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       lot's job weights.
 - [ ] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
       go ahead, a branch (such as `main`), a workflow or a project first.
-- [ ] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
-      the owner's desktop only when the spare machine is busy, or a Mac as the fallback.
+- [~] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
+      the owner's desktop only when the spare machine is busy, or a Mac as the fallback. Built
+      2026-11-13 (1.16.0), with M23.9 (the user's ask for a settings window per node, M14.14):
+      `priority = "preferred" | "normal" | "fallback"` in node.toml, also set from afar; a node
+      leaves a job to a free node ranked above it that offers what the job needs, for 30 s at
+      most (design.md, Node settings), with tests on the real coordinator code. Open: two real
+      nodes of different priority, the lower one taking jobs only while the better one is full.
 - [ ] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
       takes no job for a while, and others take them. Also before any failure (from macserve,
       2026-11-12): a node checks its own health (Docker answers, toolchains run, disk room) and
@@ -821,7 +832,16 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       version back by itself.
 - [ ] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
       sizes come from measurements.
-- [ ] M23.9 Config reload: an edited `node.toml` applies to the next job with no service restart.
+- [~] M23.9 Config reload: an edited `node.toml` applies to the next job with no service restart.
+      Built 2026-11-13 (1.16.0): `slots`, `priority` and `capabilities` from a hand edit (the worker
+      looks every 2 s) or from afar, `mulebox machine config <name> --slots N --priority P` and
+      `GET|POST /api/machines/<name>/settings`: the coordinator holds the change (schema 21), the
+      worker writes it into its own node.toml with its next claim or heartbeat and reports it, a
+      lower count stops no job, and a suggestion from cores and memory is shown beside the value
+      (design.md, Node settings). Tests with the real coordinator, worker and dashboard code and
+      real node.toml files in temporary folders. Open: on the real node, `mulebox machine config`
+      raises its slots from the dev machine, node.toml shows the new value, a third job runs at
+      once with no restart, and setting it back works the same way.
 - [ ] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
       session of your own, waiting in the same line so no job starts under you.
 - [~] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on

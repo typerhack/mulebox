@@ -14,6 +14,10 @@ roles = ["coordinator", "worker"]
 # Lower it to 1 on a small machine, raise it if yours stays idle during two jobs.
 slots = 2
 
+# Which nodes take jobs first: "preferred", "normal" or "fallback". A node takes a job only when
+# no node ranked above it could. `mulebox machine config` changes this and `slots` from afar.
+# priority = "normal"
+
 # What this node offers to jobs (`needs` in a project's .mulebox.yml), e.g. ["docker"].
 capabilities = []
 

@@ -92,7 +92,8 @@ def test_passed_job(agent, fake_link, paths):
     assert set(load["disk"]["roots"]) <= set(agent.node.roots)
     assert claim == {"worker": "build-1", "capabilities": ["node", *PACKAGE_CACHES], "free_slots": 1,
                      "toolchains": {}, "version": get_version(),
-                     "restarted": True}  # the first claim after a start
+                     "restarted": True,  # the first claim after a start
+                     "settings": {"slots": 1, "priority": "normal"}}
 
 
 def test_failed_job_keeps_exit_code(agent, fake_link):

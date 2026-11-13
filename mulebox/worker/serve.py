@@ -18,6 +18,7 @@ from mulebox.worker.agent import Agent
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor
 from mulebox.worker.link import CoordinatorLink
+from mulebox.worker.live_config import LiveConfig
 from mulebox.worker.paths import NodePaths
 
 LOG = get_logger("worker.serve")
@@ -25,8 +26,9 @@ LOG = get_logger("worker.serve")
 
 def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
           paths: NodePaths | None = None, stop: threading.Event | None = None,
-          docker: Docker | None = None, services: Manager | None = None) -> None:
-    """Recovery first, then the claim loop until `stop` is set."""
+          docker: Docker | None = None, services: Manager | None = None,
+          live: LiveConfig | None = None) -> None:
+    """Recovery first, then the claim loop until `stop` is set; `live` follows node.toml."""
     paths = paths or NodePaths.from_config(node.roots)
     stop = stop or threading.Event()
     ci = CiContainers(paths.runners, docker)
@@ -40,7 +42,7 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
                                         meter=RunnerMeter.for_platform(
                                             ci, services,
                                             places=PlaceGroups(paths.runners, docker)),
-                                        controls=steer))
+                                        controls=steer), live=live)
     agent.recover()
     places = PlaceKeeper(node.name, link, paths)  # isolated runners: a container per CI job
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)

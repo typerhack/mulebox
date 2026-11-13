@@ -1,7 +1,8 @@
 """The queue: atomic claims, slot accounting, queue positions and the listing.
 
 Oldest first, except what its owner moved up (`priority`, job_control.py). A paused job is
-skipped and keeps its place; a machine running a boosted job takes no new one until it ends.
+skipped and keeps its place; a machine running a boosted job takes no new one until it ends. A
+job a node ranked above the claiming one could take now is left to it (node_settings.py).
 
 A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
 claiming at once can never get the same job, and the cluster-wide slot limit holds.
@@ -18,7 +19,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, project_pause, upgrades, workers
+from mulebox.coordinator import holds, node_settings, project_pause, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -36,7 +37,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
           free_slots: int, cluster_slots: int = 1, *, now: float | None = None,
           toolchains: dict[str, list[str]] | None = None, version: str | None = None,
           disk_free: int | None = None,
-          load: dict[str, Any] | None = None) -> dict[str, Any] | None:
+          load: dict[str, Any] | None = None,
+          priority: str | None = None) -> dict[str, Any] | None:
     """Give `worker` the oldest queued job whose needs it meets, or None.
 
     None when the worker has no free slot, when the cluster's slots (workers.cluster_limit, at
@@ -60,6 +62,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
+        better = node_settings.better_free(conn, worker, now, priority)  # nodes ranked above
         for job in st.select_jobs(conn, "state = ? AND kind = ?",
                                   (JobState.QUEUED.value, JOB_KIND), QUEUE_ORDER):
             if blocker is not None and st.line_key(blocker) < st.line_key(job):
@@ -67,7 +70,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
             if upgrades.blocks(conn, worker, job):
                 return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
-                    and job["project"] not in on_hold and not job["paused"]):
+                    and job["project"] not in on_hold and not job["paused"]
+                    and not node_settings.held_back(job, better, now)):
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,
