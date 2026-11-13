@@ -136,7 +136,8 @@ jobs, GitHub runs' slots and waiting upgrades, in one order (`coordinator/line.p
    median of the known lengths of the rows in line; with none known, arrival decides. It comes
    after fair turns, so short jobs of one project cannot take every turn.
 5. **Arrival**: `queued_at`, then `seq`. (A row moved by hand before 1.17.1 may still carry a
-   `priority`, which goes first, higher first, as it did then; nothing writes one any more.)
+   `priority`, which goes first, higher first, as it did then; nothing writes one any more, and a
+   move leaves it, so a row others are pinned to keeps its place.)
 
 **The user's decisions (2026-11-13).** Aging is 30 minutes by default and only counts once another
 rule is on (as built in 1.17.0). A move by hand pins only the moved job, so a later rule change
@@ -150,7 +151,9 @@ row only (`pin_side`, `pin_job`, `pin_order`; coordinator/line_moves.py):
 - `first`: `front`, ahead of everything the rules order, the latest such move first.
 - `up`, `down`, `last`: `before` the row right after the gap, or, at the end of the line, `after`
   the row right before it. If that neighbour is pinned itself, the moved row joins it at the same
-  place, just ahead of or behind it (`pin_order`).
+  place, just ahead of or behind it (`pin_order`). Between two rows of one place it takes the
+  middle of their `pin_order`s; when floating point has none left (about 50 moves back and forth
+  in one place), the rows of that place are numbered 0, 1, 2 again in the same write.
 
 A pin is to the other row's place by the rules, not to wherever that row is shown: the line is
 built from the rows nobody moved, in the rules' order, with each pinned row set just ahead of or
@@ -172,7 +175,9 @@ on. A test holds the two equal for mixed lines.
 the history. It takes a fixed number of queries however long the line is: the queued rows, the
 rules, the rows that left the line but still hold a pinned row's place, what each project runs, and
 the usual lengths of every row at once (`usual.lengths`, one query per kind, each row still counting
-only the runs before it). 1.17.0 asked the history once per row; 6000 waiting jobs took 4.4 s
+only the runs before it). That query looks up each project, job, command and place in time once,
+and each lookup walks the history index back from its place and stops at the 20 runs it counts, so
+a project with 1000 passed runs costs what one with 20 does (1.17.1 read them all). 1.17.0 asked the history once per row; 6000 waiting jobs took 4.4 s
 inside the claim, holding back every other write. One request reads the line once and hands it on,
 to the waiting reasons and the upgrade checks too.
 

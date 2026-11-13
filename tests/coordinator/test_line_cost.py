@@ -65,3 +65,49 @@ def test_one_request_reads_the_line_once(store, staging, monkeypatch):
         reads.clear()
         assert api.handle(store, staging, request(kind, **body), 40.0).type != "error"
         assert len(reads) == 1, kind
+
+
+def _history(store, count, start=0):
+    """`count` passed runs of example-app's check, run n taking n seconds."""
+    with store.write() as conn:
+        for n in range(start, start + count):
+            job_id = f"job-run{n:023d}"
+            st.insert_job(conn, {**submit_body(), "job_id": job_id, "state": JobState.FINISHED,
+                                 "outcome": "passed", "created_at": float(n),
+                                 "queued_at": float(n), "timeout_min": 20})
+            conn.execute("INSERT INTO job_steps (job_id, seq, stage, started_at, finished_at) "
+                         "VALUES (?, 0, 'command', 0, ?)", (job_id, float(n)))
+
+
+def _steps(store, work):
+    """SQLite's virtual machine steps `work` takes: the rows it looks at."""
+    seen = [0]
+
+    def tick():
+        seen[0] += 1
+        return 0
+
+    store._conn.set_progress_handler(tick, 1)
+    try:
+        work()
+    finally:
+        store._conn.set_progress_handler(None, 1)
+    return seen[0]
+
+
+def test_a_jobs_usual_length_reads_only_its_last_runs_however_long_its_history(store, staging):
+    from mulebox.coordinator import usual
+
+    steps = []
+    for start, count in ((0, 100), (100, 900)):
+        _history(store, count, start)
+        job_id = queued(store, staging, now=5000.0)
+        with store.read() as conn:
+            job = st.require_job(conn, job_id)
+            assert usual.lengths(conn, [job])[job_id] == float(start + count - 11)  # last 20
+
+            def read(conn=conn, job=job):
+                usual.lengths(conn, [job])
+
+            steps.append(_steps(store, read))
+    assert steps[1] < steps[0] * 2, steps  # ten times the history, about the same work

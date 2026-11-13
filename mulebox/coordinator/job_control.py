@@ -90,7 +90,7 @@ def control(req: Request) -> Message:
                            "there is nothing to " + action)
         fields = changes(conn, job, action, req.now)
         if fields:
-            st.update_job(conn, job["job_id"], **fields)
+            line_moves.write(conn, job["job_id"], fields)
             job = st.require_job(conn, job["job_id"])
         order = line.read(conn, req.now)
         place, why = order.position(job), order.explain(job)

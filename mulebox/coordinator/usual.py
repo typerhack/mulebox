@@ -19,7 +19,6 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from bisect import bisect_left
 from collections import defaultdict
 from statistics import median_low
 from typing import Any
@@ -77,44 +76,49 @@ def for_job(conn: sqlite3.Connection, job: dict[str, Any]) -> dict[str, Any] | N
     return usual(conn, job["project"], job["job"], job["argv"], job["seq"])
 
 
-_JOB_RUNS = ("SELECT j.project, j.job, j.argv, j.seq, (SELECT MAX(s.finished_at) - MIN(s.started_at) "
+# The last RUNS passed runs before each lookup's seq, one lookup per distinct (project, job,
+# argv, seq) of the rows asked about, all of them in one query passed as JSON: each lookup walks
+# the jobs_project index back from its seq and stops at RUNS runs, however long the history.
+_LOOKUPS = ("WITH want AS (SELECT key AS n, json_extract(value, '$[0]') AS project, "
+            "json_extract(value, '$[1]') AS job, json_extract(value, '$[2]') AS argv, "
+            "json_extract(value, '$[3]') AS seq FROM json_each(?)) ")
+_JOB_RUNS = (_LOOKUPS + "SELECT w.n, (SELECT MAX(s.finished_at) - MIN(s.started_at) "
              "FROM job_steps s WHERE s.job_id = j.job_id AND s.finished_at IS NOT NULL) AS length "
-             "FROM jobs j WHERE j.kind = 'job' AND j.outcome = 'passed' AND j.project IN ({}) "
-             "AND j.seq < ? AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id) "
-             "AND NOT EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id "
-             "AND s.network_lost = 1) ORDER BY j.seq")
-_RUNNER_RUNS = ("SELECT project, job, NULL AS argv, seq, duration_s AS length FROM jobs "
-                "WHERE kind = 'runner' AND outcome = 'passed' AND duration_s IS NOT NULL "
-                "AND project IN ({}) AND seq < ? ORDER BY seq")
+             "FROM want w JOIN jobs j ON j.job_id IN (SELECT r.job_id FROM jobs r "
+             "WHERE r.project = w.project AND r.job = w.job AND r.seq < w.seq AND r.kind = 'job' "
+             "AND r.outcome = 'passed' AND r.argv = w.argv "
+             "AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = r.job_id) "
+             "AND NOT EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = r.job_id "
+             "AND s.network_lost = 1) ORDER BY r.seq DESC LIMIT ?)")
+_RUNNER_RUNS = (_LOOKUPS + "SELECT w.n, j.duration_s AS length FROM want w JOIN jobs j "
+                "ON j.job_id IN (SELECT r.job_id FROM jobs r WHERE r.project = w.project "
+                "AND r.job = w.job AND r.seq < w.seq AND r.kind = 'runner' "
+                "AND r.outcome = 'passed' AND r.duration_s IS NOT NULL "
+                "ORDER BY r.seq DESC LIMIT ?)")
 
 
-def _history(conn: sqlite3.Connection, sql: str, rows: list[dict[str, Any]]
-             ) -> dict[tuple, tuple[list[int], list[float | None]]]:
-    """Past runs of the rows' projects, by (project, job, argv), in seq order."""
-    if not rows:
-        return {}
-    projects = sorted({row["project"] for row in rows})
-    found: dict[tuple, tuple[list[int], list[float | None]]] = {}
-    query = sql.format(", ".join("?" * len(projects)))
-    for run in conn.execute(query, (*projects, max(row["seq"] for row in rows))):
-        seqs, lengths = found.setdefault((run["project"], run["job"], run["argv"]), ([], []))
-        seqs.append(run["seq"])
-        lengths.append(run["length"])
-    return found
+def _lookup(row: dict[str, Any]) -> tuple:
+    """What a row's usual length depends on: its project, job, command and place in time."""
+    argv = json.dumps(row["argv"], sort_keys=True) if row["kind"] == "job" else None
+    return row["project"], row["job"], argv, row["seq"]
 
 
 def lengths(conn: sqlite3.Connection, rows: list[dict[str, Any]]) -> dict[str, float | None]:
-    """`job_seconds` for many rows at once, in two queries whatever their number, so the line
-    (line.py) and the dashboard can read it for every waiting row inside one transaction."""
+    """`job_seconds` for many rows at once, in one query per kind whatever their number, so the
+    line (line.py) and the dashboard can read it for every waiting row inside one transaction."""
     out: dict[str, float | None] = {row["job_id"]: None for row in rows}
     for kind, sql, digits in (("job", _JOB_RUNS, 3), ("runner", _RUNNER_RUNS, 1)):
         mine = [row for row in rows if row["kind"] == kind]
-        history = _history(conn, sql, mine)
+        if not mine:
+            continue
+        wanted = sorted({_lookup(row) for row in mine})
+        found: dict[int, list[float]] = defaultdict(list)
+        for run in conn.execute(sql, (json.dumps(wanted), RUNS)):
+            if run["length"] is not None:
+                found[run["n"]].append(run["length"])
+        index = {lookup: n for n, lookup in enumerate(wanted)}
         for row in mine:
-            argv = json.dumps(row["argv"], sort_keys=True) if kind == "job" else None
-            seqs, values = history.get((row["project"], row["job"], argv), ([], []))
-            end = bisect_left(seqs, row["seq"])  # only runs before this one
-            known = [v for v in values[max(0, end - RUNS):end] if v is not None]
+            known = found.get(index[_lookup(row)])
             out[row["job_id"]] = round(median_low(known), digits) if known else None
     return out
 

@@ -194,3 +194,27 @@ def test_only_a_job_in_line_moves(store, staging):
     running = claimed(store, staging, now=1.0)["job_id"]
     with pytest.raises(Conflict, match="moves in line"):
         act(store, staging, running, "down")
+
+
+def test_a_move_leaves_jobs_ordered_by_a_legacy_priority_where_they_were(store, staging):
+    a, b, c, d = _four(store, staging)
+    with store.write() as conn:  # moved up by hand before pins existed: higher first
+        for job_id, level in zip((a, b, c, d), (4, 3, 2, 1)):
+            st.update_job(conn, job_id, priority=level)
+    assert _line(store) == [a, b, c, d]
+    act(store, staging, a, "down")
+    assert _line(store) == [b, a, c, d]
+    act(store, staging, c, "first")  # c, which a is pinned ahead of, keeps its place for a
+    assert _line(store) == [c, b, a, d]
+
+
+def test_moves_back_and_forth_in_one_place_never_run_out_of_room(store, staging):
+    a, b, c, d = _four(store, staging)
+    for job_id in (a, b, c, d):
+        act(store, staging, job_id, "first")
+    assert _line(store) == [d, c, b, a]
+    for n in range(200):  # each move halves the room between two pins at the front
+        mover = b if n % 2 == 0 else c
+        act(store, staging, mover, "up")
+        rest = [c, b] if mover == c else [b, c]
+        assert _line(store) == [d, *rest, a], n
