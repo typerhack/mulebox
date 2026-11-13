@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.15.4 - 2026-11-13 - patch
+- Roadmap: the Down meter seen on the deployed dashboard in real Edge with a drill job's large pip download (M23.11); a real CI cache restore stays open.
+
 ## 1.15.3 - 2026-11-13 - patch
 - The Down meter, fixes from Sol's review of 1.15.1: a GitHub run's figures now read "at least 12.0 of 41.0 MB" (and "at least 18.0 MB so far") on the card itself, not only in a hover title that touch screens never show. A size with nothing counted yet (pip's `Downloading torch (906 MB)`) drew a definite 0% meter and read "906 MB in all", as if finished; a share now needs both figures, so it is the open, dashed track with "906 MB to download". On a narrow card (390 px, a frozen and boosted GitHub run with its marks and menu) the amount squeezed the track away and spilled; the row now wraps, putting the amount on its own right-aligned line under the track (`.meter-wrap`, components.css). Seen in headless Chrome at 390 and 1440 px in both themes with the `downloads` scene, which gains a frozen, boosted run and a size-only download.
 

@@ -838,8 +838,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Download progress on cards (the user's ask, 2026-11-13): built 2026-11-13 (1.15.0), the
       reading only (`download` in a job's activity, its card's `doing` and `mulebox status`),
       with tests on lines from the node's real CI runs. The user picked mockup A, a second meter;
-      card built 1.15.1; open: seen on the deployed dashboard in Edge, with a real slow cache
-      restore.
+      card built 1.15.1, Sol's fixes 1.15.2 and 1.15.3. Seen 2026-11-13 in real Edge on the
+      deployed dashboard: a drill job's pip download of a 906 MB wheel showed the open track,
+      "864 MB to download" (the dashboard counts in 1024s), the file's name and "542 KB/s, whole
+      node"; the job was cancelled and its project home removed. Open: a real slow cache restore
+      on a CI run, with its meter filling.
 
 ## M24: Answers an agent can trust
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,
