@@ -5,7 +5,8 @@
 //          GitHub run); build-2 runs 2 with 1 waiting; 2 jobs for the next free machine and
 //          one no machine fits.
 //   downloads: the Down meter in each state, on agent jobs and GitHub runs: a known total, no
-//          total, no bytes for a while (each), the node's traffic only, and a long name.
+//          total, no bytes for a while (each), the node's traffic only, a long name, a size alone,
+//          and a GitHub run frozen and boosted (the narrowest card).
 
 import { job, type MockJob } from "./fixtures.ts";
 
@@ -72,13 +73,16 @@ function downloads() {
   const still = { rate_bytes_s: 0, net_bytes_s: 0, quiet_s: 75, stalled: true };
   const running = [
     run("A41F9C", "build-1", 72, 30, { branch: "feat/checkout-form", doing: { stage: "install", cpu_pct: 30, download: pnpm } }),
-    run("C07E55", "build-1", 48, 0, { ...ci("build-1"), usual_s: 180, doing: { ...step, download: cache } }),
+    run("C07E55", "build-1", 48, 0, { ...ci("build-1"), usual_s: 180, paused: true, boost: true, doing: { ...step, download: cache } }),
     run("E93B21", "build-1", 117, 0, { branch: "feat/checkout-form", doing: { stage: "install", cpu_pct: 0, download: { ...pnpm, ...still } } }),
     run("B0E6F5", "build-1", 93, 0, { ...ci("build-1"), usual_s: 180, doing: { ...step, download: { ...cache, ...still } } }),
     run("D2A771", "build-2", 20, 5, { ...LONG, doing: { stage: "toolchain", cpu_pct: 5, download: {
       what: "tool", name: "chromium-headless-shell-linux-x64-with-a-long-file-name.tar.gz", done_bytes: null, total_bytes: null,
       rate_bytes_s: null, net_bytes_s: 3.1 * MB, net_scope: "machine", quiet_s: null, stalled: null } } }),
-    run("F5C310", "build-2", 20, 90, { project: "example-worker", branch: "chore/deps", client_os: "Linux" }),
+    run("F5C310", "build-2", 20, 90, { project: "example-worker", branch: "chore/deps", client_os: "Linux", doing: {
+      stage: "install", cpu_pct: 90, download: { what: "package", name: "torch-2.5.1-cp312-cp312-manylinux1_x86_64.whl",
+      done_bytes: null, total_bytes: 906 * MB, rate_bytes_s: null, net_bytes_s: 3.1 * MB, net_scope: "machine",
+      quiet_s: null, stalled: null } } }),
   ];
   return { running, queued: [] as MockJob[], machines: { "build-1": { slots: 4, state: "busy" }, "build-2": { slots: 2, state: "busy" } } };
 }

@@ -6,8 +6,9 @@ import { bytes, duration } from "./format";
 import type { Download } from "./types";
 
 export interface DownloadView {
-  share: number | null;    // percent of the total, null when the total is not known
-  amount: string;          // "12 of 41 MB", "18 MB so far"
+  share: number | null;    // percent of the total, null unless both the bytes so far and the total are known
+  sized: boolean;          // the total is known, whether or not the bytes so far are
+  amount: string;          // "12 of 41 MB", "18 MB so far", "906 MB to download"; "at least" first for a floor
   subject: string;         // "pip cache"; "" when nothing names it
   speed: string | null;    // "0.6 MB/s"
   wholeNode: boolean;      // the speed is the node's traffic, not this job's alone
@@ -26,10 +27,13 @@ function ofTotal(done: number, total: number): string {
   return whole.endsWith(` ${unit}`) ? `${number} of ${whole}` : `${number} ${unit} of ${whole}`;
 }
 
-function amountOf(done: number | null, total: number | null): string {
-  if (done !== null && total !== null) return ofTotal(done, total);
-  if (done !== null) return `${bytes(done)} so far`;
-  return total !== null ? `${bytes(total)} in all` : "size not known";
+// A size alone is what is to come, never what has arrived. `floor`: the figures are a lower
+// bound (a GitHub runner writes its output in blocks), said in the words, not a hover alone.
+function amountOf(done: number | null, total: number | null, floor: boolean): string {
+  const least = floor ? "at least " : "";
+  if (done !== null && total !== null) return least + ofTotal(done, total);
+  if (done !== null) return `${least}${bytes(done)} so far`;
+  return total !== null ? `${bytes(total)} to download` : "size not known";
 }
 
 const seconds = (s: number) => (s < 90 ? `${Math.round(s)} s` : duration(s));
@@ -44,7 +48,7 @@ function speedOf(download: Download): { speed: string | null; wholeNode: boolean
   return { speed: null, wholeNode: false };
 }
 
-export function downloadView(download: Download | null | undefined): DownloadView | null {
+export function downloadView(download: Download | null | undefined, floor = false): DownloadView | null {
   if (!download) return null;
   const done = known(download.done_bytes) ? download.done_bytes : null;
   const total = known(download.total_bytes) && download.total_bytes > 0 ? download.total_bytes : null;
@@ -52,8 +56,9 @@ export function downloadView(download: Download | null | undefined): DownloadVie
     ? (known(download.quiet_s) ? `No bytes for ${seconds(download.quiet_s)}` : "No bytes moving")
     : null;
   return {
-    share: total === null ? null : Math.min(100, ((done ?? 0) / total) * 100),
-    amount: amountOf(done, total),
+    share: total === null || done === null ? null : Math.min(100, (done / total) * 100),
+    sized: total !== null,
+    amount: amountOf(done, total, floor),
     subject: download.name?.trim() || KINDS[download.what ?? ""] || "",
     ...(quiet ? { speed: null, wholeNode: false } : speedOf(download)),
     quiet,

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.15.3 - 2026-11-13 - patch
+- The Down meter, fixes from Sol's review of 1.15.1: a GitHub run's figures now read "at least 12.0 of 41.0 MB" (and "at least 18.0 MB so far") on the card itself, not only in a hover title that touch screens never show. A size with nothing counted yet (pip's `Downloading torch (906 MB)`) drew a definite 0% meter and read "906 MB in all", as if finished; a share now needs both figures, so it is the open, dashed track with "906 MB to download". On a narrow card (390 px, a frozen and boosted GitHub run with its marks and menu) the amount squeezed the track away and spilled; the row now wraps, putting the amount on its own right-aligned line under the track (`.meter-wrap`, components.css). Seen in headless Chrome at 390 and 1440 px in both themes with the `downloads` scene, which gains a frozen, boosted run and a size-only download.
+
 ## 1.15.2 - 2026-11-13 - patch
 - Download readings, fixes from Sol's review of 1.15.0: junk that looked like progress (`| | 10% of ... MiB`, a size of 400 nines) raised out of log processing; numbers are now bounded, a size must be finite, and `download_lines.parse` never raises. An isolated runner at 2 KiB/s read as stalled, as traffic under 4 KiB/s counted as none: any byte, in its traffic or its printed figures, now counts. Playwright's tenths (one line in 102 s for 1 GiB at 1 MiB/s) read as stalled between them: its lines alone now judge against twice the longest gap seen, and say nothing before the first. A named end (`..., done`, uv's `Downloaded torch`) cleared another package's reading; it now ends only its own. Image readings never ended: they end at their total, and when pullnoise.py sees every layer with its data, before a long extraction.
 - Docs: design.md, Downloads.

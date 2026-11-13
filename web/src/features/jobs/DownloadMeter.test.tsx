@@ -19,7 +19,7 @@ describe("a card's Down meter", () => {
     expect(meter.getAttribute("aria-valuenow")).toBe("29");
     expect(meter.hasAttribute("data-level")).toBe(false);
     expect(meter.className).toContain("meter-flat");
-    expect(screen.getByText("12.0 of 41.0 MB").title).toContain("figures from 30 s ago");
+    expect(screen.getByText("at least 12.0 of 41.0 MB").title).toContain("figures from 30 s ago");
     expect(screen.getByText("Downloading npm cache")).toBeTruthy();
     expect(screen.getByText("614 KB/s").className).toContain("num");
     expect(container.querySelector(".track-open")).toBeNull();
@@ -35,7 +35,18 @@ describe("a card's Down meter", () => {
     expect(screen.getByText("3.0 MB/s, whole node")).toBeTruthy();
   });
 
-  it("turns to the warning colour and counts the seconds when no byte moves", () => {
+  it("shows a GitHub run's floor visibly, and a size alone as an open track, not 0%", () => {
+    render(<DownloadMeter download={{ what: "package", done_bytes: 18 * MB }} trails />);
+    expect(screen.getByText("at least 18.0 MB so far")).toBeTruthy();
+    cleanup();
+    const { container } = render(<DownloadMeter download={{ what: "package", name: "torch", total_bytes: 906 * MB }} />);
+    expect(screen.queryByRole("meter")).toBeNull();
+    expect(container.querySelector(".track-open")).toBeTruthy();
+    expect(screen.getByText("906 MB to download")).toBeTruthy();
+    expect(container.textContent).not.toMatch(/in all/);
+  });
+
+    it("turns to the warning colour and counts the seconds when no byte moves", () => {
     const { container } = render(<DownloadMeter download={{ ...cache, quiet_s: 75, stalled: true }} />);
     expect(screen.getByRole("meter").getAttribute("data-level")).toBe("warn");
     expect(screen.getByText("No bytes for 75 s")).toBeTruthy();

@@ -24,7 +24,16 @@ describe("a download in words", () => {
       .toMatchObject({ share: null, amount: "18.0 MB so far", subject: "packages", speed: null });
     expect(downloadView({ what: "tool", name: "node-v22.12.0-linux-x64.tar.gz" })?.amount).toBe("size not known");
     expect(downloadView({ what: "network", total_bytes: 0 })).toMatchObject({ share: null, subject: "" });
-    expect(downloadView({ what: "package", total_bytes: 906 * MB })).toMatchObject({ share: 0, amount: "906 MB in all" });
+    // a size with nothing yet arrived: no definite 0%, and worded as what is to come
+    expect(downloadView({ what: "package", total_bytes: 906 * MB }))
+      .toMatchObject({ share: null, sized: true, amount: "906 MB to download" });
+  });
+
+  it("says at least, in the words, for a floor", () => {
+    expect(downloadView({ done_bytes: 12 * MB, total_bytes: 41 * MB }, true)?.amount).toBe("at least 12.0 of 41.0 MB");
+    expect(downloadView({ done_bytes: 18 * MB }, true)?.amount).toBe("at least 18.0 MB so far");
+    expect(downloadView({ total_bytes: 906 * MB }, true)?.amount).toBe("906 MB to download");
+    expect(downloadView({ done_bytes: 12 * MB, total_bytes: 41 * MB })?.amount).toBe("12.0 of 41.0 MB");
   });
 
   it("prefers the job's own measured traffic, and never passes the node's off as the job's", () => {
