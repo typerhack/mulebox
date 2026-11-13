@@ -19,7 +19,7 @@ Most people have, or can cheaply get, an idle Linux machine on the same network.
 - Simple to operate for one person; no cloud services, no inbound internet access.
 
 Non-goals (for now): multi-tenant use, internet-facing access, automatic failover,
-scheduling by speed or job weight, an MCP server (a thin wrapper may come later).
+scheduling by machine speed or job weight, an MCP server (a thin wrapper may come later).
 
 ## Roles
 
@@ -56,8 +56,8 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    compares it with the project's last snapshot and asks for the difference, rebuilds the whole
    snapshot, and queues the job only if the result matches the list. Any trouble sends the whole
    snapshot, so a saving never fails a job. One snapshot per project stays in `<staging>/bases`.
-2. **Queue**: one line, oldest first. Assignment is atomic: the oldest job a free worker can
-   run. The owner can steer it (`mulebox pause|resume|first|up|down|last|boost|normal`, or the
+2. **Queue**: one line, oldest first unless the owner set order rules (Order of the line,
+   below). Assignment is atomic: the first job in line a free worker can run. The owner can steer it (`mulebox pause|resume|first|up|down|last|boost|normal`, or the
    dashboard): a waiting job moves to the front, one place up or down, or to the end (the move
    writes the new order into every waiting job's priority, so jobs sent later come after them), a paused one keeps its place and does not start,
    and a machine running a `boost`ed job takes no new one (coordinator/job_control.py). A whole
@@ -103,6 +103,60 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 - Client disconnected after submit: the outcome is "unknown"; reconnect by job id.
 - Node unreachable: the client fails fast with a clear message and never falls
   back to running locally on its own.
+
+## Order of the line (M23.3, M24.4, 2026-11-13)
+
+The user asked for settings that order the line beside moving jobs by hand. One line stays: agent
+jobs, GitHub runs' slots and waiting upgrades, in one order (`coordinator/line.py`), which
+`queue.claim`, a GitHub run's grant, an upgrade's turn, positions and moves all read.
+
+**Precedence.** Each step only breaks the ties of the one before:
+
+1. **Moves by hand** (`mulebox first|up|down|last`, the dashboard's arrows): `priority`, higher
+   first. A move writes the order shown, rules included, into every waiting job, as before; those
+   jobs keep that order, and a job sent later comes behind them, placed by the rules among its
+   peers. A queued upgrade goes first the same way unless sent with `--behind`.
+2. **Levels from the rules**, higher first, added up per row:
+   - `projects`: a level per project, -3 to 3 (low -1, normal 0, high 1), for agent jobs and a
+     repository's GitHub runs alike (`owner__repo` is a project name).
+   - `branches`: a level per branch name or pattern (`main`, `release/*`). The exact name wins,
+     else the longest pattern that matches.
+   - `github`: a level for every GitHub run's slot against agent jobs.
+   - `aging_min` (default 30): every that many minutes in line add one level, so a low project
+     or a long job is never held back for good. An upgrade takes aging only.
+3. **Fair turns** (`fair_turns`, off by default): among rows of one level, the k-th waiting row
+   of a project gets turn k plus what that project already runs, and turns go first. So one
+   project's burst of ten jobs does not hold back another project's single job, and a project with
+   two jobs running waits behind one with none.
+4. **Shortest first** (`shortest_first`, off by default): among rows of one level and turn, the
+   one whose `usual` length (usual.py: an agent job's median passed run, a GitHub run's median
+   held slot) is shorter goes first. A row with no history comes after the ones with one; aging
+   keeps it from waiting for ever. It comes after fair turns, so short jobs of one project cannot
+   take every turn.
+5. **Arrival**: `queued_at`, then `seq`.
+
+A workflow rule was left out: a runner's hook knows the GitHub job's name, not the workflow's, so
+it would need a new column first. Branches and projects cover "CI of `main` first".
+
+**Defaults keep today's line exactly.** With no project, branch or GitHub level and fair turns
+and shortest first off, `line.read` takes the SQL order of arrival with moves (`priority DESC,
+queued_at, seq`), as the line was before. Aging alone cannot change that order (an older row has
+always waited longer), so its default of 30 minutes only counts once another rule is on. A test
+holds the two equal for mixed lines with moves.
+
+**Where the settings live.** In the coordinator's store, `meta` key `line_rules`, one JSON value
+like the project pauses and holds, read in the same `BEGIN IMMEDIATE` transaction that starts a job,
+so the claim stays atomic and no schema change is needed. Set by the owner from any dev machine
+(`mulebox queue rules`, `mulebox project priority <project> <level>`) or from the dashboard, both
+sending `queue_rules`. Never in a project's `.mulebox.yml`: a project must not be able to raise
+itself above the others, and an agent can edit that file.
+
+**Explainable.** While any rule is on, every waiting row says why it is where it is: `place_reason`
+(such as `project example-app +1; waited 45m +1; turn 2 of example-app; then by arrival`) and
+`order` (`by_hand`, `level`, `levels` with the rule each came from, `turn`, `usual_s`), in
+`status`, `queue` and the dashboard, beside `waiting_for` and `running_ahead`, which still say why
+a job has not started. With every rule at its default there is nothing to say beyond arrival, and
+the fields are absent.
 
 ## Time limits
 
@@ -478,8 +532,8 @@ heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no p
 ## Multiple machines
 
 - Workers declare capabilities (`slots`, `docker`, `arch`, toolchains) and claim the
-  oldest compatible job, in the order of their priority (Node settings, below). No speed
-  scores or weights yet.
+  first compatible job in line (Order of the line), in the order of their priority (Node
+  settings, below). No speed scores or weights yet.
 - A job whose `needs` no known worker offers is refused at submit, with what to change. A
   queued job whose capable workers are all offline stays queued and says so.
 - Add a machine: `mulebox setup <worker> --worker-of <coordinator>` (docs/install.md, More

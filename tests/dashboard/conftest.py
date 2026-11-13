@@ -140,6 +140,9 @@ class FakeCanceller:
                              "pending": {k: v for k, v in change.items() if k != "cancel"} or None,
                              "suggested": None})
 
+    async def queue_rules(self, body):
+        return self._answer(body, MessageType.QUEUE_RULES_OK, {"rules": body.get("rules", {})})
+
 
 @pytest.fixture(scope="module")
 def stored_password(tmp_path_factory):

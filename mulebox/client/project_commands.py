@@ -5,6 +5,7 @@
     mulebox project pause <project>... [--minutes N]   none of its jobs or CI runs starts
     mulebox project resume <project>...
     mulebox project paused
+    mulebox project priority <project> [LEVEL]   its level in the line (order_commands.py)
 
 Clean and reset are `mulebox project-home` on the machine (worker/project_commands.py); without
 `--yes` they only say what would go. Pause, resume and paused are coordinator requests
@@ -18,6 +19,7 @@ import argparse
 import sys
 import time
 
+from mulebox.client import order_commands
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import request
 from mulebox.common.protocol import MessageType
@@ -45,6 +47,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     resume.set_defaults(func=guarded(_pause), action="resume", minutes=None)
     listing = actions.add_parser("paused", help="list paused projects")
     listing.set_defaults(func=guarded(_pause), action="list", projects=[], minutes=None)
+    order_commands.add_priority(actions)
 
 
 def _on_machine(*argv: str) -> int:

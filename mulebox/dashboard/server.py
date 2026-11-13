@@ -24,7 +24,7 @@ from aiohttp import web
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.stats import GROUPS as STAT_FILTERS
 from mulebox.dashboard import (cancel, controls, history_query, keys, login, metrics_api,
-                               node_settings, pages, streams)
+                               node_settings, order_api, pages, streams)
 from mulebox.dashboard.canceller import Canceller
 from mulebox.dashboard.data import HISTORY_DEFAULT, DashboardData
 from mulebox.dashboard.hub import Hub
@@ -93,6 +93,7 @@ def build_app(data: DashboardData, hub: Hub, *, clock: Callable[[], float] = tim
     app.router.add_get("/api/history", _history)
     app.router.add_get("/api/metrics", _metrics)
     app.router.add_get("/api/stats", _stats)
+    order_api.add_routes(app, writable=canceller is not None)
     app.router.add_get("/api/jobs/{job_id}", _job)
     app.router.add_get("/api/jobs/{job_id}/log.txt", streams.log_text)
     app.router.add_get("/api/jobs/{job_id}/log", streams.log_stream)

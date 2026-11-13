@@ -17,6 +17,7 @@ from mulebox.client import (
     job_commands,
     job_controls,
     machine_commands,
+    order_commands,
     project_commands,
     setup_commands,
     skill_commands,
@@ -39,7 +40,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("version", help="print the mulebox version")
     for package in (client_commands, init_commands, job_commands, job_controls, machine_commands,
-                    project_commands, stats_commands,
+                    order_commands, project_commands, stats_commands,
                     setup_commands, doctor_commands, skill_commands, feedback_commands, coordinator_commands, worker_commands, runner_commands, service_commands,
                     dashboard_commands):
         package.register(sub)

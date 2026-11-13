@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.0 - 2026-11-13 - minor
+- Order rules for the line (M23.3, M24.4; design.md, Order of the line): a level per project (`mulebox project priority <project> low|normal|high|-3..3`) and per branch or pattern, a level for GitHub runs, aging (default every 30 min adds a level, so nothing waits for ever), fair turns between projects (counting what each already runs) and shortest first from `usual`, set with `mulebox queue rules` or `GET|POST /api/queue/rules` and kept in the coordinator's `meta`, never in `.mulebox.yml`, so a project cannot raise itself. Moves by hand still come first, arrival last. One order (`coordinator/line.py`) for claims, GitHub grants, upgrades, positions and moves, read in the claiming transaction. With the defaults the line is exactly the old one; while a rule is on, `status`, `queue` and the dashboard give each waiting job's `place_reason` and `order`. The dashboard's settings page is M14.15.
+
 ## 1.16.5 - 2026-11-13 - patch
 - AGENTS.md hard rule 11 (the user's): every model loads the frontend-design skill before any UI step, the lead agent too when it merges or checks UI work, and every subagent prompt that touches UI says so.
 

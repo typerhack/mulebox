@@ -4,10 +4,10 @@ import multiprocessing
 
 import pytest
 
-from mulebox.coordinator import queue
+from mulebox.coordinator import api, queue
 from mulebox.coordinator.store import Store
 
-from .helpers import queued
+from .helpers import queued, request
 
 PROCESSES = 6
 
@@ -55,3 +55,18 @@ def test_processes_claim_atomically(store, staging, cluster_slots, expected):
     assert len(set(claimed)) == expected
     with store.read() as conn:
         assert queue.active_count(conn) == expected
+
+
+def test_processes_claim_atomically_with_order_rules_on(store, staging):
+    """Every order rule at once (line.py): still no job twice."""
+    for t in range(24):
+        queued(store, staging, now=float(t), project=f"example-{t % 3}",
+               branch="main" if t < 3 else f"b-{t}")
+    reply = api.handle(store, staging, request("queue_rules", action="set", rules={
+        "projects": {"example-2": 1}, "branches": {"main": 1}, "fair_turns": True,
+        "shortest_first": True, "aging_min": 1}), 50.0)
+    assert reply.type == "queue_rules_ok"
+    claimed = _run(str(store.path), 100)
+    assert len(claimed) == 24 and len(set(claimed)) == 24
+    with store.read() as conn:
+        assert queue.active_count(conn) == 24

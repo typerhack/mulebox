@@ -8,8 +8,9 @@ mulebox runs on its owner's own network, so whoever reaches the queue may steer 
   activity (attendance.py), so the time it spent paused is not held against it.
 - `first`, `up`, `down`, `last`: a queued job moves to the front of the line, one place ahead,
   one place back, or to the end (`_move`). The line is the queue's own order, priority first
-  (queue.QUEUE_ORDER), so a move writes the new order into every waiting job's priority; a
-  job sent later comes after all of them, as it would anyway.
+  (line.py), so a move writes the order shown, rules included, into every waiting job's
+  priority: those jobs keep it, and a job sent later comes after all of them, ordered by the
+  rules among its peers.
 - `boost`: the job gets the machine's CPU and disk before anything else there, and its machine
   takes no new job until it ends (queue.boosted_on). A queued job is also moved first.
 - `normal`: ends the boost; the job keeps its place in line.
@@ -27,7 +28,7 @@ import sqlite3
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType
-from mulebox.coordinator import attendance, queue
+from mulebox.coordinator import attendance, line, queue
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -47,18 +48,18 @@ def _first(conn: sqlite3.Connection, job: dict[str, Any]) -> int:
     return max(job["priority"], top + 1)
 
 
-def _move(conn: sqlite3.Connection, job: dict[str, Any], to: str) -> dict[str, Any]:
+def _move(conn: sqlite3.Connection, job: dict[str, Any], to: str, now: float) -> dict[str, Any]:
     """Reorder the line with `job` moved `to`; the job's own new columns."""
     # Every queued row, GitHub's slots too, so they keep their place among the jobs shown.
-    line = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), queue.QUEUE_ORDER)
-    ids = [row["job_id"] for row in line]
+    rows = line.read(conn, now).rows
+    ids = [row["job_id"] for row in rows]
     at = ids.index(job["job_id"])
     ids.pop(at)
     place = {"first": 0, "last": len(ids), "up": max(at - 1, 0), "down": min(at + 1, len(ids))}[to]
     ids.insert(place, job["job_id"])
     if place == at:
         return {}
-    priority = {row["job_id"]: row["priority"] for row in line}
+    priority = {row["job_id"]: row["priority"] for row in rows}
     for index, job_id in enumerate(ids):
         wanted = len(ids) - index  # the last in line keeps 1, ahead of jobs sent later
         if priority[job_id] != wanted and job_id != job["job_id"]:
@@ -85,7 +86,7 @@ def changes(conn: sqlite3.Connection, job: dict[str, Any], action: str,
             if action != "first":
                 raise Conflict(f"job {job['job_id']} is still uploading; it has no place in line yet")
             return {"priority": _first(conn, job)}
-        return _move(conn, job, action)
+        return _move(conn, job, action, now)
     if action == "boost":
         return {"boost": 1, **({"priority": _first(conn, job)} if waiting else {})}
     return {"boost": 0} if job["boost"] else {}  # normal
@@ -119,5 +120,6 @@ def control(req: Request) -> Message:
         if fields:
             st.update_job(conn, job["job_id"], **fields)
             job = st.require_job(conn, job["job_id"])
-        place = queue.position(conn, job)
-    return req.reply(MessageType.STATUS_OK, status_body(job, place, action=action))
+        order = line.read(conn, req.now)
+        place, why = order.position(job), order.explain(job)
+    return req.reply(MessageType.STATUS_OK, status_body(job, place, action=action, **why))

@@ -114,7 +114,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
         now = clock()
         with store.read() as conn:  # state before log: finished means the log is complete
             job = st.require_job(conn, job_id)
-            place = queue.position(conn, job)
+            place = queue.position(conn, job, now)
             reason = waiting_for(conn, job, now)
             failed = steps.failed_stage(conn, job)
         while with_log:

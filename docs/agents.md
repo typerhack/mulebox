@@ -143,7 +143,10 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   or for a job that usually takes 5 minutes or more, it suggests `--detach` for next time. A
   line such as
   `queued, position 1; waiting: no node for this job is online` is different:
-  nothing will start until a person fixes it, so tell the user.
+  nothing will start until a person fixes it, so tell the user. The owner may have set order
+  rules (a project's or a branch's level, fair turns, shortest first); then `mulebox status`
+  and `mulebox queue` add a `place:` line, and `--json` `place_reason` and `order`, saying why
+  the job is where it is. The rules are the owner's: do not change them to get ahead.
 
 A job goes through stages: `toolchain` (only when it installs a pinned one), `prepare`, `environment`, `images`, `services`, `install`, `setup`,
 `command`, `cleanup`. `mulebox status <job-id>` shows them; with `--json`, `steps` has when each started

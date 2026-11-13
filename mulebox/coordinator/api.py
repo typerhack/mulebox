@@ -18,6 +18,8 @@ from mulebox.coordinator import (
     holds,
     job_control,
     leases,
+    line,
+    line_rules,
     machine_api,
     node_settings,
     project_pause,
@@ -160,7 +162,8 @@ def job_ok(req: Request) -> Message:
 def status(req: Request) -> Message:
     with req.store.read() as conn:
         job = st.require_job(conn, v.job_id(req.body))
-        place = queue.position(conn, job)
+        order = line.read(conn, req.now)
+        place, why = order.position(job), order.explain(job)
         reason = waiting_for(conn, job, req.now)
         rows = steps.for_job(conn, job["job_id"])
         typical = usual.for_job(conn, job)
@@ -169,7 +172,7 @@ def status(req: Request) -> Message:
         ahead = running_ahead(conn, job)
     return req.reply(MessageType.STATUS_OK, {
         **status_body(job, place, reason, steps=rows, usual=typical,
-                      **usual.estimate(job, typical), **ahead, **failed),
+                      **usual.estimate(job, typical), **ahead, **failed, **why),
         **status_facts(job), **attendance.status_fields(job, rows, req.now, limits),
         "dashboard": req.dashboard})
 
@@ -201,9 +204,11 @@ def queue_list(req: Request) -> Message:
     project = v.text(req.body, "news_for", None)
     with req.store.read() as conn:
         limits = attendance.read_limits(conn)
+        order = line.read(conn, req.now)
         rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now)),
-                 **running_ahead(conn, job), **attendance.fields(job, req.now, limits)}
-                for job, pos in queue.listing(conn, limit)]
+                 **running_ahead(conn, job), **attendance.fields(job, req.now, limits),
+                 **order.explain(job)}
+                for job, pos in queue.listing(conn, limit, order)]
     news: dict[str, Any] = {}
     if project:
         with req.store.write() as conn:
@@ -268,6 +273,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.JOB_CONTROL: job_control.control,
     MessageType.UPGRADE: upgrades.upgrade,
     MessageType.PROJECT_PAUSE: project_pause.control,
+    MessageType.QUEUE_RULES: line_rules.control,
     MessageType.STATS: stats_api.summary,
     MessageType.LOGS: logs,
     MessageType.TAKE: taken.take,

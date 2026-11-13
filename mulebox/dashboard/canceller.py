@@ -49,6 +49,10 @@ class Canceller:
         its `node_settings_ok` reply."""
         return await self.send(request(MessageType.NODE_SETTINGS, worker=worker, **change))
 
+    async def queue_rules(self, body: dict) -> Message:
+        """`queue_rules` (coordinator/line_rules.py); its `queue_rules_ok` reply."""
+        return await self.send(request(MessageType.QUEUE_RULES, **body))
+
     async def send(self, msg: Message) -> Message:
         """One request through a `mulebox rpc` of its own; its reply, or CoordinatorError."""
         process = await asyncio.create_subprocess_exec(

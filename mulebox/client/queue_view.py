@@ -11,7 +11,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from mulebox.client.report import format_duration, short_id, waiting_reason
+from mulebox.client.report import format_duration, place_lines, short_id, waiting_reason
 from mulebox.common.status import elapsed_s, queue_position, sections, shown_state
 
 COLUMNS = ("ID", "PROJECT", "JOB", "BRANCH", "STATE", "ELAPSED", "POS")
@@ -107,6 +107,7 @@ def render_table(
             reason = waiting_reason(job)
             if reason:
                 out.append(f"  waiting: {_cell(reason, None)}"[:width])
+            out += [f"  {_cell(text, None)}"[:width] for text in place_lines(job)]
             if job.get("question"):
                 out.append(_question_row(job)[:width])
         if not group:

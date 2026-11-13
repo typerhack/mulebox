@@ -120,6 +120,8 @@ class MessageType(StrEnum):
     UPGRADE = "upgrade"
     PROJECT_PAUSE = "project_pause"
     PROJECT_PAUSE_OK = "project_pause_ok"
+    QUEUE_RULES = "queue_rules"
+    QUEUE_RULES_OK = "queue_rules_ok"
     STATS = "stats"
     STATS_OK = "stats_ok"
     NODE_SETTINGS = "node_settings"
@@ -189,6 +191,10 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: pause, resume (projects, minutes) or list (project_pause.py).
     MessageType.PROJECT_PAUSE: frozenset({"action"}),
     MessageType.PROJECT_PAUSE_OK: frozenset({"paused"}),
+    # client -> coordinator: `action` get, set (`rules`, a partial change) or reset of the
+    # order rules (coordinator/line_rules.py).
+    MessageType.QUEUE_RULES: frozenset(),
+    MessageType.QUEUE_RULES_OK: frozenset({"rules"}),
     # client -> coordinator: job minutes in a range (coordinator/stats.py).
     MessageType.STATS: frozenset(),
     MessageType.STATS_OK: frozenset({"total", "by", "days"}),

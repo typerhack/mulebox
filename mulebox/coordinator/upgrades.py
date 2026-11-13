@@ -24,7 +24,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import queue, workers
+from mulebox.coordinator import line, queue, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -40,9 +40,6 @@ _WAITING = (JobState.QUEUED.value,)
 _PENDING = (JobState.QUEUED.value, *(s.value for s in ACTIVE_STATES))
 
 
-_key = st.line_key
-
-
 def pending(conn: sqlite3.Connection, worker: str) -> list[dict[str, Any]]:
     """Upgrades of `worker` that are waiting or installing, in line order."""
     marks = ", ".join("?" * len(_PENDING))
@@ -50,26 +47,33 @@ def pending(conn: sqlite3.Connection, worker: str) -> list[dict[str, Any]]:
                           (UPGRADE_KIND, worker, *_PENDING), queue.QUEUE_ORDER)
 
 
-def blocks(conn: sqlite3.Connection, worker: str, row: dict[str, Any]) -> bool:
+def blocks(conn: sqlite3.Connection, worker: str, row: dict[str, Any],
+           order: line.Line | None = None) -> bool:
     """Whether an upgrade keeps `row` (a waiting job or GitHub slot) from starting on `worker`:
-    one is installing there, or one waits ahead of `row` in line."""
-    for upgrade in pending(conn, worker):
-        if upgrade["state"] != JobState.QUEUED or _key(upgrade) < _key(row):
+    one is installing there, or one waits ahead of `row` in line (`order`, line.py)."""
+    found = pending(conn, worker)
+    if found and order is None:
+        order = line.read(conn)
+    for upgrade in found:
+        if upgrade["state"] != JobState.QUEUED or order.before(upgrade, row):
             return True
     return False
 
 
-def ahead_of(conn: sqlite3.Connection, row: dict[str, Any]) -> dict[str, Any] | None:
+def ahead_of(conn: sqlite3.Connection, row: dict[str, Any], now: float | None = None
+             ) -> dict[str, Any] | None:
     """A waiting or installing upgrade that comes before `row` in line, if any."""
     marks = ", ".join("?" * len(_PENDING))
-    for upgrade in st.select_jobs(conn, f"kind = ? AND state IN ({marks})",
-                                  (UPGRADE_KIND, *_PENDING), queue.QUEUE_ORDER):
-        if upgrade["state"] != JobState.QUEUED or _key(upgrade) < _key(row):
+    found = st.select_jobs(conn, f"kind = ? AND state IN ({marks})",
+                           (UPGRADE_KIND, *_PENDING), queue.QUEUE_ORDER)
+    order = line.read(conn, now) if found else None
+    for upgrade in found:
+        if upgrade["state"] != JobState.QUEUED or order.before(upgrade, row):
             return upgrade
     return None
 
 
-def _due(conn: sqlite3.Connection, upgrade: dict[str, Any]) -> bool:
+def _due(conn: sqlite3.Connection, upgrade: dict[str, Any], now: float) -> bool:
     """The machine runs nothing, and nothing ahead in line could start there first."""
     worker = upgrade["pinned_worker"]
     if queue.active_on(conn, worker) > 0:
@@ -78,8 +82,8 @@ def _due(conn: sqlite3.Connection, upgrade: dict[str, Any]) -> bool:
         return True  # paused: nothing ahead will start there anyway
     known = workers.get(conn, worker)
     have = set(known["capabilities"]) if known else set()
-    for row in st.select_jobs(conn, "state = ?", _WAITING, queue.QUEUE_ORDER):
-        if _key(row) >= _key(upgrade):
+    for row in line.read(conn, now).rows:
+        if row["job_id"] == upgrade["job_id"]:
             return True
         if row["kind"] == queue.JOB_KIND and not row["paused"] and set(row["needs"]) <= have:
             return False
@@ -112,14 +116,14 @@ def _turn(req: Request) -> dict[str, Any]:
     with req.store.write() as conn:
         job = _require(conn, req)
         if job["state"] == JobState.QUEUED:
-            if not job["paused"] and _due(conn, job):
+            if not job["paused"] and _due(conn, job, req.now):
                 job = st.transition(conn, job, JobState.STARTING, worker=job["pinned_worker"],
                                     started_at=req.now, worker_lease_until=req.now + INSTALL_LEASE_S)
                 job = st.transition(conn, job, JobState.RUNNING)
             else:
                 st.update_job(conn, job["job_id"], client_lease_until=req.now + TURN_LEASE_S)
                 job = st.require_job(conn, job["job_id"])
-        return {**status_body(job, queue.position(conn, job)),
+        return {**status_body(job, queue.position(conn, job, req.now)),
                 "go": job["state"] in ACTIVE_STATES}
 
 
@@ -165,5 +169,5 @@ def upgrade(req: Request) -> Message:
     made = _ACTIONS[action](req)
     if action == "queue":
         with req.store.read() as conn:
-            made = status_body(made, queue.position(conn, made))
+            made = status_body(made, queue.position(conn, made, req.now))
     return req.reply(MessageType.STATUS_OK, made)

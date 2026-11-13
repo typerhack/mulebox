@@ -57,7 +57,7 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
         return project_pause.reason(job["project"], until)
     if holds.draining(conn, now):
         return holds.DRAIN_REASON
-    if (upgrade := upgrades.ahead_of(conn, job)) is not None:
+    if (upgrade := upgrades.ahead_of(conn, job, now)) is not None:
         return (f"an upgrade of {upgrade['pinned_worker']} to {upgrade['branch']} is ahead of it "
                 f"({upgrade['job_id']})")
     return needs.waiting_for(workers.listing(conn), job["needs"], now)

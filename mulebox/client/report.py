@@ -129,6 +129,13 @@ def waiting_reason(body: dict[str, Any]) -> str | None:
     return None
 
 
+def place_lines(body: dict[str, Any]) -> list[str]:
+    """Why a waiting job is where it is in line, while an order rule is on (coordinator/line.py);
+    nothing when arrival alone placed it."""
+    reason = body.get("place_reason")
+    return [f"place: {reason}"] if body.get("state") == "queued" and reason else []
+
+
 def state_line(body: dict[str, Any]) -> str | None:
     """Status line for a state change seen on the watch stream (None: nothing to say)."""
     state = body.get("state")

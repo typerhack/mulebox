@@ -33,7 +33,7 @@ def accept_upload(store: Store, staging: Staging, job_id: str, sha256: str,
                 conn, job, JobState.QUEUED, queued_at=now, upload_sha256=sha256,
                 client_lease_until=now + CLIENT_LEASE_S,
             )
-            return job, queue.position(conn, job)
+            return job, queue.position(conn, job, now)
     except (Conflict, NotFound):
         current = store.get_job(job_id)
         if current is None or current["state"] == JobState.FINISHED:

@@ -17,8 +17,8 @@ from mulebox.common.download_watch import clean as clean_download
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
-from mulebox.coordinator import (api, attendance, clients, node_settings, queue, stats, stats_api,
-                                 steps, usual, workers)
+from mulebox.coordinator import (api, attendance, clients, line, line_rules, node_settings, queue,
+                                 stats, stats_api, steps, usual, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -45,7 +45,8 @@ class DashboardData:
         """The queue rows, each waiting agent job with where it may go (views.placement)."""
         now = time.time() if now is None else now
         with self.store.read() as conn:
-            rows = queue.listing(conn, finished_limit)
+            order = line.read(conn, now)  # the order rules' reasons (line.py)
+            rows = queue.listing(conn, finished_limit, order)
             fleet = workers.listing(conn)
             limits = attendance.read_limits(conn)
             typical = {job["job_id"]: usual.job_seconds(conn, job) for job, _ in rows
@@ -60,7 +61,7 @@ class DashboardData:
             busy = {job["job_id"]: holder for job, _ in rows
                     if (holder := running_ahead(conn, job).get("branch_busy"))}
         return [{**reservation_dict(job, pos), **placement(fleet, job, now),
-                 **attendance.fields(job, now, limits),
+                 **attendance.fields(job, now, limits), **order.explain(job),
                  **({"usual_s": typical[job["job_id"]]} if typical.get(job["job_id"]) else {}),
                  **({"doing": doing[job["job_id"]]} if job["job_id"] in doing else {}),
                  **({"waiting_for": why[job["job_id"]]} if job["job_id"] in why else {}),
@@ -69,6 +70,11 @@ class DashboardData:
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:
         return snapshot(self.queue_jobs(now), now)
+
+    def queue_rules(self) -> dict[str, Any]:
+        """The order rules and the projects to set them for (line_rules.body)."""
+        with self.store.read() as conn:
+            return line_rules.body(conn)
 
     def machines(self, now: float) -> dict[str, Any]:
         return self.fleet(now)[0]
@@ -102,9 +108,10 @@ class DashboardData:
             rows = steps.for_job(conn, job["job_id"])
             typical = usual.for_job(conn, job)
             failed = steps.failed_stage(conn, job).get("stage")
+            why = line.read(conn, now).explain(job)
         detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS},
                   "steps": rows, "usual": typical, "failed_stage": failed,
-                  **attendance.fields(job, now, limits),
+                  **attendance.fields(job, now, limits), **why,
                   "activity": attendance.status_fields(job, rows, now, limits)["activity"]}
         detail["shown_state"] = shown_state(detail)
         detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))

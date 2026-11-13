@@ -644,6 +644,24 @@ mulebox project resume <name>...   # and `mulebox project paused` lists them
 mulebox machine resume <name>
 ```
 
+The order of the line has rules of its own, first come first served until you set one
+(docs/design.md, Order of the line). They live on the coordinator, not in a project's
+`.mulebox.yml`, so a project cannot raise itself:
+
+```sh
+mulebox queue rules                     # show them
+mulebox project priority example-app high      # low, normal, high or -3..3
+mulebox queue rules --branch main=1     # a branch (or 'release/*') goes ahead
+mulebox queue rules --github 1          # GitHub runs ahead of agent jobs
+mulebox queue rules --fair-turns on     # projects take turns: a burst does not hold back one job
+mulebox queue rules --shortest-first on # among equals, what usually takes least goes first
+mulebox queue rules --aging 30          # every 30 min in line adds a level (0: off)
+mulebox queue rules --reset             # back to first come, first served
+```
+
+Moves by hand still come first. While a rule is on, `mulebox queue` and `mulebox status` say why
+each waiting job is where it is (`place:`).
+
 A paused job is not asked whether it is stuck, and resuming it answers what was asked meanwhile.
 A paused job still holds its slot and its memory. A boost does not stop GitHub runners on that
 machine from taking CI jobs; it only weighs the job above them.

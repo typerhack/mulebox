@@ -121,7 +121,7 @@ def test_non_request_types_are_bad_requests(store, staging):
 
 def test_internal_errors_become_error_replies(store, staging):
     job_id = queued(store, staging)
-    with mock.patch.object(api.queue, "position", side_effect=RuntimeError("boom")):
+    with mock.patch.object(api.line, "read", side_effect=RuntimeError("boom")):
         reply = call(store, staging, "status", job_id=job_id)
     assert reply.body == {"code": "internal", "message": "internal error: RuntimeError"}
 

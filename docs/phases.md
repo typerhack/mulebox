@@ -532,6 +532,12 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       held by drill jobs, a real CI run's waiting slot sat at #2 behind a drill job; its up arrow
       put it at #1, and when a slot came free it started ahead of the job that had queued first.
 
+- [ ] M14.15 Queue order settings on the dashboard (the user's ask, 2026-11-13): the order rules of
+      M23.3 and M24.4 (project levels, branch levels, GitHub runs' level, aging, fair turns, shortest
+      first) shown and set from the page, and each waiting row's `place_reason`, on
+      `GET|POST /api/queue/rules` (interfaces-m2.md). Mockups to pick from first. Done when: a rule set
+      on the deployed dashboard in Edge reorders a real line and the rows say why.
+
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it
       showed quiet for 45 s with 6.8 cores busy, and a stream cut with no error reopened at its offset in 30 s.
@@ -793,8 +799,15 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
       lot's job weights.
-- [ ] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
-      go ahead, a branch (such as `main`), a workflow or a project first.
+- [~] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
+      go ahead, a branch (such as `main`), a workflow or a project first. Built 2026-11-13 (1.17.0):
+      `coordinator/line.py` and `line_rules.py` (design.md, Order of the line), project, branch and
+      GitHub levels, aging, shortest first, kept in the coordinator's store and set by `mulebox queue
+      rules`, `mulebox project priority` and `GET|POST /api/queue/rules`; every waiting job says why
+      it is where it is (`place_reason`). Tested with the real coordinator code: the defaults give
+      the old order, claims from six processes with every rule on never double-claim. A workflow
+      rule was left out (the hook knows no workflow name). Open: real jobs on the node with a rule
+      on, their order and `place:` in `mulebox queue`, and the settings on the dashboard (M14.15).
 - [~] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
       the owner's desktop only when the spare machine is busy, or a Mac as the fallback. Built
       2026-11-13 (1.16.0), with M23.9 (the user's ask for a settings window per node, M14.14):
@@ -884,9 +897,11 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
 - [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.
-- [ ] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
+- [~] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
       project's single job; the line takes the projects in turn, below moving by hand (M14.3) and the
-      order rules (M23.3).
+      order rules (M23.3). Built 2026-11-13 (1.17.0): `fair_turns`, off by default, counting what each
+      project already runs (design.md, Order of the line), with tests. Open: a real burst of one
+      project beside another project's job on the node, the single job taking the next free slot.
 - [ ] M24.5 One job across slots: named groups of tests (`shards:`) run side by side on free slots and
       machines, and come back as one result with one exit code and one summary.
 - [~] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status

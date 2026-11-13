@@ -1,8 +1,9 @@
 """The queue: atomic claims, slot accounting, queue positions and the listing.
 
-Oldest first, except what its owner moved up (`priority`, job_control.py). A paused job is
-skipped and keeps its place; a machine running a boosted job takes no new one until it ends. A
-job a node ranked above the claiming one could take now is left to it (node_settings.py).
+In the order of the line (line.py): the owner's moves, then the order rules, then arrival.
+A paused job is skipped and keeps its place; a machine running a boosted job takes no new one
+until it ends. A job a node ranked above the claiming one could take now is left to it
+(node_settings.py).
 
 A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
 claiming at once can never get the same job, and the cluster-wide slot limit holds.
@@ -19,7 +20,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, node_settings, project_pause, upgrades, workers
+from mulebox.coordinator import holds, line, node_settings, project_pause, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -28,7 +29,7 @@ from mulebox.coordinator.store import ACTIVE_STATES, Store
 DEFAULT_FINISHED_LIMIT = 20
 
 _ACTIVE_SQL = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
-QUEUE_ORDER = "priority DESC, queued_at, seq"
+QUEUE_ORDER = line.ARRIVAL_ORDER  # with no order rule on (line.py)
 JOB_KIND = "job"
 RUNNER_KIND = "runner"
 
@@ -39,7 +40,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
           disk_free: int | None = None,
           load: dict[str, Any] | None = None,
           priority: str | None = None) -> dict[str, Any] | None:
-    """Give `worker` the oldest queued job whose needs it meets, or None.
+    """Give `worker` the first queued job in line (line.py) whose needs it meets, or None.
 
     None when the worker has no free slot, when the cluster's slots (workers.cluster_limit, at
     least `cluster_slots`) are all held by jobs in
@@ -58,16 +59,16 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
                 or holds.draining(conn, now) or boosted_on(conn, worker)):
             return None
-        blocker = oldest_reservation(conn, worker)
+        order = line.read(conn, now)
+        blocker = oldest_reservation(conn, worker, order)
         on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         better = node_settings.better_free(conn, worker, now, priority)  # nodes ranked above
-        for job in st.select_jobs(conn, "state = ? AND kind = ?",
-                                  (JobState.QUEUED.value, JOB_KIND), QUEUE_ORDER):
-            if blocker is not None and st.line_key(blocker) < st.line_key(job):
+        for job in (row for row in order.rows if row["kind"] == JOB_KIND):
+            if blocker is not None and order.before(blocker, job):
                 return None  # the reservation ahead in line goes first
-            if upgrades.blocks(conn, worker, job):
+            if upgrades.blocks(conn, worker, job, order):
                 return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
                     and job["project"] not in on_hold and not job["paused"]
@@ -106,31 +107,26 @@ def boosted_on(conn: sqlite3.Connection, worker: str) -> bool:
                         (worker,)).fetchone() is not None
 
 
-def oldest_reservation(conn: sqlite3.Connection, worker: str) -> dict[str, Any] | None:
+def oldest_reservation(conn: sqlite3.Connection, worker: str,
+                       order: line.Line | None = None) -> dict[str, Any] | None:
     """The queued reservation pinned to `worker` that is first in line, or None."""
-    rows = st.select_jobs(conn, "state = ? AND kind = ? AND pinned_worker = ?",
-                          (JobState.QUEUED.value, RUNNER_KIND, worker), QUEUE_ORDER, limit=1)
-    return rows[0] if rows else None
+    order = order or line.read(conn)
+    return next((row for row in order.rows
+                 if row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker), None)
 
 
-def position(conn: sqlite3.Connection, job: dict[str, Any]) -> int | None:
+def position(conn: sqlite3.Connection, job: dict[str, Any], now: float | None = None) -> int | None:
     """1-based place of a queued job in the line; None for any other state."""
     if job["state"] != JobState.QUEUED:
         return None
-    ahead = conn.execute(
-        "SELECT COUNT(*) FROM jobs WHERE state = ? AND (priority > ? OR (priority = ? AND "
-        "(queued_at < ? OR (queued_at = ? AND seq < ?))))",
-        (JobState.QUEUED.value, job["priority"], job["priority"], job["queued_at"],
-         job["queued_at"], job["seq"]),
-    ).fetchone()[0]
-    return ahead + 1
+    return line.read(conn, now).position(job)
 
 
-def listing(conn: sqlite3.Connection, finished_limit: int = DEFAULT_FINISHED_LIMIT
-            ) -> list[tuple[dict[str, Any], int | None]]:
+def listing(conn: sqlite3.Connection, finished_limit: int = DEFAULT_FINISHED_LIMIT,
+            order: line.Line | None = None) -> list[tuple[dict[str, Any], int | None]]:
     """(job, position) pairs: active jobs, then queued in order, uploading, recent finished."""
     active = st.select_jobs(conn, _ACTIVE_SQL, (), "started_at, seq")
-    queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), QUEUE_ORDER)
+    queued = (order or line.read(conn)).rows
     uploading = st.select_jobs(conn, "state = ?", (JobState.UPLOADING.value,), "seq")
     finished = st.select_jobs(
         conn, "state = ?", (JobState.FINISHED.value,), "finished_at DESC, seq DESC",

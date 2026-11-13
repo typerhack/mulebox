@@ -25,6 +25,7 @@ SAMPLE_VALUES = {
     "action": "drain",
     "running": [],
     "paused": {},
+    "rules": {},
     "need": None,
     "steps": [],
     "hosts": [],
@@ -94,6 +95,7 @@ def test_enum_values_match_contract():
     assert {t.value for t in MessageType} == {
         "job_ok", "job_control", "upgrade", "project_pause", "project_pause_ok", "stats", "stats_ok",
         "node_settings", "node_settings_ok",
+        "queue_rules", "queue_rules_ok",
         "submit", "submit_ok", "upload_done", "status", "status_ok", "upload_plan_ok", "cancel",
         "heartbeat",
         "claim", "claim_ok", "claim_none", "job_update", "log_chunk", "result", "steps", "error",

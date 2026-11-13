@@ -16,7 +16,7 @@ from typing import Any
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Outcome
-from mulebox.coordinator import holds, project_pause, queue, upgrades, workers
+from mulebox.coordinator import holds, line, project_pause, queue, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -65,8 +65,9 @@ def require(conn: sqlite3.Connection, job_id: str) -> dict[str, Any]:
     return job
 
 
-def ahead(conn: sqlite3.Connection, job: dict[str, Any], now: float) -> int:
-    """Queued rows ahead of `job` in line (moves count, job_control.py) that its worker could
+def ahead(conn: sqlite3.Connection, job: dict[str, Any], now: float,
+          order: line.Line | None = None) -> int:
+    """Queued rows ahead of `job` in line (line.py: moves and order rules) that its worker could
     run: agent jobs whose needs the worker meets and that are not paused, nor of a paused or
     held project, and reservations pinned to it. A job that may not start keeps its place
     without holding a GitHub run back."""
@@ -74,10 +75,10 @@ def ahead(conn: sqlite3.Connection, job: dict[str, Any], now: float) -> int:
     known = workers.get(conn, worker)
     have = set(known["capabilities"]) if known else set()
     on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
-    queued = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,))
+    order = order or line.read(conn, now)
     return sum(
-        1 for row in queued
-        if st.line_key(row) < st.line_key(job)
+        1 for row in order.rows
+        if order.before(row, job)
         and ((row["kind"] == JOB_KIND and set(row["needs"]) <= have and not row["paused"]
               and row["project"] not in on_hold)
              or (row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker))
@@ -99,10 +100,12 @@ def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
 
     Returns the job, `running` when granted, unchanged otherwise.
     """
-    if job["state"] != JobState.QUEUED or ahead(conn, job, now) > 0 or holds.draining(conn, now):
+    order = line.read(conn, now)
+    if (job["state"] != JobState.QUEUED or ahead(conn, job, now, order) > 0
+            or holds.draining(conn, now)):
         return job
     worker = job["pinned_worker"]
-    if upgrades.blocks(conn, worker, job) or job["project"] in project_pause.paused(conn, now):
+    if upgrades.blocks(conn, worker, job, order) or job["project"] in project_pause.paused(conn, now):
         return job
     if queue.active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots):
         return job
