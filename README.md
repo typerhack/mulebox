@@ -37,16 +37,19 @@ machine, here and now, and it takes your CI along in the same line.
   agents' jobs, so a node never runs more than it has room for.
   ([GitHub Actions](#github-actions-on-the-same-machines))
 - **You see and steer everything.** A live dashboard has logs, resource graphs, stages as a
-  waterfall, a CI run's steps as they happen, and job minutes. From it or the CLI you can freeze,
-  boost, move or cancel a job, and pause a machine. ([The dashboard](#the-dashboard-1),
-  [You steer](#you-steer))
+  waterfall, a CI run's steps as they happen, download progress, and job minutes. From it or the
+  CLI you can freeze, boost, move or cancel a job, pause a machine, set a node's slots, and set
+  rules for the order of the line. ([The dashboard](#the-dashboard-1), [You steer](#you-steer))
+- **A pass you can require on GitHub.** `check` can post its result as a commit status on the
+  pushed commit, so a pull request shows it. ([For agents](#for-agents))
 - **Upgrades that wait their turn.** An upgrade queues like a job or waits until the node is idle, so
   no running job is cut short. ([You steer](#you-steer))
 
 ## Install
 
 You need a Linux machine with systemd, git and Python 3.12 or newer, which your dev machine reaches
-over ssh with a key, at an address that does not change (below).
+over ssh with a key, at an address that does not change (below). A Mac can be a node too; that is
+new and not yet run on a real Mac node ([A Mac as a node](docs/install.md#a-mac-as-a-node)).
 
 ### Give every machine a fixed address
 
@@ -154,6 +157,13 @@ theme and follows the system's by default.
 | A GitHub Actions run, step by step | Every machine at a glance |
 | ![History with search and filters](docs/images/history-light.png) | ![How long jobs ran, today and since the first job](docs/images/statistics-dark.png) |
 | History, searchable | Job minutes, by kind, project and machine |
+| ![A node's settings: slots and priority, each with mulebox's suggestion beside yours](docs/images/node-settings-dark.png) | ![The Order panel: the rules for the order of the line, each waiting row saying why it stands where it does](docs/images/order-light.png) |
+| A node's slots and priority, with the suggestion | Rules for the order of the line |
+
+While a job or a CI run downloads packages or a cache, its card shows how much has come and how
+fast, and warns when no bytes arrive for a while:
+
+![Running jobs and GitHub runs with their download meters: a known total, an open track and a stalled download](docs/images/downloads-dark.png)
 
 A machine with many cores can show its busiest cores and one line for the rest (compact view,
 left). On a phone the page stacks into one column (right).
@@ -224,6 +234,9 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 - **Written for agents.** `mulebox contract` tells an agent how this project works through mulebox.
   The Claude Code skill teaches it the rest; `mulebox setup` installs it, and an agent whose skill is
   out of date is told so and updates it.
+- **A result on the pull request.** With `github_status: true` in `.mulebox.yml`, `check` on an
+  exact pushed commit posts its result as the commit status `mulebox/<job>`, through the dev
+  machine's own `gh`, so it can be a required check. Nothing on GitHub reaches in to the node.
 - **Problems reported safely.** `mulebox feedback draft` writes a GitHub issue with the job's ids,
   stages and log lines, scrubbed of addresses, names and secrets; `post` files it once you read it.
 
@@ -244,6 +257,8 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 - **Get ready ahead of time.** `mulebox warm` fetches toolchains, images and caches and runs the
   installs, with no command.
 - **Quiet logs.** Image download progress is folded into one line, with the bytes on the stage.
+- **Downloads you can see.** A package install or a CI cache restore shows its bytes, total and
+  speed on the job's card and in `mulebox status`, and a download that stalls says so.
 - **How long it usually takes.** Each job and each stage shows its usual length from past passed
   runs, beside the time so far.
 
@@ -258,6 +273,10 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 - **Browser tests.** Playwright against the job's containers, with browsers kept for the next job.
 - **Several jobs per project**, each with its own command, setup, ports and containers or none, and
   `env:` values that build on each other.
+- **Apple platforms** on a Mac node (new, not yet run on a real one): a job pins an Xcode version,
+  gets a simulator of its own, removed on every outcome, and caches for SwiftPM and CocoaPods;
+  `init` writes the job for an Xcode project or a Swift package
+  ([Apple builds](docs/install.md#apple-builds-on-a-mac-node)).
 - **`mulebox run -- <cmd>`** runs any command on the node; `--in <service>` runs it in a compose
   service, `--take <path>` brings a changed file, such as a lockfile, back to the dev machine.
 
@@ -296,10 +315,18 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **A job**: pause a waiting one (it keeps its place), freeze a running one with its containers and
   resume it where it stopped, boost it (the machine's CPU and disk first, nothing new starts beside
   it), move it to the front, up, down or to the end, cancel it.
+- **The order of the line**: rules you set once, in the dashboard's Order panel or with
+  `mulebox queue rules`. Levels for a project, a branch (such as `main`), GitHub runs or one
+  workflow; aging, so a job that waited long moves up; shortest first; and fair turns, so one
+  project's burst does not hold back another's single job. Every waiting job says why it stands
+  where it does. All off by default, which keeps the order of arrival.
 - **A machine**: pause (drain) it so it finishes what runs and takes nothing new, resume it, or remove
-  it.
+  it. Set its slots and priority from the dashboard or `mulebox machine config`, beside a
+  suggestion from its cores and memory; the change reaches its `node.toml` and counts from the
+  next job, with no restart. A `preferred` node takes jobs first, a `fallback` one only when the
+  others are full.
 - **A project**: pause all its jobs and CI runs, for a set time or until resumed (`mulebox project
-  pause`).
+  pause`), or give it a level in line (`mulebox project priority`).
 - **Everything at once**: the dashboard's Queue actions pause or resume every machine, and freeze or
   resume every running job.
 - **Upgrades in line**: `mulebox setup <node> --queued` waits its turn like a job, next by default or
@@ -318,7 +345,10 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **Tabs**: Queue, Failed, Passed and Recent, with live counts.
 - **History** with search and filters you can share as a link, and **Statistics**: job minutes today,
   by day and since the first job, by kind, project, source and machine (also `mulebox stats`).
-- **Machines page**: every node with its state, load, network, slots, version and last contact.
+- **Machines page**: every node with its state, load, network, slots, version and last contact,
+  and a settings window per node for its slots and priority.
+- **Order panel**: the rules for the order of the line, set and saved from the page.
+- **Download meters** on a job's card: bytes, total and speed, and a warning when one stalls.
 - **Out of step**: a strip says when a dev machine, a worker or a skill runs another version, with the fix.
 - **Light and dark** themes and two meter styles, remembered per browser, and a layout that works on
   a phone.
@@ -332,6 +362,9 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   offers (Docker, Playwright, toolchains), writes the dev machine's config and proves it with a first job.
 - **More nodes**: `mulebox setup <node> --worker-of <coordinator>` adds a worker, with a key that can
   only ask for work. Jobs go to a node that has what they need.
+- **Linux and macOS**: services run under systemd on Linux and launchd on a Mac, managed the same
+  way on both (`mulebox service status|restart|logs`). macOS nodes are new and not yet run on a real
+  Mac node.
 - **Survives restarts**: services come back by themselves after a reboot; a running job ends as
   `interrupted` (exit 75) and is not run again by itself, and waiting jobs run.
 - **On your own machines**: jobs travel over ssh to machines you own; no cloud service, no port open
@@ -380,7 +413,9 @@ command prints. The ones you and your agents use:
 | `mulebox pause <id>`, `resume <id>` | hold a waiting job, or freeze a running one, and let it go again |
 | `mulebox first`, `up`, `down`, `last <id>` | move a waiting job in line |
 | `mulebox boost <id>`, `normal <id>` | give a job the machine first, and end that |
+| `mulebox queue rules` | show or set the rules for the order of the line |
 | `mulebox project pause`, `resume`, `paused` | hold all of a project's jobs and CI runs for a while |
+| `mulebox project priority <project> [level]` | a project's level in line: low, normal, high |
 | `mulebox project clean`, `reset` | remove old branch folders, or a project's whole folder, on the node |
 
 **Machines and setup**:
@@ -389,9 +424,11 @@ command prints. The ones you and your agents use:
 | --- | --- |
 | `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker |
 | `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
+| `mulebox machine config <node>` | a node's slots and priority, applied from its next job |
+| `mulebox service status`, `restart`, `logs` | on a node: mulebox's own services, systemd or launchd |
 | `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |
 | `mulebox dashboard password`, `firewall`, `cert` | on the node: sign-in, firewall and HTTPS for `lan` mode |
-| `mulebox runner register`, `unregister` | add or remove a GitHub Actions runner for a private repository |
+| `mulebox runner register`, `unregister` | add or remove a GitHub Actions runner; `--isolated` for a fresh container per job |
 | `mulebox skill install`, `update`, `status` | the agent skill in your Claude config folders |
 | `mulebox feedback draft`, `post` | report a problem as a GitHub issue, scrubbed of private data first |
 | `mulebox version` | this mulebox's version |
@@ -437,8 +474,9 @@ at it: "read mulebox's docs/agents.md and set this project up".
 
 mulebox is for one owner and the projects that owner trusts. A job runs as the node's user, with
 Docker, so it is not a sandbox: read the [security model](docs/install.md#security-model) before
-pointing it at a machine that holds anything else. mulebox attaches GitHub runners to private
-repositories only ([why](#github-actions-on-the-same-machines)).
+pointing it at a machine that holds anything else. A plain GitHub runner takes private repositories
+only; a public one needs an isolated runner, a fresh confined container per job
+([why](#github-actions-on-the-same-machines)).
 
 ## Development
 

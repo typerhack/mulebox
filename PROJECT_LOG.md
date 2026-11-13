@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.15 - 2026-11-13 - patch
+- README brought up to date with what came since 1.6.0 (the user's ask): a node's settings window and priority, live reload of node.toml, rules for the order of the line (Order panel, `mulebox queue rules`, `mulebox project priority`), fair turns, download meters, `github_status` commit statuses, isolated runners for public repositories (the Security section said private only), macOS nodes and Apple builds (marked as new and not yet run on a real Mac node), `mulebox service` and `mulebox machine config` in the command tables.
+- New pictures from the stand-in data: `node-settings-dark.png`, `order-light.png`, `downloads-dark.png`; every other picture taken again on 1.17.14. `tools/screenshots.py` gains the three shots (a script click opens the window and the panel; the downloads shot scrolls to the Jobs box). No product code changed.
+
 ## 1.17.14 - 2026-11-13 - patch
 - Roadmap M24.6 done: a real pull request (a throwaway draft of this repository) showed the commit statuses from real `mulebox check` runs with `github_status: true`, `mulebox/check` passed and `mulebox/broken` (a job `false`) failed (exit 1), both on the pushed commit, posted by the dev machine's `gh`. The PR was closed and its branch, CI run, worktree and node project tree removed. Docs only.
 

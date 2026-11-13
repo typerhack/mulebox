@@ -56,6 +56,13 @@ SHOTS = [
     Shot("cpu-compact-light", "#/", "light", env={**CLEAN, "MULEBOX_MOCK_CORES": "32"},
          prefs={"mulebox-cpu-view": "compact"}),
     Shot("phone-dark", "#/", width=390, height=844, env=CLEAN),
+    Shot("node-settings-dark", "#/", env=CLEAN,
+         script="document.querySelector('[aria-label=\"Settings of build-1\"]').click()"),
+    Shot("order-light", "#/", "light", height=1700, env={**CLEAN, "MULEBOX_MOCK_SCENE": "order"},
+         script="[...document.querySelectorAll('button')].find(b => b.textContent.startsWith('Order')).click()"),
+    Shot("downloads-dark", "#/", height=700, env={**CLEAN, "MULEBOX_MOCK_SCENE": "downloads"},
+         script="[...document.querySelectorAll('h1,h2,h3')].find(h => h.textContent.trim() === 'Jobs')"
+                "?.scrollIntoView(); window.scrollBy(0, -88)"),
     Shot("sign-in-light", "page:login.html", "light", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("sign-in-dark", "page:login.html", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("design-system-light", "file:design-system/specimen.html", "light", height=1100, wait=2.0,
