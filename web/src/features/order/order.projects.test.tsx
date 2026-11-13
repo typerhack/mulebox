@@ -88,30 +88,12 @@ describe("the Order panel's project levels", () => {
     expect(rowsOf(panel, "Other projects")).toHaveLength(1);  // it stays where its use puts it
   });
 
-  it("shows a long rest by its latest three, and opens the others in place from the keyboard's button", async () => {
-    serve(rules(), [used("example-app", 3, HOUR), ...drills(18)]);
-    const panel = await openPanel();
-    expect(rowsOf(panel, "Other projects")).toHaveLength(3);
-    const more = within(panel).getByRole("button", { name: "Show 15 more" });
-    expect(more.getAttribute("aria-expanded")).toBe("false");
-    expect(more.getAttribute("aria-controls")).toBe(projectList(panel).id);
-    more.focus();
-    fireEvent.click(more);
-    expect(rowsOf(panel, "Other projects")).toHaveLength(18);
-    const fewer = within(panel).getByRole("button", { name: "Show the latest 3" });
-    expect(fewer.getAttribute("aria-expanded")).toBe("true");
-    expect(document.activeElement).toBe(fewer);
-    fireEvent.click(within(within(panel).getByRole("radiogroup", { name: /^drill-18/ })).getByRole("radio", { name: "High" }));
-    fireEvent.click(fewer);
-    expect(rowsOf(panel, "Other projects")).toHaveLength(3);  // the viewer's choice holds
-  });
-
-  it("starts with the rest open when a level is set past its first three", async () => {
+  it("shows every one of a long rest, with no button to open more", async () => {
     serve(rules({ projects: { "drill-12": -1 } }), [used("example-app", 3, HOUR), ...drills(18)]);
     const panel = await openPanel();
     expect(rowsOf(panel, "Other projects")).toHaveLength(18);
     expect(within(within(panel).getByRole("radiogroup", { name: /^drill-12/ })).getByRole("radio", { name: "Low", checked: true })).toBeTruthy();
-    expect(within(panel).getByRole("button", { name: "Show the latest 3" })).toBeTruthy();
+    expect(within(panel).queryByRole("button", { name: /^Show / })).toBeNull();
   });
 
   it("counts a project with a job waiting as active, and says so when none is", async () => {

@@ -69,7 +69,6 @@ export const isDefault = (body: RulesBody) => !isDirty(body.defaults, body.rules
 // that never ran last. `flat` when the answer does not say how the projects were used: then
 // there is one group, as before. Names are looked up in Maps, so any name is only a name.
 export interface ProjectRow { name: string; last_run: number | null; runs_7d: number; waiting: number }
-export const OTHER_SHOWN = 3;
 
 export function projectGroups(body: RulesBody, draft: Rules, waiting: ReadonlyMap<string, number> = new Map()) {
   const used = new Map((body.project_activity ?? []).map((entry) => [entry.name, entry]));

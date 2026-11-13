@@ -200,9 +200,8 @@ last used two years ago can still be given a level. The panel only says which ar
 with a job or a GitHub run in the last seven days (or one waiting now) come first, under "Active in
 the last 7 days", by name, each with its runs and how long ago the last one was; the rest follow
 under "Other projects", the latest run first, with the day of that run, and one with a level that
-never sent a job last. A rest of more than four shows its latest three and a button that opens the
-others in place; it starts open when a level is set among them, so a set level is never out of
-sight. Both groups are one list, so a project whose use changes while the panel is open keeps its
+never sent a job last. Every one of the rest is always shown, with no button to open more (the
+user's call, 2026-11-13), so no project and no set level is ever out of sight. Both groups are one list, so a project whose use changes while the panel is open keeps its
 row, and the focus stays on its choice. A project with a job waiting has a row even before the
 rules are read again. The facts come with the rules (`project_activity`, `line_rules.project_activity`): one pass
 over the job history per read, 7 ms on 20000 jobs.

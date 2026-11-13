@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.13 - 2026-11-13 - patch
+- Order panel: every project under "Other projects" is always shown; the "Show N more" and "Show the latest 3" button is gone, with `OTHER_SHOWN`. The user, asked whether the rest should always be open: "yes". No project and no set level is out of sight, and the panel needs no state for it any more.
+- `OrderLevels.tsx` loses the open and chosen state and the chevrons; the two toggle tests in `order.projects.test.tsx` become one: 18 other projects all listed, a level set among them shown, no button. The list's id went with the button's `aria-controls` (Sol's review). docs/design.md, Order of the line, says so.
+
 ## 1.17.12 - 2026-11-13 - patch
 - The segmented choice is radio marks, everywhere it is used: a node's Priority in the settings window, the project, branch, workflow and GitHub levels of the Order panel, and the period of the Statistics table. The user of the deployed dashboard on 2026-11-13: "the pattern [of the choice] in the machine settings is looking pretty bad. I don't like it at all. Especially the underline border, it's pretty bad." Of the three options of 1.17.11 ([docs/design-system/segmented-options.html](docs/design-system/segmented-options.html)) the user picked C, radio marks.
 - `web/src/ui/Segmented.tsx` and `.seg` in `web/src/styles/components.css`: no box and no line; a ring before each word, the chosen ring filled in `--accent` with a heavier word, so never colour alone. A part keeps its width when chosen (each word holds a hidden heavier copy of itself), which it did not before. Still a radio group with one tab stop, arrow keys, Home and End; keyboard focus is the page's own ring around the part, a different mark from the chosen one; hover shades the part and darkens its ring; off or read only, nothing is in the accent and the chosen ring is filled in `--text-3`; 44 px parts on touch or under 520 px; no transition under reduced motion.
