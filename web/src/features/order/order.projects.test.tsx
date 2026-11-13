@@ -38,8 +38,18 @@ async function openPanel() {
   await within(panel).findByRole("switch", { name: "Fair turns" });
   return panel;
 }
-const rowsOf = (panel: HTMLElement, name: string) =>
-  within(within(panel).getByRole("list", { name })).getAllByRole("listitem").map((row) => row.querySelector("span")?.textContent);
+// The rows under one heading of the project list: both groups are one list.
+const projectList = (panel: HTMLElement) => within(panel).getByRole("list", { name: "Project levels" });
+function rowsOf(panel: HTMLElement, name: string) {
+  const rows: (string | null | undefined)[] = [];
+  let under = "";
+  for (const item of within(projectList(panel)).getAllByRole("listitem")) {
+    const heading = item.querySelector("h5");
+    if (heading) under = heading.textContent ?? "";
+    else if (under === name && item.querySelector("[role=radiogroup]")) rows.push(item.querySelector("span")?.textContent);
+  }
+  return rows;
+}
 
 afterEach(() => {
   cleanup();
@@ -84,7 +94,7 @@ describe("the Order panel's project levels", () => {
     expect(rowsOf(panel, "Other projects")).toHaveLength(3);
     const more = within(panel).getByRole("button", { name: "Show 15 more" });
     expect(more.getAttribute("aria-expanded")).toBe("false");
-    expect(more.getAttribute("aria-controls")).toBe(within(panel).getByRole("list", { name: "Other projects" }).id);
+    expect(more.getAttribute("aria-controls")).toBe(projectList(panel).id);
     more.focus();
     fireEvent.click(more);
     expect(rowsOf(panel, "Other projects")).toHaveLength(18);
@@ -111,7 +121,48 @@ describe("the Order panel's project levels", () => {
     const waiting: Job = { job_id: "job-1", state: "queued", kind: "job", project: "old-drill", position: 1 };
     queueStore.set({ snapshot: { now: NOW, running: [], queued: [waiting], recent: [] }, at: 0 });
     await waitFor(() => expect(rowsOf(panel, "Active in the last 7 days")).toEqual(["old-drill1 waiting"]));
-    expect(within(panel).queryByRole("list", { name: "Other projects" })).toBeNull();
+    expect(within(panel).queryByRole("heading", { name: "Other projects" })).toBeNull();
+  });
+
+  it("keeps the focus and the choice on a project that moves between the two groups", async () => {
+    serve(rules(), [used("example-app", 3, HOUR), used("old-drill", 0, 41 * DAY)]);
+    const panel = await openPanel();
+    const low = within(within(panel).getByRole("radiogroup", { name: /^old-drill/ })).getByRole("radio", { name: "Low" });
+    fireEvent.click(low);
+    low.focus();
+    const waiting: Job = { job_id: "job-1", state: "queued", kind: "job", project: "old-drill", position: 1 };
+    queueStore.set({ snapshot: { now: NOW, running: [], queued: [waiting], recent: [] }, at: 0 });
+    await waitFor(() => expect(rowsOf(panel, "Active in the last 7 days")).toEqual(["example-app3 runs, last 60 min ago", "old-drill1 waiting"]));
+    expect(document.activeElement).toBe(low);  // the same row, not a new one
+    expect(low.getAttribute("aria-checked")).toBe("true");
+    queueStore.set({ snapshot: { now: NOW, running: [], queued: [], recent: [] }, at: 1 });
+    await waitFor(() => expect(rowsOf(panel, "Other projects")).toHaveLength(1));
+    expect(document.activeElement).toBe(low);
+    expect(low.isConnected).toBe(true);
+  });
+
+  it("treats a project named like a built-in property as any other", async () => {
+    serve(rules(), [used("constructor", 0, 41 * DAY), used("toString", 2, HOUR), used("valueOf", 0, 50 * DAY)]);
+    const panel = await openPanel();
+    const waiting: Job = { job_id: "job-1", state: "queued", kind: "job", project: "valueOf", position: 1 };
+    queueStore.set({ snapshot: { now: NOW, running: [], queued: [waiting], recent: [] }, at: 0 });
+    await waitFor(() => expect(rowsOf(panel, "Active in the last 7 days")).toEqual(["toString2 runs, last 60 min ago", "valueOf1 waiting"]));
+    expect(rowsOf(panel, "Other projects")).toEqual([`constructorlast run ${day(NOW - 41 * DAY, NOW)}`]);
+    for (const name of ["constructor", "toString", "valueOf"]) {
+      const radios = within(within(panel).getByRole("radiogroup", { name: new RegExp(`^${name}`) })).getAllByRole("radio");
+      expect(radios.map((radio) => `${radio.textContent}${radio.getAttribute("aria-checked") === "true" ? "*" : ""}`)).toEqual(["High", "Normal*", "Low"]);
+    }
+    expect(within(panel).getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(true);
+  });
+
+  it("shows a project new since the rules were read as soon as a job of it waits", async () => {
+    serve(rules(), [used("example-app", 3, HOUR)]);
+    const panel = await openPanel();
+    const waiting: Job = { job_id: "job-1", state: "queued", kind: "job", project: "new-app", position: 1 };
+    queueStore.set({ snapshot: { now: NOW, running: [], queued: [waiting, { ...waiting, job_id: "job-2", position: 2 }], recent: [] }, at: 0 });
+    await waitFor(() => expect(rowsOf(panel, "Active in the last 7 days")).toEqual(["example-app3 runs, last 60 min ago", "new-app2 waiting"]));
+    fireEvent.click(within(within(panel).getByRole("radiogroup", { name: /^new-app/ })).getByRole("radio", { name: "High" }));
+    expect(within(panel).getByRole("button", { name: "Save" }).hasAttribute("disabled")).toBe(false);
   });
 
   it("keeps one list when the answer does not say how the projects were used", async () => {

@@ -35,6 +35,13 @@ describe("the order rules", () => {
     expect(nameProblem("x".repeat(101), {})).toContain("100");
     expect(nameProblem("main", { main: 1 })).toContain("already");
     expect(nameProblem("release/*", { main: 1 })).toBeNull();
+    expect(nameProblem("constructor", { main: 1 })).toBeNull();
+  });
+
+  it("reads a name like a built-in property as any other name", () => {
+    expect(changeOf(rules(), rules({ branches: { toString: 1 } }))).toEqual({ branches: { toString: 1 } });
+    expect(isDirty(rules({ workflows: { constructor: 0 } as Record<string, number> }), rules())).toBe(false);
+    expect(levelName(2, { low: -1, normal: 0, high: 1 })).toBe("+2");
   });
 });
 

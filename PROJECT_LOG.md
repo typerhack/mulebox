@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.8 - 2026-11-13 - patch
+- The Order panel's project levels, three faults Sol found in 1.17.7, each first shown by a failing component test (`order.projects.test.tsx`, `lib/order.test.ts`).
+- A project that crossed the seven-day line on a reread, or whose job began or stopped waiting, moved between two separate lists, so its row was made anew and a focused choice lost the focus to the page. The two groups are now one list ("Project levels") with "Active in the last 7 days" and "Other projects" as headings inside it, and a row's key is its project alone: the row moves, stays the same row, and the focus stays on the same project and choice. The "Show N more" button now names that one list in `aria-controls`.
+- A project called `constructor`, `toString` or `valueOf` met the properties every object has: its waiting count was a function, so it stayed among the others with the function's text as its note, and its level read as a function, a fourth choice with none chosen. Waiting counts are a Map, and every level is read through `levelOf` (`Object.hasOwn`), also for branches and workflows, in `changeOf`, `levelChoices` and `nameProblem` (which had called `constructor` "already in the list").
+- A project whose first job waited after the rules were read had no row until the next read. The live line's project names are now among the rows, and the waiting job puts the project among the active.
+- Docs: design.md (Order of the line).
+- Not seen in a browser: the tests run in jsdom. Known and left: a focused row that moves into the closed part of a long rest goes with it.
+
 ## 1.17.7 - 2026-11-13 - patch
 - The Order panel's project levels listed every project the node had ever seen in one flat list, about twenty of them old drills on the user's node. The user (2026-11-13): "I'd rather have all the projects here. Maybe a user wants to work on a project 2 years from now; he needs to have a record. But we say: these are used in the past 7 days, these are active. You still can use the others." So nothing is hidden or dropped: the list is split into "Active in the last 7 days" (a job or a GitHub run in that time, or one waiting now; by name, each with its fact, such as "12 runs, last 2 h ago" or "1 waiting, 6 runs") and "Other projects" (the latest run first, "last run 3 Oct", with the year once it is another one; a project with a level that never sent a job says "no run yet"). Every row is as settable as before, and a level shows wherever its project's use puts it.
 - A rest of more than four shows its latest three and a button, "Show 15 more", that opens the others in place (`aria-expanded`, `aria-controls`, like the waiting list's); it starts open when a level is set among the hidden ones, and then stays as the viewer left it.

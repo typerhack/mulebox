@@ -14,6 +14,10 @@ export const WORDS: Record<string, number> = { low: -1, normal: 0, high: 1 };
 export const MAX_AGING_MIN = 24 * 60;
 export const MAX_NAME = 100;
 
+// A level by its name, 0 when the name has none. Never the plain `map[name]`: a project may be
+// called "constructor" or "toString", and an object answers those with a function of its own.
+export const levelOf = (map: Record<string, number>, name: string): number => (Object.hasOwn(map, name) ? map[name] : 0);
+
 export const signed = (level: number) => (level > 0 ? `+${level}` : String(level));
 
 // low, normal or high; any other stored level as its number.
@@ -24,7 +28,7 @@ export function levelName(level: number, words: Record<string, number> = WORDS):
 // The choices a level offers: High, Normal, Low, and the stored number when it is none of them.
 export function levelChoices(saved: number, words: Record<string, number> = WORDS): Choice<number>[] {
   const named = [["high", "High"], ["normal", "Normal"], ["low", "Low"]]
-    .filter(([word]) => word in words).map(([word, label]) => ({ value: words[word], label }));
+    .filter(([word]) => Object.hasOwn(words, word)).map(([word, label]) => ({ value: words[word], label }));
   return named.some(({ value }) => value === saved) ? named : [...named, { value: saved, label: signed(saved) }];
 }
 
@@ -33,12 +37,12 @@ export function levelChoices(saved: number, words: Record<string, number> = WORD
 export function changeOf(saved: Rules, draft: Rules): Partial<Rules> {
   const change: Partial<Rules> = {};
   for (const map of LEVEL_MAPS) {
-    const entries: Record<string, number> = {};
+    const entries = new Map<string, number>();
     for (const name of new Set([...Object.keys(saved[map]), ...Object.keys(draft[map])])) {
-      const was = saved[map][name] ?? 0, now = draft[map][name] ?? 0;
-      if (was !== now) entries[name] = now;
+      const was = levelOf(saved[map], name), now = levelOf(draft[map], name);
+      if (was !== now) entries.set(name, now);
     }
-    if (Object.keys(entries).length) change[map] = entries;
+    if (entries.size) change[map] = Object.fromEntries(entries);
   }
   if (saved.github !== draft.github) change.github = draft.github;
   if (saved.aging_min !== draft.aging_min) change.aging_min = draft.aging_min;
@@ -58,18 +62,20 @@ export function applyChange(rules: Rules, change: Partial<Rules>): Rules {
 export const isDirty = (saved: Rules, draft: Rules) => Object.keys(changeOf(saved, draft)).length > 0;
 export const isDefault = (body: RulesBody) => !isDirty(body.defaults, body.rules);
 
-// The projects to set a level for, every one the node has seen and every one with a level, in
-// two lists: those with a job or a GitHub run in the last seven days (or one waiting now), by
-// name, then the rest, the latest run first and one that never ran last. `flat` when the answer
-// does not say how the projects were used: then there is one list, as before.
+// The projects to set a level for: every one the node has seen, every one with a level and
+// every one with a job waiting now (`waiting`, from the live queue, so a project new since the
+// rules were read has its row at once). In two groups: those with a job or a GitHub run in the
+// last seven days (or one waiting now), by name, then the rest, the latest run first and one
+// that never ran last. `flat` when the answer does not say how the projects were used: then
+// there is one group, as before. Names are looked up in Maps, so any name is only a name.
 export interface ProjectRow { name: string; last_run: number | null; runs_7d: number; waiting: number }
 export const OTHER_SHOWN = 3;
 
-export function projectGroups(body: RulesBody, draft: Rules, waiting: Record<string, number> = {}) {
+export function projectGroups(body: RulesBody, draft: Rules, waiting: ReadonlyMap<string, number> = new Map()) {
   const used = new Map((body.project_activity ?? []).map((entry) => [entry.name, entry]));
-  const names = [...new Set([...body.projects, ...used.keys(), ...Object.keys(body.rules.projects), ...Object.keys(draft.projects)])];
+  const names = [...new Set([...body.projects, ...used.keys(), ...Object.keys(body.rules.projects), ...Object.keys(draft.projects), ...waiting.keys()])];
   const rows: ProjectRow[] = names.map((name) =>
-    ({ name, last_run: used.get(name)?.last_run ?? null, runs_7d: used.get(name)?.runs_7d ?? 0, waiting: waiting[name] ?? 0 }));
+    ({ name, last_run: used.get(name)?.last_run ?? null, runs_7d: used.get(name)?.runs_7d ?? 0, waiting: waiting.get(name) ?? 0 }));
   if (!body.project_activity) return { flat: true, active: rows, other: [] };
   const isActive = (row: ProjectRow) => row.runs_7d > 0 || row.waiting > 0;
   const byName = (a: ProjectRow, b: ProjectRow) => a.name.localeCompare(b.name);
@@ -102,7 +108,7 @@ export const ordering = (rules: Rules) => levelsSet(rules) > 0 || rules.shortest
 export function nameProblem(name: string, taken: Record<string, number>): string | null {
   if (!name) return "Type a name first.";
   if (name.length > MAX_NAME) return `At most ${MAX_NAME} characters.`;
-  if (name in taken) return "It is already in the list.";
+  if (Object.hasOwn(taken, name)) return "It is already in the list.";
   return null;
 }
 
