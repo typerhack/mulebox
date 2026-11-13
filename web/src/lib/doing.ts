@@ -1,6 +1,6 @@
 // What a job in a slot is doing now: a word for its stage (a CI job's GitHub step) and the
 // cores the job alone uses, from the worker's last reading (dashboard/data.py, `doing`).
-// A download is told by its stage: per-job network is not measured, so nothing claims bytes.
+// What it downloads meanwhile is lib/download.ts.
 
 import type { Doing } from "./types";
 

@@ -1,5 +1,6 @@
 // A running job's card: its state as an icon, name, branch and id, where it came from, what
-// it is doing, the time so far beside the usual, and the cores the job alone uses.
+// it is doing, the time so far beside the usual, the cores the job alone uses, and what it
+// downloads while it does.
 
 import { stateOf, stateText } from "../../lib/format";
 import { coresText, doingWord } from "../../lib/doing";
@@ -10,6 +11,7 @@ import { CopyText } from "../../ui/Copy";
 import { Meter } from "../../ui/Meter";
 import { Status } from "../../ui/Status";
 import { Branch, Elapsed, JobId, JobName, Marks, OfUsual, QuestionMark, Source } from "./JobBits";
+import { DownloadMeter } from "./DownloadMeter";
 import { JobMenu, MoveButtons } from "./JobMenu";
 
 export function JobCard({ job, cores, total }: { job: Job; cores: number | null | undefined; total: number }) {
@@ -33,6 +35,7 @@ export function JobCard({ job, cores, total }: { job: Job; cores: number | null 
           <Meter name="Cores" value={(pct / cores)} text={coresText(pct)}
             label={`Cores this job uses: ${coresText(pct)} of ${cores}`} />
         ) : <p className="num text-sm text-ink-2">Cores: {coresText(pct)}</p>)}
+        <DownloadMeter download={job.doing?.download} trails={job.kind === "runner"} />
         <QuestionMark job={job} />
       </div>
       <div className="flex flex-none items-center gap-2"><Marks job={job} /><JobMenu job={job} total={total} /></div>

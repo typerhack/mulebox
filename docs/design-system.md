@@ -179,6 +179,14 @@ Drawn in the specimen, in both themes:
 - Running job card with its three-dots menu. Menu items have an icon, a bold name and one plain
   hint.
 - Waiting row: position, name, branch, time waited, the four move arrows as one group, three dots.
+- Download meter on a running card (the user's pick of three, 2026-11-13;
+  [design-system/download-progress-mockup.html](design-system/download-progress-mockup.html),
+  option A): a "Down" row under Cores, only while the job downloads. A meter that fills when the
+  total is known, a dashed open track in `--border-strong` when not, and below it "Downloading"
+  with what, and the speed as a fact of its own. When no byte has moved for a while the fill
+  and a warning icon take `--status-warning` and the line says "No bytes for 75 s"; the open
+  track stays as it is. It is not load: one solid fill in both meter styles, and no warning at
+  80% (`web/src/features/jobs/DownloadMeter.tsx`).
 - Warning strip (amber) and danger strip (red), each with its fix.
 - Tooltip, empty state.
 - Settings controls (the user's agreement, 2026-11-13, for node settings and queue order): a

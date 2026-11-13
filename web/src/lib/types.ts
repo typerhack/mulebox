@@ -10,10 +10,29 @@ export interface Question {
   left_s: number;
 }
 
+// What a running job is downloading (docs/interfaces.md, download_watch.py). The printed
+// figures (`done_bytes`, `total_bytes`, `rate_bytes_s`, `as_of_s` seconds old) can trail on a
+// GitHub run; `net_bytes_s` is measured now, the job's own or the whole node's (`net_scope`).
+export interface Download {
+  what?: string | null;
+  name?: string | null;
+  step?: string | null;
+  done_bytes?: number | null;
+  total_bytes?: number | null;
+  rate_bytes_s?: number | null;
+  as_of_s?: number | null;
+  net_bytes_s?: number | null;
+  net_scope?: "job" | "machine" | null;
+  waiting_on_network?: boolean | null;
+  quiet_s?: number | null;
+  stalled?: boolean | null;
+}
+
 export interface Doing {
   stage?: string | null;
   step?: string | null;
   cpu_pct?: number | null;
+  download?: Download | null;
 }
 
 export interface CiResult {

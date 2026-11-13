@@ -11,14 +11,16 @@ export const WARN_FROM = 80, DANGER_FROM = 92;
 export const levelOf = (value: number) => (value >= DANGER_FROM ? "danger" : value >= WARN_FROM ? "warn" : null);
 const share = (value: number) => ({ "--v": `${Math.max(0, Math.min(100, value)).toFixed(1)}%` }) as CSSProperties;
 
-interface BarProps { value: number | null; label: string; levels?: boolean; className?: string }
+type Level = "warn" | "danger" | null;
+// `level` sets the colour itself, for a meter whose warning is not its fullness (a download).
+interface BarProps { value: number | null; label: string; levels?: boolean; level?: Level; className?: string }
 
 // The bar alone, for a table cell or a card.
-export function MeterBar({ value, label, levels = true, className }: BarProps) {
+export function MeterBar({ value, label, levels = true, level, className }: BarProps) {
   const shown = value ?? 0;
   return (
     <div className={cx("meter", className)} role="meter" aria-label={label} aria-valuemin={0} aria-valuemax={100}
-      aria-valuenow={Math.round(shown)} data-level={(levels && levelOf(shown)) || undefined} style={share(shown)}>
+      aria-valuenow={Math.round(shown)} data-level={(level !== undefined ? level : levels && levelOf(shown)) || undefined} style={share(shown)}>
       <i />
     </div>
   );

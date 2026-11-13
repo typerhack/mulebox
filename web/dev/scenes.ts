@@ -4,6 +4,8 @@
 //   wide:  build-1 has 4 slots, all running, 2 waiting for it (long names, a paused job, a
 //          GitHub run); build-2 runs 2 with 1 waiting; 2 jobs for the next free machine and
 //          one no machine fits.
+//   downloads: the Down meter in each state, on agent jobs and GitHub runs: a known total, no
+//          total, no bytes for a while (each), the node's traffic only, and a long name.
 
 import { job, type MockJob } from "./fixtures.ts";
 
@@ -60,8 +62,29 @@ function wide() {
   return { running, queued, machines: { "build-1": { slots: 4, state: "busy" }, "build-2": { slots: 2, state: "busy" } } };
 }
 
+const MB = 1024 ** 2;
+function downloads() {
+  const step = { step: "Run actions/setup-node@v4", cpu_pct: 0 };
+  const cache = { what: "cache", name: "npm cache", done_bytes: 12 * MB, total_bytes: 41 * MB, rate_bytes_s: 0.5 * MB,
+                  as_of_s: 30, net_bytes_s: 0.6 * MB, net_scope: "job", waiting_on_network: true, quiet_s: 0, stalled: false };
+  const pnpm = { what: "package", name: "next@16.4.3", done_bytes: 18 * MB, total_bytes: null, rate_bytes_s: 0.4 * MB,
+                 as_of_s: 1, net_bytes_s: 3.1 * MB, net_scope: "machine", waiting_on_network: true, quiet_s: 0, stalled: false };
+  const still = { rate_bytes_s: 0, net_bytes_s: 0, quiet_s: 75, stalled: true };
+  const running = [
+    run("A41F9C", "build-1", 72, 30, { branch: "feat/checkout-form", doing: { stage: "install", cpu_pct: 30, download: pnpm } }),
+    run("C07E55", "build-1", 48, 0, { ...ci("build-1"), usual_s: 180, doing: { ...step, download: cache } }),
+    run("E93B21", "build-1", 117, 0, { branch: "feat/checkout-form", doing: { stage: "install", cpu_pct: 0, download: { ...pnpm, ...still } } }),
+    run("B0E6F5", "build-1", 93, 0, { ...ci("build-1"), usual_s: 180, doing: { ...step, download: { ...cache, ...still } } }),
+    run("D2A771", "build-2", 20, 5, { ...LONG, doing: { stage: "toolchain", cpu_pct: 5, download: {
+      what: "tool", name: "chromium-headless-shell-linux-x64-with-a-long-file-name.tar.gz", done_bytes: null, total_bytes: null,
+      rate_bytes_s: null, net_bytes_s: 3.1 * MB, net_scope: "machine", quiet_s: null, stalled: null } } }),
+    run("F5C310", "build-2", 20, 90, { project: "example-worker", branch: "chore/deps", client_os: "Linux" }),
+  ];
+  return { running, queued: [] as MockJob[], machines: { "build-1": { slots: 4, state: "busy" }, "build-2": { slots: 2, state: "busy" } } };
+}
+
 export function makeScene(name: string | undefined) {
-  const made = name === "split" ? split() : name === "wide" ? wide() : null;
+  const made = name === "split" ? split() : name === "wide" ? wide() : name === "downloads" ? downloads() : null;
   if (!made) return null;
   made.queued.forEach((row: MockJob, index) => { row.position = index + 1; row.elapsed_s = 25 * (index + 1); });
   return { queue: { running: made.running as MockJob[], queued: made.queued as MockJob[], recent: [] as MockJob[] }, machines: made.machines };

@@ -12,13 +12,16 @@
     background: var(--meter-fill); transition: width var(--dur-base) var(--ease); }
   .meter[data-level="warn"] > i { background: var(--status-warning); }
   .meter[data-level="danger"] > i { background: var(--status-danger); }
-  :root[data-paint="rainbow"] .meter { height: var(--space-2); border-radius: var(--spacing-hair);
+  /* `.meter-flat` is not load (a download's share), so it keeps one solid fill in both styles. */
+  :root[data-paint="rainbow"] .meter:not(.meter-flat) { height: var(--space-2); border-radius: var(--spacing-hair);
     background: linear-gradient(90deg, var(--ramp-lo), var(--ramp-mid) 62%, var(--ramp-hi)); }
-  :root[data-paint="rainbow"] .meter > i { position: absolute; inset: 0 0 0 var(--v, 0%); width: auto;
+  :root[data-paint="rainbow"] .meter:not(.meter-flat) > i { position: absolute; inset: 0 0 0 var(--v, 0%); width: auto;
     border-radius: 0; background: var(--meter-track); transition: inset var(--dur-base) var(--ease); }
-  :root[data-paint="rainbow"] .meter::after { content: ""; position: absolute; inset: 0;
+  :root[data-paint="rainbow"] .meter:not(.meter-flat)::after { content: ""; position: absolute; inset: 0;
     background: repeating-linear-gradient(90deg, transparent 0 calc(var(--space-1) * 1.25),
       var(--meter-gap, var(--surface-1)) calc(var(--space-1) * 1.25) calc(var(--space-1) * 1.75)); }
+  /* A download with no known total: a track with no end, where the meter would be. */
+  .track-open { min-width: 0; height: 0; border-top: var(--spacing-hair) dashed var(--border-strong); }
   .on-card { --meter-gap: var(--surface-2); }
 
   /* Graph: a canvas, its scale note, and the crosshair's tip. */

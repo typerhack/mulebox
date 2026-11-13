@@ -16,7 +16,8 @@ const scene = makeScene(process.env.MULEBOX_MOCK_SCENE);
 const queue = scene?.queue ?? makeQueue();
 let machines = makeMachines(queue, scene?.machines);
 const viewers = new Set<ServerResponse>();
-const history = historyRows(queue.recent, now());
+// A scene has no finished jobs of its own; the History page keeps the default ones.
+const history = historyRows(queue.recent.length ? queue.recent : makeQueue().recent, now());
 
 const send = (res: ServerResponse, event: string, data: unknown, id?: number) =>
   res.write(`${id === undefined ? "" : `id: ${id}\n`}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);

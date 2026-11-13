@@ -837,8 +837,9 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       segment timeout in ci.yml, with a test; open: a real stalled restore giving up in a minute.
       Download progress on cards (the user's ask, 2026-11-13): built 2026-11-13 (1.15.0), the
       reading only (`download` in a job's activity, its card's `doing` and `mulebox status`),
-      with tests on lines from the node's real CI runs. Open: the card's look (mockups for the
-      user), and a real slow cache restore seen on the deployed dashboard.
+      with tests on lines from the node's real CI runs. The user picked mockup A, a second meter;
+      card built 1.15.1; open: seen on the deployed dashboard in Edge, with a real slow cache
+      restore.
 
 ## M24: Answers an agent can trust
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,

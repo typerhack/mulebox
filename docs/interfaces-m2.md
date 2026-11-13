@@ -58,7 +58,8 @@ Input is a public job dict; every function tolerates missing or malformed fields
   `doing.download` (1.15.0) is what the job is downloading, null when nothing is, in the shape
   of interfaces.md, download_watch.py; it counts in steps of 5% of its total (4 MiB with no
   total), and when it starts or stops waiting on the network or stalling. A rate alone changes
-  nothing, so it waits for the next event.
+  nothing, so it waits for the next event. The React page draws it as the card's Down meter
+  (1.15.1, `web/src/lib/download.ts`, `features/jobs/DownloadMeter.tsx`).
 
 ## Where a waiting job may go (`coordinator/views.py` `placement`)
 
