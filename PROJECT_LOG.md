@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.14 - 2026-11-13 - patch
+- Roadmap M24.6 done: a real pull request (a throwaway draft of this repository) showed the commit statuses from real `mulebox check` runs with `github_status: true`, `mulebox/check` passed and `mulebox/broken` (a job `false`) failed (exit 1), both on the pushed commit, posted by the dev machine's `gh`. The PR was closed and its branch, CI run, worktree and node project tree removed. Docs only.
+
 ## 1.17.13 - 2026-11-13 - patch
 - Order panel: every project under "Other projects" is always shown; the "Show N more" and "Show the latest 3" button is gone, with `OTHER_SHOWN`. The user, asked whether the rest should always be open: "yes". No project and no set level is out of sight, and the panel needs no state for it any more.
 - `OrderLevels.tsx` loses the open and chosen state and the chevrons; the two toggle tests in `order.projects.test.tsx` become one: 18 other projects all listed, a level set among them shown, no button. The list's id went with the button's `aria-controls` (Sol's review). docs/design.md, Order of the line, says so.

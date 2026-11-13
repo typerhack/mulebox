@@ -917,11 +917,16 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       project beside another project's job on the node, the single job taking the next free slot.
 - [ ] M24.5 One job across slots: named groups of tests (`shards:`) run side by side on free slots and
       machines, and come back as one result with one exit code and one summary.
-- [~] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status
+- [x] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status
       or check run, so a PR shows it and it can be a required check, with nothing reaching in to the
       node. Built 2026-11-12 (1.14.0): `github_status: true` in `.mulebox.yml`, a commit status
       `mulebox/<job>` posted by the dev machine's `gh` after `check` (design.md, Results on GitHub),
       with tests. Done when: a real pull request shows the status from a real `check`.
+      Done 2026-11-13 (1.17.14): on a throwaway draft pull request of this repository, with
+      `github_status: true` on a clean pushed commit, a real `mulebox check` passed on the node
+      (3m 54s) and the PR showed `mulebox/check` passed; a job `false` beside it showed
+      `mulebox/broken` failed (exit 1) on the same commit. The PR was closed, its branch, CI run,
+      worktree and the node's project tree removed.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
 
