@@ -140,7 +140,7 @@ class Agent(Ending, Skipping):
         safe = self.paths.is_safe_job(project, job_id)
         log_path = self.paths.job_dir(project, job_id) / "out.log" if safe else None
         tailer = LogTailer(log_path, job_id, attempt_id, request,
-                           StreamRedactor(secret_values(self.node.job_env)))
+                           StreamRedactor(secret_values(self.node.job_env)), clock=self.clock)
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}),
                         take=[p for p in claim.get("take") or [] if isinstance(p, str)],
@@ -254,7 +254,7 @@ class Agent(Ending, Skipping):
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
                       attempt_id=job.attempt_id, load=self.host.sample(), activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
-                          job.steps.stage, job.steps.last_line, now))
+                          job.steps.stage, job.steps.last_line, now, job.tailer.download))
         try:
             return self._call(msg, now)
         except LinkError:

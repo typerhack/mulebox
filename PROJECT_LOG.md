@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.15.0 - 2026-11-13 - minor
+- Download readings (the user's ask, M23.11): a running job says what it is downloading, how much of how much, how fast, and whether it waits on the network or stalled, so a cache restore at 0.6 MB/s over the node's VPN, at no CPU, does not look hung. `download` in a heartbeat's `activity` (`common/download_watch.py`), in `mulebox status`, check-ins and a card's `doing` on the dashboard, sent with the heartbeats that already go. Read from the lines tools print (`common/download_lines.py`): GitHub's cache restore, setup-python and setup-node tool downloads, pnpm, pip, uv, Playwright and image layers; a CI run's at the times its runner stamped them. An isolated runner's own traffic is measured (its container's network); elsewhere the node's is shown and never judged. A card's fingerprint follows it in 5% steps. The card's look is for later.
+
 ## 1.14.5 - 2026-11-13 - patch
 - Mockups (docs/design-system/mockups-2026-11-13.html): node settings, download progress on a job card and queue order, three options each, drawn by a Fable subagent and reviewed by Sol. The user picked node settings C (suggested and yours), download progress A (a second meter) and queue order A (an Order button on the line).
 

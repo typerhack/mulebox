@@ -4,8 +4,10 @@ A crashed runner never calls its job-completed hook, so the worker watches its o
 reservations: every 10 s it asks the coordinator for them (`runner_jobs`). While the
 runner's job process (`Runner.Worker`, found through /proc) is alive, a granted
 reservation gets a worker heartbeat, which renews its lease and carries what the job does: its
-CPU, its compose containers' included (runner_meter.py), and the step it is on, for its card on the dashboard. Once the process has been
-gone for 60 s the reservation is released as `interrupted`. A granted reservation's steps and
+CPU, its compose containers' included (runner_meter.py), the step it is on, and what that step
+downloads (live_log.py, common/download_watch.py), for its card on the dashboard. The traffic
+beside a download is the job's own for an isolated runner, else the node's. Once the process has
+been gone for 60 s the reservation is released as `interrupted`. A granted reservation's steps and
 output also go into its log from the runner's own files, every second (live_log.py). Pause and
 boost asked for a running reservation are applied to its runner each round (runner_controls.py).
 
@@ -29,10 +31,11 @@ from mulebox.common.config_reader import NAME_RE
 from mulebox.common.log import get_logger
 from mulebox.common.mounts import is_within
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.common.redact import StreamRedactor
+from mulebox.common.redact import Redactor, StreamRedactor
 from mulebox.runners.live_log import RunnerLog
 from mulebox.runners.runner_controls import RunnerControls
 from mulebox.runners.runner_meter import RunnerMeter
+from mulebox.worker.activity import MachineMeter
 from mulebox.worker.link import request
 
 LOG = get_logger("runners.supervise")
@@ -142,7 +145,8 @@ class Supervisor:
                  interval_s: float = SUPERVISE_S, gone_s: float = GONE_S,
                  redactor: Callable[[], StreamRedactor] = StreamRedactor,
                  meter: RunnerMeter | None = None,
-                 controls: RunnerControls | None = None) -> None:
+                 controls: RunnerControls | None = None,
+                 machine: MachineMeter | None = None) -> None:
         self.worker = worker
         self.runners_root = Path(runners_root)
         self.alive = alive
@@ -155,6 +159,8 @@ class Supervisor:
         self.next_follow = 0.0
         self.meter = meter if meter is not None else RunnerMeter()
         self.controls = controls
+        self.machine = machine if machine is not None else MachineMeter()
+        self._names = Redactor()  # a download's name comes from a page line not yet redacted
 
     def tick(self, now: float, send: Callable[[Message], Message]) -> None:
         """One supervision round when due. Link errors propagate to the caller."""
@@ -225,5 +231,20 @@ class Supervisor:
 
     def _activity(self, job_id: str, runner: str, now: float) -> dict[str, Any]:
         follower = self.logs.get(job_id)
-        return {"job_cpu_pct": self.meter.cpu_pct(job_id, runner, now),
-                "step": follower[0].step if follower else None}
+        cpu = self.meter.cpu_pct(job_id, runner, now)
+        return {"job_cpu_pct": cpu, "step": follower[0].step if follower else None,
+                "download": self._download(follower[0] if follower else None, job_id, cpu, now)}
+
+    def _download(self, follower: RunnerLog | None, job_id: str, cpu: float | None,
+                  now: float) -> dict[str, Any] | None:
+        if follower is None:
+            return None
+        net, scope = self.meter.net_bytes_s(job_id), "job"
+        if net is None:
+            self.machine.update(now)
+            kib = self.machine.net_kib_s
+            net, scope = (None, None) if kib is None else (kib * 1024.0, "machine")
+        reading = follower.download.reading(now, cpu, net, scope)
+        if reading is not None and reading.get("name"):
+            reading["name"] = self._names.redact(reading["name"])
+        return reading

@@ -12,6 +12,10 @@ On a Mac there are no control groups: the runner's own processes are its launchd
 group, from one `ps` listing (worker/darwin_jobs.py, as for a job), and its containers' CPU comes
 from the engine's API, asked beside the loop.
 
+An isolated runner's job runs in a container with a network of its own (place.py), so its
+traffic is the job's alone and is read too, for its download (common/download_watch.py). A
+runner's service shares the node's network, so it has no traffic reading of its own.
+
 Not counted: a container started with plain `docker run`, which says nothing of where it came
 from. A container counts from its second reading, so one that just appeared never adds the CPU
 it used before it was seen. A first reading, or a runner group that cannot be read, gives None:
@@ -33,6 +37,7 @@ from mulebox.worker.docker import Docker
 
 WORKDIR_LABEL = "com.docker.compose.project.working_dir"
 _RUNNER = "runner"
+NET = "net:job"  # bytes in and out of an isolated runner's own network
 
 Reading = dict[str, float]  # CPU seconds by source: the runner, and each of its containers
 Reader = Callable[[str], "Reading | None"]  # runner name -> reading
@@ -101,12 +106,16 @@ class PlaceGroups:
 def runner_reading(runner: str, containers: CiContainers | None = None,
                    places: PlaceGroups | None = None) -> Reading | None:
     group = cgroups.runner_group(runner)
-    if group is None and places is not None:
+    isolated = group is None and places is not None
+    if isolated:
         group = places.group(runner)
     used = cgroups.cpu_seconds(group) if group is not None else None
     if used is None:
         return None
     reading = {_RUNNER: used}
+    traffic = cgroups.group_net_bytes(group) if isolated else None
+    if traffic is not None:
+        reading[NET] = float(traffic)
     for container in containers.of(runner) if containers is not None else []:
         found = cgroups.container_group(container)
         cpu = cgroups.cpu_seconds(found) if found is not None else None
@@ -169,6 +178,7 @@ class RunnerMeter:
         self.containers = containers
         self.read = read or (lambda runner: runner_reading(runner, self.containers, places))
         self._last: dict[str, tuple[Reading, float]] = {}  # job id -> (reading, at)
+        self._net: dict[str, float] = {}  # job id -> its own bytes a second, where measured
 
     def new_round(self) -> None:
         """Called once a supervision round, before the cards are read."""
@@ -179,6 +189,7 @@ class RunnerMeter:
         """Percent of one core the job used since the last reading of it."""
         reading = self.read(runner)
         last = self._last.get(job_id)
+        self._net.pop(job_id, None)
         if reading is None:
             self._last.pop(job_id, None)
             return None
@@ -186,9 +197,17 @@ class RunnerMeter:
         if last is None or now <= last[1]:
             return None
         before, at = last
-        used = sum(max(0.0, value - before[key]) for key, value in reading.items() if key in before)
+        if NET in reading and NET in before:
+            self._net[job_id] = round(max(0.0, reading[NET] - before[NET]) / (now - at), 1)
+        used = sum(max(0.0, value - before[key]) for key, value in reading.items()
+                   if key in before and key != NET)
         return round(used / (now - at) * 100.0, 1)
+
+    def net_bytes_s(self, job_id: str) -> float | None:
+        """The job's own traffic over the span of its last `cpu_pct`; None where not measured."""
+        return self._net.get(job_id)
 
     def forget(self, keep: set) -> None:
         for job_id in [job_id for job_id in self._last if job_id not in keep]:
             del self._last[job_id]
+            self._net.pop(job_id, None)

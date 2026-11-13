@@ -13,7 +13,7 @@ from typing import Any, TextIO
 
 from mulebox.client import report
 from mulebox.client.remote import Remote, request
-from mulebox.client.report import format_duration
+from mulebox.client.report import format_duration, format_size
 from mulebox.common.config import (
     ConfigError,
     find_project_config,
@@ -89,7 +89,37 @@ def activity_text(activity: dict[str, Any]) -> str:
         parts.append(f"machine network {net:.1f} KiB/s")
     if activity.get("last_line"):
         parts.append(f"last line: {activity['last_line']}")
+    if isinstance(activity.get("download"), dict):
+        parts.append(download_text(activity["download"]))
     return ", ".join(parts) or "no readings from the machine"
+
+
+def download_text(download: dict[str, Any]) -> str:
+    """What a job is downloading (common/download_watch.py), as far as the readings go."""
+    name = download.get("name") or download.get("what")
+    done, total = number(download.get("done_bytes")), number(download.get("total_bytes"))
+    words = f"downloading {name}" if name != "network" else "downloading, by its own traffic"
+    if done is not None and total:
+        words += f": {format_size(int(done))} of {format_size(int(total))} ({done / total:.0%})"
+    elif done is not None:
+        words += f": {format_size(int(done))} so far"
+    elif total:
+        words += f" ({format_size(int(total))})"
+    rate, age = number(download.get("rate_bytes_s")), number(download.get("as_of_s"))
+    if rate is not None:
+        words += f" at {format_size(int(rate))}/s"
+    if age is not None and age >= 30:
+        words += f", as printed {format_duration(age)} ago"
+    net = number(download.get("net_bytes_s"))
+    if net is not None:
+        whose = "its own" if download.get("net_scope") == "job" else "the machine's"
+        words += f", network {format_size(int(net))}/s ({whose})"
+    if download.get("waiting_on_network"):
+        words += ", waiting on the network"
+    quiet = number(download.get("quiet_s"))
+    if download.get("stalled") and quiet is not None:
+        words += f", stalled: no byte for {format_duration(quiet)}"
+    return words
 
 
 def check_in_line(job_id: str, check_in: dict[str, Any]) -> str:

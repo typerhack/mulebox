@@ -27,6 +27,7 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Any
 
+from mulebox.common import download_watch
 from mulebox.common.config import DEFAULT_UNATTENDED_IDLE_MIN, DEFAULT_UNATTENDED_MAX_HOURS
 from mulebox.common.protocol import JobState
 from mulebox.common.status import STOP_STUCK, STOP_TEXT, STOP_UNKNOWN, current_stage
@@ -94,12 +95,14 @@ def answer(job: dict[str, Any], now: float) -> int:
 
 def activity(job: dict[str, Any], rows: list[dict[str, Any]], now: float) -> dict[str, Any]:
     """A running job for someone deciding whether it is stuck. The readings are the worker's
-    last report, null when it could not measure them; CPU and network are the machine's."""
+    last report, null when it could not measure them; CPU and network are the machine's.
+    `download` is what it is downloading (common/download_watch.py), null when nothing is."""
     report = job["activity"] or {}
     started = job["started_at"]
     return {"elapsed_s": round(now - started, 1) if started else None,
             "stage": current_stage(job, rows),
-            **{name: report.get(name) for name in _REPORTED}}
+            **{name: report.get(name) for name in _REPORTED},
+            "download": download_watch.clean(report.get("download"))}
 
 
 def status_fields(job: dict[str, Any], rows: list[dict[str, Any]], now: float,

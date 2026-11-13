@@ -20,15 +20,22 @@ because on Linux an open file can still be read after it is deleted. A step shor
 poll can be missed; GitHub has everything. The last step is read once more after the slot is
 released, as its completed hook ends the reservation (reservations.LATE_LOG_S). Only reading happens here, nothing in the runner's
 folder is changed. Output goes through LogTailer, so it is redacted like any job's log.
+
+The open step's page lines, with the times the runner stamped on them, also go to a DownloadWatch
+(common/download_watch.py), for what the step is downloading: a cache restore over a slow link
+prints `Received ... of ...` for minutes at no CPU. A page reaches the node in blocks, so the
+figures trail; the watch knows (live=False).
 """
 
 from __future__ import annotations
 
+import calendar
 import os
 import re
 from pathlib import Path
 from typing import BinaryIO
 
+from mulebox.common.download_watch import DownloadWatch
 from mulebox.common.redact import StreamRedactor
 from mulebox.runners import diary
 from mulebox.runners.diag_files import open_diag
@@ -41,6 +48,7 @@ _RECORD = re.compile(r"web console lines for record '([0-9a-f-]{36})'")
 _JOB = re.compile(r"\bJob ID ([0-9a-f-]{36})\b")  # its own page repeats every step: skipped
 _PLAN = re.compile(r'"planId":\s*"([0-9a-f-]{36})"')
 _STAMP = re.compile(r"^﻿?\d{4}-\d\d-\d\dT[\d:.]+Z ?")
+_STAMP_TIME = re.compile(r"^﻿?(\d{4})-(\d\d)-(\d\d)T(\d\d):(\d\d):(\d\d)(\.\d+)?Z")
 _GROUP, _END_GROUP = "##[group]", "##[endgroup]"
 _DIARY_TIME = re.compile(r"^\[(\d{4}-\d\d-\d\d) (\d\d:\d\d:\d\dZ) ")
 _ENDED = re.compile(r"current step result '(\w+)'")
@@ -52,6 +60,18 @@ def _at(line: str) -> str:
     """` at <time>` from a diary line's own time, or nothing when it has none."""
     found = _DIARY_TIME.match(line)
     return f" at {found[1]}T{found[2]}" if found else ""
+
+
+def stamp_time(line: str) -> float | None:
+    """The UTC time a page line was stamped with, as a Unix time; None when it has none."""
+    found = _STAMP_TIME.match(line)
+    if found is None:
+        return None
+    try:
+        whole = calendar.timegm(tuple(int(part) for part in found.groups()[:6]) + (0, 0, 0))
+    except (ValueError, OverflowError):
+        return None
+    return whole + (float(found[7]) if found[7] else 0.0)
 
 
 def _page_line(line: str) -> str | None:
@@ -73,13 +93,15 @@ class RunnerLog:
     def __init__(self, job_id: str, runner_dir: Path, make_request: MakeRequest,
                  redactor: StreamRedactor | None = None) -> None:
         self.diag = Path(runner_dir) / "_diag"
-        self.tailer = LogTailer(None, job_id, "", make_request, redactor)
+        self.tailer = LogTailer(None, job_id, "", make_request, redactor, watch_downloads=False)
+        self.download = DownloadWatch(live=False)
         self._worker_log: Path | None = None
         self._worker_pos = 0
         self._worker_partial = ""
         self._plan: str | None = None
         self._job: str | None = None
         self._step: str | None = None
+        self._open: str | None = None  # the step until its result: only its lines are downloads
         self._records: dict[str, str] = {}  # record id -> step name
         self._pages: dict[str, _Page] = {}
         self._done: set[str] = set()  # pages read to their end
@@ -139,10 +161,14 @@ class RunnerLog:
             self._job = job[1]
         elif step := STEP.search(line):
             self._step = step[1]
+            self._open = self._step
+            self.download.step(self._step)
             self.tailer.note(f"mulebox: step{_at(line)}: {self._step}\n")
         elif self._step and (record := _RECORD.search(line)):
             self._records.setdefault(record[1], self._step)
         elif self._step and (ended := _ENDED.search(line)):
+            self._open = None
+            self.download.step(None)
             if result := _RESULTS.get(ended[1].lower()):
                 self.tailer.note(f"mulebox: step {result}{_at(line)}: {self._step}\n")
 
@@ -173,13 +199,21 @@ class RunnerLog:
         page.partial += data
         lines = page.partial.split(b"\n")
         page.partial = b"" if gone else lines.pop()
-        shown = [kept for raw in lines if raw
-                 if (kept := _page_line(raw.decode("utf-8", errors="replace").rstrip("\r")))
-                 is not None]
+        texts = [raw.decode("utf-8", errors="replace").rstrip("\r") for raw in lines if raw]
+        step = self._records.get(page.record, "a step")
+        if step == self._open:
+            self._downloads(texts)
+        shown = [kept for text in texts if (kept := _page_line(text)) is not None]
         if shown:
-            step = self._records.get(page.record, "a step")
             if step != self._shown:
                 self._shown = step
                 self.tailer.note(f"--- output of {step}\n")
             self.tailer.note("".join(f"{line}\n" for line in shown))
         return gone
+
+    def _downloads(self, texts: list[str]) -> None:
+        """The open step's lines, at their own times, for the download watch."""
+        for text in texts:
+            at = stamp_time(text)
+            if at is not None:
+                self.download.line(_STAMP.sub("", text), at)

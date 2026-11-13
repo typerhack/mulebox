@@ -183,7 +183,34 @@ def test_a_heartbeat_carries_the_runner_jobs_cpu_and_step(gh_env, link, paths, s
     supervisor.tick(T0, link.call)
     supervisor.tick(T0 + SUPERVISE_S, link.call)
     activity = store.get_job(job_id)["activity"]
-    assert activity == {"job_cpu_pct": 200.0, "step": "Run pnpm check"}
+    assert activity == {"job_cpu_pct": 200.0, "step": "Run pnpm check", "download": None}
+
+
+def test_a_heartbeat_carries_an_isolated_runners_download_with_its_own_traffic(
+        gh_env, link, paths, store):
+    from mulebox.runners.runner_meter import NET, RunnerMeter
+    plan, record = "d20691f6-9c82-5b6a-b39b-8cea59a72f41", "1d474f7c-0a18-43e9-9ad8-57d8d0598a92"
+    job_id = grant(gh_env, link, paths)
+    diag = paths.runners / RUNNER / "_diag"
+    (diag / "pages").mkdir(parents=True)
+    (diag / "Worker_20261112-143740-utc.log").write_text(
+        f'"planId": "{plan}",\n'
+        "[x INFO StepsRunner] Processing step: DisplayName='Run actions/setup-node@949feb2'\n"
+        f"[x INFO JobServerQueue] web console lines for record '{record}'\n")
+    (diag / "pages" / f"{plan}_{record}_1.log").write_text(  # stamped T0 - 5 s
+        "1970-01-01T02:46:35Z Cache hit for: node-cache-Linux-x64-npm-dd22\n"
+        "1970-01-01T02:46:35Z Received 0 of 41040441 (0.0%), 0.0 MBs/sec\n")
+    used = iter([{"runner": 5.0, NET: 1000.0}, {"runner": 5.1, NET: 6_001_000.0}])
+    supervisor = Supervisor("build-1", paths.runners, alive=lambda folder: True,
+                            meter=RunnerMeter(read=lambda runner: next(used)))
+    supervisor.tick(T0, link.call)
+    supervisor.next_follow = 0.0
+    supervisor.tick(T0 + SUPERVISE_S, link.call)
+    found = store.get_job(job_id)["activity"]["download"]
+    assert (found["what"], found["name"], found["done_bytes"], found["total_bytes"]) == (
+        "cache", "npm cache", 0, 41040441)
+    assert found["net_scope"] == "job" and found["net_bytes_s"] == 600_000.0
+    assert found["waiting_on_network"] is True and found["stalled"] is False
 
 
 def test_runner_alive_on_a_mac_reads_the_arguments_from_ps(paths):

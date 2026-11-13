@@ -189,14 +189,18 @@ def test_a_running_job_says_what_it_is_doing_and_a_waiting_one_does_not(data, st
                                                                          run_job):
     job_id, ids = run_job()
     api.handle(store, staging, request("heartbeat", lease="worker", **ids,
-                                       activity={"job_cpu_pct": 310.0, "idle_s": 0.0}), NOW)
+                                       activity={"job_cpu_pct": 310.0, "idle_s": 0.0,
+                                                 "download": {"what": "image", "done_bytes": 5}}),
+               NOW)
     with store.write() as conn:
         steps.save(conn, job_id, [{"seq": 0, "stage": "images", "started_at": NOW,
                                    "finished_at": None, "exit_code": None,
                                    "failing_line": None, "bytes_downloaded": None}])
     queued(store, staging)
     rows = {row["job_id"]: row for row in data.queue_jobs(NOW)}
-    assert rows.pop(job_id)["doing"] == {"stage": "images", "step": None, "cpu_pct": 310.0}
+    doing = rows.pop(job_id)["doing"]
+    assert doing.pop("download")["done_bytes"] == 5
+    assert doing == {"stage": "images", "step": None, "cpu_pct": 310.0}
     assert ["doing" in row for row in rows.values()] == [False]
 
 

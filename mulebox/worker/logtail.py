@@ -5,8 +5,9 @@ incremental decoder so a character split across reads stays intact). The text go
 `StreamRedactor` before it leaves the worker. Offsets are byte offsets of the redacted
 UTF-8 stream; each chunk holds at most 64 KiB and is never cut inside a character.
 
-Redacted text then goes on line by line: PullNoise (pullnoise.py) collapses image progress,
-and the job's StepTracker takes out the stage marks. So the stored log and the steps only ever
+Redacted text then goes on line by line: DownloadWatch (common/download_watch.py) reads what is
+downloading and how far it got, PullNoise (pullnoise.py) collapses image progress, and the job's
+StepTracker takes out the stage marks. So the stored log and the steps only ever
 see redacted text. The raw file keeps everything until the job's folder goes.
 
 Chunks are queued and sent in order. A transport failure keeps the queue for the next
@@ -19,10 +20,12 @@ from __future__ import annotations
 
 import codecs
 import re
+import time
 from collections import deque
 from collections.abc import Callable
 from pathlib import Path
 
+from mulebox.common.download_watch import DownloadWatch
 from mulebox.common.redact import StreamRedactor
 from mulebox.common.protocol import Message, MessageType
 from mulebox.worker.pullnoise import PullNoise
@@ -54,7 +57,8 @@ def split_utf8(data: bytes, limit: int = MAX_CHUNK_BYTES) -> list[bytes]:
 class LogTailer:
     def __init__(self, path: Path | None, job_id: str, attempt_id: str, make_request: MakeRequest,
                  redactor: StreamRedactor | None = None,
-                 steps: StepTracker | None = None) -> None:
+                 steps: StepTracker | None = None, watch_downloads: bool = True,
+                 clock: Callable[[], float] = time.time) -> None:
         self.path = path
         self.job_id = job_id
         self.attempt_id = attempt_id
@@ -62,6 +66,8 @@ class LogTailer:
         self._redactor = redactor or StreamRedactor()
         self.steps = steps or StepTracker()
         self._noise = PullNoise()
+        self.download = DownloadWatch() if watch_downloads else None
+        self._clock = clock
         self._partial = ""  # redacted text of a line not finished yet
         self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         self._read_pos = 0
@@ -111,7 +117,14 @@ class LogTailer:
 
     def _kept(self, line: str) -> str:
         pieces = self._noise.line(line)
-        self.steps.add_bytes(self._noise.take_new_bytes())
+        fresh = self._noise.take_new_bytes()
+        self.steps.add_bytes(fresh)
+        if self.download is not None:
+            at = self._clock()
+            self.download.step(self.steps.stage)
+            self.download.line(line, at)
+            if fresh:
+                self.download.image_bytes(self._noise.total, self._noise.size, at)
         return "".join(self.steps.line(piece) for piece in pieces)
 
     def _queue_text(self, text: str) -> None:

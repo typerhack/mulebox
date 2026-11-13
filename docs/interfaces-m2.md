@@ -55,6 +55,10 @@ Input is a public job dict; every function tolerates missing or malformed fields
   capable machine going offline redraws the queue. So is a card's activity (`doing`: stage,
   step, CPU in steps of 10% of a core): before 0.75.2 it was not, and a long job's card kept
   what it showed at its start until something else in the queue changed or the page reloaded.
+  `doing.download` (1.15.0) is what the job is downloading, null when nothing is, in the shape
+  of interfaces.md, download_watch.py; it counts in steps of 5% of its total (4 MiB with no
+  total), and when it starts or stops waiting on the network or stalling. A rate alone changes
+  nothing, so it waits for the next event.
 
 ## Where a waiting job may go (`coordinator/views.py` `placement`)
 

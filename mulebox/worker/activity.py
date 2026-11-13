@@ -19,6 +19,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from mulebox.common.download_watch import DownloadWatch
 from mulebox.common.host import DarwinHost
 from mulebox.common.proc import PROC, busy_seconds
 from mulebox.common.status import IMAGES
@@ -75,13 +76,27 @@ class MachineMeter:
         self._last, self._at = counters, now
 
 
+def download(watch: DownloadWatch | None, machine: MachineMeter, job: JobMeter,
+             stage: str | None, now: float) -> dict[str, Any] | None:
+    """What the job is downloading (common/download_watch.py). A unit shares the node's network,
+    so the traffic beside it is the machine's, shown and never judged."""
+    if watch is None:
+        return None
+    watch.step(stage)
+    net = machine.net_kib_s
+    return watch.reading(now, job.cpu_pct, None if net is None else net * 1024.0, "machine")
+
+
 def report(machine: MachineMeter, job: JobMeter, started_at: float, output_at: float,
-           stage: str | None, last_line: str | None, now: float) -> dict[str, Any]:
+           stage: str | None, last_line: str | None, now: float,
+           watch: DownloadWatch | None = None) -> dict[str, Any]:
     """The `activity` of a heartbeat, for a job with these times (agent clock). `last_line` is
-    the stage's last output, redacted: inside `command`, the only sign of which step is on."""
+    the stage's last output, redacted: inside `command`, the only sign of which step is on.
+    `download` is what it is downloading, when the watch sees anything."""
     output_idle = max(0.0, now - max(started_at, output_at))
     idle = None
     if job.busy_at is not None and stage != IMAGES:
         idle = round(min(output_idle, now - job.busy_at), 1)
     return {"output_idle_s": round(output_idle, 1), "idle_s": idle, "job_cpu_pct": job.cpu_pct,
-            "cpu_pct": machine.cpu_pct, "net_kib_s": machine.net_kib_s, "last_line": last_line}
+            "cpu_pct": machine.cpu_pct, "net_kib_s": machine.net_kib_s, "last_line": last_line,
+            "download": download(watch, machine, job, stage, now)}

@@ -31,8 +31,9 @@ from __future__ import annotations
 
 import re
 
+from mulebox.common.download_lines import SIZE as _SIZE, size_bytes as _bytes
+
 EVERY_BYTES = 100_000_000
-_SIZE = r"(\d+(?:\.\d+)?)\s*([kKMGT]?i?B)"
 _LAYER = re.compile(
     r"^\s*(?:[\w.-]+\s+)?([0-9a-f]{12}):?\s+(Pulling fs layer|Waiting|Verifying Checksum|"
     r"Download complete|Downloading|Extracting|Pull complete|Already exists)\b(.*)$")
@@ -41,12 +42,6 @@ _BUILD_LAYER = re.compile(
 _BUILD_EXTRACT = re.compile(r"^#\d+\s+extracting\s+sha256:[0-9a-f]{64}\s+[\d.]+s\s*$")
 _PACKAGE = re.compile(rf"^Downloading \S+: {_SIZE}\s*/\s*{_SIZE}\s*$")
 _AMOUNT = re.compile(rf"{_SIZE}(?:\s*/\s*{_SIZE})?")
-
-
-def _bytes(number: str, unit: str) -> int:
-    base = 1024 if "i" in unit else 1000
-    power = {"": 0, "k": 1, "K": 1, "M": 2, "G": 3, "T": 4}[unit.rstrip("B").rstrip("i")]
-    return int(float(number) * base**power)
 
 
 class PullNoise:
@@ -60,6 +55,14 @@ class PullNoise:
     @property
     def total(self) -> int:
         return sum(self._layers.values())
+
+    @property
+    def size(self) -> int | None:
+        """What the layers seen so far weigh, when every one of them gave its size (Compose 2,
+        BuildKit); None for Compose 5, which gives none, and before any layer."""
+        if not self._layers or any(layer not in self._totals for layer in self._layers):
+            return None
+        return sum(self._totals.values())
 
     def take_new_bytes(self) -> int:
         """Bytes downloaded since the last call."""

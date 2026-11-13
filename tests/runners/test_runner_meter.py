@@ -29,6 +29,18 @@ def test_containers_count_from_their_second_reading_and_a_gone_one_adds_nothing(
     assert meter.cpu_pct("job-1", "build-1-app", 20.0) == 210.0
 
 
+def test_an_isolated_runners_own_traffic_is_a_rate_and_never_cpu():
+    used = iter([{"runner": 10.0, runner_meter.NET: 5_000.0},
+                 {"runner": 11.0, runner_meter.NET: 6_005_000.0}, {"runner": 12.0}])
+    meter = RunnerMeter(read=lambda runner: next(used))
+    meter.cpu_pct("job-1", "ci", 0.0)
+    assert meter.net_bytes_s("job-1") is None  # nothing to compare yet
+    assert meter.cpu_pct("job-1", "ci", 10.0) == 10.0
+    assert meter.net_bytes_s("job-1") == 600_000.0
+    meter.cpu_pct("job-1", "ci", 20.0)
+    assert meter.net_bytes_s("job-1") is None  # a service runner: the node's network
+
+
 def test_a_runners_containers_are_those_started_inside_its_work_folder():
     lines = [f"aaa\t{ROOT}/build-1-app/_work/app/app",
              f"bbb\t{ROOT}/build-1-app/_work/app/app/infra",

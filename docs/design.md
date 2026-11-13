@@ -421,8 +421,8 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   of the cores the job alone uses, which pulses only at half a core or more, so the busy job
   stands out. An agent job is read from its unit and containers, a CI job from its runner's
   service and the Compose containers started from the runner's work folder (a plain
-  `docker run` of a workflow says nothing of where it came from and is not counted). Downloads are told by the stage
-  only: per-job network is not measured.
+  `docker run` of a workflow says nothing of where it came from and is not counted). What it is
+  downloading, how far and how fast, is a reading of its own (Downloads, below).
 - Low overhead: metrics sampled once and shared (CPU/memory every 2 s, Docker every 5 s,
   disk space every 30 s), bounded buffers, slow viewers dropped rather than slowing jobs.
 - Access modes: `local` (bound to 127.0.0.1, opened through an SSH tunnel by
@@ -442,6 +442,32 @@ Recommended agent rule for each project: run builds, type checks, lint and tests
   2026-11-10; before 0.87.0 cancelling needed a sign-in on the `lan` address and was off by
   default). Each sends what the CLI sends, by the same `mulebox rpc`, so the dashboard process
   never holds a writable store. Protection against other pages: interfaces-m2.md, Controls.
+
+### Downloads (the user's ask, 2026-11-13)
+
+A node behind a slow VPN restores GitHub's cache at 0.6 MB/s, and a step doing that sits at no
+CPU for minutes, which looks hung. So a running job's card and `mulebox status` say what is
+downloading, how much of how much, how fast, and whether it waits on the network or has stalled,
+so the slowness reads as the network's, not the node's. One reading per job, `download` in the
+heartbeat's `activity` (`common/download_watch.py`), made where the job runs and sent with the
+heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no poll of its own.
+
+- What is downloading comes from the job's own output, the lines tools print anyway
+  (`common/download_lines.py`): GitHub's cache restore (`Received <done> of <total>`), a tool
+  into the runner's tool cache, pnpm, pip and uv, Playwright's browsers, and image layers
+  (pullnoise.py). A CI run's lines are read from the runner's pages with the times it stamped
+  on them; they reach the node in blocks of about 4 KB, so on a slow link the figures trail,
+  and the reading says how old they are rather than calling a quiet minute a stall.
+- How fast the bytes move now is measured where it can be the job's own: an isolated runner's
+  container has a network of its own. An agent job's unit and a plain runner share the node's
+  network, which a desktop and the VPN keep busy, so its traffic is shown as the machine's and
+  never decides anything, like the machine's readings in Time limits.
+- Waiting on the network: something is downloading and the job's CPU is under a tenth of a core.
+  An isolated runner's own traffic with an idle CPU counts as a download with no line to name it.
+- Stalled: no byte for 60 s, by the job's own traffic where measured, else by the printed
+  figures. pip prints a file's size and nothing after, so its stall is unknown, never guessed.
+- A download belongs to its stage or step. Not read: git's `Receiving objects`, curl and wget
+  meters (they redraw one line, which a log without a terminal does not keep), Gradle and Maven.
 
 ## Multiple machines
 

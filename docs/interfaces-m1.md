@@ -84,9 +84,9 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | --- | --- | --- |
 | submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch`, `detached` | submit_ok (job_id, state, `detached`); repeat key returns the same job. A client that asked for `detached` and does not see it echoed cancels the job |
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
-| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity`; `stop_reason` on a stopped job) |
+| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity` (with `download`, interfaces.md); `stop_reason` on a stopped job) |
 | cancel | job_id | status_ok |
-| heartbeat | job_id, lease (`client`/`worker`), + `attempt_id`, `activity` and `load` (as in claim) for worker | status_ok (+ `cancel`) |
+| heartbeat | job_id, lease (`client`/`worker`), + `attempt_id`, `activity` (its `download` too, interfaces.md) and `load` (as in claim) for worker | status_ok (+ `cancel`) |
 | queue | + `limit` (default 20 recent finished) | queue_ok (jobs: list of job dicts; `dashboard`, see below) |
 | projects | - | projects_ok (projects: `project`, `jobs`, `last_run`, `kind`, `state`, `outcome` of the newest job, newest first) |
 | logs | job_id, offset | log_chunk (data from offset, `eof: bool`) |

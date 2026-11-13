@@ -835,6 +835,10 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Done when: a CI run on the node with a cold GitHub connection installs its packages in
       seconds, and no step waits on a cache download. Built 2026-11-13 (1.14.3): the 1-minute
       segment timeout in ci.yml, with a test; open: a real stalled restore giving up in a minute.
+      Download progress on cards (the user's ask, 2026-11-13): built 2026-11-13 (1.15.0), the
+      reading only (`download` in a job's activity, its card's `doing` and `mulebox status`),
+      with tests on lines from the node's real CI runs. Open: the card's look (mockups for the
+      user), and a real slow cache restore seen on the deployed dashboard.
 
 ## M24: Answers an agent can trust
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,

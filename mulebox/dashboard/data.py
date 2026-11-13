@@ -13,6 +13,7 @@ import shlex
 import time
 from typing import Any
 
+from mulebox.common.download_watch import clean as clean_download
 from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
@@ -148,10 +149,12 @@ class DashboardData:
 
 def _doing(job: dict[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     """What a job in a slot is doing now, for its card: its stage (a runner job's GitHub step)
-    and the CPU of the job alone in percent of one core, null when not measured."""
+    and the CPU of the job alone in percent of one core, null when not measured, and what it is
+    downloading (common/download_watch.py), null when nothing is."""
     report = job.get("activity") or {}
     cpu = report.get("job_cpu_pct")
     step = report.get("step")
     return {"stage": current_stage(job, rows),
             "step": step if isinstance(step, str) else None,
-            "cpu_pct": cpu if isinstance(cpu, (int, float)) else None}
+            "cpu_pct": cpu if isinstance(cpu, (int, float)) else None,
+            "download": clean_download(report.get("download"))}

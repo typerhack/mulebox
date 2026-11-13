@@ -140,3 +140,25 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   to read-only directories we own inside the tree (never the root or the target's parent).
 - `ensure_dir`: path spelled under `Roots.paths`, no `..`, no symlink below the root.
 - Linux: an unreadable mount table fails closed.
+
+## download_lines.py and download_watch.py (1.15.0)
+- `download_lines.parse(line) -> Seen | None`: one output line as `Seen(kind, what, name, done,
+  total)`, `kind` `start|progress|end`, `what` `cache|tool|package|browser`; the shapes are in the
+  module docstring. `size_bytes(number, unit)` (also used by worker/pullnoise.py).
+- `DownloadWatch(live=True)`: `step(name)`, `line(text, at)`, `image_bytes(done, total, at)`,
+  `reading(now, cpu_pct=None, net_bytes_s=None, net_scope=None) -> dict | None`. `live=False`
+  for a GitHub runner's pages, which trail. `clean(value)` keeps a reading's known keys and
+  types, for anything read off the wire.
+- The reading, `activity.download` in a heartbeat and a `status` reply, and `doing.download` on
+  a dashboard card (null when nothing downloads):
+
+      {"what": "cache", "name": "pip cache", "step": "Run actions/setup-python@6d4fd22",
+       "done_bytes": 1418315, "total_bytes": 9806923, "rate_bytes_s": 11819.3, "as_of_s": 30.0,
+       "net_bytes_s": 614400.0, "net_scope": "job", "waiting_on_network": true,
+       "quiet_s": 0.0, "stalled": false}
+
+  `what` is also `image`, or `network` for an isolated runner's own traffic at an idle CPU with
+  no line to name it. `done_bytes`, `total_bytes`, `rate_bytes_s` and `as_of_s` come from the
+  printed figures, null when there are none; `net_bytes_s` is measured now, `net_scope` `job`
+  (its own network) or `machine` (the node's, never judged); `quiet_s` and `stalled` (60 s
+  with no byte) are null when nothing tells.

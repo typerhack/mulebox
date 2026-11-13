@@ -90,3 +90,35 @@ def test_pages_of_an_earlier_job_and_an_older_diary_are_left_alone(tmp_path):
     log = RunnerLog("job-1", folder, make)
     log.poll(started_after=old.stat().st_mtime + 60)
     assert sent_text(log) == ""
+
+
+def test_the_open_steps_cache_restore_is_read_at_the_times_the_runner_stamped(tmp_path):
+    """Lines as the node's runner wrote them on 2026-11-12, restoring pip's cache over its VPN."""
+    from mulebox.runners.live_log import stamp_time
+    folder, diag = runner(tmp_path)
+    diary = diag / "Worker_20261112-143740-utc.log"
+    diary.write_text(f'    "planId": "{PLAN}",\n'
+                     "[2026-11-12 14:38:06Z INFO StepsRunner] Processing step: "
+                     "DisplayName='Run actions/setup-python@6d4fd22'\n"
+                     f"[x INFO JobServerQueue] web console lines for record '{RECORD}'\n")
+    page = diag / "pages" / f"{PLAN}_{RECORD}_1.log"
+    page.write_bytes("﻿2026-11-12T14:38:20.1000000Z Cache hit for: setup-python-Linux-x64-"
+                     "24.04-Ubuntu-python-3.13.18-pip-e3c887ed\n"
+                     "2026-11-12T14:38:21.0000000Z Received 0 of 9806923 (0.0%), 0.0 MBs/sec\n"
+                     "2026-11-12T14:40:21.0000000Z Received 1418315 of 9806923 (14.5%), "
+                     "0.1 MBs/sec\n".encode())
+    log = RunnerLog("job-1", folder, make)
+    log.poll(0)
+    at = stamp_time("2026-11-12T14:40:21.0000000Z x")
+    assert at == stamp_time("﻿2026-11-12T14:40:21Z x") == 1794494421.0
+    assert stamp_time("no stamp") is None
+    found = log.download.reading(at + 30, cpu_pct=0.5)
+    assert (found["name"], found["done_bytes"], found["total_bytes"]) == (
+        "pip cache", 1418315, 9806923)
+    assert found["step"] == "Run actions/setup-python@6d4fd22" and found["as_of_s"] == 30.0
+    assert found["rate_bytes_s"] == round(1418315 / 120, 1) and found["stalled"] is False
+    with open(diary, "a") as fh:
+        fh.write("[2026-11-12 14:48:13Z INFO StepsRunner] No need for updating job result with "
+                 "current step result 'Succeeded'.\n")
+    log.poll(0)
+    assert log.download.reading(at + 60) is None  # the step is over

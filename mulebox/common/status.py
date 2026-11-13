@@ -207,8 +207,8 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     """What changes when a view must redraw: ids, states, outcomes, positions, for a
     waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), a
     waiting question's reason and whole minutes left, what a job in a slot is doing
-    (`doing_mark`), or its card would keep what it showed when the job started, and the
-    owner's controls (paused, boost, priority), or a frozen job would not say so.
+    (`doing_mark`, its download too), or its card would keep what it showed when the job
+    started, and the owner's controls (paused, boost, priority), or a frozen job would not say so.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
@@ -222,16 +222,35 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
 
 
 DOING_CPU_STEP = 10.0  # percent of one core; a finer change is not worth an event
+DOWNLOAD_PCT_STEP = 5.0  # of a download's total
+DOWNLOAD_BYTES_STEP = 4 * 1024 * 1024  # of one with no total
 
 
-def doing_mark(job: dict[str, Any]) -> tuple[Any, Any, int | None] | None:
-    """A card's stage, step and CPU in steps of DOING_CPU_STEP, for a view's fingerprint."""
+def doing_mark(job: dict[str, Any]) -> tuple[Any, ...] | None:
+    """A card's stage, step and CPU in steps of DOING_CPU_STEP, and its download, for a view's
+    fingerprint."""
     doing = job.get("doing")
     if not isinstance(doing, dict):
         return None
     cpu = number(doing.get("cpu_pct"))
     return (doing.get("stage"), doing.get("step"),
-            None if cpu is None else int(cpu // DOING_CPU_STEP))
+            None if cpu is None else int(cpu // DOING_CPU_STEP),
+            download_mark(doing.get("download")))
+
+
+def download_mark(download: Any) -> tuple[Any, ...] | None:
+    """What is downloading, how far in steps (DOWNLOAD_PCT_STEP of its total, else
+    DOWNLOAD_BYTES_STEP), and whether it waits on the network or stalled; a finer change is not
+    worth an event, and the card's rate waits for the next one."""
+    if not isinstance(download, dict):
+        return None
+    done, total = number(download.get("done_bytes")), number(download.get("total_bytes"))
+    if done is not None and total:
+        amount: int | None = int(done / total * 100 // DOWNLOAD_PCT_STEP)
+    else:
+        amount = None if done is None else int(done // DOWNLOAD_BYTES_STEP)
+    return (download.get("what"), download.get("name"), amount,
+            download.get("waiting_on_network"), download.get("stalled"))
 
 
 def left_mark(job: dict[str, Any]) -> tuple[Any, int] | None:

@@ -154,7 +154,7 @@ def test_status_has_the_activity_and_the_question(store, staging):
     assert body["question"] is None
     assert body["activity"] == {"elapsed_s": 42.0, "stage": None, "output_idle_s": 12.5,
                                 "idle_s": 2.0, "job_cpu_pct": None, "cpu_pct": 180.0,
-                                "net_kib_s": 1.5, "last_line": None}
+                                "net_kib_s": 1.5, "last_line": None, "download": None}
     assert call(store, staging, "status", ASKED, job_id=job["job_id"]).body["question"]["reason"]
 
 
@@ -195,7 +195,18 @@ def test_a_running_job_checks_in_every_timeout_min(store, staging):
              if "check_in" in b]
     assert found == [{"number": 2, "elapsed_s": 1500.0, "stage": None, "output_idle_s": 30.0,
                       "idle_s": 1.0, "job_cpu_pct": None, "cpu_pct": 99.0,
-                      "net_kib_s": 2.0, "last_line": None}]
+                      "net_kib_s": 2.0, "last_line": None, "download": None}]
+
+
+def test_status_gives_the_download_with_only_its_known_keys(store, staging):
+    job = running(store, staging)
+    beat(store, staging, job, T0 + 40, download={
+        "what": "cache", "name": "pip cache", "done_bytes": 1418315, "total_bytes": 9806923.0,
+        "stalled": "yes", "net_scope": "elsewhere", "extra": 1})
+    found = call(store, staging, "status", T0 + 42, job_id=job["job_id"]).body["activity"]
+    assert found["download"]["done_bytes"] == 1418315
+    assert found["download"]["total_bytes"] == 9806923 and found["download"]["stalled"] is None
+    assert found["download"]["net_scope"] is None and "extra" not in found["download"]
 
 
 def test_a_queued_job_does_not_check_in(store, staging):
