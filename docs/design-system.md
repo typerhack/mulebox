@@ -189,6 +189,9 @@ Drawn in the specimen, in both themes:
   80% (`web/src/features/jobs/DownloadMeter.tsx`).
 - Warning strip (amber) and danger strip (red), each with its fix.
 - Tooltip, empty state.
+- Tables: the first and the last cell of a row keep `--space-3` from the row's edges, header
+  included, so a shaded row never has its name or its buttons on its border (the user's ask,
+  2026-11-13).
 - Settings controls (the user's agreement, 2026-11-13, for node settings and queue order): a
   switch (on in `--accent`, a visible label beside it, 44px touch target), a segmented choice (one
   of a few, such as High, Normal, Low; the chosen part in `--accent`, arrow keys move between
@@ -203,8 +206,13 @@ Drawn in the specimen, in both themes:
   accent line under the chosen part of a segmented choice.
   In code: `web/src/ui/Stepper.tsx`, `Segmented.tsx` and `Window.tsx`; the page under a window
   cannot be reached while it is open. First used by the
-  node settings window (`web/src/features/machines/NodeSettings.tsx`), which is one table that
-  turns into a card per setting under 640px of its own width. While a save is on its way its
+  node settings window (`web/src/features/machines/NodeSettings.tsx`), whose body is the page's
+  colour (`--surface-0`) holding panels like the top row's (the user's ask, 2026-11-13, after the
+  first table "hurt the eyes"): a panel per setting, with its name and icon, one line on what it
+  means, then Suggested, Yours and Runs with as rows with the name on the left and the value on
+  the right, a hairline between rows and the reason on a line under its row; beside them a panel
+  of what the node reports, as the Disk panel lists its facts. One column under 760px of its own
+  width. While a save is on its way its
   controls take no edit, and an open window reads its node again every few seconds, keeping
   what the viewer has changed and not saved.
   A panel is `--pop-width` (380px) wide or as wide as its host, whichever is less, and at most

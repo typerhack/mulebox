@@ -10,6 +10,7 @@ import { useEffect, useId, useRef, type ReactNode, type RefObject } from "react"
 import { createPortal } from "react-dom";
 
 import { IconButton } from "./Button";
+import { cx } from "./cx";
 
 const CAN_FOCUS = "a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled)";
 
@@ -18,12 +19,13 @@ interface Props {
   icon?: ReactNode;
   note?: ReactNode;       // one line under the title
   foot?: ReactNode;
+  ground?: boolean;       // the body holds panels: it takes the page's colour, as under the top row
   opener?: RefObject<HTMLElement | null>;  // what gets the focus back; else what had it (a click does not focus a button in every browser)
   onClose: () => void;
   children: ReactNode;
 }
 
-export function Window({ title, icon, note, foot, opener, onClose, children }: Props) {
+export function Window({ title, icon, note, foot, ground, opener, onClose, children }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const close = useRef(onClose);
@@ -71,7 +73,7 @@ export function Window({ title, icon, note, foot, opener, onClose, children }: P
           </div>
           <IconButton label="Close" onClick={onClose} className="border-transparent"><X aria-hidden className="size-icon" /></IconButton>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">{children}</div>
+        <div className={cx("min-h-0 flex-1 overflow-y-auto overscroll-contain", ground ? "bg-surface-0 p-3" : "p-4")}>{children}</div>
         {foot && <footer className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 border-t border-line px-4 py-3">{foot}</footer>}
       </div>
     </div>,

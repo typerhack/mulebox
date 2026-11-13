@@ -33,7 +33,7 @@ describe("a node's settings window", () => {
     expect(cell("Slots", "Runs with")).toBe("2 now");
     expect(cell("Priority", "Runs with")).toBe("Normal nowas suggested");
     expect(screen.getByRole("radio", { name: "Normal" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText("Offers").parentElement?.textContent).toBe("Offersdocker");
+    expect(screen.getByText("Offers").textContent).toBe("Offersdocker");
     expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
   });
 

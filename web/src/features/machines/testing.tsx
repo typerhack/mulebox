@@ -24,8 +24,8 @@ export const row = (shown: Machine) => <TipProvider><NodeSettingsButton machine=
 export async function open(shown = machine()) {
   const made = render(row(shown));
   fireEvent.click(screen.getByRole("button", { name: "Settings of build-2" }));
-  await screen.findByRole("table", { name: "Settings" });
+  await screen.findByRole("region", { name: "Slots" });
   return made;
 }
 export const cell = (name: string, label: string) =>
-  screen.getByRole("rowheader", { name: new RegExp(`^${name}`) }).parentElement?.querySelector(`[data-label="${label}"]`)?.textContent;
+  screen.getByRole("region", { name }).querySelector(`[data-label="${label}"]`)?.textContent;

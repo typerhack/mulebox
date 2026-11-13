@@ -114,7 +114,10 @@
     font-weight: 600; white-space: nowrap; }
   .data-table td { padding: var(--space-1) var(--space-4) var(--space-1) 0; border-bottom: 1px solid var(--border);
     vertical-align: middle; }
-  .data-table th:last-child, .data-table td:last-child { padding-right: 0; }
+  /* The ends of a row keep off its edges, so a shaded row does not have its name and its
+     buttons on its border. */
+  .data-table th:first-child, .data-table td:first-child { padding-left: var(--space-3); }
+  .data-table th:last-child, .data-table td:last-child { padding-right: var(--space-3); }
   .data-table th.end, .data-table td.end { text-align: right; }
   @variant max-lg {
     .data-table.stacks thead { display: none; }
@@ -127,23 +130,11 @@
     .data-table.stacks td.wide { grid-column: 1 / -1; }
   }
 
-  /* A node's settings window: one table, a row per setting with what is suggested, what the
-     viewer set and what the node runs with, then the node's own facts in two columns. One card
-     per setting when the window is narrow, each cell saying its own column. */
-  .ledger { container-type: inline-size; }
-  .ledger-row { display: grid; align-items: start; gap: var(--space-2) var(--space-4); padding: var(--space-3) 0;
-    border-bottom: 1px solid var(--border);
-    grid-template-columns: calc(var(--space-7) * 3) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); }
-  .ledger-row > * { min-width: 0; }
-  .ledger-row.head { padding: 0 0 var(--space-2); border-bottom-color: var(--border-strong); color: var(--text-2);
-    font-size: var(--text-sm); font-weight: 600; }
-  .ledger-row.fact { grid-template-columns: calc(var(--space-7) * 3) minmax(0, 1fr); font-size: var(--text-sm); }
-  .ledger-row small { display: block; color: var(--text-2); font-size: var(--text-sm); font-weight: 400; }
-  @variant @max-sm {
-    .ledger-row.head { display: none; }
-    .ledger-row, .ledger-row.fact { grid-template-columns: minmax(0, 1fr); }
-    .ledger-row > [data-label]::before { content: attr(data-label); display: block; margin-bottom: var(--space-1);
-      color: var(--text-2); font-size: var(--text-xs); }
+  /* A node's settings window: the settings' panels beside the node's own facts, as the top row
+     sets Memory and Disk beside Machines; one column when the window is narrow. */
+  .settings-grid { display: grid; gap: var(--app-gap); grid-template-columns: minmax(0, 1fr); }
+  @variant @md {
+    .settings-grid { grid-template-columns: minmax(0, 1fr) var(--spacing-col-l); }
   }
 
   /* The day chart of the Statistics page. */

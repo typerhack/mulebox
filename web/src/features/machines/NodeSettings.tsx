@@ -30,7 +30,7 @@ function Strip({ tone, icon: Icon, alert, action, children }:
                { tone: Tone; icon: typeof Lock; alert?: boolean; action?: ReactNode; children: ReactNode }) {
   return (
     <div role={alert ? "alert" : "status"}
-      className={cx("mb-4 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-m border px-3 py-2", TONES[tone][0])}>
+      className={cx("mb-3 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-m border px-3 py-2", TONES[tone][0])}>
       <Icon aria-hidden className={cx("status-icon mt-px size-icon", TONES[tone][1])} />
       <p className="min-w-0 flex-1 basis-col-s">{children}</p>
       {action}
@@ -111,7 +111,7 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
 
   return (
     <Window title={name} icon={<Server aria-hidden className="size-icon" />}
-      note={`Node settings${machine.host ? ", dashboard host" : ""}`} opener={opener} onClose={onClose}
+      note={`Node settings${machine.host ? ", dashboard host" : ""}`} opener={opener} onClose={onClose} ground
       foot={(
         <>
           <p className="mr-auto min-w-0 flex-1 basis-col-m text-sm text-ink-2">
