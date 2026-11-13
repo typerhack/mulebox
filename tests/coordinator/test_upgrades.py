@@ -109,6 +109,9 @@ def test_a_waiting_upgrade_moves_and_shows_in_status(store, staging):
     api.handle(store, staging, request("job_control", job_id=upgrade, action="last"), 3.0)
     status = api.handle(store, staging, request("status", job_id=upgrade), 4.0).body
     assert status["kind"] == "upgrade" and status["position"] == 2
+    assert status["place_reason"] == f"moved by hand, just behind {waiting}"
+    with store.read() as conn:
+        assert st.require_job(conn, waiting)["pin_side"] is None  # only the upgrade is pinned
     assert claim(store, now=5.0)["job_id"] == waiting
     paused = api.handle(store, staging, request("job_control", job_id=upgrade, action="boost"), 6.0)
     assert paused.type == "error" and "only move" in paused.body["message"]

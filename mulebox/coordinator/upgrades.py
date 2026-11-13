@@ -24,7 +24,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import line, queue, workers
+from mulebox.coordinator import line, line_moves, queue, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -36,7 +36,6 @@ UPGRADE_KIND = "upgrade"
 TURN_LEASE_S = 90.0  # the waiter asks every few seconds
 INSTALL_LEASE_S = 1800.0  # past the installer's own limit
 MAX_LOG = 64 * 1024
-_WAITING = (JobState.QUEUED.value,)
 _PENDING = (JobState.QUEUED.value, *(s.value for s in ACTIVE_STATES))
 
 
@@ -48,10 +47,11 @@ def pending(conn: sqlite3.Connection, worker: str) -> list[dict[str, Any]]:
 
 
 def blocks(conn: sqlite3.Connection, worker: str, row: dict[str, Any],
-           order: line.Line | None = None) -> bool:
+           order: line.Line | None = None, found: list[dict[str, Any]] | None = None) -> bool:
     """Whether an upgrade keeps `row` (a waiting job or GitHub slot) from starting on `worker`:
-    one is installing there, or one waits ahead of `row` in line (`order`, line.py)."""
-    found = pending(conn, worker)
+    one is installing there, or one waits ahead of `row` in line (`order`, line.py). `found`:
+    `pending(conn, worker)`, read once by a caller that asks for many rows."""
+    found = pending(conn, worker) if found is None else found
     if found and order is None:
         order = line.read(conn)
     for upgrade in found:
@@ -60,13 +60,15 @@ def blocks(conn: sqlite3.Connection, worker: str, row: dict[str, Any],
     return False
 
 
-def ahead_of(conn: sqlite3.Connection, row: dict[str, Any], now: float | None = None
-             ) -> dict[str, Any] | None:
-    """A waiting or installing upgrade that comes before `row` in line, if any."""
+def ahead_of(conn: sqlite3.Connection, row: dict[str, Any], now: float | None = None,
+             order: line.Line | None = None) -> dict[str, Any] | None:
+    """A waiting or installing upgrade that comes before `row` in line, if any. `order`: the
+    line as the caller already read it in this transaction."""
     marks = ", ".join("?" * len(_PENDING))
     found = st.select_jobs(conn, f"kind = ? AND state IN ({marks})",
                            (UPGRADE_KIND, *_PENDING), queue.QUEUE_ORDER)
-    order = line.read(conn, now) if found else None
+    if found and order is None:
+        order = line.read(conn, now)
     for upgrade in found:
         if upgrade["state"] != JobState.QUEUED or order.before(upgrade, row):
             return upgrade
@@ -100,13 +102,13 @@ def _create(req: Request) -> dict[str, Any]:
         for found in pending(conn, worker):
             raise Conflict(f"an upgrade of {worker} to {found['branch']} is already in line "
                            f"({found['job_id']}); cancel it first: mulebox cancel {found['job_id']}")
-        top = conn.execute("SELECT MAX(priority) FROM jobs WHERE state = ?", _WAITING).fetchone()[0]
+        ahead = line_moves.front(line.read(conn, req.now), {"job_id": ""}) if first else {}
         return st.insert_job(conn, {
             "job_id": new_id("job"), "kind": UPGRADE_KIND, "pinned_worker": worker,
             "project": "mulebox", "job": "upgrade", "branch": version,
             "client": v.text(req.body, "client", "upgrade"), "argv": ["upgrade", version],
             "fingerprint": "", "base_commit": "", "timeout_min": 0, "detached": True,
-            "idempotency_key": f"upgrade-{new_id('key')}", "priority": (top or 0) + 1 if first else 0,
+            "idempotency_key": f"upgrade-{new_id('key')}", **ahead,
             "state": JobState.QUEUED, "created_at": req.now, "queued_at": req.now,
             "client_lease_until": req.now + TURN_LEASE_S,
         })

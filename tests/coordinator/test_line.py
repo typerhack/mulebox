@@ -7,6 +7,7 @@ from mulebox.coordinator import api, line, queue
 from mulebox.coordinator import store as st
 
 from .helpers import queued, request
+from .test_reservations import T0, call, reserve
 
 HOUR = 3600.0
 
@@ -40,18 +41,21 @@ def control(store, staging, job_id, action, now=1000.0):
     return reply.body
 
 
-def test_the_defaults_keep_arrival_order_with_moves_and_aging(store, staging):
+def test_the_defaults_keep_arrival_order_and_aging_alone_changes_nothing(store, staging):
     ids = [queued(store, staging, now=float(t), project=f"p{t % 3}") for t in range(8)]
+    assert order(store) == arrival(store) == ids
     control(store, staging, ids[5], "first")
     control(store, staging, ids[2], "down")
-    before = arrival(store)
+    moved = order(store, 10.0)
+    assert moved == [ids[5], ids[0], ids[1], ids[3], ids[2], ids[4], ids[6], ids[7]]
     for now in (10.0, 5 * HOUR, 40 * HOUR):  # aging alone, however long they waited
-        assert order(store, now) == before
+        assert order(store, now) == moved
     with store.read() as conn:
         for job_id in ids:
             job = st.require_job(conn, job_id)
-            assert queue.position(conn, job, 40 * HOUR) == before.index(job_id) + 1
-            assert line.read(conn, 40 * HOUR).explain(job) == {}  # nothing to say by default
+            assert queue.position(conn, job, 40 * HOUR) == moved.index(job_id) + 1
+            why = line.read(conn, 40 * HOUR).explain(job)
+            assert bool(why) == (job_id in (ids[5], ids[2]))  # only a move has something to say
 
 
 def test_a_high_project_goes_ahead_and_says_why(store, staging):
@@ -98,16 +102,32 @@ def test_fair_turns_let_a_single_job_pass_a_burst(store, staging):
     assert reasons[burst[2]] == "turn 3 of example-app; then by arrival"
 
 
-def test_shortest_first_puts_known_short_jobs_first(store, staging, monkeypatch):
+def lengths_of(monkeypatch, known):
+    monkeypatch.setattr(line.usual, "lengths",
+                        lambda conn, rows: {row["job_id"]: known.get(row["job"]) for row in rows})
+
+
+def test_shortest_first_counts_a_job_with_no_history_as_the_lines_median(store, staging,
+                                                                         monkeypatch):
     slow = queued(store, staging, now=1.0, job="slow")
     unknown = queued(store, staging, now=2.0, job="new")
-    quick = queued(store, staging, now=3.0, job="quick")
-    lengths = {"slow": 600.0, "quick": 30.0}
-    monkeypatch.setattr(line.usual, "job_seconds", lambda conn, job: lengths.get(job["job"]))
+    mid = queued(store, staging, now=3.0, job="mid")
+    quick = queued(store, staging, now=4.0, job="quick")
+    lengths_of(monkeypatch, {"slow": 600.0, "mid": 120.0, "quick": 30.0})
     rules(store, staging, shortest_first=True)
-    assert order(store) == [quick, slow, unknown]
-    reply = api.handle(store, staging, request("status", job_id=unknown), 4.0)
-    assert "no usual length yet" in reply.body["place_reason"]
+    assert order(store) == [quick, unknown, mid, slow]  # 120 s like mid, and it came first
+    reply = api.handle(store, staging, request("status", job_id=unknown), 5.0)
+    assert "no usual length yet, counted as the line's median 2m" in reply.body["place_reason"]
+    assert reply.body["order"]["usual_s"] is None and reply.body["order"]["counted_as_s"] == 120.0
+
+
+def test_shortest_first_with_no_length_known_keeps_arrival(store, staging, monkeypatch):
+    ids = [queued(store, staging, now=float(t), job=f"j{t}") for t in range(3)]
+    lengths_of(monkeypatch, {})
+    rules(store, staging, shortest_first=True)
+    assert order(store) == ids
+    reply = api.handle(store, staging, request("status", job_id=ids[1]), 5.0)
+    assert reply.body["place_reason"] == "no usual length in line yet; then by arrival"
 
 
 def test_a_github_level_puts_ci_runs_ahead_of_agent_jobs(store, staging):
@@ -122,16 +142,65 @@ def test_a_github_level_puts_ci_runs_ahead_of_agent_jobs(store, staging):
     assert granted.body["state"] == "running"
 
 
-def test_moves_come_first_and_keep_the_order_they_set(store, staging):
+def test_a_move_pins_only_the_moved_job_and_the_rules_still_order_the_rest(store, staging):
     a = queued(store, staging, now=1.0, project="example-app")
     b = queued(store, staging, now=2.0, project="example-api")
-    rules(store, staging, projects={"example-api": 1})
-    assert order(store) == [b, a]
-    control(store, staging, b, "down")
-    later = queued(store, staging, now=3.0, project="example-api")
-    assert order(store) == [a, b, later]  # the moved line stays; a later job goes behind it
-    reply = api.handle(store, staging, request("status", job_id=b), 4.0)
-    assert reply.body["place_reason"] == "in the order last set by hand"
+    c = queued(store, staging, now=3.0, project="example-web")
+    control(store, staging, c, "up")
+    assert order(store) == [a, c, b]
+    with store.read() as conn:
+        assert [(r["pin_side"], r["priority"]) for r in (st.require_job(conn, a),
+                                                       st.require_job(conn, b))] == [(None, 0)] * 2
+    rules(store, staging, projects={"example-api": 1})  # a later rule still moves the others
+    assert order(store) == [c, b, a]  # c keeps its place just ahead of b
+    reply = api.handle(store, staging, request("status", job_id=c), 4.0)
+    assert reply.body["place_reason"] == f"moved by hand, just ahead of {b}"
+    assert reply.body["order"]["moved"] == {"side": "before", "job_id": b, "in_line": True}
+    reply = api.handle(store, staging, request("status", job_id=a), 4.0)
+    assert reply.body["place_reason"] == "then by arrival"
+
+
+def test_a_moved_job_takes_the_place_of_one_that_left_the_line(store, staging):
+    low = queued(store, staging, now=1.0, project="example-low")
+    other = queued(store, staging, now=2.0, project="example-app")
+    rules(store, staging, projects={"example-low": -1})
+    assert order(store) == [other, low]
+    control(store, staging, low, "up")  # just ahead of other
+    control(store, staging, low, "pause")
+    assert claim(store, now=3.0) == other  # other leaves the line; low keeps its place
+    later = queued(store, staging, now=4.0, project="example-app")
+    assert order(store, 5.0) == [low, later]  # by its own level it would come last
+    reply = api.handle(store, staging, request("status", job_id=low), 5.0)
+    assert reply.body["place_reason"] == (f"moved by hand ahead of {other}, which has left the "
+                                          "line, so in its place")
+    assert reply.body["order"]["moved"]["in_line"] is False
+
+
+def test_a_workflow_level_puts_its_runs_ahead(store, staging):
+    agent = queued(store, staging, now=1.0)
+    slots = {}
+    for run, workflow in ((1, "Nightly"), (2, "CI")):
+        reply = api.handle(store, staging, request(
+            "reserve", worker="build-1", repository="example-org/example-app", job="test",
+            run_id=str(run), run_attempt="1", runner="build-1-example-app", workflow=workflow),
+            1.0 + run)
+        slots[workflow] = reply.body["job_id"]
+    assert order(store) == [agent, slots["Nightly"], slots["CI"]]
+    body = rules(store, staging, workflows={"CI": "high", "Nightly": -1})
+    assert body["rules"]["workflows"] == {"CI": 1, "Nightly": -1}
+    assert order(store) == [slots["CI"], agent, slots["Nightly"]]
+    reply = api.handle(store, staging, request("status", job_id=slots["CI"]), 5.0)
+    assert reply.body["place_reason"] == "workflow CI +1; then by arrival"
+
+
+def test_aging_is_said_in_whole_steps_so_a_reason_does_not_tick(store, staging):
+    low = queued(store, staging, now=0.0, project="example-low")
+    rules(store, staging, projects={"example-low": -1}, aging_min=30)
+    reasons = set()
+    for minute in (31, 45, 59):
+        reply = api.handle(store, staging, request("status", job_id=low), minute * 60.0)
+        reasons.add(reply.body["place_reason"])
+    assert reasons == {"project example-low -1; waited 30m or more +1; then by arrival"}
 
 
 def test_a_paused_project_still_holds_its_place_under_the_rules(store, staging):
@@ -146,6 +215,7 @@ def test_a_paused_project_still_holds_its_place_under_the_rules(store, staging):
 @pytest.mark.parametrize("change, problem", [
     ({"projects": {"example-app": 4}}, "level"), ({"projects": {"../x": 1}}, "valid name"),
     ({"branches": {"has space": 1}}, "valid name"), ({"github": "loud"}, "github"),
+    ({"workflows": {" CI": 1}}, "valid name"), ({"workflows": {"CI": 9}}, "level"),
     ({"aging_min": -1}, "aging_min"), ({"fair_turns": "yes"}, "fair_turns"),
     ({"colour": 1}, "rules"), ("all", "rules"),
 ])
@@ -172,3 +242,15 @@ def test_an_unreadable_stored_value_falls_back_to_the_defaults(store, staging):
         conn.execute("INSERT INTO meta (key, value) VALUES ('line_rules', 'not json')")
     reply = api.handle(store, staging, request("queue_rules"), 1.0)
     assert reply.body["rules"] == reply.body["defaults"]
+
+
+def test_a_slot_moved_up_is_pinned_alone_and_says_so(store, staging):
+    older = queued(store, staging, now=T0)
+    res = reserve(store, staging, now=T0 + 1, workflow="CI")
+    assert call(store, staging, "job_control", now=T0, job_id=res, action="up").body["position"] == 1
+    status = call(store, staging, "status", now=T0 + 2, job_id=res).body
+    assert status["place_reason"] == f"moved by hand, just ahead of {older}"
+    assert status["moved"] == "before"
+    with store.read() as conn:
+        assert st.require_job(conn, older)["pin_side"] is None
+        assert st.require_job(conn, res)["workflow"] == "CI"

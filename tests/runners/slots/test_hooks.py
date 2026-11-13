@@ -29,6 +29,7 @@ def test_started_then_completed(gh_env, link, paths, store):
     job = store.get_job(job_id)
     assert job["state"] == JobState.RUNNING and job["kind"] == "runner"
     assert job["project"] == "example-org__example-app" and job["branch"] == "main"
+    assert job["workflow"] == "CI"  # for the order rules' `workflows`
     assert job["run_url"] == "https://github.com/example-org/example-app/actions/runs/4242"
     assert (paths.runners / RUNNER / ".mulebox-reservation").read_text() == job_id + "\n"
     again, _ = started(gh_env, link, paths)  # a retried hook finds the same reservation

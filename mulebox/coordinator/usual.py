@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from bisect import bisect_left
 from collections import defaultdict
 from statistics import median_low
 from typing import Any
@@ -76,20 +77,52 @@ def for_job(conn: sqlite3.Connection, job: dict[str, Any]) -> dict[str, Any] | N
     return usual(conn, job["project"], job["job"], job["argv"], job["seq"])
 
 
-_RUNNER_RECENT = ("SELECT duration_s FROM jobs WHERE project = ? AND job = ? AND kind = 'runner' "
-                  "AND outcome = 'passed' AND duration_s IS NOT NULL AND seq < ? "
-                  "ORDER BY seq DESC LIMIT ?")
+_JOB_RUNS = ("SELECT j.project, j.job, j.argv, j.seq, (SELECT MAX(s.finished_at) - MIN(s.started_at) "
+             "FROM job_steps s WHERE s.job_id = j.job_id AND s.finished_at IS NOT NULL) AS length "
+             "FROM jobs j WHERE j.kind = 'job' AND j.outcome = 'passed' AND j.project IN ({}) "
+             "AND j.seq < ? AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id) "
+             "AND NOT EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id "
+             "AND s.network_lost = 1) ORDER BY j.seq")
+_RUNNER_RUNS = ("SELECT project, job, NULL AS argv, seq, duration_s AS length FROM jobs "
+                "WHERE kind = 'runner' AND outcome = 'passed' AND duration_s IS NOT NULL "
+                "AND project IN ({}) AND seq < ? ORDER BY seq")
+
+
+def _history(conn: sqlite3.Connection, sql: str, rows: list[dict[str, Any]]
+             ) -> dict[tuple, tuple[list[int], list[float | None]]]:
+    """Past runs of the rows' projects, by (project, job, argv), in seq order."""
+    if not rows:
+        return {}
+    projects = sorted({row["project"] for row in rows})
+    found: dict[tuple, tuple[list[int], list[float | None]]] = {}
+    query = sql.format(", ".join("?" * len(projects)))
+    for run in conn.execute(query, (*projects, max(row["seq"] for row in rows))):
+        seqs, lengths = found.setdefault((run["project"], run["job"], run["argv"]), ([], []))
+        seqs.append(run["seq"])
+        lengths.append(run["length"])
+    return found
+
+
+def lengths(conn: sqlite3.Connection, rows: list[dict[str, Any]]) -> dict[str, float | None]:
+    """`job_seconds` for many rows at once, in two queries whatever their number, so the line
+    (line.py) and the dashboard can read it for every waiting row inside one transaction."""
+    out: dict[str, float | None] = {row["job_id"]: None for row in rows}
+    for kind, sql, digits in (("job", _JOB_RUNS, 3), ("runner", _RUNNER_RUNS, 1)):
+        mine = [row for row in rows if row["kind"] == kind]
+        history = _history(conn, sql, mine)
+        for row in mine:
+            argv = json.dumps(row["argv"], sort_keys=True) if kind == "job" else None
+            seqs, values = history.get((row["project"], row["job"], argv), ([], []))
+            end = bisect_left(seqs, row["seq"])  # only runs before this one
+            known = [v for v in values[max(0, end - RUNS):end] if v is not None]
+            out[row["job_id"]] = round(median_low(known), digits) if known else None
+    return out
 
 
 def job_seconds(conn: sqlite3.Connection, job: dict[str, Any]) -> float | None:
     """What a job like this one usually takes, whole, for a card on the dashboard. A CI slot has
     no stages, so its figure is how long past slots of that repository and job were held."""
-    if job["kind"] != "job":
-        held = [row[0] for row in conn.execute(
-            _RUNNER_RECENT, (job["project"], job["job"], job["seq"], RUNS))]
-        return round(median_low(held), 1) if held else None
-    typical = for_job(conn, job)
-    return typical["job_s"] if typical else None
+    return lengths(conn, [job])[job["job_id"]]
 
 
 def estimate(job: dict[str, Any], typical: dict[str, Any] | None) -> dict[str, Any]:

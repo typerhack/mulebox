@@ -55,10 +55,10 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 21
+        assert store.schema_version() == st.SCHEMA_VERSION == 22
         with store.read() as conn:
-            assert {"kind", "pinned_worker", "runner", "run_url", "detached"} <= columns(
-                conn, "jobs")
+            assert {"kind", "pinned_worker", "runner", "run_url", "detached", "pin_side",
+                    "pin_job", "pin_order", "workflow"} <= columns(conn, "jobs")
             assert {"slots", "toolchains", "version", "draining", "load", "settings", "wanted",
                     "wanted_at"} <= columns(conn, "workers")
             indexes = {r[0] for r in conn.execute("SELECT name FROM sqlite_master "

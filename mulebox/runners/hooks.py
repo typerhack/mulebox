@@ -59,6 +59,7 @@ class GitHubJob:
     branch: str | None = None
     run_url: str | None = None
     key: str | None = None  # an isolated runner's own (place_bridge.KEY_ENV), else derived
+    workflow: str | None = None  # GITHUB_WORKFLOW, for the order rules' `workflows`
 
     @classmethod
     def from_env(cls, env: Mapping[str, str]) -> GitHubJob:
@@ -73,7 +74,7 @@ class GitHubJob:
                    f"{env['GITHUB_RUN_ID']}") if server else None
         return cls(env["GITHUB_REPOSITORY"], env["GITHUB_RUN_ID"], env["GITHUB_RUN_ATTEMPT"],
                    env["GITHUB_JOB"], env["RUNNER_NAME"], env.get("GITHUB_REF_NAME") or None,
-                   run_url, env.get(KEY_ENV) or None)
+                   run_url, env.get(KEY_ENV) or None, env.get("GITHUB_WORKFLOW") or None)
 
 
 def timeout_minutes(env: Mapping[str, str]) -> float:
@@ -132,7 +133,8 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
     reserve = request(MessageType.RESERVE, worker=worker, repository=gh.repository,
                       job=gh.job, run_id=gh.run_id, run_attempt=gh.run_attempt,
                       runner=gh.runner, branch=gh.branch, run_url=gh.run_url,
-                      **({"idempotency_key": gh.key} if gh.key else {}))
+                      **({"idempotency_key": gh.key} if gh.key else {}),
+                      **({"workflow": gh.workflow} if gh.workflow else {}))
     # No idempotency_key: the coordinator derives it from the run, so a retried hook
     # finds its reservation (reservations.default_key).
     job_id: str | None = None

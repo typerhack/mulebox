@@ -66,3 +66,12 @@ def test_fingerprint_sees_where_a_waiting_job_may_go_change():
     assert status.fingerprint([waiting]) != status.fingerprint(
         [{**waiting, "waiting_for": "no node for this job is online"}])
     assert status.fingerprint([waiting]) == status.fingerprint([{**waiting, "elapsed_s": 5.0}])
+
+
+def test_fingerprint_sees_a_new_reason_for_a_place_and_a_move():
+    waiting = job("queued", position=2, place_reason="project example-app -1; then by arrival")
+    aged = {**waiting, "place_reason": "project example-app -1; waited 30m or more +1; then by "
+                                       "arrival", "order": {"level": 0}}
+    assert status.fingerprint([waiting]) != status.fingerprint([aged])
+    assert status.fingerprint([waiting]) != status.fingerprint([{**waiting, "moved": "front"}])
+    assert status.fingerprint([waiting]) == status.fingerprint([{**waiting, "order": {"x": 1}}])

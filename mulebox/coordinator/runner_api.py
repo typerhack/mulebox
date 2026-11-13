@@ -7,6 +7,7 @@ this module validates request bodies and builds the replies.
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
+from mulebox.coordinator import line, line_rules
 from mulebox.coordinator import reservations as rs
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -20,6 +21,12 @@ def _ident(body: dict[str, Any], name: str) -> str:
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return str(value)
     return v.text(body, name)
+
+
+def _workflow(body: dict[str, Any]) -> str | None:
+    """The run's workflow name (GITHUB_WORKFLOW) for the order rules, cut to what they keep."""
+    found = v.text(body, "workflow", None)
+    return found.strip()[:line_rules.MAX_PATTERN] or None if found else None
 
 
 def reserve(req: Request) -> Message:
@@ -36,6 +43,7 @@ def reserve(req: Request) -> Message:
         "runner": runner,
         "branch": v.text(body, "branch", None),
         "run_url": v.text(body, "run_url", None),
+        "workflow": _workflow(body),
         "idempotency_key": v.text(
             body, "idempotency_key", rs.default_key(repository, run_id, run_attempt, job, runner)
         ),
@@ -48,8 +56,10 @@ def reserve(req: Request) -> Message:
 def acquire(req: Request) -> Message:
     with req.store.write() as conn:
         job = rs.require(conn, v.job_id(req.body))
-        job = rs.try_grant(conn, job, req.now, req.cluster_slots)
-        place = rs.ahead(conn, job, req.now) + 1 if job["state"] == JobState.QUEUED else None
+        order = line.read(conn, req.now)
+        job = rs.try_grant(conn, job, req.now, req.cluster_slots, order)
+        # Not granted: the line is as it was read.
+        place = rs.ahead(conn, job, req.now, order) + 1 if job["state"] == JobState.QUEUED else None
     return req.reply(MessageType.STATUS_OK, status_body(job, place))
 
 

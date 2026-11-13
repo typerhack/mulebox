@@ -3,6 +3,7 @@
     projects        project -> level, -3..3 (`mulebox project priority`); 0 removes it
     branches        branch name or pattern (`release/*`) -> level; 0 removes it
     github          level of every GitHub run's slot, against agent jobs
+    workflows       GitHub workflow name (as its runner's hook sends it) -> level; 0 removes it
     aging_min       every so many minutes in line add one level, so nothing waits for ever
     shortest_first  among equals, the job that usually takes least goes first
     fair_turns      among equals, projects take turns, counting what each already runs
@@ -34,7 +35,8 @@ DEFAULT_AGING_MIN = 30
 MAX_AGING_MIN = 24 * 60
 MAX_ENTRIES = 50
 MAX_PATTERN = 100
-FIELDS = ("projects", "branches", "github", "aging_min", "shortest_first", "fair_turns")
+FIELDS = ("projects", "branches", "github", "workflows", "aging_min", "shortest_first",
+          "fair_turns")
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,7 @@ class Rules:
     projects: dict[str, int] = field(default_factory=dict)
     branches: dict[str, int] = field(default_factory=dict)
     github: int = 0
+    workflows: dict[str, int] = field(default_factory=dict)
     aging_min: int = DEFAULT_AGING_MIN
     shortest_first: bool = False
     fair_turns: bool = False
@@ -49,8 +52,8 @@ class Rules:
     def ordering(self) -> bool:
         """Whether any rule can change the order of arrival. Aging alone cannot: an older job
         has waited at least as long as a younger one."""
-        return bool(self.projects or self.branches or self.github or self.shortest_first
-                    or self.fair_turns)
+        return bool(self.projects or self.branches or self.github or self.workflows
+                    or self.shortest_first or self.fair_turns)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -74,6 +77,12 @@ def level(value: Any, name: str = "level") -> int:
 def _branch_ok(pattern: Any) -> bool:
     return (isinstance(pattern, str) and 0 < len(pattern) <= MAX_PATTERN and pattern.isprintable()
             and not any(ch.isspace() for ch in pattern))
+
+
+def _workflow_ok(name: Any) -> bool:
+    """A workflow's `name:`, which may hold spaces, as GitHub gives it in GITHUB_WORKFLOW."""
+    return (isinstance(name, str) and 0 < len(name) <= MAX_PATTERN and name.isprintable()
+            and name == name.strip())
 
 
 def _levels(current: dict[str, int], change: Any, what: str, ok: Any) -> dict[str, int]:
@@ -104,6 +113,9 @@ def merge(rules: Rules, change: Any) -> Rules:
             lambda n: isinstance(n, str) and NAME_RE.fullmatch(n) is not None))
     if "branches" in change:
         out = replace(out, branches=_levels(out.branches, change["branches"], "branches", _branch_ok))
+    if "workflows" in change:
+        out = replace(out, workflows=_levels(out.workflows, change["workflows"], "workflows",
+                                             _workflow_ok))
     if "github" in change:
         out = replace(out, github=level(change["github"], "github"))
     if "aging_min" in change:

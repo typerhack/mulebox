@@ -24,8 +24,8 @@ gone for 60 s the worker releases it.
   "github"`, `argv = []`. It is created directly in `queued` (it skips `uploading`).
 - New columns (schema version bump with a migration for existing databases): `kind TEXT
   NOT NULL DEFAULT 'job'`, `pinned_worker TEXT`, `runner TEXT`, `run_url TEXT`.
-- One line across both kinds, oldest first unless its owner moved a row (`priority`,
-  `store.line_key`): `queue.claim` (agent jobs) never takes `kind = runner` rows, and does not
+- One line across both kinds, oldest first unless its owner moved a row or set order rules
+  (coordinator/line.py; design.md, Order of the line): `queue.claim` (agent jobs) never takes `kind = runner` rows, and does not
   take a job while a queued reservation pinned to that worker is **ahead** of it in line.
   `acquire` (below) grants a reservation only when it is first in line among the queued rows
   the worker could run (a paused agent job keeps its place without holding it back) and a cluster slot and a worker slot are free. Granting moves it `queued ->
@@ -51,7 +51,7 @@ gone for 60 s the worker releases it.
 
 | Request | Body | Reply |
 | --- | --- | --- |
-| `reserve` | `worker`, `repository`, `job`, `run_id`, `run_attempt`, `runner`, + `branch`, `run_url`, `idempotency_key` | `submit_ok` (job_id, state) |
+| `reserve` | `worker`, `repository`, `job`, `run_id`, `run_attempt`, `runner`, + `branch`, `run_url`, `idempotency_key`, `workflow` (GITHUB_WORKFLOW, for the order rules' `workflows`; stored as `jobs.workflow`, schema 22) | `submit_ok` (job_id, state) |
 | `acquire` | `job_id` | `status_ok` (state `running` when granted, else `queued` + `position`) |
 | `release` | `job_id`, `outcome` (`passed`/`failed`/`cancelled`/`interrupted`), + `ci_result` | `status_ok` |
 | `runner_jobs` | `worker` | `queue_ok` (active reservations pinned to that worker) |

@@ -3,7 +3,7 @@
 import pytest
 
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import api, attendance, queue
+from mulebox.coordinator import api, attendance, line, queue
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest, Conflict
 from mulebox.coordinator.views import PAUSED_REASON
@@ -53,10 +53,12 @@ def test_first_goes_before_older_jobs(store, staging):
 def test_first_twice_and_on_two_jobs_keeps_the_latest_ahead(store, staging):
     a, b = queued(store, staging, now=1.0), queued(store, staging, now=2.0)
     act(store, staging, a, "first")
-    before = job(store, a)["priority"]
+    before = job(store, a)
+    assert before["pin_side"] == "front" and before["priority"] == 0
     act(store, staging, a, "first")
-    assert job(store, a)["priority"] == before  # already leads: nothing changes
+    assert job(store, a) == before  # already leads: nothing changes
     act(store, staging, b, "first")
+    assert _line(store) == [b, a]
     assert claim(store)["job_id"] == b
 
 
@@ -110,8 +112,56 @@ def test_what_cannot_be_steered(store, staging):
 
 def _line(store):
     with store.read() as conn:
-        rows = st.select_jobs(conn, "state = ?", (JobState.QUEUED.value,), queue.QUEUE_ORDER)
-    return [row["job_id"] for row in rows]
+        return [row["job_id"] for row in line.read(conn, 1000.0).rows]
+
+
+def _four(store, staging):
+    return [queued(store, staging, now=float(n)) for n in range(1, 5)]
+
+
+def _pins(store, ids):
+    with store.read() as conn:
+        return {job_id: st.require_job(conn, job_id)["pin_side"] for job_id in ids}
+
+
+def test_up_passes_the_job_ahead_and_pins_only_the_moved_one(store, staging):
+    a, b, c, d = _four(store, staging)
+    act(store, staging, c, "up")
+    assert _line(store) == [a, c, b, d]
+    assert _pins(store, [a, b, c, d]) == {a: None, b: None, c: "before", d: None}
+    assert job(store, c)["pin_job"] == b
+    later = queued(store, staging, now=9.0)
+    assert _line(store) == [a, c, b, d, later]
+
+
+def test_down_lets_the_job_behind_go_first(store, staging):
+    a, b, c, d = _four(store, staging)
+    act(store, staging, a, "down")
+    assert _line(store) == [b, a, c, d]
+    act(store, staging, a, "down")
+    assert _line(store) == [b, c, a, d]
+    assert _pins(store, [b, c, d]) == {b: None, c: None, d: None}
+    assert claim(store)["job_id"] == b and claim(store, "wrk-b")["job_id"] == c
+    assert _line(store) == [a, d]  # the jobs it was moved behind have started
+
+
+def test_first_goes_to_the_front_and_stays_ahead_of_later_jobs(store, staging):
+    a, b, c, d = _four(store, staging)
+    act(store, staging, d, "first")
+    later = queued(store, staging, now=9.0)
+    assert _line(store) == [d, a, b, c, later]
+    assert _pins(store, [a, b, c]) == {a: None, b: None, c: None}
+
+
+def test_last_goes_to_the_end_ahead_of_jobs_sent_later(store, staging):
+    a, b, c, d = _four(store, staging)
+    act(store, staging, a, "last")
+    assert _line(store) == [b, c, d, a]
+    later = queued(store, staging, now=9.0)
+    assert _line(store) == [b, c, d, a, later]
+    for worker in ("wrk-a", "wrk-b", "wrk-c"):
+        claim(store, worker)
+    assert _line(store) == [a, later]  # the job it went behind started: it keeps that place
 
 
 def test_up_down_first_and_last_reorder_the_line(store, staging):

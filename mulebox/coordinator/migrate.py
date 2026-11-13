@@ -39,6 +39,9 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 20 -> 21: `workers.settings` (JSON: the `slots` and `priority` a worker last reported, and why a
   change could not be written), `workers.wanted` (JSON, a change its owner asked for that the
   worker has yet to apply) and `workers.wanted_at` (node_settings.py); NULL until set.
+- 21 -> 22: `jobs.pin_side`, `jobs.pin_job` and `jobs.pin_order`: a job moved by hand, at the
+  front or just ahead of or behind another job's place (line.py), NULL for the others; and
+  `jobs.workflow`, a GitHub run's workflow name from its runner's hook, for the order rules.
 """
 
 import sqlite3
@@ -98,6 +101,10 @@ _STEPS: dict[int, tuple[str, ...]] = {
     20: ("ALTER TABLE workers ADD COLUMN settings TEXT",
          "ALTER TABLE workers ADD COLUMN wanted TEXT",
          "ALTER TABLE workers ADD COLUMN wanted_at REAL"),
+    21: ("ALTER TABLE jobs ADD COLUMN pin_side TEXT",
+         "ALTER TABLE jobs ADD COLUMN pin_job TEXT",
+         "ALTER TABLE jobs ADD COLUMN pin_order REAL",
+         "ALTER TABLE jobs ADD COLUMN workflow TEXT"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

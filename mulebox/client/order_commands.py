@@ -2,7 +2,8 @@
 
     mulebox queue rules [--json]                          show them
     mulebox queue rules [--project NAME=LEVEL]... [--branch PATTERN=LEVEL]... [--github LEVEL]
-                        [--aging MIN] [--shortest-first on|off] [--fair-turns on|off]
+                        [--workflow NAME=LEVEL]... [--aging MIN] [--shortest-first on|off]
+                        [--fair-turns on|off]
     mulebox queue rules --reset                           back to arrival order
     mulebox project priority <project> [LEVEL]            one project's level
 
@@ -32,6 +33,8 @@ def register(sub: argparse._SubParsersAction) -> None:
     rules.add_argument("--branch", action="append", default=[], metavar="PATTERN=LEVEL",
                        help="a branch's level, such as main=1 or 'release/*=1' (repeat)")
     rules.add_argument("--github", metavar="LEVEL", help="the level of GitHub runs")
+    rules.add_argument("--workflow", action="append", default=[], metavar="NAME=LEVEL",
+                       help="a GitHub workflow's level, by its name: such as CI=1 (repeat)")
     rules.add_argument("--aging", type=int, metavar="MIN",
                        help="every MIN minutes in line add one level (0: off)")
     rules.add_argument("--shortest-first", choices=SWITCH, help="shorter usual jobs first")
@@ -66,6 +69,8 @@ def change_from(args: argparse.Namespace) -> dict[str, Any]:
         change["projects"] = _pairs(args.project, "project")
     if args.branch:
         change["branches"] = _pairs(args.branch, "branch")
+    if args.workflow:
+        change["workflows"] = _pairs(args.workflow, "workflow")
     if args.github is not None:
         change["github"] = args.github
     if args.aging is not None:
@@ -84,14 +89,15 @@ def render(body: dict[str, Any]) -> list[str]:
     rules = body["rules"]
     aging = rules["aging_min"]
     on = bool(rules["projects"] or rules["branches"] or rules["github"]
-              or rules["shortest_first"] or rules["fair_turns"])
+              or rules.get("workflows") or rules["shortest_first"] or rules["fair_turns"])
     return [
         "The line, each step breaking the ties of the one before:",
-        "  1. moves by hand (mulebox first|up|down|last)",
+        "  1. moves by hand (mulebox first|up|down|last), each pinning only the moved job",
         "  2. levels, higher first:",
         f"       projects       {_levels(rules['projects'])}",
         f"       branches       {_levels(rules['branches'])}",
         f"       GitHub runs    {rules['github']:+d}",
+        f"       workflows      {_levels(rules.get('workflows') or {})}",
         f"       waiting        " + (f"+1 every {aging} min in line" if aging else "off"),
         f"  3. fair turns between projects: {'on' if rules['fair_turns'] else 'off'}",
         f"  4. shortest first: {'on' if rules['shortest_first'] else 'off'}",

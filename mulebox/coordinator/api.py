@@ -164,7 +164,7 @@ def status(req: Request) -> Message:
         job = st.require_job(conn, v.job_id(req.body))
         order = line.read(conn, req.now)
         place, why = order.position(job), order.explain(job)
-        reason = waiting_for(conn, job, req.now)
+        reason = waiting_for(conn, job, req.now, order)
         rows = steps.for_job(conn, job["job_id"])
         typical = usual.for_job(conn, job)
         failed = steps.failed_stage(conn, job)
@@ -205,7 +205,7 @@ def queue_list(req: Request) -> Message:
     with req.store.read() as conn:
         limits = attendance.read_limits(conn)
         order = line.read(conn, req.now)
-        rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now)),
+        rows = [{**job_dict(job, pos, waiting_for(conn, job, req.now, order)),
                  **running_ahead(conn, job), **attendance.fields(job, req.now, limits),
                  **order.explain(job)}
                 for job, pos in queue.listing(conn, limit, order)]

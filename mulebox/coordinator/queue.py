@@ -62,13 +62,14 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         order = line.read(conn, now)
         blocker = oldest_reservation(conn, worker, order)
         on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
+        upgrading = upgrades.pending(conn, worker)
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         better = node_settings.better_free(conn, worker, now, priority)  # nodes ranked above
         for job in (row for row in order.rows if row["kind"] == JOB_KIND):
             if blocker is not None and order.before(blocker, job):
                 return None  # the reservation ahead in line goes first
-            if upgrades.blocks(conn, worker, job, order):
+            if upgrades.blocks(conn, worker, job, order, upgrading):
                 return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
                     and job["project"] not in on_hold and not job["paused"]

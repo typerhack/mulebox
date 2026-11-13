@@ -135,3 +135,16 @@ def test_a_run_that_lost_its_network_does_not_count(store, staging):
         conn.execute("UPDATE job_steps SET network_lost = 1 WHERE job_id = ?", (hurt,))
     found = read(store)
     assert found["runs"] == 1 and found["stages"]["install"] == 10
+
+
+def test_lengths_at_once_agree_with_each_job_alone(store, staging, monkeypatch):
+    monkeypatch.setattr(usual, "RUNS", 2)
+    ids = [run(store, staging, [("command", seconds)]) for seconds in (10, 500, 20, 40)]
+    ids.append(run(store, staging, [("command", 7)], job="other"))
+    with store.read() as conn:
+        jobs = [st.require_job(conn, job_id) for job_id in ids]
+        together = usual.lengths(conn, jobs)
+        for job in jobs:  # each counts only its own runs before it
+            alone = usual.for_job(conn, job)
+            assert together[job["job_id"]] == (alone["job_s"] if alone else None)
+    assert [together[i] for i in ids] == [None, 10.0, 10.0, 20.0, None]

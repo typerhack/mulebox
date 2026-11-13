@@ -805,8 +805,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       GitHub levels, aging, shortest first, kept in the coordinator's store and set by `mulebox queue
       rules`, `mulebox project priority` and `GET|POST /api/queue/rules`; every waiting job says why
       it is where it is (`place_reason`). Tested with the real coordinator code: the defaults give
-      the old order, claims from six processes with every rule on never double-claim. A workflow
-      rule was left out (the hook knows no workflow name). Open: real jobs on the node with a rule
+      the old order, claims from six processes with every rule on never double-claim. 1.17.1, the
+      user's decisions: a move pins only the moved job (the others stay in the rules' order), a job
+      with no history counts as the line's median under shortest first, a workflow level (the hook
+      sends GITHUB_WORKFLOW, schema 22), and a long line read in a fixed number of queries (6000
+      waiting jobs: 4.4 s inside the claim before, 0.2 s after). Open: real jobs on the node with a rule
       on, their order and `place:` in `mulebox queue`, and the settings on the dashboard (M14.15).
 - [~] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
       the owner's desktop only when the spare machine is busy, or a Mac as the fallback. Built

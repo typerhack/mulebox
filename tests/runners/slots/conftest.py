@@ -48,6 +48,7 @@ def gh_env():
     return {
         "GITHUB_REPOSITORY": "example-org/example-app", "GITHUB_RUN_ID": "4242",
         "GITHUB_RUN_ATTEMPT": "1", "GITHUB_JOB": "test", "GITHUB_REF_NAME": "main",
+        "GITHUB_WORKFLOW": "CI",
         "GITHUB_SERVER_URL": "https://github.com", "RUNNER_NAME": RUNNER,
     }
 

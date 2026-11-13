@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.1 - 2026-11-13 - patch
+- The order of the line, as the user decided (design.md, Order of the line): a move by hand pins only the moved job (`front`, or just ahead of or behind another job's place, in new columns `pin_side`, `pin_job`, `pin_order`, coordinator/line_moves.py), so a later rule change still orders the rest; 1.17.0 wrote the whole visible order into every waiting job. A pinned job whose neighbour left the line keeps that place. GitHub slots, upgrades and `boost` move the same way.
+- Shortest first counts a job with no past runs as the median of the known lengths in line (none known: arrival), not after every known job.
+- A workflow level: the runner's job-started hook sends GITHUB_WORKFLOW with `reserve`, kept as `jobs.workflow` (schema 22, migration 21 -> 22), `workflows` in the rules, `mulebox queue rules --workflow NAME=LEVEL`, `/api/queue/rules`, and `place_reason`.
+- A long line is read in a fixed number of queries: the usual lengths of every row at once (`usual.lengths`), one read of the line per request, shared with the waiting reasons, `upgrades.ahead_of` and a GitHub slot's grant. Found by Sol: 6000 waiting jobs with shortest first took 4.4 s inside the claim's transaction; now 0.2 s. A test bounds the queries.
+- Aging is said in whole steps (`waited 30m or more +1`), and the dashboard redraws on a changed `place_reason` or `moved`, so it redraws when aging changes the order, not every minute.
+
 ## 1.17.0 - 2026-11-13 - minor
 - Order rules for the line (M23.3, M24.4; design.md, Order of the line): a level per project (`mulebox project priority <project> low|normal|high|-3..3`) and per branch or pattern, a level for GitHub runs, aging (default every 30 min adds a level, so nothing waits for ever), fair turns between projects (counting what each already runs) and shortest first from `usual`, set with `mulebox queue rules` or `GET|POST /api/queue/rules` and kept in the coordinator's `meta`, never in `.mulebox.yml`, so a project cannot raise itself. Moves by hand still come first, arrival last. One order (`coordinator/line.py`) for claims, GitHub grants, upgrades, positions and moves, read in the claiming transaction. With the defaults the line is exactly the old one; while a rule is on, `status`, `queue` and the dashboard give each waiting job's `place_reason` and `order`. The dashboard's settings page is M14.15.
 

@@ -58,8 +58,8 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
    snapshot, so a saving never fails a job. One snapshot per project stays in `<staging>/bases`.
 2. **Queue**: one line, oldest first unless the owner set order rules (Order of the line,
    below). Assignment is atomic: the first job in line a free worker can run. The owner can steer it (`mulebox pause|resume|first|up|down|last|boost|normal`, or the
-   dashboard): a waiting job moves to the front, one place up or down, or to the end (the move
-   writes the new order into every waiting job's priority, so jobs sent later come after them), a paused one keeps its place and does not start,
+   dashboard): a waiting job moves to the front, one place up or down, or to the end (only the moved
+   job is pinned, next to another job's place; Order of the line), a paused one keeps its place and does not start,
    and a machine running a `boost`ed job takes no new one (coordinator/job_control.py). A whole
    project can be paused for a while (`mulebox project pause`, coordinator/project_pause.py), and
    an upgrade can wait in the line like a job (`mulebox setup <machine> --queued`,
@@ -112,16 +112,18 @@ jobs, GitHub runs' slots and waiting upgrades, in one order (`coordinator/line.p
 
 **Precedence.** Each step only breaks the ties of the one before:
 
-1. **Moves by hand** (`mulebox first|up|down|last`, the dashboard's arrows): `priority`, higher
-   first. A move writes the order shown, rules included, into every waiting job, as before; those
-   jobs keep that order, and a job sent later comes behind them, placed by the rules among its
-   peers. A queued upgrade goes first the same way unless sent with `--behind`.
+1. **Moves by hand** (`mulebox first|up|down|last`, the dashboard's arrows) pin only the moved
+   row; see below.
 2. **Levels from the rules**, higher first, added up per row:
    - `projects`: a level per project, -3 to 3 (low -1, normal 0, high 1), for agent jobs and a
      repository's GitHub runs alike (`owner__repo` is a project name).
    - `branches`: a level per branch name or pattern (`main`, `release/*`). The exact name wins,
      else the longest pattern that matches.
    - `github`: a level for every GitHub run's slot against agent jobs.
+   - `workflows`: a level per GitHub workflow, by its `name:` exactly as GitHub gives it in
+     `GITHUB_WORKFLOW` (such as `CI` or `Nightly build`). The runner's job-started hook sends it with
+     `reserve`, and the slot keeps it (`jobs.workflow`, schema 22). A run from a hook older than
+     1.17.1 has none and takes no workflow level.
    - `aging_min` (default 30): every that many minutes in line add one level, so a low project
      or a long job is never held back for good. An upgrade takes aging only.
 3. **Fair turns** (`fair_turns`, off by default): among rows of one level, the k-th waiting row
@@ -130,33 +132,67 @@ jobs, GitHub runs' slots and waiting upgrades, in one order (`coordinator/line.p
    two jobs running waits behind one with none.
 4. **Shortest first** (`shortest_first`, off by default): among rows of one level and turn, the
    one whose `usual` length (usual.py: an agent job's median passed run, a GitHub run's median
-   held slot) is shorter goes first. A row with no history comes after the ones with one; aging
-   keeps it from waiting for ever. It comes after fair turns, so short jobs of one project cannot
-   take every turn.
-5. **Arrival**: `queued_at`, then `seq`.
+   held slot) is shorter goes first. A row with no history counts as the line's average, the
+   median of the known lengths of the rows in line; with none known, arrival decides. It comes
+   after fair turns, so short jobs of one project cannot take every turn.
+5. **Arrival**: `queued_at`, then `seq`. (A row moved by hand before 1.17.1 may still carry a
+   `priority`, which goes first, higher first, as it did then; nothing writes one any more.)
 
-A workflow rule was left out: a runner's hook knows the GitHub job's name, not the workflow's, so
-it would need a new column first. Branches and projects cover "CI of `main` first".
+**The user's decisions (2026-11-13).** Aging is 30 minutes by default and only counts once another
+rule is on (as built in 1.17.0). A move by hand pins only the moved job, so a later rule change
+still applies to the rest (1.17.0 wrote the whole visible order into every waiting job, which froze
+the line). Under shortest first a job with no past runs counts as the line's median, not after the
+known jobs. A workflow rule is wanted, so the hook sends the workflow's name.
 
-**Defaults keep today's line exactly.** With no project, branch or GitHub level and fair turns
-and shortest first off, `line.read` takes the SQL order of arrival with moves (`priority DESC,
-queued_at, seq`), as the line was before. Aging alone cannot change that order (an older row has
-always waited longer), so its default of 30 minutes only counts once another rule is on. A test
-holds the two equal for mixed lines with moves.
+**Moves pin one row.** A move puts the row in the gap it asks for and pins it there, in the moved
+row only (`pin_side`, `pin_job`, `pin_order`; coordinator/line_moves.py):
+
+- `first`: `front`, ahead of everything the rules order, the latest such move first.
+- `up`, `down`, `last`: `before` the row right after the gap, or, at the end of the line, `after`
+  the row right before it. If that neighbour is pinned itself, the moved row joins it at the same
+  place, just ahead of or behind it (`pin_order`).
+
+A pin is to the other row's place by the rules, not to wherever that row is shown: the line is
+built from the rows nobody moved, in the rules' order, with each pinned row set just ahead of or
+behind the place of its row. When that row is moved too, or has left the line (it started, or was
+cancelled), its place by the rules still holds and the pinned row stays in it; a pin to a row no
+longer in the store is dropped and the row goes by the rules again. So in a first-come line `up`
+passes one job and stays ahead of it, `down` lets one pass, `last` goes behind the last row and
+ahead of jobs sent later, and when the row it went behind starts first it simply keeps that place.
+A GitHub run's slot and a waiting upgrade move the same way; a queued upgrade is pinned `front`
+unless sent with `--behind`, and `boost` on a waiting job pins it `front` too.
+
+**Defaults keep today's line exactly.** With no project, branch, GitHub or workflow level, fair
+turns and shortest first off, and no row moved, `line.read` takes the SQL order of arrival
+(`priority DESC, queued_at, seq`), as the line was before. Aging alone cannot change that order (an
+older row has always waited longer), so its default of 30 minutes only counts once another rule is
+on. A test holds the two equal for mixed lines.
+
+**Cost.** `queue.claim` reads the line inside its `BEGIN IMMEDIATE`, so the read must not grow with
+the history. It takes a fixed number of queries however long the line is: the queued rows, the
+rules, the rows that left the line but still hold a pinned row's place, what each project runs, and
+the usual lengths of every row at once (`usual.lengths`, one query per kind, each row still counting
+only the runs before it). 1.17.0 asked the history once per row; 6000 waiting jobs took 4.4 s
+inside the claim, holding back every other write. One request reads the line once and hands it on,
+to the waiting reasons and the upgrade checks too.
 
 **Where the settings live.** In the coordinator's store, `meta` key `line_rules`, one JSON value
 like the project pauses and holds, read in the same `BEGIN IMMEDIATE` transaction that starts a job,
-so the claim stays atomic and no schema change is needed. Set by the owner from any dev machine
-(`mulebox queue rules`, `mulebox project priority <project> <level>`) or from the dashboard, both
-sending `queue_rules`. Never in a project's `.mulebox.yml`: a project must not be able to raise
-itself above the others, and an agent can edit that file.
+so the claim stays atomic. A move's pin is in the moved row's own columns. Set by the owner from any
+dev machine (`mulebox queue rules`, `mulebox project priority <project> <level>`) or from the
+dashboard, both sending `queue_rules`. Never in a project's `.mulebox.yml`: a project must not be
+able to raise itself above the others, and an agent can edit that file.
 
 **Explainable.** While any rule is on, every waiting row says why it is where it is: `place_reason`
-(such as `project example-app +1; waited 45m +1; turn 2 of example-app; then by arrival`) and
-`order` (`by_hand`, `level`, `levels` with the rule each came from, `turn`, `usual_s`), in
-`status`, `queue` and the dashboard, beside `waiting_for` and `running_ahead`, which still say why
-a job has not started. With every rule at its default there is nothing to say beyond arrival, and
-the fields are absent.
+(such as `project example-app +1; waited 30m or more +1; turn 2 of example-app; then by arrival`)
+and `order` (`by_hand`, `level`, `levels` with the rule each came from, `turn`, `usual_s`,
+`counted_as_s` for a row with no usual length, and `moved` for a pinned row), in `status`, `queue`
+and the dashboard, beside `waiting_for` and `running_ahead`, which still say why a job has not
+started. A moved row says so with no rule on too (`moved to the front by hand`, `moved by hand, just
+ahead of <job>`, or `... which has left the line, so in its place`). Aging is said in whole steps,
+not minutes, so a reason changes only when the order behind it can: the dashboard redraws on a
+changed reason, not every minute. With every rule at its default and nothing moved there is nothing
+to say beyond arrival, and the fields are absent.
 
 ## Time limits
 

@@ -35,13 +35,17 @@ def job_dict(job: dict[str, Any], position: int | None = None,
 
 
 def controls(job: dict[str, Any]) -> dict[str, Any]:
-    """The owner's controls on a job (job_control.py), only those that are on."""
-    return {name: job[name] for name in ("paused", "boost", "priority") if job.get(name)}
+    """The owner's controls on a job (job_control.py), only those that are on; `moved` is the
+    side of a move by hand (front, before or after another job's place, line.py)."""
+    found = {name: job[name] for name in ("paused", "boost", "priority") if job.get(name)}
+    if job.get("pin_side"):
+        found["moved"] = job["pin_side"]
+    return found
 
 
-def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
+def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -> str | None:
     """Why a queued agent job or upgrade cannot start yet (needs.py, upgrades.py); None for
-    anything else."""
+    anything else. `order`: the line (line.py) when the caller read it already."""
     from mulebox.coordinator import upgrades  # upgrades -> views
 
     if job["state"] != JobState.QUEUED or job["kind"] not in ("job", upgrades.UPGRADE_KIND):
@@ -57,7 +61,7 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float) -> str | None:
         return project_pause.reason(job["project"], until)
     if holds.draining(conn, now):
         return holds.DRAIN_REASON
-    if (upgrade := upgrades.ahead_of(conn, job, now)) is not None:
+    if (upgrade := upgrades.ahead_of(conn, job, now, order)) is not None:
         return (f"an upgrade of {upgrade['pinned_worker']} to {upgrade['branch']} is ahead of it "
                 f"({upgrade['job_id']})")
     return needs.waiting_for(workers.listing(conn), job["needs"], now)
@@ -132,7 +136,7 @@ def result_body(job: dict[str, Any], **extra: Any) -> dict[str, Any]:
             "base_commit": job["base_commit"], **extra}
 
 
-RESERVATION_FIELDS = ("kind", "pinned_worker", "runner", "run_url")
+RESERVATION_FIELDS = ("kind", "pinned_worker", "runner", "run_url", "workflow")
 
 
 def reservation_dict(job: dict[str, Any], position: int | None = None) -> dict[str, Any]:

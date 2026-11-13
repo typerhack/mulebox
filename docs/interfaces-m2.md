@@ -312,11 +312,11 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
 | `GET /api/session` | `{action_token, cancel_token}` (the same value): what this page sends with a change, null with the controls off |
 | `POST /api/jobs/{id}/cancel` | `{job_id, state, outcome, cancel_requested}`; rules in Controls |
-| `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, priority}` |
+| `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, moved}` (`moved`: front, before or after, only the moved job pinned; a `priority` only on rows moved before 1.17.1), and `place_reason` and `order` for a queued job |
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
 | `GET /api/machines/{name}/settings` | the settings window (Node settings, below); 404 for a name the store does not know |
 | `POST /api/machines/{name}/settings` | body `{slots}`, `{priority}`, both, or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
-| `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for`; every queued row `place_reason` and `order` while an order rule is on (interfaces-m1.md, `queue_rules`) |
+| `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for`; every queued row `place_reason` and `order` while an order rule is on, and a moved row (`moved`) always (interfaces-m1.md, `queue_rules`); a GitHub slot also `workflow` |
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects}` (interfaces-m1.md), read from the store |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new `{rules, defaults, levels, projects}`. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
 | `GET /api/machines` | machines panel snapshot (above) |

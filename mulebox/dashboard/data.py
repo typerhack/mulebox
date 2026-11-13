@@ -49,14 +49,14 @@ class DashboardData:
             rows = queue.listing(conn, finished_limit, order)
             fleet = workers.listing(conn)
             limits = attendance.read_limits(conn)
-            typical = {job["job_id"]: usual.job_seconds(conn, job) for job, _ in rows
-                       if job["state"] != JobState.FINISHED}
+            typical = usual.lengths(conn, [job for job, _ in rows
+                                           if job["state"] != JobState.FINISHED])
             doing = {job["job_id"]: _doing(job, steps.for_job(conn, job["job_id"]))
                      for job, _ in rows if job["state"] in ACTIVE}
             # The coordinator's own reason (paused, held, behind an upgrade, a paused project,
             # nothing fits), the one `mulebox status` and `queue` give.
             why = {job["job_id"]: reason for job, _ in rows
-                   if (reason := waiting_for(conn, job, now))}
+                   if (reason := waiting_for(conn, job, now, order))}
             # The job holding a queued job's branch, which it waits for even with a slot free.
             busy = {job["job_id"]: holder for job, _ in rows
                     if (holder := running_ahead(conn, job).get("branch_busy"))}

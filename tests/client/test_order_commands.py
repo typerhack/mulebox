@@ -12,8 +12,10 @@ def test_rules_show_set_and_reset(local, capsys):
     out = capsys.readouterr().out
     assert "first come, first served" in out and "fair turns between projects: off" in out
     assert cli.main(["queue", "rules", "--branch", "main=high", "--fair-turns", "on",
-                     "--project", "example-app=-2", "--aging", "15"]) == 0
+                     "--project", "example-app=-2", "--aging", "15",
+                     "--workflow", "Nightly build=low"]) == 0
     out = capsys.readouterr().out
+    assert "workflows      Nightly build -1" in out
     assert "projects       example-app -2" in out and "branches       main +1" in out
     assert "+1 every 15 min in line" in out and "fair turns between projects: on" in out
     assert cli.main(["queue", "rules", "--json"]) == 0

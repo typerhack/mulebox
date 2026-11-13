@@ -44,7 +44,7 @@ def default_key(repository: str, run_id: str, run_attempt: str, job: str, runner
 def create(conn: sqlite3.Connection, fields: dict[str, Any], now: float) -> dict[str, Any]:
     """Insert a queued reservation, or return the one with the same idempotency key.
 
-    `fields`: pinned_worker, project, job, runner, idempotency_key, + branch, run_url.
+    `fields`: pinned_worker, project, job, runner, idempotency_key, + branch, run_url, workflow.
     """
     found = st.find_by_key(conn, fields["idempotency_key"])
     if found is not None:
@@ -95,12 +95,13 @@ def worker_slots(conn: sqlite3.Connection, worker: str, cluster_slots: int) -> i
 
 
 def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
-              cluster_slots: int) -> dict[str, Any]:
+              cluster_slots: int, order: line.Line | None = None) -> dict[str, Any]:
     """Grant a queued reservation if it is first in line and slots are free.
 
-    Returns the job, `running` when granted, unchanged otherwise.
+    Returns the job, `running` when granted, unchanged otherwise. `order`: the line as the
+    caller read it in this transaction.
     """
-    order = line.read(conn, now)
+    order = order or line.read(conn, now)
     if (job["state"] != JobState.QUEUED or ahead(conn, job, now, order) > 0
             or holds.draining(conn, now)):
         return job

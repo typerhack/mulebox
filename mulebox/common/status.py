@@ -208,7 +208,10 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     waiting job where it may go (`can_run_on`, `waiting_for`, when the rows carry them), a
     waiting question's reason and whole minutes left, what a job in a slot is doing
     (`doing_mark`, its download too), or its card would keep what it showed when the job
-    started, and the owner's controls (paused, boost, priority), or a frozen job would not say so.
+    started, the owner's controls (paused, boost, priority, moved), or a frozen job would not say
+    so, and why a waiting row is where it is (`place_reason`), which aging can change with nothing
+    else changing; it is said in whole aging steps (coordinator/line_why.py), so this does not
+    redraw every minute.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
@@ -216,7 +219,8 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
         (j.get("job_id"), j.get("state"), j.get("outcome"), j.get("position"),
          j.get("worker"), j.get("started_at"), j.get("finished_at"),
          j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j), doing_mark(j),
-         bool(j.get("paused")), bool(j.get("boost")), j.get("priority") or 0)
+         bool(j.get("paused")), bool(j.get("boost")), j.get("priority") or 0, j.get("moved"),
+         j.get("place_reason"))
         for j in jobs
     )
 

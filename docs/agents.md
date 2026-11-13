@@ -144,7 +144,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   line such as
   `queued, position 1; waiting: no node for this job is online` is different:
   nothing will start until a person fixes it, so tell the user. The owner may have set order
-  rules (a project's or a branch's level, fair turns, shortest first); then `mulebox status`
+  rules (a project's or a branch's level, fair turns, shortest first) or moved a job by hand;
+  then `mulebox status`
   and `mulebox queue` add a `place:` line, and `--json` `place_reason` and `order`, saying why
   the job is where it is. The rules are the owner's: do not change them to get ahead.
 

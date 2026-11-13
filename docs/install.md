@@ -653,14 +653,18 @@ mulebox queue rules                     # show them
 mulebox project priority example-app high      # low, normal, high or -3..3
 mulebox queue rules --branch main=1     # a branch (or 'release/*') goes ahead
 mulebox queue rules --github 1          # GitHub runs ahead of agent jobs
+mulebox queue rules --workflow CI=1     # runs of one workflow (its `name:`) ahead
 mulebox queue rules --fair-turns on     # projects take turns: a burst does not hold back one job
 mulebox queue rules --shortest-first on # among equals, what usually takes least goes first
 mulebox queue rules --aging 30          # every 30 min in line adds a level (0: off)
 mulebox queue rules --reset             # back to first come, first served
 ```
 
-Moves by hand still come first. While a rule is on, `mulebox queue` and `mulebox status` say why
-each waiting job is where it is (`place:`).
+Moves by hand still come first, and move only the job you move: `mulebox up <job>` puts it just
+ahead of the job it passed, and it keeps that place when a rule changes; the other jobs go on in
+the rules' order. While a rule is on, or for a moved job, `mulebox queue` and `mulebox status` say
+why each waiting job is where it is (`place:`). A workflow level needs the runner's hook from
+mulebox 1.16.1 or later on the node, which sends the workflow's name.
 
 A paused job is not asked whether it is stuck, and resuming it answers what was asked meanwhile.
 A paused job still holds its slot and its memory. A boost does not stop GitHub runners on that
