@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: node settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="mockups-2026-11-13.css">
+<style>
+/* Only what this page lays out; every value is a token or a size named in the shared file. */
+.machines-box { width: min(100%, var(--col-xl)); }
+.strip.calm { border-color: var(--border-strong); background: var(--surface-2); }
+.strip.calm > svg { color: var(--status-queued); }
+.suggest { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--surface-2); font-size: var(--text-sm); }
+.suggest > span { flex: 1 1 var(--col-s); }
+.about-h { display: flex; align-items: center; gap: var(--space-2); font-weight: 600; }
+.about-h > small { color: var(--text-2); font-size: var(--text-sm); font-weight: 400; }
+
+/* B: the slot rack, sixteen boxes to press. */
+.rack { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: var(--space-1); }
+.rack > button { height: var(--ctl-s); padding: 0; border: 1px solid var(--text-1); border-radius: var(--radius-s); background: var(--surface-3); }
+.rack > button.busy { background: var(--text-1); }
+.rack > button.soon { border-style: dashed; }
+.rack > button.off { border-color: var(--border-strong); background: var(--surface-1); }
+.rack > button:hover { outline: 1px solid var(--text-1); }
+.rack-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); color: var(--text-2); font-size: var(--text-sm); }
+.rack-key > span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.pop .field { padding: var(--space-3) 0; }
+
+/* C: the ledger, one row per setting, with what is suggested, what you set and what runs. */
+.ledger { container-type: inline-size; }
+.ledger-row { display: grid; grid-template-columns: calc(var(--space-7) * 3) repeat(3, minmax(0, 1fr)); gap: var(--space-2) var(--space-4);
+  align-items: center; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+.ledger-row.head { padding: 0 0 var(--space-2); border-bottom-color: var(--border-strong); color: var(--text-2); font-size: var(--text-sm); font-weight: 600; }
+.ledger-row.fact { grid-template-columns: calc(var(--space-7) * 3) minmax(0, 1fr); align-items: start; font-size: var(--text-sm); }
+.ledger-row > :first-child { font-weight: 600; }
+.ledger-row.fact > :first-child { font-weight: 400; color: var(--text-2); }
+.ledger-row small { display: block; color: var(--text-2); font-size: var(--text-sm); font-weight: 400; }
+.ledger-row code { display: block; overflow-wrap: anywhere; }
+.ledger-h { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-5) 0 var(--space-2); border-bottom: 1px solid var(--border-strong);
+  color: var(--text-2); font-size: var(--text-sm); font-weight: 600; }
+@container (max-width: 640px) {
+  .ledger-row.head { display: none; }
+  .ledger-row, .ledger-row.fact { grid-template-columns: minmax(0, 1fr); }
+  .ledger-row > [data-label]::before { content: attr(data-label); display: block; color: var(--text-2); font-size: var(--text-xs); font-weight: 400; }
+}
+</style>
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Node settings</h1>
+        <p class="doc-lead">mulebox suggests how a node should run and has always just done it. Here the owner sees the suggestion and can overrule it: how many jobs at once, and whether the node is preferred, normal or a fallback. A change applies to the next job; a node on another machine takes it on its next check-in and reads "pending" until then.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, side sheet</a><a href="#b">B, dials on the row</a><a href="#c">C, suggested and yours</a>
+      <a href="mockups-2026-11-13.html">All mockups of 2026-11-13</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">Side sheet</h2>
+      <p class="opt-idea">One form in a sheet from the right: change what you like, read the rest, then Save once.</p></div>
+    <div class="stage over">
+      <div class="under" data-clone="#machines"></div>
+      <section class="float sheet" aria-label="Settings of build-1">
+        <header class="float-head">
+          <div><h3><i data-i="server"></i>build-1</h3><p class="sm t2">Dashboard host, online, 2 jobs running</p></div>
+          <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button>
+        </header>
+        <div class="float-body">
+          <div class="field" data-slots="3" data-now="2" data-busy="2" data-cores="8" data-gb="16">
+            <div class="row apart"><span class="field-name">Slots</span><span class="pending" data-changed><i data-i="undo-2" class="s"></i>Was 2</span></div>
+            <p class="field-hint">How many jobs this node runs at once, from 1 to 16.</p>
+            <div class="row">
+              <span class="stepper"><button type="button" data-step="-1" aria-label="One slot fewer"><i data-i="minus"></i></button><output aria-label="Slots" data-n>3</output><button type="button" data-step="1" aria-label="One slot more"><i data-i="plus"></i></button></span>
+              <span class="slot-boxes" data-boxes aria-hidden="true"></span>
+            </div>
+            <p class="sm"><span data-n>3</span> slots: <span data-each></span>.</p>
+            <div class="suggest"><span>Suggested: <b>2</b>, from this node's 8 cores and 16 GB.</span><button class="btn" type="button" data-set="2">Use 2</button></div>
+          </div>
+          <div class="field">
+            <span class="field-name" id="a-pri">Priority</span>
+            <div class="seg fill" role="radiogroup" aria-labelledby="a-pri" data-note="a-pri-says">
+              <button type="button" role="radio" aria-checked="false" data-says="Preferred: jobs come here first, while it has a free slot."><i data-i="star" class="s"></i>Preferred</button>
+              <button type="button" role="radio" aria-checked="true" data-says="Normal: takes jobs once the preferred nodes are full."><i data-i="equal" class="s"></i>Normal</button>
+              <button type="button" role="radio" aria-checked="false" data-says="Fallback: takes jobs only when the preferred and normal nodes are full."><i data-i="life-buoy" class="s"></i>Fallback</button>
+            </div>
+            <p class="field-hint" id="a-pri-says">Normal: takes jobs once the preferred nodes are full.</p>
+          </div>
+          <div class="field">
+            <div class="row apart"><span class="field-name" id="a-take">Take new jobs</span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="a-take"></button></div>
+            <p class="field-hint">Off pauses the node: running jobs finish, nothing new starts. The same as Pause on its row.</p>
+          </div>
+          <div class="field">
+            <p class="about-h"><i data-i="lock" class="s"></i>About this node <small>read from the node, set in its node.toml</small></p>
+            <dl class="facts">
+              <dt>Version</dt><dd class="num">1.14.4, same as the coordinator</dd>
+              <dt>System</dt><dd>Ubuntu 24.04, 8 cores, 16 GB</dd>
+              <dt>Offers</dt><dd class="tags"><span class="tag">docker</span><span class="tag">playwright</span><span class="tag">cache-pnpm</span><span class="tag">cache-pip</span></dd>
+              <dt>Toolchains</dt><dd class="tags"><span class="tag">node 22.11.0</span><span class="tag">node 20.18.1</span><span class="tag">pnpm 9.12.3</span><span class="tag">python 3.12.7</span></dd>
+              <dt>Roots</dt><dd><code>/home/alice/.mulebox/projects</code><code>/home/alice/.mulebox/staging</code><code>/home/alice/.mulebox/caches</code><code>/home/alice/.mulebox/logs</code></dd>
+            </dl>
+          </div>
+        </div>
+        <footer class="float-foot">
+          <p>Applies to the next job. The 2 jobs running now keep their slots.</p>
+          <button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">Save changes</button>
+        </footer>
+      </section>
+    </div>
+    <div class="stage">
+      <p class="stage-cap">After Save on a node on another machine: the sheet's first line, and the node's row in the Machines box, until build-2 checks in.</p>
+      <div class="cols">
+        <div class="strip calm"><i data-i="clock"></i><div class="grow"><b>Pending on build-2.</b> 3 slots and Fallback apply on its next check-in, usually within 15 s. Until then it runs with 2 slots, Normal.</div><button class="btn" type="button">Undo</button></div>
+        <div class="panel"><div class="panel-body"><div class="machine">
+          <div class="row apart"><strong>build-2</strong><span class="row tight"><span class="st" data-state="passed"><i data-i="circle-check"></i>Idle</span><button class="icon-btn" type="button" aria-label="Pause build-2" title="Pause"><i data-i="pause"></i></button><button class="icon-btn" type="button" aria-label="Settings of build-2" title="Node settings"><i data-i="settings-2"></i></button></span></div>
+          <div class="row apart sm t2"><span class="slots">0 of 2 slots busy<span class="slot-boxes"><i></i><i></i><i class="soon"></i></span></span><span class="pending"><i data-i="clock" class="s"></i>3 slots, Fallback pending</span></div>
+        </div></div></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Opens from</b>The settings button on a node's row, in the Machines box and on the Machines page. Full width under 520 px.</li>
+      <li><b>Good at</b>Room to explain each setting, and one Save, so two changes reach the node together.</li>
+      <li><b>Costs</b>The most to build, and it covers the page for a two-number change.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">Dials on the row</h2>
+      <p class="opt-idea">A small popover under the node's row: press a box to set the slots, press a priority, done. No Save; each change says applied or pending.</p></div>
+    <div class="stage">
+      <section class="panel machines-box" id="machines" aria-label="Machines">
+        <header class="panel-head"><h3><i data-i="server"></i>Machines</h3><span class="panel-note num">2 of 2 online, 2 slots free</span></header>
+        <div class="panel-body">
+          <div class="machine">
+            <div class="row apart">
+              <span class="row tight"><strong>build-1</strong><span class="mark" role="img" aria-label="Dashboard host" title="Dashboard host"><i data-i="house" class="s"></i></span></span>
+              <span class="row tight"><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><button class="icon-btn" type="button" aria-label="Pause build-1" title="Pause: take no new jobs"><i data-i="pause"></i></button><button class="icon-btn" type="button" aria-label="Settings of build-1" title="Node settings"><i data-i="settings-2"></i></button></span>
+            </div>
+            <div class="stack labels-4">
+              <div class="meter-row"><span>CPU</span><span class="meter" style="--v:62%"><i></i></span><span class="num">62%</span></div>
+              <div class="meter-row"><span>Mem</span><span class="meter" style="--v:48%"><i></i></span><span class="num">48%</span></div>
+            </div>
+            <div class="row apart sm t2"><span class="slots">2 of 2 slots busy<span class="slot-boxes"><i class="busy"></i><i class="busy"></i></span></span><span class="row tight num"><i data-i="arrow-down" class="s"></i>0.6 MB/s<i data-i="arrow-up" class="s"></i>0.1 MB/s</span></div>
+            <div class="tags"><span class="tag">docker</span><span class="tag">playwright</span></div>
+          </div>
+          <div class="machine">
+            <div class="row apart pop-host">
+              <strong>build-2</strong>
+              <span class="row tight"><span class="st" data-state="passed"><i data-i="circle-check"></i>Idle</span><button class="icon-btn" type="button" aria-label="Pause build-2" title="Pause: take no new jobs"><i data-i="pause"></i></button><button class="icon-btn" type="button" aria-label="Settings of build-2" title="Node settings" aria-expanded="true"><i data-i="settings-2"></i></button></span>
+              <section class="float pop" aria-label="Settings of build-2">
+                <div class="float-body">
+                  <div class="field" data-slots="3" data-now="2" data-busy="0" data-cores="8" data-gb="16" data-pick>
+                    <div class="row apart"><span class="field-name"><span data-n>3</span> slots</span><span class="pending" data-changed><i data-i="clock" class="s"></i>Pending<button class="btn ghost" type="button" data-set="2">Undo</button></span></div>
+                    <div class="rack" data-boxes role="group" aria-label="Slots, 1 to 16"></div>
+                    <p class="rack-key"><span>Suggested: 2, from 8 cores and 16 GB</span></p>
+                    <p class="field-hint" data-changed>build-2 takes this on its next check-in, usually within 15 s. Running jobs keep their slot.</p>
+                  </div>
+                  <div class="field">
+                    <div class="row apart"><span class="field-name" id="b-pri">Priority</span><span class="pending applied"><i data-i="check" class="s"></i>Applied</span></div>
+                    <div class="seg fill" role="radiogroup" aria-labelledby="b-pri" data-note="b-pri-says">
+                      <button type="button" role="radio" aria-checked="false" aria-label="Preferred" title="Preferred" data-says="Preferred: jobs come here first."><i data-i="star"></i></button>
+                      <button type="button" role="radio" aria-checked="false" aria-label="Normal" title="Normal" data-says="Normal: takes jobs once the preferred nodes are full."><i data-i="equal"></i></button>
+                      <button type="button" role="radio" aria-checked="true" aria-label="Fallback" title="Fallback" data-says="Fallback: takes jobs only when the other nodes are full."><i data-i="life-buoy"></i></button>
+                    </div>
+                    <p class="field-hint" id="b-pri-says">Fallback: takes jobs only when the other nodes are full.</p>
+                  </div>
+                  <div class="field">
+                    <div class="row apart"><span class="field-name" id="b-take">Take new jobs</span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-take"></button></div>
+                  </div>
+                  <div class="field">
+                    <dl class="facts">
+                      <dt>Version</dt><dd class="num">1.14.4</dd>
+                      <dt>Offers</dt><dd>docker, cache-pnpm</dd>
+                      <dt>Toolchains</dt><dd>node 22.11.0, pnpm 9.12.3</dd>
+                      <dt>Roots</dt><dd><code>/home/alice/.mulebox</code></dd>
+                    </dl>
+                    <a class="sm" href="#b">Everything about build-2 on the Machines page</a>
+                  </div>
+                </div>
+              </section>
+            </div>
+            <div class="stack labels-4">
+              <div class="meter-row"><span>CPU</span><span class="meter" style="--v:4%"><i></i></span><span class="num">4%</span></div>
+              <div class="meter-row"><span>Mem</span><span class="meter" style="--v:21%"><i></i></span><span class="num">21%</span></div>
+            </div>
+            <div class="row apart sm t2"><span class="slots">0 of 2 slots busy<span class="slot-boxes"><i></i><i></i></span></span><span class="row tight num"><i data-i="arrow-down" class="s"></i>0.0 MB/s<i data-i="arrow-up" class="s"></i>0.0 MB/s</span></div>
+            <div class="tags"><span class="tag">docker</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <ul class="notes">
+      <li><b>Opens from</b>The settings button on the node's row, hanging under it. The page stays in view.</li>
+      <li><b>Good at</b>Speed: the slot boxes are the same boxes the row already shows, and one press sets them.</li>
+      <li><b>Costs</b>No room for the full read-only part, which moves to the Machines page; and no Save means a slip applies at once (Undo beside it).</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">Suggested and yours</h2>
+      <p class="opt-idea">A window that is one table: each setting with what mulebox suggests and why, what you set, and what the node runs with now.</p></div>
+    <div class="stage over">
+      <div class="under" data-clone="#machines"></div>
+      <section class="float dialog" aria-label="Settings of build-2">
+        <header class="float-head">
+          <div><h3><i data-i="server"></i>build-2</h3><p class="sm t2">On another machine, online, last check-in 4 s ago</p></div>
+          <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button>
+        </header>
+        <div class="float-body ledger">
+          <div class="ledger-row head"><span>Setting</span><span>Suggested</span><span>Yours</span><span>Runs with</span></div>
+          <div class="ledger-row" data-slots="3" data-now="2" data-busy="0" data-cores="8" data-gb="16">
+            <span>Slots<small>jobs at once, 1 to 16</small></span>
+            <span data-label="Suggested"><span class="num">2</span><small>from 8 cores and 16 GB</small></span>
+            <span data-label="Yours" class="row tight"><span class="stepper"><button type="button" data-step="-1" aria-label="One slot fewer"><i data-i="minus"></i></button><output aria-label="Slots" data-n>3</output><button type="button" data-step="1" aria-label="One slot more"><i data-i="plus"></i></button></span><button class="icon-btn" type="button" data-set="2" data-changed aria-label="Back to the suggested 2" title="Back to the suggested 2"><i data-i="rotate-ccw"></i></button></span>
+            <span data-label="Runs with"><span class="num">2 now</span> <span class="pending" data-changed><i data-i="clock" class="s"></i><span data-n>3</span> pending</span><small data-changed>on its next check-in</small></span>
+          </div>
+          <div class="ledger-row">
+            <span id="c-pri">Priority<small>which node a job goes to first</small></span>
+            <span data-label="Suggested">Normal<small>no node is set as preferred</small></span>
+            <span data-label="Yours"><span class="seg small" role="radiogroup" aria-labelledby="c-pri">
+              <button type="button" role="radio" aria-checked="false" aria-label="Preferred" title="Preferred: jobs come here first"><i data-i="star" class="s"></i></button>
+              <button type="button" role="radio" aria-checked="true" aria-label="Normal" title="Normal">Normal</button>
+              <button type="button" role="radio" aria-checked="false" aria-label="Fallback" title="Fallback: only when the others are full"><i data-i="life-buoy" class="s"></i></button>
+            </span></span>
+            <span data-label="Runs with">Normal<small>as suggested</small></span>
+          </div>
+          <div class="ledger-row">
+            <span id="c-take">New jobs<small>off pauses the node</small></span>
+            <span data-label="Suggested">Take them</span>
+            <span data-label="Yours"><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="c-take"></button></span>
+            <span data-label="Runs with">Taking jobs<small>as suggested</small></span>
+          </div>
+          <p class="ledger-h"><i data-i="lock" class="s"></i>Reported by the node, set in its node.toml</p>
+          <div class="ledger-row fact"><span>Version</span><span class="num">1.14.4, same as the coordinator</span></div>
+          <div class="ledger-row fact"><span>System</span><span>Ubuntu 24.04, 8 cores, 16 GB</span></div>
+          <div class="ledger-row fact"><span>Offers</span><span class="tags"><span class="tag">docker</span><span class="tag">cache-pnpm</span></span></div>
+          <div class="ledger-row fact"><span>Toolchains</span><span class="tags"><span class="tag">node 22.11.0</span><span class="tag">pnpm 9.12.3</span><span class="tag">python 3.12.7</span></span></div>
+          <div class="ledger-row fact"><span>Roots</span><span><code>/home/alice/.mulebox/projects</code><code>/home/alice/.mulebox/staging</code><code>/home/alice/.mulebox/caches</code><code>/home/alice/.mulebox/logs</code></span></div>
+        </div>
+        <footer class="float-foot">
+          <p>Applies to the next job. Running jobs keep their slot.</p>
+          <button class="btn ghost" type="button"><i data-i="rotate-ccw" class="s"></i>All as suggested</button><button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">Save changes</button>
+        </footer>
+      </section>
+    </div>
+    <ul class="notes">
+      <li><b>Opens from</b>The settings button on a node's row, as a window in the middle of the page; one card per setting under 640 px.</li>
+      <li><b>Good at</b>Showing the default beside the choice: nothing is hidden, and "pending" has its own column.</li>
+      <li><b>Costs</b>The densest of the three; a table asks more reading than a form for three settings.</li>
+    </ul>
+  </section>
+</div>
+<script src="mockups-2026-11-13.js"></script>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups of 2026-11-13</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="mockups-2026-11-13.css">
+<style>
+.index { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-xl)), 1fr)); margin-top: var(--space-6); }
+.index > a { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-l);
+  background: var(--surface-1); text-decoration: none; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.index > a:hover { background: var(--surface-2); border-color: var(--text-1); }
+.index h2 { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; }
+.index p { color: var(--text-2); }
+.index dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); }
+.index dt { font: 600 var(--text-sm)/1.5 var(--font-mono); }
+.index dd { color: var(--text-2); }
+.index dd b { color: var(--text-1); font-weight: 600; }
+.foot { margin-top: var(--space-6); color: var(--text-2); font-size: var(--text-sm); max-width: 76ch; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>Mockups of 2026-11-13</h1>
+      <p class="doc-lead">Three things asked for on 2026-11-13, each drawn three ways in the Gauge design system, to pick from before anything is built. The top row of the dashboard and everything not named here stay as they are.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+
+  <nav class="index" aria-label="Mockups">
+    <a href="node-settings-mockup.html">
+      <h2>Node settings<i data-i="chevron-right"></i></h2>
+      <p>See what mulebox suggests for a node and overrule it: slots and priority, with the node's own facts beside them.</p>
+      <dl>
+        <dt>A</dt><dd><b>Side sheet.</b> One form from the right, one Save.</dd>
+        <dt>B</dt><dd><b>Dials on the row.</b> A popover: press a slot box, press a priority, no Save.</dd>
+        <dt>C</dt><dd><b>Suggested and yours.</b> A window that is one table: suggested, yours, runs with.</dd>
+      </dl>
+    </a>
+    <a href="download-progress-mockup.html">
+      <h2>Download progress<i data-i="chevron-right"></i></h2>
+      <p>A running job's card says it is downloading, how far and how fast, and tells slow from stalled.</p>
+      <dl>
+        <dt>A</dt><dd><b>A second meter.</b> Down, under Cores, in the same grammar.</dd>
+        <dt>B</dt><dd><b>Speed trace.</b> A line of the last two minutes; a stall is a line that fell flat.</dd>
+        <dt>C</dt><dd><b>One sentence.</b> Words only, no new part on the card.</dd>
+      </dl>
+    </a>
+    <a href="queue-order-mockup.html">
+      <h2>Queue order<i data-i="chevron-right"></i></h2>
+      <p>Order rules and a priority per project, and on every waiting row a short reason for its place.</p>
+      <dl>
+        <dt>A</dt><dd><b>An Order button on the line.</b> Switches in a small panel; the reason as a second line.</dd>
+        <dt>B</dt><dd><b>An Order page.</b> The rules as a ranked ladder; the reason as a column.</dd>
+        <dt>C</dt><dd><b>In place.</b> Toggles above the line, priority in the row's menu; the reason as an icon.</dd>
+      </dl>
+    </a>
+  </nav>
+  <p class="foot">Static pages with example data. The theme switch is on every page, and the controls answer a click so an option can be tried; nothing is saved. Colours, type, space, corners and motion come from <a href="tokens.css">tokens.css</a>; the switch, the segmented choice, the stepper and the things that open (popover, sheet, window) are new parts, to be added to <a href="../design-system.md">design-system.md</a> with the option that is picked.</p>
+</div>
+<script src="mockups-2026-11-13.js"></script>
+</body>
+</html>

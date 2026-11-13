@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: queue order</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="mockups-2026-11-13.css">
+<style>
+/* Only what this page lays out; every value is a token or a size named in the shared file. */
+.with-side { display: grid; gap: var(--space-3); align-items: start; grid-template-columns: minmax(0, 1fr); }
+.with-side > .float { width: min(100%, var(--pop-w)); }
+@media (min-width: 1101px) { .with-side { grid-template-columns: minmax(0, 1fr) var(--pop-w); } }
+.opened-cap { color: var(--text-2); font-size: var(--text-sm); margin-bottom: var(--space-2); }
+.lane { display: grid; gap: var(--space-2); min-width: 0; }
+.lane-sub { color: var(--text-2); font-size: var(--text-sm); }
+
+/* The reason for a row's place, three ways. */
+.why { flex-basis: 100%; display: flex; align-items: center; gap: var(--space-1); color: var(--text-2); font-size: var(--text-sm); }
+.why-col { display: inline-flex; align-items: center; gap: var(--space-1); font-size: var(--text-sm); white-space: nowrap; }
+.lead { display: inline-flex; align-items: center; gap: var(--space-2); position: relative; }
+.why-mark { display: inline-grid; place-items: center; width: var(--space-5); height: var(--space-5); color: var(--text-1); }
+.lead > .tip { position: absolute; z-index: 1; left: var(--space-5); bottom: calc(100% + var(--hair)); }
+@container (min-width: 641px) { .why-col { min-width: calc(var(--space-7) * 4.5); } }
+
+/* A rule: its icon, what it does, and its switch. */
+.rule { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 var(--space-3); align-items: center; padding: var(--space-2) 0; }
+.rule > svg { align-self: start; margin-top: var(--hair); }
+.rule b { display: block; font-weight: 600; }
+.rule small { display: block; color: var(--text-2); font-size: var(--text-sm); }
+.rule + .rule, .prio + .prio { border-top: 1px solid var(--border); }
+.prio { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-2) 0; }
+.prio > span:first-child { font-weight: 500; }
+.prio small { color: var(--text-2); font-size: var(--text-sm); font-weight: 400; margin-left: var(--space-2); }
+.sub-h { color: var(--text-2); font-size: var(--text-sm); font-weight: 600; margin: var(--space-4) 0 var(--space-1); }
+.sub-h:first-child { margin-top: 0; }
+
+/* B: the ladder, strongest rule first. */
+.order-page { display: grid; gap: var(--space-5) var(--space-6); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--col-xl) * 1.4)), 1fr)); align-items: start; margin-top: var(--space-4); }
+.order-page > .wide { grid-column: 1 / -1; }
+.ladder > li { display: grid; grid-template-columns: var(--space-4) auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: center; padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+.ladder > li:first-child { border-top: 1px solid var(--border); }
+.ladder .n { color: var(--text-2); font: var(--text-sm)/1.5 var(--font-mono); text-align: right; }
+.ladder b { display: block; font-weight: 600; }
+.ladder small { display: block; color: var(--text-2); font-size: var(--text-sm); }
+.ladder .ctl { display: inline-flex; align-items: center; gap: var(--space-3); }
+.ladder li.is-off b, .ladder li.is-off > svg { color: var(--text-3); }
+@media (max-width: 520px) { .ladder .ctl { grid-column: 3 / -1; justify-content: space-between; } }
+
+/* C: the rules as a row of toggles over the line. */
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.chips > .btn[aria-pressed="true"] { box-shadow: inset 0 calc(-1 * var(--hair)) 0 var(--accent); font-weight: 600; }
+.chips > .btn[aria-pressed="false"] { color: var(--text-2); }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Queue order</h1>
+        <p class="doc-lead">Today the line is first come, first served, moved by hand with the arrows. This adds rules the owner can switch on (main branch first, shortest first, fair turns between projects, aging so nothing waits forever) and a priority per project. Every waiting row then says in a few words why it stands where it does. Moving by hand stays, and always wins.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, an Order button on the line</a><a href="#b">B, an Order page</a><a href="#c">C, in place</a>
+      <a href="mockups-2026-11-13.html">All mockups of 2026-11-13</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">An Order button on the line</h2>
+      <p class="opt-idea">The line gets one button, Order. It opens a small panel with the four rules as switches and each project's priority; rows carry their reason as a second line.</p></div>
+    <div class="stage with-side">
+      <section class="panel" aria-label="Jobs, option A"><header class="panel-head strong"><h3>Jobs</h3></header><div class="panel-body stack loose">
+        <div class="tabs" role="tablist" aria-label="Job views"><button role="tab" type="button" aria-selected="true">Queue<span class="count num">9</span></button><button role="tab" type="button" aria-selected="false">Failed<span class="count num">2</span></button><button role="tab" type="button" aria-selected="false">Passed<span class="count num">38</span></button><button role="tab" type="button" aria-selected="false">Recent<span class="count num">40</span></button></div>
+        <section class="lane" aria-label="Next free machine">
+          <div class="lane-head"><strong>Next free machine</strong><span class="lane-note num">7 waiting</span><button class="btn" type="button" aria-haspopup="dialog" aria-expanded="true"><i data-i="list-ordered" class="s"></i>Order</button></div>
+          <p class="lane-sub">Whichever machine is free first takes these, in this order.</p>
+          <ol class="waits" aria-label="Waiting for the next free machine">
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 1">1</span>
+  <div class="wait-main"><a class="job-name" href="#">example-worker <span>/</span> test</a><span class="branch"><i data-i="git-branch" class="s"></i><span>fix/retry</span></span><span class="src" title="Sent from a dev machine, Linux"><i data-i="laptop" class="s"></i>Linux</span><span class="why" title="You moved it up; it stays there"><i data-i="hand" class="s"></i>moved up by hand</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 2m 10s</span><span class="moves" role="group" aria-label="Move example-worker / test in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front" disabled><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up" disabled><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-worker / test" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 2">2</span>
+  <div class="wait-main"><a class="job-name" href="#">example-api <span>/</span> CI</a><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="src" title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="why" title="Jobs on main go ahead of other branches"><i data-i="git-branch" class="s"></i>ahead: main first</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 20s</span><span class="moves" role="group" aria-label="Move example-api / CI in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 3">3</span>
+  <div class="wait-main"><a class="job-name" href="#">example-app <span>/</span> check</a><span class="branch"><i data-i="git-branch" class="s"></i><span>fix/cart-total</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="why" title="example-app is set to high priority"><i data-i="flag" class="s"></i>ahead: high priority</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 1m 05s</span><span class="moves" role="group" aria-label="Move example-app / check in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 4">4</span>
+  <div class="wait-main"><a class="job-name" href="#">docs-site <span>/</span> build</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/search</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="why" title="Aging: it waited over 10 min, so it moved up"><i data-i="hourglass" class="s"></i>ahead: waited 14 min</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 14m 10s</span><span class="moves" role="group" aria-label="Move docs-site / build in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for docs-site / build" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 5">5</span>
+  <div class="wait-main"><a class="job-name" href="#">example-worker <span>/</span> lint</a><span class="branch"><i data-i="git-branch" class="s"></i><span>chore/deps</span></span><span class="src" title="Sent from a dev machine, Linux"><i data-i="laptop" class="s"></i>Linux</span><span class="why" title="Shortest first, by its usual duration"><i data-i="timer" class="s"></i>ahead: shortest, usually 40 s</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 50s</span><span class="moves" role="group" aria-label="Move example-worker / lint in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-worker / lint" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 6">6</span>
+  <div class="wait-main"><a class="job-name" href="#">example-app <span>/</span> e2e</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="why" title="Projects take turns; example-app had the last one"><i data-i="repeat" class="s"></i>fair turn: after example-worker</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 58s</span><span class="moves" role="group" aria-label="Move example-app / e2e in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-app / e2e" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 7">7</span>
+  <div class="wait-main"><a class="job-name" href="#">docs-site <span>/</span> preview</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/search</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="why" title="docs-site is set to low priority"><i data-i="arrow-down" class="s"></i>behind: low priority</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 30s</span><span class="moves" role="group" aria-label="Move docs-site / preview in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down" disabled><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end" disabled><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for docs-site / preview" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+</ol>
+        </section>
+      </div></section>
+      <div>
+        <p class="opened-cap">Order, opened. It hangs under the button; drawn beside the line here so both can be read.</p>
+        <section class="float" aria-label="Order of the line">
+          <div class="float-body">
+            <p class="sub-h">Rules</p>
+            <div class="rule"><i data-i="git-branch"></i><span><b id="a-r1">Main branch first</b><small>Jobs on main go ahead of other branches.</small></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="a-r1"></button></div>
+            <div class="rule"><i data-i="timer"></i><span><b id="a-r2">Shortest first</b><small>By how long a job like it usually takes.</small></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="a-r2"></button></div>
+            <div class="rule"><i data-i="repeat"></i><span><b id="a-r3">Fair turns</b><small>Projects take turns, so one project's burst does not hold up the rest.</small></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="a-r3"></button></div>
+            <div class="rule"><i data-i="hourglass"></i><span><b id="a-r4">Aging</b><small>After 10 min of waiting a job moves ahead, so nothing waits forever.</small></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="a-r4"></button></div>
+            <p class="sub-h">Project priority</p>
+            <div class="prio"><span id="a-example-app">example-app<small class="num">2 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="a-example-app"><button type="button" role="radio" aria-checked="true">High</button><button type="button" role="radio" aria-checked="false">Normal</button><button type="button" role="radio" aria-checked="false">Low</button></span></div><div class="prio"><span id="a-example-api">example-api<small class="num">1 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="a-example-api"><button type="button" role="radio" aria-checked="false">High</button><button type="button" role="radio" aria-checked="true">Normal</button><button type="button" role="radio" aria-checked="false">Low</button></span></div><div class="prio"><span id="a-example-worker">example-worker<small class="num">2 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="a-example-worker"><button type="button" role="radio" aria-checked="false">High</button><button type="button" role="radio" aria-checked="true">Normal</button><button type="button" role="radio" aria-checked="false">Low</button></span></div><div class="prio"><span id="a-docs-site">docs-site<small class="num">2 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="a-docs-site"><button type="button" role="radio" aria-checked="false">High</button><button type="button" role="radio" aria-checked="false">Normal</button><button type="button" role="radio" aria-checked="true">Low</button></span></div>
+          </div>
+          <footer class="float-foot"><p>Applies to the line at once. A job you move by hand stays where you put it.</p></footer>
+        </section>
+      </div>
+    </div><ul class="notes"><li><b>Opens from</b>An Order button in the heading of the waiting line, the thing it changes. Also reachable from Queue actions.</li><li><b>Reason on a row</b>A second line in plain words under the name, with the rule's icon: "ahead: main first".</li><li><b>Costs</b>Every row is one line taller, and the rules have no visible ranking: which wins when two apply is not shown.</li></ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">An Order page</h2>
+      <p class="opt-idea">Order becomes a page of its own. The rules are a ladder, strongest first, that you can switch and re-rank; beside it the projects; under both, the line as these rules leave it, each row with its reason in a column.</p></div>
+    <div class="stage">
+      <section class="panel" aria-label="Order, option B"><div class="panel-body">
+        <div class="tabs" role="tablist" aria-label="Pages"><button role="tab" type="button" aria-selected="false">Queue</button><button role="tab" type="button" aria-selected="false">Machines</button><button role="tab" type="button" aria-selected="false">Statistics</button><button role="tab" type="button" aria-selected="false">History</button><button role="tab" type="button" aria-selected="true">Order</button></div>
+        <div class="order-page">
+          <div>
+            <p class="sub-h">Rules, strongest first</p>
+            <ol class="ladder">
+              <li class=""><span class="n">1</span><i data-i="hand"></i><span><b id="b-r0">By hand</b><small>A job you move with the arrows stays where you put it.</small></span><span class="ctl"><span class="mark" role="img" aria-label="Always on" title="Always on, always first"><i data-i="lock" class="s"></i></span></span></li>
+              <li class=""><span class="n">2</span><i data-i="hourglass"></i><span><b id="b-r1">Aging</b><small>A job that waited over 10 min goes next, so nothing waits forever.</small></span><span class="ctl"><span class="moves" role="group" aria-label="Rank of Aging"><button class="icon-btn" type="button" aria-label="Rank higher" title="Rank higher"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Rank lower" title="Rank lower"><i data-i="chevron-down"></i></button></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-r1"></button></span></li>
+              <li class=""><span class="n">3</span><i data-i="flag"></i><span><b id="b-r2">Project priority</b><small>High before normal before low.</small></span><span class="ctl"><span class="moves" role="group" aria-label="Rank of Project priority"><button class="icon-btn" type="button" aria-label="Rank higher" title="Rank higher"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Rank lower" title="Rank lower"><i data-i="chevron-down"></i></button></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-r2"></button></span></li>
+              <li class=""><span class="n">4</span><i data-i="git-branch"></i><span><b id="b-r3">Main branch first</b><small>Jobs on main go ahead of other branches.</small></span><span class="ctl"><span class="moves" role="group" aria-label="Rank of Main branch first"><button class="icon-btn" type="button" aria-label="Rank higher" title="Rank higher"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Rank lower" title="Rank lower"><i data-i="chevron-down"></i></button></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-r3"></button></span></li>
+              <li class=""><span class="n">5</span><i data-i="repeat"></i><span><b id="b-r4">Fair turns</b><small>Projects take turns, so one burst does not hold up the rest.</small></span><span class="ctl"><span class="moves" role="group" aria-label="Rank of Fair turns"><button class="icon-btn" type="button" aria-label="Rank higher" title="Rank higher"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Rank lower" title="Rank lower"><i data-i="chevron-down"></i></button></span><button class="switch" type="button" role="switch" aria-checked="true" aria-labelledby="b-r4"></button></span></li>
+              <li class="is-off"><span class="n">6</span><i data-i="timer"></i><span><b id="b-r5">Shortest first</b><small>By how long a job like it usually takes. Off: in order of arrival.</small></span><span class="ctl"><span class="moves" role="group" aria-label="Rank of Shortest first"><button class="icon-btn" type="button" aria-label="Rank higher" title="Rank higher"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Rank lower" title="Rank lower"><i data-i="chevron-down"></i></button></span><button class="switch" type="button" role="switch" aria-checked="false" aria-labelledby="b-r5"></button></span></li>
+            </ol>
+          </div>
+          <div>
+            <p class="sub-h">Project priority</p>
+            <div class="prio"><span id="b-example-app">example-app<small class="num">2 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="b-example-app"><button type="button" role="radio" aria-checked="true">High</button><button type="button" role="radio" aria-checked="false">Normal</button><button type="button" role="radio" aria-checked="false">Low</button></span></div><div class="prio"><span id="b-example-api">example-api<small class="num">1 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="b-example-api"><button type="button" role="radio" aria-checked="false">High</button><button type="button" role="radio" aria-checked="true">Normal</button><button type="button" role="radio" aria-checked="false">Low</button></span></div><div class="prio"><span id="b-example-worker">example-worker<small class="num">2 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="b-example-worker"><button type="button" role="radio" aria-checked="false">High</button><button type="button" role="radio" aria-checked="true">Normal</button><button type="button" role="radio" aria-checked="false">Low</button></span></div><div class="prio"><span id="b-docs-site">docs-site<small class="num">2 waiting</small></span><span class="seg small" role="radiogroup" aria-labelledby="b-docs-site"><button type="button" role="radio" aria-checked="false">High</button><button type="button" role="radio" aria-checked="false">Normal</button><button type="button" role="radio" aria-checked="true">Low</button></span></div>
+          </div>
+          <div class="wide">
+            <p class="sub-h">The line under these rules</p>
+            <ol class="waits" aria-label="Waiting for the next free machine">
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 1">1</span>
+  <div class="wait-main"><a class="job-name" href="#">example-worker <span>/</span> test</a><span class="branch"><i data-i="git-branch" class="s"></i><span>fix/retry</span></span><span class="src" title="Sent from a dev machine, Linux"><i data-i="laptop" class="s"></i>Linux</span></div>
+  <div class="wait-side"><span class="why-col" title="You moved it up; it stays there"><i data-i="hand" class="s"></i>moved up by hand</span><span class="wait-time num">waiting 2m 10s</span><span class="moves" role="group" aria-label="Move example-worker / test in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front" disabled><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up" disabled><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-worker / test" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 2">2</span>
+  <div class="wait-main"><a class="job-name" href="#">example-api <span>/</span> CI</a><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="src" title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span></div>
+  <div class="wait-side"><span class="why-col" title="Jobs on main go ahead of other branches"><i data-i="git-branch" class="s"></i>main first</span><span class="wait-time num">waiting 0m 20s</span><span class="moves" role="group" aria-label="Move example-api / CI in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 3">3</span>
+  <div class="wait-main"><a class="job-name" href="#">example-app <span>/</span> check</a><span class="branch"><i data-i="git-branch" class="s"></i><span>fix/cart-total</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="why-col" title="example-app is set to high priority"><i data-i="flag" class="s"></i>high priority</span><span class="wait-time num">waiting 1m 05s</span><span class="moves" role="group" aria-label="Move example-app / check in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 4">4</span>
+  <div class="wait-main"><a class="job-name" href="#">docs-site <span>/</span> build</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/search</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="why-col" title="Aging: it waited over 10 min, so it moved up"><i data-i="hourglass" class="s"></i>waited 14 min</span><span class="wait-time num">waiting 14m 10s</span><span class="moves" role="group" aria-label="Move docs-site / build in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for docs-site / build" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 5">5</span>
+  <div class="wait-main"><a class="job-name" href="#">example-worker <span>/</span> lint</a><span class="branch"><i data-i="git-branch" class="s"></i><span>chore/deps</span></span><span class="src" title="Sent from a dev machine, Linux"><i data-i="laptop" class="s"></i>Linux</span></div>
+  <div class="wait-side"><span class="why-col" title="No rule applies; first come, first served"><i data-i="clock" class="s"></i>in order of arrival</span><span class="wait-time num">waiting 0m 50s</span><span class="moves" role="group" aria-label="Move example-worker / lint in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-worker / lint" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 6">6</span>
+  <div class="wait-main"><a class="job-name" href="#">example-app <span>/</span> e2e</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="why-col" title="Projects take turns; example-app had the last one"><i data-i="repeat" class="s"></i>fair turn</span><span class="wait-time num">waiting 0m 58s</span><span class="moves" role="group" aria-label="Move example-app / e2e in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-app / e2e" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="pos num" aria-label="Position 7">7</span>
+  <div class="wait-main"><a class="job-name" href="#">docs-site <span>/</span> preview</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/search</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="why-col" title="docs-site is set to low priority"><i data-i="arrow-down" class="s"></i>low priority</span><span class="wait-time num">waiting 0m 30s</span><span class="moves" role="group" aria-label="Move docs-site / preview in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down" disabled><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end" disabled><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for docs-site / preview" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+</ol>
+          </div>
+        </div>
+      </div></section>
+    </div><ul class="notes"><li><b>Opens from</b>Order in the header, beside Queue, Machines, Statistics and History. The Queue tab shows the same reason column.</li><li><b>Reason on a row</b>A column of its own before the time, icon and two or three words, so reasons line up and can be scanned.</li><li><b>Costs</b>A whole page for six switches, and re-ranking rules is power few owners will want; the queue itself is one click away.</li></ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">In place</h2>
+      <p class="opt-idea">Nothing new opens. The rules are four toggles above the line, a project's priority is three items in the menu a row already has, and each row shows its reason as one icon beside its number.</p></div>
+    <div class="stage with-side">
+      <section class="panel" aria-label="Jobs, option C"><header class="panel-head strong"><h3>Jobs</h3></header><div class="panel-body stack loose">
+        <div class="tabs" role="tablist" aria-label="Job views"><button role="tab" type="button" aria-selected="true">Queue<span class="count num">9</span></button><button role="tab" type="button" aria-selected="false">Failed<span class="count num">2</span></button><button role="tab" type="button" aria-selected="false">Passed<span class="count num">38</span></button><button role="tab" type="button" aria-selected="false">Recent<span class="count num">40</span></button></div>
+        <section class="lane" aria-label="Next free machine">
+          <div class="lane-head"><strong>Next free machine</strong><span class="lane-note num">7 waiting</span></div>
+          <div class="chips" role="group" aria-label="Order rules">
+            <button class="btn" type="button" data-toggle aria-pressed="true" title="Jobs on main go ahead of other branches"><i data-i="git-branch" class="s"></i>Main first</button>
+            <button class="btn" type="button" data-toggle aria-pressed="true" title="By how long a job like it usually takes"><i data-i="timer" class="s"></i>Shortest first</button>
+            <button class="btn" type="button" data-toggle aria-pressed="true" title="Projects take turns"><i data-i="repeat" class="s"></i>Fair turns</button>
+            <button class="btn" type="button" data-toggle aria-pressed="true" title="After 10 min of waiting a job moves ahead"><i data-i="hourglass" class="s"></i>Aging</button>
+          </div>
+          <ol class="waits" aria-label="Waiting for the next free machine">
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 1">1</span><span class="why-mark" role="img" aria-label="moved up by hand" title="moved up by hand"><i data-i="hand" class="s"></i></span></span>
+  <div class="wait-main"><a class="job-name" href="#">example-worker <span>/</span> test</a><span class="branch"><i data-i="git-branch" class="s"></i><span>fix/retry</span></span><span class="src" title="Sent from a dev machine, Linux"><i data-i="laptop" class="s"></i>Linux</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 2m 10s</span><span class="moves" role="group" aria-label="Move example-worker / test in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front" disabled><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up" disabled><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-worker / test" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 2">2</span><span class="why-mark" role="img" aria-label="ahead: main first" title="ahead: main first"><i data-i="git-branch" class="s"></i></span><span class="tip" role="tooltip">ahead: main first</span></span>
+  <div class="wait-main"><a class="job-name" href="#">example-api <span>/</span> CI</a><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="src" title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 20s</span><span class="moves" role="group" aria-label="Move example-api / CI in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 3">3</span><span class="why-mark" role="img" aria-label="ahead: high priority" title="ahead: high priority"><i data-i="flag" class="s"></i></span></span>
+  <div class="wait-main"><a class="job-name" href="#">example-app <span>/</span> check</a><span class="branch"><i data-i="git-branch" class="s"></i><span>fix/cart-total</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 1m 05s</span><span class="moves" role="group" aria-label="Move example-app / check in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-expanded="true" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 4">4</span><span class="why-mark" role="img" aria-label="ahead: waited 14 min" title="ahead: waited 14 min"><i data-i="hourglass" class="s"></i></span></span>
+  <div class="wait-main"><a class="job-name" href="#">docs-site <span>/</span> build</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/search</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 14m 10s</span><span class="moves" role="group" aria-label="Move docs-site / build in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for docs-site / build" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 5">5</span><span class="why-mark" role="img" aria-label="ahead: shortest, usually 40 s" title="ahead: shortest, usually 40 s"><i data-i="timer" class="s"></i></span></span>
+  <div class="wait-main"><a class="job-name" href="#">example-worker <span>/</span> lint</a><span class="branch"><i data-i="git-branch" class="s"></i><span>chore/deps</span></span><span class="src" title="Sent from a dev machine, Linux"><i data-i="laptop" class="s"></i>Linux</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 50s</span><span class="moves" role="group" aria-label="Move example-worker / lint in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-worker / lint" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 6">6</span><span class="why-mark" role="img" aria-label="fair turn: after example-worker" title="fair turn: after example-worker"><i data-i="repeat" class="s"></i></span></span>
+  <div class="wait-main"><a class="job-name" href="#">example-app <span>/</span> e2e</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 58s</span><span class="moves" role="group" aria-label="Move example-app / e2e in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down"><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end"><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for example-app / e2e" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+<li class="wait-row">
+  <span class="lead"><span class="pos num" aria-label="Position 7">7</span><span class="why-mark" role="img" aria-label="behind: low priority" title="behind: low priority"><i data-i="arrow-down" class="s"></i></span></span>
+  <div class="wait-main"><a class="job-name" href="#">docs-site <span>/</span> preview</a><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/search</span></span><span class="src" title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span></div>
+  <div class="wait-side"><span class="wait-time num">waiting 0m 30s</span><span class="moves" role="group" aria-label="Move docs-site / preview in line"><button class="icon-btn" type="button" aria-label="Move to the front" title="Move to the front"><i data-i="chevrons-up"></i></button><button class="icon-btn" type="button" aria-label="Move up" title="Move up"><i data-i="chevron-up"></i></button><button class="icon-btn" type="button" aria-label="Move down" title="Move down" disabled><i data-i="chevron-down"></i></button><button class="icon-btn" type="button" aria-label="Move to the end" title="Move to the end" disabled><i data-i="chevrons-down"></i></button></span><button class="icon-btn" type="button" aria-haspopup="menu" aria-label="Actions for docs-site / preview" title="Actions"><i data-i="ellipsis"></i></button></div>
+</li>
+</ol>
+        </section>
+      </div></section>
+      <div>
+        <p class="opened-cap">The three dots of row 3, opened: the menu it has today, and the project's priority added to it.</p>
+        <div class="menu" role="menu" aria-label="Actions for example-app / check">
+          <button class="menu-item" type="button" role="menuitem"><i data-i="pause"></i><b>Pause</b><small>Keep its place, start it later.</small></button>
+          <button class="menu-item" type="button" role="menuitem"><i data-i="zap"></i><b>Boost</b><small>More CPU and disk once it runs.</small></button>
+          <button class="menu-item" type="button" role="menuitem"><i data-i="ban"></i><b>Cancel</b><small>Take it out of the line.</small></button>
+          <div class="menu-sep"></div>
+          <p class="menu-h">Priority of example-app</p>
+          <button class="menu-item" type="button" role="menuitem"><i data-i="flag"></i><b>High</b><span class="end" role="img" aria-label="Chosen"><i data-i="check"></i></span><small>Its jobs go ahead of other projects.</small></button>
+          <button class="menu-item" type="button" role="menuitem"><i data-i="equal"></i><b>Normal</b><small>In line with the rest.</small></button>
+          <button class="menu-item" type="button" role="menuitem"><i data-i="arrow-down"></i><b>Low</b><small>Its jobs wait until the others are through.</small></button>
+        </div>
+      </div>
+    </div><ul class="notes"><li><b>Opens from</b>Nowhere: the toggles sit on the line, and priority is in the three dots of any job of that project, waiting or running.</li><li><b>Reason on a row</b>One icon beside the position, the words in its tooltip (row 2 shows it). Rows keep the height they have today.</li><li><b>Costs</b>The reason is an icon to learn before it reads, and a project's priority can only be found through one of its jobs.</li></ul>
+  </section>
+</div>
+<script src="mockups-2026-11-13.js"></script>
+</body>
+</html>

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.14.5 - 2026-11-13 - patch
+- Mockups (docs/design-system/mockups-2026-11-13.html): node settings, download progress on a job card and queue order, three options each, drawn by a Fable subagent and reviewed by Sol. The user picked node settings C (suggested and yours), download progress A (a second meter) and queue order A (an Order button on the line).
+
 ## 1.14.4 - 2026-11-13 - patch
 - Design system: a switch, a segmented choice, a number stepper, an anchored panel and a window, with `--shadow-2` now under every floating surface, not menus alone (the user's agreement), for the node settings and queue order screens.
 

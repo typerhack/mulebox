@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: download progress</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="mockups-2026-11-13.css">
+<style>
+/* Only what this page lays out; every value is a token or a size named in the shared file. */
+.groups { display: grid; gap: var(--space-4) var(--space-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--col-l) * 2)), 1fr)); margin-top: var(--space-3); }
+.groups > div { display: grid; gap: var(--space-2); align-content: start; min-width: 0; }
+.dl-note { display: flex; flex-wrap: wrap; align-items: center; gap: 0 var(--space-2); color: var(--text-2); font-size: var(--text-sm); }
+.dl-note > svg { color: var(--text-2); }
+.dl-note b { color: var(--text-1); font-weight: 500; }
+.dl-note.stall > svg { color: var(--status-warning); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.warn-i { color: var(--status-warning); stroke-width: calc(var(--icon-stroke) + 0.25); }
+/* A: a download with no known total has a track with no end. */
+.track-open { height: 0; border-top: var(--hair) dashed var(--border-strong); }
+/* B: the speed of the last two minutes. */
+.spark-row { display: flex; align-items: center; gap: var(--space-2); }
+.spark { flex: 1 1 auto; min-width: 0; height: var(--ctl-s); display: block; overflow: visible; }
+.spark path, .spark polyline { vector-effect: non-scaling-stroke; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.spark .base { stroke: var(--border-strong); stroke-width: 1px; }
+.spark .area { fill: var(--graph-fill); stroke: none; }
+.spark .line { stroke: var(--graph-line); stroke-width: var(--hair); }
+.spark .flat { stroke: var(--status-warning); stroke-width: calc(var(--hair) * 1.5); }
+.spark-row > .rate { font-size: var(--text-sm); font-weight: 600; display: inline-flex; align-items: center; gap: var(--space-1); }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Download progress</h1>
+        <p class="doc-lead">Behind a slow VPN a job that restores a cache or installs packages sits at 0.0 cores for minutes and looks hung. The running card should say it is downloading, how far and how fast, and tell slow apart from stalled. Each option shows an agent's job (no total known) and a GitHub CI run (total known), in the running list as it is today.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, a second meter</a><a href="#b">B, speed trace</a><a href="#c">C, one sentence</a>
+      <a href="mockups-2026-11-13.html">All mockups of 2026-11-13</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">A second meter</h2>
+      <p class="opt-idea">Under Cores, a Down meter in the same grammar: it fills when the total is known, has an open track when it is not, and turns amber when the bytes stop.</p></div>
+    <div class="stage"><section class="panel" aria-label="Running on build-1, option A"><div class="panel-body">
+      <div class="lane-head"><strong>build-1</strong><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><span class="lane-note num">2 running</span></div>
+      <div class="groups">
+        <div><h3 class="col-h">Downloading, slowly</h3><div class="run-cards">
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-app <span>/</span> check</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="job-id">7f3a9c1</span></span>
+    <span class="meta"><span title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="cut" title="Installing packages"><span>Installing packages</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 12s of usually 4m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:4%"><i></i></span><span class="num">0.3</span></div>
+    <div class="meter-row"><span>Down</span><span class="track-open" title="The total is not known"></span><span class="num">18 MB so far</span></div>
+    <p class="dl-note"><span>pnpm install, <span class="num">0.4 MB/s</span></span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-api <span>/</span> CI</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="job-id">c41d7e2</span></span>
+    <span class="meta"><span title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="cut" title="Run actions/setup-node@v4"><span>Run actions/setup-node@v4</span><i data-i="copy" class="s copy"></i></span><span class="num">0m 48s of usually 3m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <div class="meter-row"><span>Down</span><span class="meter" style="--v:29%"><i></i></span><span class="num">12 of 41 MB</span></div>
+    <p class="dl-note"><span>Restoring npm cache, <span class="num">0.6 MB/s</span></span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+        </div></div>
+        <div><h3 class="col-h">The same two jobs, 45 s after the last byte</h3><div class="run-cards">
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-app <span>/</span> check</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="job-id">7f3a9c1</span></span>
+    <span class="meta"><span title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="cut" title="Installing packages"><span>Installing packages</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 57s of usually 4m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <div class="meter-row"><span>Down</span><span class="track-open" title="The total is not known"></span><span class="num">18 MB so far</span></div>
+    <p class="dl-note stall"><i data-i="triangle-alert" class="s"></i><b>No bytes for 45 s</b><span>pnpm install</span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-api <span>/</span> CI</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="job-id">c41d7e2</span></span>
+    <span class="meta"><span title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="cut" title="Run actions/setup-node@v4"><span>Run actions/setup-node@v4</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 33s of usually 3m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <div class="meter-row"><span>Down</span><span class="meter" data-level="warn" style="--v:29%"><i></i></span><span class="num">12 of 41 MB</span></div>
+    <p class="dl-note stall"><i data-i="triangle-alert" class="s"></i><b>No bytes for 45 s</b><span>Restoring npm cache</span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+        </div></div>
+      </div>
+    </div></section></div>
+    <ul class="notes"><li><b>Reads as</b>Cores at 0.0 with Down moving is a download; both at rest is a stall. No new shape to learn.</li><li><b>Stall</b>The fill stops where it was and turns to the warning colour, with the warning icon and the seconds since the last byte.</li><li><b>Costs</b>A card grows by two lines while it downloads, and a download with no total has a track that cannot fill.</li></ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">Speed trace</h2>
+      <p class="opt-idea">A small line of the last two minutes of speed: slow is a low line that keeps moving, stalled is a line that fell flat.</p></div>
+    <div class="stage"><section class="panel" aria-label="Running on build-1, option B"><div class="panel-body">
+      <div class="lane-head"><strong>build-1</strong><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><span class="lane-note num">2 running</span></div>
+      <div class="groups">
+        <div><h3 class="col-h">Downloading, slowly</h3><div class="run-cards">
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-app <span>/</span> check</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="job-id">7f3a9c1</span></span>
+    <span class="meta"><span title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="cut" title="Installing packages"><span>Installing packages</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 12s of usually 4m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:4%"><i></i></span><span class="num">0.3</span></div>
+    <div class="spark-row"><svg class="spark" viewBox="0 0 120 28" preserveAspectRatio="none" role="img" aria-label="Speed of the last 2 minutes: steady"><title>Speed of the last 2 minutes: steady</title><path class="base" d="M0 26.5H120"/><polyline class="area" points="0,26 0,18 8,15 16,19 24,16 32,17 40,14 48,18 56,17 64,15 72,19 80,16 88,18 96,15 104,17 112,16 120,16 120,26"/><polyline class="line" points="0,18 8,15 16,19 24,16 32,17 40,14 48,18 56,17 64,15 72,19 80,16 88,18 96,15 104,17 112,16 120,16"/></svg><span class="rate num"><i data-i="arrow-down" class="s"></i>0.4 MB/s</span></div>
+    <p class="dl-note"><span>pnpm install, <span class="num">18 MB so far</span></span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-api <span>/</span> CI</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="job-id">c41d7e2</span></span>
+    <span class="meta"><span title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="cut" title="Run actions/setup-node@v4"><span>Run actions/setup-node@v4</span><i data-i="copy" class="s copy"></i></span><span class="num">0m 48s of usually 3m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <div class="spark-row"><svg class="spark" viewBox="0 0 120 28" preserveAspectRatio="none" role="img" aria-label="Speed of the last 2 minutes: steady"><title>Speed of the last 2 minutes: steady</title><path class="base" d="M0 26.5H120"/><polyline class="area" points="0,26 0,14 8,12 16,13 24,10 32,12 40,11 48,14 56,12 64,13 72,10 80,12 88,11 96,13 104,12 112,11 120,12 120,26"/><polyline class="line" points="0,14 8,12 16,13 24,10 32,12 40,11 48,14 56,12 64,13 72,10 80,12 88,11 96,13 104,12 112,11 120,12"/></svg><span class="rate num"><i data-i="arrow-down" class="s"></i>0.6 MB/s</span></div>
+    <p class="dl-note"><span>Restoring npm cache, <span class="num">12 of 41 MB</span></span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+        </div></div>
+        <div><h3 class="col-h">The same two jobs, 45 s after the last byte</h3><div class="run-cards">
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-app <span>/</span> check</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="job-id">7f3a9c1</span></span>
+    <span class="meta"><span title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="cut" title="Installing packages"><span>Installing packages</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 57s of usually 4m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <div class="spark-row"><svg class="spark" viewBox="0 0 120 28" preserveAspectRatio="none" role="img" aria-label="Speed of the last 2 minutes: none for the last 45 seconds"><title>Speed of the last 2 minutes: none for the last 45 seconds</title><path class="base" d="M0 26.5H120"/><polyline class="area" points="0,26 0,18 8,15 16,19 24,16 32,17 40,14 48,18 56,17 64,15 72,19 75,26"/><polyline class="line" points="0,18 8,15 16,19 24,16 32,17 40,14 48,18 56,17 64,15 72,19 75,26"/><path class="flat" d="M75 26H120"/></svg><span class="rate num"><i data-i="triangle-alert" class="s warn-i"></i>0 MB/s</span></div>
+    <p class="dl-note stall"><b>No bytes for 45 s</b><span>pnpm install, stopped at 18 MB</span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-api <span>/</span> CI</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="job-id">c41d7e2</span></span>
+    <span class="meta"><span title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="cut" title="Run actions/setup-node@v4"><span>Run actions/setup-node@v4</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 33s of usually 3m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <div class="spark-row"><svg class="spark" viewBox="0 0 120 28" preserveAspectRatio="none" role="img" aria-label="Speed of the last 2 minutes: none for the last 45 seconds"><title>Speed of the last 2 minutes: none for the last 45 seconds</title><path class="base" d="M0 26.5H120"/><polyline class="area" points="0,26 0,13 8,10 16,12 24,11 32,14 40,12 48,13 56,10 64,12 72,13 75,26"/><polyline class="line" points="0,13 8,10 16,12 24,11 32,14 40,12 48,13 56,10 64,12 72,13 75,26"/><path class="flat" d="M75 26H120"/></svg><span class="rate num"><i data-i="triangle-alert" class="s warn-i"></i>0 MB/s</span></div>
+    <p class="dl-note stall"><b>No bytes for 45 s</b><span>Restoring npm cache, stopped at 12 of 41 MB</span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+        </div></div>
+      </div>
+    </div></section></div>
+    <ul class="notes"><li><b>Reads as</b>The shape tells slow from stalled before any number is read, and works the same with or without a total.</li><li><b>Stall</b>The line drops to the floor and the flat stretch is drawn in the warning colour, as long as the stall has lasted.</li><li><b>Costs</b>The tallest card, a speed history per job to keep, and a third moving thing on the page.</li></ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">One sentence</h2>
+      <p class="opt-idea">No new part: a line of words under Cores says what is downloading, how far and how fast, and becomes a warning line when it stalls.</p></div>
+    <div class="stage"><section class="panel" aria-label="Running on build-1, option C"><div class="panel-body">
+      <div class="lane-head"><strong>build-1</strong><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><span class="lane-note num">2 running</span></div>
+      <div class="groups">
+        <div><h3 class="col-h">Downloading, slowly</h3><div class="run-cards">
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-app <span>/</span> check</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="job-id">7f3a9c1</span></span>
+    <span class="meta"><span title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="cut" title="Installing packages"><span>Installing packages</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 12s of usually 4m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:4%"><i></i></span><span class="num">0.3</span></div>
+    <p class="dl-note"><i data-i="download" class="s"></i><b>pnpm install</b><span class="num">18 MB so far, 0.4 MB/s</span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-api <span>/</span> CI</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="job-id">c41d7e2</span></span>
+    <span class="meta"><span title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="cut" title="Run actions/setup-node@v4"><span>Run actions/setup-node@v4</span><i data-i="copy" class="s copy"></i></span><span class="num">0m 48s of usually 3m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <p class="dl-note"><i data-i="download" class="s"></i><b>Restoring npm cache</b><span class="num">12 of 41 MB, 0.6 MB/s</span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+        </div></div>
+        <div><h3 class="col-h">The same two jobs, 45 s after the last byte</h3><div class="run-cards">
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-app <span>/</span> check</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>feat/checkout-form</span></span><span class="job-id">7f3a9c1</span></span>
+    <span class="meta"><span title="Sent from a dev machine, macOS"><i data-i="laptop" class="s"></i>macOS</span><span class="cut" title="Installing packages"><span>Installing packages</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 57s of usually 4m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <p class="dl-note stall"><i data-i="triangle-alert" class="s"></i><b>No bytes for 45 s</b><span>pnpm install, <span class="num">18 MB so far</span></span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-app / check" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+<article class="job-card">
+  <span class="st" data-state="running" role="img" aria-label="Running" title="Running"><i data-i="loader-circle" class="l"></i></span>
+  <div class="job-main">
+    <a class="job-name" href="#">example-api <span>/</span> CI</a>
+    <span class="row"><span class="branch"><i data-i="git-branch" class="s"></i><span>main</span></span><span class="job-id">c41d7e2</span></span>
+    <span class="meta"><span title="A GitHub CI run"><i data-i="workflow" class="s"></i>CI</span><span class="cut" title="Run actions/setup-node@v4"><span>Run actions/setup-node@v4</span><i data-i="copy" class="s copy"></i></span><span class="num">1m 33s of usually 3m</span></span>
+    <div class="meter-row"><span>Cores</span><span class="meter" style="--v:0%"><i></i></span><span class="num">0.0</span></div>
+    <p class="dl-note stall"><i data-i="triangle-alert" class="s"></i><b>No bytes for 45 s</b><span>Restoring npm cache, <span class="num">12 of 41 MB</span></span></p>
+  </div>
+  <div class="job-side"><button class="icon-btn" type="button" aria-label="Actions for example-api / CI" title="Actions"><i data-i="ellipsis"></i></button></div>
+</article>
+        </div></div>
+      </div>
+    </div></section></div>
+    <ul class="notes"><li><b>Reads as</b>The sentence the user asked for, in the place the card already has for a note; the card grows by one line.</li><li><b>Stall</b>The download icon gives way to the warning icon and "No bytes for 45 s", in the style of "Needs an answer".</li><li><b>Costs</b>Nothing to see at a glance across many cards: every state is read, not seen.</li></ul>
+  </section>
+</div>
+<script src="mockups-2026-11-13.js"></script>
+</body>
+</html>
