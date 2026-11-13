@@ -532,7 +532,7 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       held by drill jobs, a real CI run's waiting slot sat at #2 behind a drill job; its up arrow
       put it at #1, and when a slot came free it started ahead of the job that had queued first.
 
-- [~] M14.15 Queue order settings on the dashboard (the user's ask, 2026-11-13): the order rules of
+- [x] M14.15 Queue order settings on the dashboard (the user's ask, 2026-11-13): the order rules of
       M23.3 and M24.4 (project levels, branch levels, GitHub runs' level, aging, fair turns, shortest
       first) shown and set from the page, and each waiting row's `place_reason`, on
       `GET|POST /api/queue/rules` (interfaces-m2.md). Mockups to pick from first. Done when: a rule set
@@ -542,7 +542,11 @@ Decided by the user on 2026-11-05: the Jobs box comes before more project adopti
       tests, and seen with stand-in data at 390 and 1440 px in both themes in headless Chrome.
       1.17.4, from Sol's review: no edit lost to a save, another viewer's change kept, answers in
       order, a read every 5 s while open, and one panel that stays open when its lane goes.
-      Open: on the real dashboard in Edge.
+      Done 2026-11-13 (1.17.4) on the deployed dashboard in the browser at 544 px: with two drill
+      projects of two jobs each and both slots busy, one project set to High in the panel and saved
+      (Unsaved, then "Saved"); its two jobs moved ahead, their rows saying "ahead: project high",
+      the other's "in order of arrival". The rules were reset to the defaults and the drill removed.
+      Found there and fixed 1.17.6: after Save the focus dropped to the page, so Escape did nothing.
 
 - [x] M14.4 The live job page tells a quiet job from a dead page. Reported 2026-11-06 from a real project
       whose gate prints nothing until it ends. Done 2026-11-06 (0.65.0): in real Edge beside a real job, it

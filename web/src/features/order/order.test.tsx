@@ -142,6 +142,21 @@ describe("the Order panel", () => {
     await waitFor(() => expect(sent(fetched)?.body).toEqual({ rules: { branches: { "release/*": -1 }, aging_min: 35 } }));
   });
 
+  it("keeps the focus in the panel once Save turns disabled, so Escape still closes it", async () => {
+    serve(rules(), rules({ fair_turns: true }));
+    tokenStore.set("tok");
+    const panel = await openPanel();
+    fireEvent.click(within(panel).getByRole("switch", { name: "Fair turns" }));
+    const save = within(panel).getByRole("button", { name: "Save" });
+    save.focus();
+    fireEvent.click(save);
+    save.blur();  // a browser drops the focus to the page as Save turns disabled; jsdom keeps it
+    await within(panel).findByText("Saved. The line follows these rules now.");
+    await waitFor(() => expect(panel.contains(document.activeElement)).toBe(true));
+    fireEvent.keyDown(document.activeElement as Element, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("closes on Escape and gives the focus back to its button", async () => {
     serve(rules());
     tokenStore.set("tok");

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.6 - 2026-11-13 - patch
+- A floating panel keeps the focus when its focused control turns disabled (`ui/Float.tsx`): after Save in the Order panel the focus dropped to the page, so Escape no longer closed it (seen on the deployed dashboard). Roadmap: M14.15 done, a project level set in the panel reordered a real line on the node with each row saying why.
+
 ## 1.17.5 - 2026-11-13 - patch
 - Dashboard, two things the user said of the deployed page on 2026-11-13.
 - The All machines table: "small tweak needed: the table row, everything too stuck at the sides". The first and the last cell of a row, header included, now keep 12 px (`--space-3`) from the row's edges, so the shaded row of the shown machine no longer has its name and its buttons on its border. In `.data-table`, so the Statistics breakdown has the same; History uses no table. Stacked cards under 1100 px are as before.
