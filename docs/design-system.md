@@ -143,7 +143,8 @@ One radius per level, stepped by size:
 
 - Hairlines separate: 1px `--border` around panels and between rows, 1px `--border-strong`
   around anything you can press. Cards are one tone off the panel (`--surface-2`) with a hairline.
-- No shadows, except `--shadow-2` under a menu, the one thing that floats above the page.
+- No shadows, except `--shadow-2` under what floats above the page: a menu, a panel opened from a
+  button, and a window (the user's agreement, 2026-11-13).
 
 ## Motion
 
@@ -180,6 +181,15 @@ Drawn in the specimen, in both themes:
 - Waiting row: position, name, branch, time waited, the four move arrows as one group, three dots.
 - Warning strip (amber) and danger strip (red), each with its fix.
 - Tooltip, empty state.
+- Settings controls (the user's agreement, 2026-11-13, for node settings and queue order): a
+  switch (on in `--accent`, a visible label beside it, 44px touch target), a segmented choice (one
+  of a few, such as High, Normal, Low; the chosen part in `--accent`, arrow keys move between
+  parts), and a number stepper (minus, value in mono, plus; typed values allowed, out-of-range
+  refused with the range said).
+- Floating surfaces: a panel opened from a button (anchored to it) and a window (centred, page
+  dimmed behind). Both `--surface` with a hairline and `--shadow-2`, dialog semantics, Escape and a
+  close button, focus moves in on open and back to the opener on close. A change is "Unsaved" until
+  Save, and "Pending" only after Save while a node has yet to take it.
 - A line longer than its box, such as a GitHub step on a job card (the user's ask, 2026-11-12):
   cut with an ellipsis, the whole text in its tooltip, and a small quiet copy button beside it,
   in `--ink-3` until hovered (`web/src/ui/Copy.tsx`). Over plain HTTP, where browsers give a

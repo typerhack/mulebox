@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.14.4 - 2026-11-13 - patch
+- Design system: a switch, a segmented choice, a number stepper, an anchored panel and a window, with `--shadow-2` now under every floating surface, not menus alone (the user's agreement), for the node settings and queue order screens.
+
 ## 1.14.3 - 2026-11-13 - patch
 - CI: `SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1` for the whole workflow (M23.11, first step): over the node's slow VPN link a GitHub cache restore in setup-python or setup-node stalled for actions/cache's default 10 minutes at 0% CPU; now it gives up on the cache in a minute and installs without it. A test keeps it. The node's traffic keeps the VPN (the user's call).
 
