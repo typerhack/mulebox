@@ -14,11 +14,16 @@ is measured, its network traffic. `reading` gives one dict, or None when nothing
   isolated runner's container), `machine` when it is the whole node's, which a VPN and a desktop
   keep busy, so it never decides anything here;
 - `waiting_on_network`: the job's CPU is under a tenth of a core, so the wait is the network;
-- `quiet_s` and `stalled`: how long no byte moved, and whether that is STALL_S or more. From the
-  job's own traffic when it is measured, else from the printed figures; null when neither is
-  known, as for pip, which names a file and its size and nothing after.
+- `quiet_s` and `stalled`: how long no byte moved, and whether that is STALL_S or more. Any byte,
+  in the job's own traffic (when it is measured) or in the printed figures, counts as moving: a
+  slow line is never called stalled. Playwright prints only every tenth, so its figures alone
+  call a stall only past twice the longest gap seen between its lines, and nothing before the
+  first gap. Null when nothing is known, as for pip, which names a file and its size and nothing
+  after.
 
-A download belongs to its step: a new step forgets it. One that reached its total has ended.
+A download belongs to its step: a new step forgets it. One that reached its total, or whose
+named end line came (an end names its download where the tool prints one), has ended, and image
+layers end when pullnoise.py says every layer has its data, before the extraction.
 """
 
 from __future__ import annotations
@@ -32,13 +37,14 @@ from mulebox.common.status import number
 STALL_S = 60.0
 RATE_WINDOW_S = 60.0
 IDLE_CPU_PCT = 10.0  # coordinator/attendance.py and web/src/lib/quiet.ts draw the same line
-MOVING_BYTES_S = 4 * 1024.0  # the job's own traffic above this moves bytes (job_meter.py's line)
 NETWORK_BYTES_S = 16 * 1024.0  # above this, with no line and an idle CPU, it is a download
 KEYS = ("what", "name", "step", "done_bytes", "total_bytes", "rate_bytes_s", "as_of_s",
         "net_bytes_s", "net_scope", "waiting_on_network", "quiet_s", "stalled")
 SCOPES = ("job", "machine")
 MAX_TEXT = 200
 MAX_POINTS = 512  # a busy pnpm prints many lines a second
+COARSE = (dl.BROWSER,)  # tools that print their progress in large steps
+GAPS = 2.0  # a coarse download is stalled past this many times its longest gap
 
 
 class _Item:
@@ -48,6 +54,8 @@ class _Item:
         self.total: int | None = None
         self.seen_at = self.started_at = at
         self.moved_at: float | None = None
+        self.coarse = what in COARSE
+        self.longest_gap: float | None = None  # between printed advances
         self.points: deque[tuple[float, int]] = deque(maxlen=MAX_POINTS)
 
     def progress(self, done: int | None, total: int | None, at: float) -> None:
@@ -57,6 +65,8 @@ class _Item:
         if done is None:
             return
         if done > (self.done or 0):
+            gap = at - (self.moved_at if self.moved_at is not None else self.started_at)
+            self.longest_gap = max(gap, self.longest_gap or 0.0)
             self.moved_at = at
         self.done = max(done, self.done or 0)
         self.points.append((at, self.done))
@@ -66,6 +76,13 @@ class _Item:
     @property
     def finished(self) -> bool:
         return self.done is not None and self.total is not None and self.done >= self.total
+
+    def named(self, name: str | None) -> bool:
+        """Whether an end line naming `name` is this download's (uv's `torch` ends pip's
+        `torch-2.5.1-...whl` too); an end with no name is any download's of its kind."""
+        if name is None or self.name is None:
+            return True
+        return self.name == name or self.name.startswith(name + "-")
 
     def rate(self) -> float | None:
         if len(self.points) < 2 or self.points[-1][0] <= self.points[0][0]:
@@ -98,7 +115,7 @@ class DownloadWatch:
         item = self._item
         same = item is not None and item.what == seen.what
         if seen.kind == dl.END:
-            if same:
+            if same and item.named(seen.name):
                 self._item = None
             return
         if seen.kind == dl.START or item is None or not same or \
@@ -115,12 +132,19 @@ class DownloadWatch:
         if self._item is None or self._item.what != dl.IMAGE:
             self._item = _Item(dl.IMAGE, None, at)
         self._item.progress(done, total, at)
+        if self._item.finished:
+            self._item = None
+
+    def image_done(self) -> None:
+        """Every image layer seen has its data: what follows is extraction, not a download."""
+        if self._item is not None and self._item.what == dl.IMAGE:
+            self._item = None
 
     def _own_quiet(self, now: float, net_bytes_s: float) -> float:
-        """Seconds the job's own traffic has stayed under MOVING_BYTES_S."""
+        """Seconds the job's own traffic has read zero: any byte moves."""
         if self._traffic_since is None:
             self._traffic_since = now
-        if net_bytes_s >= MOVING_BYTES_S:
+        if net_bytes_s > 0:
             self._traffic_moved_at = now
         return now - (self._traffic_moved_at or self._traffic_since)
 
@@ -130,18 +154,28 @@ class DownloadWatch:
         moved = item.moved_at if item.moved_at is not None else item.started_at
         return (now if self.live else item.seen_at) - moved
 
+    def _quiet(self, item: _Item, now: float, own: float | None) -> tuple[float | None, float]:
+        """How long no byte moved, and how long that may last before it is a stall."""
+        figures = self._figures_quiet(item, now)
+        if own is not None:
+            return (own if figures is None else min(own, figures)), STALL_S
+        if item.coarse:
+            if item.longest_gap is None:
+                return None, STALL_S  # one printed step says nothing about the next
+            return figures, max(STALL_S, GAPS * item.longest_gap)
+        return figures, STALL_S
+
     def reading(self, now: float, cpu_pct: float | None = None, net_bytes_s: float | None = None,
                 net_scope: str | None = None) -> dict[str, Any] | None:
         own = net_scope == "job" and net_bytes_s is not None
-        quiet = self._own_quiet(now, net_bytes_s) if own else None
+        own_quiet = self._own_quiet(now, net_bytes_s) if own else None
         idle = None if cpu_pct is None else cpu_pct < IDLE_CPU_PCT
         item = self._item
         if item is None:
             if not (own and net_bytes_s >= NETWORK_BYTES_S and idle):
                 return None  # nothing named, and no traffic of its own while it waits
             item = _Item(dl.NETWORK, None, now)
-        if quiet is None:
-            quiet = self._figures_quiet(item, now)
+        quiet, limit = self._quiet(item, now, own_quiet)
         quiet = None if quiet is None else round(max(0.0, quiet), 1)
         return {"what": item.what, "name": item.name, "step": self._step,
                 "done_bytes": item.done, "total_bytes": item.total, "rate_bytes_s": item.rate(),
@@ -149,7 +183,7 @@ class DownloadWatch:
                 "net_bytes_s": None if net_bytes_s is None else round(net_bytes_s, 1),
                 "net_scope": net_scope if net_bytes_s is not None else None,
                 "waiting_on_network": idle, "quiet_s": quiet,
-                "stalled": None if quiet is None else quiet >= STALL_S}
+                "stalled": None if quiet is None else quiet >= limit}
 
 
 def clean(value: Any) -> dict[str, Any] | None:

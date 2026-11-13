@@ -41,6 +41,7 @@ _BUILD_LAYER = re.compile(
     rf"^#\d+\s+sha256:([0-9a-f]{{12}})[0-9a-f]{{52}}\s+{_SIZE}\s*/\s*{_SIZE}\s+[\d.]+s(?:\s+done)?\s*$")
 _BUILD_EXTRACT = re.compile(r"^#\d+\s+extracting\s+sha256:[0-9a-f]{64}\s+[\d.]+s\s*$")
 _PACKAGE = re.compile(rf"^Downloading \S+: {_SIZE}\s*/\s*{_SIZE}\s*$")
+_LANDED = ("Verifying Checksum", "Download complete", "Extracting", "Pull complete", "Already exists")
 _AMOUNT = re.compile(rf"{_SIZE}(?:\s*/\s*{_SIZE})?")
 
 
@@ -48,6 +49,8 @@ class PullNoise:
     def __init__(self) -> None:
         self._layers: dict[str, int] = {}  # bytes seen per layer
         self._totals: dict[str, int] = {}  # sizes a line gave
+        self._pending: set[str] = set()  # layers whose data has yet to arrive
+        self._landed: set[str] = set()  # layers whose data is all here
         self._reported = 0  # bytes the tracker knows
         self._said = 0  # bytes the log has been told
         self._next_line = EVERY_BYTES
@@ -63,6 +66,19 @@ class PullNoise:
         if not self._layers or any(layer not in self._totals for layer in self._layers):
             return None
         return sum(self._totals.values())
+
+    @property
+    def downloading(self) -> bool:
+        """A layer is on its way: false once every layer seen has its data (complete, already
+        there, or extracting), which a long extraction follows with no byte moving."""
+        return bool(self._pending)
+
+    def _state(self, layer: str, landed: bool) -> None:
+        if landed:
+            self._pending.discard(layer)
+            self._landed.add(layer)
+        elif layer not in self._landed:
+            self._pending.add(layer)
 
     def take_new_bytes(self) -> int:
         """Bytes downloaded since the last call."""
@@ -85,8 +101,10 @@ class PullNoise:
         built = _BUILD_LAYER.match(text)
         if built:
             self._seen(built[1], _bytes(built[2], built[3]), _bytes(built[4], built[5]))
-            if "done" in text:
+            done = text.rstrip().endswith("done")
+            if done:
                 self._complete(built[1])
+            self._state(built[1], done)
             return True
         if _BUILD_EXTRACT.match(text):
             return True
@@ -100,6 +118,7 @@ class PullNoise:
                 self._seen(found[1], _bytes(amount[1], amount[2]), size)
         elif found[2] == "Download complete":
             self._complete(found[1])
+        self._state(found[1], found[2] in _LANDED)
         return True
 
     def _summary(self) -> list[str]:

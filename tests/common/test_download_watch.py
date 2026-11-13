@@ -52,8 +52,8 @@ def test_the_jobs_own_traffic_decides_the_stall_when_it_is_measured():
     found = watch.reading(T0 + 400, cpu_pct=0.2, net_bytes_s=600_000.0, net_scope="job")
     assert found["stalled"] is False and found["quiet_s"] == 0.0
     assert found["net_bytes_s"] == 600_000.0 and found["net_scope"] == "job"
-    assert watch.reading(T0 + 450, net_bytes_s=100.0, net_scope="job")["quiet_s"] == 50.0
-    assert watch.reading(T0 + 470, net_bytes_s=100.0, net_scope="job")["stalled"] is True
+    assert watch.reading(T0 + 450, net_bytes_s=0.0, net_scope="job")["quiet_s"] == 50.0
+    assert watch.reading(T0 + 470, net_bytes_s=0.0, net_scope="job")["stalled"] is True
 
 
 def test_the_machines_traffic_is_shown_and_never_decides():
@@ -109,3 +109,56 @@ def test_clean_keeps_known_keys_and_types():
         "what": "cache", "name": "x" * 200, "step": None, "done_bytes": 12, "total_bytes": None,
         "rate_bytes_s": None, "as_of_s": None, "net_bytes_s": None, "net_scope": "job",
         "waiting_on_network": None, "quiet_s": None, "stalled": None}
+
+
+def test_any_own_traffic_or_printed_progress_is_no_stall():
+    """An isolated runner at 2 KiB/s moves bytes: under any throughput line it is not stalled."""
+    watch = DownloadWatch(live=False)
+    for second in range(0, 200, 10):
+        watch.line(received(2048 * second), T0 + second)
+        found = watch.reading(T0 + second, cpu_pct=0.5, net_bytes_s=2048.0, net_scope="job")
+    assert found["stalled"] is False and found["quiet_s"] == 0.0
+    watch = DownloadWatch()
+    watch.line(received(0), T0)
+    for second in range(10, 200, 10):  # traffic reads zero, the printed bytes still advance
+        watch.line(received(2048 * second), T0 + second)
+        found = watch.reading(T0 + second, net_bytes_s=0.0, net_scope="job")
+    assert found["stalled"] is False
+
+
+def test_playwrights_tenths_are_not_a_stall_between_them():
+    """1 GiB at 1 MiB/s: a line every 102 s."""
+    watch = DownloadWatch()
+    watch.line("Downloading Chromium 131.0 (playwright build v1148) from https://cdn.example/c.zip", T0)
+    assert watch.reading(T0 + 90)["stalled"] is None  # no interval seen yet: unknown
+    watch.line("|■■■■■■■■      |  10% of 1024.0 MiB", T0 + 102)
+    assert watch.reading(T0 + 190)["stalled"] is False  # within the interval seen
+    watch.line("|■■■■■■■■      |  20% of 1024.0 MiB", T0 + 204)
+    assert watch.reading(T0 + 300)["stalled"] is False
+    assert watch.reading(T0 + 204 + 3 * 102)["stalled"] is True  # far past every interval seen
+
+
+def test_a_named_end_ends_only_its_own_download():
+    watch = DownloadWatch()
+    watch.line("Downloading a@1: 1 MB/10 MB", T0)
+    watch.line("Downloading b@1: 1 MB/10 MB", T0 + 1)
+    watch.line("Downloading a@1: 10 MB/10 MB, done", T0 + 2)
+    assert watch.reading(T0 + 2)["name"] == "b@1"
+    watch.line("Downloading torch (700.0MiB)", T0 + 3)
+    watch.line(" Downloaded numpy", T0 + 4)
+    assert watch.reading(T0 + 4)["name"] == "torch"
+    watch.line(" Downloaded torch", T0 + 5)
+    assert watch.reading(T0 + 5) is None
+    watch.line("  Downloading torch-2.5.1-cp312-cp312-manylinux1_x86_64.whl (906.4 MB)", T0 + 6)
+    watch.line(" Downloaded torch", T0 + 7)
+    assert watch.reading(T0 + 7) is None
+
+
+def test_an_image_download_ends_at_its_total_or_when_the_layers_end():
+    watch = DownloadWatch()
+    watch.step("images")
+    watch.image_bytes(100, 100, T0)
+    assert watch.reading(T0 + 70) is None
+    watch.image_bytes(50, None, T0 + 80)
+    watch.image_done()  # every layer downloaded, extraction follows
+    assert watch.reading(T0 + 200) is None

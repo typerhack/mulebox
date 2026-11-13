@@ -178,3 +178,21 @@ def test_a_package_download_leaves_only_its_last_line():
     assert kept == [[], ["Downloading next@16.4.3: 43.60 MB/43.60 MB, done\n"],
                     ["Downloading the pnpm 12.16.1 binary for linux-x64...\n"]]
     assert noise.total == 0
+
+
+def test_downloading_ends_when_every_layer_has_its_data():
+    noise = PullNoise()
+    assert noise.downloading is False
+    for line in ("9986a736f7d3 Pulling fs layer 0B", "aaaaaaaaaaaa Pulling fs layer 0B",
+                 "9986a736f7d3 Downloading 2.097MB", "9986a736f7d3 Download complete 0B"):
+        noise.line(line + "\n")
+    assert noise.downloading is True  # aaaaaaaaaaaa still to come
+    noise.line("aaaaaaaaaaaa Already exists 0B\n")
+    assert noise.downloading is False
+    noise.line("9986a736f7d3 Extracting 1.2MB\n")
+    assert noise.downloading is False
+    built = PullNoise()
+    built.line("#5 sha256:" + "ab" * 32 + " 12.3MB / 45.6MB 1.2s\n")
+    assert built.downloading is True
+    built.line("#5 sha256:" + "ab" * 32 + " 45.6MB / 45.6MB 3.0s done\n")
+    assert built.downloading is False

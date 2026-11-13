@@ -464,8 +464,14 @@ heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no p
   never decides anything, like the machine's readings in Time limits.
 - Waiting on the network: something is downloading and the job's CPU is under a tenth of a core.
   An isolated runner's own traffic with an idle CPU counts as a download with no line to name it.
-- Stalled: no byte for 60 s, by the job's own traffic where measured, else by the printed
-  figures. pip prints a file's size and nothing after, so its stall is unknown, never guessed.
+- Stalled: no byte for 60 s. Any byte counts, in the job's own traffic where measured or in
+  the printed figures, so a slow line is slow, never stalled. Playwright prints every tenth, so
+  its lines alone call a stall only past twice the longest gap seen between them, and nothing
+  before the first. pip prints a file's size and nothing after, so its stall is unknown, never
+  guessed. A download ends at its total, at its own end line (a named one ends only its
+  download), or for images when every layer has its data, before the extraction.
+- A line that only looks like progress, with figures out of reach, is no reading: the parser
+  never raises on output.
 - A download belongs to its stage or step. Not read: git's `Receiving objects`, curl and wget
   meters (they redraw one line, which a log without a terminal does not keep), Gradle and Maven.
 

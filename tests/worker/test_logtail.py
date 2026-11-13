@@ -96,3 +96,14 @@ def test_transport_failure_keeps_queue_error_reply_drops_it(tmp_path):
     tailer.note("more\n")
     tailer.send(sink)
     assert tailer.dropped and tailer.sent_all
+
+
+def test_an_image_download_ends_when_its_layers_have_their_data(tmp_path):
+    """Compose 5 gives no totals: the reading ends with the layers, not after the extraction."""
+    tailer = _tailer(tmp_path)
+    _append(tmp_path, b"9986a736f7d3 Pulling fs layer 0B\n9986a736f7d3 Downloading 2.097MB\n")
+    tailer.read_new()
+    assert tailer.download.reading(0.0)["what"] == "image"
+    _append(tmp_path, b"9986a736f7d3 Download complete 0B\n9986a736f7d3 Extracting 2.1MB\n")
+    tailer.read_new()
+    assert tailer.download.reading(0.0) is None

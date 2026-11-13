@@ -56,7 +56,7 @@ def test_package_managers():
     assert parse(pip) == Seen(dl.START, dl.PACKAGE,
                               "torch-2.5.1-cp312-cp312-manylinux1_x86_64.whl", None, 906_400_000)
     assert parse("Downloading torch (700.0MiB)").total == 700 * 1024 * 1024  # uv
-    assert parse(" Downloaded torch") == Seen(dl.END, dl.PACKAGE)
+    assert parse(" Downloaded torch").kind == dl.END
     assert parse("Installing collected packages: torch") == Seen(dl.END, dl.PACKAGE)
 
 
@@ -87,3 +87,24 @@ def test_other_lines_are_nothing_or_no_progress(line):
 
 def test_a_name_is_cut():
     assert len(parse(f"Downloading {'x' * 300}.whl (1 MB)").name) == dl.MAX_NAME
+
+
+@pytest.mark.parametrize("line", [
+    "| | 10% of ... MiB", "|■■| 10% of 1.2.3 MiB", f"|■| 50% of {'9' * 400} MiB",
+    f"Downloading next@1: {'9' * 400} MB/{'9' * 400} MB", f"Downloading torch ({'9' * 400}.5 GB)",
+    f"Received {'9' * 5000} of {'9' * 5000} (1.0%), 0.1 MBs/sec",
+    f"Cache Size: ~1 MB ({'9' * 5000} B)", "Downloading x: 1.5.5 MB/2 MB",
+])
+def test_junk_numbers_never_raise(line):
+    seen = parse(line)
+    assert seen is None or all(v is None or v < 10**30 for v in (seen.done, seen.total))
+
+
+def test_size_bytes_refuses_what_is_not_a_finite_size():
+    for number, unit in (("1e400", "MB"), ("inf", "GB"), ("nan", "B"), ("9" * 400, "TB")):
+        with pytest.raises(ValueError):
+            dl.size_bytes(number, unit)
+
+
+def test_uvs_end_keeps_the_package_name():
+    assert parse(" Downloaded torch") == Seen(dl.END, dl.PACKAGE, "torch")

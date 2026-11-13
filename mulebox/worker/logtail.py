@@ -125,6 +125,8 @@ class LogTailer:
             self.download.line(line, at)
             if fresh:
                 self.download.image_bytes(self._noise.total, self._noise.size, at)
+            if not self._noise.downloading:
+                self.download.image_done()
         return "".join(self.steps.line(piece) for piece in pieces)
 
     def _queue_text(self, text: str) -> None:
