@@ -30,7 +30,7 @@ KEPT = """\
  Image busybox:1.36.1-musl Pulling
  Image memcached:1.6.32-alpine Pulling
  Image busybox:1.36.1-musl Pulled
-mulebox: at least 4 MB of image layers downloaded
+mulebox: at least 4.1 MB of image layers downloaded
  Image memcached:1.6.32-alpine Pulled
  Network mulebox-probe-a_default Created
  Container mulebox-probe-a-a-1 Started
@@ -83,8 +83,8 @@ def test_a_long_pull_says_how_far_it_has_come():
     noise = PullNoise()
     lines = "".join(f" 0123456789ab Downloading {mb}MB\n" for mb in range(1, 250))
     said = through(noise, lines).splitlines()
-    assert said == ["mulebox: at least 100 MB of image layers downloaded",
-                    "mulebox: at least 200 MB of image layers downloaded"]
+    assert said == ["mulebox: at least 100.0 MB of image layers downloaded",
+                    "mulebox: at least 200.0 MB of image layers downloaded"]
     assert EVERY_BYTES == 100_000_000
 
 
@@ -108,7 +108,7 @@ def test_ordinary_output_is_not_touched():
 def test_the_summary_comes_at_the_end_if_nothing_follows():
     noise = PullNoise()
     through(noise, " 0123456789ab Downloading 3MB\n")
-    assert noise.flush() == ["mulebox: at least 3 MB of image layers downloaded\n"]
+    assert noise.flush() == ["mulebox: at least 3.0 MB of image layers downloaded\n"]
     assert noise.flush() == []
 
 
@@ -156,7 +156,7 @@ def test_a_stage_mark_after_a_run_of_layers_still_works(tmp_path):
     tracker.begin("images", 1.0)
     text = f" 0123456789ab Downloading 3MB\n::mulebox-step:{tracker.marker}:5:services\n"
     logged = run(tmp_path, text, tracker)
-    assert logged == "mulebox: at least 3 MB of image layers downloaded\n"
+    assert logged == "mulebox: at least 3.0 MB of image layers downloaded\n"
     rows = tracker.pending()
     assert [row["stage"] for row in rows] == ["images", "services"]
     assert rows[0]["bytes_downloaded"] == 3_000_000 and rows[1]["bytes_downloaded"] is None

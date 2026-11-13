@@ -32,6 +32,7 @@ from mulebox.client.tree import (
     selected_paths,
     walk,
 )
+from mulebox.common import units
 from mulebox.common.errors import MuleboxError
 
 __all__ = ["Snapshot", "SnapshotError", "current_fingerprint", "make_snapshot", "sha256_file"]
@@ -97,7 +98,8 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = (),
         size = path.stat().st_size
         if size > MAX_SNAPSHOT_BYTES:
             raise SnapshotError(
-                f"snapshot is {size / 1024**2:.0f} MiB, over the 1 GiB upload limit; add large "
+                f"snapshot is {units.size(size)}, over the {units.size(MAX_SNAPSHOT_BYTES)} upload limit; "
+                "add large "
                 "generated folders to `exclude` in .mulebox.yml or to .gitignore"
             )
         digest = sha256_file(path)

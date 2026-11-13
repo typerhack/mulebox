@@ -20,9 +20,8 @@ import time
 from mulebox.client import machine_config
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import Remote, request
-from mulebox.client.report import format_size
 from mulebox.client.setup_worker import marker_name
-from mulebox.common import ssh
+from mulebox.common import ssh, units
 from mulebox.common.protocol import MessageType
 
 POLL_S = 5.0
@@ -70,7 +69,7 @@ def percent(value: float | None) -> str:
 
 def per_second(kib_s: float | None) -> str:
     """Network in or out over the machine's physical interfaces (common/netdev.py)."""
-    return "-" if kib_s is None else f"{format_size(int(kib_s * 1024))}/s"
+    return "-" if kib_s is None else units.rate_kib(kib_s)
 
 
 def _list(args: argparse.Namespace) -> int:

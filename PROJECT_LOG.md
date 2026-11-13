@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.9 - 2026-11-13 - patch
+- Sizes and rates in decimal SI units everywhere a person reads them, the user's call of 2026-11-13: "Make everything consistent. Megabytes make more sense to me; MiB I don't have any sense of. Percent is perfect too." And: always one decimal, "906.4 MB", not "906 MB" ("that's two characters, why not show it").
+- One rule each side: `mulebox/common/units.py` (`size`, `rate`, `rate_kib`) for the terminal and the logs, `bytes` and `rate` in `web/src/lib/format.ts` for the dashboard. B, KB, MB, GB, TB, 1000-based, whole bytes under 1 KB and one decimal above. The dashboard divided by 1024 but said MB, so pip's 906.4 MB wheel showed as 864 MB; it now reads 906.4 MB.
+- Moved to it: `mulebox status` and check-in downloads and network (were KiB/MiB), `mulebox machine list` network (KiB/s), the snapshot and sending lines, the upload limit message (now "1.1 GB"), files taken back, the protocol line limit, the disk warning, cache and project sizes, the queue view's project sizes, the image-pull line in job logs, and the suggested slots' memory (a 32 GiB machine now reads 34.4 GB). `client/report.format_size` is gone.
+- Kept as they are: API fields and their units (bytes, `*_kib_s`), node.toml settings, limits in code, and protocol errors that give an exact byte count. Percentages unchanged.
+- docs/design-system.md, Type, states the rule; example output in docs/agents.md, interfaces-m2.md, interfaces-m4.md and troubleshooting.md follows it. Seen at 390 px in headless Chrome on the `downloads` scene and the machines page of `npm run dev`: the longer figures fit, nothing past the edge.
+
 ## 1.17.8 - 2026-11-13 - patch
 - The Order panel's project levels, three faults Sol found in 1.17.7, each first shown by a failing component test (`order.projects.test.tsx`, `lib/order.test.ts`).
 - A project that crossed the seven-day line on a reread, or whose job began or stopped waiting, moved between two separate lists, so its row was made anew and a focused choice lost the focus to the page. The two groups are now one list ("Project levels") with "Active in the last 7 days" and "Other projects" as headings inside it, and a row's key is its project alone: the row moves, stays the same row, and the focus stays on the same project and choice. The "Show N more" button now names that one list in `aria-controls`.

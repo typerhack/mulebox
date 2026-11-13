@@ -162,7 +162,7 @@ dropped: `Pulling fs layer`, `Waiting`, `Downloading`, `Verifying Checksum`, `Do
 `Extracting`, `Pull complete`, `Already exists` on a line that starts with a 12-digit layer
 id, and BuildKit's `#N sha256:... a / b` and `#N extracting sha256:...` lines without `done`.
 Lines about images, networks and containers stay, as does anything else, errors and retries
-included. In their place: `mulebox: at least 640 MB of image layers downloaded`, every 100 MB
+included. In their place: `mulebox: at least 640.0 MB of image layers downloaded`, every 100 MB
 and after each run of layer lines. The raw `out.log` keeps all of it until the folder goes.
 
 What Compose prints without a terminal, seen on 5.6: `<layer> Downloading 2.097MB`, the amount

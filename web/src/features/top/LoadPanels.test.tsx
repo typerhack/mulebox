@@ -10,11 +10,11 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
-const GB = 1024 ** 3;
+const GB = 1000 ** 3;
 const sample: Sample = {
   t: 1, cpu: [10, 20], memory: { total: 16 * GB, available: 12 * GB, used: 4 * GB },
   swap: { total: 4 * GB, used: 0 }, jobs_memory: 1.5 * GB, docker_disk: 14 * GB, docker: 2,
-  self: { cpu: 1.2, rss: 50 * 1024 ** 2 }, viewers: 1,
+  self: { cpu: 1.2, rss: 50 * 1000 ** 2 }, viewers: 1,
   disk: [{ roots: ["cache", "jobs"], total: 400 * GB, used: 300 * GB, free: 100 * GB }],
 };
 const host = (samples: Sample[]) => ({ samples, isHost: true, machine: null, lastSeen: null }) as unknown as Shown;

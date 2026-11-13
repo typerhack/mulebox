@@ -95,6 +95,7 @@ def _list(args: argparse.Namespace) -> int:
 
 
 def _cache_list(args: argparse.Namespace) -> int:
+    from mulebox.common import units
     from mulebox.worker import caches
 
     try:
@@ -102,7 +103,7 @@ def _cache_list(args: argparse.Namespace) -> int:
     except MuleboxError as exc:
         return _fail(exc)
     for project, tool, size in caches.listing(paths):
-        print(f"{project}\t{tool}\t{size / 1e6:.1f} MB")
+        print(f"{project}\t{tool}\t{units.size(size)}")
     return 0
 
 

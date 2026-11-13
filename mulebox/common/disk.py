@@ -12,6 +12,7 @@ import shutil
 from collections.abc import Callable, Iterable
 from typing import Any
 
+from mulebox.common import units
 LOW_FREE_BYTES = 10_000_000_000  # a compose job's images and an install can take that
 
 
@@ -60,6 +61,6 @@ def is_low(free: int | None) -> bool:
 
 
 def warning(worker: str, free: int) -> str:
-    return (f"{worker} has {free / 1e9:.1f} GB free, and jobs can fail for lack of space. "
+    return (f"{worker} has {units.size(free)} free, and jobs can fail for lack of space. "
             "`mulebox project clean` lists what can go and `--yes` removes it; "
             "`docker system df` on the machine shows what Docker holds")

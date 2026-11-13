@@ -71,7 +71,7 @@ function wide() {
   return { running, queued, machines: { "build-1": { slots: 4, state: "busy" }, "build-2": { slots: 2, state: "busy" } } };
 }
 
-const MB = 1024 ** 2;
+const MB = 1000 ** 2;
 function downloads() {
   const step = { step: "Run actions/setup-node@v4", cpu_pct: 0 };
   const cache = { what: "cache", name: "npm cache", done_bytes: 12 * MB, total_bytes: 41 * MB, rate_bytes_s: 0.5 * MB,
@@ -89,7 +89,7 @@ function downloads() {
       rate_bytes_s: null, net_bytes_s: 3.1 * MB, net_scope: "machine", quiet_s: null, stalled: null } } }),
     run("F5C310", "build-2", 20, 90, { project: "example-worker", branch: "chore/deps", client_os: "Linux", doing: {
       stage: "install", cpu_pct: 90, download: { what: "package", name: "torch-2.5.1-cp312-cp312-manylinux1_x86_64.whl",
-      done_bytes: null, total_bytes: 906 * MB, rate_bytes_s: null, net_bytes_s: 3.1 * MB, net_scope: "machine",
+      done_bytes: null, total_bytes: 906.4 * MB, rate_bytes_s: null, net_bytes_s: 3.1 * MB, net_scope: "machine",
       quiet_s: null, stalled: null } } }),
   ];
   return { running, queued: [] as MockJob[], machines: { "build-1": { slots: 4, state: "busy" }, "build-2": { slots: 2, state: "busy" } } };

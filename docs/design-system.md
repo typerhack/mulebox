@@ -119,6 +119,11 @@ them in light, Gauge in dark, and they want the viewer to choose.
 - Scale: `--text-xs` (branches, counts) up to `--text-display`. Base is `--text-base`. Nothing
   smaller than `--text-xs`.
 - Numbers line up: tabular figures, aligned right, never wrapped.
+- Sizes and rates in decimal SI units, as package managers and download tools print them: B, KB,
+  MB, GB, TB, 1000-based, and KB/s, MB/s, never KiB or MiB. Whole bytes under 1 KB, one decimal in
+  every unit above (`906.4 MB`, `41.0 MB`, `614.0 KB/s`). One formatter each side: `bytes` and
+  `rate` in web/src/lib/format.ts, `mulebox/common/units.py` for the terminal and the logs.
+  Percentages stay as they are.
 
 ## Space and layout
 

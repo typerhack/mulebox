@@ -32,6 +32,7 @@ from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
 from mulebox.common.config import ProjectConfig
 from mulebox.common.config_jobs import JobOptions, for_job
+from mulebox.common import units
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.ssh import RemoteError, SSHUnavailable
@@ -97,7 +98,7 @@ def run_job(
     try:
         for path in snap.skipped_links:
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
-        report.status(io.err, f"snapshot {snap.files} files, {report.format_size(snap.size)}")
+        report.status(io.err, f"snapshot {snap.files} files, {units.size(snap.size)}")
         body = submit_body(project, job, argv, snap, detach,
                            reuse=isinstance(target, str) and not (again or warm), take=take)
         reply = remote.call(request(MessageType.SUBMIT, **body))

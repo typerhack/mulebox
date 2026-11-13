@@ -27,7 +27,7 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 | `has no commits yet` (exit 2) | Commit once, then run it again. The job records the commit it came from |
 | `no node offers docker` or another need (exit 4) | A person adds it to `capabilities` in `node.toml` and restarts the worker: [install.md, Node config](install.md#node-config) |
 | `toolchain node ... is not installed on this worker` (exit 5) | Install that version on the node, or pin one it lists: [install.md, Toolchains](install.md#toolchains) |
-| `snapshot is ... over the 1 GiB upload limit` | Add generated folders to `.gitignore`, or to `exclude` in `.mulebox.yml` |
+| `snapshot is ... over the 1.1 GB upload limit` | Add generated folders to `.gitignore`, or to `exclude` in `.mulebox.yml` |
 
 ## Jobs
 

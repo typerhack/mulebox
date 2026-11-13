@@ -17,8 +17,13 @@ describe("format", () => {
 
   it("writes sizes and ages", () => {
     expect(bytes(0)).toBe("0 B");
-    expect(bytes(1536)).toBe("1.5 KB");
-    expect(bytes(215 * 1024 ** 3)).toBe("215 GB");
+    expect(bytes(1500)).toBe("1.5 KB");
+    expect(bytes(1024)).toBe("1.0 KB");
+    expect(bytes(906_400_000)).toBe("906.4 MB");
+    expect(bytes(41_040_441)).toBe("41.0 MB");
+    expect(bytes(999)).toBe("999 B");
+    expect(bytes(999_600)).toBe("1.0 MB");
+    expect(bytes(215 * 1000 ** 3)).toBe("215.0 GB");
     expect(ago(1000, 1005)).toBe("now");
     expect(ago(1000, 1000 + 14 * 60)).toBe("14 min ago");
     expect(ago(null, 5)).toBe("never");

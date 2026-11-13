@@ -62,7 +62,7 @@ def test_notices_are_events_with_their_keys():
 
 def test_a_check_in_line_gives_what_a_decision_needs():
     line = attention.check_in_line(JOB, CHECK_IN)
-    for part in ("1h 00m", "stage command", "1m 35s ago", "180%", "0.5 KiB/s",
+    for part in ("1h 00m", "stage command", "1m 35s ago", "180%", "512 B/s",
                  f"mulebox cancel {JOB}"):
         assert part in line
 

@@ -20,14 +20,20 @@ export function roughly(seconds: number): string {
   return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
 }
 
+// Sizes in decimal SI units, 1000-based, as package managers and download tools print them (the
+// user's call, 2026-11-13): pip's 906.4 MB wheel reads 906.4 MB here too,
+// one decimal in every unit above B. The one rule for the page;
+// mulebox/common/units.py holds the same one for the terminal and the logs.
 export function bytes(n: number | null | undefined): string {
   if (n === null || n === undefined) return "-";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = n, unit = 0;
-  while (value >= 1024 && unit < units.length - 1) { value /= 1024; unit += 1; }
-  return `${value.toFixed(value >= 100 || unit === 0 ? 0 : 1)} ${units[unit]}`;
+  if (n < 999.5) return `${Math.max(0, Math.round(n))} B`;
+  const units = ["KB", "MB", "GB", "TB"];
+  let value = n / 1000, unit = 0;
+  while (value >= 999.95 && unit < units.length - 1) { value /= 1000; unit += 1; }
+  return `${value.toFixed(1)} ${units[unit]}`;
 }
 
+// A rate from the API's KiB/s fields (`net_in_kib_s`): the field stays binary, the label decimal.
 export const rate = (kibS: number) => `${bytes(kibS * 1024)}/s`;
 export const percent = (value: number) => `${value.toFixed(0)}%`;
 

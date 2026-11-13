@@ -6,9 +6,9 @@ import { TipProvider } from "../../ui/Tip";
 import { DownloadMeter } from "./DownloadMeter";
 import { JobCard } from "./JobCard";
 
-const MB = 1024 ** 2;
+const MB = 1000 ** 2;
 const cache: Download = { what: "cache", name: "npm cache", done_bytes: 12 * MB, total_bytes: 41 * MB,
-                          rate_bytes_s: 0.5 * MB, as_of_s: 30, net_bytes_s: 0.6 * MB, net_scope: "job", quiet_s: 0, stalled: false };
+                          rate_bytes_s: 0.5 * MB, as_of_s: 30, net_bytes_s: 0.614 * MB, net_scope: "job", quiet_s: 0, stalled: false };
 
 afterEach(cleanup);
 
@@ -21,7 +21,7 @@ describe("a card's Down meter", () => {
     expect(meter.className).toContain("meter-flat");
     expect(screen.getByText("at least 12.0 of 41.0 MB").title).toContain("figures from 30 s ago");
     expect(screen.getByText("Downloading npm cache")).toBeTruthy();
-    expect(screen.getByText("614 KB/s").className).toContain("num");
+    expect(screen.getByText("614.0 KB/s").className).toContain("num");
     expect(container.querySelector(".track-open")).toBeNull();
   });
 
@@ -39,10 +39,10 @@ describe("a card's Down meter", () => {
     render(<DownloadMeter download={{ what: "package", done_bytes: 18 * MB }} trails />);
     expect(screen.getByText("at least 18.0 MB so far")).toBeTruthy();
     cleanup();
-    const { container } = render(<DownloadMeter download={{ what: "package", name: "torch", total_bytes: 906 * MB }} />);
+    const { container } = render(<DownloadMeter download={{ what: "package", name: "torch", total_bytes: 906.4 * MB }} />);
     expect(screen.queryByRole("meter")).toBeNull();
     expect(container.querySelector(".track-open")).toBeTruthy();
-    expect(screen.getByText("906 MB to download")).toBeTruthy();
+    expect(screen.getByText("906.4 MB to download")).toBeTruthy();
     expect(container.textContent).not.toMatch(/in all/);
   });
 

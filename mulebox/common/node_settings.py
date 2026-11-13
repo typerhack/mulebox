@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from mulebox.common import units
 MIN_SLOTS, MAX_SLOTS = 1, 64
 PRIORITIES = ("preferred", "normal", "fallback")  # best first
 DEFAULT_PRIORITY = "normal"
@@ -64,5 +65,5 @@ def suggest_slots(cores: int | None, memory_bytes: int | None) -> dict[str, Any]
     memory_gb = memory_bytes / GB
     slots = max(MIN_SLOTS, min(cores // CORES_PER_JOB, int(memory_gb // GB_PER_JOB), MAX_SLOTS))
     return {"slots": slots,
-            "reason": f"{cores} cores and {memory_gb:.0f} GB of memory, at about "
+            "reason": f"{cores} cores and {units.size(memory_bytes)} of memory, at about "
                       f"{CORES_PER_JOB} cores and {GB_PER_JOB} GB a job"}

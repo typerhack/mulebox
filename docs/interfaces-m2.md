@@ -341,7 +341,7 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
  "applies": true,
  "current": {"slots": 2, "priority": "normal"},
  "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
- "suggested": {"slots": 4, "reason": "16 cores and 32 GB of memory, at about 4 cores and 6 GB a job"},
+ "suggested": {"slots": 4, "reason": "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job"},
  "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"]},
  "editable": true}
 ```

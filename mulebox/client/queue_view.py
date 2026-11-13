@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 from mulebox.client.report import format_duration, place_lines, short_id, waiting_reason
+from mulebox.common import units
 from mulebox.common.status import elapsed_s, queue_position, sections, shown_state
 
 COLUMNS = ("ID", "PROJECT", "JOB", "BRANCH", "STATE", "ELAPSED", "POS")
@@ -59,7 +60,7 @@ def job_row(job: dict[str, Any], now: float, full_ids: bool = False) -> list[str
 
 
 def _megabytes(size: Any) -> str:
-    return f"{size / 1e6:.1f} MB" if isinstance(size, (int, float)) else "-"
+    return units.size(size) if isinstance(size, (int, float)) else "-"
 
 
 def render_projects(projects: list[dict[str, Any]]) -> list[str]:

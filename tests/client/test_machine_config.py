@@ -49,7 +49,7 @@ def test_it_shows_the_values_and_the_suggestion(remote, capsys):
     assert run("build-1") == 0
     out = capsys.readouterr().out
     assert "slots:     2" in out and "priority:  normal" in out
-    assert "suggested: 4 slot(s), from 16 cores and 32 GB" in out
+    assert "suggested: 4 slot(s), from 16 cores and 34.4 GB" in out
     assert remote.sent == [{"worker": "build-1"}]
 
 

@@ -13,6 +13,7 @@ import sys
 import time
 from typing import Any
 
+from mulebox.common import units
 from mulebox.common.config import NodeConfig, load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
@@ -72,7 +73,7 @@ def _reclaimer(node: NodeConfig, paths: NodePaths) -> project_disk.Reclaim:
 
 
 def _size(path: Any) -> str:
-    return f"{caches.size_of(path) / 1e6:.1f} MB"
+    return units.size(caches.size_of(path))
 
 
 def _held(store: Any, project: str, work: Any) -> None:
@@ -92,7 +93,7 @@ def _list(args: argparse.Namespace) -> int:
         print(json.dumps(rows))
     else:
         for row in rows:
-            print(f"{row['project']}\t{row['size'] / 1e6:.1f} MB\t{row['folder']}")
+            print(f"{row['project']}\t{units.size(row['size'])}\t{row['folder']}")
     return 0
 
 

@@ -25,7 +25,7 @@ def test_read_files_takes_plain_files_and_names_the_rest(tmp_path):
                                             "dir.lock", "../x"], notes.append)
     assert found == [(0, b"{}")]
     text = "".join(notes)
-    assert "taken back: api/composer.lock (2 bytes)" in text
+    assert "taken back: api/composer.lock (2 B)" in text
     assert "gone.lock is not there" in text and "link.lock goes through a link" in text
     assert "dir.lock is not a plain file" in text and "../x must stay inside" in text
 

@@ -13,7 +13,8 @@ from typing import Any, TextIO
 
 from mulebox.client import report
 from mulebox.client.remote import Remote, request
-from mulebox.client.report import format_duration, format_size
+from mulebox.client.report import format_duration
+from mulebox.common import units
 from mulebox.common.config import (
     ConfigError,
     find_project_config,
@@ -86,7 +87,7 @@ def activity_text(activity: dict[str, Any]) -> str:
     if cpu is not None:
         parts.append(f"machine CPU {cpu:.0f}% of a core")
     if net is not None:
-        parts.append(f"machine network {net:.1f} KiB/s")
+        parts.append(f"machine network {units.rate_kib(net)}")
     if activity.get("last_line"):
         parts.append(f"last line: {activity['last_line']}")
     if isinstance(activity.get("download"), dict):
@@ -100,20 +101,20 @@ def download_text(download: dict[str, Any]) -> str:
     done, total = number(download.get("done_bytes")), number(download.get("total_bytes"))
     words = f"downloading {name}" if name != "network" else "downloading, by its own traffic"
     if done is not None and total:
-        words += f": {format_size(int(done))} of {format_size(int(total))} ({done / total:.0%})"
+        words += f": {units.size(done)} of {units.size(total)} ({done / total:.0%})"
     elif done is not None:
-        words += f": {format_size(int(done))} so far"
+        words += f": {units.size(done)} so far"
     elif total:
-        words += f" ({format_size(int(total))})"
+        words += f" ({units.size(total)})"
     rate, age = number(download.get("rate_bytes_s")), number(download.get("as_of_s"))
     if rate is not None:
-        words += f" at {format_size(int(rate))}/s"
+        words += f" at {units.rate(rate)}"
     if age is not None and age >= 30:
         words += f", as printed {format_duration(age)} ago"
     net = number(download.get("net_bytes_s"))
     if net is not None:
         whose = "its own" if download.get("net_scope") == "job" else "the machine's"
-        words += f", network {format_size(int(net))}/s ({whose})"
+        words += f", network {units.rate(net)} ({whose})"
     if download.get("waiting_on_network"):
         words += ", waiting on the network"
     quiet = number(download.get("quiet_s"))

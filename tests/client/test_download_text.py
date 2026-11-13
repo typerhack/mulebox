@@ -12,15 +12,15 @@ CACHE = {"what": "cache", "name": "pip cache", "step": "Run actions/setup-python
 def test_status_says_what_is_downloading_how_far_and_that_it_waits_on_the_network():
     lines = status_lines({"job_id": "job-1", "activity": {"elapsed_s": 300.0, "download": CACHE}})
     assert lines[0].endswith(
-        "downloading pip cache: 1.4 MiB of 9.4 MiB (14%) at 102.4 KiB/s, as printed 1m 15s ago, "
-        "network 600.0 KiB/s (its own), waiting on the network, stalled: no byte for 1m 35s")
+        "downloading pip cache: 1.4 MB of 9.8 MB (14%) at 104.9 KB/s, as printed 1m 15s ago, "
+        "network 614.4 KB/s (its own), waiting on the network, stalled: no byte for 1m 35s")
 
 
 def test_a_download_with_only_a_name_and_a_size_says_so():
     text = activity_text({"download": {"what": "package", "name": "torch.whl",
                                        "total_bytes": 906_400_000, "net_bytes_s": 2048.0,
                                        "net_scope": "machine"}})
-    assert text == "downloading torch.whl (864.4 MiB), network 2.0 KiB/s (the machine's)"
+    assert text == "downloading torch.whl (906.4 MB), network 2.0 KB/s (the machine's)"
     assert activity_text({"download": {"what": "network", "waiting_on_network": True}}) == (
         "downloading, by its own traffic, waiting on the network")
 

@@ -18,6 +18,7 @@ from typing import Any, TextIO
 
 from mulebox.client import report
 from mulebox.client.excludes import Excludes
+from mulebox.common import units
 from mulebox.common.protocol import MessageType
 from mulebox.common.take_paths import MAX_FILE_BYTES, checked
 
@@ -89,6 +90,6 @@ def bring_back(call: Call, request: Callable[..., Any], job_id: str, paths: Sequ
             report.status(err, f"not taken back: {path}: {exc}")
             missing += 1
             continue
-        size = f"{len(data)} bytes" if len(data) < 1024 else report.format_size(len(data))
+        size = units.size(len(data))
         report.status(err, f"taken back: {path} ({size})")
     return 1 if missing else 0

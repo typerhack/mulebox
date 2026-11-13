@@ -14,6 +14,7 @@ import stat
 from collections.abc import Callable
 from pathlib import Path
 
+from mulebox.common import units
 from mulebox.common.mounts import is_within
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.take_paths import CHUNK_BYTES, MAX_FILE_BYTES, MAX_TOTAL_BYTES, problem
@@ -38,7 +39,7 @@ def _read(tree: Path, path: str) -> bytes | str:
     if not stat.S_ISREG(info.st_mode):
         return "is not a plain file"
     if info.st_size > MAX_FILE_BYTES:
-        return f"is over {MAX_FILE_BYTES >> 20} MiB"
+        return f"is over {units.size(MAX_FILE_BYTES)}"
     try:
         with open(full, "rb", opener=lambda p, f: os.open(p, f | os.O_NOFOLLOW)) as fh:
             return fh.read(MAX_FILE_BYTES + 1)
@@ -52,13 +53,13 @@ def read_files(tree: Path, paths: list[str], note: Callable[[str], None]) -> Tak
     for index, path in enumerate(paths):
         data = _read(Path(tree), path)
         if isinstance(data, bytes) and total + len(data) > MAX_TOTAL_BYTES:
-            data = f"would pass {MAX_TOTAL_BYTES >> 20} MiB with the others"
+            data = f"would pass {units.size(MAX_TOTAL_BYTES)} with the others"
         if isinstance(data, str):
             note(f"mulebox: not taken back: {path} {data}\n")
             continue
         total += len(data)
         found.append((index, data))
-        note(f"mulebox: taken back: {path} ({len(data)} bytes)\n")
+        note(f"mulebox: taken back: {path} ({units.size(len(data))})\n")
     return found
 
 

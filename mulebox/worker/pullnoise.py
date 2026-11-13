@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import re
 
+from mulebox.common import units
 from mulebox.common.download_lines import SIZE as _SIZE, size_bytes as _bytes
 
 EVERY_BYTES = 100_000_000
@@ -125,7 +126,7 @@ class PullNoise:
         if self.total <= self._said:
             return []
         self._said = self.total
-        return [f"mulebox: at least {self.total / 1e6:.0f} MB of image layers downloaded\n"]
+        return [f"mulebox: at least {units.size(self.total)} of image layers downloaded\n"]
 
     def line(self, text: str) -> list[str]:
         """What stays of one line: the line, nothing, or a summary before it."""

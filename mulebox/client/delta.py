@@ -16,7 +16,7 @@ from io import BytesIO
 from pathlib import Path
 from typing import Any, BinaryIO, Protocol
 
-from mulebox.client.report import format_size
+from mulebox.common import units
 from mulebox.client.snapshot import Snapshot, sha256_file
 from mulebox.common import manifest
 from mulebox.common.errors import MuleboxError
@@ -74,7 +74,7 @@ def _send(remote: DeltaRemote, job_id: str, snap: Snapshot, status: Callable[[st
         size = path.stat().st_size
         if size > snap.size * _WORTH_IT:
             return False
-        status(f"sending {len(need)} of {snap.files} files, {format_size(size)}")
+        status(f"sending {len(need)} of {snap.files} files, {units.size(size)}")
         remote.upload_delta(job_id, path, sha256_file(path), manifest.digest(wanted))
     return True
 

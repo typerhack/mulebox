@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.client import sshio
-from mulebox.common import ssh
+from mulebox.common import ssh, units
 from mulebox.common.config import ClientConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
@@ -169,7 +169,8 @@ def read_reply(stdout: bytes, msg: Message | None) -> Message | None:
 
 def _decode_line(line: bytes) -> Message:
     if len(line) > MAX_LINE_BYTES + 2:  # + line break
-        raise CoordinatorError("the coordinator sent a line over the 1 MiB protocol limit")
+        raise CoordinatorError(
+            f"the coordinator sent a line over the {units.size(MAX_LINE_BYTES)} protocol limit")
     try:
         reply = decode(line)
     except ProtocolError as exc:

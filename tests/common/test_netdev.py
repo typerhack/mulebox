@@ -62,5 +62,5 @@ def test_coordinator_keeps_sane_network_readings():
 def test_machine_list_shows_rates():
     from mulebox.client.machine_commands import per_second
     assert per_second(None) == "-"
-    assert per_second(2.0) == "2.0 KiB/s"
-    assert per_second(3 * 1024) == "3.0 MiB/s"
+    assert per_second(2.0) == "2.0 KB/s"
+    assert per_second(3 * 1024) == "3.1 MB/s"

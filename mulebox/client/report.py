@@ -83,12 +83,6 @@ def format_duration(seconds: float | None) -> str:
     return f"{hours}h {minutes:02d}m"
 
 
-def format_size(size: int) -> str:
-    if size < 1024 * 1024:
-        return f"{size / 1024:.1f} KiB"
-    return f"{size / 1024**2:.1f} MiB"
-
-
 def outcome_line(job_id: str, result: dict[str, Any]) -> str:
     took = format_duration(duration_of(result))
     if stopped(result):
