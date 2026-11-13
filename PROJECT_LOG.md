@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.14.3 - 2026-11-13 - patch
+- CI: `SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1` for the whole workflow (M23.11, first step): over the node's slow VPN link a GitHub cache restore in setup-python or setup-node stalled for actions/cache's default 10 minutes at 0% CPU; now it gives up on the cache in a minute and installs without it. A test keeps it. The node's traffic keeps the VPN (the user's call).
+
 ## 1.14.2 - 2026-11-13 - patch
 - ssh calls send a keepalive every 10 s and give up after 3 unanswered (`common/ssh.py`): when the node went down mid-check, `mulebox check` sat silent for over 10 minutes waiting for the operating system to drop the connection; now the call fails in about 30 s and the client's "connection lost, reconnecting" shows. A quiet job is not affected, as the node's ssh answers the keepalive.
 

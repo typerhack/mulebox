@@ -33,6 +33,12 @@ on:
 permissions:
   contents: read
 
+env:
+  # actions/cache (inside setup-python and setup-node) waits 10 minutes on a stalled download
+  # segment. Over the node's slow link a restore stalled for those 10 minutes at 0% CPU; with 1
+  # the step gives up on the cache in a minute and installs without it (roadmap M23.11).
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1
+
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

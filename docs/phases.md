@@ -824,16 +824,17 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
 - [ ] M23.9 Config reload: an edited `node.toml` applies to the next job with no service restart.
 - [ ] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
       session of your own, waiting in the same line so no job starts under you.
-- [ ] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on
+- [~] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on
       the node fetches its npm (41 MB) and pip (10 MB) cache from GitHub's cache storage. The node
       reaches the internet through a VPN tunnel (0.6 MB/s from GitHub against 10 MB/s on the dev
       machine), and a stalled restore holds `setup-node` or `setup-python` for `actions/cache`'s
       10-minute segment timeout at 0% CPU (seen in four runs that day, ten minutes each). In order:
       `SEGMENT_DOWNLOAD_TIMEOUT_MINS: 1` in ci.yml, so a stall costs a minute; then caches kept on
       the node, a volume per isolated place for npm and pip like its tool cache, with GitHub's cache
-      left off on self-hosted runs; and whether the node's GitHub traffic needs the VPN at all (the
-      user's call, as the VPN is theirs). Done when: a CI run on the node with a cold GitHub
-      connection installs its packages in seconds, and no step waits on a cache download.
+      left off on self-hosted runs. The node's traffic keeps the VPN (the user's call, 2026-11-13).
+      Done when: a CI run on the node with a cold GitHub connection installs its packages in
+      seconds, and no step waits on a cache download. Built 2026-11-13 (1.14.3): the 1-minute
+      segment timeout in ci.yml, with a test; open: a real stalled restore giving up in a minute.
 
 ## M24: Answers an agent can trust
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,

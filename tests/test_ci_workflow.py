@@ -154,3 +154,10 @@ def test_docs_alone_run_nothing_and_code_always_runs():
         assert pattern.endswith((".md", ".html")) or pattern in ("LICENSE", "VERSION"), pattern
     local = yaml.safe_load((REPO / ".mulebox.yml").read_text(encoding="utf-8"))["ignore_changes"]
     assert [p.replace("**/", "") for p in ignored] == local  # mulebox check skips the same files
+
+
+def test_a_stalled_cache_download_gives_up_in_a_minute():
+    # Over the node's slow link a cache restore stalled for actions/cache's default 10 minutes
+    # (roadmap M23.11); the whole workflow keeps the wait to one minute.
+    ci = load(REPO / ".github" / "workflows" / "ci.yml")
+    assert ci["env"]["SEGMENT_DOWNLOAD_TIMEOUT_MINS"] == 1
