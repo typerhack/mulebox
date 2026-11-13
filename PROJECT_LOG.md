@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.16 - 2026-11-13 - patch
+- A Mac node with Docker Desktop was set up as offering "plain jobs" and "no Docker": `mulebox node-offers` ran `docker` with the ssh login's `PATH`, which on a Mac lacks `/usr/local/bin`, where Docker Desktop puts it. It now runs with the `PATH` the services get (`services/manager.py`, `service_path()`, the launchd agents' search path on a Mac, the inherited one on Linux), so it finds what a job finds. Seen on the first real Mac node (M21): after the fix setup said "it offers: docker". Test in `tests/worker/test_offers.py`; docs/install.md, A Mac as a node.
+
 ## 1.17.15 - 2026-11-13 - patch
 - README brought up to date with what came since 1.6.0 (the user's ask): a node's settings window and priority, live reload of node.toml, rules for the order of the line (Order panel, `mulebox queue rules`, `mulebox project priority`), fair turns, download meters, `github_status` commit statuses, isolated runners for public repositories (the Security section said private only), macOS nodes and Apple builds (marked as new and not yet run on a real Mac node), `mulebox service` and `mulebox machine config` in the command tables.
 - New pictures from the stand-in data: `node-settings-dark.png`, `order-light.png`, `downloads-dark.png`; every other picture taken again on 1.17.14. `tools/screenshots.py` gains the three shots (a script click opens the window and the panel; the downloads shot scrolls to the Jobs box). No product code changed.

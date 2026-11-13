@@ -7,6 +7,7 @@ here: it needs system packages that only root installs.
 
 import argparse
 import json
+import os
 import re
 import subprocess
 from collections.abc import Callable, Sequence
@@ -14,6 +15,7 @@ from pathlib import Path
 
 from mulebox.common.config import ConfigError, load_node_config, node_config_path
 from mulebox.common.errors import MuleboxError
+from mulebox.services.manager import service_path
 
 Check = Callable[[Sequence[str]], bool]
 _TIMEOUT_S = 30
@@ -21,8 +23,10 @@ _LINE = re.compile(r"^capabilities[ \t]*=[ \t]*\[[ \t]*\][ \t]*$", re.MULTILINE)
 
 
 def _succeeds(argv: Sequence[str]) -> bool:
+    """Run with the PATH the worker has, not ssh's: Docker Desktop is in /usr/local/bin."""
+    env = {**os.environ, "PATH": service_path()}
     try:
-        return subprocess.run(argv, capture_output=True, timeout=_TIMEOUT_S,
+        return subprocess.run(argv, capture_output=True, timeout=_TIMEOUT_S, env=env,
                               stdin=subprocess.DEVNULL).returncode == 0
     except (OSError, subprocess.TimeoutExpired):
         return False

@@ -32,3 +32,13 @@ def test_nothing_found_changes_nothing(tmp_path):
     path = tmp_path / "node.toml"
     path.write_text("capabilities = []\n")
     assert offers.fill_capabilities(path, []) == []
+
+
+def test_checks_use_the_services_path_on_a_mac(tmp_path):
+    from mulebox.services.manager import service_path
+
+    ssh_path = "/usr/bin:/bin"  # what a non-login ssh session gives on a Mac
+    found = service_path("darwin", {"PATH": ssh_path}, tmp_path).split(":")
+    assert "/usr/local/bin" in found and "/opt/homebrew/bin" in found  # Docker Desktop, Homebrew
+    assert found[-2:] == ["/usr/sbin", "/sbin"] and found.count("/usr/bin") == 1
+    assert service_path("linux", {"PATH": ssh_path}) == ssh_path
