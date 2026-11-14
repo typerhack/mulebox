@@ -145,6 +145,10 @@ their readings; GitHub runners follow. `mulebox setup` installs a Mac the same w
   stops the agent's process group; boost raises only the run's containers. Whether a run is alive
   is read from `ps`. A removed runner's agent definition stays, disabled, in
   `~/Library/LaunchAgents`; delete the file by hand if you like.
+- An outgoing firewall that asks about each program, such as LuLu or Little Snitch, holds a new
+  runner's `Runner.Listener` (in `~/.mulebox/runners/<name>/bin/`) until it is allowed, so
+  `runner add` stops at the runner's "# Authentication" after 300 s with nothing sent. Allow that
+  program for the runner's folder, then add the runner again.
 
 #### Apple builds on a Mac node
 

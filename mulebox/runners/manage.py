@@ -17,6 +17,7 @@ the hook scripts and `.env` lines, then start the runner's service: the systemd 
 from __future__ import annotations
 
 import os
+import signal
 import subprocess
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -47,14 +48,31 @@ class RunnerError(MuleboxError):
 
 def run_config(argv: Sequence[str], cwd: Path, env: Mapping[str, str]
                ) -> subprocess.CompletedProcess:
+    """Run the runner's config.sh. In a group of its own: on a timeout the whole group is
+    stopped, as config.sh leaves its `Runner.Listener` running if only the script is killed
+    (seen on a Mac node), and the error ends with what it printed last."""
     try:
-        return subprocess.run(list(argv), cwd=cwd, env=dict(env), capture_output=True,
-                              text=True, timeout=CONFIG_TIMEOUT_S, stdin=subprocess.DEVNULL)
-    except subprocess.TimeoutExpired:
-        raise RunnerError(f"`{argv[0]} {argv[1]}` did not finish within "
-                          f"{CONFIG_TIMEOUT_S} s") from None
+        proc = subprocess.Popen(list(argv), cwd=cwd, env=dict(env), stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True, stdin=subprocess.DEVNULL,
+                                start_new_session=True)
     except OSError as exc:
         raise RunnerError(f"cannot run {argv[0]}: {exc.strerror}") from None
+    try:
+        out, _ = proc.communicate(timeout=CONFIG_TIMEOUT_S)
+    except subprocess.TimeoutExpired:
+        _stop_group(proc)
+        out, _ = proc.communicate()
+        last = (out or "").strip()[-OUTPUT_CHARS:]
+        raise RunnerError(f"`{argv[0]} {argv[1]}` did not finish within {CONFIG_TIMEOUT_S} s"
+                          + (f"; it printed last:\n{last}" if last else "")) from None
+    return subprocess.CompletedProcess(list(argv), proc.returncode, out, "")
+
+
+def _stop_group(proc: subprocess.Popen) -> None:
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError):
+        proc.kill()
 
 
 @dataclass
@@ -85,7 +103,10 @@ def remove_argv(folder: Path) -> list[str]:
 
 def _config(m: Machine, argv: list[str], folder: Path, token: str, what: str) -> None:
     redactor = Redactor([token])
-    proc = m.config_run(argv, folder, {**os.environ, TOKEN_ENV: token})
+    try:
+        proc = m.config_run(argv, folder, {**os.environ, TOKEN_ENV: token})
+    except RunnerError as exc:  # its output, on a timeout
+        raise RunnerError(redactor.redact(str(exc))) from None
     if proc.returncode != 0:
         output = ((proc.stdout or "") + (proc.stderr or "")).strip()[-OUTPUT_CHARS:]
         raise RunnerError(f"{what} failed (exit {proc.returncode}): "

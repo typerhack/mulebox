@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.20.3 - 2026-11-14 - patch
+- A runner's `config.sh` that hung left its `Runner.Listener` running after mulebox gave up and removed its folder: on a timeout only the script was killed. It now runs in a group of its own, the whole group is stopped, and the error ends with what it printed last, redacted (`runners/manage.py`, `run_config`). Seen adding the first runner on a Mac node, where an outgoing firewall (LuLu) held the new program's connection; docs/install.md says so. Tests in `tests/runners/test_config_run.py` (the first fails on 1.20.2).
+
 ## 1.20.2 - 2026-11-14 - patch
 - A changed `Podfile` kept the old `pod install`: the files a `setup` depends on (`SETUP_INPUTS` in `worker/project_home.py`) had no Apple manifests, so on the first CocoaPods job on a Mac node the setup was skipped and the build could not find the new pod. `Podfile`, `Podfile.lock`, `Package.swift` and `Package.resolved` count now. Test in `tests/worker/test_project_home.py`; docs/agents.md.
 
