@@ -1002,6 +1002,12 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       worktree and the node's project tree removed.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
+- [ ] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox
+      still holds 56 GB on the node, most of it 131 branch folders of a few projects, about 280 MB each.
+      The user wants the projects' share, Docker apart, at 10 to 15 GB. To work out: why so many
+      folders count as live (dev machines keep old local branches; lists arrive only from 1.26
+      clients), a shorter or size-led rule, and agents asked to check and delete their merged
+      branches (the skill). Done when: the node's projects hold 15 GB or less in normal use.
 - [ ] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
       next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
       `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and

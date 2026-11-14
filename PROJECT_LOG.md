@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.5 - 2026-11-14 - patch
+- docs/phases.md: M25.9, the projects' share on a node down to 10 to 15 GB (the user's ask), open.
+
 ## 1.27.4 - 2026-11-14 - patch
 - docs/phases.md: M24.8, a stuck job said as stuck in `status`, `wait` and `events` (the user's ask), open.
 
