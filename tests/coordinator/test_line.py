@@ -102,6 +102,20 @@ def test_fair_turns_let_a_single_job_pass_a_burst(store, staging):
     assert reasons[burst[2]] == "turn 3 of example-app; then by arrival"
 
 
+def test_fair_turns_do_not_give_a_burst_back_the_slot_its_job_just_left(store, staging):
+    """Seen on the node: with one slot coming free, each time a burst's job ended its project
+    ran nothing, tied the single job at turn 1 and won on arrival, again and again."""
+    burst = [queued(store, staging, now=float(t), project="example-app") for t in range(3)]
+    single = queued(store, staging, now=10.0, project="example-api")
+    rules(store, staging, fair_turns=True)
+    assert claim(store, now=20.0) == burst[0]
+    with store.write() as conn:
+        conn.execute("UPDATE jobs SET state = ?, finished_at = ? WHERE job_id = ?",
+                     (JobState.FINISHED.value, 45.0, burst[0]))
+    assert order(store, 46.0) == [single, burst[1], burst[2]]
+    assert claim(store, now=46.0) == single
+
+
 def lengths_of(monkeypatch, known):
     monkeypatch.setattr(line.usual, "lengths",
                         lambda conn, rows: {row["job_id"]: known.get(row["job"]) for row in rows})

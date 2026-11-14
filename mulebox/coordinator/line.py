@@ -8,7 +8,10 @@ The rules' order, each step breaking the ties of the one before:
    workflow's, plus one for every `aging_min` minutes in line. Higher first. An upgrade takes
    only aging.
 3. Fair turns, when on: a project's waiting rows count from what it already runs, so one
-   project's burst does not hold back another project's single job.
+   project's burst does not hold back another project's single job. Of rows on the same turn,
+   the project that last started a job longer ago goes first (one never started, first of
+   all): when a burst's job ends, its project runs nothing for a moment, and arrival alone
+   would give it the slot it just left again and again.
 4. Shortest first, when on: what the job usually takes (usual.py), shorter first; a job with
    no history counts as the median of the known lengths in line (none known: arrival decides).
 5. Arrival: `queued_at`, then `seq`.
@@ -122,6 +125,17 @@ def _running(conn: sqlite3.Connection) -> Counter[str]:
     return Counter(row["project"] for row in rows)
 
 
+def _served(conn: sqlite3.Connection, projects: set[str]) -> dict[str, float]:
+    """When each of these projects last started a job or runner (none: not in the dict)."""
+    if not projects:
+        return {}
+    marks = ", ".join("?" * len(projects))
+    rows = conn.execute(f"SELECT project, MAX(started_at) AS last FROM jobs WHERE project IN "
+                        f"({marks}) AND kind IN ('job', 'runner') AND started_at IS NOT NULL "
+                        "GROUP BY project", sorted(projects))
+    return {row["project"]: row["last"] for row in rows}
+
+
 def _pins(conn: sqlite3.Connection, rows: list[dict[str, Any]]
           ) -> tuple[dict[str, Pin], dict[str, dict[str, Any]]]:
     """The pins in force, and the rows that left the line but still hold a pinned row's place.
@@ -148,6 +162,7 @@ def _keys(conn: sqlite3.Connection, slots: list[dict[str, Any]], counted_ids: se
     its project would have there, without taking it."""
     level = {row["job_id"]: sum(p["level"] for p in levels(rules, row, now)) for row in slots}
     seen = _running(conn) if rules.fair_turns else Counter()
+    served = _served(conn, {row["project"] for row in slots}) if rules.fair_turns else {}
     turn: dict[str, int] = {}
     if rules.fair_turns:
         for row in sorted(slots, key=lambda r: (-r["priority"], -level[r["job_id"]],
@@ -162,6 +177,7 @@ def _keys(conn: sqlite3.Connection, slots: list[dict[str, Any]], counted_ids: se
         took = length.get(row["job_id"])
         took = fill if took is None else took
         keys[row["job_id"]] = (-row["priority"], -level[row["job_id"]], turn.get(row["job_id"], 0),
+                               served.get(row["project"], float("-inf")),
                                (1, 0.0) if took is None else (0, took),
                                row["queued_at"] or 0.0, row["seq"])
     return keys, turn

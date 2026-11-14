@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.23 - 2026-11-14 - patch
+- Fair turns (M24.4) let a burst keep a slot from another project's single job. In the drill on the node, with one slot coming free at a time, each time a burst's job ended its project ran nothing for a moment, so its next job tied the single job at turn 1 and won on arrival, again and again. Of rows on the same turn, the project that last started a job longer ago now goes first, one that never started any first of all (`coordinator/line.py`, `_served`: one more query, still a fixed number per read). Test in `tests/coordinator/test_line.py` (fails on 1.17.22); docs/design.md, Order of the line.
+
 ## 1.17.22 - 2026-11-14 - patch
 - `mulebox projects` took over 3 minutes on a node with 6.6 million files in its project folders, and gave 101 GB where `du` gave 48 GB: each branch tree was walked twice (for itself and for its project), and a file hard-linked into several `node_modules` (pnpm) counted once per link. `common/tree_size.py` now sizes a project and its trees in one walk and counts a hard-linked file once, as `du` does; `worker/caches.py` and `worker/project_commands.py` use it too. On the real node under load: 192 s down to 114 s (`du -s` took 84 s), 48.5 GB. Tests in `tests/common/test_tree_size.py`; docs/design.md, Project folders.
 

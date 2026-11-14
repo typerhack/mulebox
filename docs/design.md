@@ -129,7 +129,10 @@ jobs, GitHub runs' slots and waiting upgrades, in one order (`coordinator/line.p
 3. **Fair turns** (`fair_turns`, off by default): among rows of one level, the k-th waiting row
    of a project gets turn k plus what that project already runs, and turns go first. So one
    project's burst of ten jobs does not hold back another project's single job, and a project with
-   two jobs running waits behind one with none.
+   two jobs running waits behind one with none. Of rows on the same turn, the project that last
+   started a job longer ago goes first, one that never started any first of all: when a burst's
+   job ends its project runs nothing for a moment, and arrival alone gave it back the slot it had
+   just left, each time (seen on the node, 2026-11-14).
 4. **Shortest first** (`shortest_first`, off by default): among rows of one level and turn, the
    one whose `usual` length (usual.py: an agent job's median passed run, a GitHub run's median
    held slot) is shorter goes first. A row with no history counts as the line's average, the
