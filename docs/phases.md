@@ -1006,15 +1006,19 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
 ## M25: Several nodes (the user's ask, 2026-11-14)
 How work spreads over several nodes, and what reaches each of them. Design: design.md, Which node
 runs a job.
-- [~] M25.1 `--on <node>` for `check`, `run` and `warm`: that node alone, refused at once for an
+- [x] M25.1 `--on <node>` for `check`, `run` and `warm`: that node alone, refused at once for an
       unknown node or one without the job's needs, a result counts only from that node, and a
       coordinator too old to keep it cancels the job. Built 2026-11-14 (1.21.0), with tests. Done
       when: a real job sent `--on` the Mac waits for it with the Linux node free, and runs there.
-- [~] M25.2 Of free nodes on one level, the branch's node goes first, then the one with more free
+      Done 2026-11-14 (1.22.2): with the Mac drained and the Linux node free, a job sent `--on` the
+      Mac waited, its reason naming the Mac alone; resumed, the Mac ran it (`uname`: Darwin).
+- [x] M25.2 Of free nodes on one level, the branch's node goes first, then the one with more free
       slots, 10 s at most; every wait, priority's too, counts from the first time a node left the
       job (schema 23). Built 2026-11-14 (1.21.0), with tests. Done when: on two real nodes, a
       branch's next job goes back to the node that ran it, and with no such node to the one with
-      more room.
+      more room. Done 2026-11-14 (1.22.2), the Mac and the Linux node both `normal`: a new
+      branch's job went to the Linux node with 2 slots free against the Mac's 1; a branch last run
+      on the Linux node went back there with 1 slot free against the Mac's 2.
 - [x] M25.3 GitHub runs on one node: a runner label of its own in `runs-on:`, written down in
       docs/install.md. 2026-11-14 (1.21.0), docs only: it is how GitHub picks runners already.
 - [x] M25.4 `mulebox project reset` and `clean` reach a project's folders on every node, not only
@@ -1025,10 +1029,17 @@ runs a job.
       Done 2026-11-14 (1.22.0): on the real node, a dry-run `clean` and `reset` answered under the
       node's name through orders, and `reset --yes` of a throwaway project removed its folder in
       2 s. Only one node was online, so a second node's answer is covered by tests.
-- [~] M25.5 `cache-cocoapods` keeps CocoaPods' spec index too, not only its downloads: a job's
+- [x] M25.5 `cache-cocoapods` keeps CocoaPods' spec index too, not only its downloads: a job's
       `pod install` wrote into the node user's `~/.cocoapods` (seen 2026-11-14). Built 2026-11-14
       (1.22.1): `CP_HOME_DIR` on the same folder as `CP_CACHE_DIR`, with a test. Done when: a
       CocoaPods job on a Mac node leaves the node user's `~/.cocoapods` untouched.
+      Done 2026-11-14 (1.22.2): `pod install` of Alamofire on the Mac node wrote the index to
+      `repos/` in the project's cache; `~/.cocoapods` kept its 779 files, none changed.
+- [ ] M25.6 A job goes to a node of another system or architecture than its project was set up
+      for, and fails there. Found 2026-11-14: with the Mac node at `normal`, then `fallback` with
+      the Linux node full, it took a real project's Linux jobs; one failed in its container, as
+      `node_modules` from the Linux node held x86-64 native packages and the Mac's Docker is
+      arm64. `fallback` does not keep a node to some projects only.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

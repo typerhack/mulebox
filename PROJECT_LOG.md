@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.22.3 - 2026-11-14 - patch
+- Roadmap: M25.1 (`--on`), M25.2 (the branch's node, then the roomier one) and M25.5 (the CocoaPods spec index in the cache) done on a real Mac node beside the Linux node. Found there and opened as M25.6: a Linux project's job taken by the Mac node fails, and `fallback` does not keep a node to some projects only. Docs only.
+
 ## 1.22.2 - 2026-11-14 - patch
 - README brought up to 1.22: Mac nodes run for real beside a Linux node, which free node takes a job and `--on <node>`, isolated jobs and a node's floor, a CI workflow on one node by its runner's label, jobs in a process group on a Mac. The dashboard has not changed since the screenshots of 1.17.15, so they stay. Docs only.
 
