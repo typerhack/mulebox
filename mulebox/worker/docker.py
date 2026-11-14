@@ -18,6 +18,7 @@ from mulebox.common.redact import Redactor
 
 CALL_TIMEOUT_S = 60.0
 _REFUSED = frozenset({"prune", "system"})
+_READ_ONLY = (("system", "df"),)  # the one `system` call allowed: it only reads totals
 
 Runner = Callable[[Sequence[str], Mapping[str, str] | None, Path | None, float],
                   subprocess.CompletedProcess]
@@ -50,6 +51,8 @@ class Docker:
             timeout_s: float = CALL_TIMEOUT_S) -> str:
         """`docker <args>`; its stdout, or DockerError with redacted stderr."""
         refused = _REFUSED.intersection(args)
+        if tuple(args[:2]) in _READ_ONLY and refused == {"system"}:
+            refused = set()
         if refused:
             raise DockerError(f"mulebox never runs docker {sorted(refused)[0]}")
         proc = self._run(["docker", *args], env, cwd, timeout_s)

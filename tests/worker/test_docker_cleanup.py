@@ -192,6 +192,15 @@ def test_prune_cannot_be_run_at_all(daemon, docker, args):
     assert daemon.calls == []
 
 
+@pytest.mark.parametrize("args", [("system", "df", "prune"), ("system", "info"),
+                                  ("df", "system"), ("system", "events")])
+def test_only_system_df_runs_of_the_system_commands(daemon, docker, args):
+    with pytest.raises(DockerError, match="never"):
+        docker.run(*args)
+    docker.run("system", "df", "--format", "{{json .}}")  # the storage report's totals
+    assert [c[:3] for c in daemon.calls] == [("system", "df", "--format")]
+
+
 def test_errors_are_redacted(docker, daemon):
     daemon.responses[("compose",)] = subprocess.CompletedProcess(
         [], 1, "", "failed with password=hunter2hunter2")

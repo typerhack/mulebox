@@ -1069,6 +1069,11 @@ runs a job.
       real node the first sweep removes old branch folders, keeps the latest and kept ones and any
       in use, and `mulebox storage` shows what it holds. The Storage view on the dashboard follows,
       from the mockups the user picks.
+      Run 2026-11-14 (1.24.1) on the real node: the first sweep, a minute after the upgrade, removed
+      the 13 folders a 7-day `project clean` dry run had listed (4.3 GB, free 55 to 60 GB), each
+      project's latest stayed, and `mulebox storage` showed every project, the shared folders and
+      Docker's totals (these were refused at first: fixed 1.24.1). Open: a keep mark and a folder in
+      use seen held back on the node (tests only), and the Storage view.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

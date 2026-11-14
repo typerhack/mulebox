@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.24.1 - 2026-11-14 - patch
+- The storage report had no Docker totals on the real node: the worker's Docker wrapper refuses every `docker system` call, as a guard against `system prune`, so `docker system df` was refused too. `system df`, which only reads, is now the one `system` call allowed; prune stays refused everywhere (`worker/docker.py`). Test in `tests/worker/test_docker_cleanup.py`.
+
 ## 1.24.0 - 2026-11-14 - minor
 - Each node keeps its own disk in check (M25.8, the user's ask: 63 GB in 144 branch folders on the node after 10 days). Four node settings, top-level in node.toml and set from afar like `slots` (`common/storage_policy.py`): `keep_free` ("10%" or "50GB"), `unused_days` (7), `keep_latest` (true) and `idle_days` (14). A branch folder's last use is its last job on that node, from git's log of its branch.
 - The worker sweeps a minute after it starts, then hourly, and soon when free space falls under `keep_free` (`worker/storage_sweep.py`, the rules in `worker/storage_rules.py`): it measures mulebox's folders once, counting a hard-linked file once (`worker/storage_scan.py`, `common/tree_size.py`), and removes unused branch folders through the `project clean` removal, never a folder in use, a project's latest or one the user keeps; it claims no job while it removes. When that is not enough, or a project is idle, it says what could go and the user decides. Docker's totals are shown, not cleaned.
