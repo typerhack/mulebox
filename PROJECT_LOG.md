@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.24.2 - 2026-11-14 - patch
+- CI on macOS failed two tests of `mulebox storage`: their claim carried the time the test file was imported, and on a slower machine the node then read as offline by the real clock. The claim now takes the time it is made (`tests/client/test_storage_commands.py`). Tests only.
+
 ## 1.24.1 - 2026-11-14 - patch
 - The storage report had no Docker totals on the real node: the worker's Docker wrapper refuses every `docker system` call, as a guard against `system prune`, so `docker system df` was refused too. `system df`, which only reads, is now the one `system` call allowed; prune stays refused everywhere (`worker/docker.py`). Test in `tests/worker/test_docker_cleanup.py`.
 

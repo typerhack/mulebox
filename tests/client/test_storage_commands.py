@@ -34,11 +34,12 @@ REPORT = {
 
 @pytest.fixture
 def remote(store, staging, monkeypatch):  # noqa: F811
-    queued(store, staging, now=NOW - 10, branch="feature/a")
+    now = time.time()  # the claim's time, not the module's: online is judged by the real clock
+    queued(store, staging, now=now - 10, branch="feature/a")
     body = {"worker": "build-1", "capabilities": [], "free_slots": 2,
             "settings": {"slots": 2, "priority": "normal", "dev": False, **storage_policy.DEFAULTS},
-            "storage": REPORT}
-    api.handle(store, staging, request("claim", **body), NOW)
+            "storage": {**REPORT, "at": now - 120}}
+    api.handle(store, staging, request("claim", **body), now)
     fake = StoreRemote(store, staging)
     monkeypatch.setattr(storage_commands, "connect", lambda: fake)
     monkeypatch.setattr(machine_config, "connect", lambda: fake)
@@ -66,7 +67,7 @@ def test_storage_says_what_each_node_holds_and_what_goes_when(remote, capsys):
 
 def test_a_node_with_no_report_says_why(store, staging, monkeypatch, capsys):  # noqa: F811
     api.handle(store, staging, request("claim", worker="old-1", capabilities=[], free_slots=1),
-               NOW)
+               time.time())
     monkeypatch.setattr(storage_commands, "connect", lambda: StoreRemote(store, staging))
     run("storage")
     assert "old-1: online, no report yet" in capsys.readouterr().out
