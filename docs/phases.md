@@ -837,7 +837,7 @@ After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionO
 Decided by the user on 2026-11-12, to start after M21 and M22 (macOS nodes, Apple builds). Ideas taken
 from other self-hosted runner tools and made to serve agent jobs first, not only CI. Ranked by benefit
 to the core; 1, 2 and 5 first. Each needs a design note in design.md before it is built.
-- [~] M23.1 Isolation per project: `isolation: container` (later `vm`) runs a job in a fresh
+- [x] M23.1 Isolation per project: `isolation: container` (later `vm`) runs a job in a fresh
       container or virtual machine, not under systemd as the node's user, so code an agent wrote
       cannot read the node's home folder. The trade-offs of each level written down.
       Design note written 2026-11-14 (1.17.25): design.md, Isolation per job. Proposed: a floor
@@ -855,8 +855,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       the node with real Postgres and Redis: both by name and at `localhost:$MULEBOX_PORT_...`,
       `docker compose exec` (42, PONG), `ps` and `restart` of its own services worked; `docker run`
       and a privileged exec were refused with the reason in the log; a cancel mid-job left no
-      container, network, socket or door process. Open: part 3, the floor in node.toml and the
-      refusal of a job asking for less.
+      container, network, socket or door process.
+      Done 2026-11-14 (1.20.0), part 3, the floor: with `isolation = "container"` set in the
+      node's node.toml while it ran (no restart), a project that said nothing ran isolated (no
+      `~/.mulebox`, no Docker socket, "isolated: runs in a container" in its log), and one with
+      `isolation: none` was refused at submit with the reason and the fix. node.toml was put back.
 - [ ] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
