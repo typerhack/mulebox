@@ -1,6 +1,7 @@
 // What a node holds beside its branch folders: package caches, toolchains and browsers,
 // GitHub runners, uploads and job folders, each with its size and its path to copy. Then
-// Docker's own totals: all of Docker on the node, not only mulebox's, shown and never cleaned.
+// Docker's own totals: all of Docker on the node, not only mulebox's, with what mulebox cleans
+// of it and what its last cleanup freed.
 
 import { Layers, Package, Workflow, Wrench, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -45,6 +46,7 @@ const DOCKER: [string, string, string][] = [
 export function OtherRows({ report }: { report: Report }) {
   const at = report.paths, shared = (name: string) => report.shared[name] ?? 0;
   const caches = report.projects.filter((p) => p.caches > 0).sort((a, b) => b.caches - a.caches);
+  const freed = report.sweep?.docker ?? null;
   const cacheTotal = caches.reduce((a, p) => a + p.caches, 0) + shared("caches_other");
   return (
     <>
@@ -67,7 +69,12 @@ export function OtherRows({ report }: { report: Report }) {
 
       <Head icon={Layers} title="Docker" note="all of Docker on this node, not only mulebox's" />
       <p className="py-2 text-sm text-ink-2">
-        Shown, never cleaned by mulebox: a job's own containers and images go with the job, and the rest cannot be told from yours.
+        {report.policy.docker_clean === undefined
+          ? "Shown, not cleaned: this node runs a mulebox older than 1.26."
+          : `${report.policy.docker_clean && report.policy.auto_clean !== false ? "Cleaned with each cleanup" : "Its cleanup is off; Run now still cleans it"}: mulebox removes Docker's unused build cache and dangling images, and the images its own jobs pulled and no longer use. It never touches volumes, or images mulebox never used.`}
+        {freed && <>{" "}<span className="text-ink-1">The last cleanup freed <strong className="num font-semibold">{bytes(freed.build_cache)}</strong> of build cache
+          and <strong className="num font-semibold">{bytes(freed.images)}</strong> of images{freed.removed.length ? ` (${freed.removed.join(", ")})` : ""}.</span></>}
+        {report.sweep && !freed && report.policy.docker_clean !== undefined && " The last cleanup did not clean Docker."}
       </p>
       {report.docker ? DOCKER.filter(([key]) => report.docker?.[key]).map(([key, name, one]) => {
         const part = report.docker![key];

@@ -1,7 +1,7 @@
 // What the storage tests share: a node's report as a worker's sweep sends it, and the reply
 // around it. Every name is an example.
 
-import type { Folder, Report, StorageBody } from "./storage";
+import type { Folder, Report, StorageBody, Sweep } from "./storage";
 
 export const GB = 1e9, NOW = Math.floor(Date.now() / 1000), DAY = 86400;  // the page reads the real clock
 export const folder = (name: string, gb: number, daysAgo: number, fate: Folder["fate"], removedIn: number | null = null): Folder =>
@@ -44,3 +44,26 @@ export const low = (): Report => report({
     { ...folder("chore-deps-44444444", 2.5, 3, "stays", 4), project: "example-app" },
     { ...folder("main-22222222", 0.6, 2, "kept"), project: "example-app" }] },
 });
+
+// A node on 1.26: its cleanup settings, what it holds, its last cleanup, and the history.
+export const sweep = (hoursAgo: number, more: Partial<Sweep> = {}): Sweep => ({
+  started: NOW - hoursAgo * 3600, seconds: 4.2, trigger: "hourly", auto: true, would_remove: 0, removed: [], count: 0, bytes: 0,
+  docker: { build_cache: 0, images: 0, removed: [], error: null }, free_before: 80 * GB, free_after: 80 * GB, errors: [], ...more,
+});
+export const cleaned = (): Sweep => sweep(0.2, {
+  removed: [{ project: "example-app", folder: "old-pricing-66666666", size: 0.8 * GB, why: "gone" },
+            { project: "example-app", folder: "fix-typo-77777777", size: 0.4 * GB, why: "unused" },
+            { project: "example-app", folder: "big-88888888", size: 1.1 * GB, why: "size" }],
+  count: 3, bytes: 2.3 * GB, docker: { build_cache: 1.2 * GB, images: 0.4 * GB, removed: ["node:20-bookworm"], error: null },
+  free_before: 76.1 * GB, free_after: 80 * GB,
+});
+export const modern = (more: Partial<Report> = {}): Report => report({
+  policy: { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14, auto_clean: true, docker_clean: true,
+            warn_size: "50GB", max_size: "OFF" },
+  held: 13 * GB, over: 0, sweep: cleaned(), ...more,
+});
+export const withHistory = (made: Report = modern(), history: Sweep[] = [cleaned(), sweep(1.2)]): StorageBody => {
+  const base = body({}, made);
+  base.branches["example-app"]["old-pricing-66666666"] = "feature/old-pricing";
+  return { ...base, history: history.map((one) => ({ node: "build-1", ...one })) };
+};

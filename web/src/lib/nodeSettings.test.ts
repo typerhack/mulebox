@@ -31,6 +31,17 @@ describe("a node's settings", () => {
     expect(asSuggested(view({ suggested: null }))).toEqual({ priority: "normal" });
   });
 
+  it("take the disk suggestions the node reports, and none an older node lacks", () => {
+    const disk = { keep_free: "20%", unused_days: 3, keep_latest: false, idle_days: 9 };
+    const defaults = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
+                       auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
+    expect(asSuggested(view({ current: { slots: 2, priority: "normal", ...disk }, defaults })))
+      .toEqual({ slots: 4, priority: "normal", keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 });
+    expect(asSuggested(view({ current: { slots: 2, priority: "normal", ...disk, auto_clean: false, docker_clean: false,
+                                         max_size: "80GB", warn_size: "OFF" }, defaults })))
+      .toEqual({ slots: 4, priority: "normal", ...defaults });
+  });
+
   it("show nothing to run with for a node that has not reported", () => {
     expect(rowOf(view({ applies: false, current: null }), {}, "slots")).toEqual({ now: null, yours: null, mark: null });
   });

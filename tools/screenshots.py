@@ -68,6 +68,10 @@ SHOTS = [
                 ".find(b => b.textContent.includes('example-app')).click();"
                 " await new Promise(r => setTimeout(r, 300));"
                 " document.querySelector('section[aria-label=Storage]').scrollIntoView(); window.scrollBy(0, -60); })()"),
+    Shot("storage-history-light", "#/storage", "light", height=760, env=CLEAN,
+         script="(async () => { const h = document.querySelector('section[aria-label=\"Cleanup history\"]');"
+                " const rows = h.querySelectorAll('button[aria-expanded]'); rows[0].click(); rows[5].click();"
+                " await new Promise(r => setTimeout(r, 300)); h.scrollIntoView(); window.scrollBy(0, -60); })()"),
     Shot("storage-settings-light", "#/", "light", height=1000, env=CLEAN,
          script="(async () => { document.querySelector('[aria-label=\"Settings of build-1\"]').click();"
                 " await new Promise(r => setTimeout(r, 1200)); document.getElementById('tab-storage').click(); })()"),

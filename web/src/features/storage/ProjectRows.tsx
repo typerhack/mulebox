@@ -9,7 +9,7 @@ import { useState, type ReactNode } from "react";
 
 import { ago, bytes, plural } from "../../lib/format";
 import { branchOf, fateText, goingNext, keptBranch, keptProject, projectSize, suggestions,
-         type Fate, type Folder, type Project, type Report, type StorageBody } from "../../lib/storage";
+         type Fate, type Folder, type Policy, type Project, type Report, type StorageBody } from "../../lib/storage";
 import { IconButton } from "../../ui/Button";
 import { CopyButton } from "../../ui/Copy";
 import { cx } from "../../ui/cx";
@@ -77,7 +77,12 @@ function projectFate(project: Project, report: Report, body: StorageBody, ctl: C
   }
   if (keptProject(body, project.project)) return <FateLine icon={Pin} tone="text-accent">Kept by you</FateLine>;
   const next = goingNext(report).filter((f) => f.project === project.project);
-  const soon = next.filter((f) => f.fate === "remove" || (f.removed_in ?? Infinity) < 1);
+  const due = next.filter((f) => f.fate === "remove");
+  if (due.length) {
+    return <FateLine icon={Timer} strong>{plural(due.length, "folder")} {report.policy.auto_clean === false ? "would go (automatic cleanup is off)"
+      : `${due.length === 1 ? "goes" : "go"} at the next cleanup`}</FateLine>;
+  }
+  const soon = next.filter((f) => (f.removed_in ?? Infinity) < 1);
   if (soon.length) return <FateLine icon={Timer} strong>{plural(soon.length, "folder")} {soon.length === 1 ? "goes" : "go"} within a day</FateLine>;
   if (next.length) return <FateLine icon={Clock}>{fateText(next[0]).replace("Removed", "Next goes")}</FateLine>;
   return <FateLine icon={Flag}>Nothing goes on its own</FateLine>;
@@ -88,8 +93,8 @@ const NO_BRANCH = "mulebox does not know this folder's branch: clean the project
 
 const FIRST = 8;  // a project's folders before "more": the ones used last
 
-interface FoldersProps { body: StorageBody; project: Project; home: string | null; now: number; ctl: Controls; asked: Asking | null }
-function Folders({ body, project, home, now, ctl, asked }: FoldersProps) {
+interface FoldersProps { body: StorageBody; project: Project; policy: Policy; home: string | null; now: number; ctl: Controls; asked: Asking | null }
+function Folders({ body, project, policy, home, now, ctl, asked }: FoldersProps) {
   const [all, setAll] = useState(false);
   const name = project.project;
   const sorted = [...project.folders].sort((a, b) => (b.last_used ?? 0) - (a.last_used ?? 0));
@@ -110,7 +115,7 @@ function Folders({ body, project, home, now, ctl, asked }: FoldersProps) {
                 <strong className="num font-semibold">{bytes(folder.size)}</strong>
                 <span className="text-ink-2">{ago(folder.last_used, now)}</span>
                 <FateLine icon={FATE_ICON[folder.fate]} strong={folder.fate === "remove"}
-                  tone={folder.fate === "kept" ? "text-accent" : folder.fate === "running" ? "text-running" : undefined}>{fateText(folder)}</FateLine>
+                  tone={folder.fate === "kept" ? "text-accent" : folder.fate === "running" ? "text-running" : undefined}>{fateText(folder, policy)}</FateLine>
               </span>
               <RowActs path={home && `${home}/trees/${folder.folder}`} what={branch ?? folder.folder}
                 kept={mine} locked={branch === null ? NO_BRANCH : undefined}
@@ -166,7 +171,7 @@ export function ProjectRows({ body, report, now, ctl }: Props) {
               <CleanConfirm body={body} project={project} folder={null} reset={asked.reset} busy={ctl.busy} problem={ctl.problem}
                 onRemove={ctl.remove} onCancel={() => ctl.ask(null)} />
             )}
-            {open && <Folders body={body} project={project} home={home(name)} now={now} ctl={ctl} asked={asked} />}
+            {open && <Folders body={body} project={project} policy={report.policy} home={home(name)} now={now} ctl={ctl} asked={asked} />}
           </div>
         );
       })}

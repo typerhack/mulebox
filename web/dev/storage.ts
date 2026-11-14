@@ -5,8 +5,9 @@
 
 const GB = 1e9, DAY = 86400;
 const LOW = process.env.MULEBOX_MOCK_SCENE === "lowspace";
+const OFF = process.env.MULEBOX_MOCK_SCENE === "cleanupoff";  // automatic cleanup off: folders that would go, a size limit passed
 const now = () => Date.now() / 1000;
-interface Folder { folder: string; size: number; last_used: number; fate: string; removed_in: number | null }
+interface Folder { folder: string; size: number; last_used: number; fate: string; removed_in: number | null; why?: string | null }
 interface Project { project: string; home: number; caches: number; folders: Folder[] }
 
 const WORDS = ["checkout", "invoices", "login-redirect", "reports-export", "search-filters", "dark-mode", "rate-limits", "onboarding",
@@ -34,12 +35,55 @@ function project(name: string, count: number, total: number, newest: number, cac
            folders: folders.map(({ age, ...f }) => ({ ...f, removed_in: f.fate === "stays" ? Math.max(0, 7 - age) : null })) };
 }
 
-const projects = [project("example-app", 56, 37.2 * GB, 0.008, 2.3 * GB), project("example-shop", 69, 23.5 * GB, 0.08, 1.4 * GB),
+const made = [project("example-app", 56, 37.2 * GB, 0.008, 2.3 * GB), project("example-shop", 69, 23.5 * GB, 0.08, 1.4 * GB),
                   project("mulebox", 19, 1.27 * GB, 0.03, 0.5 * GB), project("example-docs", 1, 0.7 * GB, 16.2, 0)];
+// Two folders are due at the next cleanup: one whose branch was deleted, one unused for a week
+// (with the cleanup off, three, one of them over the size limit).
+function due(projectName: string, at: number, why: string) {
+  const folder = made.find((p) => p.project === projectName)?.folders.filter((f) => f.fate === "stays").at(-at);
+  if (folder) Object.assign(folder, { fate: "remove", removed_in: null, why });
+}
+due("example-app", 1, "unused"); due("example-shop", 3, "gone");
+if (OFF) due("example-app", 2, "size");
+const projects = made;
 const where = (home: string) => ({ projects: `${home}/.mulebox/projects`, packages: `${home}/.mulebox/cache/packages`,
   toolchains: `${home}/.mulebox/cache/toolchains`, browsers: `${home}/.mulebox/cache/playwright`, caches_other: `${home}/.mulebox/cache`,
   runners: `${home}/.mulebox/runners`, staging: `${home}/.mulebox/staging`, jobs: `${home}/.mulebox/jobs` });
-const policy = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 };
+const policy = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14, auto_clean: !OFF, docker_clean: true,
+                 warn_size: "50GB", max_size: OFF ? "60GB" : "OFF" };
+
+// A node's cleanups, newest first: hourly ones that found nothing, one after a branch was
+// deleted, one by hand with Docker, one with an error, one when the disk ran low.
+const removedOf = (list: [string, string, number, string][]) => list.map(([project, branch, gb, why]) =>
+  {
+    const folder = `${branch.replace(/\W+/g, "-")}-0f1e2d3c`;
+    (branches[project] ??= {})[folder] = branch;
+    return { project, folder, size: gb * GB, why };
+  });
+function sweep(hoursAgo: number, trigger: string, gone: [string, string, number, string][], docker: [number, number, string[]] | null,
+               free: number, errors: string[] = []) {
+  const removed = removedOf(gone), bytes = removed.reduce((a, f) => a + f.size, 0);
+  const freed = bytes + (docker ? (docker[0] + docker[1]) * GB : 0);
+  return { started: now() - hoursAgo * 3600, seconds: Math.round((3 + gone.length * 1.7) * 10) / 10, trigger, auto: !OFF, would_remove: OFF ? 3 : 0,
+           removed: OFF ? [] : removed, count: OFF ? 0 : removed.length, bytes: OFF ? 0 : bytes,
+           docker: OFF ? null : docker && { build_cache: docker[0] * GB, images: docker[1] * GB, removed: docker[2], error: null },
+           free_before: free * GB - freed, free_after: free * GB, errors };
+}
+function history(node: string) {
+  const quiet = (h: number) => sweep(h, "hourly", [], [0, 0, []], 80);
+  return [
+    sweep(0.2, "hourly", [["example-app", "feature/old-pricing", 0.8, "gone"], ["example-shop", "fix/typo", 0.4, "unused"]], [1.2, 0.4, ["node:20-bookworm"]], 80),
+    quiet(1.2), quiet(2.2),
+    sweep(3.2, "now", [["example-shop", "agent/spike-search", 0.9, "unused"]], [6.3, 2.1, ["postgres:16", "redis:7"]], 78.3),
+    quiet(4.2),
+    sweep(5.2, "hourly", [["example-app", "chore/bump-eslint", 0.5, "gone"]], [0, 0, []], 68.4,
+          ["example-shop/fix-webhooks-1a2b3c4d: [Errno 13] Permission denied: 'node_modules/.cache'"]),
+    sweep(6.1, "low", [["example-app", "feature/reports-v1", 1.1, "size"], ["example-app", "feature/reports-v2", 0.9, "size"],
+                       ["example-shop", "fix/cart-rounding", 0.6, "unused"]], [3.8, 0, []], 67.9),
+    sweep(7.2, "start", [], null, 61.5),
+    ...Array.from({ length: 18 }, (_, i) => quiet(8.2 + i)),
+  ].map((one) => ({ node, ...one }));
+}
 
 // What the node says could go next: the oldest folders, until they cover what is missing.
 function short() {
@@ -61,8 +105,12 @@ function reports() {
     docker: { images: { size: 9.8 * GB, reclaimable: 3.6 * GB, count: 23 }, containers: { size: 0.2 * GB, reclaimable: 0, count: 6 },
               volumes: { size: 1.1 * GB, reclaimable: 0.3 * GB, count: 9 }, build_cache: { size: 9.7 * GB, reclaimable: 9.4 * GB, count: 212 } },
     idle: [{ project: "example-docs", days: 16, size: 0.7 * GB, kept: keeps.some((k) => k.project === "example-docs" && !k.branch) }],
-    short: LOW ? short() : null, removed: LOW ? { count: 0, bytes: 0 } : { count: 13, bytes: 4.3 * GB },
+    short: LOW ? short() : null, removed: LOW || OFF ? { count: 0, bytes: 0 } : { count: 2, bytes: 1.2 * GB },
+    held: 0, over: OFF ? 1.4 * GB : 0, sweep: history("build-1")[0] as Record<string, unknown>,
   };
+  main.held = projects.reduce((a, p) => a + p.home + p.caches + p.folders.reduce((b, f) => b + f.size, 0), 0)
+    + Object.values(main.shared).reduce((a, b) => a + b, 0);
+  delete main.sweep.node;
   const ios = project("example-ios", 6, 3.3 * GB, 0.4, 1.2 * GB);
   const mac = { at: now() - 41 * 60, disk: { total: 994 * GB, free: 382 * GB, reserve: 99.4 * GB }, policy, projects: [ios],
                 shared: { toolchains: 0.3 * GB, browsers: 0, caches_other: 0, runners: 1.3 * GB, staging: 0.1 * GB, jobs: 0 },
@@ -73,7 +121,7 @@ function reports() {
 export function storageBody(machines: { name: string; state: string; version?: string | null }[], editable: boolean) {
   const made = reports();
   return { nodes: machines.map((m, index) => ({ node: m.name, online: m.state !== "offline", version: m.version, report: made[index] ?? null })),
-           keeps, branches, editable };
+           keeps, branches, history: history(machines[0]?.name ?? "build-1"), editable };
 }
 
 export function keepMark(body: Record<string, unknown>) {
@@ -83,7 +131,13 @@ export function keepMark(body: Record<string, unknown>) {
   return { keeps };
 }
 
-const groups = new Map<string, { project: string; branch: string | null; asked: number; nodes: string[] }>();
+const groups = new Map<string, { project: string; branch: string | null; asked: number; nodes: string[]; sweep?: boolean }>();
+// Run now: the node answers after a moment with its cleanup's own summary.
+export function sweepStart(body: Record<string, unknown>) {
+  const group = `grp-${groups.size + 1}`, nodes = [typeof body.node === "string" ? body.node : "build-1"];
+  groups.set(group, { project: "", branch: null, asked: Date.now(), nodes, sweep: true });
+  return { group, nodes, offline: [], done: false };
+}
 export function removeStart(body: Record<string, unknown>, nodes: string[]) {
   const group = `grp-${groups.size + 1}`;
   groups.set(group, { project: String(body.project), branch: typeof body.branch === "string" ? body.branch : null, asked: Date.now(), nodes });
@@ -94,6 +148,10 @@ export function removeRead(group: string) {
   const found = groups.get(group);
   if (!found) return null;
   const done = Date.now() - found.asked > 1500;
+  if (found.sweep) {
+    return { group, done, action: "sweep", answers: found.nodes.map((node) => ({ node, exit_code: done ? 0 : null, answered: done, lost: false,
+      output: done ? "removed 2 branch folder(s), 1.2 GB\ndocker: build cache 1.2 GB, images 400.0 MB freed (node:20-bookworm)\nfree space 78.4 GB to 80.0 GB" : null })) };
+  }
   if (done) {
     const at = projects.findIndex((p) => p.project === found.project);
     if (at >= 0 && found.branch === null) projects.splice(at, 1);

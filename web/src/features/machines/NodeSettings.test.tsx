@@ -37,6 +37,14 @@ describe("a node's settings window", () => {
     expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("lays the Jobs tab's panels two to a row, each on the grid's rows, so a row's panels line up", async () => {
+    serve(view());
+    await open();
+    const panels = [...document.querySelectorAll(".setting-panels > section")];
+    expect(panels.map((panel) => panel.getAttribute("aria-label"))).toEqual(["Slots", "Priority", "Dev mode", "Reported by the node"]);
+    expect(panels.every((panel) => panel.classList.contains("setting-panel"))).toBe(true);
+  });
+
   it("calls an edit unsaved until Save, and pending only once it was sent", async () => {
     const posts = serve(view(), view({ pending: { slots: 3 }, pending_since: 1 }));
     await open();

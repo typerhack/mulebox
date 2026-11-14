@@ -9,7 +9,9 @@
 //          and a GitHub run frozen and boosted (the narrowest card).
 //   settings: the split queue, with node settings in every state the window shows: build-1
 //          as suggested, build-2 with a saved change it could not take, build-3 (with
-//          MULEBOX_MOCK_MACHINES=3 or more) on an older mulebox, build-4 (4 or more) in dev mode. A change saved in the window
+//          MULEBOX_MOCK_MACHINES=3 or more) on an older mulebox, build-4 (4 or more) in dev mode
+//          on 1.25 (no auto_clean, docker_clean, max_size or warn_size); build-2 has a size
+//          limit and cleanup on its own off. A change saved in the window
 //          is pending for 6 s, then the node has it. MULEBOX_MOCK_CONTROLS=off turns the
 //          controls off, so the window is read only.
 //   order: the order rules on (dev/order.ts): seven jobs for the next free machine, each with
@@ -97,9 +99,9 @@ function downloads() {
 
 // What each node's settings start as (dev/settings.ts fills in the rest).
 export const SETTINGS_SCENE: Record<string, More> = {
-  "build-2": { pending: { slots: 3, priority: "fallback" }, error: "node.toml is a symlink, which is never written through" },
+  "build-2": { disk: { max_size: "5GB", auto_clean: false }, pending: { slots: 3, priority: "fallback" }, error: "node.toml is a symlink, which is never written through" },
   "build-3": { old: true },
-  "build-4": { dev: true },
+  "build-4": { dev: true, pre126: true },
 };
 
 export function makeScene(name: string | undefined) {

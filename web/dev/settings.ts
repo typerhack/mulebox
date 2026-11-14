@@ -5,9 +5,12 @@
 import { SETTINGS_SCENE } from "./scenes.ts";
 
 interface Row { name: string; slots: number; state: string; cores?: number | null; version?: string | null; jobs: unknown[] }
-const DISK = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 };
+const DISK = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
+               auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
 const DISK_KEYS = Object.keys(DISK) as (keyof typeof DISK)[];
+const SINCE_126 = ["auto_clean", "docker_clean", "max_size", "warn_size"];
 interface Kept { disk: Record<string, unknown>; priority: string; dev: boolean; pending: Record<string, unknown> | null; since: number | null; error: string | null; old: boolean }
+const SIZE = /^\s*(off|\d+(\.\d+)?\s*(MB|GB|TB))\s*$/i;
 
 const TAKES_MS = 6000;
 const PRIORITIES = ["preferred", "normal", "fallback"];
@@ -18,7 +21,10 @@ function of(row: Row): Kept {
   let found = kept.get(row.name);
   if (!found) {
     const start = scene[row.name] ?? {};
-    found = { disk: { ...DISK }, priority: "normal", dev: Boolean(start.dev), pending: (start.pending as Kept["pending"]) ?? null, since: start.pending ? Date.now() / 1000 - 40 : null,
+    // `pre126`: a node on 1.24 or 1.25, with the first four disk settings only.
+    const disk: Record<string, unknown> = { ...DISK, ...(start.disk as Record<string, unknown> | undefined) };
+    if (start.pre126) for (const key of SINCE_126) delete disk[key];
+    found = { disk, priority: "normal", dev: Boolean(start.dev), pending: (start.pending as Kept["pending"]) ?? null, since: start.pending ? Date.now() / 1000 - 40 : null,
               error: (start.error as string) ?? null, old: Boolean(start.old) };
     kept.set(row.name, found);
   }
@@ -56,6 +62,13 @@ export function answerSettings(row: Row, change: Record<string, unknown> | null,
   if (slots !== undefined && !(Number.isInteger(slots) && (slots as number) >= 1 && (slots as number) <= 64)) return { status: 400, body: "slots must be a whole number from 1 to 64" };
   if (priority !== undefined && !PRIORITIES.includes(String(priority))) return { status: 400, body: "priority must be preferred, normal or fallback" };
   if (dev !== undefined && typeof dev !== "boolean") return { status: 400, body: "dev must be true or false" };
+  for (const key of SINCE_126) {
+    if (change[key] === undefined) continue;
+    if (!(key in has.disk)) return { status: 409, body: `${row.name} runs a mulebox older than 1.26, which has no ${key}` };
+    const flag = key.endsWith("_clean");
+    if (flag ? typeof change[key] !== "boolean" : !SIZE.test(String(change[key]))) return { status: 400, body: `${key} must be ${flag ? "true or false" : "a size such as \"50GB\" or \"off\""}` };
+    if (!flag) change[key] = String(change[key]).replace(/\s/g, "").toUpperCase();
+  }
   if (dev === true && row.name === "build-1") return { status: 409, body: "dev mode is for other nodes: build-1 is the coordinator, which every job goes through" };
   const wanted: Record<string, unknown> = change.cancel ? {} : { ...has.pending };
   if (slots !== undefined) wanted.slots = slots;

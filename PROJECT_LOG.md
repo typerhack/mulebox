@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.0 - 2026-11-14 - minor
+- The dashboard for 1.26's cleanup. Storage page: an automatic cleanup line under the ruler with each rule as the node has it (off said as off), what the last cleanup removed and freed, and Settings and Run now buttons (`web/src/features/storage/CleanupLine.tsx`); the cleanup history of the shown node, each run opening to its folders and why, its Docker images and its errors (`CleanupHistory.tsx`); Docker worded as what mulebox removes and never touches; mulebox's size against `warn_size` and `max_size`; each folder's fate with its reason. README text and pictures retaken (`tools/screenshots.py`).
+- Node settings window: panels two to a row on one grid, their rows lined up (`.setting-panels`, `Panel` subgrid); the Jobs tab in the same style; the four new storage settings beside the related ones (`StorageLimits.tsx`), hidden for a node older than 1.26, and "All as suggested" sends only what the node reports. Stand-in scenes `cleanupoff` and the settings scene with a 1.25 node.
+- Component tests for both; docs/interfaces-m2.md, docs/design-system.md and web/README.md updated.
+
 ## 1.26.0 - 2026-11-14 - minor
 - Cleanup that follows the branches (the user's ask): every job carries the dev machine's own branch list (`client/gitinfo.py`), the coordinator keeps the newest per project and dev machine (`coordinator/branch_lists.py`, table `project_branches`, schema 26) and sends each node the branches no dev machine has any more (`storage_gone`); the sweep removes their folders at once, latest or not, and the latest mark moves to the newest live branch (`worker/storage_rules.py`). A dev machine on an older mulebox sends no list, so its branches are never judged.
 - Docker cleanup on its own, `docker_clean` (on): build cache unused for `unused_days`, dangling images, and images mulebox's own jobs pulled and no job used since, when no container uses them (`worker/docker_prune.py`, `worker/image_use.py`). An image mulebox never used, volumes, networks and containers are never touched; `image prune --all` and `system prune` stay refused (`worker/docker.py`).

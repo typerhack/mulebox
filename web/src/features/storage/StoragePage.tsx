@@ -1,15 +1,16 @@
 // The Storage page (the user's pick, "by project"): for the node the top row shows, its disk
-// as one ruler, what its last sweep did and what goes next, then everything mulebox holds
-// there: projects and their branch folders, caches, toolchains, runners, and Docker's totals.
+// as one ruler, its automatic cleanup (what it does, what the last one did, Run now), then
+// everything mulebox holds there: projects and their branch folders, caches, toolchains,
+// runners and Docker's totals, and last the history of its cleanups.
 // The numbers are the node's last report, an hour old at most; the page measures nothing.
 
-import { Folder, HardDrive, Lock, Timer } from "lucide-react";
+import { Folder, HardDrive, Lock } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { problemText } from "../../lib/api";
 import { ago, bytes, plural } from "../../lib/format";
 import { useStore } from "../../lib/store";
-import { branchOf, cleanable, held, nextLine, sendKeep, sendRemove, suggestions } from "../../lib/storage";
+import { branchOf, cleanable, held, sendKeep, sendRemove, suggestions } from "../../lib/storage";
 import { tickStore, useMachines } from "../../state/live";
 import { hostOf, pick, pickStore } from "../../state/picked";
 import { markGone, refreshStorage, setKeeps, useStorage } from "../../state/storage";
@@ -17,6 +18,8 @@ import { Button } from "../../ui/Button";
 import { WithCode } from "../../ui/Code";
 import { Panel } from "../../ui/Panel";
 import { Segmented } from "../../ui/Segmented";
+import { CleanupHistory } from "./CleanupHistory";
+import { CleanupLine } from "./CleanupLine";
 import { DiskRuler } from "./DiskRuler";
 import { GoingNextWindow } from "./GoingNext";
 import { Head, OtherRows } from "./OtherRows";
@@ -73,7 +76,7 @@ export function StoragePage() {
     if (failed.length) setProblem([...new Set(failed)].join(" "));
     else {
       setAsking(null);
-      setSaid("Removed. The sizes follow with each node's next sweep, within the hour.");
+      setSaid("Removed. The sizes follow with each node's next cleanup, within the hour.");
     }
     setBusy(false);
     void refreshStorage();
@@ -110,17 +113,10 @@ export function StoragePage() {
       ) : (
         <>
           <DiskRuler report={report} legend />
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-m border border-line bg-surface-2 px-3 py-2 text-sm">
-            <Timer aria-hidden className="size-icon flex-none text-ink-2" />
-            <p className="min-w-0 flex-1 basis-col-m">
-              <strong className="font-semibold">
-                {report.removed.count ? `The last sweep, ${ago(report.at, now)}, removed ${plural(report.removed.count, "branch folder")} and freed ${bytes(report.removed.bytes)}.`
-                  : `The last sweep, ${ago(report.at, now)}, removed nothing.`}
-              </strong>{" "}
-              <span className="text-ink-2">{nextLine(report)} A folder goes after {plural(report.policy.unused_days, "day")} with no job{!node.online && "; the node is offline now"}.</span>
-            </p>
+          <CleanupLine node={node.node} online={node.online} report={report} editable={body.editable} now={now}
+            machine={panel?.machines.find((m) => m.name === node.node) ?? null}>
             <Button ref={nextButton} aria-haspopup="dialog" onClick={() => setShowNext(true)}>Show what goes next</Button>
-          </div>
+          </CleanupLine>
           {said && <p role="status" className="text-sm font-medium">{said}</p>}
           <div className="keep-list">
             <Head icon={Folder} title="Projects" columns={["Size", "Last job", "What happens"]}
@@ -129,6 +125,8 @@ export function StoragePage() {
             {!report.projects.some((p) => p.folders.length || p.home) && <p className="py-2 text-sm text-ink-2">No project has run a job on this node yet.</p>}
             <OtherRows report={report} />
           </div>
+          <CleanupHistory sweeps={(body.history ?? []).filter((sweep) => sweep.node === node.node)} body={body}
+            days={report.policy.unused_days} now={now} />
           {showNext && (
             <GoingNextWindow node={node.node} body={body} report={report} now={now} opener={nextButton}
               onKeep={body.editable ? keep : undefined} onClose={() => setShowNext(false)} />

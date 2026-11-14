@@ -20,7 +20,7 @@ describe("a node's storage report", () => {
   });
 
   it("says what happens to a folder in the report's own words", () => {
-    expect(fateText({ fate: "remove", removed_in: null })).toBe("Goes at the next sweep");
+    expect(fateText({ fate: "remove", removed_in: null })).toBe("Goes at the next cleanup");
     expect(fateText({ fate: "stays", removed_in: 0.5 })).toBe("Removed within a day");
     expect(fateText({ fate: "stays", removed_in: 3.2 })).toBe("Removed in 4 days");
     expect(fateText({ fate: "latest", removed_in: null })).toBe("Kept: the project's latest");
@@ -63,11 +63,31 @@ describe("the free space to keep", () => {
     const made = report();
     const same = preview(made, made.policy, NOW)!;
     expect(same).toMatchObject({ goes: 0, shortBy: 0 });
-    expect(previewText(same, made)).toBe("With these values the reserve is 49.0 GB and the next sweep removes nothing. The disk stays 31.0 GB above the reserve.");
+    expect(previewText(same, made)).toBe("With these values the reserve is 49.0 GB and the next cleanup removes nothing. The disk stays 31.0 GB above the reserve.");
     const strict = preview(made, { keep_free: "20%", unused_days: 3, keep_latest: false, idle_days: 14 }, NOW)!;
     expect(strict.goes).toBe(3);  // fix/login and chore/deps past 3 days, and example-docs's latest
     expect(strict.frees / GB).toBeCloseTo(1.6);
     expect(previewText(strict, made)).toContain("so mulebox would ask you what else may go");
+  });
+
+  it("takes the oldest folders that may go past the size limit, and says what stays over it", () => {
+    const made = report();  // mulebox holds 13 GB; two folders may go, 0.5 and 0.4 GB
+    const fits = preview(made, { ...made.policy, max_size: "12.5GB" }, NOW)!;
+    expect(fits).toMatchObject({ goes: 1, bySize: 1, over: 0 });
+    expect(previewText(fits, made)).toBe("With these values the reserve is 49.0 GB and the next cleanup removes 1 folder and frees "
+      + "500.0 MB, 1 of them to stay under the size limit. The disk stays 31.5 GB above the reserve. mulebox would hold 12.5 GB of its 12.5 GB limit.");
+    const tight = preview(made, { ...made.policy, max_size: "12GB" }, NOW)!;
+    expect(tight).toMatchObject({ goes: 2, bySize: 2 });
+    expect(previewText(tight, made)).toContain("mulebox would hold 12.1 GB, over its 12.0 GB limit: the rest is running, kept or latest.");
+    expect(preview(made, { ...made.policy, max_size: "OFF" }, NOW)).toMatchObject({ limit: null, goes: 0 });
+  });
+
+  it("removes nothing with cleanup on its own off, and says what it would", () => {
+    const made = report();
+    const found = preview(made, { ...made.policy, unused_days: 3, auto_clean: false, max_size: "10GB" }, NOW)!;
+    expect(found).toMatchObject({ auto: false, goes: 2, held: 13 * GB });
+    expect(previewText(found, made)).toBe("With these values the reserve is 49.0 GB and cleanup on its own is off, so the next cleanup "
+      + "removes nothing; it would remove 2 folders, 900.0 MB. The disk stays 31.0 GB above the reserve. mulebox holds 13.0 GB, over its 10.0 GB limit.");
   });
 });
 

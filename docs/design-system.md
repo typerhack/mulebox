@@ -226,8 +226,11 @@ Drawn in the specimen, in both themes:
   first table "hurt the eyes"): a panel per setting, with its name and icon, one line on what it
   means, then Suggested, Yours and Runs with as rows with the name on the left and the value on
   the right, a hairline between rows and the reason on a line under its row; beside them a panel
-  of what the node reports, as the Disk panel lists its facts. One column under 760px of its own
-  width. While a save is on its way its
+  of what the node reports, as the Disk panel lists its facts. Both tabs set their panels two to a
+  row, one column under 640px of their own width; the panels of a row are as tall as each other
+  and their rows (the meaning, Suggested, Yours, Runs with) line up across the row, each panel's
+  rows taken from the grid it sits in (`Panel` with `subgrid`, `.setting-panels`), with the
+  controls on the panel's right edge. While a save is on its way its
   controls take no edit, and an open window reads its node again every few seconds, keeping
   what the viewer has changed and not saved.
   A panel is `--pop-width` (380px) wide or as wide as its host, whichever is less, and at most

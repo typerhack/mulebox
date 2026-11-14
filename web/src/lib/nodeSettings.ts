@@ -9,14 +9,17 @@ import { getJson, post } from "./api";
 import { unsent as unsentOf } from "./edits";
 import { REREAD_MS } from "./turns";
 
-export const STORAGE_KEYS = ["keep_free", "unused_days", "keep_latest", "idle_days"] as const;
+export const STORAGE_KEYS = ["keep_free", "unused_days", "keep_latest", "idle_days",
+                             "auto_clean", "docker_clean", "max_size", "warn_size"] as const;
 export const KEYS = ["slots", "priority", "dev", ...STORAGE_KEYS] as const;
 export type SettingKey = typeof KEYS[number];
 // `dev` is missing from a node older than 1.23, which has no dev mode; the four disk settings
-// (docs/design.md, Disk use and cleanup on its own) from one older than 1.24.
+// (docs/design.md, Disk use and cleanup on its own) from one older than 1.24, and the last four
+// (common/storage_policy.py) from one older than 1.26.
 export interface Values {
   slots: number; priority: string; dev?: boolean;
   keep_free?: string; unused_days?: number; keep_latest?: boolean; idle_days?: number;
+  auto_clean?: boolean; docker_clean?: boolean; max_size?: string; warn_size?: string;
 }
 export type Draft = Partial<Values>;
 
@@ -34,7 +37,8 @@ export interface NodeSettings {
   suggested: { slots: number; reason: string } | null;
   choices?: { slots?: { min: number; max: number }; priority?: string[]; dev?: boolean[];
               keep_free?: { max_share: number }; unused_days?: { min: number; max: number };
-              idle_days?: { min: number; max: number } };
+              idle_days?: { min: number; max: number }; auto_clean?: boolean[]; docker_clean?: boolean[];
+              max_size?: Record<string, string>; warn_size?: Record<string, string> };
   defaults?: Pick<Values, typeof STORAGE_KEYS[number]>;  // what mulebox suggests for the disk settings
   editable: boolean;
 }
@@ -59,7 +63,11 @@ export const priorityLabel = (value: string | null | undefined) =>
   PRIORITIES.find((choice) => choice.value === value)?.label ?? (value || "-");
 
 // node.toml's own defaults for the disk settings, when the server names none.
-export const STORAGE_DEFAULTS = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 };
+export const STORAGE_DEFAULTS = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
+                                  auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
+// A size setting with no limit, as the node writes it back (common/storage_policy.py).
+export const OFF = "OFF";
+export const ON_OFF: { value: string; label: string }[] = [{ value: "on", label: "On" }, { value: "off", label: "Off" }];
 export const DAYS_RANGE = { min: 1, max: 365 };
 export const LATEST: { value: string; label: string; says: string }[] = [
   { value: "keep", label: "Keep", says: "Each project's most recent folder stays however old, so its next job starts warm." },
@@ -92,11 +100,15 @@ export function changes(view: NodeSettings, draft: Draft): Draft {
 // The edits left once `sent` was saved (lib/edits.ts).
 export const unsent = (draft: Draft, sent: Draft): Draft => unsentOf<Values>(draft, sent);
 
-// "All as suggested": the suggestion as fixed values of the viewer's own, still to be saved.
-export const asSuggested = (view: NodeSettings): Draft =>
-  ({ priority: SUGGESTED_PRIORITY, ...(typeof view.current?.dev === "boolean" ? { dev: false } : {}),
-     ...(view.suggested ? { slots: view.suggested.slots } : {}),
-     ...(typeof view.current?.keep_free === "string" ? { ...STORAGE_DEFAULTS, ...view.defaults } : {}) });
+// "All as suggested": the suggestion as fixed values of the viewer's own, still to be saved; of
+// the disk settings only those the node reports, as an older node takes no others.
+export function asSuggested(view: NodeSettings): Draft {
+  const defaults: Draft = { ...STORAGE_DEFAULTS, ...view.defaults };
+  const disk = Object.fromEntries(STORAGE_KEYS.filter((key) => view.current?.[key] !== undefined)
+    .map((key) => [key, defaults[key]]));
+  return { priority: SUGGESTED_PRIORITY, ...(typeof view.current?.dev === "boolean" ? { dev: false } : {}),
+           ...(view.suggested ? { slots: view.suggested.slots } : {}), ...disk };
+}
 
 const url = (name: string) => `/api/machines/${encodeURIComponent(name)}/settings`;
 export const readSettings = (name: string) => getJson<NodeSettings>(url(name));

@@ -35,18 +35,18 @@ afterEach(() => {
 });
 
 describe("the Storage page", () => {
-  it("shows the disk, the last sweep, each project, and Docker as not mulebox's to clean", () => {
+  it("shows the disk, the last sweep, each project, and Docker as all of Docker on the node", () => {
     show(body());
     const page = screen.getByRole("region", { name: "Storage" });
     expect(page.textContent).toContain("build-1 holds 13.0 GB, measured");
     expect(page.textContent).toContain("80.0 GB free of 490.0 GB");
     expect(page.textContent).toContain("31.0 GB above the reserve of 49.0 GB (10%)");
-    expect(page.textContent).toContain("removed 13 branch folders and freed 4.3 GB.");
+    expect(page.textContent).toContain("removed 13 branch folders, 4.3 GB.");
     expect(rowOf("example-app").textContent).toContain("2.7 GB");  // its folders and repository; caches have their own row
     expect(rowOf("example-app").textContent).toContain("1 folder goes within a day");
     expect(rowOf("example-docs").textContent).toContain("No job for 16 days. Clean it?");
     expect(page.textContent).toContain("all of Docker on this node, not only mulebox's");
-    expect(page.textContent).toContain("Shown, never cleaned by mulebox");
+    expect(page.textContent).toContain("Shown, not cleaned: this node runs a mulebox older than 1.26.");
     expect(rowOf("Images").querySelector("button[aria-label^=Clean]")).toBeNull();
   });
 

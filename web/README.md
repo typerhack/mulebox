@@ -20,7 +20,8 @@ touching a real queue, and a history of 120 jobs to search, filter and page (`de
 `MULEBOX_MOCK_MACHINES=20 npm run dev` gives twenty machines.
 `MULEBOX_MOCK_SCENE=split|wide|downloads|settings|order` picks another queue (`dev/scenes.ts`);
 `downloads` has the Down meter in each state, `settings` has node settings in every state the
-settings window shows, `order` has the order rules on (`dev/order.ts`), and
+settings window shows (with `MULEBOX_MOCK_MACHINES=4`, build-4 on 1.25 without the settings of
+1.26, and build-2 with a size limit and cleanup on its own off), `order` has the order rules on (`dev/order.ts`), and
 `MULEBOX_MOCK_CONTROLS=off` turns the controls off.
 
 To see real data, point it at a dashboard; requests go through Vite's proxy:

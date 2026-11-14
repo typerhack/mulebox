@@ -14,17 +14,22 @@ interface Props {
   caption?: ReactNode;      // what the panel's chart shows: its time window and scale
   note?: ReactNode;
   strong?: boolean;         // a page's main panel: its title in the main text colour
+  // Its title and its body's rows set on the rows of the grid it sits in (`.setting-panels`), so
+  // panels side by side line their rows up: a settings panel's meaning, Suggested, Yours and
+  // Runs with. The body's children are its rows, one each.
+  subgrid?: boolean;
   className?: string;
   bodyClassName?: string;
   children: ReactNode;
 }
 
-export function Panel({ title, label, icon, head, caption, note, strong, className, bodyClassName, children }: Props) {
+export function Panel({ title, label, icon, head, caption, note, strong, subgrid, className, bodyClassName, children }: Props) {
   const shownNote = note !== undefined && note !== null
     && <span className="num text-sm font-medium text-ink-1">{note}</span>;
   return (
     <section aria-label={label}
-      className={cx("flex min-w-0 flex-col rounded-l border border-line bg-surface-1", className)}>
+      className={cx("min-w-0 rounded-l border border-line bg-surface-1",
+                     subgrid ? "setting-panel" : "flex flex-col", className)}>
       <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-3 pt-3">
         <span className="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
           <h2 className={cx("flex items-center gap-2 font-semibold",
@@ -39,7 +44,7 @@ export function Panel({ title, label, icon, head, caption, note, strong, classNa
           </span>
         ) : shownNote}
       </header>
-      <div className={cx("min-w-0 flex-1 p-3", bodyClassName)}>{children}</div>
+      <div className={cx("min-w-0 p-3", subgrid ? "setting-panel-body" : "flex-1", bodyClassName)}>{children}</div>
     </section>
   );
 }

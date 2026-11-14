@@ -8,7 +8,7 @@ import type { Plugin } from "vite";
 
 import { makeScene } from "./scenes.ts";
 import { answerSettings, withSettings } from "./settings.ts";
-import { keepMark, removeRead, removeStart, storageBody } from "./storage.ts";
+import { keepMark, removeRead, removeStart, storageBody, sweepStart } from "./storage.ts";
 import { answerHistory, historyRows } from "./history.ts";
 import { changeRules, rulesBody } from "./order.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
@@ -126,6 +126,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
   if (path === "/api/storage") return json(res, storageBody(machines, CONTROLS));
   if (path === "/api/storage/keep" && post) return json(res, keepMark(await body(req)));
   if (path === "/api/storage/remove" && post) return json(res, removeStart(await body(req), machines.filter((m) => m.state !== "offline").map((m) => m.name)));
+  if (path === "/api/storage/sweep" && post) return json(res, sweepStart(await body(req)));
   if (path.startsWith("/api/storage/remove/")) return json(res, removeRead(path.slice(20)) ?? { done: true, answers: [] });
   if (path === "/api/history") {
     const { status, body } = answerHistory(history, url.searchParams);

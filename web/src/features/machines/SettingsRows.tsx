@@ -30,7 +30,7 @@ interface Props {
 // right, and under both a line that says why or what happens next.
 export function Row({ label, note, noteId, children }: { label: string; note?: ReactNode; noteId?: string; children: ReactNode }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-3 text-sm last:pb-0">
+    <div className="flex flex-wrap content-start items-center justify-between gap-x-3 gap-y-1 py-3 text-sm last:pb-0">
       <span className="text-ink-2">{label}</span>
       <div data-label={label} className="contents">
         {children}
@@ -82,71 +82,70 @@ export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDro
   const drop = (key: SettingKey) => (locked ? undefined : () => onDrop(key));
   return (
     <div className="@container">
-      <div className="settings-grid">
-        <div className="grid content-start gap-gap">
-          <Panel title="Slots" label="Slots" icon={<SquareStack aria-hidden className="size-icon" />} bodyClassName={ROWS}>
-            {meaning(`Jobs at once, ${range.min} to ${range.max}`)}
-            <Row label="Suggested" note={suggested ? `from ${view.suggested?.reason}` : "the node has not reported its cores and memory"}>
-              {suggested ? <span className="num font-medium">{suggested}</span> : <span>None yet</span>}
-            </Row>
-            <Row label="Yours">
-              <span className="inline-flex items-start gap-2">
-                {!locked && !busy && suggested !== undefined && suggested !== mine && (
-                  <IconButton label={`Use the suggested ${suggested}`} className="size-ctl"
-                    tip={`Sets ${suggested} as your value: a fixed number, kept until you change it`}
-                    onClick={() => onEdit({ slots: suggested })}>
-                    <RotateCcw aria-hidden className="size-icon" />
-                  </IconButton>
-                )}
-                <Stepper value={mine} min={range.min} max={range.max} label="Slots" unit="slot" disabled={locked || busy}
-                  onChange={(next) => onEdit({ slots: next })} />
-              </span>
-            </Row>
-            <RunsWith now={slots.now ?? machine.slots} yours={slots.yours} mark={slots.mark} online={view.online}
-              same={slots.now !== null && slots.now === suggested} drop={drop("slots")} busy={busy} />
-          </Panel>
-          <Panel title="Priority" label="Priority" icon={<ListOrdered aria-hidden className="size-icon" />} bodyClassName={ROWS}>
-            {meaning("Which node a job goes to first")}
-            <Row label="Suggested" note="the default for every node">
-              <span className="font-medium">{priorityLabel(SUGGESTED_PRIORITY)}</span>
-            </Row>
-            <Row label="Yours" noteId={says}
-              note={PRIORITIES.find((choice) => choice.value === priority.yours)?.says ?? "Not reported by the node."}>
-              <Segmented label="Priority" describedBy={says} disabled={locked || busy} value={priority.yours}
-                choices={PRIORITIES.filter((choice) => known.includes(choice.value))}
-                onChange={(next) => onEdit({ priority: next })} />
-            </Row>
-            <RunsWith now={priority.now ? priorityLabel(priority.now) : null} yours={priorityLabel(priority.yours)}
-              mark={priority.mark} online={view.online} same={priority.now === SUGGESTED_PRIORITY}
-              drop={drop("priority")} busy={busy} />
-          </Panel>
-          <Panel title="Dev mode" label="Dev mode" icon={<FlaskConical aria-hidden className="size-icon" />} bodyClassName={ROWS}>
-            {meaning("For a node you are setting up or trying out")}
-            <Row label="Suggested" note="the default for every node">
-              <span className="font-medium">Off</span>
-            </Row>
-            <Row label="Yours" noteId={devSays}
-              note={devKnown ? DEV_MODES.find((choice) => choice.value === (dev.yours ? "on" : "off"))?.says
-                             : "The node runs a mulebox older than 1.23, which has no dev mode."}>
-              <Segmented label="Dev mode" describedBy={devSays} disabled={locked || busy || !devKnown}
-                value={dev.yours ? "on" : "off"} choices={DEV_MODES}
-                onChange={(next) => onEdit({ dev: next === "on" })} />
-            </Row>
-            <RunsWith now={devKnown ? devLabel(dev.now) : null} yours={devLabel(dev.yours)}
-              mark={dev.mark} online={view.online} same={dev.now === false}
-              drop={drop("dev")} busy={busy} />
-          </Panel>
-        </div>
-        <Panel title="Reported by the node" label="Reported by the node" icon={<Lock aria-hidden className="size-icon" />}
-          bodyClassName="flex flex-col gap-2">
-          <p className="pb-1 text-sm text-ink-2">Set in its node.toml</p>
-          <Fact name="Version">{view.version ?? machine.version ?? "not reported"}</Fact>
-          <Fact name="State">
-            {view.online ? `Online, ${plural(view.running ?? machine.jobs.length, "job")} running${view.draining ? ", paused" : ""}`
-                         : `Offline, last seen ${ago(machine.last_seen, Date.now() / 1000)}`}
-          </Fact>
-          {typeof machine.cores === "number" && <Fact name="System">{plural(machine.cores, "core")}</Fact>}
-          {machine.capabilities.length ? <Offers machine={machine} word /> : <Fact name="Offers">nothing named</Fact>}
+      <div className="setting-panels">
+        <Panel subgrid title="Slots" label="Slots" icon={<SquareStack aria-hidden className="size-icon" />} bodyClassName={ROWS}>
+          {meaning(`Jobs at once, ${range.min} to ${range.max}`)}
+          <Row label="Suggested" note={suggested ? `from ${view.suggested?.reason}` : "the node has not reported its cores and memory"}>
+            {suggested ? <span className="num font-medium">{suggested}</span> : <span>None yet</span>}
+          </Row>
+          <Row label="Yours">
+            <span className="inline-flex items-start gap-2">
+              {!locked && !busy && suggested !== undefined && suggested !== mine && (
+                <IconButton label={`Use the suggested ${suggested}`} className="size-ctl"
+                  tip={`Sets ${suggested} as your value: a fixed number, kept until you change it`}
+                  onClick={() => onEdit({ slots: suggested })}>
+                  <RotateCcw aria-hidden className="size-icon" />
+                </IconButton>
+              )}
+              <Stepper value={mine} min={range.min} max={range.max} label="Slots" unit="slot" disabled={locked || busy}
+                onChange={(next) => onEdit({ slots: next })} />
+            </span>
+          </Row>
+          <RunsWith now={slots.now ?? machine.slots} yours={slots.yours} mark={slots.mark} online={view.online}
+            same={slots.now !== null && slots.now === suggested} drop={drop("slots")} busy={busy} />
+        </Panel>
+        <Panel subgrid title="Priority" label="Priority" icon={<ListOrdered aria-hidden className="size-icon" />} bodyClassName={ROWS}>
+          {meaning("Which node a job goes to first")}
+          <Row label="Suggested" note="the default for every node">
+            <span className="font-medium">{priorityLabel(SUGGESTED_PRIORITY)}</span>
+          </Row>
+          <Row label="Yours" noteId={says}
+            note={PRIORITIES.find((choice) => choice.value === priority.yours)?.says ?? "Not reported by the node."}>
+            <Segmented label="Priority" describedBy={says} disabled={locked || busy} value={priority.yours}
+              choices={PRIORITIES.filter((choice) => known.includes(choice.value))}
+              onChange={(next) => onEdit({ priority: next })} />
+          </Row>
+          <RunsWith now={priority.now ? priorityLabel(priority.now) : null} yours={priorityLabel(priority.yours)}
+            mark={priority.mark} online={view.online} same={priority.now === SUGGESTED_PRIORITY}
+            drop={drop("priority")} busy={busy} />
+        </Panel>
+        <Panel subgrid title="Dev mode" label="Dev mode" icon={<FlaskConical aria-hidden className="size-icon" />} bodyClassName={ROWS}>
+          {meaning("For a node you are setting up or trying out")}
+          <Row label="Suggested" note="the default for every node">
+            <span className="font-medium">Off</span>
+          </Row>
+          <Row label="Yours" noteId={devSays}
+            note={devKnown ? DEV_MODES.find((choice) => choice.value === (dev.yours ? "on" : "off"))?.says
+                           : "The node runs a mulebox older than 1.23, which has no dev mode."}>
+            <Segmented label="Dev mode" describedBy={devSays} disabled={locked || busy || !devKnown}
+              value={dev.yours ? "on" : "off"} choices={DEV_MODES}
+              onChange={(next) => onEdit({ dev: next === "on" })} />
+          </Row>
+          <RunsWith now={devKnown ? devLabel(dev.now) : null} yours={devLabel(dev.yours)}
+            mark={dev.mark} online={view.online} same={dev.now === false}
+            drop={drop("dev")} busy={busy} />
+        </Panel>
+        <Panel subgrid title="Reported by the node" label="Reported by the node" icon={<Lock aria-hidden className="size-icon" />}>
+          {meaning("Set in its node.toml")}
+          <div className="row-span-3 flex flex-col gap-2 border-t border-line pt-3">
+            <Fact name="Version">{view.version ?? machine.version ?? "not reported"}</Fact>
+            <Fact name="State">
+              {view.online ? `Online, ${plural(view.running ?? machine.jobs.length, "job")} running${view.draining ? ", paused" : ""}`
+                           : `Offline, last seen ${ago(machine.last_seen, Date.now() / 1000)}`}
+            </Fact>
+            {typeof machine.cores === "number" && <Fact name="System">{plural(machine.cores, "core")}</Fact>}
+            {machine.capabilities.length ? <Offers machine={machine} word /> : <Fact name="Offers">nothing named</Fact>}
+          </div>
         </Panel>
       </div>
     </div>

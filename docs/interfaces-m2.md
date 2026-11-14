@@ -132,9 +132,27 @@ says how old.
   the `stays` and `remove` folders of every project, soonest first), then a row per project that
   opens to its branch folders, and rows for package caches, toolchains, browsers, runners, uploads
   and job folders. Docker's totals come last, said as all of Docker on the node, never cleaned.
+- **The automatic cleanup** (since 1.26) is one block under the ruler, from the report's `policy`,
+  `sweep`, `held` and `over`: whether it is on and each rule in words (what is off is said as off),
+  what the last cleanup removed and freed in Docker, what goes next, and what mulebox holds against
+  `warn_size` and `max_size`, in the warning colour past `warn_size`; with `over` above 0 it names
+  what blocks the limit (latest, kept or running folders). With the controls on, Settings opens the
+  node's settings window on its Storage tab, and Run now sends `POST /api/storage/sweep {node,
+  docker: true}`, reads `GET /api/storage/remove/<group>` until every node answered, shows each
+  node's own answer, and reads `/api/storage` again after 3, 12 and 30 s for the node's new report.
+- **Cleanup history** is the last section: the shown node's records of `history`, newest first, 20
+  and more on demand. A row says when, what set it off (`trigger`), folders removed, what Docker
+  freed (or that it was not cleaned), free space before and after, and the count of errors; it
+  opens to the run's length, each removed folder with its reason in words (`why`: `gone` "its
+  branch is gone from your dev machines", `unused` "no job for N days", `size` "over the size
+  limit"), the image names, and every error word for word.
+- **Docker** says what mulebox cleans there (unused build cache, dangling images, images its own
+  jobs pulled and no longer use; never volumes or images it never used) and what the last cleanup
+  freed. A node before 1.26 reads "shown, not cleaned".
 - **A folder's row** names its branch (`branches`; the folder name when the history does not know
   it), its size, its last job and its fate in words: `running`, `kept`, `latest`, `remove` ("goes
-  at the next sweep") or `stays` with `removed_in` in days.
+  at the next cleanup", with its `why`; "would go (automatic cleanup is off)" when `auto_clean` is
+  off) or `stays` with `removed_in` in days.
 - **Actions**, with the controls on: copy the path (from the report's `paths`: a project's home is
   `<projects>/<project>`, a branch folder `<projects>/<project>/trees/<folder>`; a worker before
   1.25 sends none and the button is left out), keep (`POST /api/storage/keep`), and clean, which
@@ -153,9 +171,13 @@ says how old.
   they cover `short.need`, a `latest` one offered unticked, a `kept` one not offered. Each ticked
   folder is removed with its own `POST /api/storage/remove`.
 - **Settings.** The node's settings window has a Storage tab for `keep_free`, `unused_days`,
-  `keep_latest` and `idle_days` (Node settings below), with one line that says what the values on
-  screen would do at the next sweep, worked out in the page from the node's last report
-  (`lib/storage.ts`, `preview`).
+  `keep_latest` and `idle_days`, and from a node on 1.26 `max_size` ("Most mulebox may use"),
+  `auto_clean` ("Clean up on its own"), `docker_clean` ("Clean Docker too") and `warn_size` ("Warn
+  agents over"), hidden for an older node (Node settings below). One line says what the values on
+  screen would do at the next cleanup, worked out in the page from the node's last report
+  (`lib/storage.ts`, `preview`): what goes, also past the size limit (the oldest folders that may
+  go, as `storage_rules.trim`), how mulebox then stands against that limit, and, with cleanup on
+  its own off, that nothing goes and what would.
 
 ## History page (`web/src/features/history/`, `web/src/lib/history.ts`, `dashboard/history_query.py`)
 
@@ -359,7 +381,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, moved}` (`moved`: front, before or after, only the moved job pinned; a `priority` only on rows moved before 1.17.1), and `place_reason` and `order` for a queued job |
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
 | `GET /api/machines/{name}/settings` | the settings window (Node settings, below); 404 for a name the store does not know |
-| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_free`, `unused_days`, `keep_latest`, `idle_days`, or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
+| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`, `docker_clean`, `warn_size`, `max_size` (a node on 1.26), or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for`; every queued row `place_reason` and `order` while an order rule is on, and a moved row (`moved`) always (interfaces-m1.md, `queue_rules`); a GitHub slot also `workflow` |
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
@@ -389,13 +411,17 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 {"worker": "build-1", "online": true, "draining": false, "version": "1.16.0", "running": 1,
  "applies": true,
  "current": {"slots": 2, "priority": "normal", "dev": false, "keep_free": "10%",
-             "unused_days": 7, "keep_latest": true, "idle_days": 14},
+             "unused_days": 7, "keep_latest": true, "idle_days": 14, "auto_clean": true,
+             "docker_clean": true, "warn_size": "50GB", "max_size": "OFF"},
  "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
  "suggested": {"slots": 4, "reason": "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job"},
  "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"],
              "dev": [false, true], "keep_free": {"max_share": 90}, "unused_days": {"min": 1, "max": 365},
-             "keep_latest": [false, true], "idle_days": {"min": 1, "max": 365}},
- "defaults": {"keep_free": "10%", "unused_days": 7, "keep_latest": true, "idle_days": 14},
+             "keep_latest": [false, true], "idle_days": {"min": 1, "max": 365},
+             "auto_clean": [false, true], "docker_clean": [false, true], "warn_size": {"off": "off"},
+             "max_size": {"off": "off"}},
+ "defaults": {"keep_free": "10%", "unused_days": 7, "keep_latest": true, "idle_days": 14,
+              "auto_clean": true, "docker_clean": true, "warn_size": "50GB", "max_size": "OFF"},
  "editable": true}
 ```
 
@@ -418,7 +444,8 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
   `mulebox rpc`, as `mulebox machine config` does. While a change waits, `/api/events` sends a
   `machines` event with `settings_pending` true, and another once it applied.
 - The page's window for it is `web/src/features/machines/NodeSettings.tsx`, with a Jobs tab (slots,
-  priority, dev mode) and a Storage tab (the disk settings, `StorageSettings.tsx`): it reads on open,
+  priority, dev mode) and a Storage tab (`tab-storage`; the disk settings, `StorageSettings.tsx`, and
+  those of 1.26, `StorageLimits.tsx`, which sends a size off as `"OFF"`): it reads on open,
   again when the machine's row changes (state, jobs, slots, priority, version,
   `settings_pending`) and every 5 s while it is open, as a row reads `settings_pending` before
   and after a failed write and only this body has `error`. An answer older than a newer request

@@ -125,7 +125,7 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
           <p className="mr-auto min-w-0 flex-1 basis-col-m text-sm text-ink-2">
             {problem ? <strong role="alert" className="font-semibold text-ink-1">{problem.text}</strong>
               : locked ? "Nothing here can be changed from this page."
-              : tab === "storage" ? "Applies from the node's next sweep. A project or branch you marked to keep is exempt from all of it."
+              : tab === "storage" ? "Applies from the node's next cleanup. A project or branch you marked to keep is exempt from all of it."
               : "Applies to the next job; running jobs keep their slot. A suggestion you take is saved as a fixed value of yours."}
           </p>
           {!locked && view && (

@@ -1,6 +1,6 @@
 // What goes next on a node by itself, soonest first, across its projects: the list behind
 // "Show what goes next". A folder can be kept from here, which takes it off the list with the
-// node's next sweep.
+// node's next cleanup.
 
 import { HardDrive } from "lucide-react";
 import type { RefObject } from "react";
@@ -30,7 +30,7 @@ export function GoingNextWindow({ node, body, report, now, opener, onKeep, onClo
       foot={(
         <>
           <p className="mr-auto min-w-0 flex-1 basis-col-m text-sm text-ink-2">
-            A folder goes once no job used it for {plural(report.policy.unused_days, "day")}; the node sweeps every hour.
+            A folder goes once no job used it for {plural(report.policy.unused_days, "day")}; the node cleans up every hour.
             {report.policy.keep_latest && " Each project's latest folder stays."}
           </p>
           <Button tone="ghost" onClick={onClose}>Close</Button>
@@ -50,7 +50,7 @@ export function GoingNextWindow({ node, body, report, now, opener, onKeep, onClo
                   <strong className="num font-semibold">{bytes(folder.size)}</strong>
                   <span className="text-ink-2">{ago(folder.last_used, now)}</span>
                   <span className={folder.fate === "remove" || (folder.removed_in ?? 9) < 1 ? "font-medium" : "text-ink-2"}>
-                    {kept ? "Kept by you from the next sweep" : fateText(folder)}</span>
+                    {kept ? "Kept by you from the next cleanup" : fateText(folder, report.policy)}</span>
                 </span>
                 <RowActs path={report.paths ? `${report.paths.projects}/${folder.project}/trees/${folder.folder}` : null}
                   what={branch ?? folder.folder} kept={kept}
