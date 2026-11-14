@@ -55,7 +55,10 @@ TOOLS = (
     Tool(package_cache.SPM, "spm", "MULEBOX_CACHE_SPM", (),
          "pass it as `xcodebuild -packageCachePath \"$MULEBOX_CACHE_SPM\"` or `swift build "
          "--cache-path \"$MULEBOX_CACHE_SPM\"`"),
-    Tool(package_cache.COCOAPODS, "cocoapods", "MULEBOX_CACHE_COCOAPODS", ("CP_CACHE_DIR",)),
+    # Downloads go to Pods/ in CP_CACHE_DIR and the spec index to repos/ in CP_HOME_DIR, which
+    # was the node user's ~/.cocoapods: one folder holds both without a clash.
+    Tool(package_cache.COCOAPODS, "cocoapods", "MULEBOX_CACHE_COCOAPODS",
+         ("CP_CACHE_DIR", "CP_HOME_DIR")),
 )
 
 

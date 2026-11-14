@@ -78,6 +78,7 @@ def test_pip_uses_its_own_setting(paths, tmp_path):
 def test_cocoapods_uses_its_own_setting_and_swift_packages_say_how(paths, tmp_path):
     spec, notes = build(paths, tmp_path, ["cache-cocoapods", "cache-spm"])
     assert spec.env["CP_CACHE_DIR"] == str(paths.cache / "packages/example-app/cocoapods")
+    assert spec.env["CP_HOME_DIR"] == spec.env["CP_CACHE_DIR"]  # the spec index, not ~/.cocoapods
     assert spec.env["MULEBOX_CACHE_SPM"] == str(paths.cache / "packages/example-app/spm")
     assert any("-packageCachePath" in note for note in notes)  # no setting reaches SwiftPM
     assert {"cache-spm", "cache-cocoapods"} <= set(compose.worker_capabilities(()))

@@ -1017,15 +1017,18 @@ runs a job.
       more room.
 - [x] M25.3 GitHub runs on one node: a runner label of its own in `runs-on:`, written down in
       docs/install.md. 2026-11-14 (1.21.0), docs only: it is how GitHub picks runners already.
-- [~] M25.4 `mulebox project reset` and `clean` reach a project's folders on every node, not only
+- [x] M25.4 `mulebox project reset` and `clean` reach a project's folders on every node, not only
       the coordinator's. Found on the first Mac node, 2026-11-13. Built 2026-11-14 (1.22.0): an
       order per online node on its claim or heartbeat reply (schema 24), each node's answer
       printed under its name, `reset --yes` held on every node until all answered, the old path
       for an older coordinator; tests with the real coordinator, worker and client code.
-      Done when: on the real node, both through orders, a dry run and a real reset of a
-      throwaway project.
-- [ ] M25.5 `cache-cocoapods` keeps CocoaPods' spec index too, not only its downloads: a job's
-      `pod install` wrote into the node user's `~/.cocoapods` (seen 2026-11-14).
+      Done 2026-11-14 (1.22.0): on the real node, a dry-run `clean` and `reset` answered under the
+      node's name through orders, and `reset --yes` of a throwaway project removed its folder in
+      2 s. Only one node was online, so a second node's answer is covered by tests.
+- [~] M25.5 `cache-cocoapods` keeps CocoaPods' spec index too, not only its downloads: a job's
+      `pod install` wrote into the node user's `~/.cocoapods` (seen 2026-11-14). Built 2026-11-14
+      (1.22.1): `CP_HOME_DIR` on the same folder as `CP_CACHE_DIR`, with a test. Done when: a
+      CocoaPods job on a Mac node leaves the node user's `~/.cocoapods` untouched.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.22.1 - 2026-11-14 - patch
+- `cache-cocoapods` keeps CocoaPods' spec index too (M25.5): a job's `pod install` wrote the trunk index into the node user's `~/.cocoapods`, outside mulebox's roots, as only `CP_CACHE_DIR` was set. `CP_HOME_DIR` now names the same folder; downloads go to its `Pods/`, the index to its `repos/` (`worker/caches.py`). Roadmap: M25.4 done on the real node. Test in `tests/worker/test_caches.py`; docs/agents.md, docs/install.md.
+
 ## 1.22.0 - 2026-11-14 - minor
 - `mulebox project reset` and `clean` reach every online node, not only the coordinator's machine (M25.4, found on the first Mac node). The coordinator keeps one order per online node (`coordinator/project_orders.py`, table `project_orders`, schema 24), handed out with each worker's claim or heartbeat reply; the worker runs it in a thread (`worker/orders.py`), claims no job meanwhile, and answers `order_done` with what it printed. The dev machine prints each node's answer under its name, names offline nodes, and exits 1 for a node that failed or gave no answer in 5 minutes (`client/project_commands.py`).
 - `reset --yes` holds the project on every node until each answered, and with the last answer the coordinator's upload base goes; `clean` skips the branches a node runs a job in now. The removal itself moved to `worker/project_work.py`, shared by `mulebox project-home` and the orders. A coordinator older than 1.22.0 gets the old path, its own machine only.

@@ -505,7 +505,7 @@ needs: [cache-pnpm, cache-composer, cache-npm, cache-pip]
 | `cache-composer` | `<cache>/packages/<project>/composer` | `COMPOSER_CACHE_DIR`, `MULEBOX_CACHE_COMPOSER` |
 | `cache-npm` | `<cache>/packages/<project>/npm` | `npm_config_cache`, `MULEBOX_CACHE_NPM` |
 | `cache-pip` | `<cache>/packages/<project>/pip` | `PIP_CACHE_DIR`, `MULEBOX_CACHE_PIP` |
-| `cache-cocoapods` | `<cache>/packages/<project>/cocoapods` | `CP_CACHE_DIR`, `MULEBOX_CACHE_COCOAPODS` |
+| `cache-cocoapods` | `<cache>/packages/<project>/cocoapods` | `CP_CACHE_DIR`, `CP_HOME_DIR`, `MULEBOX_CACHE_COCOAPODS` |
 | `cache-spm` | `<cache>/packages/<project>/spm` | `MULEBOX_CACHE_SPM` only: pass it yourself (section 2c) |
 
 Commands on the machine need nothing more. **A container sees a cache only if the compose
@@ -635,7 +635,9 @@ exits 5, naming the ones it has; `mulebox doctor` lists each Mac's Xcodes, SDKs 
 job. Without it xcodebuild writes to the node user's own DerivedData. SwiftPM reads no setting
 for its cache either: pass `-packageCachePath "$MULEBOX_CACHE_SPM"` to xcodebuild, or
 `--cache-path "$MULEBOX_CACHE_SPM"` to `swift build` and `swift test`. CocoaPods finds its cache
-by itself (`CP_CACHE_DIR`); every branch shares it, and CocoaPods empties a cache another version
+by itself (`CP_CACHE_DIR` for downloads, `CP_HOME_DIR` for its spec index, never the node user's
+`~/.cocoapods`); a private spec repository is added there by the project's `setup`
+(`pod repo add`). Every branch shares it, and CocoaPods empties a cache another version
 wrote, so keep the project's branches on one CocoaPods version (a `Gemfile.lock` pins it, run as
 `bundle exec pod install`). A simulator test needs no signing, hence `CODE_SIGNING_ALLOWED=NO`.
 
