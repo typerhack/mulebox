@@ -846,6 +846,17 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       into, read and restart its own containers. The user took every proposal the same day
       (1.17.26): floor `none` by default, worker and proxy, mulebox's image or the project's, no
       lowering below the floor.
+      Part 1 built 2026-11-14 (1.18.0): `isolation: container`, the confined container. Run on the
+      node: it saw no ssh key, `gh` login, mulebox config or other project, a read-only root and
+      nothing on the node's localhost; node 22.22.3 ran from the read-only toolchain mount, git
+      worked, a secret came by name only; mulebox's image built in 3m 29s once, later jobs 12 s;
+      a cancel left no container, network, unit or job folder.
+      Part 2 built 2026-11-14 (1.19.0, 1.19.1): compose jobs, the door and the port forward. Run on
+      the node with real Postgres and Redis: both by name and at `localhost:$MULEBOX_PORT_...`,
+      `docker compose exec` (42, PONG), `ps` and `restart` of its own services worked; `docker run`
+      and a privileged exec were refused with the reason in the log; a cancel mid-job left no
+      container, network, socket or door process. Open: part 3, the floor in node.toml and the
+      refusal of a job asking for less.
 - [ ] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking

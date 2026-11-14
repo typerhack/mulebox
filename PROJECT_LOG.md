@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.19.2 - 2026-11-14 - patch
+- Roadmap: M23.1 parts 1 and 2 run on the node (an isolated job and an isolated compose job with real Postgres and Redis, refusals, cancels, nothing left behind). Part 3, the node's floor, is open. Docs only.
+
 ## 1.19.1 - 2026-11-14 - patch
 - In the first real isolated compose job on the node, its first connection to `localhost:$MULEBOX_PORT_DB_5432` was refused: the port forwarder had not yet bound its ports. It now writes a ready file once it listens (`--ready`), and the job's script waits for it before its first line (`worker/isolated.py`, `worker/port_forward.py`). Test in `tests/worker/test_port_forward.py`.
 
