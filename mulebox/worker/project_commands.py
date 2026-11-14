@@ -17,6 +17,7 @@ from mulebox.common import units
 from mulebox.common.config import NodeConfig, load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
+from mulebox.common.tree_size import size_of
 from mulebox.worker import caches, project_disk, project_home, reclaim
 from mulebox.worker.docker import Docker
 from mulebox.worker.paths import NodePaths
@@ -73,7 +74,7 @@ def _reclaimer(node: NodeConfig, paths: NodePaths) -> project_disk.Reclaim:
 
 
 def _size(path: Any) -> str:
-    return units.size(caches.size_of(path))
+    return units.size(size_of(path))
 
 
 def _held(store: Any, project: str, work: Any) -> None:

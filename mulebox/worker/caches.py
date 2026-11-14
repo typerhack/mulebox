@@ -22,7 +22,6 @@ gives the project's caches back with the same helper it uses for job folders (cl
 
 from __future__ import annotations
 
-import os
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +29,7 @@ from pathlib import Path
 from mulebox.common import package_cache
 from mulebox.common.ids import new_id
 from mulebox.common.safepath import RemovalDenied, confirm_dir, ensure_dir, remove_tree
+from mulebox.common.tree_size import size_of
 from mulebox.worker import reclaim
 from mulebox.worker.docker import Docker
 from mulebox.worker.paths import NodePaths
@@ -92,17 +92,6 @@ def give_back(docker: Docker, paths: NodePaths, project: str, job_id: str, worke
     """Make the worker's user own the project's caches again, if it has any."""
     if paths.packages_dir(project).is_dir():
         reclaim.reclaim_cache(docker, paths, project, job_id, worker)
-
-
-def size_of(folder: Path) -> int:
-    total = 0
-    for base, _, files in os.walk(folder):  # does not follow symlinks
-        for name in files:
-            try:
-                total += os.lstat(os.path.join(base, name)).st_size
-            except OSError:
-                continue
-    return total
 
 
 def listing(paths: NodePaths) -> list[tuple[str, str, int]]:

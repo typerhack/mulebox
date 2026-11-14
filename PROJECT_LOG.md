@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.22 - 2026-11-14 - patch
+- `mulebox projects` took over 3 minutes on a node with 6.6 million files in its project folders, and gave 101 GB where `du` gave 48 GB: each branch tree was walked twice (for itself and for its project), and a file hard-linked into several `node_modules` (pnpm) counted once per link. `common/tree_size.py` now sizes a project and its trees in one walk and counts a hard-linked file once, as `du` does; `worker/caches.py` and `worker/project_commands.py` use it too. On the real node under load: 192 s down to 114 s (`du -s` took 84 s), 48.5 GB. Tests in `tests/common/test_tree_size.py`; docs/design.md, Project folders.
+
 ## 1.17.21 - 2026-11-14 - patch
 - `mulebox service install`, which setup runs on a node, read a launchd agent as `stopped` right after starting it, as launchd spawns an agent a moment after it loads it (seen on the first real Mac node, M21). It now reads a just-started service again for up to 5 s until it runs (`services/base.py`, `settled_state`), and gives what it then reads, so one that really fails to start still shows `stopped`. Tests in `tests/services/test_commands.py`.
 

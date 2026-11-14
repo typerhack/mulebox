@@ -10,7 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.safepath import RemovalDenied, remove_tree
-from mulebox.worker import caches, project_home, workspace
+from mulebox.common.tree_size import sizes
+from mulebox.worker import project_home, workspace
 from mulebox.worker.paths import NodePaths
 
 Reclaim = Callable[[Path], None]
@@ -22,15 +23,15 @@ def trees(paths: NodePaths, project: str) -> list[Path]:
 
 
 def listing(paths: NodePaths) -> list[dict[str, Any]]:
-    """Each project folder on this machine, with its size in bytes."""
+    """Each project folder on this machine, with its size in bytes, read in one walk each."""
     if not paths.projects.is_dir():
         return []
     found = []
     for home in sorted(path for path in paths.projects.iterdir() if path.is_dir()):
-        branches = [{"folder": tree.name, "size": caches.size_of(tree)}
-                    for tree in trees(paths, home.name)]
-        found.append({"project": home.name, "folder": str(home), "size": caches.size_of(home),
-                      "trees": branches})
+        branches = trees(paths, home.name)
+        total, each = sizes(home, branches)
+        found.append({"project": home.name, "folder": str(home), "size": total,
+                      "trees": [{"folder": tree.name, "size": each[tree]} for tree in branches]})
     return found
 
 

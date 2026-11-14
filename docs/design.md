@@ -434,8 +434,9 @@ It stays inside the job and its slot. Moving it outside would run more work than
 ## Project folders
 
 Everything lives at `<projects>/<project>/`: `repo.git`, `trees/<branch>-<hash>/` and
-`state/`. `mulebox projects` shows each folder and its size. All of it can be made again by a
-job, so removing it costs time, not data.
+`state/`. `mulebox projects` shows each folder and its size, counted as `du` counts it (a file
+hard-linked into several `node_modules`, as pnpm does, once; one walk of the folder). All of
+it can be made again by a job, so removing it costs time, not data.
 
 - `mulebox project clean` removes branch folders with no job for 14 days (`--days`), keeping each
   project's newest.
