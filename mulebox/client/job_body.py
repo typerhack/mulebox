@@ -8,7 +8,7 @@ from collections.abc import Sequence
 
 from mulebox.client import skill_install
 from mulebox.client.snapshot import Snapshot
-from mulebox.common import compose
+from mulebox.common import compose, isolation
 from mulebox.common.config import ProjectConfig
 from mulebox.common.config_jobs import HOST_PORTS_KEY, join_ports
 from mulebox.common.ids import new_id
@@ -28,13 +28,15 @@ def job_request(project: ProjectConfig, target: str | Sequence[str]) -> tuple[st
 
 
 def job_env(project: ProjectConfig) -> dict[str, str]:
-    """The project's `env:` values, plus the compose file list (common/compose.py) and the
-    names of the job's own ports (config_jobs.py)."""
+    """The project's `env:` values, plus the compose file list (common/compose.py), the
+    names of the job's own ports (config_jobs.py) and an isolated job's image (isolation.py)."""
     env = dict(project.env)
     if project.compose:
         env[compose.COMPOSE_FILES_KEY] = compose.join_files(project.compose)
     if project.host_ports:
         env[HOST_PORTS_KEY] = join_ports(project.host_ports)
+    if project.image:
+        env[isolation.IMAGE_KEY] = project.image
     return env
 
 

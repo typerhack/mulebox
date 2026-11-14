@@ -5,11 +5,19 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from mulebox.common import compose, isolation
 from mulebox.common.protocol import Outcome
 from mulebox.worker.controls import JobControls
 from mulebox.worker.job_meter import JobMeter
 from mulebox.worker.logtail import LogTailer
 from mulebox.worker.steps import StepTracker
+
+
+def uses_docker(claim: dict[str, Any]) -> bool:
+    """Whether a claimed job makes Docker resources the worker removes: a `compose:` job's
+    services, an isolated job's container (isolation.py)."""
+    return (compose.COMPOSE_FILES_KEY in (claim.get("env") or {})
+            or isolation.CAPABILITY in (claim.get("needs") or ()))
 
 
 @dataclass
@@ -22,7 +30,7 @@ class ActiveJob:
     last_heartbeat: float
     last_output: float = 0.0  # agent clock: the last bytes in the job's raw log
     handle: Any = None  # executor handle once the process runs
-    uses_docker: bool = False  # a `compose:` job: its Docker resources are torn down
+    uses_docker: bool = False  # a `compose:` or isolated job: its Docker resources are torn down
     uses_simulator: bool = False  # its simulator is removed (simulator.py)
     outcome: Outcome | None = None  # set when the job ended
     exit_code: int | None = None

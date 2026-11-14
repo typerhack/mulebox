@@ -18,7 +18,9 @@ job needs something older workers cannot do.
 from __future__ import annotations
 
 import re
+import sys
 
+from mulebox.common import isolation
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import is_valid_id
 from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
@@ -38,10 +40,11 @@ class ComposeError(MuleboxError):
     """A compose project cannot be used as it is."""
 
 
-def worker_capabilities(configured: tuple[str, ...]) -> list[str]:
+def worker_capabilities(configured: tuple[str, ...], platform: str = sys.platform) -> list[str]:
     """What a worker tells the coordinator: `capabilities` from its node.toml, and what it
     reports by itself."""
     implied = (COMPOSE_CAPABILITY,) if DOCKER_CAPABILITY in configured else ()
+    implied = (*implied, *isolation.offered(configured, DOCKER_CAPABILITY, platform))
     return list(dict.fromkeys((*configured, *implied, *PACKAGE_CACHES)))
 
 

@@ -5,6 +5,7 @@ Split from agent.py: `Agent` provides `paths`.
 
 from typing import Any
 
+from mulebox.common import compose
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.status import COMMAND, SETUP
@@ -18,7 +19,7 @@ class Skipping:
     def _with_setup(self, job: ActiveJob, claim: dict[str, Any], synced: project_home.Synced
                     ) -> dict[str, Any]:
         """`claim` without its `setup` when nothing it depends on changed."""
-        if not claim.get("setup") or job.uses_docker:
+        if not claim.get("setup") or compose.COMPOSE_FILES_KEY in (claim.get("env") or {}):
             return claim
         key = project_home.setup_key(synced.tree, claim)
         if (not synced.lost

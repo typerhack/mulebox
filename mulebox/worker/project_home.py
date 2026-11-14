@@ -33,7 +33,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from mulebox.common import compose
+from mulebox.common import compose, isolation
 from mulebox.common.config_jobs import HOST_PORTS_KEY
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import ensure_dir, remove_tree
@@ -205,8 +205,10 @@ def setup_key(tree: Path, claim: dict[str, Any]) -> str:
 
 def _key(tree: Path, claim: dict[str, Any], line: str | None, more: list[Path]) -> str:
     env = {k: v for k, v in (claim.get("env") or {}).items() if k != HOST_PORTS_KEY}
-    digest = hashlib.sha256(json.dumps(
-        [line, claim.get("toolchain"), env], sort_keys=True).encode())
+    parts: list[Any] = [line, claim.get("toolchain"), env]
+    if isolation.CAPABILITY in (claim.get("needs") or ()):
+        parts.append(isolation.CAPABILITY)  # built in a container: not what the node would build
+    digest = hashlib.sha256(json.dumps(parts, sort_keys=True).encode())
     for path in [*_inputs(tree), *more]:
         digest.update(str(path.relative_to(tree)).encode())
         digest.update(hashlib.sha256(path.read_bytes()).digest())

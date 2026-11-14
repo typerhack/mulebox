@@ -236,3 +236,26 @@ def test_an_env_entry_using_a_later_one_is_a_config_error(tmp_path):
                     "env:\n  URL: http://${HOST}\n  HOST: db\n")
     with pytest.raises(ConfigError, match=r"env\.URL.*move HOST above URL"):
         load_project_config(path)
+
+
+def test_isolation_asks_for_an_isolated_worker_with_docker(tmp_path):
+    config = load_project_config(write(tmp_path, MINIMAL + "isolation: container\n"))
+    assert config.isolation == "container" and config.image is None
+    assert {"docker", "isolated"} <= set(config.all_needs)
+    assert "isolated" not in load_project_config(write(tmp_path, MINIMAL)).all_needs
+
+
+def test_an_isolated_job_may_name_its_own_image(tmp_path):
+    config = load_project_config(write(
+        tmp_path, MINIMAL + "isolation: container\nimage: ghcr.io/example/ci:1\n"))
+    assert config.image == "ghcr.io/example/ci:1"
+
+
+@pytest.mark.parametrize("extra, words", [
+    ("isolation: vm\n", "must be one of none, container"),
+    ("image: ubuntu:24.04\n", "needs isolation: container"),
+    ("isolation: container\nimage: --privileged\n", "Docker image name"),
+    ("isolation: container\nimage: UPPER/case\n", "Docker image name"),
+])
+def test_isolation_mistakes_are_config_errors(tmp_path, extra, words):
+    assert words in str(error_for(tmp_path, MINIMAL + extra))

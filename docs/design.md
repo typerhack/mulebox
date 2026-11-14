@@ -816,6 +816,15 @@ framework), a step of its own.
 for that. Compose services run images the project chose, contained by the policy, not by this
 step. A package cache is still a channel between jobs of one project, on purpose.
 
+**Built:** part 1, 1.18.0: `isolation:` and `image:` in `.mulebox.yml` (common/isolation.py,
+the need `isolated` a Linux worker with Docker offers by itself), the container
+(worker/isolated.py, mulebox's image in worker/job_image.py, the confinement shared with a
+runner's place in common/confined.py). The job's unit runs `docker run`, so cancel, time limits
+and the log stay the unit's; the container and its network carry the job's labels, so the
+teardown of compose jobs removes them, and pause and boost reach it. The project's git
+repository is mounted too, as the branch tree is a worktree of it. A compose job asking for it
+is refused until part 2.
+
 **Decided by the user (2026-11-14):** the default floor is `none`; compose jobs take way 2, the
 worker running Compose and a narrow proxy; the job image is mulebox's own, and a project may name
 its own `image:`; a project cannot ask for less than its node's floor: such a job is refused and

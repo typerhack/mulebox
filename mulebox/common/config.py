@@ -52,6 +52,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from mulebox.common import compose, config_jobs, config_node, config_project
+from mulebox.common import isolation as isolation_rules
 from mulebox.common.config_node import DASHBOARD_MODES, DEFAULT_DASHBOARD_PORT  # noqa: F401
 from mulebox.common.config_reader import ConfigError, Reader, load_toml, load_yaml
 
@@ -101,6 +102,8 @@ class ProjectConfig:
     env: dict[str, str] = field(default_factory=dict)
     job_options: dict[str, config_jobs.JobOptions] = field(default_factory=dict)
     host_ports: tuple[str, ...] = ()  # of the one job `for_job` gave this for
+    isolation: str = isolation_rules.NONE  # common/isolation.py
+    image: str | None = None  # an isolated job's own image, else mulebox's
 
     @property
     def all_needs(self) -> tuple[str, ...]:
@@ -108,6 +111,8 @@ class ProjectConfig:
         `xcode` or `simulator` for one that pins it: a Mac node that has it offers it."""
         implied = (compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY) if self.compose else ()
         implied = (*implied, *(name for name in FOUND_ON_NODE if name in self.toolchain))
+        if self.isolation == isolation_rules.CONTAINER:
+            implied = (*implied, compose.DOCKER_CAPABILITY, isolation_rules.CAPABILITY)
         return tuple(dict.fromkeys((*self.needs, *implied)))
 
 
@@ -175,9 +180,23 @@ def load_project_config(path: Path) -> ProjectConfig:
         ignore_changes=reader.strings("ignore_changes"),
         github_status=reader.boolean("github_status", False),
         env=config_project.env_values(reader, files),
+        **_isolation(reader),
     )
     reader.finish()
     return config
+
+
+def _isolation(reader: Reader) -> dict[str, Any]:
+    level = reader.text("isolation", isolation_rules.NONE)
+    if (problem := isolation_rules.level_problem(level)) is not None:
+        reader.fail("isolation", problem)
+    image = reader.text("image", None)
+    if image is not None:
+        if level != isolation_rules.CONTAINER:
+            reader.fail("image", "is the image of an isolated job; it needs isolation: container")
+        if (problem := isolation_rules.image_problem(image)) is not None:
+            reader.fail("image", problem)
+    return {"isolation": level, "image": image}
 
 
 def client_config_path() -> Path:

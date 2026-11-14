@@ -20,9 +20,10 @@ Containers carry the label `mulebox.place=<name>`, by which any a crash left are
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
+from mulebox.common import confined
+from mulebox.common.confined import CPU_SHARES, PIDS, memory_limit_mb  # noqa: F401
 from mulebox.common.errors import MuleboxError
 from mulebox.runners.place_hook import HOOKS_MOUNT, IO_MOUNT
 from mulebox.runners.place_image import TOOL_CACHE
@@ -30,23 +31,12 @@ from mulebox.worker.docker import Docker, DockerError
 
 NETWORK = "mulebox-isolated"
 LABEL = "mulebox.place"
-PIDS = 4096
-CPU_SHARES = 512  # half Docker's default, as CPUWeight=50 is half systemd's
 DIAG = "/home/runner/_diag"
 ENTRY = 'read -r cfg; exec ./run.sh --jitconfig "$cfg"'
 
 
 class PlaceError(MuleboxError):
     """An isolated runner cannot run its next job."""
-
-
-def memory_limit_mb(total_bytes: int | None = None) -> int:
-    if total_bytes is None:
-        try:
-            total_bytes = os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES")
-        except (ValueError, OSError):
-            total_bytes = 8 * 1024 ** 3
-    return max(1024, int(total_bytes * 3 / 4) // (1024 * 1024))
 
 
 def tool_volume(place: str) -> str:
@@ -58,9 +48,7 @@ def run_argv(container: str, place: str, image: str, *, hooks_dir: Path, io_dir:
     return [
         "docker", "run", "--interactive", "--rm", "--sig-proxy=false", "--name", container,
         "--label", f"{LABEL}={place}",
-        "--cap-drop", "ALL", "--security-opt", "no-new-privileges",
-        "--pids-limit", str(PIDS), "--memory", f"{memory_mb or memory_limit_mb()}m",
-        "--cpu-shares", str(CPU_SHARES), "--network", NETWORK,
+        *confined.run_args(memory_mb), "--network", NETWORK,
         "--volume", f"{hooks_dir}:{HOOKS_MOUNT}:ro",
         "--volume", f"{io_dir}:{IO_MOUNT}",
         "--volume", f"{diag_dir}:{DIAG}",

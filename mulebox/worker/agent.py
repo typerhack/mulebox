@@ -36,7 +36,7 @@ from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
-from mulebox.worker.job import ActiveJob, outcome_for
+from mulebox.worker.job import ActiveJob, outcome_for, uses_docker
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.worker.logtail import LogTailer
@@ -155,7 +155,7 @@ class Agent(Ending, Skipping):
         tailer = LogTailer(log_path, job_id, attempt_id, request,
                            StreamRedactor(secret_values(self.node.job_env)), clock=self.clock)
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
-                        uses_docker=compose.COMPOSE_FILES_KEY in (claim.get("env") or {}),
+                        uses_docker=uses_docker(claim),
                         take=[p for p in claim.get("take") or [] if isinstance(p, str)],
                         uses_simulator=simulator.wanted(claim))
         job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker, self.executor)

@@ -237,6 +237,8 @@ timeout_min: 30                 # how often a running job checks in; not a limit
 exclude: [reports/]             # extra paths never uploaded (secrets are excluded already)
 ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result (below)
 github_status: true             # post `check`'s result to the pushed commit on GitHub (below)
+isolation: container            # run each job in a confined container (below); default none
+image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
 ```
 
    `github_status: true` makes `mulebox check` post its result as the commit status
@@ -245,6 +247,14 @@ github_status: true             # post `check`'s result to the pushed commit on 
    commit: no change in the worktree, no untracked file, and a remote-tracking branch holds HEAD;
    else nothing is posted and `check` says why. Not with `--detach`. It goes out through the dev
    machine's own `gh`, which must be signed in with write access to the repository.
+
+   `isolation: container` runs each job in a fresh container of its own on a Linux node with
+   Docker: it sees the project's folder, its package caches and the node's toolchains
+   (read-only), and not the node's home folder, keys, other projects or Docker. Use it for code
+   nobody has read. It runs in mulebox's image (Ubuntu with git, a compiler, Python), built once
+   per node by the first such job, or in `image:`, which then brings its own tools: the node's
+   toolchains may not run in another system. A job of a compose project cannot be isolated yet,
+   and a job line cannot run `docker` (docs/design.md, Isolation per job).
 
    Rules for the values:
    - **Databases are per job.** A database a job shares with anything else, such as one

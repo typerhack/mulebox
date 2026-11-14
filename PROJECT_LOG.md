@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.18.0 - 2026-11-14 - minor
+- Isolated jobs, part 1 of M23.1 (docs/design.md, Isolation per job): `isolation: container` in `.mulebox.yml` runs each job in a fresh confined container on a Linux node with Docker, which sees the job's branch tree and the project's git repository, its package caches, and the node's toolchains and browsers read-only, and nothing else of the node. `image:` names a project's own image; otherwise mulebox builds its own once per node from the node's system (`worker/job_image.py`), inside the first job's unit. It travels as the need `isolated`, offered by a Linux worker with Docker by itself, and the image in the job's env, so no wire or store change. The container runs as the node's user with no capability, `no-new-privileges`, a read-only root, `/tmp` in memory as `HOME`, limits, and a network of its own; values reach it by name only, never on a command line. Its job labels let the existing teardown, restart cleanup, pause and boost reach it. A compose job asking for it is refused until part 2.
+- `common/confined.py`: the confinement flags a runner's place had (`runners/place_container.py`), now shared with isolated jobs.
+- A setup's key counts isolation, so a branch moved to or from a container sets up again. Tests in `tests/worker/test_isolated.py`, `tests/common/test_config.py`, `tests/common/test_compose_names.py`, `tests/client/test_job_body.py`; docs/agents.md.
+
 ## 1.17.26 - 2026-11-14 - patch
 - M23.1: the user's decisions in the design note (docs/design.md, Isolation per job): default floor `none`; compose jobs through the worker and a narrow proxy; mulebox's job image, or a project's own `image:`; a project cannot go below its node's floor. Docs only.
 
