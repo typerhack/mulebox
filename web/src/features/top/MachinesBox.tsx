@@ -83,7 +83,9 @@ export function MachinesBox({ panel, shown, now }: { panel: MachinesPanel | null
   const rows = panel?.machines ?? [];
   const note = panel ? `${panel.online} of ${panel.total} online, ${plural(panel.free_slots, "slot")} free` : "Waiting for data";
   const icon = <Server aria-hidden className="size-icon" />;
-  const isPicked = (m: Machine) => !shown.isHost && shown.machine?.name === m.name;
+  // The machine CPU, Memory and Disk show, the host too when it is the default: with more than
+  // one machine the line says which one the panels are about.
+  const isPicked = (m: Machine) => rows.length > 1 && shown.machine?.name === m.name;
   if (!panel || !rows.length) {
     return (
       <Panel title="Machines" label="Machines" icon={icon} note={note}>

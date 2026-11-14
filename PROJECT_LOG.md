@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.23.2 - 2026-11-14 - patch
+- The Machines box marks the machine CPU, Memory and Disk show with its line, the dashboard's own machine too while it is the default, so with several machines it is always clear which one the panels are about (the user's report: the line showed only for a picked node). One machine alone stays unmarked. Test in `web/src/features/top/MachinesBox.test.tsx`.
+
 ## 1.23.1 - 2026-11-14 - patch
 - Roadmap: M25.6 (a job only on a node of its project's system) and M25.7 (dev mode) done on the real Mac node beside the Linux node: a Linux project's jobs waited for the Linux node with the Mac free, an `os: any` job ran on the Mac, and in dev mode the Mac took only a job sent `--on` it. The Mac node was removed and cleaned up after. Docs only.
 
