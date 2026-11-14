@@ -102,7 +102,7 @@ class ProjectConfig:
     env: dict[str, str] = field(default_factory=dict)
     job_options: dict[str, config_jobs.JobOptions] = field(default_factory=dict)
     host_ports: tuple[str, ...] = ()  # of the one job `for_job` gave this for
-    isolation: str = isolation_rules.NONE  # common/isolation.py
+    isolation: str | None = None  # common/isolation.py; None: the node's floor
     image: str | None = None  # an isolated job's own image, else mulebox's
 
     @property
@@ -113,6 +113,8 @@ class ProjectConfig:
         implied = (*implied, *(name for name in FOUND_ON_NODE if name in self.toolchain))
         if self.isolation == isolation_rules.CONTAINER:
             implied = (*implied, compose.DOCKER_CAPABILITY, isolation_rules.CAPABILITY)
+        elif self.isolation == isolation_rules.NONE:  # asked for: refused on an isolated node
+            implied = (*implied, isolation_rules.UNISOLATED)
         return tuple(dict.fromkeys((*self.needs, *implied)))
 
 
@@ -133,6 +135,7 @@ class NodeConfig:
     slots: int = 1
     priority: str = "normal"  # common/node_settings.py
     capabilities: tuple[str, ...] = ()
+    isolation: str = isolation_rules.NONE  # the floor for every job here (common/isolation.py)
     coordinator: str | None = None
     coordinator_key: str | None = None  # a worker's own key for it (`mulebox setup --worker-of`)
     dashboard: dict[str, Any] = field(default_factory=dict)
@@ -187,8 +190,8 @@ def load_project_config(path: Path) -> ProjectConfig:
 
 
 def _isolation(reader: Reader) -> dict[str, Any]:
-    level = reader.text("isolation", isolation_rules.NONE)
-    if (problem := isolation_rules.level_problem(level)) is not None:
+    level = reader.text("isolation", None)
+    if level is not None and (problem := isolation_rules.level_problem(level)) is not None:
         reader.fail("isolation", problem)
     image = reader.text("image", None)
     if image is not None:
@@ -260,6 +263,18 @@ def load_node_config(path: Path | None = None) -> NodeConfig:
     return node_config_from(path, load_toml(path))
 
 
+def _floor(reader: Reader) -> str:
+    """A node's `isolation`: `container` only where jobs can be isolated."""
+    level = reader.text("isolation", isolation_rules.NONE)
+    if (problem := isolation_rules.level_problem(level)) is not None:
+        reader.fail("isolation", problem)
+    if level == isolation_rules.CONTAINER and not isolation_rules.can_isolate(
+            reader.strings("capabilities"), compose.DOCKER_CAPABILITY):
+        reader.fail("isolation", "container needs a Linux node with Docker and `docker` in "
+                    "its capabilities")
+    return level
+
+
 def node_config_from(path: Path, data: Any) -> NodeConfig:
     """A node's config from parsed TOML; `path` names the file in errors."""
     reader = Reader(path, data)
@@ -270,6 +285,7 @@ def node_config_from(path: Path, data: Any) -> NodeConfig:
         slots=config_node.slots(reader),
         priority=config_node.priority(reader),
         capabilities=reader.strings("capabilities"),
+        isolation=_floor(reader),
         coordinator=reader.ssh_target("coordinator", None),
         coordinator_key=reader.absolute_path("coordinator_key"),
         dashboard=config_node.dashboard(reader),

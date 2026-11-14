@@ -18,6 +18,10 @@ slots = 2
 # no node ranked above it could. `mulebox machine config` changes this and `slots` from afar.
 # priority = "normal"
 
+# Run every job here in a confined container of its own, whatever a project says: "none" (the
+# default) or "container", which needs Docker on Linux. Applies from the next job.
+# isolation = "none"
+
 # What this node offers to jobs (`needs` in a project's .mulebox.yml), e.g. ["docker"].
 capabilities = []
 

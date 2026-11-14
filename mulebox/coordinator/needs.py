@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import compose, package_cache
+from mulebox.common import compose, isolation, package_cache
 from mulebox.coordinator.workers import is_online
 
 Worker = dict[str, Any]
@@ -59,7 +59,16 @@ def _nobody_offers(needs: list[str], workers: list[Worker]) -> str:
     return f"no node offers {', '.join(sorted(set(needs)))} ({known})"
 
 
+HOW_TO_ISOLATE = ("every node runs its jobs isolated (`isolation = \"container\"` in its "
+                  "node.toml), and a project cannot go below that: remove `isolation: none` "
+                  "from .mulebox.yml; a node older than mulebox 1.20 is upgraded "
+                  "(docs/install.md, Upgrade)")
+
+
 def _what_to_do(workers: list[Worker], needs: list[str]) -> str:
+    if isolation.UNISOLATED in needs and all(
+            isolation.UNISOLATED in _missing(w, needs) for w in workers):
+        return HOW_TO_ISOLATE
     return HOW_TO_UPGRADE if any(_too_old(w, needs) for w in workers) else HOW_TO_ADD
 
 

@@ -190,6 +190,12 @@ passes `CODE_SIGNING_ALLOWED=NO`; signing for a device or the App Store stays wi
   what the job needs). For example the spare machine `preferred` and your own desktop `normal`:
   the desktop runs jobs only while the spare one is full. A job a better node leaves waiting 30 s
   goes to the next one.
+- `isolation`: `"none"` (if left out) or `"container"`, the floor for every job on this node.
+  With `"container"` each job runs in a fresh confined container of its own, also one whose
+  `.mulebox.yml` says nothing, so code nobody has read cannot reach this user's keys, logins or
+  other projects (docs/agents.md, `isolation:`; docs/design.md, Isolation per job). It needs a
+  Linux node with `docker` in `capabilities`. A project that writes `isolation: none` is refused
+  where every node has the floor, and says why. It applies from the next job, no restart.
 - `capabilities`: see [interfaces.md](interfaces.md). A project's `needs` must be
   in `capabilities` of some worker, or its jobs are refused with that message. Add `docker`
   on a machine with Docker Engine and Compose v2 whose user is in the `docker` group, to
@@ -541,7 +547,9 @@ mulebox is for one owner and the projects that owner trusts. It is not a sandbox
   and mulebox itself. Docker access makes that root in all but name.
 - So a machine used as a desktop shares all of that with every job. A dedicated user keeps the
   desktop's files out of reach only without the `docker` group, and mulebox's Docker jobs need
-  that group. For a real boundary, use a machine that holds nothing else.
+  that group. For a real boundary, use a machine that holds nothing else, or set
+  `isolation = "container"` in node.toml: each job then runs in a confined container with no
+  Docker socket, home folder or keys (docs/design.md, Isolation per job).
 - A worker on another machine reaches the coordinator with a key of its own. Its line in
   `authorized_keys` has `restrict` (no forwarding, no terminal) and a forced command,
   `mulebox ssh-gate`, which runs only `mulebox rpc` and `rpc-download <job>`, and over `rpc`

@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.20.0 - 2026-11-14 - minor
+- Isolated jobs, part 3 of M23.1: a node's floor. `isolation = "container"` in node.toml runs every job on that node in a confined container, also one whose `.mulebox.yml` says nothing: the worker adds the need `isolated` to each claim (`worker/job.py`, `floored`). It applies from the next claim, like `slots` (`worker/live_config.py`). Only a Linux node with `docker` in its capabilities may set it; anything else is a config error.
+- A project cannot go below its node's floor: an explicit `isolation: none` travels as the need `unisolated`, which every worker offers by itself unless its floor is `container` (`common/isolation.py`), so such a job never lands on an isolated node, and with none left the coordinator refuses it at submit and says how to fix it (`coordinator/needs.py`). A project that leaves the field out takes its node's floor.
+- Tests in `tests/common/test_isolation_floor.py`, `tests/common/test_compose_names.py`, `tests/worker/test_agent.py`; docs/install.md, docs/agents.md, docs/design.md, the node.toml template.
+
 ## 1.19.2 - 2026-11-14 - patch
 - Roadmap: M23.1 parts 1 and 2 run on the node (an isolated job and an isolated compose job with real Postgres and Redis, refusals, cancels, nothing left behind). Part 3, the node's floor, is open. Docs only.
 

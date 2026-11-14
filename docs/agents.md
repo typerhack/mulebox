@@ -260,6 +260,11 @@ image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
    that would make a container, image or volume (`docker run`, `build`, `cp`, Testcontainers) is
    refused with a message (docs/design.md, Isolation per job).
 
+   A node's owner can make every job there isolated (`isolation = "container"` in node.toml),
+   with or without this field. Leave the field out to take what the node gives; write
+   `isolation: none` only for a project that cannot run in a container: on a node with that
+   floor its jobs are refused, and the message says why.
+
    Rules for the values:
    - **Databases are per job.** A database a job shares with anything else, such as one
      already running on the node or reached by address, needs `${MULEBOX_JOB_SLUG}`

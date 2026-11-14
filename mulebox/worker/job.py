@@ -20,6 +20,16 @@ def uses_docker(claim: dict[str, Any]) -> bool:
             or isolation.CAPABILITY in (claim.get("needs") or ()))
 
 
+def floored(claim: dict[str, Any], floor: str) -> dict[str, Any]:
+    """The claim as this node runs it: with the floor `container` (node.toml), every job is
+    isolated, also one whose project says nothing (isolation.py). A project that asked for
+    `isolation: none` never gets here: such a node does not offer `unisolated`."""
+    needs = list(claim.get("needs") or ())
+    if floor != isolation.CONTAINER or isolation.CAPABILITY in needs:
+        return claim
+    return {**claim, "needs": [*needs, isolation.CAPABILITY]}
+
+
 @dataclass
 class ActiveJob:
     job_id: str

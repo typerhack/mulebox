@@ -46,18 +46,23 @@ def test_a_tampered_file_list_is_refused(value):
 
 def test_a_worker_reports_compose_by_itself_only_with_docker():
     assert compose.worker_capabilities(("docker", "node"), "darwin") == [
-        "docker", "node", "compose-v1", *PACKAGE_CACHES]
-    assert compose.worker_capabilities(("node",)) == ["node", *PACKAGE_CACHES]
-    assert compose.worker_capabilities(()) == [*PACKAGE_CACHES]
+        "docker", "node", "compose-v1", "unisolated", *PACKAGE_CACHES]
+    assert compose.worker_capabilities(("node",)) == ["node", "unisolated", *PACKAGE_CACHES]
+    assert compose.worker_capabilities(()) == ["unisolated", *PACKAGE_CACHES]
 
 
 def test_saying_it_twice_changes_nothing():
     assert compose.worker_capabilities(("docker", "compose-v1"), "darwin") == [
-        "docker", "compose-v1", *PACKAGE_CACHES]
+        "docker", "compose-v1", "unisolated", *PACKAGE_CACHES]
 
 
 def test_a_linux_worker_with_docker_offers_isolated_jobs_by_itself():
     assert compose.worker_capabilities(("docker",), "linux") == [
-        "docker", "compose-v1", "isolated", *PACKAGE_CACHES]
+        "docker", "compose-v1", "isolated", "unisolated", *PACKAGE_CACHES]
     assert "isolated" not in compose.worker_capabilities(("node",), "linux")
     assert "isolated" not in compose.worker_capabilities(("docker",), "darwin")
+
+
+def test_a_node_with_the_floor_container_offers_no_unisolated_jobs():
+    offers = compose.worker_capabilities(("docker",), "linux", floor="container")
+    assert "isolated" in offers and "unisolated" not in offers

@@ -40,11 +40,12 @@ class ComposeError(MuleboxError):
     """A compose project cannot be used as it is."""
 
 
-def worker_capabilities(configured: tuple[str, ...], platform: str = sys.platform) -> list[str]:
+def worker_capabilities(configured: tuple[str, ...], platform: str = sys.platform,
+                        floor: str = isolation.NONE) -> list[str]:
     """What a worker tells the coordinator: `capabilities` from its node.toml, and what it
     reports by itself."""
     implied = (COMPOSE_CAPABILITY,) if DOCKER_CAPABILITY in configured else ()
-    implied = (*implied, *isolation.offered(configured, DOCKER_CAPABILITY, platform))
+    implied = (*implied, *isolation.offered(configured, DOCKER_CAPABILITY, platform, floor))
     return list(dict.fromkeys((*configured, *implied, *PACKAGE_CACHES)))
 
 

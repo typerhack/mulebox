@@ -36,7 +36,7 @@ from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
-from mulebox.worker.job import ActiveJob, outcome_for, uses_docker
+from mulebox.worker.job import ActiveJob, floored, outcome_for, uses_docker
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.worker.logtail import LogTailer
@@ -148,6 +148,7 @@ class Agent(Ending, Skipping):
             self._start(reply.body, now)
 
     def _start(self, claim: dict[str, Any], now: float) -> None:
+        claim = floored(claim, self.node.isolation)
         job_id, attempt_id = claim["job_id"], claim["attempt_id"]
         project = claim["project"]
         safe = self.paths.is_safe_job(project, job_id)

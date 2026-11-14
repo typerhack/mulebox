@@ -839,6 +839,15 @@ projects to use, is forwarded inside the container to each service's own port
 the node's, linked against its system, so in a project's own image of another system `docker
 compose exec` may not run, and with no Python there the ports are reached by service name.
 
+Part 3, 1.20.0: the floor. `isolation = "container"` in node.toml makes the worker add the need
+`isolated` to every job it claims (worker/job.py, `floored`), so a job whose project says
+nothing runs isolated there; it applies from the next claim, like `slots`. Every worker offers
+the need `unisolated` by itself unless its floor is `container`, and an explicit `isolation:
+none` in `.mulebox.yml` asks for it, so such a job is never claimed by an isolated node, and with
+none left the coordinator refuses it at submit and names the floor (coordinator/needs.py). A
+project that leaves the field out takes its node's floor. A node older than 1.20.0 offers no
+`unisolated`, so a project that writes `isolation: none` needs its nodes upgraded.
+
 **Decided by the user (2026-11-14):** the default floor is `none`; compose jobs take way 2, the
 worker running Compose and a narrow proxy; the job image is mulebox's own, and a project may name
 its own `image:`; a project cannot ask for less than its node's floor: such a job is refused and

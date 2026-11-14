@@ -36,7 +36,7 @@ def fields(node: NodeConfig, paths: NodePaths, load: HostLoad | None = None) -> 
     fullest = (sample or {}).get("disk")
     free = fullest["free"] if fullest else disk.free_bytes(node.roots.values())
     tools = by_name(paths)
-    offers = compose.worker_capabilities(node.capabilities)
+    offers = compose.worker_capabilities(node.capabilities, floor=node.isolation)
     # an Xcode or a simulator runtime, as a project pinning one needs it (config.py all_needs)
     offers = list(dict.fromkeys((*offers, *(name for name in FOUND_ON_NODE if tools.get(name)))))
     return {"worker": node.name, "capabilities": offers,
