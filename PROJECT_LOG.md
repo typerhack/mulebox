@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.26 - 2026-11-14 - patch
+- M23.1: the user's decisions in the design note (docs/design.md, Isolation per job): default floor `none`; compose jobs through the worker and a narrow proxy; mulebox's job image, or a project's own `image:`; a project cannot go below its node's floor. Docs only.
+
 ## 1.17.25 - 2026-11-14 - patch
 - Design note for M23.1, isolation per job (docs/design.md, Isolation per job): the levels `none`, `container` and later `vm` with what each keeps out and costs; a floor set by the node that a project can only raise; the job's container confined like an isolated runner's place; three ways for compose jobs weighed (the Docker socket refused, the worker running Compose with a narrow proxy proposed, an engine per job left for projects that build images); Mac nodes; the decisions left to the user. Safety points to it. Docs only.
 

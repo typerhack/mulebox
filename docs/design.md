@@ -737,7 +737,7 @@ runner, the second for public repositories:
      what the firewall closes. A job that needs Docker itself cannot run in it. A job can write its
      own diary in `_diag`, so the result mulebox shows for it is the job's word.
 
-## Isolation per job (M23.1, proposed 2026-11-14, for the user's decision)
+## Isolation per job (M23.1, decided by the user 2026-11-14)
 
 Today a job runs under systemd as the node's user. Code an agent wrote, or a package it pulled in,
 can read what that user can: `~/.ssh`, the `gh` login, the coordinator's key, other projects'
@@ -816,9 +816,10 @@ framework), a step of its own.
 for that. Compose services run images the project chose, contained by the policy, not by this
 step. A package cache is still a channel between jobs of one project, on purpose.
 
-**Open for the user:** the default floor (`none` proposed); way 2 over way 3; the job image as
-mulebox's own with a project's `image:` allowed; whether a project may ask for `none` on a node
-whose floor is `container` (proposed: no, it is refused and says why).
+**Decided by the user (2026-11-14):** the default floor is `none`; compose jobs take way 2, the
+worker running Compose and a narrow proxy; the job image is mulebox's own, and a project may name
+its own `image:`; a project cannot ask for less than its node's floor: such a job is refused and
+says why.
 
 ## Safety
 
@@ -831,7 +832,7 @@ whose floor is `container` (proposed: no, it is refused and says why).
 - Docker access is root-equivalent: running jobs as the machine's normal user is fine for
   a single trusted owner; a dedicated user is optional hygiene, not isolation. mulebox is not
   a sandbox: its checks stop mistakes and a CI file's assumptions, not a hostile project.
-  Isolation per job, proposed above, is the way to run code nobody has read.
+  Isolation per job, above, is the way to run code nobody has read.
 - Docker cleanup removes only what a listing filtered on one job's exact labels returned.
   `prune` and `system` cannot be run through mulebox at all. Containers, networks and
   volumes of the job go; images stay as cache.

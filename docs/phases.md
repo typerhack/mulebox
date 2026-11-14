@@ -843,7 +843,9 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Design note written 2026-11-14 (1.17.25): design.md, Isolation per job. Proposed: a floor
       in node.toml that a project can raise, not lower; the job in a confined container like an
       isolated runner's; Compose run by the worker, with a proxy that lets a job line only exec
-      into, read and restart its own containers. Waiting for the user's decisions listed there.
+      into, read and restart its own containers. The user took every proposal the same day
+      (1.17.26): floor `none` by default, worker and proxy, mulebox's image or the project's, no
+      lowering below the floor.
 - [ ] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
