@@ -12,6 +12,9 @@ printed. The client reads the group (`project_order` with `group`) until every n
   coordinator's upload base of the project goes.
 - `clean` takes no hold: each node skips the branches it runs a job in, and takes no new job
   while it cleans. The branch history it needs (projects.branches) goes in the order.
+- `sweep` is the storage cleanup run now (worker/storage_sweep.py), on every online node or on
+  `node` alone, with `docker` to remove Docker's unused build cache and images too; it runs
+  even with the node's `auto_clean` off, as the user asked for it.
 - An order no node answered in `ANSWER_S` counts as lost: the node may be on an older mulebox.
 """
 
@@ -29,7 +32,7 @@ from mulebox.coordinator.context import Request
 from mulebox.coordinator.errors import BadRequest
 
 ANSWER_S = 300.0
-ACTIONS = ("reset", "clean")
+ACTIONS = ("reset", "clean", "sweep")
 
 
 def _body(req: Request) -> dict[str, Any]:
@@ -37,7 +40,9 @@ def _body(req: Request) -> dict[str, Any]:
     if action not in ACTIONS:
         raise BadRequest(f"action must be one of {', '.join(ACTIONS)}")
     body: dict[str, Any] = {"action": action, "yes": v.flag(req.body, "yes")}
-    if action == "reset":
+    if action == "sweep":
+        body.update(docker=v.flag(req.body, "docker"), node=v.text(req.body, "node", None))
+    elif action == "reset":
         body.update(project=v.text(req.body, "project"), branch=v.text(req.body, "branch", None),
                     caches=v.flag(req.body, "caches"))
     else:
@@ -58,14 +63,18 @@ def control(req: Request) -> Message:
             body["used"] = {project: {branch or "": when for branch, when in seen.items()}
                             for project, seen in projects.branches(conn).items()}
         rows = workers.listing(conn)
-        online = [w["worker"] for w in rows if workers.is_online(w, req.now)]
+        online = [w["worker"] for w in rows if workers.is_online(w, req.now)
+                  and body.get("node") in (None, w["worker"])]
+        if body.get("node") and not online:
+            raise BadRequest(f"no online node {body['node']}")
         for worker in online:
             conn.execute("INSERT INTO project_orders (order_id, grp, worker, body, created_at) "
                          "VALUES (?, ?, ?, ?, ?)",
                          (new_id("ord"), group, worker, json.dumps(body), req.now))
     if holding and not online:
         holds.release(req.store, body["project"])
-    offline = sorted(w["worker"] for w in rows if w["worker"] not in online)
+    offline = sorted(w["worker"] for w in rows if w["worker"] not in online
+                     and body.get("node") in (None, w["worker"]))
     return req.reply(MessageType.PROJECT_ORDER_OK,
                      {"group": group, "nodes": online, "offline": offline, "done": not online})
 

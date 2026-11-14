@@ -35,7 +35,7 @@ def claim(req: Request) -> Message:
     with req.store.write() as conn:  # after the claim, which records a new worker
         storage.keep_report(conn, worker, req.body)
         waiting = {**node_settings.settle(conn, worker, settings),
-                   **project_orders.hand_out(conn, worker, req.now), **storage.reply_fields(conn)}
+                   **project_orders.hand_out(conn, worker, req.now), **storage.reply_fields(conn, req.now)}
     if job is None:
         return req.reply(MessageType.CLAIM_NONE, waiting)
     return req.reply(MessageType.CLAIM_OK, {**queue.claim_body(job), **waiting})
@@ -75,7 +75,7 @@ def heartbeat(req: Request) -> Message:
         storage.keep_report(conn, job["worker"], req.body)
         waiting = {**node_settings.settle(conn, job["worker"], node_settings.reported(req.body)),
                    **project_orders.hand_out(conn, job["worker"], req.now),
-                   **storage.reply_fields(conn)}
+                   **storage.reply_fields(conn, req.now)}
         _activity(conn, req, job)
     return _status(req, job, **waiting)
 

@@ -60,6 +60,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "fingerprint": snap.fingerprint,
         "base_commit": snap.base_commit,
         "branch": snap.branch,
+        **({"branches": list(snap.branches)} if snap.branches else {}),  # for the node's cleanup
         "client": socket.gethostname() or "client",
         "client_os": client_os(),
         "client_version": get_version(),

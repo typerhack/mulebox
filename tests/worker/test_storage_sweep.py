@@ -24,6 +24,8 @@ class NoDocker:
         from mulebox.worker.docker import DockerError
         raise DockerError("no docker here")
 
+    run = lines
+
 
 @pytest.fixture(autouse=True)
 def no_settle(monkeypatch):
@@ -141,12 +143,14 @@ def test_claims_stop_only_while_folders_are_removed(worker, send, monkeypatch):
 def test_a_sweep_is_due_an_hour_after_the_last_or_when_space_runs_short(worker, monkeypatch):
     agent = worker()
     state = agent._store()
-    assert agent._sweep_due(state) is False  # a minute after start, not before
+    assert agent._sweep_due(state) is None  # a minute after start, not before
     state["next"] = 0.0
-    assert agent._sweep_due(state) is True
+    assert agent._sweep_due(state) == "start"
+    state["first"] = False
+    assert agent._sweep_due(state) == "hourly"
     state["next"], state["last"], state["low_check"] = float("inf"), 0.0, 0.0
     agent.node = replace(agent.node, storage=StoragePolicy(keep_free="90%"))
-    assert agent._sweep_due(state) is True  # this disk is surely not 90% free
+    assert agent._sweep_due(state) == "low"  # this disk is surely not 90% free
     state["last"] = time.time()
     state["low_check"] = 0.0
-    assert agent._sweep_due(state) is False  # not again within LOW_EVERY_S
+    assert agent._sweep_due(state) is None  # not again within LOW_EVERY_S

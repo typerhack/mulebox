@@ -87,6 +87,23 @@ CREATE TABLE IF NOT EXISTS storage_keeps (
     PRIMARY KEY (project, branch)
 )
 """
+PROJECT_BRANCHES = """
+CREATE TABLE IF NOT EXISTS project_branches (
+    project TEXT NOT NULL,
+    client TEXT NOT NULL,
+    branches TEXT NOT NULL,
+    seen_at REAL NOT NULL,
+    PRIMARY KEY (project, client)
+)
+"""
+STORAGE_SWEEPS = """
+CREATE TABLE IF NOT EXISTS storage_sweeps (
+    worker TEXT NOT NULL,
+    started REAL NOT NULL,
+    body TEXT NOT NULL,
+    PRIMARY KEY (worker, started)
+)
+"""
 _STEPS: dict[int, tuple[str, ...]] = {
     1: (
         "ALTER TABLE jobs ADD COLUMN kind TEXT NOT NULL DEFAULT 'job'",
@@ -132,6 +149,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     22: ("ALTER TABLE jobs ADD COLUMN deferred_at REAL",),
     23: (PROJECT_ORDERS,),
     24: (STORAGE_KEEPS, "ALTER TABLE workers ADD COLUMN storage TEXT"),
+    25: (PROJECT_BRANCHES, STORAGE_SWEEPS),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

@@ -98,6 +98,21 @@ def config_value(root: Path, key: str) -> str:
     return proc.stdout.decode().strip() if proc.returncode == 0 else ""
 
 
+MAX_BRANCHES = 5000
+
+
+def branches(root: Path) -> tuple[str, ...]:
+    """The repository's own branches, sorted; empty when git cannot say. Sent with each job so a
+    node can remove the folders of branches no dev machine has any more (design.md, Disk use and
+    cleanup on its own). Remote-tracking names are left out: they outlive a branch deleted on
+    the remote until someone prunes them."""
+    proc = _git(root, "for-each-ref", "--format=%(refname:short)", "refs/heads", check=False)
+    if proc.returncode != 0:
+        return ()
+    names = {line for line in proc.stdout.decode(errors="surrogateescape").splitlines() if line}
+    return () if len(names) > MAX_BRANCHES else tuple(sorted(names))  # a cut list would lie
+
+
 def branch(root: Path) -> str:
     """`git rev-parse --abbrev-ref HEAD` (`HEAD` when detached), or "" without commits."""
     proc = _git(root, "rev-parse", "--abbrev-ref", "HEAD", check=False)

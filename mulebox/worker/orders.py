@@ -1,4 +1,5 @@
-"""Project orders on this node: `project reset` and `clean` for every node (M25.4).
+"""Project orders on this node: `project reset` and `clean` for every node (M25.4), and the
+storage cleanup run now (`sweep`, storage_sweep.py).
 
 The coordinator sends them with a claim's or heartbeat's reply (`orders`,
 coordinator/project_orders.py). Each runs in a thread of its own, so the loop keeps tending
@@ -58,12 +59,21 @@ class Ordering:
             skip = {(job.project, project_home.slug(job.branch)) for job in self.active.values()}
             LOG.info("project order %s: %s", order_id, order.get("action"))
 
+            if order.get("action") == "sweep":  # claims stop only while it removes
+                threading.Thread(target=self._swept_order, args=(order, order_id),
+                                 daemon=True).start()
+                continue
+
             def work(order=order, order_id=order_id, skip=skip) -> None:
                 code, output = run(order, self.node, self.paths, skip)
                 state["done"].append((order_id, code, output))
                 state["running"].pop(order_id, None)
             state["running"][order_id] = threading.Thread(target=work, daemon=True)
             state["running"][order_id].start()
+
+    def _swept_order(self, order: dict[str, Any], order_id: str) -> None:
+        code, output = self._sweep_order(order)  # storage_sweep.py
+        self._order_state()["done"].append((order_id, code, output))
 
     def _ordering(self, now: float) -> bool:
         """Report the orders that ended; True while one still runs (claim no job then)."""

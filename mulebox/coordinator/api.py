@@ -12,8 +12,8 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common import take_paths
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import (attendance, clients, holds, job_control, leases, line,
-                                 line_rules, machine_api, needs, node_settings, project_orders,
+from mulebox.coordinator import (attendance, branch_lists, clients, holds, job_control, leases,
+                                 line, line_rules, machine_api, needs, node_settings, project_orders,
                                  project_pause, projects, queue, reuse, runner_api, stats_api,
                                  steps, storage, taken, upgrades, usual, worker_api, workers)
 from mulebox.coordinator import store as st
@@ -86,10 +86,12 @@ def submit(req: Request) -> Message:
         "take": _take(body),
         "pinned_worker": v.text(body, "on", None),  # `--on <node>`: that node only
     }
-    said = clients.fields(body)
+    said, names = clients.fields(body), branch_lists.checked(body)
     with req.store.write() as conn:
         if said:  # first, as a repeat answered from an earlier result returns early
             clients.seen(conn, fields["client"], said, req.now)
+        if names is not None:
+            branch_lists.seen(conn, fields["project"], fields["client"], names, req.now)
         job = st.find_by_key(conn, fields["idempotency_key"])
         same = reuse.earlier(conn, fields, req.now) if job is None and v.flag(body, "reuse") else None
         if same is not None:
@@ -134,7 +136,7 @@ def _news(conn: Any, project: str, now: float) -> dict[str, Any]:
     return {"questions": [{**job_dict(job), **found} for job in rows
                           if (found := attendance.fields(job, now, limits))],
             "finished_away": [result_body(job) for job in finished],
-            "low_disks": workers.low_disks(conn, now)}
+            "low_disks": workers.low_disks(conn, now), "heavy_nodes": storage.heavy(conn, now)}
 
 
 def job_ok(req: Request) -> Message:

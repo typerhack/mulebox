@@ -55,6 +55,7 @@ class Snapshot:
     files: int
     size: int
     skipped_links: tuple[str, ...] = ()
+    branches: tuple[str, ...] = ()  # every branch the repository knows (gitinfo.branches)
 
     def discard(self) -> None:
         """Delete the temporary archive (our own temp file; safe to call twice)."""
@@ -87,6 +88,7 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = (),
         gitinfo.ensure_commit(root)
         paths = selected_paths(root, Excludes(extra_excludes))
         commit, branch = gitinfo.base_commit(root), gitinfo.branch(root)
+        known = gitinfo.branches(root)
     except gitinfo.GitError as exc:
         raise SnapshotError(str(exc)) from exc
     fd, name = tempfile.mkstemp(prefix="mulebox-snapshot-", suffix=".tar.gz")
@@ -106,7 +108,7 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = (),
     except BaseException:
         path.unlink(missing_ok=True)
         raise
-    return Snapshot(path, digest, fingerprint, commit, branch, files, size, tuple(skipped))
+    return Snapshot(path, digest, fingerprint, commit, branch, files, size, tuple(skipped), known)
 
 
 def _write_archive(root: Path, paths: list[str], raw: BinaryIO,

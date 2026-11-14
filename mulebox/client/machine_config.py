@@ -42,6 +42,13 @@ def register(actions: argparse._SubParsersAction) -> None:
     config.add_argument("--keep-latest", choices=("on", "off"),
                         help="keep each project's latest folder however old")
     config.add_argument("--idle-days", type=int, help="suggest cleaning a project idle this long")
+    config.add_argument("--auto-clean", choices=("on", "off"),
+                        help="remove on its own; off, it only says what would go")
+    config.add_argument("--docker-clean", choices=("on", "off"),
+                        help="also remove Docker build cache and images unused that long")
+    config.add_argument("--warn-size", help='warn agents when mulebox holds more ("50GB", or off)')
+    config.add_argument("--max-size", help='the most mulebox may hold; it removes the oldest '
+                        'folders past it ("100GB", or off)')
     config.add_argument("--cancel", action="store_true", help="drop a change still waiting")
     config.add_argument("--wait", action="store_true",
                         help=f"return once the machine applied it (up to {WAIT_S:.0f} s)")
@@ -70,6 +77,12 @@ def lines(view: dict[str, Any]) -> list[str]:
                        f"unused {current['unused_days']} days, "
                        f"{'keeping' if current['keep_latest'] else 'not keeping'} each "
                        f"project's latest; suggests cleaning after {current['idle_days']} days")
+        if "auto_clean" in current:
+            out.append("cleanup:   " + ("on its own" if current["auto_clean"] else
+                                        "off: nothing goes on its own, it only says what would")
+                       + "; Docker " + ("too" if current["docker_clean"] else "never")
+                       + "; warns over " + str(current.get("warn_size", "50GB")).lower()
+                       + "; at most " + str(current.get("max_size", "off")).lower())
     if tip:
         out.append(f"suggested: {tip['slots']} slot(s), from {tip['reason']}")
     if pending:
@@ -79,6 +92,10 @@ def lines(view: dict[str, Any]) -> list[str]:
     if view.get("error"):
         out.append(f"could not apply: {view['error']}")
     return out
+
+
+def _flag(value: str | None) -> bool | None:
+    return None if value is None else value == "on"
 
 
 def _word(value: Any) -> str:
@@ -92,7 +109,10 @@ def _config(args: argparse.Namespace) -> int:
                              ("dev", None if args.dev is None else args.dev == "on"),
                              ("keep_free", args.keep_free), ("unused_days", args.unused_days),
                              ("keep_latest", None if args.keep_latest is None
-                              else args.keep_latest == "on"), ("idle_days", args.idle_days))
+                              else args.keep_latest == "on"), ("idle_days", args.idle_days),
+                             ("auto_clean", _flag(args.auto_clean)),
+                             ("docker_clean", _flag(args.docker_clean)),
+                             ("warn_size", args.warn_size), ("max_size", args.max_size))
                             if value is not None}
     if args.cancel:
         body["cancel"] = True

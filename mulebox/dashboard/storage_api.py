@@ -6,6 +6,8 @@ Project folders, Disk use and cleanup on its own).
     POST /api/storage/remove          {"project", "branch"?}: a project's folders, or a branch's,
                                       on every node, as `mulebox project reset --yes`
     GET  /api/storage/remove/<group>  each node's answer to that removal so far
+    POST /api/storage/sweep           {"node"?, "docker"?}: the cleanup now, as `mulebox storage
+                                      clean`; its answers at /api/storage/remove/<group>
 
 GET /api/storage reads the dashboard's own read-only store, plus `editable`. The rest needs the
 controls on and is protected like them (cancel.check); it goes through the canceller's
@@ -73,6 +75,23 @@ async def post_remove(request: web.Request) -> web.Response:
     return web.json_response(reply)
 
 
+async def post_sweep(request: web.Request) -> web.Response:
+    cancel.check(request)
+    try:
+        body = await request.json()
+    except ValueError:
+        body = {}
+    body = body if isinstance(body, dict) else {}
+    node = body.get("node")
+    if node is not None and not isinstance(node, str):
+        raise web.HTTPBadRequest(text="node must be text\n")
+    order = {"action": "sweep", "docker": body.get("docker", True) is not False,
+             **({"node": node} if node else {})}
+    reply = await _send(request, message(MessageType.PROJECT_ORDER, **order))
+    _log.info("storage: cleanup now %s from the dashboard by %s", order, request.remote)
+    return web.json_response(reply)
+
+
 async def get_removal(request: web.Request) -> web.Response:
     """Only reads: a page's GET carries no Origin, and the answers change nothing."""
     group = request.match_info["group"]
@@ -84,4 +103,5 @@ def add_routes(app: web.Application, editable: bool) -> None:
     if editable:
         app.router.add_post("/api/storage/keep", post_keep)
         app.router.add_post("/api/storage/remove", post_remove)
+        app.router.add_post("/api/storage/sweep", post_sweep)
         app.router.add_get("/api/storage/remove/{group}", get_removal)

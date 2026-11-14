@@ -475,11 +475,24 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 | `unused_days` | 7 | a branch folder with no job for this long is removed on its own |
 | `keep_latest` | true | each project's latest folder stays however old, so the next job after a break is still quick |
 | `idle_days` | 14 | a project with no job for this long gets a suggestion to clean its latest folder, never a removal |
+| `auto_clean` | true | the sweep removes on its own; off, it only says what would go, and removes when the user runs it (`mulebox storage clean`, the dashboard's Run now) |
+| `docker_clean` | true | Docker's unused build cache, dangling images and the images mulebox's jobs pulled and no job used since go too (below) |
+| `max_size` | `"off"` | the most mulebox's folders may take on the node; past it the oldest folders that may go are removed, never a running, kept or latest one |
+| `warn_size` | `"50GB"` | past it, every command from a project tells the agent to tell its user, who may ask an agent to look (1.26.0) |
 
 - **Last use** of a folder is the time of its last job on this node: every job commits in its
   folder, so git's log of the folder's branch (`repo.git/logs/refs/heads/tree-<folder>`) has it,
   for folders from before this too. Per node, not the coordinator's history, as a branch run
   lately on another node may have sat unused here.
+- **Gone branches** (1.26.0, the user's ask: most folders were of branches merged and deleted
+  long before 7 days passed): every job carries the dev machine's own branches (`refs/heads`,
+  not remote-tracking names, which outlive a branch deleted on GitHub until pruned); the
+  coordinator keeps the newest list per project and dev machine (`project_branches`, schema 26)
+  and sends each node the branches no dev machine has any more (`storage_gone`). A branch is
+  gone only when every dev machine that ran a job on it has sent a list since that job and no
+  recent list has it, so a dev machine on an older mulebox, which sends none, never has its
+  branches judged. Its folders go at the next sweep, latest or not; the latest mark moves to the
+  newest folder of a live branch.
 - **The sweep** runs on each worker (`worker/storage_sweep.py`, the rules in
   `worker/storage_rules.py`): a minute after the worker starts, then an hour after the last, and
   within a minute when free space falls under `keep_free` (at most every 10 minutes for that). It removes branch folders unused for `unused_days` through the same removal
@@ -500,9 +513,22 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
   will happen to each), its package caches, toolchains and browsers, GitHub runners, logs and
   snapshots, Docker's own totals (`docker system df`), and where each part is on the node (`paths`, for the dashboard's "copy path"). The coordinator keeps the last report
   per node (`workers.storage`) for `mulebox storage` and the dashboard's `/api/storage`.
-- **Docker** is shown, not cleaned on its own yet: a job's own images, containers, networks and
-  volumes already go with its cleanup, and the build cache and base images cannot yet be told
-  apart from the owner's own (Sol's review, 2026-11-14). A later step.
+- **Docker** (1.26.0, `docker_clean`): a job's own images, containers, networks and volumes go
+  with its cleanup already. The sweep also removes build cache unused for `unused_days` (`builder
+  prune --filter until=`, which goes by the cache's last use) and dangling images older than
+  that. Docker keeps no time of last use for an image, and between jobs every base image a
+  project pulls is "unused" by Docker's count, so the worker notes the images each compose job's
+  services pull when it starts (`worker/image_use.py`); an image no job used for `unused_days`,
+  and no container uses, is removed by name (`worker/docker_prune.py`). An image mulebox never
+  noted is the owner's and stays; volumes stay; `image prune --all` and `system prune` stay
+  refused in `worker/docker.py`.
+- **History**: each sweep's record, why it ran (`start`, `hourly`, `low`, `now`), the folders it
+  removed with the reason (`gone`, `unused`, `size`), what Docker freed, free space before and
+  after and any error, goes with the report and is kept per node (`storage_sweeps`, the newest
+  1000), for `mulebox storage --history` and the dashboard, so a cleanup that does the wrong
+  thing can be seen and fixed.
+- **Too much held**: past `warn_size` every command from a project adds a notice for the agent
+  to tell its user (`heavy_nodes`, client/attention.py); past `max_size` the sweep itself trims.
 - An older worker sends no report and sweeps nothing; the dashboard says to upgrade it. An older
   coordinator ignores the report and sends no keep marks.
 

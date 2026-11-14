@@ -18,9 +18,10 @@ import json
 import sqlite3
 from typing import Any
 
+from mulebox.common import storage_policy
 from mulebox.common.branch_folder import slug
 from mulebox.common.protocol import Message, MessageType
-from mulebox.coordinator import projects, workers
+from mulebox.coordinator import branch_lists, projects, storage_history, workers
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
 
@@ -35,6 +36,7 @@ def keep_report(conn: sqlite3.Connection, worker: str, body: dict[str, Any]) -> 
     text = json.dumps(report, sort_keys=True)
     if len(text) <= MAX_REPORT:
         conn.execute("UPDATE workers SET storage = ? WHERE worker = ?", (text, worker))
+        storage_history.add(conn, worker, report)
 
 
 def keeps(conn: sqlite3.Connection) -> list[dict[str, Any]]:
@@ -44,10 +46,12 @@ def keeps(conn: sqlite3.Connection) -> list[dict[str, Any]]:
              "since": row["created_at"]} for row in rows]
 
 
-def reply_fields(conn: sqlite3.Connection) -> dict[str, Any]:
-    """What every claim's and heartbeat's reply carries for the worker's sweep."""
+def reply_fields(conn: sqlite3.Connection, now: float) -> dict[str, Any]:
+    """What every claim's and heartbeat's reply carries for the worker's sweep: the keep marks
+    and the branches no dev machine has any more (branch_lists.py)."""
     return {"storage_keeps": [{"project": k["project"], "branch": k["branch"]}
-                              for k in keeps(conn)]}
+                              for k in keeps(conn)],
+            "storage_gone": branch_lists.gone(conn, now)}
 
 
 def _names(conn: sqlite3.Connection) -> dict[str, dict[str, str]]:
@@ -56,7 +60,7 @@ def _names(conn: sqlite3.Connection) -> dict[str, dict[str, str]]:
             for project, seen in projects.branches(conn).items()}
 
 
-def body(conn: sqlite3.Connection, now: float) -> dict[str, Any]:
+def body(conn: sqlite3.Connection, now: float, history: int = 50) -> dict[str, Any]:
     """Every node's last report, the keep marks and the folders' branch names: the `storage`
     reply, and the dashboard's `/api/storage` from its own read-only store."""
     stored = {row["worker"]: row["storage"] for row in conn.execute(
@@ -65,12 +69,32 @@ def body(conn: sqlite3.Connection, now: float) -> dict[str, Any]:
               "version": row.get("version"),
               "report": json.loads(stored[row["worker"]]) if stored.get(row["worker"]) else None}
              for row in workers.listing(conn)]
-    return {"nodes": nodes, "keeps": keeps(conn), "branches": _names(conn)}
+    return {"nodes": nodes, "keeps": keeps(conn), "branches": _names(conn),
+            "history": storage_history.recent(conn, history)}
+
+
+def heavy(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
+    """Online nodes where mulebox holds more than their `warn_size`, for every command from a
+    project to pass on to the user (client/attention.py)."""
+    out = []
+    for row in workers.listing(conn):
+        text = conn.execute("SELECT storage FROM workers WHERE worker = ?",
+                            (row["worker"],)).fetchone()["storage"]
+        if not text or not workers.is_online(row, now):
+            continue
+        report = json.loads(text)
+        limit = storage_policy.warn_bytes(str((report.get("policy") or {}).get(
+            "warn_size", storage_policy.DEFAULTS["warn_size"])))
+        held = report.get("held")
+        if limit is not None and isinstance(held, int) and held > limit:
+            out.append({"worker": row["worker"], "held": held, "warn": limit})
+    return out
 
 
 def read(req: Request) -> Message:
     with req.store.read() as conn:
-        return req.reply(MessageType.STORAGE_OK, body(conn, req.now))
+        return req.reply(MessageType.STORAGE_OK,
+                         body(conn, req.now, v.integer(req.body, "history", 50, 1, 500)))
 
 
 def keep(req: Request) -> Message:

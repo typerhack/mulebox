@@ -41,3 +41,11 @@ def test_bad_bodies_are_400_and_a_foreign_page_is_refused(lan):
     status, _, asked = ask(lan, "/api/storage/remove", {"project": "a"},
                            headers={"Origin": "http://elsewhere.example"})
     assert status == 403 and asked == []
+
+
+def test_run_now_sends_a_sweep_order(lan):
+    status, answer, asked = ask(lan, "/api/storage/sweep", {"node": "build-1"})
+    assert status == 200 and answer["group"] == "grp-1"
+    assert asked == [("project_order", {"action": "sweep", "docker": True, "node": "build-1"})]
+    status, _, asked = ask(lan, "/api/storage/sweep", {"docker": False})
+    assert asked == [("project_order", {"action": "sweep", "docker": False})]

@@ -82,7 +82,8 @@ def disk(paths: NodePaths) -> dict[str, int]:
     return {"total": usage.total, "free": usage.free}
 
 
-def _bytes(text: str) -> int | None:
+def parse_size(text: str) -> int | None:
+    """A size as Docker prints it (`9.809GB`, `106.5kB`, `0B`), in bytes."""
     found = _DOCKER_SIZE.match(text or "")
     return int(float(found.group(1)) * _UNITS[found.group(2)]) if found else None
 
@@ -104,7 +105,7 @@ def docker(engine: Docker | None) -> dict[str, Any] | None:
         key = {"Images": "images", "Containers": "containers", "Local Volumes": "volumes",
                "Build Cache": "build_cache"}.get(row.get("Type"))
         if key:
-            out[key] = {"size": _bytes(row.get("Size", "")),
-                        "reclaimable": _bytes(row.get("Reclaimable", "")),
+            out[key] = {"size": parse_size(row.get("Size", "")),
+                        "reclaimable": parse_size(row.get("Reclaimable", "")),
                         "count": int(row["TotalCount"]) if str(row.get("TotalCount", "")).isdigit() else None}
     return out or None

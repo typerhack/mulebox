@@ -1074,6 +1074,13 @@ runs a job.
       project's latest stayed, and `mulebox storage` showed every project, the shared folders and
       Docker's totals (these were refused at first: fixed 1.24.1). Open: a keep mark and a folder in
       use seen held back on the node (tests only), and the Storage view.
+      1.26.0 (the user's asks after the Storage view, 2026-11-14): most of the 130 folders left were
+      of branches already merged and deleted, so a folder now goes as soon as no dev machine has its
+      branch; Docker's unused build cache and the images mulebox's jobs no longer use go on their own;
+      `max_size`, `warn_size` (agents told), `auto_clean`, a history of every cleanup, and Run now.
+      Built with tests. Open: on the real node, gone branches' folders removed by the first sweep
+      after jobs carry the lists, Docker freed with base images used that week kept, and the history
+      read back.
       The Storage view built 2026-11-14 (1.25.0), the user's picks of the mockups
       (design-system/storage/): a Storage page by project after Machines in the header, a line to it
       in the Disk panel, a Storage tab in the node's settings window, the low-space warning in the

@@ -10,6 +10,7 @@ takes root, so a person does it once, and then adds `playwright` to `capabilitie
 
 from __future__ import annotations
 
+import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -18,11 +19,15 @@ from typing import Any
 from mulebox.common import compose, config_jobs, env_rules, isolation
 from mulebox.common.safepath import ensure_dir
 from mulebox.common.config import XCODE
-from mulebox.worker import caches, compose_job, isolated, jobspec, simulator, steps, xcode
+from mulebox.common.log import get_logger
+from mulebox.worker import (caches, compose_job, image_use, isolated, jobspec, simulator, steps,
+                            xcode)
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import ExecutorError, RunSpec, unit_name
 from mulebox.worker.paths import NodePaths
 from mulebox.worker.ports import PortPool
+
+LOG = get_logger("worker.runspec")
 
 PLAYWRIGHT_CAPABILITY = "playwright"
 PLAYWRIGHT_SETTINGS = {
@@ -133,6 +138,10 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
                                     src, values, environment, cached.folders,
                                     (*machine.job_env, *settled), scratch)
         first, extra, notes = ready.script, ready.extra_env, ready.notes
+        try:
+            image_use.noted(machine.paths, ready.images, time.time())  # for the storage cleanup
+        except Exception as exc:  # noqa: BLE001 - a note must never fail the job
+            LOG.warning("could not note the job's images: %s", exc)
     marker = marker or steps.new_marker()
     isolate = isolation.CAPABILITY in needs
     access = (_access(machine, job_id, ready, extra) if isolate and ready is not None

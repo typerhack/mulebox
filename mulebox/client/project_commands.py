@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from typing import Any
 
 from mulebox.client import order_commands
 from mulebox.client import storage_commands
@@ -74,6 +75,12 @@ def _on_every_node(body: dict, *fallback: str) -> int:
         print("mulebox: the coordinator is older than 1.22.0; only its own machine is reached",
               file=sys.stderr)
         return _on_machine(*fallback)
+    return follow(remote, body, reply)
+
+
+def follow(remote: Any, body: dict, reply: dict | None = None) -> int:
+    """Send an order (unless `reply` has its answer already) and print each node's answer."""
+    reply = reply or remote.call(request(MessageType.PROJECT_ORDER, **body)).body
     group = reply["group"]
     for node in reply.get("offline") or ():
         print(f"{node}: not reached, it is offline; its folders stay")

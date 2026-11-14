@@ -168,6 +168,18 @@ def tell(body: dict[str, Any], err: TextIO) -> None:
         report.status(err, away_line(job))
     for low in _dicts(body.get("low_disks")):
         report.status(err, WARNING + disk.warning(str(low.get("worker")), int(low.get("free") or 0)))
+    for heavy in _dicts(body.get("heavy_nodes")):
+        report.status(err, heavy_line(heavy))
+
+
+def heavy_line(heavy: dict[str, Any]) -> str:
+    """A node where mulebox holds more than its warning size: for the agent to tell its user."""
+    node = str(heavy.get("worker"))
+    return (f"notice for the user: mulebox holds {units.size(int(heavy.get('held') or 0))} on {node}, "
+            f"over the {units.size(int(heavy.get('warn') or 0))} it warns at. Tell the user; with "
+            "their go, `mulebox storage` shows what it holds and what goes when, and `mulebox "
+            "project reset <project> --branch <branch> --yes` removes a folder no longer needed "
+            f"(change the size: `mulebox machine config {node} --warn-size 80GB`)")
 
 
 def _dicts(items: Any) -> list[dict[str, Any]]:

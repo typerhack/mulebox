@@ -6,9 +6,15 @@ user's keep marks and the folders jobs run in now go in; a plan comes out, which
 Each folder gets one fate, the first that holds:
 - `running`: a job runs in it now. Never removed.
 - `kept`: the user marked it, or its whole project, to keep (`mulebox project keep`).
+- `remove` (`why: gone`): its branch is on no dev machine any more (`gone`, from the
+  coordinator); it goes at the next sweep, latest or not.
 - `latest`: the project's latest folder, with `keep_latest`.
-- `remove`: no job for `unused_days`; the sweep removes it.
+- `remove` (`why: unused`): no job for `unused_days`; the sweep removes it.
 - `stays`: used lately; `removed_in` says in how many days it would go.
+
+Past the node's `max_size` (mulebox's own folders, caches and tools together), `trim` then
+marks the oldest `stays` folders `remove` (`why: size`) until mulebox is back under it; what it
+cannot reach that way (latest, kept and running folders stay) is left as `over`.
 
 An idle project (its latest folder unused for `idle_days`) gets a suggestion, not a removal.
 When the disk would still be under the reserve after the removals, `short` lists what could go
@@ -34,6 +40,7 @@ class Folder:
     last_used: float | None  # None: never seen a job here (counts as long ago)
     fate: str = STAYS
     removed_in: float | None = None  # days, for `stays`
+    why: str | None = None  # for `remove`: `gone` or `unused`
 
 
 @dataclass
@@ -41,6 +48,7 @@ class Plan:
     folders: list[Folder]
     idle: list[dict[str, Any]] = field(default_factory=list)
     short: dict[str, Any] | None = None
+    over: int = 0  # bytes still over `max_size` after `trim`
 
     @property
     def to_remove(self) -> list[Folder]:
@@ -53,34 +61,41 @@ def _is_kept(folder: Folder, keeps: set[tuple[str, str | None]]) -> bool:
 
 def plan(folders: list[Folder], policy: StoragePolicy, now: float,
          keeps: set[tuple[str, str | None]], running: set[tuple[str, str]],
-         free: int | None = None, reserve: int | None = None) -> Plan:
+         free: int | None = None, reserve: int | None = None,
+         gone: set[tuple[str, str]] = frozenset()) -> Plan:
     """`keeps`: (project, None) for a whole project or (project, folder name); `running`:
     (project, folder name) pairs a job is in now; `free` and `reserve` in bytes, to tell
-    whether the removals are enough."""
+    whether the removals are enough; `gone`: (project, folder name) of branches no dev machine
+    has any more."""
     by_project: dict[str, list[Folder]] = {}
     for folder in folders:
         by_project.setdefault(folder.project, []).append(folder)
     out = Plan(folders)
     for project, own in sorted(by_project.items()):
         own.sort(key=lambda f: f.last_used or 0.0, reverse=True)
-        for index, folder in enumerate(own):
+        live = [f for f in own if (project, f.folder) not in gone]
+        newest = live[0] if live else None  # the latest is the newest folder of a live branch
+        for folder in own:
             age = (now - folder.last_used) / DAY if folder.last_used else float("inf")
             if (project, folder.folder) in running:
                 folder.fate = RUNNING
             elif _is_kept(folder, keeps):
                 folder.fate = KEPT
-            elif index == 0 and policy.keep_latest:
+            elif (project, folder.folder) in gone:
+                folder.fate, folder.why = REMOVE, "gone"
+            elif folder is newest and policy.keep_latest:
                 folder.fate = LATEST
             elif age >= policy.unused_days:
-                folder.fate = REMOVE
+                folder.fate, folder.why = REMOVE, "unused"
             else:
                 folder.fate, folder.removed_in = STAYS, max(0.0, policy.unused_days - age)
-        latest = own[0]
-        idle_days = (now - latest.last_used) / DAY if latest.last_used else None
-        if latest.fate in (LATEST, KEPT) and (idle_days is None or idle_days >= policy.idle_days):
+        if newest is None:
+            continue
+        idle_days = (now - newest.last_used) / DAY if newest.last_used else None
+        if newest.fate in (LATEST, KEPT) and (idle_days is None or idle_days >= policy.idle_days):
             out.idle.append({"project": project, "days": None if idle_days is None else int(idle_days),
                              "size": sum(f.size for f in own if f.fate != REMOVE),
-                             "kept": latest.fate == KEPT})
+                             "kept": newest.fate == KEPT})
     if free is not None and reserve is not None:
         out.short = _short(out, free, reserve)
     return out
@@ -102,3 +117,19 @@ def _short(out: Plan, free: int, reserve: int) -> dict[str, Any] | None:
                       "last_used": folder.last_used, "fate": folder.fate})
         total += folder.size
     return {"need": need, "could_free": total, "folders": could}
+
+
+def trim(out: Plan, held: int, limit: int | None) -> Plan:
+    """Mark the oldest folders that may go for removal until mulebox's `held` bytes, less what is
+    planned already, are under `limit`."""
+    if limit is None:
+        return out
+    over = held - sum(f.size for f in out.to_remove) - limit
+    for folder in sorted((f for f in out.folders if f.fate == STAYS),
+                         key=lambda f: f.last_used or 0.0):
+        if over <= 0:
+            break
+        folder.fate, folder.why, folder.removed_in = REMOVE, "size", None
+        over -= folder.size
+    out.over = max(0, over)
+    return out

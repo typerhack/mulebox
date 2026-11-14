@@ -128,6 +128,20 @@ fixed number. `mulebox contract` shows these as job settings.
 The coordinator and the workers must be upgraded together. If `mulebox doctor` reports
 different versions, tell the user.
 
+## Disk space on the node
+
+- Delete a branch you are done with as usual: its folder on the node goes at the node's next
+  cleanup after the next job sent from this repository, which tells mulebox your branches. To
+  free it at once: `mulebox project reset <project> --branch <branch> --yes`.
+- A notice that mulebox holds more than a node warns at is for the user: tell them, in your
+  reply, with the size. Clean nothing on your own.
+- When the user asks you to check mulebox's disk: run `mulebox storage` (what each node holds
+  and what goes when) and `mulebox storage --history` (what each cleanup removed and why). Say
+  what takes the space and what you would remove. With their go: `mulebox project reset ...
+  --yes` for folders, `mulebox project keep ...` for ones to keep, `mulebox storage clean` to
+  run the cleanup now, `mulebox machine config <node> --max-size ...` for a limit. Report a
+  cleanup that removed the wrong thing as a mulebox problem (below).
+
 ## When something goes wrong
 
 - A job failed: that is a normal result. Read the short failure summary at the end of its

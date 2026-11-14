@@ -366,9 +366,12 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   `--behind` the jobs already waiting, then installs and the line goes on. `--when-idle` waits for
   running jobs; a running job is never cut short unless you say `--now`.
 - **Clean up**: `mulebox projects` shows each project's folder and size; `project clean` removes old
-  branch folders, `project reset` a whole project, on every node. Each node also removes branch folders unused
-  for 7 days on its own, keeps each project's latest one and 10% of its disk free, all settings
-  of yours; `mulebox storage` shows what it holds and what goes when, `project keep` keeps a folder.
+  branch folders, `project reset` a whole project, on every node. Each node also cleans up on
+  its own: the folder of a branch your dev machines no longer have goes at once, one unused for
+  7 days after that, Docker's unused build cache and the images its jobs no longer use too, and
+  past a size you set the oldest go first; past 50 GB agents are told to tell you. All of it is
+  your setting; `mulebox storage` shows what it holds and what goes when, `--history` every
+  cleanup and what it removed, `project keep` keeps a folder.
 
 ### The dashboard
 

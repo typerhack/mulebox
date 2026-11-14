@@ -89,3 +89,18 @@ def test_machine_config_sends_and_shows_the_storage_settings(remote, capsys):
     out = capsys.readouterr().out
     assert "disk:      keeps 10% free; removes branch folders unused 7 days, keeping" in out
     assert "waiting:" in out and "keep_free 20%" in out
+
+
+def test_history_says_what_each_cleanup_did(remote, capsys):
+    from mulebox.coordinator import api as coordinator_api
+    sweep = {"started": NOW - 3600, "trigger": "hourly", "auto": True, "count": 1,
+             "bytes": 600_000_000, "free_before": 50 * GB, "free_after": 51 * GB,
+             "removed": [{"project": "example-app", "folder": "f", "size": 600_000_000,
+                          "why": "gone"}], "docker": {"build_cache": GB, "images": 0}}
+    coordinator_api.handle(remote.store, remote.staging, request(
+        "claim", worker="build-1", capabilities=[], free_slots=2,
+        storage={**REPORT, "at": NOW, "sweep": sweep}), NOW)
+    assert run("storage", "--history") == 0
+    out = capsys.readouterr().out
+    assert "build-1: today, hourly: 1 folder(s), 600.0 MB, docker 1.0 GB" in out
+    assert "its branch is on no dev machine" in out

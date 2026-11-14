@@ -2,13 +2,17 @@
 
 No shell is involved. Every call has a timeout, so a hung daemon cannot stop the worker
 for good, and errors carry redacted text, because compose output can quote env values.
-`prune` and `system` are refused here whatever the caller asks: mulebox removes only what
-it found by exact job label (docker_cleanup.py), never by "whatever looks unused". The
+`prune` and `system` are refused here whatever the caller asks: a job's cleanup removes only
+what it found by exact job label (docker_cleanup.py). The exceptions are exact forms only:
+`system df`, which reads, and the storage cleanup's prunes of build cache and dangling images
+unused for a number of hours (docker_prune.py), never volumes, networks, containers, tagged
+images or `system prune`. The
 runner is injected, and tests use a fake one: they never touch a real Docker daemon.
 """
 
 from __future__ import annotations
 
+import re
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
@@ -19,6 +23,16 @@ from mulebox.common.redact import Redactor
 CALL_TIMEOUT_S = 60.0
 _REFUSED = frozenset({"prune", "system"})
 _READ_ONLY = (("system", "df"),)  # the one `system` call allowed: it only reads totals
+_PRUNES = (("builder", "prune", "--force"), ("image", "prune", "--force"))  # dangling only
+# each then `--filter until=<hours>h` and nothing else; `image prune --all` is never allowed
+_UNTIL = re.compile(r"^until=[1-9][0-9]{0,5}h$")
+
+
+def allowed_prune(args: Sequence[str]) -> bool:
+    """True for exactly one of the storage cleanup's prune forms (docker_prune.py)."""
+    head, tail = tuple(args[:-2]), tuple(args[-2:])
+    return (head in _PRUNES and len(tail) == 2 and tail[0] == "--filter"
+            and bool(_UNTIL.match(tail[1])))
 
 Runner = Callable[[Sequence[str], Mapping[str, str] | None, Path | None, float],
                   subprocess.CompletedProcess]
@@ -51,7 +65,7 @@ class Docker:
             timeout_s: float = CALL_TIMEOUT_S) -> str:
         """`docker <args>`; its stdout, or DockerError with redacted stderr."""
         refused = _REFUSED.intersection(args)
-        if tuple(args[:2]) in _READ_ONLY and refused == {"system"}:
+        if (tuple(args[:2]) in _READ_ONLY and refused == {"system"}) or allowed_prune(args):
             refused = set()
         if refused:
             raise DockerError(f"mulebox never runs docker {sorted(refused)[0]}")

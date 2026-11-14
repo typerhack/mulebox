@@ -30,7 +30,7 @@ from typing import Any
 from mulebox.common import compose
 from mulebox.common.compose import ComposeError
 from mulebox.common.status import CONTAINER_LOGS_NOTE, IMAGES, SERVICES
-from mulebox.worker import compose_file
+from mulebox.worker import compose_file, image_use
 from mulebox.worker.compose_file import Port
 from mulebox.worker.docker import Docker, DockerError
 from mulebox.worker.jobspec import port_references
@@ -52,6 +52,7 @@ class ComposeJob:
     notes: tuple[str, ...]  # told to the job's log
     project: str = ""  # its Compose project name (common/compose.py)
     forwards: tuple[tuple[int, str, int], ...] = ()  # (node port, service, its port), TCP only
+    images: tuple[str, ...] = ()  # the images its services pull (image_use.py)
 
 
 def _config(docker: Docker, env: Mapping[str, str], src: Path) -> dict[str, Any]:
@@ -131,4 +132,5 @@ def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str
                       script=script_lines(),
                       notes=(*_port_notes(ports, assigned), *notes), project=project,
                       forwards=tuple((assigned[port.variable], port.service, port.target)
-                                     for port in ports if port.protocol == "tcp"))
+                                     for port in ports if port.protocol == "tcp"),
+                      images=tuple(image_use.images_of(model)))
