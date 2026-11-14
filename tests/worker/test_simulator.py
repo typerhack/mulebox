@@ -114,6 +114,15 @@ def test_a_worker_that_starts_removes_every_job_simulator_and_nothing_else():
     assert deleted == ["AAA", "BBB", "EEE"]  # not the user's own, nor a near name
 
 
+def test_the_log_counts_one_leftover_simulator_in_the_singular(caplog):
+    simctl = Simctl()
+    sims = simulator.Simulators(lambda: XCODE_DIR, simctl)
+    sims._named = lambda keep: ["AAA"]
+    with caplog.at_level("INFO", logger=simulator.LOG.name):
+        assert sims.remove_leftovers() == 1
+    assert "removed 1 simulator earlier jobs left" in caplog.text
+
+
 def test_with_no_xcode_nothing_is_asked():
     simctl = Simctl()
     assert simulator.Simulators(lambda: None, simctl).remove_leftovers() == 0

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.20 - 2026-11-14 - patch
+- A Mac worker that found one simulator left by earlier jobs logged "removed 1 simulators" (seen on the first real Mac node, M21). It now says "removed 1 simulator", and the plural from two on (`worker/simulator.py`). Test in `tests/worker/test_simulator.py`.
+
 ## 1.17.19 - 2026-11-13 - patch
 - Roadmap: the first real Mac node, this dev machine set up as a worker of the Linux node. Done: M5.3 (a second worker's readings live on the dashboard), M21.2 (jobs, cancel, a hard kill of the worker), M21.3 (readings), M22.1 (Xcode pinned), M22.2 (a simulator per job, removed after a cancel and a hard kill), M23.4 (a `fallback` node took a job only while the Linux node was full). Run, still open: M21.1 (a Linux upgrade), M22.3 (`cache-spm` reused; CocoaPods open), M22.4 (init for a Swift package; an Xcode project open). Three faults found there are listed under M21. Docs only.
 

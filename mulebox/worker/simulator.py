@@ -194,5 +194,6 @@ class Simulators:
         for udid in udids:
             self._delete(udid)
         if udids:
-            LOG.info("removed %d simulators earlier jobs left", len(udids))
+            LOG.info("removed %d simulator%s earlier jobs left", len(udids),
+                     "" if len(udids) == 1 else "s")
         return len(udids)
