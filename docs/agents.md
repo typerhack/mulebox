@@ -292,7 +292,7 @@ image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
      install. It is
      skipped when nothing it depends on changed: its text, the toolchain, the env and the
      manifests, lockfiles and version files at the root or one folder down (`package.json`,
-     `pnpm-lock.yaml`, `pyproject.toml`, `requirements.txt`, `go.mod`, `VERSION`, `.nvmrc` and the
+     `pnpm-lock.yaml`, `pyproject.toml`, `requirements.txt`, `go.mod`, `Podfile`, `VERSION`, `.nvmrc` and the
      like; the list is `SETUP_INPUTS` in `worker/project_home.py`). If `setup` reads any other
      file, change its text to make it run again. Its output must be something git ignores; if it
      is not, the next job loses it and `setup` runs again. A compose job always runs `setup`.

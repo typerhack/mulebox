@@ -190,6 +190,16 @@ def test_the_key_is_stable_and_follows_what_setup_depends_on(send):
     assert home.setup_key(tree, CLAIM) != key
 
 
+@pytest.mark.parametrize("name", ["Podfile", "Podfile.lock", "Package.swift", "Package.resolved"])
+def test_an_apple_projects_manifests_count_too(send, name):
+    """Seen on the first CocoaPods job on a Mac node: a changed Podfile kept the old
+    `pod install`, as the key did not read it."""
+    tree = send({**FILES, name: "one"}).tree
+    key = home.setup_key(tree, CLAIM)
+    send({**FILES, name: "two"})
+    assert home.setup_key(tree, CLAIM) != key
+
+
 def test_source_changes_do_not_touch_the_key(send):
     tree = send({**FILES, "pnpm-lock.yaml": "one"}).tree
     key = home.setup_key(tree, CLAIM)

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.20.2 - 2026-11-14 - patch
+- A changed `Podfile` kept the old `pod install`: the files a `setup` depends on (`SETUP_INPUTS` in `worker/project_home.py`) had no Apple manifests, so on the first CocoaPods job on a Mac node the setup was skipped and the build could not find the new pod. `Podfile`, `Podfile.lock`, `Package.swift` and `Package.resolved` count now. Test in `tests/worker/test_project_home.py`; docs/agents.md.
+
 ## 1.20.1 - 2026-11-14 - patch
 - Roadmap: M23.1 done. On the node, with the floor set in node.toml while the worker ran, a project that said nothing ran isolated and one with `isolation: none` was refused at submit with its fix. Docs only.
 

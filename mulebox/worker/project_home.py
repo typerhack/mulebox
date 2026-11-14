@@ -52,7 +52,7 @@ SETUP_INPUTS = (
     "composer.lock", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt",
     "requirements-dev.txt", "uv.lock", "poetry.lock", "Pipfile.lock", "Cargo.toml", "Cargo.lock",
     "Dockerfile", "go.mod", "go.sum", "pubspec.yaml", "pubspec.lock", "Gemfile", "Gemfile.lock", "mix.lock",
-    "VERSION", ".nvmrc", ".node-version", ".python-version", ".tool-versions",
+    "Podfile", "Podfile.lock", "Package.swift", "Package.resolved", "VERSION", ".nvmrc", ".node-version", ".python-version", ".tool-versions",
 )
 _NOT_A_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 EMPTY_TREE_ID = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
