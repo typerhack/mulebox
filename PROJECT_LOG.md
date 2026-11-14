@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.21 - 2026-11-14 - patch
+- `mulebox service install`, which setup runs on a node, read a launchd agent as `stopped` right after starting it, as launchd spawns an agent a moment after it loads it (seen on the first real Mac node, M21). It now reads a just-started service again for up to 5 s until it runs (`services/base.py`, `settled_state`), and gives what it then reads, so one that really fails to start still shows `stopped`. Tests in `tests/services/test_commands.py`.
+
 ## 1.17.20 - 2026-11-14 - patch
 - A Mac worker that found one simulator left by earlier jobs logged "removed 1 simulators" (seen on the first real Mac node, M21). It now says "removed 1 simulator", and the plural from two on (`worker/simulator.py`). Test in `tests/worker/test_simulator.py`.
 

@@ -10,6 +10,7 @@ an instance of `mulebox-runner@.service` on Linux, the agent `mulebox-runner-<na
 
 from __future__ import annotations
 
+import time
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Protocol
@@ -22,6 +23,7 @@ PREFIX = "mulebox-"
 SERVICES = ("coordinator", "dashboard", "worker")
 RUNNING, STOPPED, MISSING = "running", "stopped", "not installed"
 RUNNER_NAME_MAX = 64  # as runners/names.py allows
+SETTLE_S = 5.0  # how long a service just started may take to be seen running
 
 Say = Callable[[str], None]
 
@@ -51,6 +53,18 @@ def wanted(roles: Sequence[str]) -> list[str]:
     if "worker" in roles:
         names.append("worker")
     return names
+
+
+def settled_state(manager: Manager, name: str, wait_s: float = SETTLE_S,
+                  sleep: Callable[[float], None] = time.sleep,
+                  clock: Callable[[], float] = time.monotonic) -> str:
+    """The state of a service just started: launchd spawns an agent a moment after it loads it,
+    so a read at once can say STOPPED for one that is about to run. Waits until it runs, or
+    `wait_s` passed, and gives what it then reads."""
+    end = clock() + wait_s
+    while (state := manager.state(name)) == STOPPED and clock() < end:
+        sleep(0.2)
+    return state
 
 
 class Manager(Protocol):

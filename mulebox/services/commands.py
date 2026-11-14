@@ -18,7 +18,7 @@ from pathlib import Path
 
 from mulebox.common.config import load_node_config
 from mulebox.common.errors import MuleboxError
-from mulebox.services.base import SERVICES, check_name, wanted
+from mulebox.services.base import SERVICES, check_name, settled_state, wanted
 from mulebox.services.manager import for_platform
 
 
@@ -55,7 +55,7 @@ def _install(args: argparse.Namespace) -> int:
         runs = wanted(node.roles)
         manager.install(node.roles, print)
         for name in runs:
-            print(f"  service:  {name} ({manager.state(name)})")
+            print(f"  service:  {name} ({settled_state(manager, name)})")
         print(f"Logs: mulebox service logs {' '.join(runs)}")
         note = manager.boot_note()
     except MuleboxError as exc:

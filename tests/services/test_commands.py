@@ -81,3 +81,28 @@ def test_the_platform_picks_the_manager():
     assert manager.for_platform("darwin").kind == "launchd"
     with pytest.raises(ServiceError, match="Linux or macOS"):
         manager.for_platform("win32")
+
+
+class Starting:
+    """A manager whose service reads stopped twice before launchd has spawned it."""
+
+    def __init__(self, reads):
+        self.reads = list(reads)
+
+    def state(self, name):
+        return self.reads.pop(0) if len(self.reads) > 1 else self.reads[0]
+
+
+def test_a_service_just_started_is_read_again_until_it_runs():
+    from mulebox.services.base import STOPPED, settled_state
+    slept = []
+    assert settled_state(Starting([STOPPED, STOPPED, RUNNING]), "worker",
+                         sleep=slept.append, clock=lambda: 0.0) == RUNNING
+    assert len(slept) == 2
+
+
+def test_a_service_that_never_runs_is_given_as_stopped_after_the_wait():
+    from mulebox.services.base import STOPPED, settled_state
+    times = iter([0.0, 1.0, 6.0])
+    assert settled_state(Starting([STOPPED]), "worker", wait_s=5,
+                         sleep=lambda s: None, clock=lambda: next(times)) == STOPPED
