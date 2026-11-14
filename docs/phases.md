@@ -1088,6 +1088,15 @@ runs a job.
       tests, and seen in Edge on the stand-in data at 544 px and wide in both themes. Open: the page
       on the deployed dashboard with the node's real report, a keep and a clean from it reaching
       the node.
+      Run 2026-11-14 (1.27.0) on the real node: the first cleanup after the upgrade ran in 41 s with
+      no error and is in `mulebox storage --history`; 0 folders (no dev machine has sent its branch
+      list yet, and none was 7 days unused) and 674 KB of build cache: of Docker's 6 GB reclaimable
+      cache nearly all was used in the last 7 days. 84 untagged images (an Ubuntu base with an
+      apt-get layer, no container, 63 of them 11 days old) stayed: `image prune --filter until=168h`
+      reclaimed nothing on this containerd image store (a throwaway rebuild left no untagged image
+      to try it on: the store dropped the old one at once).
+      Tagged images pulled before 1.26 are not in the ledger, so they stay until a job uses them
+      again. Open: why the prune leaves those images, and gone branches' folders once lists arrive.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

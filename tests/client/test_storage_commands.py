@@ -1,6 +1,7 @@
 """`mulebox storage`, `mulebox project keep` and the storage flags of `mulebox machine config`,
 against the real coordinator code (client/storage_commands.py, client/machine_config.py)."""
 
+import json
 import time
 
 import pytest
@@ -104,3 +105,6 @@ def test_history_says_what_each_cleanup_did(remote, capsys):
     out = capsys.readouterr().out
     assert "build-1: today, hourly: 1 folder(s), 600.0 MB, docker 1.0 GB" in out
     assert "its branch is on no dev machine" in out
+    assert run("storage", "--history", "5", "--json") == 0
+    body = json.loads(capsys.readouterr().out)
+    assert body["history"][0]["trigger"] == "hourly"

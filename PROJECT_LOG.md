@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.1 - 2026-11-14 - patch
+- `mulebox storage --history N --json` gives the JSON reply; before, `--history` printed its lines and `--json` was ignored. Test in `tests/client/test_storage_commands.py`.
+- docs/phases.md M25.8: the first cleanup of 1.27.0 on the real node, and what Docker left.
+
 ## 1.27.0 - 2026-11-14 - minor
 - The dashboard for 1.26's cleanup. Storage page: an automatic cleanup line under the ruler with each rule as the node has it (off said as off), what the last cleanup removed and freed, and Settings and Run now buttons (`web/src/features/storage/CleanupLine.tsx`); the cleanup history of the shown node, each run opening to its folders and why, its Docker images and its errors (`CleanupHistory.tsx`); Docker worded as what mulebox removes and never touches; mulebox's size against `warn_size` and `max_size`; each folder's fate with its reason. README text and pictures retaken (`tools/screenshots.py`).
 - Node settings window: panels two to a row on one grid, their rows lined up (`.setting-panels`, `Panel` subgrid); the Jobs tab in the same style; the four new storage settings beside the related ones (`StorageLimits.tsx`), hidden for a node older than 1.26, and "All as suggested" sends only what the node reports. Stand-in scenes `cleanupoff` and the settings scene with a 1.25 node.

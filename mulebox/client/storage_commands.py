@@ -147,7 +147,7 @@ def _clean(args: argparse.Namespace) -> int:
 def _show(args: argparse.Namespace) -> int:
     body = connect().call(request(MessageType.STORAGE, **(
         {"history": args.history} if args.history else {}))).body
-    if args.history:
+    if args.history and not args.json:
         print("\n".join(history_lines(body.get("history") or [], time.time())))
         return 0
     if args.json:
