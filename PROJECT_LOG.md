@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.4 - 2026-11-14 - patch
+- docs/phases.md: M24.8, a stuck job said as stuck in `status`, `wait` and `events` (the user's ask), open.
+
 ## 1.27.3 - 2026-11-14 - patch
 - `mulebox storage clean --no-docker` leaves Docker alone: the node read the order's "no Docker" as "the node's setting" and pruned anyway when `docker_clean` was on (seen on the real node). A sweep order now carries Docker on or off as asked; one with no word on it, from an older sender, follows the setting (`worker/storage_sweep.py`). Test in `tests/worker/test_storage_cleanup.py`.
 - README: the node settings pictures retaken for the reworked window (the Jobs tab with dev mode, and the whole Storage tab with all eight disk settings, `tools/screenshots.py` taller for it), their captions and text, a Storage page bullet, and `mulebox storage clean`.

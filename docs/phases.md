@@ -1002,6 +1002,12 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       worktree and the node's project tree removed.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
+- [ ] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
+      next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
+      `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and
+      how to look or stop it, so an agent stops waiting on a hung job instead of rerunning it.
+      A design note in design.md first. Done when: a real hung job on the node is reported as
+      stuck by all three within the limit, and a quiet job that works is not.
 
 ## M25: Several nodes (the user's ask, 2026-11-14)
 How work spreads over several nodes, and what reaches each of them. Design: design.md, Which node
