@@ -245,6 +245,18 @@ Drawn in the specimen, in both themes:
   rule's icon: by hand `hand`, a project's level `flag` (a low one `arrow-down`), a branch
   `git-branch`, a workflow or GitHub runs `workflow`, time waited `hourglass`, fair turns `repeat`,
   shortest first `timer`, arrival `clock`. The Order button itself is `list-ordered`.
+- Storage (the user's picks, 2026-11-14, of [design-system/storage/](design-system/storage/index.html):
+  view A with C's line in the Disk panel and B's list behind a button, settings A with C's one
+  line, notices A for the warning and B for the suggestion). The disk ruler: one bar 20px high for
+  a whole disk, what mulebox holds in `--chart-1` to `--chart-5` by kind, everything else in
+  `--surface-3`, free space empty, and the reserve hatched at the far end behind a 2px line in
+  `--text-1` (`--status-danger` once the used part reaches it); what a removal would free is the
+  same hatch outlined in `--status-passed`. Its numbers are always in words above it and in its
+  legend. A storage row has three icon buttons, always in this order: `copy` the path, `pin` to
+  keep (pressed and in `--accent` when kept), `trash-2` to clean; a clean opens a list of what
+  goes under the row, and only its danger button removes. Fates carry an icon and words: `flag`
+  latest, `pin` kept, `clock` stays, `timer` goes soon, `loader-circle` in use, `lightbulb` in
+  `--status-warning` for a suggestion. A count on a header entry is a filled pill in `--text-1`.
 - A line longer than its box, such as a GitHub step on a job card (the user's ask, 2026-11-12):
   cut with an ellipsis, the whole text in its tooltip, and a small quiet copy button beside it,
   in `--ink-3` until hovered (`web/src/ui/Copy.tsx`). Over plain HTTP, where browsers give a

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: storage notices</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="storage.css">
+</head>
+<body style="--disk-gb: 490; --reserve-gb: 49">
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Storage notices</h1>
+        <p class="doc-lead">Two things mulebox says about storage and then waits. A suggestion: a project ran no job for 14 days, clean its latest folder? And a warning: the disk is at its reserve, the rules could not free enough, here is what mulebox would remove; you decide. The example is build-1 a few days on: 44 GB free, 5 GB under its reserve of 49 GB.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, in the strip under the header</a><a href="#b">B, where the thing is</a><a href="#c">C, a "To decide" list in the header</a><a href="#d">What Review opens, in every option</a>
+      <a href="index.html">All storage mockups</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">In the strip under the header</h2>
+      <p class="opt-idea">The strip that already says what is out of step says these too, on every page, until answered. The warning is amber with one button; the suggestion is a calm grey line with its answers. The header's mark counts both.</p></div>
+    <div class="stage">
+      <div class="app-bar"><b>mulebox</b>
+        <nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>History</span><span>Statistics</span></nav>
+        <span class="right"><span class="hmark warn" title="2 to look at"><i data-i="triangle-alert" class="s"></i><span class="num">2</span></span></span></div>
+      <div class="gap">
+        <div class="strip"><i data-i="triangle-alert"></i>
+          <div class="strip-lines"><div class="strip-line">
+            <p><b>build-1 has 44 GB free, 5 GB under its reserve of 49 GB.</b> <span>The cleanup rules have nothing left to remove. mulebox can free up to 16.5 GB if you say so; jobs keep running meanwhile.</span></p>
+            <span class="acts"><button class="btn" type="button">Review what goes</button></span></div></div></div>
+        <div class="strip calm"><i data-i="lightbulb"></i>
+          <div class="strip-lines"><div class="strip-line">
+            <p><b>example-docs: no job for 14 days, its latest folder takes 0.7 GB.</b> <span>Clean it? Its next job would set the folder up again.</span></p>
+            <span class="acts"><button class="btn" type="button">Clean it</button><button class="btn" type="button"><i data-i="pin" class="s"></i>Keep it</button><button class="btn ghost" type="button">Not now</button></span></div></div></div>
+        <p class="as-today">The top row and the page, as today.</p>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Good at</b>Cannot be missed, on any page, and it is the pattern the dashboard has. One place for everything that waits for the owner.</li>
+      <li><b>Costs</b>A suggestion worth 0.7 GB takes a line above the CPU panel on every page until answered; three idle projects are three lines. "Not now" asks again in 7 days.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">Where the thing is</h2>
+      <p class="opt-idea">Nothing new above the panels. The warning is a line on the node's row in the Machines box, where "Needs an answer" already appears; the suggestion sits on the project's row in the Storage view. Each is read where its subject is.</p></div>
+    <div class="stage">
+      <div class="cols">
+        <div class="gap">
+          <p class="stage-cap">The Machines box in the top row: one more line on build-1's row. The row's own parts are as today.</p>
+          <section class="panel" aria-label="Machines">
+            <header class="panel-head"><h3><i data-i="server"></i>Machines</h3><span class="panel-note num">2 of 2 online, 1 slot free</span></header>
+            <div class="panel-body">
+              <div class="machine">
+                <div class="row apart"><span class="row tight"><strong>build-1</strong><span class="mark" title="Dashboard host"><i data-i="house" class="s"></i></span></span>
+                  <span class="row tight"><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><button class="icon-btn" type="button" aria-label="Pause build-1"><i data-i="pause" class="s"></i></button><button class="icon-btn" type="button" aria-label="Settings of build-1"><i data-i="settings-2" class="s"></i></button></span></div>
+                <p class="inline-warn"><i data-i="triangle-alert" class="s"></i>Disk 5 GB under its reserve<button type="button">Review what goes</button></p>
+                <div class="stack labels-4">
+                  <div class="meter-row"><span>CPU</span><span class="meter" style="--v: 41%"><i></i></span><span class="num">41%</span></div>
+                  <div class="meter-row"><span>Mem</span><span class="meter" style="--v: 62%"><i></i></span><span class="num">62%</span></div></div>
+                <p class="slots sm"><span class="slot-boxes"><i class="busy"></i><i class="busy"></i></span>0 of 2 slots free</p>
+              </div>
+              <div class="machine"><div class="row apart"><strong>build-mac</strong><span class="row tight"><span class="st" data-state="passed"><i data-i="circle-check"></i>Idle</span><button class="icon-btn" type="button" aria-label="Settings of build-mac"><i data-i="settings-2" class="s"></i></button></span></div>
+                <p class="slots sm"><span class="slot-boxes"><i></i></span>1 of 1 slot free</p></div>
+            </div>
+          </section>
+        </div>
+        <div class="gap">
+          <p class="stage-cap">The Storage view, whichever is picked: the project's row asks, and the view's entry carries a count.</p>
+          <section class="panel"><div class="panel-body keep-list">
+            <div class="s-row"><span class="s-name"><i data-i="chevron-right" class="s"></i><b>example-docs</b><small>1 folder</small></span>
+              <span class="s-meta"><span class="num">0.7 GB</span><span>14 days ago</span><span class="fate ask"><i data-i="lightbulb" class="s"></i>Idle 14 days. Clean it?</span></span>
+              <span data-acts="example-docs"></span></div>
+            <div class="s-row"><span class="s-name"><i data-i="chevron-right" class="s"></i><b>mulebox</b><small>19 folders</small></span>
+              <span class="s-meta"><span class="num">1.3 GB</span><span>40 min ago</span><span class="fate calm"><i data-i="timer" class="s"></i>3 folders go tonight</span></span>
+              <span data-acts="mulebox"></span></div>
+          </div></section>
+          <div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span>History</span><span>Statistics</span><span class="on"><i data-i="hard-drive" class="s"></i>Storage<span class="badge num">1</span></span></nav></div>
+        </div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Good at</b>The quietest. The top of the page stays for what is out of step; a suggestion costs no room until you look at storage.</li>
+      <li><b>Costs</b>A suggestion can go unseen for weeks, which is fine for 0.7 GB. The warning depends on the Machines box being in view; with ten nodes its row may be scrolled away.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">A "To decide" list in the header</h2>
+      <p class="opt-idea">A mark in the header with a count opens a short list of what waits for the owner: suggestions and warnings, each with its answers. Only when a job could fail for lack of room does the warning also take the strip, in red.</p></div>
+    <div class="stage">
+      <div class="app-bar"><b>mulebox</b>
+        <nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>History</span><span>Statistics</span></nav>
+        <span class="right"><span class="hmark warn" aria-expanded="true" title="2 to decide"><i data-i="inbox" class="s"></i><span class="num">2</span><i data-i="triangle-alert" class="s"></i></span></span></div>
+      <section class="float pop-static" aria-label="To decide">
+        <header class="float-head"><div><h3><i data-i="inbox"></i>To decide</h3><p class="sm t2">2 things wait for you</p></div></header>
+        <div class="float-body">
+          <div class="todo warn"><i data-i="triangle-alert"></i><p><b>build-1 is 5 GB under its reserve.</b> <span>44 GB free, reserve 49 GB. The rules have nothing left; mulebox can free up to 16.5 GB.</span></p>
+            <div class="acts"><button class="btn" type="button">Review what goes</button></div></div>
+          <div class="todo calm"><i data-i="lightbulb"></i><p><b>example-docs: no job for 14 days.</b> <span>Its latest folder takes 0.7 GB. Clean it?</span></p>
+            <div class="acts"><button class="btn" type="button">Clean it</button><button class="btn" type="button"><i data-i="pin" class="s"></i>Keep it</button><button class="btn ghost" type="button">Not now</button></div></div>
+        </div>
+      </section>
+    </div>
+    <div class="stage">
+      <p class="stage-cap">Only when it is urgent: under 5 GB free a job's setup can fail, so the warning takes the strip too.</p>
+      <div class="strip danger"><i data-i="octagon-alert"></i>
+        <div class="strip-lines"><div class="strip-line">
+          <p><b>build-1 has 4 GB free. Jobs can fail for lack of room.</b> <span>mulebox can free up to 16.5 GB if you say so.</span></p>
+          <span class="acts"><button class="btn" type="button">Review what goes</button></span></div></div></div>
+    </div>
+    <ul class="notes">
+      <li><b>Good at</b>Scales: five idle projects are five rows in a list, not five lines on the page. Calm by default, loud only when jobs are at risk.</li>
+      <li><b>Costs</b>A new part in the header beside the out-of-step mark, and a count is easier to ignore than a line. Two levels of warning to build.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="d" aria-labelledby="d-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">+</span>
+      <h2 id="d-h">What "Review what goes" opens, in every option</h2>
+      <p class="opt-idea">The decision itself. mulebox proposes, cheapest loss first, and ticks just enough to be back above the reserve; the owner ticks or unticks, sees the disk answer, and removes. Nothing here happens without the red button.</p></div>
+    <div class="stage">
+      <section class="float win" aria-label="Free space on build-1">
+        <header class="float-head"><div><h3><i data-i="hard-drive"></i>build-1</h3><p class="sm t2">5 GB under its reserve of 49 GB</p></div>
+          <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button></header>
+        <div class="float-body gap">
+          <div class="disk">
+            <div class="disk-top"><span><span class="big num">44 GB</span> free now, <b class="num">53.4 GB</b> after</span><span class="num"><b>4.4 GB</b> above the reserve after</span></div>
+            <div class="ruler" role="img" aria-label="Disk of build-1: 44 GB free, 9.4 GB more after the removal">
+              <i class="c-folders" style="--gb: 46.2"></i><i class="c-caches" style="--gb: 4.6"></i><i class="c-runners" style="--gb: 4.1"></i><i class="c-docker" style="--gb: 3.4"></i><i class="would" style="--gb: 9.4"></i><i class="c-other" style="--gb: 378.3"></i></div>
+            <p class="sm t2">The rules ran: no branch folder is unused for 7 days. What takes the space is not mulebox's (378.3 GB). Hatched in green: what the ticked lines free.</p>
+          </div>
+          <div>
+            <label class="check"><input type="checkbox" checked><span><b>Unused Docker build cache</b><small>No job used it for 7 days. The next build of an image takes longer once.</small></span><b class="num">9.4 GB</b></label>
+            <label class="check"><input type="checkbox"><span><b>Unused images of jobs</b><small>4 images no job used for 7 days. Pulled or built again when a job needs one.</small></span><b class="num">1.4 GB</b></label>
+            <label class="check"><input type="checkbox"><span><b>Branch folders unused for 4 to 6 days</b><small>9 folders in example-app and example-shop. They would go by themselves within 3 days.</small></span><b class="num">4.8 GB</b></label>
+            <label class="check"><input type="checkbox"><span><b>Package cache of example-docs</b><small>Its project is idle for 14 days. The next job downloads its packages again.</small></span><b class="num">0.9 GB</b></label>
+            <label class="check"><input type="checkbox" disabled><span><b>Kept by you, and each project's latest folder</b><small>7 folders. Not offered: untick their keep mark in Storage first.</small></span><b class="num t2">4.6 GB</b></label>
+          </div>
+        </div>
+        <footer class="float-foot"><p>1 of 4 ticked: frees 9.4 GB. Or lower the reserve in this node's settings.</p>
+          <button class="btn ghost" type="button">Not now</button><button class="btn danger" type="button"><i data-i="trash-2" class="s"></i>Remove 9.4 GB</button></footer>
+      </section>
+    </div>
+  </section>
+</div>
+<script src="storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

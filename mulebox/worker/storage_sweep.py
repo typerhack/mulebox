@@ -132,7 +132,7 @@ class Storing:
         if removed:
             disk = storage_scan.disk(self.paths)
         return _report(plan, removed, held, disk, reserve, policy.report(),
-                       storage_scan.docker(self.docker))
+                       storage_scan.docker(self.docker), storage_scan.where(self.paths))
 
     def _remove(self, planned: list[storage_rules.Folder], state: dict[str, Any]
                 ) -> list[storage_rules.Folder]:
@@ -159,7 +159,7 @@ class Storing:
 
 def _report(plan: storage_rules.Plan, removed: list[storage_rules.Folder], held: dict[str, Any],
             disk: dict[str, int], reserve: int, policy: dict[str, Any],
-            docker: dict[str, Any] | None) -> dict[str, Any]:
+            docker: dict[str, Any] | None, where: dict[str, str]) -> dict[str, Any]:
     gone = {(f.project, f.folder) for f in removed}
     projects: dict[str, dict[str, Any]] = {
         name: {"project": name, **sizes, "folders": []} for name, sizes in held["projects"].items()}
@@ -172,5 +172,5 @@ def _report(plan: storage_rules.Plan, removed: list[storage_rules.Folder], held:
              "fate": folder.fate, "removed_in": folder.removed_in})
     return {"at": time.time(), "disk": {**disk, "reserve": reserve}, "policy": policy,
             "projects": sorted(projects.values(), key=lambda p: p["project"]),
-            "shared": held["shared"], "docker": docker, "idle": plan.idle, "short": plan.short,
+            "shared": held["shared"], "paths": where, "docker": docker, "idle": plan.idle, "short": plan.short,
             "removed": {"count": len(removed), "bytes": sum(f.size for f in removed)}}

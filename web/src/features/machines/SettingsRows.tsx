@@ -28,7 +28,7 @@ interface Props {
 
 // One fact of a setting, as the top panels write theirs: its name on the left, its value on the
 // right, and under both a line that says why or what happens next.
-function Row({ label, note, noteId, children }: { label: string; note?: ReactNode; noteId?: string; children: ReactNode }) {
+export function Row({ label, note, noteId, children }: { label: string; note?: ReactNode; noteId?: string; children: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-3 text-sm last:pb-0">
       <span className="text-ink-2">{label}</span>
@@ -42,7 +42,7 @@ function Row({ label, note, noteId, children }: { label: string; note?: ReactNod
 
 interface RunsProps { now: ReactNode | null; yours: ReactNode; mark: Mark; online: boolean; same: boolean; drop?: () => void; busy: boolean }
 
-function RunsWith({ now, yours, mark, online, same, drop, busy }: RunsProps) {
+export function RunsWith({ now, yours, mark, online, same, drop, busy }: RunsProps) {
   const Icon = mark === "unsaved" ? PenLine : Clock;
   return (
     <Row label="Runs with"
@@ -67,8 +67,8 @@ function RunsWith({ now, yours, mark, online, same, drop, busy }: RunsProps) {
   );
 }
 
-const ROWS = "divide-y divide-line";
-const meaning = (text: string) => <p className="pb-3 text-sm text-ink-2">{text}</p>;
+export const ROWS = "divide-y divide-line";
+export const meaning = (text: string) => <p className="pb-3 text-sm text-ink-2">{text}</p>;
 
 export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDrop }: Props) {
   const says = useId(), devSays = useId();

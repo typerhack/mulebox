@@ -9,9 +9,15 @@ import { getJson, post } from "./api";
 import { unsent as unsentOf } from "./edits";
 import { REREAD_MS } from "./turns";
 
-export type SettingKey = "slots" | "priority" | "dev";
-// `dev` is missing from a node older than 1.23, which has no dev mode.
-export interface Values { slots: number; priority: string; dev?: boolean }
+export const STORAGE_KEYS = ["keep_free", "unused_days", "keep_latest", "idle_days"] as const;
+export const KEYS = ["slots", "priority", "dev", ...STORAGE_KEYS] as const;
+export type SettingKey = typeof KEYS[number];
+// `dev` is missing from a node older than 1.23, which has no dev mode; the four disk settings
+// (docs/design.md, Disk use and cleanup on its own) from one older than 1.24.
+export interface Values {
+  slots: number; priority: string; dev?: boolean;
+  keep_free?: string; unused_days?: number; keep_latest?: boolean; idle_days?: number;
+}
 export type Draft = Partial<Values>;
 
 export interface NodeSettings {
@@ -26,7 +32,10 @@ export interface NodeSettings {
   pending_since?: number | null;
   error?: string | null;
   suggested: { slots: number; reason: string } | null;
-  choices?: { slots?: { min: number; max: number }; priority?: string[]; dev?: boolean[] };
+  choices?: { slots?: { min: number; max: number }; priority?: string[]; dev?: boolean[];
+              keep_free?: { max_share: number }; unused_days?: { min: number; max: number };
+              idle_days?: { min: number; max: number } };
+  defaults?: Pick<Values, typeof STORAGE_KEYS[number]>;  // what mulebox suggests for the disk settings
   editable: boolean;
 }
 
@@ -49,6 +58,14 @@ export const devLabel = (value: boolean | null | undefined) =>
 export const priorityLabel = (value: string | null | undefined) =>
   PRIORITIES.find((choice) => choice.value === value)?.label ?? (value || "-");
 
+// node.toml's own defaults for the disk settings, when the server names none.
+export const STORAGE_DEFAULTS = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 };
+export const DAYS_RANGE = { min: 1, max: 365 };
+export const LATEST: { value: string; label: string; says: string }[] = [
+  { value: "keep", label: "Keep", says: "Each project's most recent folder stays however old, so its next job starts warm." },
+  { value: "remove", label: "Remove", says: "A project's latest folder goes like the rest once it is unused long enough." },
+];
+
 export type Mark = "unsaved" | "pending" | null;
 export interface Row<K extends SettingKey> {
   now: Values[K] | null;     // what the node runs with
@@ -67,11 +84,9 @@ export function rowOf<K extends SettingKey>(view: NodeSettings, draft: Draft, ke
 
 // What Save sends: only the settings whose edit differs from what was last sent.
 export function changes(view: NodeSettings, draft: Draft): Draft {
-  const body: Draft = {};
-  if (rowOf(view, draft, "slots").mark === "unsaved") body.slots = draft.slots;
-  if (rowOf(view, draft, "priority").mark === "unsaved") body.priority = draft.priority;
-  if (rowOf(view, draft, "dev").mark === "unsaved") body.dev = draft.dev;
-  return body;
+  const body: Record<string, unknown> = {};
+  for (const key of KEYS) if (rowOf(view, draft, key).mark === "unsaved") body[key] = draft[key];
+  return body as Draft;
 }
 
 // The edits left once `sent` was saved (lib/edits.ts).
@@ -80,7 +95,8 @@ export const unsent = (draft: Draft, sent: Draft): Draft => unsentOf<Values>(dra
 // "All as suggested": the suggestion as fixed values of the viewer's own, still to be saved.
 export const asSuggested = (view: NodeSettings): Draft =>
   ({ priority: SUGGESTED_PRIORITY, ...(typeof view.current?.dev === "boolean" ? { dev: false } : {}),
-     ...(view.suggested ? { slots: view.suggested.slots } : {}) });
+     ...(view.suggested ? { slots: view.suggested.slots } : {}),
+     ...(typeof view.current?.keep_free === "string" ? { ...STORAGE_DEFAULTS, ...view.defaults } : {}) });
 
 const url = (name: string) => `/api/machines/${encodeURIComponent(name)}/settings`;
 export const readSettings = (name: string) => getJson<NodeSettings>(url(name));

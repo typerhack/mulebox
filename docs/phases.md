@@ -1074,6 +1074,13 @@ runs a job.
       project's latest stayed, and `mulebox storage` showed every project, the shared folders and
       Docker's totals (these were refused at first: fixed 1.24.1). Open: a keep mark and a folder in
       use seen held back on the node (tests only), and the Storage view.
+      The Storage view built 2026-11-14 (1.25.0), the user's picks of the mockups
+      (design-system/storage/): a Storage page by project after Machines in the header, a line to it
+      in the Disk panel, a Storage tab in the node's settings window, the low-space warning in the
+      strip with a review window, the idle-project suggestion on the project's row; with component
+      tests, and seen in Edge on the stand-in data at 544 px and wide in both themes. Open: the page
+      on the deployed dashboard with the node's real report, a keep and a clean from it reaching
+      the node.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

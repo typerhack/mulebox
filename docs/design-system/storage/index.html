@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: storage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="storage.css">
+<style>
+.index { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-xl)), 1fr)); margin-top: var(--space-6); }
+.index > a { display: grid; gap: var(--space-3); align-content: start; padding: var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-l);
+  background: var(--surface-1); text-decoration: none; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.index > a:hover { background: var(--surface-2); border-color: var(--text-1); }
+.index h2 { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; }
+.index p { color: var(--text-2); }
+.index dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-2) var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); }
+.index dt { font: 600 var(--text-sm)/1.5 var(--font-mono); }
+.index dd { color: var(--text-2); }
+.index dd b { color: var(--text-1); font-weight: 600; }
+.foot { margin-top: var(--space-6); color: var(--text-2); font-size: var(--text-sm); max-width: 76ch; }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>Storage mockups</h1>
+      <p class="doc-lead">Mockups of 2026-11-14, to pick from before anything is built. A node keeps a reserve of free space, removes branch folders unused for 7 days, keeps each project's latest folder, suggests cleaning a project idle for 14 days, and asks before it removes anything else. Three things to decide: where the owner sees what mulebox takes, how the rules are set, and where mulebox speaks up.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <nav class="index" aria-label="Mockups">
+    <a href="storage-view.html">
+      <h2>Storage view<i data-i="chevron-right"></i></h2>
+      <p>What mulebox takes on a node, what happens to it and when; copy path, keep, clean.</p>
+      <dl>
+        <dt>A</dt><dd><b>A Storage page, by project.</b> The disk's own shape: project, then branch.</dd>
+        <dt>B</dt><dd><b>On the Machines page, by what goes next.</b> Tonight, this week, kept.</dd>
+        <dt>C</dt><dd><b>A window from the Disk panel, by size.</b> One ranked list, biggest first.</dd>
+      </dl>
+    </a>
+    <a href="storage-settings.html">
+      <h2>Storage settings<i data-i="chevron-right"></i></h2>
+      <p>The reserve and the three cleanup rules in the node's settings window.</p>
+      <dl>
+        <dt>A</dt><dd><b>A Storage tab in the same grammar.</b> Suggested, Yours, Runs with, four times.</dd>
+        <dt>B</dt><dd><b>One Storage panel.</b> A line per setting under Dev mode.</dd>
+        <dt>C</dt><dd><b>The rules as a sentence, tried on the disk.</b> What your values would do tonight.</dd>
+      </dl>
+    </a>
+    <a href="storage-notices.html">
+      <h2>Storage notices<i data-i="chevron-right"></i></h2>
+      <p>The idle-project suggestion and the reserve warning, and the list the owner decides from.</p>
+      <dl>
+        <dt>A</dt><dd><b>In the strip under the header.</b> The existing pattern, on every page.</dd>
+        <dt>B</dt><dd><b>Where the thing is.</b> On the node's row and the project's row.</dd>
+        <dt>C</dt><dd><b>A "To decide" list in the header.</b> A count; the strip only when jobs are at risk.</dd>
+      </dl>
+    </a>
+  </nav>
+  <p class="foot"><b>Picked by the user on 2026-11-14 and built in 1.25.0:</b> Storage view A, with C's line in the Disk panel and B's "going next" list behind a button; settings A, with C's one line of what the values would do; notices A for the low-space warning and B for the idle-project suggestion, with the review window. What was built follows the node's real report, so it differs from these pages where they guessed: there is no "tonight at 03:00" (a node sweeps hourly), and Docker is shown but never cleaned.</p>
+  <p class="foot">Static pages with example data: build-1 is a Linux node with a 490 GB disk, 410 GB used, of which mulebox takes 85.6 GB; build-mac is a Mac node. Project names are examples. The theme switch is on every page; nothing is saved. Colours, type, space, corners and motion come from <a href="../tokens.css">tokens.css</a> through the shared mockup stylesheet. New parts, to be added to <a href="../../design-system.md">design-system.md</a> with what is picked: the disk ruler with its hatched reserve, the keep mark, and the list a clean shows first.</p>
+</div>
+<script src="storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

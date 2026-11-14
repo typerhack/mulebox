@@ -5,7 +5,9 @@
 import { SETTINGS_SCENE } from "./scenes.ts";
 
 interface Row { name: string; slots: number; state: string; cores?: number | null; version?: string | null; jobs: unknown[] }
-interface Kept { priority: string; dev: boolean; pending: Record<string, unknown> | null; since: number | null; error: string | null; old: boolean }
+const DISK = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 };
+const DISK_KEYS = Object.keys(DISK) as (keyof typeof DISK)[];
+interface Kept { disk: Record<string, unknown>; priority: string; dev: boolean; pending: Record<string, unknown> | null; since: number | null; error: string | null; old: boolean }
 
 const TAKES_MS = 6000;
 const PRIORITIES = ["preferred", "normal", "fallback"];
@@ -16,7 +18,7 @@ function of(row: Row): Kept {
   let found = kept.get(row.name);
   if (!found) {
     const start = scene[row.name] ?? {};
-    found = { priority: "normal", dev: Boolean(start.dev), pending: (start.pending as Kept["pending"]) ?? null, since: start.pending ? Date.now() / 1000 - 40 : null,
+    found = { disk: { ...DISK }, priority: "normal", dev: Boolean(start.dev), pending: (start.pending as Kept["pending"]) ?? null, since: start.pending ? Date.now() / 1000 - 40 : null,
               error: (start.error as string) ?? null, old: Boolean(start.old) };
     kept.set(row.name, found);
   }
@@ -35,11 +37,13 @@ function view(row: Row, editable: boolean) {
   const has = of(row), cores = row.cores ?? 8, memory = cores * 2;
   return {
     worker: row.name, online: row.state !== "offline", draining: row.state === "draining", version: has.old ? "1.14.5" : row.version,
-    running: row.jobs.length, applies: !has.old, current: has.old ? null : { slots: row.slots, priority: has.priority, dev: has.dev },
+    running: row.jobs.length, applies: !has.old, current: has.old ? null : { slots: row.slots, priority: has.priority, dev: has.dev, ...has.disk },
     pending: has.pending, pending_since: has.since, error: has.pending ? has.error : null,
     suggested: { slots: Math.max(1, Math.min(Math.floor(cores / 4), Math.floor(memory / 6))),
                  reason: `${cores} cores and ${memory} GB of memory, at about 4 cores and 6 GB a job` },
-    choices: { slots: { min: 1, max: 64 }, priority: PRIORITIES, dev: [false, true] }, editable,
+    choices: { slots: { min: 1, max: 64 }, priority: PRIORITIES, dev: [false, true], keep_free: { max_share: 90 },
+               unused_days: { min: 1, max: 365 }, keep_latest: [false, true], idle_days: { min: 1, max: 365 } },
+    defaults: DISK, editable,
   };
 }
 
@@ -57,6 +61,10 @@ export function answerSettings(row: Row, change: Record<string, unknown> | null,
   if (slots !== undefined) wanted.slots = slots;
   if (priority !== undefined) wanted.priority = priority;
   if (dev !== undefined) wanted.dev = dev;
+  for (const key of DISK_KEYS) {
+    if (change[key] !== undefined) wanted[key] = change[key];
+    if (wanted[key] === has.disk[key]) delete wanted[key];
+  }
   if (wanted.slots === row.slots) delete wanted.slots;
   if (wanted.priority === has.priority) delete wanted.priority;
   if (wanted.dev === has.dev) delete wanted.dev;
@@ -68,6 +76,7 @@ export function answerSettings(row: Row, change: Record<string, unknown> | null,
       if (typeof wanted.slots === "number") row.slots = wanted.slots;
       if (typeof wanted.priority === "string") has.priority = wanted.priority;
       if (typeof wanted.dev === "boolean") has.dev = wanted.dev;
+      for (const key of DISK_KEYS) if (wanted[key] !== undefined) has.disk[key] = wanted[key];
       Object.assign(has, { pending: null, since: null });
       changed();
     }, TAKES_MS);

@@ -2,7 +2,9 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Sample } from "../../lib/types";
+import { body as storage } from "../../lib/storage.testing";
 import type { Shown } from "../../state/picked";
+import { storageStore } from "../../state/storage";
 import { DiskPanel, MemoryPanel } from "./LoadPanels";
 
 beforeEach(() => {
@@ -48,5 +50,16 @@ describe("the Memory and Disk boxes on the dashboard's machine", () => {
   it("leave the caption out when there is no chart", () => {
     render(<MemoryPanel shown={host([{ ...sample, memory: null } as unknown as Sample])} now={2} />);
     expect(screen.queryByText("Last 5 min, 0 to total")).toBeNull();
+  });
+
+  it("link to the Storage page, with what mulebox holds once the node has reported", () => {
+    render(<DiskPanel shown={{ ...host([sample]), machine: { name: "build-1" } } as unknown as Shown} now={2} />);
+    const link = screen.getByRole("link", { name: "Storage" });
+    expect(link.getAttribute("href")).toBe("#/storage");
+    cleanup();
+    storageStore.set({ body: storage(), problem: null });
+    render(<DiskPanel shown={{ ...host([sample]), machine: { name: "build-1" } } as unknown as Shown} now={2} />);
+    expect(screen.getByRole("link", { name: "Storage: mulebox holds 13.0 GB" })).toBeTruthy();
+    storageStore.set({ body: null, problem: null });
   });
 });

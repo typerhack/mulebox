@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: storage settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="storage.css">
+</head>
+<body style="--disk-gb: 490; --reserve-gb: 49">
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Storage settings</h1>
+        <p class="doc-lead">Four settings per node, in its settings window beside slots, priority and dev mode: the free space to keep, when an unused branch folder goes, whether each project's latest folder stays, and when an idle project gets a suggestion. Each has a default mulebox suggests; the owner can overrule it.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, a Storage tab in the same grammar</a><a href="#b">B, one Storage panel</a><a href="#c">C, the rules as a sentence, tried on the disk</a>
+      <a href="index.html">All storage mockups</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">A Storage tab in the same grammar</h2>
+      <p class="opt-idea">The window gets two tabs, Jobs (slots, priority, dev mode, as today) and Storage. Each storage setting is a panel with the three rows the window already has: Suggested, Yours, Runs with.</p></div>
+    <div class="stage">
+      <section class="float win" aria-label="Settings of build-1">
+        <header class="float-head"><div><h3><i data-i="server"></i>build-1</h3><p class="sm t2">Node settings, dashboard host</p></div>
+          <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button></header>
+        <div class="float-body gap">
+          <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="false">Jobs</button><button type="button" role="tab" aria-selected="true">Storage</button></div>
+          <div class="set-grid">
+            <section class="panel" aria-label="Free space to keep"><header class="panel-head"><h3><i data-i="hard-drive"></i>Free space to keep</h3></header>
+              <div class="panel-body set-rows">
+                <p class="set-mean">mulebox cleans up before the disk has less free than this</p>
+                <div class="set-row"><span>Suggested</span><b class="num">10%</b><small>49 GB of this node's 490 GB</small></div>
+                <div class="set-row"><span>Yours</span>
+                  <span class="row tight"><div class="seg small" role="radiogroup" aria-label="Free space to keep">
+                    <button type="button" role="radio" aria-checked="false">10%</button><button type="button" role="radio" aria-checked="true">20%</button><button type="button" role="radio" aria-checked="false">A size</button></div></span>
+                  <small>98 GB. The disk has 80 GB free, so mulebox would ask you what to remove.</small></div>
+                <div class="set-row"><span>Runs with</span><span class="row tight"><b class="num">10% now</b><span class="wait-mark num"><i data-i="clock" class="s"></i>20% unsaved</span></span><small>sent to the node when you save</small></div>
+              </div></section>
+            <section class="panel" aria-label="Unused branch folders"><header class="panel-head"><h3><i data-i="timer"></i>Unused branch folders</h3></header>
+              <div class="panel-body set-rows">
+                <p class="set-mean">Removed after this long without a job</p>
+                <div class="set-row"><span>Suggested</span><b class="num">7 days</b><small>the default for every node</small></div>
+                <div class="set-row"><span>Yours</span><span class="row tight"><span class="stepper"><button type="button" aria-label="One day fewer"><i data-i="minus"></i></button><output>7</output><button type="button" aria-label="One day more"><i data-i="plus"></i></button></span><span class="unit">days</span></span></div>
+                <div class="set-row"><span>Runs with</span><b class="num">7 days now</b><small>as suggested</small></div>
+              </div></section>
+            <section class="panel" aria-label="Latest folder"><header class="panel-head"><h3><i data-i="flag"></i>Latest folder</h3></header>
+              <div class="panel-body set-rows">
+                <p class="set-mean">Each project's most recent folder stays, however old</p>
+                <div class="set-row"><span>Suggested</span><b>Keep</b><small>so a project's next job starts warm</small></div>
+                <div class="set-row"><span>Yours</span><div class="seg small" role="radiogroup" aria-label="Latest folder"><button type="button" role="radio" aria-checked="true">Keep</button><button type="button" role="radio" aria-checked="false">Remove like the rest</button></div></div>
+                <div class="set-row"><span>Runs with</span><b>Keep now</b><small>as suggested</small></div>
+              </div></section>
+            <section class="panel" aria-label="Idle projects"><header class="panel-head"><h3><i data-i="lightbulb"></i>Idle projects</h3></header>
+              <div class="panel-body set-rows">
+                <p class="set-mean">A project with no job this long gets a suggestion to clean it, never a removal</p>
+                <div class="set-row"><span>Suggested</span><b class="num">14 days</b><small>the default for every node</small></div>
+                <div class="set-row"><span>Yours</span><span class="row tight"><span class="stepper"><button type="button" aria-label="One day fewer"><i data-i="minus"></i></button><output>14</output><button type="button" aria-label="One day more"><i data-i="plus"></i></button></span><span class="unit">days</span></span></div>
+                <div class="set-row"><span>Runs with</span><b class="num">14 days now</b><small>as suggested</small></div>
+              </div></section>
+          </div>
+        </div>
+        <footer class="float-foot"><p>Applies from the next cleanup. A project or branch you marked "keep" is exempt from all of it.</p>
+          <button class="btn ghost" type="button"><i data-i="rotate-ccw" class="s"></i>All as suggested</button><button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">Save changes</button></footer>
+      </section>
+    </div>
+    <ul class="notes">
+      <li><b>Good at</b>Nothing new to learn: it reads and saves exactly like slots and priority, with unsaved and pending marks, and each default says where it comes from.</li>
+      <li><b>Costs</b>Twelve rows for four numbers, and a tab to find them behind.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">One Storage panel</h2>
+      <p class="opt-idea">No tabs. One more panel under Dev mode, a line per setting: its name and what it means on the left, the control on the right, the suggestion as a small line that only speaks up when yours differs.</p></div>
+    <div class="stage">
+      <section class="float win" aria-label="Settings of build-1">
+        <header class="float-head"><div><h3><i data-i="server"></i>build-1</h3><p class="sm t2">Node settings, dashboard host</p></div>
+          <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button></header>
+        <div class="float-body">
+          <div class="set-two">
+            <div class="gap">
+              <p class="as-today">Slots, Priority and Dev mode, as today.</p>
+              <section class="panel" aria-label="Storage"><header class="panel-head"><h3><i data-i="hard-drive"></i>Storage</h3><span class="panel-note num">80 GB free of 490 GB</span></header>
+                <div class="panel-body set-rows">
+                  <p class="set-mean">What mulebox removes by itself on this node, and how much room it keeps</p>
+                  <div class="set-line"><div><b>Free space to keep</b><small>Suggested 10%, which is 49 GB here. Yours is 98 GB: 18 GB more than is free now, so mulebox would ask you what to remove.</small></div>
+                    <span class="ctl"><button class="icon-btn" type="button" title="Use the suggested 10%" aria-label="Use the suggested 10%"><i data-i="rotate-ccw" class="s"></i></button>
+                      <div class="seg small" role="radiogroup" aria-label="Free space to keep"><button type="button" role="radio" aria-checked="false">10%</button><button type="button" role="radio" aria-checked="true">20%</button><button type="button" role="radio" aria-checked="false">A size</button></div></span>
+                    <span class="wide wait-mark sm"><i data-i="clock" class="s"></i>10% now, 20% unsaved</span></div>
+                  <div class="set-line"><div><b>Remove unused branch folders after</b><small>As suggested</small></div>
+                    <span class="ctl"><span class="stepper"><button type="button" aria-label="One day fewer"><i data-i="minus"></i></button><output>7</output><button type="button" aria-label="One day more"><i data-i="plus"></i></button></span><span class="unit">days</span></span></div>
+                  <div class="set-line"><div><b>Keep each project's latest folder</b><small>As suggested: its next job starts warm</small></div>
+                    <span class="ctl"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="Keep each project's latest folder"></button></span></div>
+                  <div class="set-line"><div><b>Suggest cleaning an idle project after</b><small>As suggested. A suggestion only, never a removal</small></div>
+                    <span class="ctl"><span class="stepper"><button type="button" aria-label="One day fewer"><i data-i="minus"></i></button><output>14</output><button type="button" aria-label="One day more"><i data-i="plus"></i></button></span><span class="unit">days</span></span></div>
+                </div></section>
+            </div>
+            <section class="panel" aria-label="Reported by the node"><header class="panel-head"><h3><i data-i="lock"></i>Reported by the node</h3></header>
+              <div class="panel-body stack">
+                <p class="sm t2">Set in its node.toml</p>
+                <p class="fact"><span>Version</span><span class="num">1.23.1</span></p>
+                <p class="fact"><span>State</span><span>Online, 2 jobs running</span></p>
+                <p class="fact"><span>System</span><span>8 cores</span></p>
+                <p class="fact"><span>Disk</span><span class="num">490 GB, 80 GB free</span></p>
+                <p class="fact"><span>mulebox takes</span><span class="num">85.6 GB</span></p>
+              </div></section>
+          </div>
+        </div>
+        <footer class="float-foot"><p>Applies to the next job and the next cleanup. What you marked "keep" is exempt.</p>
+          <button class="btn ghost" type="button"><i data-i="rotate-ccw" class="s"></i>All as suggested</button><button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">Save changes</button></footer>
+      </section>
+    </div>
+    <ul class="notes">
+      <li><b>Good at</b>All four in one look, on the window's one page, with the fewest words. The suggestion is quiet until it matters.</li>
+      <li><b>Costs</b>Not the Suggested, Yours, Runs with rows of the panels above it, so the window has two ways to show a setting. The window grows a screen longer.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">The rules as a sentence, tried on the disk</h2>
+      <p class="opt-idea">A Storage tab that reads as what mulebox will do, with the numbers in the sentence to change. Above it the node's disk, where the reserve moves as you set it, and a line that says what your values would do tonight, before you save.</p></div>
+    <div class="stage">
+      <section class="float win" aria-label="Settings of build-1" style="--reserve-gb: 98">
+        <header class="float-head"><div><h3><i data-i="server"></i>build-1</h3><p class="sm t2">Node settings, dashboard host</p></div>
+          <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button></header>
+        <div class="float-body gap">
+          <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="false">Jobs</button><button type="button" role="tab" aria-selected="true">Storage</button></div>
+          <div class="disk">
+            <div class="disk-top"><span><span class="big num">80 GB</span> free of 490 GB</span><span class="num"><b>18 GB</b> short of your reserve of <b>98 GB</b> (20%)</span></div>
+            <div class="ruler short" role="img" aria-label="Disk of build-1 with a reserve of 98 GB: 18 GB short">
+              <i class="c-folders" style="--gb: 64"></i><i class="c-caches" style="--gb: 4.6"></i><i class="c-runners" style="--gb: 4.1"></i><i class="c-docker" style="--gb: 12.8"></i><i class="c-logs" style="--gb: 0.1"></i><i class="c-other" style="--gb: 324.4"></i></div>
+            <p class="would-say"><i data-i="triangle-alert" class="s"></i><span><b>With these values, tonight:</b> the cleanup removes 41 folders and frees 17.8 GB, which leaves 0.2 GB missing. mulebox would then show you what else it can remove (10.8 GB of unused Docker data) and wait for your yes.</span></p>
+          </div>
+          <p class="say">Keep
+            <span class="seg small" role="radiogroup" aria-label="Free space to keep"><button type="button" role="radio" aria-checked="false">10%</button><button type="button" role="radio" aria-checked="true">20%</button><button type="button" role="radio" aria-checked="false">A size</button></span>
+            of the disk free. Remove a branch folder no job has used for
+            <span class="stepper"><button type="button" aria-label="One day fewer"><i data-i="minus"></i></button><output>7</output><button type="button" aria-label="One day more"><i data-i="plus"></i></button></span>
+            days, but keep each project's latest folder
+            <button class="switch" type="button" role="switch" aria-checked="true" aria-label="Keep each project's latest folder"></button>.
+            Suggest cleaning a project that ran no job for
+            <span class="stepper"><button type="button" aria-label="One day fewer"><i data-i="minus"></i></button><output>14</output><button type="button" aria-label="One day more"><i data-i="plus"></i></button></span>
+            days.</p>
+          <p class="sm t2">mulebox suggests 10%, 7 days, keep, 14 days. Yours differs in one: 20% (10% runs now, 20% unsaved).</p>
+        </div>
+        <footer class="float-foot"><p>Applies from the next cleanup. What you marked "keep" is exempt from all of it.</p>
+          <button class="btn ghost" type="button"><i data-i="rotate-ccw" class="s"></i>All as suggested</button><button class="btn ghost" type="button">Cancel</button><button class="btn primary" type="button">Save changes</button></footer>
+      </section>
+    </div>
+    <ul class="notes">
+      <li><b>Good at</b>The consequence before the save: 20% on this disk means a question tonight, and the ruler shows it. The rules read as one thought.</li>
+      <li><b>Costs</b>The furthest from the window's rows; Suggested and Runs with shrink to one line. The preview needs the node's sizes, so it is the most to build.</li>
+    </ul>
+  </section>
+</div>
+<script src="storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

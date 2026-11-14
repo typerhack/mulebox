@@ -115,6 +115,48 @@ job name, for today or all time, the top 8 with a way to show all. Two `/api/sta
 per change, with this browser's own midnights; again each minute while the page is open. The
 design is option A of three the user was shown on 2026-11-10.
 
+## Storage page (`web/src/features/storage/`, `web/src/lib/storage.ts`, `web/src/state/storage.ts`)
+
+What mulebox holds on each node, from `GET /api/storage` (HTTP API below): each node's last report
+(design.md, Disk use and cleanup on its own), the keep marks and the folders' branch names. The page
+measures nothing: a report is what the node's last sweep measured, an hour old at most, and the page
+says how old.
+
+- **One copy for the whole page.** `state/storage.ts` reads `/api/storage` when the page opens and
+  every minute while it is in view, and again after a change. The Storage page, the Disk panel's
+  line ("Storage: mulebox holds 76.3 GB"), the count on the header's Storage entry and the
+  low-space line of the strip all read it.
+- **The page** shows the node the top row shows (a picker when there is more than one): its disk
+  as one ruler (what mulebox holds by kind, everything else on the disk, free space, the reserve
+  hatched at the end), what the last sweep removed and what goes next ("Show what goes next" lists
+  the `stays` and `remove` folders of every project, soonest first), then a row per project that
+  opens to its branch folders, and rows for package caches, toolchains, browsers, runners, uploads
+  and job folders. Docker's totals come last, said as all of Docker on the node, never cleaned.
+- **A folder's row** names its branch (`branches`; the folder name when the history does not know
+  it), its size, its last job and its fate in words: `running`, `kept`, `latest`, `remove` ("goes
+  at the next sweep") or `stays` with `removed_in` in days.
+- **Actions**, with the controls on: copy the path (from the report's `paths`: a project's home is
+  `<projects>/<project>`, a branch folder `<projects>/<project>/trees/<folder>`; a worker before
+  1.25 sends none and the button is left out), keep (`POST /api/storage/keep`), and clean, which
+  first lists what goes and what stays, then sends `POST /api/storage/remove` and reads the group
+  until every node answered. Clean on a project's row removes only its folders that would go by
+  themselves anyway (`stays` and `remove`), one request with `branch` each: the latest, kept and
+  running ones stay. The whole project (no `branch`: the latest folder and the repository too, on
+  every node) goes only from an idle project's "Clean it". A removed folder is left out of the lists at once, until a report newer than the
+  removal comes. A folder whose branch is not known can be neither kept nor cleaned alone (both
+  requests take a branch), and one a job runs in cannot be cleaned. With the controls off the page
+  only shows.
+- **Notices.** An idle project (`idle`, not `kept`) asks on its own row, and the header's Storage
+  entry counts such projects. A node with `short` set (under its reserve, nothing left for the
+  rules) gets a line in the out-of-step strip on every page, counted in the header's mark; its
+  button opens the review window: `short.folders`, oldest first, the `stays` ones ticked until
+  they cover `short.need`, a `latest` one offered unticked, a `kept` one not offered. Each ticked
+  folder is removed with its own `POST /api/storage/remove`.
+- **Settings.** The node's settings window has a Storage tab for `keep_free`, `unused_days`,
+  `keep_latest` and `idle_days` (Node settings below), with one line that says what the values on
+  screen would do at the next sweep, worked out in the page from the node's last report
+  (`lib/storage.ts`, `preview`).
+
 ## History page (`web/src/features/history/`, `web/src/lib/history.ts`, `dashboard/history_query.py`)
 
 `#/history`: every finished job, newest first, 50 at a time with "Load more". A search box
@@ -317,12 +359,12 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, moved}` (`moved`: front, before or after, only the moved job pinned; a `priority` only on rows moved before 1.17.1), and `place_reason` and `order` for a queued job |
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
 | `GET /api/machines/{name}/settings` | the settings window (Node settings, below); 404 for a name the store does not know |
-| `POST /api/machines/{name}/settings` | body `{slots}`, `{priority}`, both, or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
+| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_free`, `unused_days`, `keep_latest`, `idle_days`, or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for`; every queued row `place_reason` and `order` while an order rule is on, and a moved row (`moved`) always (interfaces-m1.md, `queue_rules`); a GitHub slot also `workflow` |
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
 | `GET /api/machines` | machines panel snapshot (above) |
-| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names |
+| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names. A report holds `at`, `disk` (`total`, `free`, `reserve`), `policy`, `projects` (`project`, `home`, `caches`, `folders` with `folder`, `size`, `last_used`, `fate`, `removed_in`), `shared`, `paths` (where each part is on the node, since 1.25), `docker`, `idle`, `short` and `removed` (Storage page, above) |
 | `POST /api/storage/keep` | body `{project, branch?, keep?}` (`keep` false drops the mark); `{keeps}`. Controls on only, protected like them; 400 on a bad body |
 | `POST /api/storage/remove` | body `{project, branch?}`: `project_order` reset with `yes`, as `mulebox project reset --yes`; `{group, nodes, done}`. Controls on only, protected like them |
 | `GET /api/storage/remove/{group}` | that removal's answers per node, as `mulebox project reset` waits for them |
@@ -374,7 +416,8 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 - GET reads the dashboard's read-only store; POST sends `node_settings` through the canceller's
   `mulebox rpc`, as `mulebox machine config` does. While a change waits, `/api/events` sends a
   `machines` event with `settings_pending` true, and another once it applied.
-- The page's window for it is `web/src/features/machines/NodeSettings.tsx`: it reads on open,
+- The page's window for it is `web/src/features/machines/NodeSettings.tsx`, with a Jobs tab (slots,
+  priority, dev mode) and a Storage tab (the disk settings, `StorageSettings.tsx`): it reads on open,
   again when the machine's row changes (state, jobs, slots, priority, version,
   `settings_pending`) and every 5 s while it is open, as a row reads `settings_pending` before
   and after a failed write and only this body has `error`. An answer older than a newer request

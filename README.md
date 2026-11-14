@@ -164,6 +164,26 @@ theme and follows the system's by default.
 | History, searchable | Job minutes, by kind, project and machine |
 | ![A node's settings: slots and priority, each with mulebox's suggestion beside yours](docs/images/node-settings-dark.png) | ![The Order panel: the rules for the order of the line, each waiting row saying why it stands where it does](docs/images/order-light.png) |
 | A node's slots and priority, with the suggestion | Rules for the order of the line |
+| ![The Storage page: a node's disk as one ruler with its reserve, then every project and its branch folders with what happens to each](docs/images/storage-dark.png) | ![The Storage tab of a node's settings: free space to keep, when unused folders go, the latest folder and idle projects](docs/images/storage-settings-light.png) |
+| What mulebox holds on a node, and what goes when | A node's disk settings, with what they would do |
+
+The Storage page shows, per node, what mulebox holds on its disk and what happens to each part: the
+disk as one ruler with the free-space reserve at its end, every project and its branch folders
+with size, last job and when each goes on its own, package caches, toolchains, runners, and
+Docker's totals (shown, never cleaned by mulebox). Each folder's path can be copied, a project or
+branch marked to keep, and a clean lists what it removes before anything goes. A project with no
+job for two weeks gets a suggestion on its row. The rules are a node's settings, in the Storage
+tab of its settings window: how much space to keep free, after how many days an unused branch
+folder goes, whether each project's latest folder stays, and when an idle project is suggested
+for cleaning, with one line that says what the values on screen would do before they are saved.
+
+When a node falls under its reserve and the rules have nothing left to remove, the strip above
+the panels says so on every page, and the owner decides what goes:
+
+| | |
+| --- | --- |
+| ![The strip above the panels saying a node is under its free-space reserve](docs/images/low-space-light.png) | ![The review window: what could go next, oldest first, with enough ticked to be back above the reserve](docs/images/storage-review-dark.png) |
+| A node under its reserve | What could go, for the owner to decide |
 
 While a job or a CI run downloads packages or a cache, its card shows how much has come and how
 fast, and warns when no bytes arrive for a while:

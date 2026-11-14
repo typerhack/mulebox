@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: storage view</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="storage.css">
+</head>
+<body style="--disk-gb: 490; --reserve-gb: 49">
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Storage</h1>
+        <p class="doc-lead">What mulebox takes on a node's disk, what happens to each part and when, and the three things to do with any of it: copy its path, keep it, clean it. A clean always lists what it removes and how much that frees before anything goes. The Disk panel in the top row stays as it is.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, a Storage page, by project</a><a href="#b">B, on the Machines page, by what goes next</a><a href="#c">C, a window from the Disk panel, by size</a>
+      <a href="index.html">All storage mockups</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">A Storage page, by project</h2>
+      <p class="opt-idea">A fifth page in the header. The disk as one ruler with the reserve hatched at its end, the next cleanup in one line, then everything mulebox keeps, grouped as it is on the disk: projects and their branch folders, caches, runners, Docker, logs.</p></div>
+    <div class="stage">
+      <div class="app-bar"><b>mulebox</b>
+        <nav aria-label="Pages"><span>Queue</span><span>Machines</span><span>History</span><span>Statistics</span><span class="on"><i data-i="hard-drive" class="s"></i>Storage</span></nav></div>
+      <p class="as-today">The top row, as today: CPU, Memory, Disk, Machines. Picking a machine there picks it here too.</p>
+      <section class="panel" aria-label="Storage">
+        <header class="panel-head strong"><h3>Storage</h3>
+          <div class="seg small" role="radiogroup" aria-label="Node">
+            <button type="button" role="radio" aria-checked="true"><i data-i="house" class="s"></i>build-1</button>
+            <button type="button" role="radio" aria-checked="false">build-mac</button></div></header>
+        <div class="panel-body gap">
+          <div class="disk">
+            <div class="disk-top"><span><span class="big num">80 GB</span> free of 490 GB</span>
+              <span class="num"><b>31 GB</b> above the reserve of <b>49 GB</b> (10%)</span></div>
+            <div class="ruler" role="img" aria-label="Disk of build-1: mulebox 85.6 GB, not mulebox's 324.4 GB, free 80 GB, of which 49 GB reserve">
+              <i class="c-folders" style="--gb: 64"></i><i class="c-caches" style="--gb: 4.6"></i><i class="c-runners" style="--gb: 4.1"></i><i class="c-docker" style="--gb: 12.8"></i><i class="c-logs" style="--gb: 0.1"></i><i class="c-other" style="--gb: 324.4"></i></div>
+            <ul class="legend">
+              <li><i class="sw c-folders"></i><span>Branch folders</span><b class="num">64.0 GB</b></li>
+              <li><i class="sw c-docker"></i><span>Docker, mulebox's</span><b class="num">12.8 GB</b></li>
+              <li><i class="sw c-caches"></i><span>Package caches</span><b class="num">4.6 GB</b></li>
+              <li><i class="sw c-runners"></i><span>Runners</span><b class="num">4.1 GB</b></li>
+              <li><i class="sw c-logs"></i><span>Logs</span><b class="num">0.1 GB</b></li>
+              <li><i class="sw c-other"></i><span>Not mulebox's</span><b class="num">324.4 GB</b></li>
+              <li><i class="sw"></i><span>Free</span><b class="num">80 GB</b></li>
+              <li><i class="sw hatch"></i><span>Reserve</span><b class="num">49 GB</b></li>
+            </ul>
+          </div>
+          <div class="next"><i data-i="timer"></i>
+            <p><b>Next cleanup tonight at 03:00.</b> It removes 41 branch folders unused for 7 days and frees <b class="num">17.8 GB</b>.</p>
+            <button class="btn" type="button">Show the 41</button><button class="btn" type="button">Clean now</button></div>
+
+          <div class="keep-list">
+            <div class="s-head"><h4><i data-i="folder" class="s"></i>Projects <small>145 branch folders, 64.0 GB</small></h4>
+              <div class="s-meta"><span>Size</span><span>Last job</span><span>What happens</span></div><span></span></div>
+            <details class="grp" open>
+              <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>example-app</b><small>56 folders</small>
+                  <span class="s-path">/home/alice/.mulebox/projects/example-app</span></span>
+                <span class="s-meta"><span class="num">38.0 GB</span><span>12 min ago</span><span class="fate soon"><i data-i="timer" class="s"></i>14 folders go tonight, 9.6 GB</span></span>
+                <span data-acts="example-app"></span></summary>
+              <div class="sub">
+                <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>feature/checkout</code></span>
+                  <span class="s-meta"><span class="num">0.7 GB</span><span>12 min ago</span><span class="fate kept"><i data-i="flag" class="s"></i>Kept: latest</span></span><span data-acts="feature/checkout"></span></div>
+                <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>main</code></span>
+                  <span class="s-meta"><span class="num">0.6 GB</span><span>3 h ago</span><span class="fate kept"><i data-i="pin" class="s"></i>Kept by you</span></span><span data-acts="main" data-kept></span></div>
+                <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>fix/login-redirect</code></span>
+                  <span class="s-meta"><span class="num">0.5 GB</span><span>Yesterday</span><span class="fate calm"><i data-i="timer" class="s"></i>Removed in 6 days</span></span><span data-acts="fix/login-redirect"></span></div>
+                <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>feature/invoices</code></span>
+                  <span class="s-meta"><span class="num">0.7 GB</span><span>3 days ago</span><span class="fate calm"><i data-i="timer" class="s"></i>Removed in 4 days</span></span><span data-acts="feature/invoices"></span></div>
+                <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>chore/deps-november</code></span>
+                  <span class="s-meta"><span class="num">0.4 GB</span><span>7 days ago</span><span class="fate soon"><i data-i="timer" class="s"></i>Removed tonight</span></span><span data-acts="chore/deps-november"></span></div>
+                <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>agent/try-turbo-cache</code></span>
+                  <span class="s-meta"><span class="num">0.7 GB</span><span>23 days ago</span><span class="fate soon"><i data-i="timer" class="s"></i>Removed tonight</span></span><span data-acts="agent/try-turbo-cache"></span></div>
+                <p class="more"><button type="button">50 more branch folders</button></p>
+              </div>
+            </details>
+            <details class="grp">
+              <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>example-shop</b><small>69 folders</small></span>
+                <span class="s-meta"><span class="num">24.0 GB</span><span>2 h ago</span><span class="fate soon"><i data-i="timer" class="s"></i>24 folders go tonight, 8.0 GB</span></span>
+                <span data-acts="example-shop"></span></summary></details>
+            <details class="grp">
+              <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>mulebox</b><small>19 folders</small></span>
+                <span class="s-meta"><span class="num">1.3 GB</span><span>40 min ago</span><span class="fate soon"><i data-i="timer" class="s"></i>3 folders go tonight, 0.2 GB</span></span>
+                <span data-acts="mulebox"></span></summary></details>
+            <details class="grp">
+              <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>example-docs</b><small>1 folder</small></span>
+                <span class="s-meta"><span class="num">0.7 GB</span><span>16 days ago</span><span class="fate ask"><i data-i="lightbulb" class="s"></i>Kept: latest. Idle 16 days, clean it?</span></span>
+                <span data-acts="example-docs"></span></summary></details>
+
+            <div class="s-head"><h4><i data-i="package" class="s"></i>Package caches <small>4.6 GB</small></h4><span></span><span></span></div>
+            <details class="grp">
+              <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>4 caches</b><small>pnpm, pip, Playwright browsers</small></span>
+                <span class="s-meta"><span class="num">4.6 GB</span><span>12 min ago</span><span class="fate calm">Kept while its project has a folder</span></span>
+                <span data-acts="the package caches" data-nokeep></span></summary></details>
+
+            <div class="s-head"><h4><i data-i="workflow" class="s"></i>GitHub runners <small>4.1 GB</small></h4><span></span><span></span></div>
+            <details class="grp">
+              <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>2 runners</b><small>their work folders and tool caches</small></span>
+                <span class="s-meta"><span class="num">4.1 GB</span><span>2 h ago</span><span class="fate calm">Kept while the runner is registered</span></span>
+                <span data-acts="the runners" data-nokeep></span></summary></details>
+
+            <div class="s-head"><h4><i data-i="layers" class="s"></i>Docker <small>12.8 GB mulebox's, 13.0 GB of all 19.5 GB unused</small></h4><span></span><span></span></div>
+            <div class="s-row"><span class="s-name"><b>Images of jobs</b><small>built or pulled for a job</small></span>
+              <span class="s-meta"><span class="num">3.1 GB</span><span>12 min ago</span><span class="fate calm">1.4 GB unused, goes when the disk nears the reserve</span></span>
+              <span data-acts="the job images" data-nokeep></span></div>
+            <div class="s-row"><span class="s-name"><b>Build cache</b></span>
+              <span class="s-meta"><span class="num">9.7 GB</span><span>2 h ago</span><span class="fate calm">9.4 GB unused, goes when the disk nears the reserve</span></span>
+              <span data-acts="the build cache" data-nokeep></span></div>
+            <div class="s-row apart-from"><span class="s-name"><span>Other images</span><small>not mulebox's: left alone</small></span>
+              <span class="s-meta"><span class="num">6.7 GB</span><span></span><span>2.2 GB unused</span></span>
+              <span data-acts="the other images" data-nokeep data-noclean></span></div>
+
+            <div class="s-head"><h4><i data-i="file-text" class="s"></i>Logs <small>0.1 GB</small></h4><span></span><span></span></div>
+            <div class="s-row"><span class="s-name"><b>Job logs</b><small>1,412 jobs</small></span>
+              <span class="s-meta"><span class="num">0.1 GB</span><span>12 min ago</span><span class="fate calm">Each removed after 30 days</span></span>
+              <span data-acts="the logs" data-nokeep></span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <div class="stage">
+      <p class="stage-cap">After Clean on example-app: the row opens this under itself. Nothing is removed until the red button.</p>
+      <div class="confirm">
+        <p><b>Clean example-app:</b> removes 54 of its 56 branch folders and frees <b class="num">36.7 GB</b>. The next job on a removed branch sets its folder up again.</p>
+        <ul>
+          <li><code>agent/try-turbo-cache</code><span class="num">0.7 GB, 23 days ago</span></li>
+          <li><code>chore/deps-november</code><span class="num">0.4 GB, 7 days ago</span></li>
+          <li><code>feature/invoices</code><span class="num">0.7 GB, 3 days ago</span></li>
+          <li><code>fix/login-redirect</code><span class="num">0.5 GB, yesterday</span></li>
+          <li><span>and 50 more</span><span class="num">34.4 GB</span></li>
+          <li class="keeps"><span>Stays: <code>feature/checkout</code> (latest), <code>main</code> (kept by you)</span><span class="num">1.3 GB</span></li>
+        </ul>
+        <div class="confirm-foot"><p>Free after: 116.7 GB.</p><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="button"><i data-i="trash-2" class="s"></i>Remove 54 folders</button></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Lives</b>A page of its own, beside Statistics. The Disk panel gets a small "Storage" link to it.</li>
+      <li><b>Good at</b>The whole picture in the disk's own shape: project, then branch. Room for 145 folders, for a second node and for more kinds later.</li>
+      <li><b>Costs</b>A fifth page, and the longest list: what goes tonight is spread over the projects.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">On the Machines page, by what goes next</h2>
+      <p class="opt-idea">No new page. Each node on the Machines page gets a Storage part, and its folders are grouped by their fate, soonest first: going tonight, going this week, kept. It answers "what will mulebox do, and when" before "where is it".</p></div>
+    <div class="stage">
+      <div class="app-bar"><b>mulebox</b>
+        <nav aria-label="Pages"><span>Queue</span><span class="on">Machines</span><span>History</span><span>Statistics</span></nav></div>
+      <p class="as-today">The top row, as today.</p>
+      <div class="gap">
+      <section class="panel" aria-label="build-1"><div class="panel-body node">
+        <div class="node-head"><span class="row tight"><strong>build-1</strong><span class="mark" title="Dashboard host"><i data-i="house" class="s"></i></span><span class="st sm" data-state="running"><i data-i="loader-circle"></i>Busy</span></span>
+          <span class="sm t2">Slots, meters and offers of the node, as today</span></div>
+        <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="false">Jobs</button><button type="button" role="tab" aria-selected="true"><i data-i="hard-drive" class="s"></i>Storage<span class="count num">85.6 GB</span></button></div>
+        <div class="disk">
+          <div class="disk-top"><span><b class="num">80 GB</b> free of 490 GB, <b class="num">31 GB</b> above the reserve</span><span class="num t2">mulebox 85.6 GB, reserve 49 GB</span></div>
+          <div class="ruler slim" role="img" aria-label="Disk of build-1">
+            <i class="c-folders" style="--gb: 64"></i><i class="c-caches" style="--gb: 4.6"></i><i class="c-runners" style="--gb: 4.1"></i><i class="c-docker" style="--gb: 12.8"></i><i class="c-logs" style="--gb: 0.1"></i><i class="c-other" style="--gb: 324.4"></i></div>
+        </div>
+        <div class="keep-list">
+          <div class="s-head"><h4><i data-i="folder" class="s"></i>Branch folders <small>145 in 4 projects, 64.0 GB</small></h4>
+            <div class="s-meta"><span>Size</span><span>Last job</span><span>Project</span></div><span></span></div>
+          <details class="grp" open>
+            <summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>Going tonight at 03:00</b><small>41 folders, unused for 7 days</small></span>
+              <span class="s-meta"><span class="num">17.8 GB</span><span></span><span></span></span>
+              <span class="s-acts"><button class="btn" type="button">Clean now</button></span></summary>
+            <div class="sub">
+              <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>agent/try-turbo-cache</code></span>
+                <span class="s-meta"><span class="num">0.7 GB</span><span>23 days ago</span><span>example-app</span></span><span data-acts="agent/try-turbo-cache"></span></div>
+              <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>feature/reports-export</code></span>
+                <span class="s-meta"><span class="num">0.6 GB</span><span>19 days ago</span><span>example-shop</span></span><span data-acts="feature/reports-export"></span></div>
+              <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>chore/deps-november</code></span>
+                <span class="s-meta"><span class="num">0.4 GB</span><span>7 days ago</span><span>example-app</span></span><span data-acts="chore/deps-november"></span></div>
+              <p class="more"><button type="button">38 more</button></p>
+            </div>
+          </details>
+          <details class="grp"><summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>Going in 1 to 3 days</b><small>38 folders</small></span>
+            <span class="s-meta"><span class="num">16.9 GB</span><span></span><span></span></span><span class="s-acts"></span></summary></details>
+          <details class="grp"><summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>Going in 4 to 7 days</b><small>59 folders</small></span>
+            <span class="s-meta"><span class="num">24.7 GB</span><span></span><span></span></span><span class="s-acts"></span></summary></details>
+          <details class="grp" open><summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>Kept: the latest of each project</b><small>4 folders</small></span>
+            <span class="s-meta"><span class="num">2.7 GB</span><span></span><span></span></span><span class="s-acts"></span></summary>
+            <div class="sub">
+              <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>feature/checkout</code></span>
+                <span class="s-meta"><span class="num">0.7 GB</span><span>12 min ago</span><span>example-app</span></span><span data-acts="feature/checkout"></span></div>
+              <div class="s-row"><span class="s-name"><i data-i="git-branch" class="s"></i><code>main</code></span>
+                <span class="s-meta"><span class="num">0.7 GB</span><span>16 days ago</span><span class="fate ask"><i data-i="lightbulb" class="s"></i>example-docs: idle, clean it?</span></span><span data-acts="example-docs main"></span></div>
+              <p class="more"><button type="button">2 more</button></p>
+            </div></details>
+          <details class="grp"><summary class="s-row"><span class="s-name"><i data-i="chevron-right" class="s chev"></i><b>Kept by you</b><small>3 folders</small></span>
+            <span class="s-meta"><span class="num">1.9 GB</span><span></span><span></span></span><span class="s-acts"></span></summary></details>
+
+          <div class="s-head"><h4>Everything else mulebox keeps <small>21.6 GB</small></h4><div class="s-meta"><span>Size</span><span></span><span>What happens</span></div><span></span></div>
+          <div class="s-row"><span class="s-name"><i data-i="layers" class="s"></i><b>Docker</b><small>images of jobs 3.1 GB, build cache 9.7 GB</small></span>
+            <span class="s-meta"><span class="num">12.8 GB</span><span></span><span>10.8 GB unused, goes when the disk nears the reserve</span></span><span data-acts="Docker" data-nokeep></span></div>
+          <div class="s-row"><span class="s-name"><i data-i="package" class="s"></i><b>Package caches</b><small>4 caches</small></span>
+            <span class="s-meta"><span class="num">4.6 GB</span><span></span><span>Kept while its project has a folder</span></span><span data-acts="the package caches" data-nokeep></span></div>
+          <div class="s-row"><span class="s-name"><i data-i="workflow" class="s"></i><b>GitHub runners</b><small>2 runners</small></span>
+            <span class="s-meta"><span class="num">4.1 GB</span><span></span><span>Kept while the runner is registered</span></span><span data-acts="the runners" data-nokeep></span></div>
+          <div class="s-row"><span class="s-name"><i data-i="file-text" class="s"></i><b>Logs</b></span>
+            <span class="s-meta"><span class="num">0.1 GB</span><span></span><span>Each removed after 30 days</span></span><span data-acts="the logs" data-nokeep></span></div>
+          <div class="s-row apart-from"><span class="s-name"><span>Docker images that are not mulebox's</span></span>
+            <span class="s-meta"><span class="num">6.7 GB</span><span></span><span>Left alone</span></span><span data-acts="other images" data-nokeep data-noclean></span></div>
+        </div>
+      </div></section>
+      <section class="panel" aria-label="build-mac"><div class="panel-body node" style="--disk-gb: 994; --reserve-gb: 99">
+        <div class="node-head"><span class="row tight"><strong>build-mac</strong><span class="st sm" data-state="passed"><i data-i="circle-check"></i>Idle</span></span>
+          <span class="sm t2">macOS, 1 slot</span></div>
+        <div class="tabs" role="tablist"><button type="button" role="tab" aria-selected="false">Jobs</button><button type="button" role="tab" aria-selected="true"><i data-i="hard-drive" class="s"></i>Storage<span class="count num">5.9 GB</span></button></div>
+        <div class="disk">
+          <div class="disk-top"><span><b class="num">382 GB</b> free of 994 GB, <b class="num">283 GB</b> above the reserve</span><span class="num t2">mulebox 5.9 GB, reserve 99 GB</span></div>
+          <div class="ruler slim" role="img" aria-label="Disk of build-mac">
+            <i class="c-folders" style="--gb: 3.4"></i><i class="c-caches" style="--gb: 1.2"></i><i class="c-runners" style="--gb: 1.3"></i><i class="c-other" style="--gb: 606.1"></i></div>
+        </div>
+        <div class="next"><i data-i="circle-check"></i><p><b>Nothing goes tonight.</b> 6 branch folders in 2 projects, 3.4 GB; the oldest goes in 3 days.</p><button class="btn" type="button">Show storage</button></div>
+      </div></section>
+      </div>
+    </div>
+    <div class="stage">
+      <p class="stage-cap">After Clean now on "Going tonight": the same list a clean always shows, here in a window.</p>
+      <div class="confirm">
+        <p><b>Clean now on build-1:</b> removes the 41 branch folders tonight's cleanup would remove, and frees <b class="num">17.8 GB</b>.</p>
+        <ul>
+          <li><span>example-shop, 24 folders</span><span class="num">8.0 GB</span></li>
+          <li><span>example-app, 14 folders</span><span class="num">9.6 GB</span></li>
+          <li><span>mulebox, 3 folders</span><span class="num">0.2 GB</span></li>
+        </ul>
+        <div class="confirm-foot"><p>Free after: 97.8 GB.</p><button class="btn" type="button">Show all 41</button><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="button"><i data-i="trash-2" class="s"></i>Remove 41 folders</button></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Lives</b>The Machines page: each node has Jobs and Storage. The Disk panel's link goes to the shown node's Storage.</li>
+      <li><b>Good at</b>Trust in the automatic rules: tonight's 41 folders are one group you can open, keep from, or run now. Two nodes read side by side.</li>
+      <li><b>Costs</b>"How big is example-app" takes a look at the Project column, not one row. The Machines page grows long with many nodes.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">A window from the Disk panel, by size</h2>
+      <p class="opt-idea">The Disk panel gets one line, "Storage", that opens a window for the node it shows. Inside: the ruler, then one ranked list, biggest first, whatever kind it is. Built for the moment the disk is tight and the question is "what takes the space".</p></div>
+    <div class="stage">
+      <div class="split">
+        <div class="gap">
+          <p class="stage-cap">The Disk panel as today, with the one new line marked.</p>
+          <section class="panel disk-panel" aria-label="Disk">
+            <header class="panel-head"><h3><i data-i="hard-drive"></i>Disk</h3><span class="panel-note num">80.0 GB free</span></header>
+            <div class="panel-body stack">
+              <p class="sm t2">cache, jobs, projects</p>
+              <div class="meter-row nolabel"><span class="meter" data-level="warn" style="--v: 84%"><i></i></span><span class="num">410.0 GB of 490.0 GB</span></div>
+              <p class="fact"><span>Docker</span><span class="num">19.5 GB</span></p>
+              <p class="fact"><span>Containers</span><span class="num">6 running</span></p>
+              <p class="fact"><span>Overhead</span><span class="num">0.5% of a core, 46.1 MB</span></p>
+              <p class="fact"><span>Viewers</span><span class="num">1</span></p>
+              <button class="link-row new" type="button"><span>Storage: mulebox takes 85.6 GB</span><i data-i="chevron-right" class="s"></i></button>
+            </div>
+          </section>
+        </div>
+        <section class="float win" aria-label="Storage of build-1">
+          <header class="float-head"><div><h3><i data-i="hard-drive"></i>build-1</h3><p class="sm t2">Storage, dashboard host</p></div>
+            <button class="icon-btn bare" type="button" aria-label="Close" title="Close"><i data-i="x"></i></button></header>
+          <div class="float-body gap">
+            <div class="disk">
+              <div class="disk-top"><span><span class="big num">80 GB</span> free of 490 GB</span><span class="num"><b>31 GB</b> above the reserve of <b>49 GB</b></span></div>
+              <div class="ruler" role="img" aria-label="Disk of build-1">
+                <i class="c-folders" style="--gb: 64"></i><i class="c-caches" style="--gb: 4.6"></i><i class="c-runners" style="--gb: 4.1"></i><i class="c-docker" style="--gb: 12.8"></i><i class="c-logs" style="--gb: 0.1"></i><i class="c-other" style="--gb: 324.4"></i></div>
+            </div>
+            <div class="keep-list">
+              <p class="col-h">mulebox takes 85.6 GB, biggest first</p>
+              <div class="rank c-folders"><i data-i="chevron-down" class="s"></i><div><b>example-app</b><small>56 branch folders, 14 go tonight</small></div>
+                <span class="meter" style="--v: 100%"><i></i></span><span class="n num">38.0 GB</span><span data-acts="example-app"></span></div>
+              <div class="rank-sub c-folders">
+                <div class="rank"><div><code>agent/try-turbo-cache</code><small>23 days ago, removed tonight</small></div><span class="meter" style="--v: 1.8%"><i></i></span><span class="n num">0.7 GB</span><span data-acts="agent/try-turbo-cache"></span></div>
+                <div class="rank"><div><code>feature/checkout</code><small>12 min ago, kept: latest</small></div><span class="meter" style="--v: 1.8%"><i></i></span><span class="n num">0.7 GB</span><span data-acts="feature/checkout"></span></div>
+                <div class="rank"><div><code>main</code><small>3 h ago, kept by you</small></div><span class="meter" style="--v: 1.6%"><i></i></span><span class="n num">0.6 GB</span><span data-acts="main" data-kept></span></div>
+                <p class="more"><button type="button">53 more branch folders</button></p>
+              </div>
+              <div class="rank c-folders"><i data-i="chevron-right" class="s"></i><div><b>example-shop</b><small>69 branch folders, 24 go tonight</small></div>
+                <span class="meter" style="--v: 63%"><i></i></span><span class="n num">24.0 GB</span><span data-acts="example-shop"></span></div>
+              <div class="rank c-docker"><i data-i="chevron-right" class="s"></i><div><b>Docker build cache</b><small>9.4 GB unused</small></div>
+                <span class="meter" style="--v: 25.5%"><i></i></span><span class="n num">9.7 GB</span><span data-acts="the build cache" data-nokeep></span></div>
+              <div class="rank c-caches"><i data-i="chevron-right" class="s"></i><div><b>Package caches</b><small>4 caches</small></div>
+                <span class="meter" style="--v: 12.1%"><i></i></span><span class="n num">4.6 GB</span><span data-acts="the package caches" data-nokeep></span></div>
+              <div class="rank c-runners"><i data-i="chevron-right" class="s"></i><div><b>GitHub runners</b><small>2 runners</small></div>
+                <span class="meter" style="--v: 10.8%"><i></i></span><span class="n num">4.1 GB</span><span data-acts="the runners" data-nokeep></span></div>
+              <div class="rank c-docker"><i data-i="chevron-right" class="s"></i><div><b>Docker images of jobs</b><small>1.4 GB unused</small></div>
+                <span class="meter" style="--v: 8.2%"><i></i></span><span class="n num">3.1 GB</span><span data-acts="the job images" data-nokeep></span></div>
+              <div class="rank c-folders"><i data-i="chevron-right" class="s"></i><div><b>mulebox</b><small>19 branch folders, 3 go tonight</small></div>
+                <span class="meter" style="--v: 3.4%"><i></i></span><span class="n num">1.3 GB</span><span data-acts="mulebox"></span></div>
+              <div class="rank c-folders"><i data-i="chevron-right" class="s"></i><div><b>example-docs</b><small>1 branch folder, idle 16 days: clean it?</small></div>
+                <span class="meter" style="--v: 1.8%"><i></i></span><span class="n num">0.7 GB</span><span data-acts="example-docs"></span></div>
+              <div class="rank c-logs"><i data-i="chevron-right" class="s"></i><div><b>Logs</b><small>each removed after 30 days</small></div>
+                <span class="meter" style="--v: 0.3%"><i></i></span><span class="n num">0.1 GB</span><span data-acts="the logs" data-nokeep></span></div>
+            </div>
+          </div>
+          <footer class="float-foot"><p><b>Next cleanup tonight at 03:00:</b> 41 branch folders, 17.8 GB.</p><button class="btn" type="button">Show the 41</button><button class="btn ghost" type="button">Close</button></footer>
+        </section>
+      </div>
+    </div>
+    <div class="stage">
+      <p class="stage-cap">After Clean on the Docker build cache: the window's foot becomes the list, and the ruler shows what would come free.</p>
+      <div class="confirm">
+        <div class="ruler slim" role="img" aria-label="The disk after the clean: 9.4 GB more free">
+          <i class="c-folders" style="--gb: 64"></i><i class="c-caches" style="--gb: 4.6"></i><i class="c-runners" style="--gb: 4.1"></i><i class="c-docker" style="--gb: 3.4"></i><i class="would" style="--gb: 9.4"></i><i class="c-other" style="--gb: 324.4"></i></div>
+        <p><b>Clean the Docker build cache:</b> removes the 9.4 GB no job has used for 7 days and frees <b class="num">9.4 GB</b>. The 0.3 GB in use stays. The next build of an image takes longer once.</p>
+        <div class="confirm-foot"><p>Free after: 89.4 GB.</p><button class="btn ghost" type="button">Cancel</button><button class="btn danger" type="button"><i data-i="trash-2" class="s"></i>Remove 9.4 GB</button></div>
+      </div>
+    </div>
+    <ul class="notes">
+      <li><b>Lives</b>A window opened from the Disk panel, for the node the top row shows. No new page, nothing new on Machines.</li>
+      <li><b>Good at</b>The smallest thing to build and the fastest answer when space is short: the top three rows are 72 GB of the 85.6.</li>
+      <li><b>Costs</b>A window is tight for 145 folders, shows one node at a time, and what goes when is a second line, not the order.</li>
+    </ul>
+  </section>
+</div>
+<script src="storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

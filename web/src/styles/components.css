@@ -231,4 +231,46 @@
   .rule-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2) var(--space-3);
     align-items: center; }
   .rule-row > .wide { grid-column: 2 / -1; }
+
+  /* Storage: the disk as one ruler, what mulebox holds by kind, then everything else on the
+     disk, then free space, with the reserve hatched at the far end. Hatched in green: what a
+     removal would free. */
+  .ruler { position: relative; display: flex; height: var(--space-5); overflow: hidden;
+    border: 1px solid var(--border-strong); border-radius: var(--radius-s); background: var(--surface-1); }
+  .ruler > i { flex: 0 0 auto; width: var(--v); min-width: var(--spacing-hair); box-shadow: inset -1px 0 0 var(--surface-1); }
+  .ruler > .reserve { position: absolute; top: 0; bottom: 0; right: 0; min-width: 0; box-shadow: none;
+    border-left: var(--spacing-hair) solid var(--text-1); }
+  .ruler[data-short] > .reserve { border-left-color: var(--status-danger); }
+  .hatch { background-image: repeating-linear-gradient(135deg, var(--border-strong) 0 1px, transparent 1px var(--space-1)); }
+  .ruler > .would { box-shadow: inset 0 0 0 1px var(--status-passed); }
+  .legend { display: grid; gap: var(--space-1) var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(var(--spacing-col-m), 1fr)); }
+  .legend > li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-2); align-items: center; }
+  .swatch { width: var(--spacing-slot); height: var(--spacing-slot); border: 1px solid var(--border-strong);
+    border-radius: var(--spacing-hair); }
+
+  /* Storage rows: what it is, then its size, last job and what happens to it, then its
+     actions. In a narrow box the middle part goes under the name. */
+  .keep-list { container-type: inline-size; min-width: 0; }
+  .keep-head, .keep-row { display: grid; gap: var(--space-1) var(--space-4); align-items: center;
+    grid-template-columns: minmax(0, 1fr) calc(var(--space-7) * 11) calc(var(--spacing-ctl-s) * 3 + var(--space-1) * 2); }
+  .keep-head { padding: var(--space-4) 0 var(--space-2); border-bottom: 1px solid var(--border-strong); }
+  .keep-row { padding: var(--space-2) 0; border-bottom: 1px solid var(--border); min-width: 0; }
+  .keep-meta { display: grid; gap: var(--space-1) var(--space-4); align-items: center; min-width: 0;
+    grid-template-columns: calc(var(--space-7) * 2) minmax(0, 0.7fr) minmax(0, 1.5fr); }
+  .keep-meta > :first-child { text-align: right; }
+  .keep-acts { display: inline-flex; gap: var(--space-1); justify-content: flex-end; }
+  .keep-sub .keep-row > :first-child { padding-left: var(--space-5); }
+  .keep-sub > :last-child, .keep-sub > :last-child > .keep-row:last-child { border-bottom-color: var(--border-strong); }
+  @variant @max-md {
+    .keep-head, .keep-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .keep-head > .keep-meta { display: none; }
+    .keep-row > .keep-meta { grid-column: 1 / -1; grid-row: 2; display: flex; flex-wrap: wrap; gap: 0 var(--space-3); }
+    .keep-sub .keep-row > .keep-meta { padding-left: var(--space-5); }
+    .keep-meta > :first-child { text-align: left; }
+  }
+  /* A line of the review list: its tick, what it is, its size. */
+  .tick-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3);
+    align-items: start; padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+  .tick-row > input { width: var(--icon); height: var(--icon); margin-top: var(--spacing-hair); accent-color: var(--accent); }
 }

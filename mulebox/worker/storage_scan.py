@@ -66,6 +66,16 @@ def measure(paths: NodePaths) -> tuple[list[Folder], dict[str, Any]]:
     return folders, {"projects": projects, "shared": shared}
 
 
+def where(paths: NodePaths) -> dict[str, str]:
+    """Where each part is on this node, for the dashboard's "copy path": a project's home is
+    `<projects>/<project>`, a branch folder `<projects>/<project>/trees/<folder>`, a project's
+    package caches `<packages>/<project>`."""
+    return {"projects": str(paths.projects), "packages": str(paths.cache / "packages"),
+            "toolchains": str(paths.toolchains_dir()), "browsers": str(paths.browsers_dir()),
+            "caches_other": str(paths.cache), "runners": str(paths.runners),
+            "staging": str(paths.staging), "jobs": str(paths.jobs)}
+
+
 def disk(paths: NodePaths) -> dict[str, int]:
     """The disk of the project folders: its size and free space in bytes."""
     usage = shutil.disk_usage(paths.projects if paths.projects.is_dir() else paths.jobs)

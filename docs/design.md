@@ -498,7 +498,7 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
   several counted once; never on a page load), with the disk's size and free space, and sends
   it with its next claim or heartbeat: per project its branch folders (size, last job, and what
   will happen to each), its package caches, toolchains and browsers, GitHub runners, logs and
-  snapshots, and Docker's own totals (`docker system df`). The coordinator keeps the last report
+  snapshots, Docker's own totals (`docker system df`), and where each part is on the node (`paths`, for the dashboard's "copy path"). The coordinator keeps the last report
   per node (`workers.storage`) for `mulebox storage` and the dashboard's `/api/storage`.
 - **Docker** is shown, not cleaned on its own yet: a job's own images, containers, networks and
   volumes already go with its cleanup, and the build cache and base images cannot yet be told

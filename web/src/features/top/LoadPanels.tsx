@@ -2,11 +2,13 @@
 // in the Machines box (state/picked.ts). Current values are always text too. An offline
 // machine keeps the panels' shape and says when it was last seen.
 
-import { ArrowLeft, Cpu, HardDrive, MemoryStick } from "lucide-react";
+import { ArrowLeft, ChevronRight, Cpu, HardDrive, MemoryStick } from "lucide-react";
 
 import { ago, bytes, percent } from "../../lib/format";
+import { held } from "../../lib/storage";
 import type { Sample } from "../../lib/types";
 import { WINDOW_S } from "../../state/live";
+import { useStorage } from "../../state/storage";
 import { pick, type Shown } from "../../state/picked";
 import { Graph } from "../../ui/Graph";
 import { Meter } from "../../ui/Meter";
@@ -85,6 +87,18 @@ export function CpuPanel({ shown, now }: { shown: Shown; now: number }) {
   );
 }
 
+// One line to the Storage page, with what mulebox holds on the shown machine once its node
+// has reported (features/storage).
+function StorageLink({ machine }: { machine: string | null }) {
+  const report = useStorage().body?.nodes.find((node) => node.node === machine)?.report ?? null;
+  return (
+    <a href="#/storage" className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-2 text-sm font-medium no-underline hover:underline">
+      <span>{report ? `Storage: mulebox holds ${bytes(held(report))}` : "Storage"}</span>
+      <ChevronRight aria-hidden className="size-icon-s flex-none text-ink-2" />
+    </a>
+  );
+}
+
 const orNa = <T,>(value: T | null, show: (v: T) => string) => (value === null ? "n/a" : show(value));
 
 // Host only: what mulebox runs for jobs (job units, busy runners and their containers) and swap.
@@ -149,6 +163,7 @@ export function DiskPanel({ shown, now }: { shown: Shown; now: number }) {
         </>
       )}
       {!shown.isHost && !offline && !disks.length && <p className="text-sm text-ink-2">No disk data from this machine.</p>}
+      <StorageLink machine={shown.machine?.name ?? null} />
     </Panel>
   );
 }

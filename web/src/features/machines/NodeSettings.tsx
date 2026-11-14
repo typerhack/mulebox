@@ -17,7 +17,13 @@ import { WithCode } from "../../ui/Code";
 import { cx } from "../../ui/cx";
 import { Tip } from "../../ui/Tip";
 import { Window } from "../../ui/Window";
+import { useStorage } from "../../state/storage";
+import { Tabs } from "../../ui/Tabs";
 import { SettingsRows } from "./SettingsRows";
+import { StorageSettings } from "./StorageSettings";
+
+type Tab = "jobs" | "storage";
+const TABS: { id: Tab; label: string }[] = [{ id: "jobs", label: "Jobs" }, { id: "storage", label: "Storage" }];
 
 type Tone = "calm" | "warning" | "danger";
 const TONES: Record<Tone, [string, string]> = {
@@ -44,6 +50,8 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
   const name = machine.name;
   const [view, setView] = useState<NodeSettings | null>(null);
   const [draft, setDraft] = useState<Draft>({});
+  const [tab, setTab] = useState<Tab>("jobs");
+  const report = useStorage().body?.nodes.find((node) => node.node === name)?.report ?? null;
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState<{ text: string; read?: boolean } | null>(null);
   // Answers can come back in any order: one is shown only while its turn is the newest
@@ -117,6 +125,7 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
           <p className="mr-auto min-w-0 flex-1 basis-col-m text-sm text-ink-2">
             {problem ? <strong role="alert" className="font-semibold text-ink-1">{problem.text}</strong>
               : locked ? "Nothing here can be changed from this page."
+              : tab === "storage" ? "Applies from the node's next sweep. A project or branch you marked to keep is exempt from all of it."
               : "Applies to the next job; running jobs keep their slot. A suggestion you take is saved as a fixed value of yours."}
           </p>
           {!locked && view && (
@@ -156,8 +165,16 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
               <strong className="font-semibold">{name} is offline.</strong> It takes the pending change when it is back.
             </Strip>
           )}
-          <SettingsRows machine={machine} view={view} draft={draft} locked={locked} busy={busy}
-            onEdit={(change) => setDraft((had) => ({ ...had, ...change }))} onDrop={dropOne} />
+          <Tabs label="Settings" items={TABS} value={tab} onChange={setTab} panelId="node-settings-tab" className="mb-3" />
+          <div id="node-settings-tab" role="tabpanel" aria-labelledby={`tab-${tab}`}>
+            {tab === "jobs" ? (
+              <SettingsRows machine={machine} view={view} draft={draft} locked={locked} busy={busy}
+                onEdit={(change) => setDraft((had) => ({ ...had, ...change }))} onDrop={dropOne} />
+            ) : (
+              <StorageSettings view={view} draft={draft} report={report} locked={locked} busy={busy}
+                onEdit={(change) => setDraft((had) => ({ ...had, ...change }))} onDrop={dropOne} />
+            )}
+          </div>
         </>
       )}
     </Window>

@@ -6,6 +6,7 @@
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { IconButton } from "./Button";
 import { cx } from "./cx";
 import { Tip } from "./Tip";
 
@@ -36,6 +37,26 @@ export function CopyText({ text, title, className }: { text: string; title?: str
         </button>
       </Tip>
     </span>
+  );
+}
+
+// The button alone, for a row that does not show the text it copies (a folder's path).
+export function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+  const copy = () => {
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => setCopied(true), () => setCopied(copyByField(text)));
+    else setCopied(copyByField(text));
+  };
+  const Icon = copied ? Check : Copy;
+  return (
+    <IconButton small label={copied ? "Copied" : label} tip={copied ? "Copied" : `${label}: ${text}`} onClick={copy}>
+      <Icon aria-hidden className="size-icon-s" />
+    </IconButton>
   );
 }
 

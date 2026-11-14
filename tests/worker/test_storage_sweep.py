@@ -103,6 +103,8 @@ def test_a_sweep_removes_old_folders_and_keeps_the_latest_kept_and_running(worke
     assert fates == {latest.name: "latest", kept.name: "kept", busy.name: "running"}
     assert report["removed"]["count"] == 1 and report["policy"]["unused_days"] == 7
     assert report["disk"]["total"] > 0 and report["disk"]["reserve"] > 0
+    assert report["paths"]["projects"] == str(paths.projects)  # for the dashboard's "copy path"
+    assert report["paths"]["toolchains"] == str(paths.toolchains_dir())
     assert agent._storage_fields() == {"storage": report}  # offered until a reply comes
     agent._take_replies({})
     assert agent._storage_fields() == {}  # sent once

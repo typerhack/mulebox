@@ -63,6 +63,17 @@ SHOTS = [
     Shot("downloads-dark", "#/", height=700, env={**CLEAN, "MULEBOX_MOCK_SCENE": "downloads"},
          script="[...document.querySelectorAll('h1,h2,h3')].find(h => h.textContent.trim() === 'Jobs')"
                 "?.scrollIntoView(); window.scrollBy(0, -88)"),
+    Shot("storage-dark", "#/storage", height=1180, env=CLEAN,
+         script="(async () => { [...document.querySelectorAll('button[aria-expanded]')]"
+                ".find(b => b.textContent.includes('example-app')).click();"
+                " await new Promise(r => setTimeout(r, 300));"
+                " document.querySelector('section[aria-label=Storage]').scrollIntoView(); window.scrollBy(0, -60); })()"),
+    Shot("storage-settings-light", "#/", "light", height=1000, env=CLEAN,
+         script="(async () => { document.querySelector('[aria-label=\"Settings of build-1\"]').click();"
+                " await new Promise(r => setTimeout(r, 1200)); document.getElementById('tab-storage').click(); })()"),
+    Shot("low-space-light", "#/", "light", height=560, env={**CLEAN, "MULEBOX_MOCK_SCENE": "lowspace"}),
+    Shot("storage-review-dark", "#/", env={**CLEAN, "MULEBOX_MOCK_SCENE": "lowspace"},
+         script="[...document.querySelectorAll('button')].find(b => b.textContent === 'Review what goes').click()"),
     Shot("sign-in-light", "page:login.html", "light", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("sign-in-dark", "page:login.html", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("design-system-light", "file:design-system/specimen.html", "light", height=1100, wait=2.0,
