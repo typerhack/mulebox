@@ -64,11 +64,12 @@ export function CpuPanel({ shown, now }: { shown: Shown; now: number }) {
     ? <span className="inline-flex items-center gap-2">{text}<ViewSwitch view={view} set={setView} /></span> : text;
   return (
     <Panel title="CPU" label="CPU" icon={<Cpu aria-hidden className="size-icon" />} note={note}
-      head={<Scope shown={shown} back />} bodyClassName="flex flex-col gap-3">
+      head={<Scope shown={shown} back />} caption={!offline && cores.length ? "Last 5 min, 0 to 100%" : null}
+      bodyClassName="flex flex-col gap-3">
       {offline ? <Quiet>{offline}</Quiet> : cores.length ? (
         <>
           <Graph className="flex-1" points={samples.map((s) => ({ t: s.t, v: average(s.cpu) }))} max={100}
-            windowS={WINDOW_S} format={percent} scale="Last 5 min, 0 to 100%"
+            windowS={WINDOW_S} format={percent}
             label={`Average CPU${machine ? ` of ${machine.name}` : ""}, last 5 minutes: ${overall === null ? "-" : percent(overall)}`} />
           <CpuCores cores={cores} view={view} machine={machine?.name ?? ""} />
         </>
@@ -99,7 +100,8 @@ export function MemoryPanel({ shown, now }: { shown: Shown; now: number }) {
     : pct === null ? "Not available" : `${percent(pct)} used`;
   return (
     <Panel title="Memory" label="Memory" icon={<MemoryStick aria-hidden className="size-icon" />} note={note}
-      head={<Scope shown={shown} />} bodyClassName="flex flex-col gap-2">
+      head={<Scope shown={shown} />} caption={memory && !offline ? "Last 5 min, 0 to total" : null}
+      bodyClassName="flex flex-col gap-2">
       <Meter name="Used" value={offline ? null : pct} text={offline || pct === null ? "n/a" : percent(pct)}
         label={`Memory used: ${note}`} />
       {shown.isHost ? (
@@ -110,7 +112,7 @@ export function MemoryPanel({ shown, now }: { shown: Shown; now: number }) {
       ) : <Fact name="Available">{memory && !offline ? bytes(memory.available) : "n/a"}</Fact>}
       {memory && !offline && (
         <Graph small className="flex-1" points={samples.map((s) => ({ t: s.t, v: s.memory?.used ?? null }))}
-          max={memory.total} windowS={WINDOW_S} format={bytes} scale="Last 5 min, 0 to total"
+          max={memory.total} windowS={WINDOW_S} format={bytes}
           label="Memory used, last 5 minutes" />
       )}
     </Panel>

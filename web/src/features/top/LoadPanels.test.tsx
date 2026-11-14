@@ -36,4 +36,17 @@ describe("the Memory and Disk boxes on the dashboard's machine", () => {
     expect(fact("Swap")).toBe("SwapOff");
     expect(fact("Docker")).toBe("Dockern/a");
   });
+
+  it("say what the chart shows in the title line, not over the chart", () => {
+    render(<MemoryPanel shown={host([sample])} now={2} />);
+    const caption = screen.getByText("Last 5 min, 0 to total");
+    expect(caption.closest("header")).not.toBeNull();
+    expect(caption.closest(".graph")).toBeNull();
+    expect(document.querySelector(".graph")?.textContent).toBe("");
+  });
+
+  it("leave the caption out when there is no chart", () => {
+    render(<MemoryPanel shown={host([{ ...sample, memory: null } as unknown as Sample])} now={2} />);
+    expect(screen.queryByText("Last 5 min, 0 to total")).toBeNull();
+  });
 });

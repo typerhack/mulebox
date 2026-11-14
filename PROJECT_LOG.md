@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.23.3 - 2026-11-14 - patch
+- Dashboard: a chart's caption ("Last 5 min, 0 to 100%", "Last 5 min, 0 to total") no longer lies over the chart, where its box covered the line's top-left corner (the user's ask). It is in the panel's title line: after "Dashboard host" in the CPU box, and in the Memory box on the line of its reading. `Panel` takes a `caption`, `Graph` no longer a `scale`; a panel with no chart (offline, no samples) shows none. Tests in `web/src/features/top/LoadPanels.test.tsx`.
+
 ## 1.23.2 - 2026-11-14 - patch
 - The Machines box marks the machine CPU, Memory and Disk show with its line, the dashboard's own machine too while it is the default, so with several machines it is always clear which one the panels are about (the user's report: the line showed only for a picked node). One machine alone stays unmarked. Test in `web/src/features/top/MachinesBox.test.tsx`.
 

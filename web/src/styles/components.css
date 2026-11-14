@@ -24,7 +24,7 @@
   .track-open { min-width: 0; height: 0; border-top: var(--spacing-hair) dashed var(--border-strong); }
   .on-card { --meter-gap: var(--surface-2); }
 
-  /* Graph: a canvas, its scale note, and the crosshair's tip. */
+  /* Graph: a canvas and the crosshair's tip. Its scale is said in the panel's title line. */
   .graph { position: relative; min-height: var(--spacing-graph); }
   .graph canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
   .graph-small { min-height: var(--spacing-spark); }

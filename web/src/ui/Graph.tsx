@@ -1,5 +1,5 @@
-// The live line graph: a canvas the chart draws on (lib/chart.ts), the note that says its
-// scale, and the tip that follows the pointer. It draws again when a sample comes and when
+// The live line graph: a canvas the chart draws on (lib/chart.ts) and the tip that follows the
+// pointer. Its window and scale are said in the panel's title line (Panel's caption), not over it. It draws again when a sample comes and when
 // the theme or the meter style changes, as its colours are the stylesheet's.
 
 import { useEffect, useRef } from "react";
@@ -14,12 +14,11 @@ interface Props {
   windowS: number;
   format: (value: number) => string;
   label: string;
-  scale: string;
   small?: boolean;
   className?: string;
 }
 
-export function Graph({ points, max, windowS, format, label, scale, small, className }: Props) {
+export function Graph({ points, max, windowS, format, label, small, className }: Props) {
   const canvas = useRef<HTMLCanvasElement>(null), tip = useRef<HTMLDivElement>(null);
   const chart = useRef<LineChart | null>(null);
   const look = useLook();
@@ -40,7 +39,6 @@ export function Graph({ points, max, windowS, format, label, scale, small, class
   return (
     <div className={cx("graph", small && "graph-small", className)}>
       <canvas ref={canvas} role="img" aria-label={label} />
-      <span className="pointer-events-none absolute top-0 left-0 bg-surface-1 pr-1 text-xs leading-none text-ink-2">{scale}</span>
       <div ref={tip} hidden
         className="num pointer-events-none absolute top-0 z-10 rounded-s bg-ink-1 px-2 py-1 text-sm text-surface-0" />
     </div>
