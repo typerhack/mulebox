@@ -126,6 +126,10 @@ class MessageType(StrEnum):
     STATS_OK = "stats_ok"
     NODE_SETTINGS = "node_settings"
     NODE_SETTINGS_OK = "node_settings_ok"
+    PROJECT_ORDER = "project_order"
+    PROJECT_ORDER_OK = "project_order_ok"
+    ORDER_DONE = "order_done"
+    ORDER_DONE_OK = "order_done_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -155,6 +159,8 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
         {"job_id", "attempt_id", "project", "argv", "fingerprint", "base_commit", "timeout_min"}
     ),
     MessageType.CLAIM_NONE: frozenset(),
+    # worker -> coordinator: what a project order (coordinator/project_orders.py) printed.
+    MessageType.ORDER_DONE: frozenset({"order_id"}),
     # worker -> coordinator: the job moved to a new state.
     MessageType.JOB_UPDATE: frozenset({"job_id", "state"}),
     MessageType.LOG_CHUNK: frozenset({"job_id", "offset", "data"}),
@@ -191,6 +197,10 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: pause, resume (projects, minutes) or list (project_pause.py).
     MessageType.PROJECT_PAUSE: frozenset({"action"}),
     MessageType.PROJECT_PAUSE_OK: frozenset({"paused"}),
+    # client -> coordinator: `project reset|clean` on every node, or `group` to read its answers.
+    MessageType.PROJECT_ORDER: frozenset(),
+    MessageType.PROJECT_ORDER_OK: frozenset({"group"}),
+    MessageType.ORDER_DONE_OK: frozenset(),
     # client -> coordinator: `action` get, set (`rules`, a partial change) or reset of the
     # order rules (coordinator/line_rules.py).
     MessageType.QUEUE_RULES: frozenset(),

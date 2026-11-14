@@ -33,6 +33,7 @@ from mulebox.worker import activity, advert, background, job_meter, live_config,
 from mulebox.worker import project_home, reclaim, simulator, toolchains, workspace, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
 from mulebox.worker.agent_skip import Skipping
+from mulebox.worker.orders import Ordering
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -43,15 +44,14 @@ from mulebox.worker.logtail import LogTailer
 from mulebox.worker.paths import NodePaths
 from mulebox.worker.ports import PortPool
 
-LOG = get_logger("worker.agent")
-POLL_S = 0.5
+LOG, POLL_S = get_logger("worker.agent"), 0.5
 FINISHING_POLL_S = 0.05  # an agent is waiting for this result, on nothing but this loop
 LEASE_S = 120.0
 RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
-class Agent(Ending, Skipping):
+class Agent(Ending, Skipping, Ordering):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
                  supervisor: Any = None, docker: Docker | None = None,
@@ -114,11 +114,12 @@ class Agent(Ending, Skipping):
                 self.supervisor.tick(now, self._sender(now))
             except LinkError:
                 pass
-        if self._free_slots() > 0 and self._online(now):
+        if self._online(now) and not self._ordering(now) and self._free_slots() > 0:
             self._claim(now)
 
     def _settings(self, reply: dict[str, Any] | None = None) -> dict[str, Any]:
         """Take a hand edit of node.toml, or a change in a coordinator's `reply`; what to report."""
+        self._take_orders(reply or {})  # project orders come the same way (orders.py)
         if self.live is not None:
             self.node = self.live.follow(self.node, reply) if reply else self.live.check(self.node)
             if hasattr(self.link, "cluster_slots"):

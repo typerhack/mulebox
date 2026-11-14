@@ -44,6 +44,7 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   `jobs.workflow`, a GitHub run's workflow name from its runner's hook, for the order rules.
 - 22 -> 23: `jobs.deferred_at`, when a node first left a job to a better node (node_choice.py),
   so that wait is bounded from then and not from the job's arrival; NULL until then.
+- 23 -> 24: `project_orders`, `project reset` and `clean` for every node (project_orders.py).
 """
 
 import sqlite3
@@ -63,6 +64,19 @@ CREATE TABLE IF NOT EXISTS job_steps (
     bytes_downloaded INTEGER,
     failing_line TEXT,
     PRIMARY KEY (job_id, seq)
+)
+"""
+PROJECT_ORDERS = """
+CREATE TABLE IF NOT EXISTS project_orders (
+    order_id TEXT PRIMARY KEY,
+    grp TEXT NOT NULL,
+    worker TEXT NOT NULL,
+    body TEXT NOT NULL,
+    created_at REAL NOT NULL,
+    taken_at REAL,
+    done_at REAL,
+    exit_code INTEGER,
+    output TEXT
 )
 """
 _STEPS: dict[int, tuple[str, ...]] = {
@@ -108,6 +122,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
          "ALTER TABLE jobs ADD COLUMN pin_order REAL",
          "ALTER TABLE jobs ADD COLUMN workflow TEXT"),
     22: ("ALTER TABLE jobs ADD COLUMN deferred_at REAL",),
+    23: (PROJECT_ORDERS,),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

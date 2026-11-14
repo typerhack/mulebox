@@ -795,8 +795,8 @@ by Sol before the next starts (the user's ask).
       Python 3.13. Done 2026-11-12 (1.13.5): on main it ran on GitHub's macOS machine; two racy
       tests of stopped process groups failed there first (fixed 1.13.3 and 1.13.5), and it has
       passed on every run since.
-Found on the first Mac node (2026-11-13), not fixed yet: `mulebox project reset` and `clean` reach only
-the coordinator's machine, not a project folder on another worker. Fixed 2026-11-14: setup read the
+Found on the first Mac node (2026-11-13): `mulebox project reset` and `clean` reached only the
+coordinator's machine (M25.4). Fixed 2026-11-14: setup read the
 worker's service as `stopped` right after starting it (1.17.21); the worker logged "removed 1
 simulators" (1.17.20); `mulebox projects` took over 3 minutes and counted hard links again (1.17.22).
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
@@ -1017,8 +1017,13 @@ runs a job.
       more room.
 - [x] M25.3 GitHub runs on one node: a runner label of its own in `runs-on:`, written down in
       docs/install.md. 2026-11-14 (1.21.0), docs only: it is how GitHub picks runners already.
-- [ ] M25.4 `mulebox project reset` and `clean` reach a project's folders on every node, not only
-      the coordinator's. Found on the first Mac node, 2026-11-13.
+- [~] M25.4 `mulebox project reset` and `clean` reach a project's folders on every node, not only
+      the coordinator's. Found on the first Mac node, 2026-11-13. Built 2026-11-14 (1.22.0): an
+      order per online node on its claim or heartbeat reply (schema 24), each node's answer
+      printed under its name, `reset --yes` held on every node until all answered, the old path
+      for an older coordinator; tests with the real coordinator, worker and client code.
+      Done when: on the real node, both through orders, a dry run and a real reset of a
+      throwaway project.
 - [ ] M25.5 `cache-cocoapods` keeps CocoaPods' spec index too, not only its downloads: a job's
       `pod install` wrote into the node user's `~/.cocoapods` (seen 2026-11-14).
 

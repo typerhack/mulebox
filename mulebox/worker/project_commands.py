@@ -16,13 +16,9 @@ from typing import Any
 from mulebox.common import units
 from mulebox.common.config import NodeConfig, load_node_config
 from mulebox.common.errors import MuleboxError
-from mulebox.common.ids import new_id
-from mulebox.common.tree_size import size_of
-from mulebox.worker import caches, project_disk, project_home, reclaim
-from mulebox.worker.docker import Docker
+from mulebox.worker import project_disk, project_work
 from mulebox.worker.paths import NodePaths
-
-DEFAULT_DAYS = 14
+from mulebox.worker.project_work import DEFAULT_DAYS
 
 
 def register(sub: argparse._SubParsersAction) -> None:
@@ -69,14 +65,6 @@ def _local(node: NodeConfig) -> tuple[Any, Any]:
     return open_local(node)
 
 
-def _reclaimer(node: NodeConfig, paths: NodePaths) -> project_disk.Reclaim:
-    return lambda tree: reclaim.reclaim_tree(Docker(), paths, tree, new_id("job"), node.name)
-
-
-def _size(path: Any) -> str:
-    return units.size(size_of(path))
-
-
 def _held(store: Any, project: str, work: Any) -> None:
     from mulebox.coordinator import holds
 
@@ -105,44 +93,15 @@ def _clean(args: argparse.Namespace) -> int:
     store, _ = _local(node)
     with store.read() as conn:
         used = projects.branches(conn)
-    cutoff = time.time() - args.days * 86400
-    count = 0
-    for row in project_disk.listing(paths):
-        project = row["project"]
-        names = [tree["folder"] for tree in row["trees"]]
-        for name in project_disk.unused(names, used.get(project, {}), cutoff):
-            count += 1
-            print(f"{project}: {name}, {_size(paths.project_home(project) / 'trees' / name)}")
-            if args.yes:
-                _held(store, project, lambda p=project, n=name: project_disk.remove_worktree(
-                    paths, p, n, _reclaimer(node, paths)))
-    print(f"{'removed' if args.yes else 'would remove'} {count} branch folders; each is set up "
-          "again by its next job")
+    project_work.clean(node, paths, used, args.days, args.yes, print,
+                       hold=lambda project, work: _held(store, project, work))
     return 0
 
 
 def _reset(args: argparse.Namespace) -> int:
     node, paths = _load(args)
     store, staging = _local(node)
-    home = paths.project_home(args.project)
-    target = home / "trees" / project_home.slug(args.branch) if args.branch else home
-    print(f"{target}, {_size(target)}" if target.is_dir() else f"no folder at {target}")
-    if args.caches:
-        print(f"{paths.packages_dir(args.project)}, {_size(paths.packages_dir(args.project))}")
-    if not args.yes:
-        print("nothing removed: add --yes; the next job sets it up again")
-        return 0
-
-    def work() -> None:
-        reclaimer = _reclaimer(node, paths)
-        if args.branch and target.is_dir():
-            project_disk.remove_worktree(paths, args.project, target.name, reclaimer)
-        elif not args.branch:
-            project_disk.remove_project(paths, args.project, reclaimer)
-            staging.remove_base(args.project)
-        if args.caches:
-            caches.clear(paths, args.project, Docker())
-
-    _held(store, args.project, work)
-    print("removed; the next job sets it up again")
+    project_work.reset(node, paths, args.project, args.branch, args.caches, args.yes, print,
+                       after=lambda: staging.remove_base(args.project),
+                       hold=lambda project, work: _held(store, project, work))
     return 0

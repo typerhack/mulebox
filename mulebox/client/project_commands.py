@@ -7,8 +7,10 @@
     mulebox project paused
     mulebox project priority <project> [LEVEL]   its level in the line (order_commands.py)
 
-Clean and reset are `mulebox project-home` on the machine (worker/project_commands.py); without
-`--yes` they only say what would go. Pause, resume and paused are coordinator requests
+Clean and reset reach every online node: the coordinator hands each an order and the client
+prints every node's answer (coordinator/project_orders.py, M25.4); a coordinator older than
+that gets the old `mulebox project-home` on its own machine. Without `--yes` they only say what
+would go. Pause, resume and paused are coordinator requests
 (coordinator/project_pause.py): a paused project's jobs wait and keep their place, the rest of
 the queue goes on, and a pause ends by itself after its minutes.
 """
@@ -21,7 +23,7 @@ import time
 
 from mulebox.client import order_commands
 from mulebox.client.commands import connect, guarded
-from mulebox.client.remote import request
+from mulebox.client.remote import CoordinatorError, request
 from mulebox.common.protocol import MessageType
 
 
@@ -50,21 +52,65 @@ def register(sub: argparse._SubParsersAction) -> None:
     order_commands.add_priority(actions)
 
 
+POLL_S = 1.0
+
+
 def _on_machine(*argv: str) -> int:
     result = connect().project_home(*argv)
     sys.stdout.write(result.stdout.decode("utf-8", errors="replace"))
     return 0
 
 
+def _on_every_node(body: dict, *fallback: str) -> int:
+    """Send the order to every node and print each answer; the old path on an old coordinator."""
+    remote = connect()
+    try:
+        reply = remote.call(request(MessageType.PROJECT_ORDER, **body)).body
+    except CoordinatorError as exc:
+        if "project_order" not in str(exc):
+            raise
+        print("mulebox: the coordinator is older than 1.22.0; only its own machine is reached",
+              file=sys.stderr)
+        return _on_machine(*fallback)
+    group = reply["group"]
+    for node in reply.get("offline") or ():
+        print(f"{node}: not reached, it is offline; its folders stay")
+    if not reply.get("nodes"):
+        print("mulebox: no node is online, so nothing was looked at", file=sys.stderr)
+        return 1
+    while not reply.get("done"):
+        time.sleep(POLL_S)
+        reply = remote.call(request(MessageType.PROJECT_ORDER, group=group)).body
+    return show(reply)
+
+
+def show(group: dict) -> int:
+    """Each node's answer; non-zero when one failed or did not answer."""
+    code = 0
+    for answer in group.get("answers") or ():
+        if answer.get("lost"):
+            print(f"{answer['node']}: did not answer; it may run a mulebox older than 1.22.0")
+            code = 1
+            continue
+        print(f"{answer['node']}:")
+        for line in (answer.get("output") or "").splitlines():
+            print(f"  {line}")
+        code = code or (1 if answer.get("exit_code") else 0)
+    return code
+
+
 def _clean(args: argparse.Namespace) -> int:
     yes = ("--yes",) if args.yes else ()
-    return _on_machine("clean", "--days", str(args.days), *yes)
+    return _on_every_node({"action": "clean", "days": args.days, "yes": args.yes},
+                          "clean", "--days", str(args.days), *yes)
 
 
 def _reset(args: argparse.Namespace) -> int:
     extra = [*(("--branch", args.branch) if args.branch else ()),
              *(("--caches",) if args.caches else ()), *(("--yes",) if args.yes else ())]
-    return _on_machine("reset", args.project, *extra)
+    body = {"action": "reset", "project": args.project, "caches": args.caches, "yes": args.yes,
+            **({"branch": args.branch} if args.branch else {})}
+    return _on_every_node(body, "reset", args.project, *extra)
 
 
 def _pause(args: argparse.Namespace) -> int:

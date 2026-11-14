@@ -446,11 +446,21 @@ it can be made again by a job, so removing it costs time, not data.
 - `mulebox project reset <project>` removes the whole folder and the project's last snapshot, or
   one branch's with `--branch`, and the package caches with `--caches`. Use it when a job only
   fails or only passes because of what an earlier job left in an ignored folder.
-- Both only list what would go until `--yes`. A project with a job on a machine is refused. While
-  a folder goes the project is held (`coordinator/holds.py`, a row in `meta` that `claim` reads in
-  its own transaction), so no job can start in it; a hold ends by itself after 15 minutes.
-- They run on the coordinator's machine. Another worker's project folders are its own, and these
-  commands do not reach them yet (M5.2).
+- Both only list what would go until `--yes`, and both reach every online node: the dev machine
+  asks the coordinator (`project_order`), which keeps one order per online node
+  (`coordinator/project_orders.py`, table `project_orders`, schema 24). Each worker gets its
+  orders with its next claim or heartbeat reply, runs them in a thread of its own
+  (`worker/orders.py`, the removal itself in `worker/project_work.py`) and answers `order_done`
+  with what it printed; the dev machine prints each node's answer under its name. A node that
+  is offline is named and keeps its folders; one that gave no answer in 5 minutes counts as
+  lost (it may run a mulebox older than 1.22.0), and the command then exits 1. A coordinator
+  older than 1.22.0 does not know the request, and the old path runs on its own machine only.
+- `reset --yes` holds the project (`coordinator/holds.py`, a row in `meta` that `claim` reads in
+  its own transaction) on every node until each answered: refused while one of its jobs runs
+  anywhere, and no job of it starts meanwhile; a hold ends by itself after 15 minutes. With the
+  last answer the coordinator's last snapshot of the project goes too.
+- `clean` takes no hold: a node skips the branch folders it runs a job in now, and claims no
+  job while an order runs. The branch history it needs goes in the order.
 
 ## Package caches
 

@@ -333,7 +333,7 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   `--behind` the jobs already waiting, then installs and the line goes on. `--when-idle` waits for
   running jobs; a running job is never cut short unless you say `--now`.
 - **Clean up**: `mulebox projects` shows each project's folder and size; `project clean` removes old
-  branch folders, `project reset` a whole project. The node warns when its disk runs low.
+  branch folders, `project reset` a whole project, on every node. A node warns when its disk runs low.
 
 ### The dashboard
 
@@ -416,7 +416,7 @@ command prints. The ones you and your agents use:
 | `mulebox queue rules` | show or set the rules for the order of the line |
 | `mulebox project pause`, `resume`, `paused` | hold all of a project's jobs and CI runs for a while |
 | `mulebox project priority <project> [level]` | a project's level in line: low, normal, high |
-| `mulebox project clean`, `reset` | remove old branch folders, or a project's whole folder, on the node |
+| `mulebox project clean`, `reset` | remove old branch folders, or a project's whole folder, on every node |
 
 **Machines and setup**:
 

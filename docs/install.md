@@ -539,7 +539,9 @@ Moving the coordinator to another machine is done by hand, as it holds the queue
 Each machine's CPU and memory show on the dashboard and in `mulebox machine list`, as its worker
 reports them. `machine list` also shows each machine's network in and out, over its physical
 interfaces only (Wi-Fi, Ethernet): a VPN tunnel's traffic also crosses Wi-Fi, and a container's
-crosses a bridge, so counting those would count the same bytes twice. Not yet: `mulebox project clean` or `reset` on another worker's folders.
+crosses a bridge, so counting those would count the same bytes twice.
+`mulebox project clean` and `reset` reach every online node's folders, each node's answer under
+its name (design.md, Project folders).
 
 ### Settings from the dev machine
 
