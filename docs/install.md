@@ -376,6 +376,25 @@ never put on a command line or in a log. On Linux `roots.runners` must stay `~/.
 (the unit template runs runners from there). In workflows, use
 `runs-on: [self-hosted, mulebox]`.
 
+**Which node runs a CI job.** GitHub picks the runner, by the labels in `runs-on:`; mulebox then
+holds a slot on that runner's node, in the same line as agent jobs. With a runner on several
+nodes and the same labels, any of them may take a run. To send a workflow or a job to one node,
+give that node's runner a label of its own and name it:
+
+```sh
+# on build-2 itself (`register` reaches the coordinator's node only)
+gh api -X POST repos/example-org/example-app/actions/runners/registration-token --jq .token \
+  | ~/.mulebox/bin/mulebox runner add --repo example-org/example-app --labels mulebox,build-2
+```
+
+```yaml
+jobs:
+  e2e:
+    runs-on: [self-hosted, mulebox, build-2]   # this node only
+  unit:
+    runs-on: [self-hosted, mulebox]            # any node with a runner
+```
+
 **One cache for the gate and CI.** A project's mulebox jobs download through its package caches;
 a runner downloads through its own, so a package the gate already has can still fail to download
 in CI. On the node, point a runner at the project's caches (the name in `.mulebox.yml`):

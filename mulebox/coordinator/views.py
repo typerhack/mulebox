@@ -31,6 +31,8 @@ def job_dict(job: dict[str, Any], position: int | None = None,
     data.update(controls(job))
     if job.get("ci_result"):  # how a GitHub job went, as its runner said (runners/diary.py)
         data["ci_result"] = job["ci_result"]
+    if job.get("kind") == "job" and job.get("pinned_worker"):
+        data["on"] = job["pinned_worker"]  # sent with `--on`: that node only
     return data
 
 
@@ -64,7 +66,10 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -
     if (upgrade := upgrades.ahead_of(conn, job, now, order)) is not None:
         return (f"an upgrade of {upgrade['pinned_worker']} to {upgrade['branch']} is ahead of it "
                 f"({upgrade['job_id']})")
-    return needs.waiting_for(workers.listing(conn), job["needs"], now)
+    reason = needs.waiting_for(needs.fleet_for(workers.listing(conn), job), job["needs"], now)
+    if reason is None and job["pinned_worker"]:
+        return f"sent with --on {job['pinned_worker']}: it waits for that node alone"
+    return reason
 
 
 def running_ahead(conn: Any, job: dict[str, Any]) -> dict[str, Any]:
@@ -94,6 +99,7 @@ def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> d
     """
     if job["kind"] != "job" or job["state"] not in (JobState.QUEUED, JobState.UPLOADING):
         return {}
+    fleet = needs.fleet_for(fleet, job)
     out: dict[str, Any] = {"needs": job["needs"],
                            "can_run_on": [w["worker"] for w in needs.capable(fleet, job["needs"])]}
     reason = needs.waiting_for(fleet, job["needs"], now) if job["state"] == JobState.QUEUED else None

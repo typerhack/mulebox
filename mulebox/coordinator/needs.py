@@ -103,3 +103,20 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | No
                 f"`mulebox machine resume <name>` lets one take it")
     names = ", ".join(w["worker"] for w in fitting)
     return f"no node for this job is online (offline: {names})"
+
+
+def fleet_for(workers: list[Worker], job: dict[str, Any]) -> list[Worker]:
+    """The workers a job may go to: with `--on` (`pinned_worker`), that one only."""
+    pinned = job.get("pinned_worker") if job.get("kind", "job") == "job" else None
+    return [w for w in workers if w["worker"] == pinned] if pinned else workers
+
+
+def on_refusal(workers: list[Worker], name: str, needs: list[str]) -> str | None:
+    """Why a job sent `--on <name>` must not be queued, or None: a node nobody knows, or one
+    that does not offer what the job needs."""
+    named = [w for w in workers if w["worker"] == name]
+    if not named:
+        known = ", ".join(sorted(w["worker"] for w in workers)) or "none yet"
+        return (f"no node is named {name} (nodes: {known}); `mulebox machine list` shows "
+                "their names")
+    return refusal(named, needs)

@@ -595,8 +595,8 @@ heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no p
 ## Multiple machines
 
 - Workers declare capabilities (`slots`, `docker`, `arch`, toolchains) and claim the
-  first compatible job in line (Order of the line), in the order of their priority (Node
-  settings, below). No speed scores or weights yet.
+  first compatible job in line (Order of the line). Which free node takes a job is below,
+  Which node runs a job. No speed scores or weights yet.
 - A job whose `needs` no known worker offers is refused at submit, with what to change. A
   queued job whose capable workers are all offline stays queued and says so.
 - Add a machine: `mulebox setup <worker> --worker-of <coordinator>` (docs/install.md, More
@@ -612,6 +612,37 @@ heartbeats that already go (every 3 s for an agent job, 10 s for a CI run): no p
   it is online or has jobs, as its next claim would bring it back. A drain leaves its GitHub
   runners alone: GitHub hands them jobs, and a reservation refused would leave a CI run hanging.
   Moving the coordinator is a documented manual step (docs/install.md).
+
+### Which node runs a job (the user's ask, 2026-11-14)
+
+Nodes ask for work and the coordinator never assigns it, so the project never chooses a node
+and nothing has to know which nodes are idle: a free node asks within seconds. When a node asks,
+it gets the first job in line it can run (needs, a free slot, its branch not busy), unless
+another node that is free right now should have it (`coordinator/node_choice.py`):
+
+1. **Priority** (M23.4, Node settings): a node ranked above that offers the job's needs, for
+   `GRACE_S` (30 s).
+2. **The branch's node:** on the same level, the node that ran the branch's last job, for
+   `HOLD_S` (10 s). Its project folder already holds the branch and its set-up dependencies
+   (Project folders), so a job there sends only what changed and skips `setup`; on another node
+   the branch starts from nothing. Read from the job history, no new state.
+3. **Room:** else, on the same level, a node with more free slots than the asking one, for
+   `HOLD_S`. A tie takes the job at once. Free slots, not CPU readings: a slot is what a node
+   promises a job, and a reading moves with every job's own phases.
+
+Each wait counts from the first time a node left the job (`jobs.deferred_at`, schema 23), not
+from its arrival as before 1.21.0, so a job that waited behind a busy line still gets its
+preferred node, and a node that can never take it (an upgrade ahead of it, a GitHub slot) holds
+it up at most that long. The waits are short as the preferred node is free and asks every few
+seconds.
+
+**`--on <node>`** (`check`, `run`, `warm`): the job is for that node alone, in `pinned_worker`
+as a runner slot is, so none of the above applies and no other node takes it, however long it
+waits. Refused at submit for a name no node has or a node without the job's needs. A result
+counts as already tested (Results an agent need not repeat) only if it ran on that node. The
+coordinator echoes `on`, and a client whose coordinator does not cancels the job, as one older
+than this would run it anywhere. GitHub runs choose their node through their runner's labels
+(docs/install.md, Which node runs a CI job).
 
 ## Node settings (M23.9, M23.4, the user's ask, 2026-11-13)
 
@@ -660,8 +691,9 @@ restart.
   whoever claims first. The rule is per job, so a job only the lower node can run is not held
   back. A job left waiting 30 s in spite of a free better node (one that cannot claim it for a
   reason of its own, such as an upgrade or a GitHub slot ahead of it on that node) goes to the
-  next node, so a ranked node can never leave a job stranded. Runner reservations are pinned to
-  their machine and do not use it.
+  next node, so a ranked node can never leave a job stranded; the 30 s count from the first time
+  it was left (Which node runs a job, above). Runner reservations are pinned to their machine
+  and do not use it.
 
 ## GitHub Actions
 

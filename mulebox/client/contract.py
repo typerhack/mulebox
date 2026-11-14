@@ -46,6 +46,7 @@ COMMANDS = {
     "one_off_bare": "mulebox run --bare -- <cmd> <args...>",
     "bring_files_back": "mulebox run --take <path> -- <cmd> <args...>",
     "leave_running": "mulebox check --detach",
+    "on_one_node": "mulebox check --on <node>",
     "prepare_ahead": "mulebox warm [job]",
     "follow_it": "mulebox events --job <job-id> --json",
     "its_state": "mulebox status <job-id>",

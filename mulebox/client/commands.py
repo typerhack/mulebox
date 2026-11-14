@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.client import (attention, contract, github_status, queue_view, report,
-                            skill_install, summary, take_back, tui)
+                            skill_install, take_back, tui)
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -52,6 +52,7 @@ def register(sub: argparse._SubParsersAction) -> None:
                        help="print the job id once it is queued and leave it running")
     check.add_argument("--again", action="store_true",
                        help="run even if these exact files were already tested")
+    _on(check)
     check.set_defaults(func=guarded(_check))
 
     warm = sub.add_parser("warm", help="prepare a job ahead of time: toolchains, images, caches, "
@@ -59,6 +60,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     warm.add_argument("job", nargs="?", default="check", help="job name (default: check)")
     warm.add_argument("--detach", action="store_true",
                       help="print the job id once it is queued and leave it running")
+    _on(warm)
     warm.set_defaults(func=guarded(_warm, notices=True))
 
     run = sub.add_parser("run", help="run an ad-hoc command on a node")
@@ -71,6 +73,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     run.add_argument("--take", action="append", default=[], metavar="PATH",
                      help="once the command passed, copy this file back into the project "
                           "(repeat for more), e.g. --take api/composer.lock")
+    _on(run)
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -82,13 +85,6 @@ def register(sub: argparse._SubParsersAction) -> None:
     known.add_argument("--json", action="store_true", help="stable keys for tools")
     known.set_defaults(func=guarded(_projects, notices=True))
 
-    logs = sub.add_parser("logs", help="show a job's log")
-    logs.add_argument("job_id")
-    logs.add_argument("-f", "--follow", action="store_true", help="follow until it finishes")
-    logs.add_argument("--summary", action="store_true",
-                      help="only why it failed: stage, exit code, last relevant lines")
-    logs.set_defaults(func=guarded(_logs, notices=True))
-
     cancel = sub.add_parser("cancel", help="cancel a job")
     cancel.add_argument("job_id")
     cancel.set_defaults(func=guarded(_cancel, notices=True))
@@ -97,6 +93,11 @@ def register(sub: argparse._SubParsersAction) -> None:
                            "mulebox, for agents")
     terms.add_argument("--json", action="store_true", help="stable keys for tools")
     terms.set_defaults(func=guarded(_contract))
+
+
+def _on(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--on", metavar="NODE",
+                        help="run it on this node only, as `mulebox machine list` names it")
 
 
 def guarded(handler: Handler, notices: bool = False) -> Handler:
@@ -166,12 +167,13 @@ def _check(args: argparse.Namespace) -> int:
     project, root = _named_job(args.job)
     return github_status.around(
         project, root, args.job, args.detach, sys.stderr,
-        lambda: run_job(project, args.job, root, connect(), detach=args.detach, again=args.again))
+        lambda: run_job(project, args.job, root, connect(), detach=args.detach, again=args.again,
+                        on=args.on))
 
 
 def _warm(args: argparse.Namespace) -> int:
     project, root = _named_job(args.job)
-    return run_job(project, args.job, root, connect(), detach=args.detach, warm=True)
+    return run_job(project, args.job, root, connect(), detach=args.detach, warm=True, on=args.on)
 
 
 def _run(args: argparse.Namespace) -> int:
@@ -194,7 +196,7 @@ def _run(args: argparse.Namespace) -> int:
     except ValueError as exc:
         raise UsageError(str(exc)) from None
     return run_job(project, argv, root, connect(), detach=args.detach,
-                   options=BARE if args.bare else None, take=take)
+                   options=BARE if args.bare else None, take=take, on=args.on)
 
 
 def _queue(args: argparse.Namespace) -> int:
@@ -237,64 +239,6 @@ def _projects(args: argparse.Namespace) -> int:
         sys.stdout.write(json.dumps(rows, indent=2) + "\n")
     else:
         sys.stdout.write("\n".join(queue_view.render_projects(rows)) + "\n")
-    return 0
-
-
-def _logs(args: argparse.Namespace) -> int:
-    remote = connect()
-    watcher = Watcher(remote, Streams())
-    watcher.job_id = args.job_id
-    if args.summary:
-        return _log_summary(remote, args.job_id)
-    if args.follow:
-        result = watcher.attach()
-        note_expired_log(watcher)
-        watcher.finish(result)
-        return report.exit_code_for(result)
-    _read_log(remote, args.job_id, 0, watcher.write_log)
-    note_expired_log(watcher)
-    return 0
-
-
-def note_expired_log(watcher: Watcher) -> None:
-    """A log that printed nothing may be gone rather than empty. Only a remark: losing the
-    connection here must not cost `wait` the job's exit code."""
-    if watcher.offset:
-        return
-    try:
-        body = watcher.remote.call(request(MessageType.STATUS, job_id=watcher.job_id)).body
-    except (MuleboxError, OSError):
-        return
-    if report.log_expired(body):
-        report.status(watcher.io.err, report.expired_line(watcher.job_id))
-
-
-def _read_log(remote: Remote, job_id: str, offset: int, sink: Callable[[dict], None]) -> None:
-    while True:
-        reply = remote.call(request(MessageType.LOGS, job_id=job_id, offset=offset))
-        sink(reply.body)
-        next_offset = reply.body.get("next_offset", offset)
-        if reply.body.get("eof", True) or next_offset == offset:
-            return
-        offset = next_offset
-
-
-def _log_summary(remote: Remote, job_id: str) -> int:
-    body = remote.call(request(MessageType.STATUS, job_id=job_id)).body
-    state = body.get("state")
-    if state != "finished":
-        print(f"job {job_id} is {state}; a summary needs it to end")
-    elif not summary.wanted(body):
-        print(report.outcome_line(job_id, body))
-    else:
-        tail = summary.LogTail()
-        size = body.get("log_size")
-        start = max(0, size - summary.TAIL_BYTES) if isinstance(size, int) else 0
-        tail.cut = start > 0
-        _read_log(remote, job_id, start, lambda chunk: tail.feed(chunk.get("data") or ""))
-        if not tail.text and report.log_expired(body):
-            report.status(sys.stderr, report.expired_line(job_id))
-        print("\n".join(summary.render(job_id, body, summary.relevant_lines(tail))))
     return 0
 
 

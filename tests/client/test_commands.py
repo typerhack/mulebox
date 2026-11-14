@@ -63,6 +63,20 @@ def test_detach_on_a_coordinator_too_old_for_it_cancels_and_fails(fake, in_repo,
     assert [r["type"] for r in fake.requests()] == ["submit", "cancel"]
 
 
+def test_on_sends_the_node_and_runs_as_usual(fake, in_repo, capsys):
+    fake.scenario(log=["ok\n"])
+    assert cli.main(["check", "--on", "build-2"]) == 0
+    assert fake.requests()[0]["body"]["on"] == "build-2"
+
+
+def test_on_with_a_coordinator_too_old_for_it_cancels_and_fails(fake, in_repo, capsys):
+    """It would ignore the field and run the job on any node."""
+    fake.scenario(no_on_echo=True)
+    assert cli.main(["run", "--on", "build-2", "--", "true"]) == 4
+    assert "too old for --on" in capsys.readouterr().err
+    assert [r["type"] for r in fake.requests()] == ["submit", "cancel"]
+
+
 def test_a_stream_cut_mid_line_reconnects(fake, in_repo, capsys, monkeypatch):
     from mulebox.client import submit
 

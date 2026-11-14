@@ -9,8 +9,7 @@ writes it and reports, and what it reports clears the values it now has (`settle
 - `node_settings` request: `worker`, and `slots`, `priority` or `cancel: true` (drop what waits);
   with none of them it only reads. Refused for a worker that never reported settings (a mulebox
   older than this), so a change is not left waiting for good. Replied `node_settings_ok`, `view`.
-- Priority (`held_back`): a node does not take a job that a node ranked above it could take now;
-  a job that waited `GRACE_S` in spite of that goes to whoever claims it.
+- Priority in claims: node_choice.py.
 """
 
 from __future__ import annotations
@@ -27,7 +26,6 @@ from mulebox.coordinator.context import Request
 from mulebox.coordinator.errors import BadRequest, Conflict, NotFound
 from mulebox.coordinator.store import ACTIVE_STATES
 
-GRACE_S = 30.0
 MAX_ERROR = 500
 MAX_REPORTED = 4096  # slots a report may say, past the 64 a request may ask
 _ACTIVE = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
@@ -139,33 +137,3 @@ def _require(conn: sqlite3.Connection, name: str) -> dict[str, Any]:
     if found is None:
         raise NotFound(f"no machine {name!r}; `mulebox machine list` shows them")
     return found
-
-
-def better_free(conn: sqlite3.Connection, worker: str, now: float,
-                priority: str | None = None) -> list[set[str]]:
-    """What each node ranked above `worker` (at `priority`, as its claim says, else as stored)
-    offers, of those that could take a job now: online, not paused, running no boosted job,
-    with a free slot. Empty for a node at the top."""
-    rows = workers.listing(conn)
-    if priority is None:
-        priority = next(((r.get("settings") or {}).get("priority") for r in rows
-                         if r["worker"] == worker), None)
-    mine = ns.rank(priority)
-    found = []
-    for row in rows:
-        if (row["worker"] == worker or ns.rank((row.get("settings") or {}).get("priority")) <= mine
-                or not workers.is_online(row, now) or row.get("draining")):
-            continue
-        busy = conn.execute(f"SELECT COUNT(*), MAX(boost) FROM jobs WHERE {_ACTIVE} AND worker = ?",
-                            (row["worker"],)).fetchone()
-        if not busy[1] and (row["slots"] or 0) - busy[0] > 0:
-            found.append(set(row["capabilities"]))
-    return found
-
-
-def held_back(job: dict[str, Any], better: list[set[str]], now: float) -> bool:
-    """Whether `job` waits for a better node in `better` (better_free) rather than this one."""
-    if not better or now - (job.get("queued_at") or now) >= GRACE_S:
-        return False
-    needs = set(job["needs"])
-    return any(needs <= offers for offers in better)

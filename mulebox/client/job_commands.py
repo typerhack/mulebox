@@ -14,7 +14,8 @@ import time
 from typing import Any
 
 from mulebox.client import attention, events, report
-from mulebox.client.commands import connect, guarded, note_expired_log, project_here
+from mulebox.client.commands import connect, guarded, project_here
+from mulebox.client.log_commands import note_expired_log
 from mulebox.client.remote import request
 from mulebox.client.submit import Streams, Watcher, stale_check
 from mulebox.common import status

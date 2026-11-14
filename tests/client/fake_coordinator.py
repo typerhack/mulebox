@@ -84,6 +84,8 @@ def main():
     if kind == "submit":
         echo = {} if scenario.get("no_detached_echo") else {
             "detached": body.get("detached", False)}
+        if body.get("on") and not scenario.get("no_on_echo"):
+            echo["on"] = body["on"]
         send("submit_ok", rid, job_id="job-01JC3X0000000000000000ABCD",
              state=scenario.get("submit_state", "uploading"), **echo)
     elif kind == "watch":

@@ -53,6 +53,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | the project's full gate | `mulebox check` |
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
 | leave a long job running and go on working | `mulebox check [job] --detach`, also `mulebox run --detach -- <cmd...>` |
+| run it on one node only, such as to see it pass there | `mulebox check [job] --on <node>`, also `run` and `warm`; names from `mulebox machine list` |
 | follow a job without its log | `mulebox events --job <job-id> --json` |
 | see one job's state once | `mulebox status <job-id>` (add `--json`) |
 | get a detached job's result | `mulebox wait <job-id>` |
@@ -96,6 +97,13 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 124 | the job hit a hard `timeout_min`, which only a node older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
 | 130 | cancelled | - |
 
+- **Where a job runs.** Nodes take jobs from the line by themselves: one that offers what the
+  job needs and has a free slot, the better-ranked first (`priority` in node.toml), then the node
+  that ran the branch's last job, as it has the project's folder and dependencies set up, then
+  the one with more free slots; each waits for that one a few seconds at most. To see a job pass
+  on one node, `--on <node>` (`check`, `run`, `warm`) sends it there alone: it waits for that
+  node, is refused at once if no node has that name or it lacks what the job needs (exit 4), and
+  only a result from that node counts as already tested.
 - **Long jobs run detached.** `mulebox check --detach` uploads the snapshot, prints the job
   id on stdout and exits; the upload has to finish first, the queueing does not. No job depends
   on your session: one whose client went away, attached or not, runs to its end, and its result

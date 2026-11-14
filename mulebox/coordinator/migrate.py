@@ -42,6 +42,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 21 -> 22: `jobs.pin_side`, `jobs.pin_job` and `jobs.pin_order`: a job moved by hand, at the
   front or just ahead of or behind another job's place (line.py), NULL for the others; and
   `jobs.workflow`, a GitHub run's workflow name from its runner's hook, for the order rules.
+- 22 -> 23: `jobs.deferred_at`, when a node first left a job to a better node (node_choice.py),
+  so that wait is bounded from then and not from the job's arrival; NULL until then.
 """
 
 import sqlite3
@@ -105,6 +107,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
          "ALTER TABLE jobs ADD COLUMN pin_job TEXT",
          "ALTER TABLE jobs ADD COLUMN pin_order REAL",
          "ALTER TABLE jobs ADD COLUMN workflow TEXT"),
+    22: ("ALTER TABLE jobs ADD COLUMN deferred_at REAL",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

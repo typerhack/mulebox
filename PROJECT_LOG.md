@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.21.0 - 2026-11-14 - minor
+- `--on <node>` for `check`, `run` and `warm` (the user's ask): the job goes to that node alone, kept in `jobs.pinned_worker` as a runner slot is. Refused at submit for a node no one knows (the message lists the nodes) or one without the job's needs; only a result from that node counts as already tested; `status` and `queue` say it waits for that node; the coordinator echoes `on`, and a client whose coordinator does not cancels the job (`client/submit.py`, `coordinator/api.py`, `needs.py`, `reuse.py`, `views.py`).
+- Which free node takes a job (`coordinator/node_choice.py`, design.md, Which node runs a job): after priority, the node that ran the branch's last job goes first, as it holds the branch's folder and set-up dependencies, then the node with more free slots; each waits 10 s at most. Every wait, priority's 30 s too, now counts from the first time a node left the job (`jobs.deferred_at`, schema 23), not from its arrival, so a job that waited behind a busy line still gets its preferred node. The priority code moved here from `node_settings.py`.
+- GitHub runs on one node: a runner label of its own in `runs-on:` (docs/install.md). `mulebox logs` moved to `client/log_commands.py`, as `client/commands.py` was past 300 lines.
+- Tests in `tests/coordinator/test_node_choice.py`, `tests/client/test_commands.py`, `tests/coordinator/test_node_settings.py`, `tests/coordinator/test_migration.py`; docs/agents.md, the contract (`on_one_node`).
+
 ## 1.20.4 - 2026-11-14 - patch
 - Roadmap: done M21.4 (a runner on the Mac node took a real CI run through a mulebox slot), M22.3 (`cache-cocoapods` filled and reused) and M22.4 (`mulebox init` on an Xcode project, run unedited in the job's own simulator). Docs only.
 

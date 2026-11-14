@@ -78,8 +78,9 @@ def run_job(
     warm: bool = False,
     options: JobOptions | None = None,
     take: tuple[str, ...] = (),
+    on: str | None = None,
 ) -> int:
-    """Run a job on the nodes as if it ran here; return its exit code.
+    """Run a job on the nodes as if it ran here; return its exit code. `on`: that node only.
 
     With `detach`, return 0 once the job is queued, with its id on stdout. With `warm`, `target`
     runs only up to its command: toolchains, images, `install` and `setup`."""
@@ -100,9 +101,12 @@ def run_job(
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {units.size(snap.size)}")
         body = submit_body(project, job, argv, snap, detach,
-                           reuse=isinstance(target, str) and not (again or warm), take=take)
+                           reuse=isinstance(target, str) and not (again or warm), take=take,
+                           on=on)
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
+        if on and reply.body.get("on") != on:
+            _too_old(remote, watcher.job_id, "--on")
         already = reply.body.get("already")
         if not isinstance(already, dict):
             report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")
@@ -118,7 +122,7 @@ def run_job(
                     return 0
                 return report.exit_code_for(already)
         if detach and reply.body.get("detached") is not True:
-            _refuse_detach(remote, watcher.job_id)
+            _too_old(remote, watcher.job_id, "--detach")
         if reply.body.get("state") == "uploading":
             if not delta.send(remote, watcher.job_id, snap, lambda m: report.status(io.err, m)):
                 remote.upload(watcher.job_id, snap.path, snap.sha256)
@@ -147,10 +151,11 @@ def left_out(names: Sequence[str]) -> str:
             "entry that gives that port; only a command that needs that address would notice")
 
 
-def _refuse_detach(remote: RemoteLike, job_id: str) -> None:
+def _too_old(remote: RemoteLike, job_id: str, flag: str) -> None:
+    """A coordinator that did not echo `flag` ignored it: the job must not run without it."""
     remote.call(request(MessageType.CANCEL, job_id=job_id))
-    raise CoordinatorError("the node's mulebox is too old for --detach, so the job "
-                           "was cancelled. Upgrade it (docs/install.md), or run without --detach.")
+    raise CoordinatorError(f"the node's mulebox is too old for {flag}, so the job "
+                           f"was cancelled. Upgrade it (docs/install.md), or run without {flag}.")
 
 
 def _left_running(job_id: str, io: Streams) -> None:

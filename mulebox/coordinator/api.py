@@ -103,6 +103,7 @@ def submit(req: Request) -> Message:
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
         "detached": v.flag(body, "detached"),
         "take": _take(body),
+        "pinned_worker": v.text(body, "on", None),  # `--on <node>`: that node only
     }
     said = clients.fields(body)
     with req.store.write() as conn:
@@ -113,7 +114,9 @@ def submit(req: Request) -> Message:
         if same is not None:
             return _already(req, conn, same, fields)
         if job is None:
-            refused = needs.refusal(workers.listing(conn), fields["needs"])
+            fleet, on = workers.listing(conn), fields["pinned_worker"]
+            refused = (needs.on_refusal(fleet, on, fields["needs"]) if on
+                       else needs.refusal(fleet, fields["needs"]))
             if refused:
                 raise NoWorker(refused)
             job = st.insert_job(conn, {
@@ -125,6 +128,8 @@ def submit(req: Request) -> Message:
     # know the flag would cancel 5 minutes later.
     return req.reply(MessageType.SUBMIT_OK, {"job_id": job["job_id"], "state": job["state"],
                                              "detached": job["detached"], **news,
+                                             **({"on": job["pinned_worker"]}
+                                                if job["pinned_worker"] else {}),
                                              "dashboard": req.dashboard})
 
 
@@ -133,6 +138,7 @@ def _already(req: Request, conn: Any, job: dict[str, Any], fields: dict[str, Any
     reuse.told(conn, [job] if job["state"] == JobState.FINISHED else [], req.now)
     return req.reply(MessageType.SUBMIT_OK, {
         "job_id": job["job_id"], "state": job["state"], "detached": fields["detached"],
+        **({"on": fields["pinned_worker"]} if fields["pinned_worker"] else {}),
         "already": result_body(job), **_news(conn, fields["project"], req.now),
         "dashboard": req.dashboard})
 

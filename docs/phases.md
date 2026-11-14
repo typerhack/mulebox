@@ -1003,6 +1003,25 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
 
+## M25: Several nodes (the user's ask, 2026-11-14)
+How work spreads over several nodes, and what reaches each of them. Design: design.md, Which node
+runs a job.
+- [~] M25.1 `--on <node>` for `check`, `run` and `warm`: that node alone, refused at once for an
+      unknown node or one without the job's needs, a result counts only from that node, and a
+      coordinator too old to keep it cancels the job. Built 2026-11-14 (1.21.0), with tests. Done
+      when: a real job sent `--on` the Mac waits for it with the Linux node free, and runs there.
+- [~] M25.2 Of free nodes on one level, the branch's node goes first, then the one with more free
+      slots, 10 s at most; every wait, priority's too, counts from the first time a node left the
+      job (schema 23). Built 2026-11-14 (1.21.0), with tests. Done when: on two real nodes, a
+      branch's next job goes back to the node that ran it, and with no such node to the one with
+      more room.
+- [x] M25.3 GitHub runs on one node: a runner label of its own in `runs-on:`, written down in
+      docs/install.md. 2026-11-14 (1.21.0), docs only: it is how GitHub picks runners already.
+- [ ] M25.4 `mulebox project reset` and `clean` reach a project's folders on every node, not only
+      the coordinator's. Found on the first Mac node, 2026-11-13.
+- [ ] M25.5 `cache-cocoapods` keeps CocoaPods' spec index too, not only its downloads: a job's
+      `pod install` wrote into the node user's `~/.cocoapods` (seen 2026-11-14).
+
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:
   - Signed results (macserve): a signed record of commit, files, toolchain, exit code and test counts.

@@ -50,7 +50,8 @@ def client_os() -> str:
 
 
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
-                detach: bool = False, reuse: bool = False, take: tuple[str, ...] = ()) -> dict:
+                detach: bool = False, reuse: bool = False, take: tuple[str, ...] = (),
+                on: str | None = None) -> dict:
     return {
         "project": project.project,
         "job": job,
@@ -73,4 +74,5 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         **({"detached": True} if detach else {}),
         **({"reuse": True} if reuse else {}),
         **({"take": list(take)} if take else {}),
+        **({"on": on} if on else {}),  # this node only (coordinator/api.py)
     }

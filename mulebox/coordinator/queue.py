@@ -2,8 +2,9 @@
 
 In the order of the line (line.py): the owner's moves, then the order rules, then arrival.
 A paused job is skipped and keeps its place; a machine running a boosted job takes no new one
-until it ends. A job a node ranked above the claiming one could take now is left to it
-(node_settings.py).
+until it ends. A job sent `--on <node>` goes to that node only. A job another free node should
+take (ranked above, holding its branch, or with more room) is left to it for a while
+(node_choice.py).
 
 A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
 claiming at once can never get the same job, and the cluster-wide slot limit holds.
@@ -20,7 +21,7 @@ from typing import Any
 
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, line, node_settings, project_pause, upgrades, workers
+from mulebox.coordinator import holds, line, node_choice, project_pause, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -65,7 +66,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         upgrading = upgrades.pending(conn, worker)
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
-        better = node_settings.better_free(conn, worker, now, priority)  # nodes ranked above
+        choice = node_choice.read(conn, worker, now, priority, free)  # who else is free
         for job in (row for row in order.rows if row["kind"] == JOB_KIND):
             if blocker is not None and order.before(blocker, job):
                 return None  # the reservation ahead in line goes first
@@ -73,7 +74,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
                     and job["project"] not in on_hold and not job["paused"]
-                    and not node_settings.held_back(job, better, now)):
+                    and job["pinned_worker"] in (None, worker)  # `--on`
+                    and node_choice.leave_to(conn, choice, job, now) is None):
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,

@@ -3,7 +3,7 @@
 import pytest
 
 from mulebox.common.protocol import MessageType
-from mulebox.coordinator import api, node_settings, queue, workers
+from mulebox.coordinator import api, node_choice, node_settings, queue, workers
 
 from .helpers import queued, request
 
@@ -146,9 +146,12 @@ def test_a_job_held_too_long_goes_to_whoever_claims(store, staging):
     claim(store, staging, "spare-1", queued_at + 25, priority="preferred", free=0)  # online, idle
     assert claim(store, staging, "mac-1", queued_at + 26, priority="fallback").type \
         is MessageType.CLAIM_NONE
-    claim(store, staging, "spare-1", queued_at + node_settings.GRACE_S, priority="preferred", free=0)
-    reply = claim(store, staging, "mac-1", queued_at + node_settings.GRACE_S + 1,
-                  priority="fallback")
+    held = queued_at + 26  # the first time it was left: the wait counts from here
+    claim(store, staging, "spare-1", held + node_choice.GRACE_S - 2, priority="preferred", free=0)
+    assert claim(store, staging, "mac-1", held + node_choice.GRACE_S - 1,
+                 priority="fallback").type is MessageType.CLAIM_NONE
+    claim(store, staging, "spare-1", held + node_choice.GRACE_S, priority="preferred", free=0)
+    reply = claim(store, staging, "mac-1", held + node_choice.GRACE_S + 1, priority="fallback")
     assert reply.type is MessageType.CLAIM_OK
 
 
