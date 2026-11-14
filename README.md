@@ -346,7 +346,9 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   `--behind` the jobs already waiting, then installs and the line goes on. `--when-idle` waits for
   running jobs; a running job is never cut short unless you say `--now`.
 - **Clean up**: `mulebox projects` shows each project's folder and size; `project clean` removes old
-  branch folders, `project reset` a whole project, on every node. A node warns when its disk runs low.
+  branch folders, `project reset` a whole project, on every node. Each node also removes branch folders unused
+  for 7 days on its own, keeps each project's latest one and 10% of its disk free, all settings
+  of yours; `mulebox storage` shows what it holds and what goes when, `project keep` keeps a folder.
 
 ### The dashboard
 
@@ -431,6 +433,8 @@ command prints. The ones you and your agents use:
 | `mulebox project pause`, `resume`, `paused` | hold all of a project's jobs and CI runs for a while |
 | `mulebox project priority <project> [level]` | a project's level in line: low, normal, high |
 | `mulebox project clean`, `reset` | remove old branch folders, or a project's whole folder, on every node |
+| `mulebox project keep <project>` | keep a project's folders, or a branch's, from the automatic cleanup |
+| `mulebox storage` | what mulebox holds on each node, and what goes when |
 
 **Machines and setup**:
 
@@ -438,7 +442,7 @@ command prints. The ones you and your agents use:
 | --- | --- |
 | `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker, `--dev` in dev mode |
 | `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
-| `mulebox machine config <node>` | a node's slots, priority and dev mode, applied from its next job |
+| `mulebox machine config <node>` | a node's slots, priority, dev mode and disk settings, applied from its next job |
 | `mulebox service status`, `restart`, `logs` | on a node: mulebox's own services, systemd or launchd |
 | `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |
 | `mulebox dashboard password`, `firewall`, `cert` | on the node: sign-in, firewall and HTTPS for `lan` mode |

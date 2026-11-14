@@ -130,6 +130,10 @@ class MessageType(StrEnum):
     PROJECT_ORDER_OK = "project_order_ok"
     ORDER_DONE = "order_done"
     ORDER_DONE_OK = "order_done_ok"
+    STORAGE = "storage"
+    STORAGE_OK = "storage_ok"
+    STORAGE_KEEP = "storage_keep"
+    STORAGE_KEEP_OK = "storage_keep_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -201,6 +205,11 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.PROJECT_ORDER: frozenset(),
     MessageType.PROJECT_ORDER_OK: frozenset({"group"}),
     MessageType.ORDER_DONE_OK: frozenset(),
+    # client -> coordinator: what mulebox holds on each node, and keep marks (storage.py).
+    MessageType.STORAGE: frozenset(),
+    MessageType.STORAGE_OK: frozenset({"nodes", "keeps"}),
+    MessageType.STORAGE_KEEP: frozenset({"project"}),
+    MessageType.STORAGE_KEEP_OK: frozenset({"keeps"}),
     # client -> coordinator: `action` get, set (`rules`, a partial change) or reset of the
     # order rules (coordinator/line_rules.py).
     MessageType.QUEUE_RULES: frozenset(),

@@ -1,5 +1,5 @@
-"""A node's settings that can be changed from afar: `slots`, `priority` and `dev` (design.md,
-Node settings). The rules live here once, for node.toml's reader, the coordinator and the worker.
+"""A node's settings that can be changed from afar: `slots`, `priority`, `dev` and the storage
+settings of common/storage_policy.py (design.md, Node settings). The rules live here once, for node.toml's reader, the coordinator and the worker.
 
 - `slots`: 1 to 64 jobs at once.
 - `priority`: `preferred`, `normal` (the default) or `fallback`; a node takes a job only when no
@@ -15,12 +15,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import units
+from mulebox.common import storage_policy, units
 MIN_SLOTS, MAX_SLOTS = 1, 64
 PRIORITIES = ("preferred", "normal", "fallback")  # best first
 DEFAULT_PRIORITY = "normal"
-EDITABLE = ("slots", "priority", "dev")
-DEFAULTS = {"priority": DEFAULT_PRIORITY, "dev": False}  # for a report from before a setting
+EDITABLE = ("slots", "priority", "dev", *storage_policy.FIELDS)
+# For a report from before a setting.
+DEFAULTS = {"priority": DEFAULT_PRIORITY, "dev": False, **storage_policy.DEFAULTS}
 CORES_PER_JOB = 4
 GB_PER_JOB = 6
 GB = 1_000_000_000  # decimal, as every size shown (common/units.py)
@@ -67,6 +68,9 @@ def checked(changes: Any) -> dict[str, Any]:
         out["priority"] = check_priority(changes["priority"])
     if "dev" in changes:
         out["dev"] = check_dev(changes["dev"])
+    for name in storage_policy.FIELDS:
+        if name in changes:
+            out[name] = storage_policy.check(name, changes[name])
     return out
 
 

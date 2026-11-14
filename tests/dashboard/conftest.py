@@ -140,6 +140,13 @@ class FakeCanceller:
                              "pending": {k: v for k, v in change.items() if k != "cancel"} or None,
                              "suggested": None})
 
+    async def send(self, msg):
+        kind = {MessageType.STORAGE_KEEP: MessageType.STORAGE_KEEP_OK,
+                MessageType.PROJECT_ORDER: MessageType.PROJECT_ORDER_OK}[msg.type]
+        return self._answer((msg.type.value, msg.body), kind,
+                            {"keeps": []} if kind is MessageType.STORAGE_KEEP_OK
+                            else {"group": "grp-1", "nodes": ["build-1"], "done": False})
+
     async def queue_rules(self, body):
         return self._answer(body, MessageType.QUEUE_RULES_OK, {"rules": body.get("rules", {})})
 

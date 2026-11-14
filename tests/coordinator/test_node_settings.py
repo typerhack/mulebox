@@ -2,6 +2,7 @@
 
 import pytest
 
+from mulebox.common import storage_policy
 from mulebox.common.protocol import MessageType
 from mulebox.coordinator import api, node_choice, node_settings, queue, workers
 
@@ -12,7 +13,8 @@ GB = 1 << 30
 
 def claim(store, staging, worker, now, *, slots=2, priority="normal", free=None, caps=("node",),
           error=None, load=None):
-    settings = {"slots": slots, "priority": priority, "dev": False, **({"error": error} if error else {})}
+    settings = {"slots": slots, "priority": priority, "dev": False, **storage_policy.DEFAULTS,
+                **({"error": error} if error else {})}
     body = {"worker": worker, "capabilities": list(caps),
             "free_slots": slots if free is None else free, "settings": settings,
             **({"load": load} if load else {})}
@@ -29,12 +31,16 @@ def test_a_change_waits_goes_back_in_a_claim_and_clears_once_reported(store, sta
         "total": 32 * GB, "available": 16 * GB, "used": 16 * GB}})
     kind, view = ask(store, staging)
     assert kind is MessageType.NODE_SETTINGS_OK
-    assert view["current"] == {"slots": 2, "priority": "normal", "dev": False}
+    assert view["current"] == {"slots": 2, "priority": "normal", "dev": False,
+                               **storage_policy.DEFAULTS}
     assert view["pending"] is None
     assert view["suggested"]["slots"] == 4 and "16 cores" in view["suggested"]["reason"]
     assert view["choices"] == {"slots": {"min": 1, "max": 64},
                                "priority": ["preferred", "normal", "fallback"],
-                               "dev": [False, True]}
+                               "dev": [False, True], "keep_free": {"max_share": 90},
+                               "unused_days": {"min": 1, "max": 365},
+                               "keep_latest": [False, True], "idle_days": {"min": 1, "max": 365}}
+    assert view["defaults"] == storage_policy.DEFAULTS
     _, view = ask(store, staging, slots=3, now=11.0)
     assert view["pending"] == {"slots": 3} and view["pending_since"] == 11.0
     reply = claim(store, staging, "build-1", 12.0)  # not applied yet: it is sent again

@@ -5,6 +5,7 @@ import os
 
 import pytest
 
+from mulebox.common import storage_policy
 from mulebox.common.config import load_node_config
 from mulebox.worker import live_config, node_file
 
@@ -91,7 +92,8 @@ def test_a_change_from_afar_is_written_once_and_a_failure_is_not_retried(toml, t
     live = live_config.LiveConfig(toml, clock)
     node = live.follow(node, {"node_settings": {"slots": 4}, "node_settings_at": 5.0})
     assert node.slots == 4 and "slots = 4" in toml.read_text()
-    assert live_config.report(node, live.error) == {"slots": 4, "priority": "normal", "dev": False}
+    assert live_config.report(node, live.error) == {"slots": 4, "priority": "normal", "dev": False,
+                                                      **storage_policy.DEFAULTS}
     clock.now = 10.0
     assert live.check(node) is node  # its own write is not taken for a hand edit
     real = tmp_path / "real.toml"
@@ -156,3 +158,15 @@ def test_a_node_toml_too_big_to_read_whole_is_refused_and_not_cut(toml):
     with pytest.raises(node_file.NodeFileError, match="too big"):
         node_file.apply(toml, {"slots": 3})
     assert toml.read_text() == big
+
+
+def test_storage_settings_from_afar_are_written_and_apply_live(toml):
+    node, clock = load_node_config(toml), Clock()
+    live = live_config.LiveConfig(toml, clock)
+    node = live.follow(node, {"node_settings": {"keep_free": "20%", "unused_days": 3,
+                                                "keep_latest": False}, "node_settings_at": 5.0})
+    text = toml.read_text()
+    assert 'keep_free = "20%"' in text and "unused_days = 3" in text and "keep_latest = false" in text
+    assert node.storage == storage_policy.StoragePolicy(keep_free="20%", unused_days=3,
+                                                        keep_latest=False)
+    assert load_node_config(toml).storage == node.storage

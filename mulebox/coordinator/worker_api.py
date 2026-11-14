@@ -10,7 +10,7 @@ from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.coordinator import (leases, node_settings, project_orders, queue, recovery,
-                                 reservations, steps, workers)
+                                 reservations, steps, storage, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -33,8 +33,9 @@ def claim(req: Request) -> Message:
                       load=v.load(req.body), priority=(settings or {}).get("priority"),
                       dev=bool((settings or {}).get("dev")))
     with req.store.write() as conn:  # after the claim, which records a new worker
+        storage.keep_report(conn, worker, req.body)
         waiting = {**node_settings.settle(conn, worker, settings),
-                   **project_orders.hand_out(conn, worker, req.now)}
+                   **project_orders.hand_out(conn, worker, req.now), **storage.reply_fields(conn)}
     if job is None:
         return req.reply(MessageType.CLAIM_NONE, waiting)
     return req.reply(MessageType.CLAIM_OK, {**queue.claim_body(job), **waiting})
@@ -71,8 +72,10 @@ def heartbeat(req: Request) -> Message:
         job = _current_job(conn, req, reservations=True)
         job = leases.renew_worker_in(conn, job, req.now)
         workers.touch(conn, job["worker"], req.now, v.load(req.body))
+        storage.keep_report(conn, job["worker"], req.body)
         waiting = {**node_settings.settle(conn, job["worker"], node_settings.reported(req.body)),
-                   **project_orders.hand_out(conn, job["worker"], req.now)}
+                   **project_orders.hand_out(conn, job["worker"], req.now),
+                   **storage.reply_fields(conn)}
         _activity(conn, req, job)
     return _status(req, job, **waiting)
 

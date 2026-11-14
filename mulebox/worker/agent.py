@@ -1,17 +1,13 @@
-"""The worker loop: recovery, claim, run, heartbeat, clean up, report.
-
-`Agent.step(now)` is one iteration and does no sleeping; `serve()` runs recovery and then
-calls it until asked to stop.
+"""The worker loop: recovery, claim, run, heartbeat, clean up, report. `Agent.step(now)` is one
+iteration and does no sleeping; `serve()` runs recovery and then calls it until asked to stop.
 
 Per job: fetch snapshot, prepare the workspace, `job_update running`, start the unit, then each
-step ship new log text, poll the process, heartbeat every 3 s with what the job is doing
-(activity.py). It is stopped on `cancel: true`, when the coordinator says it is over, or when no
-reply came for 120 s (the lease). After it ends: flush the log, `job_update cleaning`, remove
-what it left (cleaner.py), `result`. Stages go out with the log. Cleanup runs beside the loop
-(background.py), so heartbeats, cancels and supervision go on while Docker is slow, and the job
-keeps its lease, also while the coordinator is unreachable; the reports follow once it
-answers. A job holds its slot until its result is out (agent_end.py). With a supervisor, each step also
-lets it watch this worker's runner reservations (runners/supervise.py; every 10 s).
+step ship new log text, poll it, heartbeat every 3 s with what it does (activity.py). It stops
+on `cancel: true`, when the coordinator says it is over, or with no reply for 120 s (the lease).
+Then: flush the log, `job_update cleaning`, remove what it left (cleaner.py, beside the loop in
+background.py, so heartbeats go on while Docker is slow), `result`; a job holds its slot until
+its result is out (agent_end.py). Project orders (orders.py), the disk sweep (storage_sweep.py)
+and a supervisor's runner reservations (runners/supervise.py) are tended each step too.
 """
 
 from __future__ import annotations
@@ -34,6 +30,7 @@ from mulebox.worker import project_home, reclaim, simulator, toolchains, workspa
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
 from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.orders import Ordering
+from mulebox.worker.storage_sweep import Storing
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
@@ -51,7 +48,7 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
-class Agent(Ending, Skipping, Ordering):
+class Agent(Ending, Skipping, Ordering, Storing):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
                  supervisor: Any = None, docker: Docker | None = None,
@@ -114,12 +111,12 @@ class Agent(Ending, Skipping, Ordering):
                 self.supervisor.tick(now, self._sender(now))
             except LinkError:
                 pass
-        if self._online(now) and not self._ordering(now) and self._free_slots() > 0:
+        if self._online(now) and not self._housekeeping(now) and self._free_slots() > 0:
             self._claim(now)
 
     def _settings(self, reply: dict[str, Any] | None = None) -> dict[str, Any]:
         """Take a hand edit of node.toml, or a change in a coordinator's `reply`; what to report."""
-        self._take_orders(reply or {})  # project orders come the same way (orders.py)
+        self._take_replies(reply)  # project orders and keep marks come the same way
         if self.live is not None:
             self.node = self.live.follow(self.node, reply) if reply else self.live.check(self.node)
             if hasattr(self.link, "cluster_slots"):
@@ -137,7 +134,7 @@ class Agent(Ending, Skipping, Ordering):
     def _claim(self, now: float) -> None:
         msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths, self.host),
                       free_slots=self._free_slots(), restarted=self.fresh,
-                      settings=self._settings())
+                      settings=self._settings(), **self._storage_fields())
         try:
             reply = self._call(msg, now)
         except LinkError:
@@ -268,6 +265,7 @@ class Agent(Ending, Skipping, Ordering):
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
                       attempt_id=job.attempt_id, load=self.host.sample(), settings=self._settings(),
+                      **self._storage_fields(),
                       activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
                           job.steps.stage, job.steps.last_line, now, job.tailer.download))

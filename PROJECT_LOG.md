@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.24.0 - 2026-11-14 - minor
+- Each node keeps its own disk in check (M25.8, the user's ask: 63 GB in 144 branch folders on the node after 10 days). Four node settings, top-level in node.toml and set from afar like `slots` (`common/storage_policy.py`): `keep_free` ("10%" or "50GB"), `unused_days` (7), `keep_latest` (true) and `idle_days` (14). A branch folder's last use is its last job on that node, from git's log of its branch.
+- The worker sweeps a minute after it starts, then hourly, and soon when free space falls under `keep_free` (`worker/storage_sweep.py`, the rules in `worker/storage_rules.py`): it measures mulebox's folders once, counting a hard-linked file once (`worker/storage_scan.py`, `common/tree_size.py`), and removes unused branch folders through the `project clean` removal, never a folder in use, a project's latest or one the user keeps; it claims no job while it removes. When that is not enough, or a project is idle, it says what could go and the user decides. Docker's totals are shown, not cleaned.
+- The report goes once with the next claim or heartbeat (`storage`) and the coordinator keeps it (`workers.storage`); keep marks live on the coordinator (`storage_keeps`, schema 25) and reach every node with each reply (`coordinator/storage.py`). New: `mulebox storage`, `mulebox project keep` (`client/storage_commands.py`), `mulebox machine config --keep-free --unused-days --keep-latest --idle-days`, and `/api/storage`, `/api/storage/keep`, `/api/storage/remove` for the coming Storage view (`dashboard/storage_api.py`). The branch folder name moved to `common/branch_folder.py`.
+- Tests in `tests/worker/test_storage_rules.py`, `test_storage_sweep.py`, `tests/coordinator/test_storage.py`, `tests/client/test_storage_commands.py`, `tests/dashboard/test_storage_api.py` and the existing suites; design.md, install.md, interfaces-m1.md, interfaces-m2.md, README.
+
 ## 1.23.3 - 2026-11-14 - patch
 - Dashboard: a chart's caption ("Last 5 min, 0 to 100%", "Last 5 min, 0 to total") no longer lies over the chart, where its box covered the line's top-left corner (the user's ask). It is in the panel's title line: after "Dashboard host" in the CPU box, and in the Memory box on the line of its reading. `Panel` takes a `caption`, `Graph` no longer a `scale`; a panel with no chart (offline, no samples) shows none. Tests in `web/src/features/top/LoadPanels.test.tsx`.
 

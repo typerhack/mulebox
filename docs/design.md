@@ -462,6 +462,50 @@ it can be made again by a job, so removing it costs time, not data.
 - `clean` takes no hold: a node skips the branch folders it runs a job in now, and claims no
   job while an order runs. The branch history it needs goes in the order.
 
+### Disk use and cleanup on its own (the user's decisions, 2026-11-14)
+
+Found on the real node: 63 GB in 144 branch folders after 10 days, as every pull request and test
+branch keeps a whole folder with its installed dependencies and nothing removed them until
+someone ran `project clean`. So each node now keeps its own disk in check, and the user sets how
+(a node setting each, Node settings below; changed from afar like `slots`):
+
+| Setting in node.toml | Default | Meaning |
+| --- | --- | --- |
+| `keep_free` | `"10%"` | free space mulebox leaves on the disk of its folders: a share of it (1 to 90%) or a size (`"50GB"`) |
+| `unused_days` | 7 | a branch folder with no job for this long is removed on its own |
+| `keep_latest` | true | each project's latest folder stays however old, so the next job after a break is still quick |
+| `idle_days` | 14 | a project with no job for this long gets a suggestion to clean its latest folder, never a removal |
+
+- **Last use** of a folder is the time of its last job on this node: every job commits in its
+  folder, so git's log of the folder's branch (`repo.git/logs/refs/heads/tree-<folder>`) has it,
+  for folders from before this too. Per node, not the coordinator's history, as a branch run
+  lately on another node may have sat unused here.
+- **The sweep** runs on each worker (`worker/storage_sweep.py`, the rules in
+  `worker/storage_rules.py`): a minute after the worker starts, then an hour after the last, and
+  within a minute when free space falls under `keep_free` (at most every 10 minutes for that). It removes branch folders unused for `unused_days` through the same removal
+  as `project clean` (`project_disk.py`, safepath), and never: a folder a job runs in now, a
+  project's latest with `keep_latest`, or anything the user marked to keep. The node claims no
+  job while it removes, as with a project order.
+- **Keep marks**: `mulebox project keep <project> [--branch <b>]` (`--off` to drop it), on the
+  dashboard too. Kept on the coordinator (`storage_keeps`, schema 25) and sent to every worker
+  with each claim or heartbeat reply, so they hold on every node.
+- **When that is not enough**, free space under `keep_free` after the sweep, mulebox removes no
+  more on its own: the node reports what it could remove next and how much that frees (latest
+  and kept folders, oldest first), the dashboard shows it, and the user decides. Idle projects
+  are shown the same way, as a suggestion.
+- **What mulebox holds** on each node: the worker measures its folders in the sweep's own thread,
+  each sweep (one walk over all of them, a file hard-linked in
+  several counted once; never on a page load), with the disk's size and free space, and sends
+  it with its next claim or heartbeat: per project its branch folders (size, last job, and what
+  will happen to each), its package caches, toolchains and browsers, GitHub runners, logs and
+  snapshots, and Docker's own totals (`docker system df`). The coordinator keeps the last report
+  per node (`workers.storage`) for `mulebox storage` and the dashboard's `/api/storage`.
+- **Docker** is shown, not cleaned on its own yet: a job's own images, containers, networks and
+  volumes already go with its cleanup, and the build cache and base images cannot yet be told
+  apart from the owner's own (Sol's review, 2026-11-14). A later step.
+- An older worker sends no report and sweeps nothing; the dashboard says to upgrade it. An older
+  coordinator ignores the report and sends no keep marks.
+
 ## Package caches
 
 A new project folder, a lockfile change or a compose job's fresh containers still mean an

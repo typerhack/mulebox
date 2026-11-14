@@ -22,6 +22,7 @@ import sys
 import time
 
 from mulebox.client import order_commands
+from mulebox.client import storage_commands
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import CoordinatorError, request
 from mulebox.common.protocol import MessageType
@@ -47,6 +48,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     resume = actions.add_parser("resume", help="let paused projects start jobs again")
     resume.add_argument("projects", nargs="+")
     resume.set_defaults(func=guarded(_pause), action="resume", minutes=None)
+    storage_commands.register_keep(actions)
     listing = actions.add_parser("paused", help="list paused projects")
     listing.set_defaults(func=guarded(_pause), action="list", projects=[], minutes=None)
     order_commands.add_priority(actions)

@@ -18,7 +18,7 @@ from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
 from mulebox.coordinator import (api, attendance, clients, line, line_rules, node_settings, queue,
-                                 stats, stats_api, steps, usual, workers)
+                                 stats, stats_api, steps, storage, usual, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -95,6 +95,11 @@ class DashboardData:
         with self.store.read() as conn:
             found = workers.get(conn, name)
             return None if found is None else node_settings.view(conn, found, now)
+
+    def storage(self, now: float) -> dict[str, Any]:
+        """What mulebox holds on each node (coordinator/storage.py `body`)."""
+        with self.store.read() as conn:
+            return storage.body(conn, now)
 
     def job(self, job_id: str, now: float | None = None) -> dict[str, Any] | None:
         """The detail view of one job, or None when the id is malformed or unknown."""

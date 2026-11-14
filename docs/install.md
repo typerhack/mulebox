@@ -552,6 +552,23 @@ crosses a bridge, so counting those would count the same bytes twice.
 `mulebox project clean` and `reset` reach every online node's folders, each node's answer under
 its name (design.md, Project folders).
 
+### Disk use
+
+Each node removes its own branch folders with no job for 7 days, keeping each project's latest
+one, and leaves 10% of its disk free; all four are the node's settings (design.md, Disk use and
+cleanup on its own). It never removes Docker data, a folder a job runs in, or what you keep:
+
+```sh
+mulebox storage                                   # each node: disk, mulebox's folders, what goes when
+mulebox project keep example-app --branch main    # no automatic rule removes it; --off ends it
+mulebox machine config build-2 --keep-free 20%    # or 50GB; --unused-days 3, --idle-days 30
+mulebox machine config build-2 --keep-latest off  # the latest folder goes after unused-days too
+```
+
+When a node is still short of space after its sweep, or a project had no job for `idle_days`,
+`mulebox storage` and the dashboard say so and give the `project reset` to run: that choice
+stays yours.
+
 ### Settings from the dev machine
 
 ```sh
@@ -565,8 +582,8 @@ The dashboard has the same settings in each machine's settings window
 (`/api/machines/<name>/settings`, with its controls on). The change waits on the coordinator
 until the machine writes it into its own `node.toml`, within seconds while it is online, or when it
 is back; there is no restart, and it counts from the next job. Fewer slots than jobs running stops
-no job: the machine takes no new one until it is under the new count. Only `slots`, `priority` and
-`dev` can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+no job: the machine takes no new one until it is under the new count. Only `slots`, `priority`,
+`dev` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.
 

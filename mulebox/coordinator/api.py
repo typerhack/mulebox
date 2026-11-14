@@ -12,31 +12,10 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common import take_paths
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import (
-    attendance,
-    clients,
-    holds,
-    job_control,
-    leases,
-    line,
-    line_rules,
-    machine_api,
-    node_settings,
-    project_orders,
-    project_pause,
-    needs,
-    projects,
-    queue,
-    reuse,
-    runner_api,
-    stats_api,
-    steps,
-    taken,
-    upgrades,
-    usual,
-    worker_api,
-    workers,
-)
+from mulebox.coordinator import (attendance, clients, holds, job_control, leases, line,
+                                 line_rules, machine_api, needs, node_settings, project_orders,
+                                 project_pause, projects, queue, reuse, runner_api, stats_api,
+                                 steps, storage, taken, upgrades, usual, worker_api, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -280,6 +259,8 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.NODE_SETTINGS: node_settings.request,
     MessageType.PROJECT_ORDER: project_orders.control,
     MessageType.ORDER_DONE: project_orders.done,
+    MessageType.STORAGE: storage.read,
+    MessageType.STORAGE_KEEP: storage.keep,
     MessageType.JOB_CONTROL: job_control.control,
     MessageType.UPGRADE: upgrades.upgrade,
     MessageType.PROJECT_PAUSE: project_pause.control,

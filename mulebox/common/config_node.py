@@ -9,7 +9,7 @@ from __future__ import annotations
 import ipaddress
 from typing import Any
 
-from mulebox.common import node_settings
+from mulebox.common import node_settings, storage_policy
 from mulebox.common.config_reader import Reader
 
 DASHBOARD_MODES = ("off", "local", "lan")
@@ -26,6 +26,16 @@ def priority(reader: Reader) -> str:
         reader.fail("priority", f"must be one of {', '.join(node_settings.PRIORITIES)}, "
                     f"got {value!r}")
     return value
+
+
+def storage(reader: Reader) -> storage_policy.StoragePolicy:
+    """`keep_free`, `unused_days`, `keep_latest` and `idle_days` (common/storage_policy.py)."""
+    found = {name: reader.get(name, None) for name in storage_policy.FIELDS}
+    try:
+        return storage_policy.read({k: v for k, v in found.items() if v is not None})
+    except ValueError as exc:
+        name = next(n for n in storage_policy.FIELDS if str(exc).startswith(n))
+        reader.fail(name, str(exc).removeprefix(name).strip())
 
 
 def dashboard(reader: Reader) -> dict[str, Any]:

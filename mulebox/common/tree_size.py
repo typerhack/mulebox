@@ -12,11 +12,13 @@ from collections.abc import Iterable
 from pathlib import Path
 
 
-def sizes(root: Path, parts: Iterable[Path] = ()) -> tuple[int, dict[Path, int]]:
+def sizes(root: Path, parts: Iterable[Path] = (),
+          seen: set[tuple[int, int]] | None = None) -> tuple[int, dict[Path, int]]:
     """The size of `root`, and of each folder of `parts` inside it, in one walk. A file linked
-    in two of them counts in the first one walked."""
+    in two of them counts in the first one walked; pass the same `seen` to several walks to
+    count it once across them all. A part inside another counts in the innermost."""
     wanted = {str(part): part for part in parts}
-    seen: set[tuple[int, int]] = set()
+    seen = set() if seen is None else seen
     total, found = _walk(str(root), wanted, seen)
     return total, {wanted[key]: found.get(key, 0) for key in wanted}
 

@@ -35,16 +35,15 @@ Choices where docs/interfaces.md is silent:
   ``cancel_button``, from before 0.87.0, is read and ignored.
 - ``slots`` is at least 1 (default 1; 1..64 when set from afar) and ``priority`` one of
   ``preferred``, ``normal`` (default) and ``fallback``; ``dev`` (default false) keeps every
-  job off the node but those sent to it by name (common/node_settings.py); all three can be
-  changed from afar (worker/node_file.py).
-- ``os`` (project) is ``linux``, ``macos`` or ``any`` (common/systems.py).
-  ``[dashboard]`` is read in config_node.py.
+  job off the node but those sent to it by name (common/node_settings.py); these and the storage
+  settings (common/storage_policy.py) can be changed from afar (worker/node_file.py).
+- ``os`` (project) is ``linux``, ``macos`` or ``any`` (common/systems.py); ``[dashboard]`` is
+  read in config_node.py.
 - ``retention`` has ``log_days`` (default 30, at least 1) and ``step_days`` (default 365, at
   least ``log_days``).
 - ``limits`` has ``unattended_idle_min`` (default 15, at least 1) and ``unattended_max_hours``
   (default 24, at least 1), which must not be shorter than the idle limit.
-- An explicit ``path`` argument wins over ``$MULEBOX_CONFIG``; an empty
-  ``$MULEBOX_CONFIG`` is ignored.
+- An explicit ``path`` argument wins over ``$MULEBOX_CONFIG``; an empty one is ignored.
 """
 
 from __future__ import annotations
@@ -58,6 +57,7 @@ from mulebox.common import compose, config_jobs, config_node, config_project
 from mulebox.common import isolation as isolation_rules
 from mulebox.common.config_node import DASHBOARD_MODES, DEFAULT_DASHBOARD_PORT  # noqa: F401
 from mulebox.common.config_reader import ConfigError, Reader, load_toml, load_yaml
+from mulebox.common.storage_policy import StoragePolicy
 
 __all__ = [
     "ClientConfig",
@@ -148,6 +148,7 @@ class NodeConfig:
     job_env: dict[str, str] = field(default_factory=dict)
     retention: dict[str, int] = field(default_factory=dict)
     limits: dict[str, int] = field(default_factory=dict)
+    storage: StoragePolicy = field(default_factory=StoragePolicy)  # common/storage_policy.py
 
 
 class ProjectNotFound(ConfigError):
@@ -279,6 +280,7 @@ def node_config_from(path: Path, data: Any) -> NodeConfig:
         slots=config_node.slots(reader),
         priority=config_node.priority(reader),
         dev=reader.boolean("dev", False),
+        storage=config_node.storage(reader),
         capabilities=reader.strings("capabilities"),
         isolation=_floor(reader),
         coordinator=reader.ssh_target("coordinator", None),

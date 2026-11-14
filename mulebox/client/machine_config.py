@@ -3,6 +3,7 @@
     mulebox machine config <name>                      what it has, what waits, the suggestion
     mulebox machine config <name> --slots 3 --priority preferred [--wait]
     mulebox machine config <name> --dev on|off         dev mode: only jobs sent `--on` it
+    mulebox machine config <name> --keep-free 20% --unused-days 7 --keep-latest on --idle-days 14
     mulebox machine config <name> --cancel             drop a change that has not applied yet
 
 The coordinator holds the change and the node writes it into its own node.toml with its next
@@ -28,13 +29,19 @@ POLL_S = 1.0
 
 
 def register(actions: argparse._SubParsersAction) -> None:
-    config = actions.add_parser("config", help="show or change a machine's slots, priority and dev mode")
+    config = actions.add_parser("config", help="show or change a machine's slots, priority, dev "
+                                "mode and disk cleanup")
     config.add_argument("name")
     config.add_argument("--slots", type=int, help=f"jobs at once, {ns.MIN_SLOTS} to {ns.MAX_SLOTS}")
     config.add_argument("--priority", choices=ns.PRIORITIES,
                         help="preferred nodes take jobs first, fallback ones last")
     config.add_argument("--dev", choices=("on", "off"),
                         help="dev mode: the node takes only jobs sent to it with --on")
+    config.add_argument("--keep-free", help='free space to leave: a share ("10%%") or a size ("50GB")')
+    config.add_argument("--unused-days", type=int, help="remove a branch folder unused this long")
+    config.add_argument("--keep-latest", choices=("on", "off"),
+                        help="keep each project's latest folder however old")
+    config.add_argument("--idle-days", type=int, help="suggest cleaning a project idle this long")
     config.add_argument("--cancel", action="store_true", help="drop a change still waiting")
     config.add_argument("--wait", action="store_true",
                         help=f"return once the machine applied it (up to {WAIT_S:.0f} s)")
@@ -58,6 +65,11 @@ def lines(view: dict[str, Any]) -> list[str]:
         out.append(f"priority:  {current['priority']}")
         out.append("dev mode:  " + ("on, it takes only jobs sent to it with --on"
                                     if current.get("dev") else "off"))
+        if "keep_free" in current:
+            out.append(f"disk:      keeps {current['keep_free']} free; removes branch folders "
+                       f"unused {current['unused_days']} days, "
+                       f"{'keeping' if current['keep_latest'] else 'not keeping'} each "
+                       f"project's latest; suggests cleaning after {current['idle_days']} days")
     if tip:
         out.append(f"suggested: {tip['slots']} slot(s), from {tip['reason']}")
     if pending:
@@ -77,7 +89,10 @@ def _config(args: argparse.Namespace) -> int:
     remote = connect()
     body: dict[str, Any] = {key: value for key, value in
                             (("slots", args.slots), ("priority", args.priority),
-                             ("dev", None if args.dev is None else args.dev == "on"))
+                             ("dev", None if args.dev is None else args.dev == "on"),
+                             ("keep_free", args.keep_free), ("unused_days", args.unused_days),
+                             ("keep_latest", None if args.keep_latest is None
+                              else args.keep_latest == "on"), ("idle_days", args.idle_days))
                             if value is not None}
     if args.cancel:
         body["cancel"] = True

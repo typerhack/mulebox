@@ -6,6 +6,7 @@ from dataclasses import replace
 
 import pytest
 
+from mulebox.common import storage_policy
 from mulebox.common import systems
 from mulebox.common.ids import new_id
 from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
@@ -95,7 +96,8 @@ def test_passed_job(agent, fake_link, paths):
                                                            *systems.offered()], "free_slots": 1,
                      "toolchains": {}, "version": get_version(),
                      "restarted": True,  # the first claim after a start
-                     "settings": {"slots": 1, "priority": "normal", "dev": False}}
+                     "settings": {"slots": 1, "priority": "normal", "dev": False,
+                                  **storage_policy.DEFAULTS}}
 
 
 def test_failed_job_keeps_exit_code(agent, fake_link):

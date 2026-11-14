@@ -26,13 +26,13 @@ import filecmp
 import hashlib
 import json
 import os
-import re
 import shutil
 import stat
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from mulebox.common.branch_folder import NO_BRANCH, slug  # noqa: F401 - used here and by callers
 from mulebox.common import compose, isolation
 from mulebox.common.config_jobs import HOST_PORTS_KEY
 from mulebox.common.log import get_logger
@@ -43,7 +43,6 @@ from mulebox.worker.paths import NodePaths
 
 LOG = get_logger("worker.home")
 BASE = "mulebox-base"
-NO_BRANCH = "detached"
 CHECKOUT_DIR = 0o755
 INCOMING = "incoming"
 SETUP, INSTALL = "setup", "install"  # what is known about each, in `state/`
@@ -54,7 +53,6 @@ SETUP_INPUTS = (
     "Dockerfile", "go.mod", "go.sum", "pubspec.yaml", "pubspec.lock", "Gemfile", "Gemfile.lock", "mix.lock",
     "Podfile", "Podfile.lock", "Package.swift", "Package.resolved", "VERSION", ".nvmrc", ".node-version", ".python-version", ".tool-versions",
 )
-_NOT_A_NAME = re.compile(r"[^A-Za-z0-9._-]+")
 EMPTY_TREE_ID = "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
 
 
@@ -63,14 +61,6 @@ class Synced:
     tree: Path
     changed: int  # files written
     lost: int  # files gone that were not part of the last snapshot
-
-
-def slug(branch: str | None) -> str:
-    """A folder name for `branch`. The hash keeps `a/b` and `a-b` apart."""
-    if not branch:
-        return NO_BRANCH
-    name = _NOT_A_NAME.sub("-", branch).strip("-.") or "branch"
-    return f"{name[:60]}-{hashlib.sha256(branch.encode()).hexdigest()[:8]}"
 
 
 def _repository(paths: NodePaths, project: str) -> Path:

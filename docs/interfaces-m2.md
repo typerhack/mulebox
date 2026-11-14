@@ -322,6 +322,10 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
 | `GET /api/machines` | machines panel snapshot (above) |
+| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names |
+| `POST /api/storage/keep` | body `{project, branch?, keep?}` (`keep` false drops the mark); `{keeps}`. Controls on only, protected like them; 400 on a bad body |
+| `POST /api/storage/remove` | body `{project, branch?}`: `project_order` reset with `yes`, as `mulebox project reset --yes`; `{group, nodes, done}`. Controls on only, protected like them |
+| `GET /api/storage/remove/{group}` | that removal's answers per node, as `mulebox project reset` waits for them |
 | `GET /api/history?limit=&before=&project=&job=&client=&worker=&kind=&result=&q=` | `{jobs, next_before}`, finished jobs newest first, and on the first page (no `before`) `choices`, every value of each filter as `/api/stats` gives it; `limit` 1..200, default 50; page with `before = next_before`, which keeps the filters. `project`, `job`, `client`, `worker` and `kind` (job or runner) are exact values; `result` is passed, failed (timed out and interrupted too) or cancelled (stopped as stuck too), as `shown_state` shows them, a GitHub run with no result of its own matching none; `q` is part of the project, job name or branch in any case, `%` and `_` taken as typed. Values up to 200 characters; 400 on a bad value |
 | `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested`, `log_size`, while it runs `activity` as in a `status` reply, and while it waits under an order rule `place_reason` and `order`; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
@@ -341,11 +345,14 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 ```json
 {"worker": "build-1", "online": true, "draining": false, "version": "1.16.0", "running": 1,
  "applies": true,
- "current": {"slots": 2, "priority": "normal", "dev": false},
+ "current": {"slots": 2, "priority": "normal", "dev": false, "keep_free": "10%",
+             "unused_days": 7, "keep_latest": true, "idle_days": 14},
  "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
  "suggested": {"slots": 4, "reason": "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job"},
  "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"],
-             "dev": [false, true]},
+             "dev": [false, true], "keep_free": {"max_share": 90}, "unused_days": {"min": 1, "max": 365},
+             "keep_latest": [false, true], "idle_days": {"min": 1, "max": 365}},
+ "defaults": {"keep_free": "10%", "unused_days": 7, "keep_latest": true, "idle_days": 14},
  "editable": true}
 ```
 
@@ -357,6 +364,8 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 - `dev` is in `current` only for a worker on 1.23 or later; a POST of `dev` for an older one is
   409, and `dev: true` for the coordinator's own node is 409 too (design.md, Which node runs a
   job).
+- The disk settings are in `current` only for a worker on 1.24 or later; a POST of one for an
+  older worker is 409. `defaults` are what a node has when node.toml says nothing.
 - `suggested` comes from the cores and memory the worker last reported, null before it did. It
   is never applied by itself.
 - `running` counts jobs and GitHub slots on it now. A lower `slots` stops no job: the node takes

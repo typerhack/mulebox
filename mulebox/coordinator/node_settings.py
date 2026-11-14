@@ -19,6 +19,7 @@ import sqlite3
 from typing import Any
 
 from mulebox.common import node_settings as ns
+from mulebox.common import storage_policy
 from mulebox.common.protocol import Message, MessageType
 from mulebox.coordinator import workers
 from mulebox.coordinator import validate as v
@@ -27,6 +28,9 @@ from mulebox.coordinator.errors import BadRequest, Conflict, NotFound
 from mulebox.coordinator.store import ACTIVE_STATES
 
 MAX_ERROR = 500
+_ALWAYS = ("slots", "priority")  # every node that reports settings has these
+_SINCE = {"dev": "1.23"}  # the version that brought a setting; the rest came with 1.24
+_WHAT = {"dev": "dev mode", **{name: "storage settings" for name in storage_policy.FIELDS}}
 MAX_REPORTED = 4096  # slots a report may say, past the 64 a request may ask
 _ACTIVE = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
 
@@ -44,6 +48,9 @@ def reported(body: dict[str, Any]) -> dict[str, Any] | None:
         out: dict[str, Any] = {"slots": slots, "priority": ns.check_priority(value.get("priority"))}
         if "dev" in value:  # a worker older than 1.23 has no dev mode
             out["dev"] = ns.check_dev(value["dev"])
+        for name in storage_policy.FIELDS:  # nor one older than 1.24 storage settings
+            if name in value:
+                out[name] = storage_policy.check(name, value[name])
     except ValueError:
         return None
     error = value.get("error")
@@ -93,14 +100,19 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
         "draining": bool(worker.get("draining")), "version": worker.get("version"),
         "running": _running(conn, worker["worker"]),
         "applies": settings is not None,
-        "current": None if settings is None else {  # no `dev` from a node older than 1.23
+        "current": None if settings is None else {  # what an older node has not, left out
             key: settings.get(key, ns.DEFAULTS.get(key)) for key in ns.EDITABLE
-            if key in settings or key != "dev"},
+            if key in settings or key in _ALWAYS},
         "pending": wanted, "pending_since": worker.get("wanted_at") if wanted else None,
         "error": (settings or {}).get("error") if wanted else None,
         "suggested": ns.suggest_slots(load.get("cores"), (load.get("memory") or {}).get("total")),
         "choices": {"slots": {"min": ns.MIN_SLOTS, "max": ns.MAX_SLOTS},
-                    "priority": list(ns.PRIORITIES), "dev": [False, True]},
+                    "priority": list(ns.PRIORITIES), "dev": [False, True],
+                    "keep_free": {"max_share": storage_policy.MAX_SHARE},
+                    "unused_days": {"min": 1, "max": storage_policy.MAX_DAYS},
+                    "keep_latest": [False, True],
+                    "idle_days": {"min": 1, "max": storage_policy.MAX_DAYS}},
+        "defaults": dict(storage_policy.DEFAULTS),  # what mulebox suggests for storage
     }
 
 
@@ -128,9 +140,11 @@ def request(req: Request) -> Message:
         if changes.get("dev") and name == workers.host(conn):
             raise Conflict(f"dev mode is for other nodes: {name} is the coordinator, which every "
                            "job goes through; put a node added with --worker-of in dev mode")
-        if "dev" in changes and "dev" not in current:
-            raise Conflict(f"{name} runs a mulebox older than 1.23, which has no dev mode; "
-                           f"upgrade it first (`mulebox setup {name}`)")
+        for key in changes:
+            if key not in current and key not in _ALWAYS:
+                raise Conflict(f"{name} runs a mulebox older than {_SINCE.get(key, '1.24')}, "
+                               f"which has no {_WHAT.get(key, key)}; upgrade it first "
+                               f"(`mulebox setup {name}`)")
         wanted = {} if drop else dict(found.get("wanted") or {})
         wanted.update(changes)
         wanted = {key: value for key, value in wanted.items() if current.get(key) != value}
