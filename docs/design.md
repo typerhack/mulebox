@@ -737,6 +737,89 @@ runner, the second for public repositories:
      what the firewall closes. A job that needs Docker itself cannot run in it. A job can write its
      own diary in `_diag`, so the result mulebox shows for it is the job's word.
 
+## Isolation per job (M23.1, proposed 2026-11-14, for the user's decision)
+
+Today a job runs under systemd as the node's user. Code an agent wrote, or a package it pulled in,
+can read what that user can: `~/.ssh`, the `gh` login, the coordinator's key, other projects'
+folders, and it can use Docker, which is root on the node. Safety above says so: mulebox is not a
+sandbox. This is a proposal to make it one, as a choice, for nodes that run code their owner has
+not read.
+
+**Levels.** `isolation:` names how far a job is kept from the node:
+
+| Level | A job runs | Keeps it from | Costs |
+| --- | --- | --- | --- |
+| `none` (today) | as the node's user, under systemd | other jobs' files, by convention only | nothing |
+| `container` | in a fresh container per job | the node's home, keys, other projects, Docker itself | about 1 s to start; no Docker in the job (below) |
+| `vm` (later) | in a throwaway virtual machine | also the node's kernel | a VM image to keep; 10 to 30 s to start; memory set aside per job |
+
+`vm` is named so the field has room for it; it is not part of this step.
+
+**Who decides.** The node's owner carries the risk, so the node sets a floor and a project can
+only ask for more: `isolation = "container"` in node.toml makes every job there run isolated,
+whatever `.mulebox.yml` says; `isolation: container` in `.mulebox.yml` asks for it on a node whose
+floor is `none`. A node that cannot give a level (a Mac, below; a node with no Docker) does not
+claim a job that asks for it, through its capabilities, as with `needs:`. Proposed default floor:
+`none`, so nothing changes for anyone until they ask.
+
+**The container.** Built like an isolated runner's place (`runners/place_container.py`), so the
+confinement is one piece of code:
+
+- Mounts: the job's branch tree (read-write), its own package caches (read-write, as today), the
+  node's toolchain folder (read-only), the browser folder for `needs: [playwright]` (read-only).
+  Nothing else of the node: no home, no `~/.mulebox` beyond these, no Docker socket.
+- The node's user id (`--user`), so files the job writes are the worker's to clean, with no
+  `reclaim`; all capabilities dropped, `no-new-privileges`, a read-only root file system with a
+  `tmpfs` for `/tmp`, `HOME` inside the job folder. Limits on memory and processes; CPU weight as
+  today, so Boost and Freeze (`docker pause`) work as they do for a runner's place.
+- The image: a mulebox job image, built once per node from Ubuntu with git, a compiler and the
+  usual build tools, matching the node's own system so toolchains it installed (M17.3) run in
+  it. A project may name its own (`image:`), then bringing its own toolchains.
+- Network: one network per job. It reaches the internet and the job's own compose services; it
+  does not reach the node's own services on 127.0.0.1 (dashboard, a database the owner runs).
+  The node's LAN stays as reachable as the firewall leaves it, as for a runner's place.
+- What a job is told and measured stays the same: `env:`, `job_env`, ports, check-ins, activity
+  (the container's CPU through the engine, `worker/docker_stats.py`), cancel and time limits.
+
+**Compose jobs, the hard part.** Today a job line runs `docker compose exec -T api ...` with the
+node's Docker. Inside the container there is no Docker, and giving it the socket would undo
+everything above. Three ways were weighed:
+
+1. **The socket mounted in.** Refused: Docker access is root on the node.
+2. **The worker runs Compose, the job gets a narrow door (proposed).** The worker brings the
+   job's services up as well as down (today `up` runs inside the job's unit, teardown is already
+   the worker's), under the same policy (`worker/compose_policy.py`), which already refuses what
+   reaches past the job. The
+   container joins the services' network, so `db:5432` works by name. For job lines that use
+   `docker compose exec`, the container gets a socket from a small mulebox proxy that answers
+   only `exec`, `logs`, `ps` and `inspect`, and `start`, `stop` and `restart`, each only for a
+   container with this job's labels, and a listing shows only those; anything that would make a container, an image or a volume
+   (`run`, `create`, `build`, `pull`, `cp`) is refused with a message. Images stay in the node's
+   cache, so no extra download over a slow link. The cost is the proxy itself: code that must
+   read Docker's API exactly, and tests against a real engine.
+3. **A Docker engine of the job's own** (Docker-in-Docker, or Sysbox so it needs no privileged
+   container). Any job line works, `docker build` and Testcontainers too, and nothing of the
+   node's engine is reachable. But every job starts with an empty image cache, so every image is
+   pulled again (minutes per job on a node behind a slow VPN), unless a registry mirror is kept
+   on the node, and Sysbox must be installed by the owner with root.
+
+Proposed: way 2, with way 3 left for a project that builds images or uses Testcontainers, which
+then runs at `none` on a node that allows it. A job line that needs more than the proxy allows
+fails with a message naming the call, not a hang.
+
+**Mac nodes.** An Xcode build needs macOS, and macOS runs no macOS containers, so a Mac node offers
+no `container` level for Apple jobs: it claims none that asks for it. A Linux-container job on a
+Mac (Docker Desktop) could get it later. The macOS route is `vm` (Apple's Virtualization
+framework), a step of its own.
+
+**Left as it is.** A container shares the node's kernel, so a kernel bug is a way out; `vm` is
+for that. Compose services run images the project chose, contained by the policy, not by this
+step. A package cache is still a channel between jobs of one project, on purpose.
+
+**Open for the user:** the default floor (`none` proposed); way 2 over way 3; the job image as
+mulebox's own with a project's `image:` allowed; whether a project may ask for `none` on a node
+whose floor is `container` (proposed: no, it is refused and says why).
+
 ## Safety
 
 - Configured roots per worker (`jobs/`, `projects/`, `cache/`, `runners/`); the path-safety module
@@ -748,6 +831,7 @@ runner, the second for public repositories:
 - Docker access is root-equivalent: running jobs as the machine's normal user is fine for
   a single trusted owner; a dedicated user is optional hygiene, not isolation. mulebox is not
   a sandbox: its checks stop mistakes and a CI file's assumptions, not a hostile project.
+  Isolation per job, proposed above, is the way to run code nobody has read.
 - Docker cleanup removes only what a listing filtered on one job's exact labels returned.
   `prune` and `system` cannot be run through mulebox at all. Containers, networks and
   volumes of the job go; images stay as cache.

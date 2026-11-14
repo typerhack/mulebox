@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.25 - 2026-11-14 - patch
+- Design note for M23.1, isolation per job (docs/design.md, Isolation per job): the levels `none`, `container` and later `vm` with what each keeps out and costs; a floor set by the node that a project can only raise; the job's container confined like an isolated runner's place; three ways for compose jobs weighed (the Docker socket refused, the worker running Compose with a narrow proxy proposed, an engine per job left for projects that build images); Mac nodes; the decisions left to the user. Safety points to it. Docs only.
+
 ## 1.17.24 - 2026-11-14 - patch
 - Roadmap: done M7.2 (the skill used by agents in another real project), M7.3 (issues #1 to #11 posted through `feedback post`), M8.7 (a fresh agent saw an out-of-date skill copy and ran `mulebox skill update` itself), M21.1 (the Linux node upgraded through `mulebox service install`), M23.3 (a project level on the node, its `place:` in `mulebox queue` and its job claimed first) and M24.4 (after the fix of 1.17.23, a single job took the next free slot beside a burst). The Mac faults fixed in 1.17.20 to 1.17.22 marked. Docs only.
 
