@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.2 - 2026-11-14 - patch
+- docs/design-system/storage/: each mockup option Fable recommends carries a "Fable suggests" tag, on the index and on its page, and Fable's report (`report.html`) is kept beside them (the user's ask: every mockup set marks Fable's pick).
+
 ## 1.27.1 - 2026-11-14 - patch
 - `mulebox storage --history N --json` gives the JSON reply; before, `--history` printed its lines and `--json` was ignored. Test in `tests/client/test_storage_commands.py`.
 - docs/phases.md M25.8: the first cleanup of 1.27.0 on the real node, and what Docker left.

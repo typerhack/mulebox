@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Storage mockups report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="storage.css">
+<style>
+.rep { max-width: 76ch; }
+.rep section { padding-top: var(--space-6); }
+.rep h2 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; margin-bottom: var(--space-3); }
+.rep p, .rep li { color: var(--text-2); line-height: 1.55; }
+.rep p + p { margin-top: var(--space-2); }
+.rep b { color: var(--text-1); font-weight: 600; }
+.rep ul { display: grid; gap: var(--space-2); padding-left: var(--space-4); }
+.rep dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-3) var(--space-4); }
+.rep dt { font: 600 var(--text-sm)/1.55 var(--font-mono); color: var(--text-1); }
+.rep dd { color: var(--text-2); line-height: 1.55; }
+.rep a { color: var(--text-1); }
+.pick { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-l); background: var(--surface-1); }
+.pick p { color: var(--text-1); }
+</style>
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>Storage mockups report</h1>
+      <p class="doc-lead">Fable's report on the storage mockups of 2026-11-14: three options for each of three parts, and what it recommends. <a href="index.html">Open the mockups</a>.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <div class="rep">
+    <section>
+      <h2>Things to know first</h2>
+      <ul>
+        <li><b>Project names are examples</b> (example-app 56 folders 38 GB, example-shop 69 folders 24 GB, mulebox 19 folders 1.3 GB); the sizes are the real node's. One idle project, example-docs (0.7 GB, 16 days), is made up, so totals read 145 folders and 64.0 GB.</li>
+        <li><b>Docker split is a reading:</b> job images (3.1 GB) and the build cache (9.7 GB) counted as mulebox's, the other 6.7 GB of images as not mulebox's and left alone. Say if the build cache should count otherwise.</li>
+        <li><b>Made up:</b> the cleanup time "tonight at 03:00", the Mac node's numbers, and "Not now asks again in 7 days". The real sweep runs hourly.</li>
+        <li><b>Checked</b> at 1440 px in headless Chrome only; in Edge at 544 px the index, the Storage view and the settings, with no sideways scroll. The notices page was not opened in Edge.</li>
+      </ul>
+    </section>
+    <section>
+      <h2><a href="storage-view.html">Storage view</a></h2>
+      <dl>
+        <dt>A</dt><dd><b>A Storage page, by project.</b> A fifth page in the header. The disk as one ruler: what mulebox takes by kind, what is not mulebox's, free space, the reserve hatched at the end. A line for the next cleanup with Show and Clean now, then projects that open to their branch folders, caches, runners, Docker and logs. Each row: size, last job, what happens to it, copy path, keep, clean. Room for 145 folders and a second node; the longest list.</dd>
+        <dt>B</dt><dd><b>On the Machines page, by what goes next.</b> Each node gets Jobs and Storage tabs; folders grouped by fate, soonest first: tonight, 1 to 3 days, 4 to 7 days, kept as latest, kept by you. Project size is a column, not a row; the Machines page gets long.</dd>
+        <dt>C</dt><dd><b>A window from the Disk panel, by size.</b> One new line in the Disk panel opens a window for the shown node: the ruler and one list, biggest first. Least to build, fastest answer when space is short; tight for 145 folders, one node at a time.</dd>
+      </dl>
+      <p>In all three, Clean first lists what goes, what stays and the free space after; nothing is removed before the red button.</p>
+    </section>
+    <section>
+      <h2><a href="storage-settings.html">Storage settings</a>, in the node's settings window</h2>
+      <dl>
+        <dt>A</dt><dd><b>A Storage tab in the same grammar.</b> Each of the four settings a panel with Suggested, Yours and Runs with, as slots has. Nothing new to learn; twelve rows for four numbers.</dd>
+        <dt>B</dt><dd><b>One Storage panel.</b> No tabs, a line per setting under Dev mode; the suggestion speaks up only when yours differs. Compact, but a second way to show a setting in one window.</dd>
+        <dt>C</dt><dd><b>The rules as a sentence, tried on the disk.</b> The controls inside one sentence; the ruler moves the reserve as you set it and says what your values would do, before you save. Furthest from the existing rows, most to build.</dd>
+      </dl>
+    </section>
+    <section>
+      <h2><a href="storage-notices.html">Notices</a></h2>
+      <p>The example: build-1 a few days on, 44 GB free, 5 GB under its 49 GB reserve.</p>
+      <dl>
+        <dt>A</dt><dd><b>In the strip under the header.</b> The out-of-step strip carries both: the warning in amber with Review what goes, the suggestion as a grey line with Clean it, Keep it, Not now. Cannot be missed; a 0.7 GB suggestion sits above the CPU panel on every page.</dd>
+        <dt>B</dt><dd><b>Where the thing is.</b> The warning on the node's row in the Machines box, the suggestion on the project's row in the Storage view. Quietest; a suggestion can go unseen for weeks.</dd>
+        <dt>C</dt><dd><b>A "To decide" list in the header.</b> A mark with a count opens a short list with each item's answers; the red strip only when jobs could fail for lack of room. Scales to many idle projects; a new header part and two warning levels.</dd>
+        <dt>D</dt><dd><b>The review window, shared by all three.</b> A checklist, cheapest loss first, with just enough ticked to get back above the reserve; kept folders listed but not offered.</dd>
+      </dl>
+    </section>
+    <section>
+      <h2>Fable's recommendation</h2>
+      <div class="pick">
+        <p><b>Storage view:</b> A, entered by C's one-line link in the Disk panel; B's "going tonight" group as the list behind "Show".</p>
+        <p><b>Settings:</b> A, as it matches the Suggested, Yours, Runs with rows you picked for this window, plus C's line of what your values would do.</p>
+        <p><b>Notices:</b> B for the idle suggestion, A for the reserve warning, which needs a decision.</p>
+      </div>
+    </section>
+    <section>
+      <h2>Follow-up noted, not changed</h2>
+      <p>With a long reading such as "118.7 GB of 234.4 GB", the Memory panel's header grows to three lines. Fix idea: shorten the caption to "5 min" when it does not fit beside the reading, with the full caption in its title; or drop the caption at that width.</p>
+    </section>
+  </div>
+</div>
+<script src="storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>
