@@ -191,10 +191,12 @@ Order agreed with the user on 2026-11-04.
       own tables, so there is one source. Done 2026-11-04 (0.11.0): run through the real CLI
       in a project, outside one and with the build machine unreachable. Drift tests tie it
       to the real commands and to docs/agents.md.
-- [~] M7.2 Installable skill: `skills/mulebox/`, installed once system-wide, so any project
+- [x] M7.2 Installable skill: `skills/mulebox/`, installed once system-wide, so any project
       can say "use the mulebox skill". Built 2026-11-04 (0.11.1). Open: the user installs it
       in another session, and an agent uses it in a real project.
-- [~] M7.3 Agent feedback: `mulebox feedback draft` and `post`, redacted first. 2026-11-09 (0.77.0):
+      Done 2026-11-14 (1.17.24): installed in both Claude config folders, and loaded by agents in
+      another real project's sessions on 2026-11-07, 11-09 and 11-13.
+- [x] M7.3 Agent feedback: `mulebox feedback draft` and `post`, redacted first. 2026-11-09 (0.77.0):
       ten real issues were filed by agents in two projects; from them, drafts carry job ids, stages and
       picked log lines, the scrub keeps public values and names what it refuses, and `mulebox feedback
       guide` holds the procedure (issues #10, #11). Built
@@ -202,6 +204,8 @@ Order agreed with the user on 2026-11-04.
       branch, identity, address, password or machine name in its draft; `post` sent the
       reviewed file to a stand-in `gh` and refused a tampered one. Screenshots dropped: they
       cannot be scrubbed. Open: the user sets `feedback_repo`, and one real issue is posted.
+      Done 2026-11-14 (1.17.24): `feedback_repo` is set, and issues #1 to #11 were posted through
+      `mulebox feedback post`, their scrubbed text in place.
 - [x] M7.4 Projects: `mulebox projects`, worked out from the job history. A registry was
       dropped: it would hold nothing beyond `.mulebox.yml` and that history, so it would
       only be a second copy. Done 2026-11-04 (0.13.0): run against a real coordinator.
@@ -258,7 +262,7 @@ Marked `[~]` until checked on a real machine.
       2026-11-04 (0.32.0) with unit tests and the real coordinator code. Done 2026-11-05 (0.53.1): a
       job with a missing toolchain and one with a refused compose file each exited 5, with the
       reason in the summary.
-- [~] M8.7 Skill versioning: the skill ships in the package (`skills/mulebox/SKILL.md` links
+- [x] M8.7 Skill versioning: the skill ships in the package (`skills/mulebox/SKILL.md` links
       to it), `mulebox skill install|update|status` over every Claude config folder, the skill
       states its contract schema, `mulebox doctor` reports it, a test ties the two. Tested
       2026-11-04 (0.31.0) with temporary folders only; the wheel holds SKILL.md. Open: the
@@ -266,6 +270,9 @@ Marked `[~]` until checked on a real machine.
       2026-11-09 (0.82.0): a text change in 0.77.0 went unnoticed by every session, as only the
       schema was compared; now `mulebox contract` reports any copy that differs, the agent
       updates it itself (the user's choice), and `mulebox setup` updates the laptop's copies.
+      Done 2026-11-14 (1.17.24): with one word changed in one installed copy, a fresh agent told only
+      to use the mulebox skill on a small project saw the notice from `mulebox contract`, ran
+      `mulebox skill update` by itself, and its job passed; both copies read current after.
 
 ## M9: Faster and clearer jobs  (done 2026-11-06, 0.62.2)
 Worked out from the first real jobs on a slow connection (2026-11-04).
@@ -737,7 +744,7 @@ Decided by the user on 2026-11-12: a Mac can be a node, a worker, the coordinato
 Linux nodes, with the architecture unchanged. There is no second Mac, so this is built and tested in
 code, and on GitHub's macOS machines in CI; a drill on a real Mac stays open. Each part is reviewed
 by Sol before the next starts (the user's ask).
-- [~] M21.1 Services: `mulebox service install|restart|stop|status|logs`, systemd on Linux and launchd
+- [x] M21.1 Services: `mulebox service install|restart|stop|status|logs`, systemd on Linux and launchd
       on macOS, one module; install.sh and every message name it, not `systemctl`. Built 2026-11-12
       (1.6.0), with tests for both managers against stand-ins for systemctl and launchctl, and the
       installer's platform check run under the Mac's own bash 3.2. Open: a real Mac, and a real Linux
@@ -746,6 +753,9 @@ by Sol before the next starts (the user's ask).
       <node>` installed the launchd agent, and launchd restarted a worker killed with `kill -9`. Found
       there: setup missed Docker Desktop (fixed 1.17.16), and the agent's ssh got `No route to host` from
       macOS's Local Network privacy (fixed 1.17.17, ssh started disclaimed). Open: a Linux upgrade.
+      Done 2026-11-14 (1.17.23): the Linux node was upgraded through it (install.sh hands the
+      services to `mulebox service install`), as on every upgrade since 1.6.0, and came back
+      after a reboot with its services and runners up.
 - [x] M21.2 Jobs on macOS: the process-group executor kept across a worker restart (orphans found
       and stopped), freeze and its limits, and what a Mac node cannot do said, not faked. Built
       2026-11-12 (1.7.0): `worker/darwin_exec.py`, jobs under `nice -n 5`, records in
@@ -783,8 +793,9 @@ by Sol before the next starts (the user's ask).
       tests of stopped process groups failed there first (fixed 1.13.3 and 1.13.5), and it has
       passed on every run since.
 Found on the first Mac node (2026-11-13), not fixed yet: `mulebox project reset` and `clean` reach only
-the coordinator's machine, not a project folder on another worker; setup reads the worker's service as
-`stopped` right after starting it; the worker logs "removed 1 simulators".
+the coordinator's machine, not a project folder on another worker. Fixed 2026-11-14: setup read the
+worker's service as `stopped` right after starting it (1.17.21); the worker logged "removed 1
+simulators" (1.17.20); `mulebox projects` took over 3 minutes and counted hard links again (1.17.22).
 Done when, for all of it: a real Mac runs jobs as a node beside a Linux node.
 
 ## M22: Apple platform builds
@@ -833,7 +844,7 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
       lot's job weights.
-- [~] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
+- [x] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
       go ahead, a branch (such as `main`), a workflow or a project first. Built 2026-11-13 (1.17.0):
       `coordinator/line.py` and `line_rules.py` (design.md, Order of the line), project, branch and
       GitHub levels, aging, shortest first, kept in the coordinator's store and set by `mulebox queue
@@ -845,6 +856,9 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       sends GITHUB_WORKFLOW, schema 22), and a long line read in a fixed number of queries (6000
       waiting jobs: 4.4 s inside the claim before, 0.2 s after). Open: real jobs on the node with a rule
       on, their order and `place:` in `mulebox queue`, and the settings on the dashboard (M14.15).
+      Done 2026-11-14 (1.17.22): on the node, two throwaway projects of two jobs each, one set
+      high; `mulebox queue` put its jobs first with `place: project example-order-b +1`, the others
+      `then by arrival`, and its first job took the next free slot ahead of one that came earlier.
 - [x] M23.4 Node priority levels: a node takes jobs only when the preferred ones are full, such as
       the owner's desktop only when the spare machine is busy, or a Mac as the fallback. Built
       2026-11-13 (1.16.0), with M23.9 (the user's ask for a settings window per node, M14.14):
@@ -937,11 +951,16 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
 - [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.
-- [~] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
+- [x] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
       project's single job; the line takes the projects in turn, below moving by hand (M14.3) and the
       order rules (M23.3). Built 2026-11-13 (1.17.0): `fair_turns`, off by default, counting what each
       project already runs (design.md, Order of the line), with tests. Open: a real burst of one
       project beside another project's job on the node, the single job taking the next free slot.
+      The first drill, 2026-11-14 (1.17.22), found that it did not: with one slot coming free, the
+      burst's project ran nothing each time its job ended, tied the single job and won on arrival,
+      twice. Fixed 1.17.23 (the project served longer ago goes first on a tie). Done 2026-11-14
+      (1.17.23): a burst of four beside one job of another project, `place: turn 1` against turns
+      3 and 4, and the single job took the first slot that came free.
 - [ ] M24.5 One job across slots: named groups of tests (`shards:`) run side by side on free slots and
       machines, and come back as one result with one exit code and one summary.
 - [x] M24.6 A pass on GitHub: a mulebox result on an exact pushed commit reported as a commit status

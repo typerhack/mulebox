@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.17.24 - 2026-11-14 - patch
+- Roadmap: done M7.2 (the skill used by agents in another real project), M7.3 (issues #1 to #11 posted through `feedback post`), M8.7 (a fresh agent saw an out-of-date skill copy and ran `mulebox skill update` itself), M21.1 (the Linux node upgraded through `mulebox service install`), M23.3 (a project level on the node, its `place:` in `mulebox queue` and its job claimed first) and M24.4 (after the fix of 1.17.23, a single job took the next free slot beside a burst). The Mac faults fixed in 1.17.20 to 1.17.22 marked. Docs only.
+
 ## 1.17.23 - 2026-11-14 - patch
 - Fair turns (M24.4) let a burst keep a slot from another project's single job. In the drill on the node, with one slot coming free at a time, each time a burst's job ended its project ran nothing for a moment, so its next job tied the single job at turn 1 and won on arrival, again and again. Of rows on the same turn, the project that last started a job longer ago now goes first, one that never started any first of all (`coordinator/line.py`, `_served`: one more query, still a fixed number per read). Test in `tests/coordinator/test_line.py` (fails on 1.17.22); docs/design.md, Order of the line.
 
