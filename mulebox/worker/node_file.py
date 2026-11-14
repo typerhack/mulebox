@@ -1,6 +1,6 @@
 """A setting changed from afar, written into the node's own node.toml (design.md, Node settings).
 
-Only `slots` and `priority` (common/node_settings.py), as top-level lines: on an existing
+Only `slots`, `priority` and `dev` (common/node_settings.py), as top-level lines: on an existing
 `slots = ...` line (a bare or quoted key) only the value is replaced, its comment kept; a missing
 one goes in before the first table, and every other line, comments too, stays as it was. A file
 over MAX_BYTES is refused, never cut. The new text must read as a node config with the same

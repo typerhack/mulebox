@@ -16,7 +16,7 @@ import { Empty, Panel } from "../../ui/Panel";
 import { NodeSettingsButton } from "./NodeSettings";
 import { HostMark, MachinePause, MachineState, Net, Offers, Slots, StepMark, isLive, shownState } from "./parts";
 
-const ORDER = ["busy", "draining", "paused", "idle", "offline"];
+const ORDER = ["busy", "draining", "paused", "dev", "idle", "offline"];
 type Sorter = (m: Machine, index: number) => number | string;
 const COLUMNS: [string, string, Sorter][] = [
   ["name", "Name", (_, index) => index],

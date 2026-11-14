@@ -4,8 +4,10 @@ node.toml `job_env`, which follows the same rules for names, `[retention]` and `
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
-from mulebox.common import compose, env_rules
+from mulebox.common import compose, env_rules, systems
+from mulebox.common import isolation as isolation_rules
 from mulebox.common.config_reader import Reader
 
 
@@ -65,3 +67,24 @@ def limits(reader: Reader, idle_default: int, hours_default: int) -> dict[str, i
     if hours * 60 < idle:
         sub.fail("unattended_max_hours", "must not be shorter than unattended_idle_min")
     return {"unattended_idle_min": idle, "unattended_max_hours": hours}
+
+
+def isolation_fields(reader: Reader) -> dict[str, Any]:
+    level = reader.text("isolation", None)
+    if level is not None and (problem := isolation_rules.level_problem(level)) is not None:
+        reader.fail("isolation", problem)
+    image = reader.text("image", None)
+    if image is not None:
+        if level != isolation_rules.CONTAINER:
+            reader.fail("image", "is the image of an isolated job; it needs isolation: container")
+        if (problem := isolation_rules.image_problem(image)) is not None:
+            reader.fail("image", problem)
+    return {"isolation": level, "image": image}
+
+
+def system(reader: Reader) -> str | None:
+    """`os:`: the system the project's jobs run on (common/systems.py)."""
+    value = reader.text("os", None)
+    if value is not None and (problem := systems.problem(value)) is not None:
+        reader.fail("os", problem)
+    return value

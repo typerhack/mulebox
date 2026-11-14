@@ -22,6 +22,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any
 
+from mulebox.common import systems
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.coordinator import line, line_moves, queue, workers
@@ -83,7 +84,7 @@ def _due(conn: sqlite3.Connection, upgrade: dict[str, Any], now: float) -> bool:
     if workers.is_draining(conn, worker):
         return True  # paused: nothing ahead will start there anyway
     known = workers.get(conn, worker)
-    have = set(known["capabilities"]) if known else set()
+    have = set(known["capabilities"] if known else systems.inferred(()))  # unseen: as an old node
     for row in line.read(conn, now).rows:
         if row["job_id"] == upgrade["job_id"]:
             return True

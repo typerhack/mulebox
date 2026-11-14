@@ -25,10 +25,11 @@ def test_a_claim_records_toolchains_and_version(store, staging):
     claim(store, staging, toolchains={"node": ["22.22.3"]}, version="1.2.3")
     body = machines(store, staging)
     assert body["version"] == get_version()
-    assert body["workers"] == [{"worker": "build-1", "online": True, "capabilities": ["docker"],
+    assert body["workers"] == [{"worker": "build-1", "online": True,
+                                "capabilities": ["docker", "linux"],  # as an old worker counts
                                 "toolchains": {"node": ["22.22.3"]}, "version": "1.2.3",
                                 "slots": 1, "disk_free": None, "draining": False, "load": None,
-                                "priority": None, "pending": None}]
+                                "priority": None, "dev": False, "pending": None}]
 
 
 def test_an_older_worker_reports_nothing_and_keeps_what_it_said(store, staging):

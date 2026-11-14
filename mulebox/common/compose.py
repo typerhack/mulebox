@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 import sys
 
-from mulebox.common import isolation
+from mulebox.common import isolation, systems
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import is_valid_id
 from mulebox.common.package_cache import CAPABILITIES as PACKAGE_CACHES
@@ -46,7 +46,8 @@ def worker_capabilities(configured: tuple[str, ...], platform: str = sys.platfor
     reports by itself."""
     implied = (COMPOSE_CAPABILITY,) if DOCKER_CAPABILITY in configured else ()
     implied = (*implied, *isolation.offered(configured, DOCKER_CAPABILITY, platform, floor))
-    return list(dict.fromkeys((*configured, *implied, *PACKAGE_CACHES)))
+    return list(dict.fromkeys((*configured, *implied, *PACKAGE_CACHES,
+                               *systems.offered(platform))))
 
 
 def file_problem(name: str) -> str | None:

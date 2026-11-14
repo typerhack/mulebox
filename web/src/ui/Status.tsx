@@ -2,7 +2,7 @@
 // The status colour sits on the icon only; the word stays in the text colour. On cards the
 // icon stands alone and the word is its tooltip.
 
-import { Ban, Circle, CircleCheck, CircleHelp, CircleMinus, CirclePause, CircleX, Clock, Hourglass,
+import { Ban, Circle, CircleCheck, CircleHelp, CircleMinus, CirclePause, CircleX, Clock, FlaskConical, Hourglass,
          LoaderCircle, PowerOff, TriangleAlert, type LucideIcon } from "lucide-react";
 
 import { stateText } from "../lib/format";
@@ -26,6 +26,7 @@ const LOOKS: Record<string, Look> = {
   idle: { Icon: Circle, tone: "text-queued" },
   offline: { Icon: PowerOff, tone: "text-cancelled" },
   draining: { Icon: Hourglass, tone: "text-queued" },
+  dev: { Icon: FlaskConical, tone: "text-queued" },
   paused: { Icon: CirclePause, tone: "text-queued" },
   stuck: { Icon: CircleHelp, tone: "text-queued" },
 };

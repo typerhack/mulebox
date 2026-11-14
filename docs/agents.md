@@ -247,7 +247,13 @@ ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result 
 github_status: true             # post `check`'s result to the pushed commit on GitHub (below)
 isolation: container            # run each job in a confined container (below); default none
 image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
+os: any                         # linux, macos or any; default linux, macos for xcode or simulator
 ```
+
+   `os:` says which nodes may run the project's jobs. Without it a job runs only on a Linux
+   node, or a Mac node when it needs `xcode` or `simulator`, as a project's folder set up on one
+   system does not run on the other. `os: any` for a project that runs the same on both. A job
+   no online node fits is refused at once (exit 4) with the system it needs.
 
    `github_status: true` makes `mulebox check` post its result as the commit status
    `mulebox/<job>` (`success`, `failure`, or `error` when the job gave no result), so a pull

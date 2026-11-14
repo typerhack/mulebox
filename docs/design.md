@@ -654,14 +654,35 @@ coordinator echoes `on`, and a client whose coordinator does not cancels the job
 than this would run it anywhere. GitHub runs choose their node through their runner's labels
 (docs/install.md, Which node runs a CI job).
 
+**The system** (M25.6, 1.23.0): a job runs only on a node of the system its project was set up
+for. Found 2026-11-14: a Mac node took a Linux project's jobs and one failed, as its
+`node_modules` held x86-64 packages from the Linux node and the Mac's Docker is arm64. Each
+worker offers `linux` or `macos` as a capability (`common/systems.py`), and the coordinator adds
+that need to every job at submit (`needs.required`): `macos` for a job that needs `xcode` or
+`simulator`, else `linux`, or what `.mulebox.yml` says in `os:`; `os: any` adds none, for a
+project that runs the same on both. The coordinator adds it, not the client, so a client of any
+version gets the rule, and an older coordinator ignores the field. A worker older than 1.23
+offers no system and is read as `macos` if it offers `xcode` or `simulator`, else `linux`, so a
+mixed cluster keeps running. The chip (`arm64`, `x86_64`) is not part of it: Docker images and
+toolchains differ by chip too, but a node's own folders are set up on that node, and the
+failure seen came from moving between systems, not between chips of one.
+
+**Dev mode** (1.23.0, the user's ask, 2026-11-14): a node being set up or tried out takes no
+project's jobs by accident. With `dev = true` in its `node.toml` a node claims only jobs pinned
+to it, `--on` and its own runners' slots and upgrades; no other node waits for it (above); a job
+only such a node could run waits with the reason and the fix. Set by `mulebox setup --dev` for a
+new node, or from afar like `slots` (Node settings, below), where asking for it counts at once,
+before the node has written it. The coordinator's own node can never be in dev mode: every job
+goes through it, so `node.toml` refuses it there and a change from afar is refused.
+
 ## Node settings (M23.9, M23.4, the user's ask, 2026-11-13)
 
 mulebox suggests how a node is set up and does that by default, and the owner decides: a node
 with 2 slots may serve its owner better with 3. So a node's settings can be read and changed from
 the dev machine (`mulebox machine config`) and from the dashboard, with no hand edit and no
 restart.
-- **What can be changed from afar: `slots` and `priority`** (the user's decision, 2026-11-13;
-  the rest is shown read-only). Both only change how much work a
+- **What can be changed from afar: `slots`, `priority` and `dev`** (the user's decision,
+  2026-11-13, `dev` 2026-11-14; the rest is shown read-only). Both only change how much work a
   node takes and when; a wrong value slows the queue and is undone the same way. Left out:
   `capabilities`, which say what the machine really has (Docker, Playwright's system packages),
   so a wrong one fails jobs, and `mulebox setup` finds them; `[job_env]`, which reaches every job's

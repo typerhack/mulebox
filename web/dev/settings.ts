@@ -5,7 +5,7 @@
 import { SETTINGS_SCENE } from "./scenes.ts";
 
 interface Row { name: string; slots: number; state: string; cores?: number | null; version?: string | null; jobs: unknown[] }
-interface Kept { priority: string; pending: Record<string, unknown> | null; since: number | null; error: string | null; old: boolean }
+interface Kept { priority: string; dev: boolean; pending: Record<string, unknown> | null; since: number | null; error: string | null; old: boolean }
 
 const TAKES_MS = 6000;
 const PRIORITIES = ["preferred", "normal", "fallback"];
@@ -16,26 +16,30 @@ function of(row: Row): Kept {
   let found = kept.get(row.name);
   if (!found) {
     const start = scene[row.name] ?? {};
-    found = { priority: "normal", pending: (start.pending as Kept["pending"]) ?? null, since: start.pending ? Date.now() / 1000 - 40 : null,
+    found = { priority: "normal", dev: Boolean(start.dev), pending: (start.pending as Kept["pending"]) ?? null, since: start.pending ? Date.now() / 1000 - 40 : null,
               error: (start.error as string) ?? null, old: Boolean(start.old) };
     kept.set(row.name, found);
   }
   return found;
 }
 
-// A machine's row with the two fields the settings add to it.
-export const withSettings = <T extends Row>(row: T) =>
-  ({ ...row, priority: of(row).old ? null : of(row).priority, settings_pending: Boolean(of(row).pending) });
+// A machine's row with the fields the settings add to it; a node in dev mode shows as `dev`
+// with no slot free, as the coordinator gives it (dashboard/machines.py).
+export const withSettings = <T extends Row & { free_slots?: number }>(row: T) => {
+  const has = of(row), dev = has.dev && row.state !== "offline";
+  return { ...row, priority: has.old ? null : has.priority, settings_pending: Boolean(has.pending),
+           ...(dev ? { state: "dev", free_slots: 0 } : {}) };
+};
 
 function view(row: Row, editable: boolean) {
   const has = of(row), cores = row.cores ?? 8, memory = cores * 2;
   return {
     worker: row.name, online: row.state !== "offline", draining: row.state === "draining", version: has.old ? "1.14.5" : row.version,
-    running: row.jobs.length, applies: !has.old, current: has.old ? null : { slots: row.slots, priority: has.priority },
+    running: row.jobs.length, applies: !has.old, current: has.old ? null : { slots: row.slots, priority: has.priority, dev: has.dev },
     pending: has.pending, pending_since: has.since, error: has.pending ? has.error : null,
     suggested: { slots: Math.max(1, Math.min(Math.floor(cores / 4), Math.floor(memory / 6))),
                  reason: `${cores} cores and ${memory} GB of memory, at about 4 cores and 6 GB a job` },
-    choices: { slots: { min: 1, max: 64 }, priority: PRIORITIES }, editable,
+    choices: { slots: { min: 1, max: 64 }, priority: PRIORITIES, dev: [false, true] }, editable,
   };
 }
 
@@ -44,14 +48,18 @@ export function answerSettings(row: Row, change: Record<string, unknown> | null,
   const has = of(row);
   if (!change) return { status: 200, body: view(row, editable) };
   if (has.old) return { status: 409, body: `${row.name} has not reported its settings: it runs a mulebox older than this one; upgrade it first` };
-  const slots = change.slots, priority = change.priority;
+  const slots = change.slots, priority = change.priority, dev = change.dev;
   if (slots !== undefined && !(Number.isInteger(slots) && (slots as number) >= 1 && (slots as number) <= 64)) return { status: 400, body: "slots must be a whole number from 1 to 64" };
   if (priority !== undefined && !PRIORITIES.includes(String(priority))) return { status: 400, body: "priority must be preferred, normal or fallback" };
+  if (dev !== undefined && typeof dev !== "boolean") return { status: 400, body: "dev must be true or false" };
+  if (dev === true && row.name === "build-1") return { status: 409, body: "dev mode is for other nodes: build-1 is the coordinator, which every job goes through" };
   const wanted: Record<string, unknown> = change.cancel ? {} : { ...has.pending };
   if (slots !== undefined) wanted.slots = slots;
   if (priority !== undefined) wanted.priority = priority;
+  if (dev !== undefined) wanted.dev = dev;
   if (wanted.slots === row.slots) delete wanted.slots;
   if (wanted.priority === has.priority) delete wanted.priority;
+  if (wanted.dev === has.dev) delete wanted.dev;
   const waits = Object.keys(wanted).length > 0;
   Object.assign(has, { pending: waits ? wanted : null, since: waits ? Date.now() / 1000 : null, error: null });
   if (waits && row.state !== "offline") {
@@ -59,6 +67,7 @@ export function answerSettings(row: Row, change: Record<string, unknown> | null,
       if (has.pending !== wanted) return;  // changed or dropped meanwhile
       if (typeof wanted.slots === "number") row.slots = wanted.slots;
       if (typeof wanted.priority === "string") has.priority = wanted.priority;
+      if (typeof wanted.dev === "boolean") has.dev = wanted.dev;
       Object.assign(has, { pending: null, since: null });
       changed();
     }, TAKES_MS);

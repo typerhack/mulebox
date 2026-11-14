@@ -11,12 +11,13 @@ from __future__ import annotations
 from typing import Any
 
 from mulebox.common.status import left_mark
-from mulebox.coordinator.workers import OFFLINE_AFTER_S, is_online
+from mulebox.coordinator.workers import OFFLINE_AFTER_S, is_dev, is_online
 
 __all__ = ["AVAILABLE", "BUSY", "DRAINING", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "machine",
            "readings", "snapshot", "with_readings"]
 
 AVAILABLE, BUSY, DRAINING, OFFLINE = "available", "busy", "draining", "offline"
+DEV = "dev"  # dev mode: takes only jobs sent to it with --on (common/node_settings.py)
 JOB_FIELDS = ("job_id", "project", "job", "kind")
 READINGS = ("cpu_pct", "mem_pct")
 
@@ -37,8 +38,10 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float,
     slots = worker["slots"] if worker["slots"] is not None else max(len(jobs), 1)
     online = is_online(worker, now)
     draining = bool(worker.get("draining"))  # absent in a store not yet upgraded
-    free = max(0, slots - len(jobs)) if online and not draining else 0
-    state = (OFFLINE if not online else DRAINING if draining else AVAILABLE if free else BUSY)
+    dev = is_dev(worker)
+    free = max(0, slots - len(jobs)) if online and not draining and not dev else 0
+    state = (OFFLINE if not online else DRAINING if draining else DEV if dev
+             else AVAILABLE if free else BUSY)
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
             "host": host is not None and worker["worker"] == host, "version": worker.get("version"),

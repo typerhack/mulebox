@@ -9,10 +9,11 @@ from mulebox.coordinator import store as st
 from .helpers import queued, request, snapshot, submit_body
 
 
-def claim(store, staging, worker, now, *, slots=2, free=None, priority="normal", caps=("node",)):
+def claim(store, staging, worker, now, *, slots=2, free=None, priority="normal", caps=("node",),
+          dev=False):
     body = {"worker": worker, "capabilities": list(caps),
             "free_slots": slots if free is None else free,
-            "settings": {"slots": slots, "priority": priority}}
+            "settings": {"slots": slots, "priority": priority, "dev": dev}}
     return api.handle(store, staging, request("claim", **body), now, cluster_slots=1)
 
 

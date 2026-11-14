@@ -47,6 +47,23 @@ def test_steps_in_order(monkeypatch):
     assert "build-2 is in the queue" in said[-1]
 
 
+def test_dev_starts_the_node_in_dev_mode(monkeypatch):
+    calls, asked = [], []
+    monkeypatch.setattr(setup, "check_login", lambda t: None)
+    monkeypatch.setattr(setup_worker, "_run", lambda t, s, stdin=None: "build-2\n")
+    monkeypatch.setattr(setup_worker, "worker_jobs", lambda c, n: [])
+    monkeypatch.setattr(setup_worker, "make_key", lambda w: ("ssh-ed25519 AAAA k", "/k"))
+    monkeypatch.setattr(setup_worker, "authorize", lambda c, n, k: None)
+    monkeypatch.setattr(setup, "install", lambda t, env: calls.append(env))
+    monkeypatch.setattr(setup, "find_offers", lambda t, say: None)
+    monkeypatch.setattr(setup_worker, "_ask_dev", lambda c, n: asked.append(n))
+    monkeypatch.setattr(setup_worker, "wait_online", lambda c, n: {"slots": 2, "dev": True})
+    said = []
+    setup_worker.run("build-2", "pc", said.append, address="pc", dev=True)
+    assert calls[0]["MULEBOX_DEV"] == "1" and asked == ["build-2"]  # before the install only
+    assert "dev mode" in said[-1] and "--on build-2" in said[-1]
+
+
 def test_running_jobs_stop_an_upgrade(monkeypatch):
     monkeypatch.setattr(setup, "check_login", lambda t: None)
     monkeypatch.setattr(setup_worker, "_run", lambda t, s, stdin=None: "build-2\n")

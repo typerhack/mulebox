@@ -20,7 +20,7 @@ def test_submit_creates_uploading_job(store, staging):
                                                          toolchain={"node": "22.0.0"}))
     assert reply.type is MessageType.SUBMIT_OK
     job = store.get_job(reply.body["job_id"])
-    assert job["state"] == JobState.UPLOADING and job["needs"] == ["node"]
+    assert job["state"] == JobState.UPLOADING and job["needs"] == ["node", "linux"]
     assert job["timeout_min"] == 20 and job["toolchain"] == {"node": "22.0.0"}
 
 

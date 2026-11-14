@@ -164,7 +164,7 @@ export interface QueueSnapshot {
   recent: Job[];
 }
 
-export type MachineState = "available" | "busy" | "offline" | "draining";
+export type MachineState = "available" | "busy" | "offline" | "draining" | "dev";
 
 export interface Machine {
   name: string;

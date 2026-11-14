@@ -34,7 +34,10 @@ Choices where docs/interfaces.md is silent:
   dashboard its buttons: cancel, pause, resume, first, boost, and pausing a machine.
   ``cancel_button``, from before 0.87.0, is read and ignored.
 - ``slots`` is at least 1 (default 1; 1..64 when set from afar) and ``priority`` one of
-  ``preferred``, ``normal`` (default) and ``fallback`` (common/node_settings.py); both can be changed from afar (worker/node_file.py).
+  ``preferred``, ``normal`` (default) and ``fallback``; ``dev`` (default false) keeps every
+  job off the node but those sent to it by name (common/node_settings.py); all three can be
+  changed from afar (worker/node_file.py).
+- ``os`` (project) is ``linux``, ``macos`` or ``any`` (common/systems.py).
   ``[dashboard]`` is read in config_node.py.
 - ``retention`` has ``log_days`` (default 30, at least 1) and ``step_days`` (default 365, at
   least ``log_days``).
@@ -104,11 +107,13 @@ class ProjectConfig:
     host_ports: tuple[str, ...] = ()  # of the one job `for_job` gave this for
     isolation: str | None = None  # common/isolation.py; None: the node's floor
     image: str | None = None  # an isolated job's own image, else mulebox's
+    system: str | None = None  # `os:`, sent as is; the coordinator adds the need (systems.py)
 
     @property
     def all_needs(self) -> tuple[str, ...]:
         """`needs`, plus what a `compose:` project cannot run without (common/compose.py), and
-        `xcode` or `simulator` for one that pins it: a Mac node that has it offers it."""
+        `xcode` or `simulator` for one that pins it: a Mac node that has it offers it. The
+        system its jobs run on is the coordinator's to add, from `os:` (common/systems.py)."""
         implied = (compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY) if self.compose else ()
         implied = (*implied, *(name for name in FOUND_ON_NODE if name in self.toolchain))
         if self.isolation == isolation_rules.CONTAINER:
@@ -134,6 +139,7 @@ class NodeConfig:
     roots: dict[str, str]
     slots: int = 1
     priority: str = "normal"  # common/node_settings.py
+    dev: bool = False  # takes only jobs sent to it by name (common/node_settings.py)
     capabilities: tuple[str, ...] = ()
     isolation: str = isolation_rules.NONE  # the floor for every job here (common/isolation.py)
     coordinator: str | None = None
@@ -183,23 +189,11 @@ def load_project_config(path: Path) -> ProjectConfig:
         ignore_changes=reader.strings("ignore_changes"),
         github_status=reader.boolean("github_status", False),
         env=config_project.env_values(reader, files),
-        **_isolation(reader),
+        **config_project.isolation_fields(reader),
+        system=config_project.system(reader),
     )
     reader.finish()
     return config
-
-
-def _isolation(reader: Reader) -> dict[str, Any]:
-    level = reader.text("isolation", None)
-    if level is not None and (problem := isolation_rules.level_problem(level)) is not None:
-        reader.fail("isolation", problem)
-    image = reader.text("image", None)
-    if image is not None:
-        if level != isolation_rules.CONTAINER:
-            reader.fail("image", "is the image of an isolated job; it needs isolation: container")
-        if (problem := isolation_rules.image_problem(image)) is not None:
-            reader.fail("image", problem)
-    return {"isolation": level, "image": image}
 
 
 def client_config_path() -> Path:
@@ -284,6 +278,7 @@ def node_config_from(path: Path, data: Any) -> NodeConfig:
         roots=_roots(reader),
         slots=config_node.slots(reader),
         priority=config_node.priority(reader),
+        dev=reader.boolean("dev", False),
         capabilities=reader.strings("capabilities"),
         isolation=_floor(reader),
         coordinator=reader.ssh_target("coordinator", None),
@@ -295,6 +290,9 @@ def node_config_from(path: Path, data: Any) -> NodeConfig:
                                      DEFAULT_UNATTENDED_MAX_HOURS),
     )
     reader.finish()
+    if config.dev and "coordinator" in config.roles:
+        reader.fail("dev", "is for other nodes: this one is the coordinator, which every job "
+                    "goes through")
     if config.coordinator is None and "coordinator" not in config.roles:
         reader.fail("coordinator", "is required on a node without the 'coordinator' role")
     return config

@@ -10,7 +10,7 @@ import json
 import sqlite3
 from typing import Any
 
-from mulebox.common import disk
+from mulebox.common import disk, systems
 
 OFFLINE_AFTER_S = 15.0  # workers poll every 1 s, or heartbeat every 3 s while busy
 
@@ -62,7 +62,7 @@ def cluster_limit(conn: sqlite3.Connection, now: float, at_least: int) -> int:
 
 def _decoded(row: sqlite3.Row) -> dict[str, Any]:
     data = dict(row)
-    data["capabilities"] = json.loads(data["capabilities"])
+    data["capabilities"] = systems.inferred(json.loads(data["capabilities"]))  # older: none named
     tools = data.get("toolchains")  # absent in a read-only view of a store not yet upgraded
     data["toolchains"] = json.loads(tools) if tools else None
     for name in ("load", "settings", "wanted"):  # settings and wanted: node_settings.py
@@ -88,7 +88,7 @@ def report(worker: dict[str, Any], now: float) -> dict[str, Any]:
             "version": worker.get("version"), "slots": worker["slots"],
             "disk_free": worker.get("disk_free"), "draining": bool(worker.get("draining")),
             "priority": (worker.get("settings") or {}).get("priority"),
-            "pending": worker.get("wanted") or None,
+            "dev": is_dev(worker), "pending": worker.get("wanted") or None,
             "load": worker.get("load") if is_online(worker, now) else None}
 
 
@@ -96,6 +96,32 @@ def low_disks(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
     """Online workers short of space, for whoever is about to give them work."""
     return [{"worker": row["worker"], "free": row.get("disk_free")} for row in listing(conn)
             if is_online(row, now) and disk.is_low(row.get("disk_free"))]
+
+
+_HOST = "coordinator_host"
+
+
+def save_host(store: Any, name: str) -> None:
+    """The coordinator's own node, as its service starts."""
+    with store.write() as conn:
+        conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", (_HOST, name))
+
+
+def host(conn: sqlite3.Connection) -> str | None:
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", (_HOST,)).fetchone()
+    return row[0] if row else None
+
+
+def is_dev(worker: dict[str, Any]) -> bool:
+    """In dev mode as it reported, or asked to be from afar and not there yet."""
+    wanted = worker.get("wanted") or {}
+    return bool(wanted.get("dev", (worker.get("settings") or {}).get("dev")))
+
+
+def dev_asked(conn: sqlite3.Connection, worker: str) -> bool:
+    """Asked from afar to go into dev mode: no job waits for the node to write it first."""
+    row = conn.execute("SELECT wanted FROM workers WHERE worker = ?", (worker,)).fetchone()
+    return bool(row and row[0] and json.loads(row[0]).get("dev") is True)
 
 
 def is_draining(conn: sqlite3.Connection, worker: str) -> bool:

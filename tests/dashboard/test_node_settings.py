@@ -15,7 +15,7 @@ GB = 1 << 30
 @pytest.fixture
 def machine(store, staging):
     body = {"worker": "build-1", "capabilities": ["docker"], "free_slots": 2,
-            "settings": {"slots": 2, "priority": "normal"},
+            "settings": {"slots": 2, "priority": "normal", "dev": False},
             "load": {"cores": 8, "memory": {"total": 16 * GB, "available": 8 * GB, "used": 8 * GB}}}
     api.handle(store, staging, request("claim", **body), NOW - 1)
     return "build-1"
@@ -29,7 +29,8 @@ def test_the_window_reads_the_values_the_suggestion_and_the_choices(call, machin
         return await found.json(), unknown.status, posted.status
 
     view, unknown, posted = call(go)
-    assert view["current"] == {"slots": 2, "priority": "normal"} and view["pending"] is None
+    assert view["current"] == {"slots": 2, "priority": "normal", "dev": False}
+    assert view["pending"] is None
     assert view["suggested"]["slots"] == 2 and view["online"] is True
     assert view["choices"]["priority"] == ["preferred", "normal", "fallback"]
     assert view["editable"] is False  # this app has no controls

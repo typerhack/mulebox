@@ -14,6 +14,7 @@ from typing import Any
 
 from mulebox.client import report
 from mulebox.client.excludes import BUILTIN_EXCLUDES
+from mulebox.common import systems
 from mulebox.common.config import DEFAULT_LOG_DAYS, ProjectConfig
 from mulebox.common.config_jobs import for_job, port_variable
 from mulebox.common.status import STAGES
@@ -210,7 +211,7 @@ def _project(config: ProjectConfig) -> dict[str, Any]:
             "job_settings": _settings(config),
             "setup": config.setup, "install": config.install,
             "toolchain": dict(config.toolchain),
-            "needs": list(config.all_needs), "compose": list(config.compose),
+            "needs": systems.with_system(config.all_needs, config.system), "compose": list(config.compose),
             "timeout_min": config.timeout_min}
 
 

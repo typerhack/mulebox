@@ -25,7 +25,7 @@ def test_a_job_with_needs_nobody_offers_is_refused_at_submit(store, staging):
     reply = api.handle(store, staging, msg, NOW)
     assert reply.type is MessageType.ERROR and reply.body["code"] == "no_worker"
     text = reply.body["message"]
-    assert "docker" in text and "build-1 offers node" in text
+    assert "docker" in text and "build-1 offers linux, node" in text  # an old worker: Linux
     assert "capabilities" in text and "node.toml" in text
     with store.read() as conn:
         assert conn.execute("SELECT COUNT(*) FROM jobs").fetchone()[0] == 0
@@ -163,14 +163,16 @@ OLD_CLIENT = {"needs": ["docker"], "env": {"MULEBOX_COMPOSE_FILES": "docker-comp
 
 
 def test_the_coordinator_adds_what_an_older_client_left_out():
-    assert needs.required(["docker"], OLD_CLIENT["env"]) == ["docker", "compose-v1"]
-    assert needs.required([], OLD_CLIENT["env"]) == ["docker", "compose-v1"]
+    assert needs.required(["docker"], OLD_CLIENT["env"]) == ["docker", "compose-v1", "linux"]
+    assert needs.required([], OLD_CLIENT["env"]) == ["docker", "compose-v1", "linux"]
     assert needs.required(["node", "compose-v1", "docker"], OLD_CLIENT["env"]) == [
-        "node", "compose-v1", "docker"]
+        "node", "compose-v1", "docker", "linux"]
 
 
 def test_a_job_without_compose_needs_only_what_it_says():
-    assert needs.required(["docker"], {"CI": "1"}) == ["docker"]
+    assert needs.required(["docker"], {"CI": "1"}) == ["docker", "linux"]
+    assert needs.required(["docker"], {}, "any") == ["docker"]
+    assert needs.required(["xcode"], {}) == ["xcode", "macos"]
 
 
 def test_an_older_client_cannot_reach_an_older_worker(store, staging):

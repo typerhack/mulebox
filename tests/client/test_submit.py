@@ -96,7 +96,7 @@ def test_submit_body_of_a_compose_project(make_repo):
     remote = FakeRemote([[result()]])
     run_job(project, "test", make_repo(), remote, streams())
     body = remote.calls[0].body
-    assert body["needs"] == ["node", "docker", "compose-v1"]
+    assert body["needs"] == ["node", "docker", "compose-v1"] and "os" not in body
     assert body["env"] == {
         "CI": "1", "MULEBOX_COMPOSE_FILES": "docker-compose.yml:docker-compose.ci.yml"}
 

@@ -18,6 +18,11 @@ slots = 2
 # no node ranked above it could. `mulebox machine config` changes this and `slots` from afar.
 # priority = "normal"
 
+# Dev mode, for a node being set up or tried out: it takes only jobs sent to it by name
+# (`mulebox check --on <node>`) and its own runners' slots. `mulebox setup --dev` starts a node
+# with it on; `mulebox machine config <node> --dev on|off` changes it from afar.
+# dev = false
+
 # Run every job here in a confined container of its own, whatever a project says: "none" (the
 # default) or "container", which needs Docker on Linux. Applies from the next job.
 # isolation = "none"

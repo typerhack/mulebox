@@ -9,8 +9,9 @@ import { getJson, post } from "./api";
 import { unsent as unsentOf } from "./edits";
 import { REREAD_MS } from "./turns";
 
-export type SettingKey = "slots" | "priority";
-export interface Values { slots: number; priority: string }
+export type SettingKey = "slots" | "priority" | "dev";
+// `dev` is missing from a node older than 1.23, which has no dev mode.
+export interface Values { slots: number; priority: string; dev?: boolean }
 export type Draft = Partial<Values>;
 
 export interface NodeSettings {
@@ -25,7 +26,7 @@ export interface NodeSettings {
   pending_since?: number | null;
   error?: string | null;
   suggested: { slots: number; reason: string } | null;
-  choices?: { slots?: { min: number; max: number }; priority?: string[] };
+  choices?: { slots?: { min: number; max: number }; priority?: string[]; dev?: boolean[] };
   editable: boolean;
 }
 
@@ -38,6 +39,13 @@ export const PRIORITIES: { value: string; label: string; says: string }[] = [
   { value: "normal", label: "Normal", says: "Takes a job when no preferred node can within 30 s." },
   { value: "fallback", label: "Fallback", says: "Takes a job only when better nodes cannot within 30 s." },
 ];
+// Dev mode (common/node_settings.py): off by default; on, the node takes only jobs sent to it.
+export const DEV_MODES: { value: string; label: string; says: string }[] = [
+  { value: "off", label: "Off", says: "Takes any job it can run." },
+  { value: "on", label: "On", says: "Takes only jobs sent to it with --on, and its own runners." },
+];
+export const devLabel = (value: boolean | null | undefined) =>
+  value === null || value === undefined ? "-" : value ? "On" : "Off";
 export const priorityLabel = (value: string | null | undefined) =>
   PRIORITIES.find((choice) => choice.value === value)?.label ?? (value || "-");
 
@@ -62,6 +70,7 @@ export function changes(view: NodeSettings, draft: Draft): Draft {
   const body: Draft = {};
   if (rowOf(view, draft, "slots").mark === "unsaved") body.slots = draft.slots;
   if (rowOf(view, draft, "priority").mark === "unsaved") body.priority = draft.priority;
+  if (rowOf(view, draft, "dev").mark === "unsaved") body.dev = draft.dev;
   return body;
 }
 
@@ -70,7 +79,8 @@ export const unsent = (draft: Draft, sent: Draft): Draft => unsentOf<Values>(dra
 
 // "All as suggested": the suggestion as fixed values of the viewer's own, still to be saved.
 export const asSuggested = (view: NodeSettings): Draft =>
-  ({ priority: SUGGESTED_PRIORITY, ...(view.suggested ? { slots: view.suggested.slots } : {}) });
+  ({ priority: SUGGESTED_PRIORITY, ...(typeof view.current?.dev === "boolean" ? { dev: false } : {}),
+     ...(view.suggested ? { slots: view.suggested.slots } : {}) });
 
 const url = (name: string) => `/api/machines/${encodeURIComponent(name)}/settings`;
 export const readSettings = (name: string) => getJson<NodeSettings>(url(name));

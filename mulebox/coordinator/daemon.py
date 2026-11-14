@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from mulebox.common.config import DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS, NodeConfig
 from mulebox.common.log import get_logger
-from mulebox.coordinator import attendance, leases, recovery, retention
+from mulebox.coordinator import attendance, leases, recovery, retention, workers
 from mulebox.coordinator.node import open_local
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -75,6 +75,7 @@ def serve(node: NodeConfig, stop: threading.Event | None = None) -> int:
     try:
         _log.info("coordinator %s serving (store %s)", node.name, store.path)
         attendance.save_limits(store, limits_of(node))
+        workers.save_host(store, node.name)  # the node dev mode is never for
         run(store, staging, stop, **node.retention)
     finally:
         store.close()

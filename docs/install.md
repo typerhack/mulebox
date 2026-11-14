@@ -497,6 +497,15 @@ waits until `build-1` lists it online. `build-2` reaches `build-1` at the addres
 uses (`ssh -G build-1`); if it needs another one, add `--coordinator-address alice@192.168.1.50`.
 The first time, `build-2` trusts `build-1`'s host key as it finds it.
 
+Add `--dev` for a node you are setting up or trying out: it takes no project's jobs until you
+end dev mode, only those sent to it with `--on` (`mulebox check --on build-2`) and its own
+runners' (design.md, Which node runs a job). End it with `mulebox machine config build-2 --dev off`
+or from its settings window on the dashboard. The coordinator's own node cannot be in dev mode.
+
+A job runs only on a node of its project's system: Linux unless it needs `xcode` or `simulator`.
+A project that runs the same on both says `os: any` in `.mulebox.yml` (`os: macos` or `linux` to
+say it outright).
+
 Run it again to upgrade `build-2`; running jobs there stop it unless `--now`. The client keeps
 talking to `build-1` only. A new node.toml written by the installer carries:
 
@@ -548,15 +557,16 @@ its name (design.md, Project folders).
 ```sh
 mulebox machine config build-2                    # slots, priority, the suggestion, what waits
 mulebox machine config build-2 --slots 3          # --priority preferred|normal|fallback; --wait
+mulebox machine config build-2 --dev on           # only jobs sent with --on; off ends it
 mulebox machine config build-2 --cancel           # drop a change that has not applied yet
 ```
 
-The dashboard serves the same settings to its pages (`/api/machines/<name>/settings`, with its
-controls on); a window for them there is still to come. The change waits on the coordinator
+The dashboard has the same settings in each machine's settings window
+(`/api/machines/<name>/settings`, with its controls on). The change waits on the coordinator
 until the machine writes it into its own `node.toml`, within seconds while it is online, or when it
 is back; there is no restart, and it counts from the next job. Fewer slots than jobs running stops
-no job: the machine takes no new one until it is under the new count. Only `slots` and `priority`
-can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+no job: the machine takes no new one until it is under the new count. Only `slots`, `priority` and
+`dev` can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.
 

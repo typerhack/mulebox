@@ -10,7 +10,8 @@ A job whose `needs` no worker offers would wait in the queue forever and say not
 
 Being busy is not a reason: a capable online worker is simply the queue working.
 
-A worker reports `compose-v1` and the package caches by itself (common/compose.py), so nobody
+A worker reports its system (`linux` or `macos`, common/systems.py), `compose-v1` and the
+package caches by itself (common/compose.py), so nobody
 can add them to a config: a machine without them is running an older mulebox.
 """
 
@@ -18,8 +19,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import compose, isolation, package_cache
-from mulebox.coordinator.workers import is_online
+from mulebox.common import compose, isolation, package_cache, systems
+from mulebox.coordinator.errors import BadRequest
+from mulebox.coordinator.workers import is_dev, is_online
 
 Worker = dict[str, Any]
 HOW_TO_ADD = ("add it to `capabilities` in ~/.config/mulebox/node.toml on a node and "
@@ -28,17 +30,28 @@ HOW_TO_UPGRADE = ("the node runs a mulebox too old for this project's `compose:`
                   "package caches; upgrade it (docs/install.md, Upgrade)")
 
 
-def required(needs: list[str], env: dict[str, str]) -> list[str]:
-    """What a job really needs. The client adds this for a clear message, but an older client
-    does not, and an older worker would claim its job and ignore the compose files."""
-    if compose.COMPOSE_FILES_KEY not in env:
-        return needs
-    return list(dict.fromkeys(
-        (*needs, compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY)))
+def asked_os(body: dict[str, Any]) -> str | None:
+    """`os` of a submit: `os:` from .mulebox.yml, or None (older clients, or not set)."""
+    value = body.get("os")
+    if value is None:
+        return None
+    if not isinstance(value, str) or (problem := systems.problem(value)) is not None:
+        raise BadRequest(f"os {problem or 'must be a string'}")
+    return value
+
+
+def required(needs: list[str], env: dict[str, str], asked_os: str | None = None) -> list[str]:
+    """What a job really needs. Compose: the client adds it for a clear message, but an older
+    client does not, and an older worker would claim its job and ignore the compose files. The
+    system it runs on (common/systems.py), from `os:` as sent: added here, not by the client, so
+    a newer client never asks an older coordinator for one, and an older client's job gets it."""
+    if compose.COMPOSE_FILES_KEY in env:
+        needs = [*needs, compose.DOCKER_CAPABILITY, compose.COMPOSE_CAPABILITY]
+    return systems.with_system(needs, asked_os)
 
 
 def _missing(worker: Worker, needs: list[str]) -> list[str]:
-    return sorted(set(needs) - set(worker["capabilities"]))
+    return sorted(set(needs) - set(systems.inferred(worker["capabilities"])))
 
 
 def capable(workers: list[Worker], needs: list[str]) -> list[Worker]:
@@ -66,6 +79,11 @@ HOW_TO_ISOLATE = ("every node runs its jobs isolated (`isolation = \"container\"
 
 
 def _what_to_do(workers: list[Worker], needs: list[str]) -> str:
+    system = next((name for name in systems.SYSTEMS if name in needs), None)
+    if system and all(system in _missing(w, needs) for w in workers):
+        return (f"this project's jobs run on {'Linux' if system == systems.LINUX else 'macOS'} "
+                "(`os:` in .mulebox.yml; Linux unless it pins Xcode or a simulator) and no node "
+                "has it: add such a node, or set `os: any` if the jobs run on either")
     if isolation.UNISOLATED in needs and all(
             isolation.UNISOLATED in _missing(w, needs) for w in workers):
         return HOW_TO_ISOLATE
@@ -87,16 +105,23 @@ def refusal(workers: list[Worker], needs: list[str]) -> str | None:
     return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
 
 
-def waiting_for(workers: list[Worker], needs: list[str], now: float) -> str | None:
-    """Why a queued job cannot start right now, or None when a worker for it is online."""
+def waiting_for(workers: list[Worker], needs: list[str], now: float,
+                pinned: bool = False) -> str | None:
+    """Why a queued job cannot start right now, or None when a worker for it is online. A node
+    in dev mode takes only a job sent to it by name (`pinned`)."""
     if not workers:
         return "no node has connected to this coordinator yet"
     fitting = capable(workers, needs)
     if not fitting:
         return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
     online = [w for w in fitting if is_online(w, now)]
-    if any(not w.get("draining") for w in online):
+    if any(not w.get("draining") and (pinned or not is_dev(w)) for w in online):
         return None
+    draining = ", ".join(w["worker"] for w in online if w.get("draining"))
+    dev = ", ".join(w["worker"] for w in online if not w.get("draining") and is_dev(w))
+    if dev and not draining:
+        return (f"every node for this job is in dev mode ({dev}), which takes only jobs sent "
+                f"with `--on`; `mulebox machine config <name> --dev off` ends it")
     if online:
         names = ", ".join(w["worker"] for w in online)
         return (f"every node for this job is draining ({names}); "

@@ -9,6 +9,9 @@ Both machines must take `ssh <host> true` from here. The steps, each said as it 
    which it reaches at the address from `ssh -G <coordinator>`, or `--coordinator-address`.
 5. What the worker offers, then: the coordinator lists it online, or setup says what to check.
 
+With `--dev` the node is in dev mode from its first claim: a new node.toml says `dev = true`, and
+for a node the coordinator knows already the change is asked before the install.
+
 Run again, it upgrades the worker; its node.toml, key and authorization are kept or replaced
 the same way. A worker's running jobs stop it unless `--now`.
 """
@@ -20,7 +23,7 @@ import subprocess
 import time
 
 from mulebox.client import setup
-from mulebox.client.remote import request
+from mulebox.client.remote import CoordinatorError, request
 from mulebox.client.setup import PROGRAM, SetupError, Say
 from mulebox.common import ssh
 from mulebox.common.errors import MuleboxError
@@ -97,8 +100,18 @@ def wait_online(coordinator: str, name: str) -> dict | None:
         time.sleep(3.0)
 
 
+def _ask_dev(coordinator: str, name: str) -> None:
+    """Ask the coordinator to put `name` in dev mode; nothing for a node it does not know yet
+    (its new node.toml says so) or one too old to have it (asked again once upgraded)."""
+    try:
+        setup.remote_for(coordinator).call(request(MessageType.NODE_SETTINGS, worker=name,
+                                                   dev=True))
+    except CoordinatorError:
+        pass
+
+
 def run(worker: str, coordinator: str, say: Say, address: str | None = None,
-        now: bool = False) -> None:
+        now: bool = False, dev: bool = False) -> None:
     for target in (coordinator, worker):
         say(f"checking the login to {target}")
         setup.check_login(target)
@@ -107,13 +120,16 @@ def run(worker: str, coordinator: str, say: Say, address: str | None = None,
     if not now and (jobs := worker_jobs(coordinator, name)):
         raise SetupError(f"{len(jobs)} job(s) are running on {worker}, and an upgrade would "
                          "stop them. Wait for them, or add --now.")
+    if dev:
+        _ask_dev(coordinator, name)  # a node known already: no job between now and its upgrade
     try:
         say(f"making a key on {worker} for {coordinator}")
         public_key, key_path = make_key(worker)
         say(f"letting that key reach {coordinator}, for mulebox requests only")
         authorize(coordinator, marker_name(name), public_key)
         say(f"installing mulebox on {worker}, a worker of {address}")
-        setup.install(worker, {"MULEBOX_COORDINATOR": address, "MULEBOX_COORDINATOR_KEY": key_path})
+        setup.install(worker, {"MULEBOX_COORDINATOR": address, "MULEBOX_COORDINATOR_KEY": key_path,
+                               **({"MULEBOX_DEV": "1"} if dev else {})})
         setup.find_offers(worker, say)
         name = _run(worker, _NAME).strip().splitlines()[-1]
     except (MuleboxError, OSError, ValueError, subprocess.SubprocessError) as exc:
@@ -127,5 +143,10 @@ def run(worker: str, coordinator: str, say: Say, address: str | None = None,
             f"{coordinator} does not see {name}. On {worker}, `mulebox service logs "
             f"worker` says why; often {address} cannot be reached from there "
             "(give another with --coordinator-address)")
+    if dev and not row.get("dev"):  # a node.toml kept from before, on a node older than 1.23
+        _ask_dev(coordinator, name)
     say(f"{name} is in the queue: {row.get('slots')} slot(s), offers "
         f"{', '.join(row.get('capabilities') or []) or 'plain jobs'}")
+    if dev:
+        say(f"{name} is in dev mode: it takes only jobs sent with `--on {name}`; "
+            f"`mulebox machine config {name} --dev off` lets it take any job")

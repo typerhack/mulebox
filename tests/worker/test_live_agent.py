@@ -50,7 +50,7 @@ def test_more_slots_from_afar_count_from_the_next_claim(tmp_path, roots_config, 
     assert agent.node.slots == 3 and "slots = 3" in path.read_text()
     agent.step()
     claims = link.of_type(MessageType.CLAIM)
-    assert claims[-1].body["settings"] == {"slots": 3, "priority": "normal"}
+    assert claims[-1].body["settings"] == {"slots": 3, "priority": "normal", "dev": False}
     assert claims[-1].body["free_slots"] == 3 and link.wanted is None
 
 

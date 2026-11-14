@@ -45,7 +45,7 @@ def test_services_is_gone_and_compose_shows_what_it_implies():
     project = contract.build(config, "1")["project"]
     assert "services" not in project
     assert project["compose"] == ["docker-compose.yml"]
-    assert project["needs"] == ["node", "docker", "compose-v1"]
+    assert project["needs"] == ["node", "docker", "compose-v1", "linux"]
 
 
 def test_compose_rules_show_only_for_a_compose_project():

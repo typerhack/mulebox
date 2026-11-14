@@ -22,6 +22,9 @@ def register(sub: argparse._SubParsersAction) -> None:
                         help="with --queued: behind the jobs already waiting, not next")
     parser.add_argument("--worker-of", metavar="COORDINATOR",
                         help="make the host one more worker of this coordinator machine")
+    parser.add_argument("--dev", action="store_true",
+                        help="with --worker-of: the new node starts in dev mode, taking only "
+                             "jobs sent to it with --on")
     parser.add_argument("--coordinator-address", metavar="TARGET",
                         help="how the worker reaches the coordinator, if not as this dev machine does")
     parser.add_argument("--no-skill", action="store_true",
@@ -38,11 +41,14 @@ def _setup(args: argparse.Namespace) -> int:
     try:
         if args.behind and not args.queued:
             raise setup.SetupError("--behind goes with --queued")
+        if args.dev and not args.worker_of:
+            raise setup.SetupError("--dev goes with --worker-of; for a node already set up, "
+                                   "`mulebox machine config <node> --dev on`")
         if args.queued:
             setup_queued.run(args.host, _say, behind=args.behind)
         elif args.worker_of:
             setup_worker.run(args.host, args.worker_of, _say, args.coordinator_address,
-                             now=args.now)
+                             now=args.now, dev=args.dev)
         else:
             setup.run(args.host, _say, now=args.now, when_idle=args.when_idle)
     except setup.SetupError as exc:

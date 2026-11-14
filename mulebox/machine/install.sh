@@ -12,6 +12,7 @@
 # Environment: MULEBOX_PYTHON picks the Python to use (default python3). MULEBOX_COORDINATOR
 # (an ssh target) and MULEBOX_COORDINATOR_KEY (an absolute key path) make a new node.toml a
 # worker of that coordinator, with no coordinator or dashboard of its own (`setup --worker-of`).
+# MULEBOX_DEV=1 starts a new node.toml in dev mode (`setup --dev`).
 set -euo pipefail
 
 MB_HOME="$HOME/.mulebox"
@@ -176,6 +177,9 @@ render_node_config() {  # template name home -> TOML on stdout
             worker+=$'\n'"coordinator_key = \"$MULEBOX_COORDINATOR_KEY\""
         text="${text//roles = \[\"coordinator\", \"worker\"\]/$worker}"
         text="${text//mode = \"local\"/mode = \"off\"}"
+    fi
+    if [ "${MULEBOX_DEV:-}" = 1 ]; then
+        text="${text//# dev = false/dev = true}"
     fi
     printf '%s\n' "$text"
 }

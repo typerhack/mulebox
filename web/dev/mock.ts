@@ -36,8 +36,8 @@ const sse = (res: ServerResponse) => res.writeHead(200, { "Content-Type": "text/
 
 const snapshot = () => ({ now: now(), ...queue });
 function panel() {
-  const live = machines.filter((m) => m.state !== "offline");
-  return { machines: machines.map(withSettings), total: machines.length, online: live.length, free_slots: live.reduce((sum, m) => sum + m.free_slots, 0),
+  const rows = machines.map(withSettings), live = rows.filter((m) => m.state !== "offline");
+  return { machines: rows, total: rows.length, online: live.length, free_slots: live.reduce((sum, m) => sum + m.free_slots, 0),
            notices: CLEAN ? [] : [{ kind: "client", level: "warning", name: "laptop.local",
                        text: `Dev machine laptop.local runs mulebox 0.0.1, the node ${VERSION}.`, fix: "Upgrade mulebox on it: `pipx upgrade mulebox` (or `uv tool upgrade mulebox` if uv installed it)." },
                      ...machines.filter((m) => m.version !== VERSION).map((m) => ({ kind: "worker", level: "danger", name: m.name,

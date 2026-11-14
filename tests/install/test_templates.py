@@ -136,3 +136,16 @@ def test_a_worker_of_another_coordinator_renders_and_validates(tmp_path):
     assert node.roles == ("worker",) and node.coordinator == "ssh://alice@192.168.1.50:22"
     assert node.coordinator_key == "/home/alice/.config/mulebox/coordinator_key"
     assert node.dashboard["mode"] == "off"
+
+
+def test_dev_writes_a_node_in_dev_mode(tmp_path):
+    env = {**os.environ, "MULEBOX_COORDINATOR": "pc", "MULEBOX_DEV": "1"}
+    text = call_install_function("render_node_config", str(INSTALL_DIR / "node.toml.example"),
+                                 "build-2", "/home/alice", env=env)
+    path = tmp_path / "node.toml"
+    path.write_text(text, encoding="utf-8")
+    assert load_node_config(path).dev is True
+    plain = call_install_function("render_node_config", str(INSTALL_DIR / "node.toml.example"),
+                                  "build-2", "/home/alice", env={**os.environ, "MULEBOX_DEV": ""})
+    path.write_text(plain, encoding="utf-8")
+    assert load_node_config(path).dev is False

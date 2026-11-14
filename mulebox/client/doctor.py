@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
-from mulebox.common import disk, upgrade
+from mulebox.common import disk, systems, upgrade
 from mulebox.common.config import FOUND_ON_NODE, SIMULATOR, XCODE, ProjectConfig
 from mulebox.common.dashboard_address import place
 from mulebox.common.env_rules import unknown_references
@@ -76,10 +76,15 @@ def versions(client: str, facts: Facts) -> list[Finding]:
     return out
 
 
+def _needed(project: ProjectConfig) -> list[str]:
+    """What the coordinator asks of a node for this project's jobs, the system too."""
+    return systems.with_system(project.all_needs, project.system)
+
+
 def _missing(worker: Worker, project: ProjectConfig) -> list[str]:
     """What this worker lacks and no job can add."""
-    offers = set(worker.get("capabilities") or ())
-    return [f"capability {need}" for need in project.all_needs if need not in offers]
+    offers = set(systems.inferred(worker.get("capabilities") or ()))  # an old one names none
+    return [f"capability {need}" for need in _needed(project) if need not in offers]
 
 
 def _toolchain_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
@@ -113,7 +118,7 @@ def _node_gaps(worker: Worker, project: ProjectConfig) -> list[str]:
 def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
     """What the project needs, without what is only to be installed (`leaving`, as _toolchain_gaps
     words it): a machine does not offer what a first job has yet to fetch."""
-    wanted = [*project.all_needs, *(f"{n} {v}" for n, v in project.toolchain.items())]
+    wanted = [*_needed(project), *(f"{n} {v}" for n, v in project.toolchain.items())]
     kept = [item for item in wanted if not any(gap.startswith(f"{item} (") for gap in leaving)]
     return ", ".join(kept) or "nothing special"
 
@@ -121,8 +126,11 @@ def _wanted(project: ProjectConfig, leaving: Sequence[str] = ()) -> str:
 def _fix(project: ProjectConfig) -> str:
     mac = (f"; `{XCODE}` and `{SIMULATOR}` are offered by a Mac node with Xcode and a "
            "simulator runtime installed, by themselves"
-           if set(FOUND_ON_NODE) & set(project.all_needs) else "")
-    return f"a capability goes into `capabilities` in the machine's node.toml{mac}"
+           if set(FOUND_ON_NODE) & set(_needed(project)) else "")
+    system = next((s for s in systems.SYSTEMS if s in _needed(project)), None)
+    os_note = (f"; `{system}` is the system its jobs run on, offered by every such node by "
+               "itself (`os:` in .mulebox.yml, or `os: any` for either)" if system else "")
+    return f"a capability goes into `capabilities` in the machine's node.toml{mac}{os_note}"
 
 
 def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
@@ -159,7 +167,7 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
     if to_install:
         found.append(Finding(OK, "machine", f"{'; '.join(to_install)}: the first job installs it, "
                              "once, which can take minutes"))
-    if set(FOUND_ON_NODE) & set(project.all_needs):
+    if set(FOUND_ON_NODE) & set(_needed(project)):
         found += _xcodes(w for w in usable if not node_gaps[str(w.get("worker"))])
     return found
 

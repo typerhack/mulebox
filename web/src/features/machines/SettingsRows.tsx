@@ -3,11 +3,11 @@
 // edit reads "unsaved" until Save and a saved change "pending" until the node took it. Beside
 // them, what the node itself reports, locked.
 
-import { Clock, ListOrdered, Lock, PenLine, RotateCcw, SquareStack } from "lucide-react";
+import { Clock, FlaskConical, ListOrdered, Lock, PenLine, RotateCcw, SquareStack } from "lucide-react";
 import { useId, type ReactNode } from "react";
 
 import { ago, plural } from "../../lib/format";
-import { PRIORITIES, SLOTS_RANGE, SUGGESTED_PRIORITY, priorityLabel, rowOf,
+import { DEV_MODES, PRIORITIES, SLOTS_RANGE, SUGGESTED_PRIORITY, devLabel, priorityLabel, rowOf,
          type Draft, type Mark, type NodeSettings, type SettingKey } from "../../lib/nodeSettings";
 import type { Machine } from "../../lib/types";
 import { IconButton } from "../../ui/Button";
@@ -71,10 +71,12 @@ const ROWS = "divide-y divide-line";
 const meaning = (text: string) => <p className="pb-3 text-sm text-ink-2">{text}</p>;
 
 export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDrop }: Props) {
-  const says = useId();
+  const says = useId(), devSays = useId();
   const range = view.choices?.slots ?? SLOTS_RANGE;
   const known = view.choices?.priority ?? PRIORITIES.map((choice) => choice.value);
   const slots = rowOf(view, draft, "slots"), priority = rowOf(view, draft, "priority");
+  const dev = rowOf(view, draft, "dev");
+  const devKnown = typeof view.current?.dev === "boolean";  // a node older than 1.23 has none
   const mine = slots.yours ?? machine.slots;
   const suggested = view.suggested?.slots;
   const drop = (key: SettingKey) => (locked ? undefined : () => onDrop(key));
@@ -117,6 +119,22 @@ export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDro
             <RunsWith now={priority.now ? priorityLabel(priority.now) : null} yours={priorityLabel(priority.yours)}
               mark={priority.mark} online={view.online} same={priority.now === SUGGESTED_PRIORITY}
               drop={drop("priority")} busy={busy} />
+          </Panel>
+          <Panel title="Dev mode" label="Dev mode" icon={<FlaskConical aria-hidden className="size-icon" />} bodyClassName={ROWS}>
+            {meaning("For a node you are setting up or trying out")}
+            <Row label="Suggested" note="the default for every node">
+              <span className="font-medium">Off</span>
+            </Row>
+            <Row label="Yours" noteId={devSays}
+              note={devKnown ? DEV_MODES.find((choice) => choice.value === (dev.yours ? "on" : "off"))?.says
+                             : "The node runs a mulebox older than 1.23, which has no dev mode."}>
+              <Segmented label="Dev mode" describedBy={devSays} disabled={locked || busy || !devKnown}
+                value={dev.yours ? "on" : "off"} choices={DEV_MODES}
+                onChange={(next) => onEdit({ dev: next === "on" })} />
+            </Row>
+            <RunsWith now={devKnown ? devLabel(dev.now) : null} yours={devLabel(dev.yours)}
+              mark={dev.mark} online={view.online} same={dev.now === false}
+              drop={drop("dev")} busy={busy} />
           </Panel>
         </div>
         <Panel title="Reported by the node" label="Reported by the node" icon={<Lock aria-hidden className="size-icon" />}

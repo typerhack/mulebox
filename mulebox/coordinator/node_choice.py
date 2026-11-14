@@ -13,7 +13,8 @@ it could run to another node that is free now, for a short while:
 Every wait counts from the first time a node left the job (`jobs.deferred_at`), not from its
 arrival, so a job that sat behind a busy line still gets its preferred node, and a node that can
 never take it (an upgrade ahead of it there, a GitHub slot) never strands it. A job sent with
-`--on <node>` (`pinned_worker`) is for that node alone and none of this applies.
+`--on <node>` (`pinned_worker`) is for that node alone and none of this applies. A node in dev
+mode takes no other job, so no node waits for it.
 """
 
 from __future__ import annotations
@@ -59,7 +60,8 @@ def read(conn: sqlite3.Connection, worker: str, now: float, priority: str | None
     mine = ns.rank(priority)
     choice = Choice(worker, free)
     for row in rows:
-        if row["worker"] == worker or not workers.is_online(row, now) or row.get("draining"):
+        if (row["worker"] == worker or not workers.is_online(row, now) or row.get("draining")
+                or workers.is_dev(row)):
             continue
         held, boosted = conn.execute(
             f"SELECT COUNT(*), MAX(boost) FROM jobs WHERE {_ACTIVE} AND worker = ?",

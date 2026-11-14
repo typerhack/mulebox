@@ -58,6 +58,8 @@ def _act(remote: Remote, name: str, action: str) -> list[str]:
 
 
 def state(row: dict) -> str:
+    if row.get("dev") and not row.get("draining"):
+        return "dev" if row.get("online") else "dev, offline"
     if row.get("draining"):
         return "draining" if row.get("online") else "drained, offline"
     return "online" if row.get("online") else "offline"

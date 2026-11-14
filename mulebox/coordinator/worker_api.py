@@ -30,7 +30,8 @@ def claim(req: Request) -> Message:
                       now=req.now, toolchains=v.versions_by_name(req.body, "toolchains"),
                       version=v.text(req.body, "version", None),
                       disk_free=v.integer(req.body, "disk_free", None, low=0),
-                      load=v.load(req.body), priority=(settings or {}).get("priority"))
+                      load=v.load(req.body), priority=(settings or {}).get("priority"),
+                      dev=bool((settings or {}).get("dev")))
     with req.store.write() as conn:  # after the claim, which records a new worker
         waiting = {**node_settings.settle(conn, worker, settings),
                    **project_orders.hand_out(conn, worker, req.now)}

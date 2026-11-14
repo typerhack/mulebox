@@ -172,7 +172,9 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
   it is offline or has not reported, and then the box reads `no live data`, never a guess. The
   machine the dashboard runs on gets the hub's own finer sample on top (the row named after
   `node.toml`'s `name`). A `machines` event is published when a reading moves a whole percent.
-- `state`: `offline` when not seen for 15 s, else `busy` with nothing free, else `available`.
+- `state`: `offline` when not seen for 15 s, else `draining` when paused, else `dev` in dev
+  mode (with `free_slots` 0, as it takes only jobs sent to it with `--on`), else `busy` with
+  nothing free, else `available`.
 - **Seen.** Claims stop while a worker has no free slot, so a job's heartbeats, every 3 s,
   also refresh `last_seen`. The worker lease cannot do this job: at 120 s it would keep a
   dead machine online for two minutes.
@@ -339,10 +341,11 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 ```json
 {"worker": "build-1", "online": true, "draining": false, "version": "1.16.0", "running": 1,
  "applies": true,
- "current": {"slots": 2, "priority": "normal"},
+ "current": {"slots": 2, "priority": "normal", "dev": false},
  "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
  "suggested": {"slots": 4, "reason": "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job"},
- "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"]},
+ "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"],
+             "dev": [false, true]},
  "editable": true}
 ```
 
@@ -351,6 +354,9 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
 - `pending` is a change the coordinator holds until the worker writes it, within seconds while it
   is online, else when it is back (`online`); null once applied. `error` says why it could not be
   written (for example a node.toml that is a symlink); it stays until a new change or `cancel`.
+- `dev` is in `current` only for a worker on 1.23 or later; a POST of `dev` for an older one is
+  409, and `dev: true` for the coordinator's own node is 409 too (design.md, Which node runs a
+  job).
 - `suggested` comes from the cores and memory the worker last reported, null before it did. It
   is never applied by itself.
 - `running` counts jobs and GitHub slots on it now. A lower `slots` stops no job: the node takes

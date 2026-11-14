@@ -32,7 +32,7 @@ class StoreRemote:
 @pytest.fixture
 def remote(store, staging, monkeypatch):  # noqa: F811
     body = {"worker": "build-1", "capabilities": [], "free_slots": 2,
-            "settings": {"slots": 2, "priority": "normal"},
+            "settings": {"slots": 2, "priority": "normal", "dev": False},
             "load": {"cores": 16, "memory": {"total": 32 * GB, "available": 0, "used": 32 * GB}}}
     api.handle(store, staging, request("claim", **body), time.time())
     fake = StoreRemote(store, staging)
@@ -72,3 +72,16 @@ def test_bad_values_are_refused_by_the_parser_or_the_coordinator(remote, capsys)
         run("build-1", "--priority", "first")
     assert run("build-1", "--slots", "0") != 0
     assert "from 1 to 64" in capsys.readouterr().err
+
+
+def test_dev_mode_is_shown_asked_and_named_in_the_list(remote, capsys, monkeypatch):
+    assert run("build-1") == 0
+    assert "dev mode:  off" in capsys.readouterr().out
+    assert run("build-1", "--dev", "on") == 0
+    assert remote.sent[-1] == {"worker": "build-1", "dev": True}
+    assert "waiting:   dev on; the machine applies it" in capsys.readouterr().out
+    from mulebox.client import machine_commands
+    monkeypatch.setattr(machine_commands, "connect", lambda: remote)
+    args = build_parser().parse_args(["machine", "list"])
+    assert args.func(args) == 0
+    assert "build-1              dev " in capsys.readouterr().out  # asked counts at once

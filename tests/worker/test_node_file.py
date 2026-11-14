@@ -91,7 +91,7 @@ def test_a_change_from_afar_is_written_once_and_a_failure_is_not_retried(toml, t
     live = live_config.LiveConfig(toml, clock)
     node = live.follow(node, {"node_settings": {"slots": 4}, "node_settings_at": 5.0})
     assert node.slots == 4 and "slots = 4" in toml.read_text()
-    assert live_config.report(node, live.error) == {"slots": 4, "priority": "normal"}
+    assert live_config.report(node, live.error) == {"slots": 4, "priority": "normal", "dev": False}
     clock.now = 10.0
     assert live.check(node) is node  # its own write is not taken for a hand edit
     real = tmp_path / "real.toml"

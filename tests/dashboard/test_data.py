@@ -65,7 +65,7 @@ def test_waiting_jobs_say_where_they_may_go_and_running_ones_do_not(data, store,
     docker = queued(store, staging, NOW + 2, needs=["docker"])
     rows = {row["job_id"]: row for row in data.queue_jobs(NOW + 3)}
     assert "can_run_on" not in rows[running] and "needs" not in rows[running]
-    assert rows[plain]["can_run_on"] == ["wrk-a", "wrk-b"] and rows[plain]["needs"] == []
+    assert rows[plain]["can_run_on"] == ["wrk-a", "wrk-b"] and rows[plain]["needs"] == ["linux"]
     assert "waiting_for" not in rows[plain]
     assert rows[docker]["can_run_on"] == ["wrk-b"] and rows[docker]["position"] == 2
     assert "waiting_for" not in rows[docker]

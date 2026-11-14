@@ -1,12 +1,12 @@
 """A node's settings from afar, and node priority in claims (design.md, Node settings).
 
 The truth is each node's node.toml. The coordinator keeps what a worker last reported
-(`workers.settings`: `slots`, `priority`, and `error` when a change could not be written) and a
+(`workers.settings`: `slots`, `priority`, `dev`, and `error` when a change could not be written) and a
 change its owner asked for (`workers.wanted`, since `wanted_at`). The change goes back in the
 reply to the worker's next claim or heartbeat (`node_settings`, `node_settings_at`); the worker
 writes it and reports, and what it reports clears the values it now has (`settle`).
 
-- `node_settings` request: `worker`, and `slots`, `priority` or `cancel: true` (drop what waits);
+- `node_settings` request: `worker`, and `slots`, `priority`, `dev` or `cancel: true` (drop what waits);
   with none of them it only reads. Refused for a worker that never reported settings (a mulebox
   older than this), so a change is not left waiting for good. Replied `node_settings_ok`, `view`.
 - Priority in claims: node_choice.py.
@@ -42,6 +42,8 @@ def reported(body: dict[str, Any]) -> dict[str, Any] | None:
         return None  # a hand edit may hold more than the 64 asked from afar
     try:
         out: dict[str, Any] = {"slots": slots, "priority": ns.check_priority(value.get("priority"))}
+        if "dev" in value:  # a worker older than 1.23 has no dev mode
+            out["dev"] = ns.check_dev(value["dev"])
     except ValueError:
         return None
     error = value.get("error")
@@ -91,12 +93,14 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
         "draining": bool(worker.get("draining")), "version": worker.get("version"),
         "running": _running(conn, worker["worker"]),
         "applies": settings is not None,
-        "current": None if settings is None else {key: settings[key] for key in ns.EDITABLE},
+        "current": None if settings is None else {  # no `dev` from a node older than 1.23
+            key: settings.get(key, ns.DEFAULTS.get(key)) for key in ns.EDITABLE
+            if key in settings or key != "dev"},
         "pending": wanted, "pending_since": worker.get("wanted_at") if wanted else None,
         "error": (settings or {}).get("error") if wanted else None,
         "suggested": ns.suggest_slots(load.get("cores"), (load.get("memory") or {}).get("total")),
         "choices": {"slots": {"min": ns.MIN_SLOTS, "max": ns.MAX_SLOTS},
-                    "priority": list(ns.PRIORITIES)},
+                    "priority": list(ns.PRIORITIES), "dev": [False, True]},
     }
 
 
@@ -121,6 +125,12 @@ def request(req: Request) -> Message:
             raise Conflict(f"{name} has not reported its settings: it runs a mulebox older than "
                            "this one, or has not claimed yet; upgrade it first "
                            f"(`mulebox setup {name}`), or edit its node.toml")
+        if changes.get("dev") and name == workers.host(conn):
+            raise Conflict(f"dev mode is for other nodes: {name} is the coordinator, which every "
+                           "job goes through; put a node added with --worker-of in dev mode")
+        if "dev" in changes and "dev" not in current:
+            raise Conflict(f"{name} runs a mulebox older than 1.23, which has no dev mode; "
+                           f"upgrade it first (`mulebox setup {name}`)")
         wanted = {} if drop else dict(found.get("wanted") or {})
         wanted.update(changes)
         wanted = {key: value for key, value in wanted.items() if current.get(key) != value}

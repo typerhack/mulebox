@@ -46,19 +46,20 @@ def test_a_tampered_file_list_is_refused(value):
 
 def test_a_worker_reports_compose_by_itself_only_with_docker():
     assert compose.worker_capabilities(("docker", "node"), "darwin") == [
-        "docker", "node", "compose-v1", "unisolated", *PACKAGE_CACHES]
-    assert compose.worker_capabilities(("node",)) == ["node", "unisolated", *PACKAGE_CACHES]
-    assert compose.worker_capabilities(()) == ["unisolated", *PACKAGE_CACHES]
+        "docker", "node", "compose-v1", "unisolated", *PACKAGE_CACHES, "macos"]
+    assert compose.worker_capabilities(("node",), "darwin") == [
+        "node", "unisolated", *PACKAGE_CACHES, "macos"]
+    assert compose.worker_capabilities((), "darwin") == ["unisolated", *PACKAGE_CACHES, "macos"]
 
 
 def test_saying_it_twice_changes_nothing():
     assert compose.worker_capabilities(("docker", "compose-v1"), "darwin") == [
-        "docker", "compose-v1", "unisolated", *PACKAGE_CACHES]
+        "docker", "compose-v1", "unisolated", *PACKAGE_CACHES, "macos"]
 
 
 def test_a_linux_worker_with_docker_offers_isolated_jobs_by_itself():
     assert compose.worker_capabilities(("docker",), "linux") == [
-        "docker", "compose-v1", "isolated", "unisolated", *PACKAGE_CACHES]
+        "docker", "compose-v1", "isolated", "unisolated", *PACKAGE_CACHES, "linux"]
     assert "isolated" not in compose.worker_capabilities(("node",), "linux")
     assert "isolated" not in compose.worker_capabilities(("docker",), "darwin")
 

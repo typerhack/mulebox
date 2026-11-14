@@ -19,6 +19,7 @@ import sqlite3
 import time
 from typing import Any
 
+from mulebox.common import systems
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
 from mulebox.coordinator import holds, line, node_choice, project_pause, upgrades, workers
@@ -40,15 +41,18 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
           toolchains: dict[str, list[str]] | None = None, version: str | None = None,
           disk_free: int | None = None,
           load: dict[str, Any] | None = None,
-          priority: str | None = None) -> dict[str, Any] | None:
+          priority: str | None = None, dev: bool = False) -> dict[str, Any] | None:
     """Give `worker` the first queued job in line (line.py) whose needs it meets, or None.
 
     None when the worker has no free slot, when the cluster's slots (workers.cluster_limit, at
     least `cluster_slots`) are all held by jobs in
     `starting|running|cleaning`, or when no queued job fits. The claimed job moves to
-    `starting` with a fresh attempt id and worker lease.
+    `starting` with a fresh attempt id and worker lease. A node in dev mode (`dev`, or asked to
+    be and not there yet) takes only a job sent to it by name, `--on` (common/node_settings.py);
+    its runners' slots and upgrades are claimed elsewhere, pinned to it already.
     """
     now = time.time() if now is None else now
+    capabilities = systems.inferred(capabilities)  # a worker older than 1.23 names none
     have = set(capabilities)
     with store.write() as conn:
         held = active_on(conn, worker, JOB_KIND)
@@ -67,6 +71,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
         busy = {(job["project"], job["branch"]) for job in active_jobs(conn)
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         choice = node_choice.read(conn, worker, now, priority, free)  # who else is free
+        dev = dev or workers.dev_asked(conn, worker)
         for job in (row for row in order.rows if row["kind"] == JOB_KIND):
             if blocker is not None and order.before(blocker, job):
                 return None  # the reservation ahead in line goes first
@@ -74,7 +79,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 return None  # an upgrade of this machine is ahead in line (upgrades.py)
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
                     and job["project"] not in on_hold and not job["paused"]
-                    and job["pinned_worker"] in (None, worker)  # `--on`
+                    and job["pinned_worker"] in ((worker,) if dev else (None, worker))  # `--on`
                     and node_choice.leave_to(conn, choice, job, now) is None):
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),

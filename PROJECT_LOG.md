@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.23.0 - 2026-11-14 - minor
+- A job runs only on a node of its project's system (M25.6): a Mac node had taken a Linux project's job, which failed on x86-64 packages in arm64 Docker. Each worker offers `linux` or `macos` (`common/systems.py`, `compose.worker_capabilities`); the coordinator adds the system to every job's needs at submit (`needs.required`): `macos` for `xcode` or `simulator`, else `linux`, or `os:` in `.mulebox.yml` (`any` adds none). The client sends `os:` as written and adds nothing, so clients of any version get the rule; an older coordinator ignores the field. Workers older than 1.23 are read as `macos` if they offer Xcode or a simulator, else `linux`. `doctor` and the contract show the same need.
+- Dev mode (M25.7, the user's ask): a node being set up or tried out takes only jobs sent to it with `--on`, and its own runners' slots and upgrades. `dev = true` in node.toml, `mulebox setup --dev` (with `--worker-of`), `mulebox machine config <node> --dev on|off`, and a Dev mode panel in the dashboard's settings window; the machine shows as Dev with no slot free. Asking for it from afar counts at once (`workers.dev_asked`); no other node waits for a dev node; a job only dev nodes could run says why it waits and how to end it. The coordinator's own node can never be in dev mode: node.toml refuses it, and so does a change from afar (meta `coordinator_host`).
+- `config.py` split: the project's `isolation` and `os` fields read in `common/config_project.py`. Tests in `tests/coordinator/test_dev_mode.py`, `tests/common/test_systems.py` and the existing suites; web tests for the panel and a dev node's slots. design.md, install.md, agents.md, interfaces-m2.md, README.
+
 ## 1.22.3 - 2026-11-14 - patch
 - Roadmap: M25.1 (`--on`), M25.2 (the branch's node, then the roomier one) and M25.5 (the CocoaPods spec index in the cache) done on a real Mac node beside the Linux node. Found there and opened as M25.6: a Linux project's job taken by the Mac node fails, and `fallback` does not keep a node to some projects only. Docs only.
 

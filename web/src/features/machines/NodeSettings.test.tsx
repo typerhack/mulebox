@@ -154,4 +154,24 @@ describe("a node's settings window", () => {
     await waitFor(() => expect(cell("Slots", "Runs with")).toBe("3 now"));
     expect(screen.queryByRole("img", { name: "Settings change pending" })).toBeNull();
   });
+
+  it("turns dev mode on with a Save, saying what it means", async () => {
+    const posts = serve(view({ current: { slots: 2, priority: "normal", dev: false } }),
+                        view({ current: { slots: 2, priority: "normal", dev: false }, pending: { dev: true } }));
+    await open();
+    expect(cell("Dev mode", "Runs with")).toBe("Off nowas suggested");
+    fireEvent.click(screen.getByRole("radio", { name: "On" }));
+    expect(cell("Dev mode", "Yours")).toContain("Takes only jobs sent to it with --on");
+    expect(cell("Dev mode", "Runs with")).toContain("On unsaved");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save changes" })); });
+    expect(posts[0].body).toEqual({ dev: true });
+    expect(cell("Dev mode", "Runs with")).toContain("On pending");
+  });
+
+  it("offers no dev mode on a node older than 1.23", async () => {
+    serve(view());
+    await open();
+    expect(cell("Dev mode", "Yours")).toContain("older than 1.23");
+    expect((screen.getByRole("radio", { name: "On" }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });

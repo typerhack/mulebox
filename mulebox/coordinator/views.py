@@ -66,7 +66,8 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -
     if (upgrade := upgrades.ahead_of(conn, job, now, order)) is not None:
         return (f"an upgrade of {upgrade['pinned_worker']} to {upgrade['branch']} is ahead of it "
                 f"({upgrade['job_id']})")
-    reason = needs.waiting_for(needs.fleet_for(workers.listing(conn), job), job["needs"], now)
+    reason = needs.waiting_for(needs.fleet_for(workers.listing(conn), job), job["needs"], now,
+                               bool(job.get("pinned_worker")))
     if reason is None and job["pinned_worker"]:
         return f"sent with --on {job['pinned_worker']}: it waits for that node alone"
     return reason
@@ -102,7 +103,8 @@ def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> d
     fleet = needs.fleet_for(fleet, job)
     out: dict[str, Any] = {"needs": job["needs"],
                            "can_run_on": [w["worker"] for w in needs.capable(fleet, job["needs"])]}
-    reason = needs.waiting_for(fleet, job["needs"], now) if job["state"] == JobState.QUEUED else None
+    reason = (needs.waiting_for(fleet, job["needs"], now, bool(job.get("pinned_worker")))
+              if job["state"] == JobState.QUEUED else None)
     if reason:
         out["waiting_for"] = reason
     return out

@@ -138,8 +138,10 @@ Two kinds of machine:
   job needs (Docker, Playwright, a toolchain, Xcode). Of the free ones, a `preferred` node goes
   before a `fallback` one, then the node that ran the branch's last job, as it holds the branch's
   folder and installed dependencies, then the node with more free slots; none waits longer than
-  30 s for a better one. `--on <node>` sends a job to one node alone. A worker reaches the
-  coordinator with a key that can do nothing but worker requests.
+  30 s for a better one. `--on <node>` sends a job to one node alone. A job runs only on a node
+  of its project's system, Linux or macOS (`os:` in `.mulebox.yml`). A node in dev mode, being
+  set up or tried out, takes only jobs sent to it with `--on`. A worker reaches the coordinator
+  with a key that can do nothing but worker requests.
 - The dashboard runs only on the coordinator. Workers send their CPU, memory and network readings
   with every heartbeat, so one page shows every node.
 - One node is enough to start: it is both coordinator and worker. A second joins with
@@ -335,7 +337,7 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   it. Set its slots and priority from the dashboard or `mulebox machine config`, beside a
   suggestion from its cores and memory; the change reaches its `node.toml` and counts from the
   next job, with no restart. A `preferred` node takes jobs first, a `fallback` one only when the
-  others are full.
+  others are full. Dev mode keeps a node you are trying out away from your projects' jobs.
 - **A project**: pause all its jobs and CI runs, for a set time or until resumed (`mulebox project
   pause`), or give it a level in line (`mulebox project priority`).
 - **Everything at once**: the dashboard's Queue actions pause or resume every machine, and freeze or
@@ -434,9 +436,9 @@ command prints. The ones you and your agents use:
 
 | Command | What it does |
 | --- | --- |
-| `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker |
+| `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker, `--dev` in dev mode |
 | `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
-| `mulebox machine config <node>` | a node's slots and priority, applied from its next job |
+| `mulebox machine config <node>` | a node's slots, priority and dev mode, applied from its next job |
 | `mulebox service status`, `restart`, `logs` | on a node: mulebox's own services, systemd or launchd |
 | `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |
 | `mulebox dashboard password`, `firewall`, `cert` | on the node: sign-in, firewall and HTTPS for `lan` mode |

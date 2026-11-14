@@ -13,6 +13,7 @@ import re
 import sqlite3
 from typing import Any
 
+from mulebox.common import systems
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Outcome
@@ -73,7 +74,7 @@ def ahead(conn: sqlite3.Connection, job: dict[str, Any], now: float,
     without holding a GitHub run back."""
     worker = job["pinned_worker"]
     known = workers.get(conn, worker)
-    have = set(known["capabilities"]) if known else set()
+    have = set(known["capabilities"] if known else systems.inferred(()))  # unseen: as an old node
     on_hold = holds.held(conn, now) | set(project_pause.paused(conn, now))
     order = order or line.read(conn, now)
     return sum(
