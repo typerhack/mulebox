@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.19.1 - 2026-11-14 - patch
+- In the first real isolated compose job on the node, its first connection to `localhost:$MULEBOX_PORT_DB_5432` was refused: the port forwarder had not yet bound its ports. It now writes a ready file once it listens (`--ready`), and the job's script waits for it before its first line (`worker/isolated.py`, `worker/port_forward.py`). Test in `tests/worker/test_port_forward.py`.
+
 ## 1.19.0 - 2026-11-14 - minor
 - Isolated jobs, part 2 of M23.1: a compose project's jobs can be isolated. The job's unit brings the services up on the node as before, then makes the job's container, joins it to every network of the job's Compose project and starts it attached, so the services answer by name and the container's exit code is the job's (`worker/isolated.py`, which now writes the unit's whole script).
 - The door (`worker/docker_door.py`, its rules in `worker/door_rules.py`): a small proxy to the node's engine, run in the job's unit on a socket under the jobs root and mounted as the container's `DOCKER_HOST`, with the node's `docker` and Compose plugin read-only. One request per connection; it lets by `_ping`, `version`, `info`, the container list narrowed to the job's label, and for a container carrying that label inspect, logs, top, wait, start, stop, restart, kill and a non-privileged exec, and the execs it made; everything else is refused with a message in the job's log. The cleaner removes its socket.

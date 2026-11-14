@@ -4,6 +4,7 @@ import socket
 import subprocess
 import sys
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -25,7 +26,7 @@ def test_a_spec_names_both_ends():
         port_forward.parse("db:5432")
 
 
-def test_a_connection_to_the_local_port_reaches_the_service():
+def test_a_connection_to_the_local_port_reaches_the_service(tmp_path):
     service = socket.socket()
     service.bind(("127.0.0.1", 0))
     service.listen(1)
@@ -38,10 +39,17 @@ def test_a_connection_to_the_local_port_reaches_the_service():
     threading.Thread(target=echo, daemon=True).start()
     local = free_port()
     # run as the container runs it: a file of its own, with nothing of mulebox importable
-    proc = subprocess.Popen([sys.executable, "-I", str(SCRIPT), f"127.0.0.1:{local}=127.0.0.1:{target}"],
+    ready = tmp_path / "ready"
+    proc = subprocess.Popen([sys.executable, "-I", str(SCRIPT), "--ready", str(ready),
+                             f"127.0.0.1:{local}=127.0.0.1:{target}"],
                             stdout=subprocess.PIPE, text=True)
     try:
         assert "forwarded" in proc.stdout.readline()
+        for _ in range(100):
+            if ready.exists():
+                break
+            time.sleep(0.02)
+        assert ready.exists()
         with socket.create_connection(("127.0.0.1", local), timeout=5) as conn:
             conn.sendall(b"abc")
             assert conn.recv(100) == b"cba"

@@ -1,6 +1,6 @@
 """Inside an isolated compose job: `localhost:$MULEBOX_PORT_...` reaches the service again.
 
-    python3 port_forward.py 127.0.0.1:41234=db:5432 [...]
+    python3 port_forward.py --ready <file> 127.0.0.1:41234=db:5432 [...]
 
 A compose job's services publish their ports on the node's loopback, which a job in its own
 container cannot reach; it reaches them by service name. Projects follow the docs and read
@@ -50,18 +50,24 @@ def parse(spec: str) -> tuple[str, int, str, int]:
     return lhost, int(lport), thost, int(tport)
 
 
-async def serve(specs: list[str]) -> None:
+async def serve(specs: list[str], ready: str | None = None) -> None:
     servers = []
     for spec in specs:
         lhost, lport, thost, tport = parse(spec)
         servers.append(await asyncio.start_server(_handler(thost, tport), lhost, lport))
     print("mulebox: localhost ports forwarded to their services", flush=True)
+    if ready:  # the job's script waits for this before its first line
+        with open(ready, "w", encoding="utf-8"):
+            pass
     await asyncio.gather(*(server.serve_forever() for server in servers))
 
 
 def main(argv: list[str]) -> int:
+    ready = None
+    if argv[:1] == ["--ready"] and len(argv) > 1:
+        ready, argv = argv[1], argv[2:]
     try:
-        asyncio.run(serve(argv))
+        asyncio.run(serve(argv, ready))
     except (ValueError, OSError) as exc:
         print(f"mulebox: port forward: {exc}", file=sys.stderr)
         return 1

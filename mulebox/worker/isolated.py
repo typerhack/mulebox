@@ -46,6 +46,7 @@ HOME = "/tmp"
 CONTAINER_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 DOOR = "/run/mulebox/docker.sock"
 FORWARDER = "/run/mulebox/port_forward.py"
+FORWARD_READY = "/tmp/.mulebox-forward-ready"  # in the container's own memory
 DOCKER_CLI = "/usr/local/bin/docker"
 COMPOSE_PLUGIN = "/usr/local/lib/docker/cli-plugins/docker-compose"
 _UNPASSED = ("PATH", "HOME")  # the container's own
@@ -92,7 +93,8 @@ def inner_lines(access: ComposeAccess | None) -> tuple[str, ...]:
     specs = " ".join(shlex.quote(f"127.0.0.1:{port}={service}:{target}")
                      for port, service, target in access.forwards)
     return ("if command -v python3 >/dev/null; then",
-            f"  python3 {FORWARDER} {specs} &",
+            f"  python3 {FORWARDER} --ready {FORWARD_READY} {specs} &",
+            f"  for _ in $(seq 100); do [ -e {FORWARD_READY} ] && break; sleep 0.05; done",
             "else echo 'mulebox: no python3 in the image, so localhost:$MULEBOX_PORT_... does not "
             "reach the services; use their names'; fi")
 
