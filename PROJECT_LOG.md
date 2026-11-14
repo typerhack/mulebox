@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.6 - 2026-11-14 - patch
+- docs/phases.md: M25.9 moved from the M24 list to M25, where it belongs.
+
 ## 1.27.5 - 2026-11-14 - patch
 - docs/phases.md: M25.9, the projects' share on a node down to 10 to 15 GB (the user's ask), open.
 
