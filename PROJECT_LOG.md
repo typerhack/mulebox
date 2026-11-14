@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.20.4 - 2026-11-14 - patch
+- Roadmap: done M21.4 (a runner on the Mac node took a real CI run through a mulebox slot), M22.3 (`cache-cocoapods` filled and reused) and M22.4 (`mulebox init` on an Xcode project, run unedited in the job's own simulator). Docs only.
+
 ## 1.20.3 - 2026-11-14 - patch
 - A runner's `config.sh` that hung left its `Runner.Listener` running after mulebox gave up and removed its folder: on a timeout only the script was killed. It now runs in a group of its own, the whole group is stopped, and the error ends with what it printed last, redacted (`runners/manage.py`, `run_config`). Seen adding the first runner on a Mac node, where an outgoing firewall (LuLu) held the new program's connection; docs/install.md says so. Tests in `tests/runners/test_config_run.py` (the first fails on 1.20.2).
 

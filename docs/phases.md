@@ -778,7 +778,7 @@ by Sol before the next starts (the user's ask).
       kernel's host port taken once, 32-bit tick counters unwrapped, the engine of the docker
       context in use. Open: the readings of a real Mac node on the dashboard.
       Done 2026-11-13 (1.17.18): the Mac node's readings in `mulebox machine list` and on the dashboard (M5.3).
-- [~] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
+- [x] M21.4 GitHub runners on macOS: a launchd agent per runner, the macOS runner download, supervision.
       Built 2026-11-12 (1.9.0): runners are services through `mulebox/services/` on both systems
       (`runner_start|stop|restart|state|freeze|boost|group`), on a Mac the agent
       `mulebox-runner-<name>` (`services/launchd_runners.py`); the `osx-<arch>` download and its
@@ -787,7 +787,10 @@ by Sol before the next starts (the user's ask).
       repository. Tested against a stand-in launchctl, with pause on real process groups of this
       Mac. 1.9.1, from Sol's review: the dashboard's readings kept apart from the service manager,
       a reused pid never paused, a failed resume retried, `ps` lines matched from their start.
-      Open: a real runner on a Mac node taking a real CI run.
+      Done 2026-11-14 (1.20.3): a runner added on the Mac node took a real CI run of a throwaway
+      private repository (macOS 27.2.1, arm64, Xcode 27.2), holding a mulebox slot for it, and
+      passed. Found there: an outgoing firewall (LuLu) held the new `Runner.Listener` until allowed,
+      and mulebox's timeout left that process running (fixed 1.20.3, docs/install.md).
 - [x] M21.5 CI runs the suite on macOS too. Built 2026-11-12 (1.9.2): a `macos` job on `macos-15`,
       Python 3.13. Done 2026-11-12 (1.13.5): on main it ran on GitHub's macOS machine; two racy
       tests of stopped process groups failed there first (fixed 1.13.3 and 1.13.5), and it has
@@ -816,22 +819,26 @@ After M21. A Mac node builds and tests for macOS, iOS, watchOS, tvOS and visionO
       Done 2026-11-13 (1.17.18) on the real Mac node: `xcodebuild test` of a Swift package in the job's own
       iOS 26.0 simulator passed, the simulator gone after; a cancel with it booted, and a `kill -9` of the
       worker with it booted (removed by the next worker's start), left none.
-- [~] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`. Built
+- [x] M22.3 DerivedData in the job's folder; caches `cache-spm` and `cache-cocoapods`. Built
       2026-11-12 (1.12.0): `$MULEBOX_DERIVED_DATA` on every Mac job, in its job folder;
       `cache-cocoapods` sets `CP_CACHE_DIR`, `cache-spm` only `$MULEBOX_CACHE_SPM`, as SwiftPM reads
       no setting (passed as `-packageCachePath`). Tested with unit tests. Open: a real Xcode job on a
       Mac node filling and reusing both caches.
       Run 2026-11-13 (1.17.18) on the real Mac node: `cache-spm` filled (6.7 MB, a 3.6 s fetch) and, in a
       fresh branch tree, gave the package back "from cache" in 0.02 s; DerivedData in the job folder, removed
-      with it. Open: `cache-cocoapods`, with no CocoaPods project yet.
-- [~] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node. Built
+      with it. Done 2026-11-14 (1.20.2): a CocoaPods project's `pod install` filled `cache-cocoapods`
+      and its pod's tests passed in the job's simulator; on a fresh branch the pod was copied from
+      the cache. Found there: a changed Podfile did not run `setup` again (fixed 1.20.2).
+- [x] M22.4 `mulebox init` for Xcode projects and Swift packages; docs for a Mac node. Built
       2026-11-12 (1.13.0): `client/init_apple.py` writes `xcodebuild test` of a workspace's or
       project's shared scheme, in the job's own simulator for a device platform, else on the Mac,
       with `pod install` for a Podfile, or `swift test` for a package, and pins the dev machine's
       selected Xcode; docs/install.md, Apple builds on a Mac node. Tested with project files made in
       tests. Open: a real Xcode project's file run as a job on a Mac node.
       Run 2026-11-13 (1.17.18): `mulebox init` on a new Swift package wrote `swift test`, the selected
-      Xcode pinned and `cache-spm`; it passed on the Mac node unedited. Open: an Xcode project.
+      Xcode pinned and `cache-spm`; it passed on the Mac node unedited. Done 2026-11-14 (1.20.1):
+      `mulebox init` on an iOS framework project with a shared scheme wrote `xcodebuild test` in the
+      job's own simulator; unedited, it passed on the Mac node (26 s), the simulator gone after.
 
 ## M23: Safer and fairer jobs
 Decided by the user on 2026-11-12, to start after M21 and M22 (macOS nodes, Apple builds). Ideas taken
