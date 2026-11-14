@@ -122,7 +122,7 @@ class Storing:
         return {(project, None if branch is None else project_home.slug(branch))
                 for project, branch in self._store()["keeps"]}
 
-    def _sweep(self, trigger: str = "hourly", docker: bool = False,
+    def _sweep(self, trigger: str = "hourly", docker: bool | None = None,
                by_hand: bool = False) -> dict[str, Any] | None:
         """One sweep; its record, or None when it failed (logged)."""
         state = self._store()
@@ -141,12 +141,13 @@ class Storing:
 
     def _sweep_order(self, order: dict[str, Any]) -> tuple[int, str]:
         """A `sweep` order (the user's Run now): (exit code, what it says)."""
-        record = self._sweep("now", order.get("docker") is True, by_hand=True)
+        docker = order.get("docker")  # True or False as asked; none from an older sender: the setting
+        record = self._sweep("now", docker if isinstance(docker, bool) else None, by_hand=True)
         if record is None:
             return 1, "mulebox: the cleanup failed; the worker's log says why"
         return 0, summary(record)
 
-    def _swept(self, trigger: str, docker: bool, by_hand: bool,
+    def _swept(self, trigger: str, docker: bool | None, by_hand: bool,
                state: dict[str, Any]) -> dict[str, Any]:
         started, policy = time.time(), self.node.storage
         folders, held = storage_scan.measure(self.paths)
@@ -161,7 +162,7 @@ class Storing:
         errors: list[str] = []
         act = by_hand or policy.auto_clean
         removed = self._remove(plan.to_remove, state, errors) if act and plan.to_remove else []
-        docker = docker or (act and policy.docker_clean)
+        docker = bool(act and policy.docker_clean) if docker is None else docker
         pruned = None
         if docker and self.docker is not None:
             try:

@@ -1096,7 +1096,9 @@ runs a job.
       reclaimed nothing on this containerd image store (a throwaway rebuild left no untagged image
       to try it on: the store dropped the old one at once).
       Tagged images pulled before 1.26 are not in the ledger, so they stay until a job uses them
-      again. Open: why the prune leaves those images, and gone branches' folders once lists arrive.
+      again. Open: why the prune leaves those images.
+      Run 2026-11-14 (1.27.2): two branches deleted on the dev machine, their folders removed by the
+      node's next cleanup with "its branch is on no dev machine"; agents told of 56 GB over 50 GB.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

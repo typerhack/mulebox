@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.27.3 - 2026-11-14 - patch
+- `mulebox storage clean --no-docker` leaves Docker alone: the node read the order's "no Docker" as "the node's setting" and pruned anyway when `docker_clean` was on (seen on the real node). A sweep order now carries Docker on or off as asked; one with no word on it, from an older sender, follows the setting (`worker/storage_sweep.py`). Test in `tests/worker/test_storage_cleanup.py`.
+- README: the node settings pictures retaken for the reworked window (the Jobs tab with dev mode, and the whole Storage tab with all eight disk settings, `tools/screenshots.py` taller for it), their captions and text, a Storage page bullet, and `mulebox storage clean`.
+- Seen on the real node with 1.27.2: the worker's first cleanup after the upgrade removed the folders of two branches deleted on the dev machine, each with "its branch is on no dev machine", and every command from a project told the agent mulebox held 56 GB, over the 50 GB warning size.
+
 ## 1.27.2 - 2026-11-14 - patch
 - docs/design-system/storage/: each mockup option Fable recommends carries a "Fable suggests" tag, on the index and on its page, and Fable's report (`report.html`) is kept beside them (the user's ask: every mockup set marks Fable's pick).
 

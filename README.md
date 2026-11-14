@@ -162,9 +162,9 @@ theme and follows the system's by default.
 | A GitHub Actions run, step by step | Every machine at a glance |
 | ![History with search and filters](docs/images/history-light.png) | ![How long jobs ran, today and since the first job](docs/images/statistics-dark.png) |
 | History, searchable | Job minutes, by kind, project and machine |
-| ![A node's settings: slots and priority, each with mulebox's suggestion beside yours](docs/images/node-settings-dark.png) | ![The Order panel: the rules for the order of the line, each waiting row saying why it stands where it does](docs/images/order-light.png) |
-| A node's slots and priority, with the suggestion | Rules for the order of the line |
-| ![The Storage page: a node's disk as one ruler with its reserve, the automatic cleanup and what it last did, then every project and its branch folders with what happens to each](docs/images/storage-dark.png) | ![The Storage tab of a node's settings: free space to keep, when unused folders go, the latest folder and idle projects](docs/images/storage-settings-light.png) |
+| ![A node's settings, Jobs tab: slots, priority, dev mode and what the node reports, each setting with mulebox's suggestion beside yours](docs/images/node-settings-dark.png) | ![The Order panel: the rules for the order of the line, each waiting row saying why it stands where it does](docs/images/order-light.png) |
+| A node's slots, priority and dev mode, with the suggestion | Rules for the order of the line |
+| ![The Storage page: a node's disk as one ruler with its reserve, the automatic cleanup and what it last did, then every project and its branch folders with what happens to each](docs/images/storage-dark.png) | ![The Storage tab of a node's settings: free space to keep, the most mulebox may use, when unused folders go, the latest folder, cleaning up on its own, cleaning Docker too, idle projects and the size at which agents are warned](docs/images/storage-settings-light.png) |
 | What mulebox holds on a node, and what goes when | A node's disk settings, with what they would do |
 
 The Storage page shows, per node, what mulebox holds on its disk and what happens to each part: the
@@ -177,9 +177,11 @@ cleanup is on and what it does, what the last one removed, and what mulebox hold
 at which it warns; Run now runs a cleanup at once. At the bottom, the cleanup history lists every
 cleanup with why it ran, each folder it removed and why, what it freed in Docker, the free space
 before and after, and any error. The rules are a node's settings, in the Storage
-tab of its settings window: how much space to keep free, after how many days an unused branch
-folder goes, whether each project's latest folder stays, and when an idle project is suggested
-for cleaning, with one line that says what the values on screen would do before they are saved.
+tab of its settings window, two to a row: how much space to keep free and the most mulebox may
+use, after how many days an unused branch folder goes and whether each project's latest folder
+stays, whether the node cleans up on its own and cleans Docker too, and when an idle project is
+suggested for cleaning and past what size agents are told to tell you; one line says what the
+values on screen would do before they are saved.
 
 ![The cleanup history: each cleanup with why it ran, the folders it removed and why, what Docker freed, the free space before and after, and an error](docs/images/storage-history-light.png)
 
@@ -377,7 +379,8 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   7 days after that, Docker's unused build cache and the images its jobs no longer use too, and
   past a size you set the oldest go first; past 50 GB agents are told to tell you. All of it is
   your setting; `mulebox storage` shows what it holds and what goes when, `--history` every
-  cleanup and what it removed, `project keep` keeps a folder.
+  cleanup and what it removed, `storage clean` runs one now (`--no-docker` leaves Docker),
+  `project keep` keeps a folder.
 
 ### The dashboard
 
@@ -390,7 +393,9 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **History** with search and filters you can share as a link, and **Statistics**: job minutes today,
   by day and since the first job, by kind, project, source and machine (also `mulebox stats`).
 - **Machines page**: every node with its state, load, network, slots, version and last contact,
-  and a settings window per node for its slots and priority.
+  and a settings window per node for its slots, priority, dev mode and disk rules.
+- **Storage page**: what mulebox holds on each node and what goes when, the automatic cleanup with
+  Run now, and the history of every cleanup.
 - **Order panel**: the rules for the order of the line, set and saved from the page.
 - **Download meters** on a job's card: bytes, total and speed, and a warning when one stalls.
 - **Out of step**: a strip says when a dev machine, a worker or a skill runs another version, with the fix.

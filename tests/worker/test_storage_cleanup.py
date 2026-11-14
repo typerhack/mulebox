@@ -108,3 +108,14 @@ def test_the_images_a_compose_model_pulls():
     model = {"services": {"db": {"image": "postgres:16"}, "app": {"build": {}, "image": "mine"},
                           "cache": {"image": "redis:7"}}}
     assert image_use.images_of(model) == ["postgres:16", "redis:7"]
+
+
+def test_run_now_without_docker_leaves_docker_alone(worker, send):  # noqa: F811
+    send("main", 1)
+    agent = worker()  # docker_clean is on
+    agent.docker = engine = FakeEngine()
+    agent._sweep_order({"action": "sweep", "docker": False})
+    assert not any(c[1:2] == ("prune",) for c in engine.calls)
+    assert agent._store()["report"]["sweep"]["docker"] is None
+    agent._sweep_order({"action": "sweep"})  # an older sender: the node's setting
+    assert ("builder", "prune", "--force", "--filter", "until=168h") in engine.calls
