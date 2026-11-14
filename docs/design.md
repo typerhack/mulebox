@@ -825,6 +825,20 @@ teardown of compose jobs removes them, and pause and boost reach it. The project
 repository is mounted too, as the branch tree is a worktree of it. A compose job asking for it
 is refused until part 2.
 
+Part 2, 1.19.0: compose jobs. The job's unit runs, on the node, the lines mulebox writes for a
+compose job (`up --wait` and the report of the services' logs on failure), then makes the
+container with `docker create`, joins it to every network of the job's Compose project, and
+starts it attached (`docker start --attach`), so the services answer by name. The door
+(worker/docker_door.py, its rules in worker/door_rules.py) runs in the unit beside it, on a
+socket under the jobs root, mounted as the container's `DOCKER_HOST`, with the node's `docker`
+command and Compose plugin read-only; it takes one request per connection, passes on only what
+door_rules.py names for containers carrying the job's label, records the execs it made, and
+refuses the rest, saying so in the log. `localhost:$MULEBOX_PORT_...`, which the docs tell
+projects to use, is forwarded inside the container to each service's own port
+(worker/port_forward.py, run by the image's Python; TCP only). The mounted `docker` command is
+the node's, linked against its system, so in a project's own image of another system `docker
+compose exec` may not run, and with no Python there the ports are reached by service name.
+
 **Decided by the user (2026-11-14):** the default floor is `none`; compose jobs take way 2, the
 worker running Compose and a narrow proxy; the job image is mulebox's own, and a project may name
 its own `image:`; a project cannot ask for less than its node's floor: such a job is refused and

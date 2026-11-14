@@ -253,8 +253,12 @@ image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
    (read-only), and not the node's home folder, keys, other projects or Docker. Use it for code
    nobody has read. It runs in mulebox's image (Ubuntu with git, a compiler, Python), built once
    per node by the first such job, or in `image:`, which then brings its own tools: the node's
-   toolchains may not run in another system. A job of a compose project cannot be isolated yet,
-   and a job line cannot run `docker` (docs/design.md, Isolation per job).
+   toolchains may not run in another system. In a compose project mulebox brings the services
+   up on the node, and the job reaches them by name (`db:5432`) or, as usual, at
+   `localhost:$MULEBOX_PORT_...` (forwarded inside the container when its image has `python3`).
+   `docker compose exec`, `logs`, `ps` and `restart` of the job's own services work; anything
+   that would make a container, image or volume (`docker run`, `build`, `cp`, Testcontainers) is
+   refused with a message (docs/design.md, Isolation per job).
 
    Rules for the values:
    - **Databases are per job.** A database a job shares with anything else, such as one

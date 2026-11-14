@@ -125,8 +125,7 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     first: tuple[str, ...] = ()
     extra: dict[str, str] = {}
     notes: tuple[str, ...] = ()
-    if files is not None and isolation.CAPABILITY in needs:
-        raise ExecutorError("an isolated job cannot use compose: on this mulebox yet")
+    ready = None
     if files is not None:
         if machine.docker is None:
             raise ExecutorError("this worker has no Docker to run a compose: project")
@@ -134,21 +133,34 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
                                     src, values, environment, cached.folders,
                                     (*machine.job_env, *settled), scratch)
         first, extra, notes = ready.script, ready.extra_env, ready.notes
-    first = (*_simulator(job_id, claim), *first)
+    marker = marker or steps.new_marker()
+    isolate = isolation.CAPABILITY in needs
+    access = (_access(machine, job_id, ready, extra) if isolate and ready is not None
+              else None)
+    # an isolated job's compose lines run on the node, before its container (isolated.py)
+    inner = isolated.inner_lines(access) if isolate else (*_simulator(job_id, claim), *first)
     spec = RunSpec(name=unit_name(job_id),
-                   argv=jobspec.build_argv(claim.get("setup"), claim["argv"], first,
-                                           marker or steps.new_marker(), claim.get("install")),
+                   argv=jobspec.build_argv(claim.get("setup"), claim["argv"], inner,
+                                           marker, claim.get("install")),
                    cwd=src, env=environment(extra), log_path=log_path,
                    timeout_s=_runtime_limit(claim))
-    if isolation.CAPABILITY in needs:
-        spec, notes = _isolate(machine, job_id, claim, spec, image, bins, cached.folders, notes)
+    if isolate:
+        spec, notes = _isolate(machine, job_id, claim, spec, image, bins, cached.folders, notes,
+                               first, marker, access)
     ports = (f"port {port} is ${name}" for name, port in own.items())
     return spec, (*cached.notes, *ports, *notes)
 
 
+def _access(machine: Machine, job_id: str, ready: compose_job.ComposeJob,
+            extra: dict[str, str]) -> isolated.ComposeAccess:
+    return isolated.ComposeAccess(ready.project, Path(extra["COMPOSE_FILE"]),
+                                  isolated.door_socket(machine.paths, job_id), ready.forwards)
+
+
 def _isolate(machine: Machine, job_id: str, claim: dict[str, Any], spec: RunSpec,
              image: str | None, bins: Sequence[Path], cache_folders: Sequence[Path],
-             notes: tuple[str, ...]) -> tuple[RunSpec, tuple[str, ...]]:
+             notes: tuple[str, ...], host_lines: Sequence[str], marker: str,
+             access: isolated.ComposeAccess | None) -> tuple[RunSpec, tuple[str, ...]]:
     """The job in its own container (isolated.py); its toolchains and browsers read-only."""
     if machine.docker is None:
         raise ExecutorError("this worker has no Docker to run an isolated job")
@@ -159,5 +171,6 @@ def _isolate(machine: Machine, job_id: str, claim: dict[str, Any], spec: RunSpec
     if PLAYWRIGHT_CAPABILITY in (claim.get("needs") or ()):
         read_only.append(machine.paths.browsers_dir())
     wrapped = isolated.wrap(spec, job_id, machine.name, image=image, bins=bins,
-                            read_write=[repo, *cache_folders], read_only=read_only)
-    return wrapped, (isolated.note(image, bool(cache_folders)), *notes)
+                            read_write=[repo, *cache_folders], read_only=read_only,
+                            host_lines=host_lines, marker=marker, access=access)
+    return wrapped, (isolated.note(image, bool(cache_folders), access is not None), *notes)

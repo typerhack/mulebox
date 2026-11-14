@@ -1,5 +1,12 @@
 """An isolated job's container (worker/isolated.py, runspec.py; M23.1)."""
 
+import os
+import shlex
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
+
 import pytest
 
 from mulebox.common import compose, isolation
@@ -29,28 +36,31 @@ def build(machine, tmp_path, needs=("isolated",), env=None, project="example-app
 
 
 def run_part(spec):
-    """The `docker run ...` command line the unit ends in."""
-    return list(spec.argv[spec.argv.index("docker"):])
+    """The `docker create ...` command line in the unit's script, as words."""
+    script = spec.argv[2]
+    words = shlex.split(script[script.index("docker create"):].replace(' "${mulebox_tools[@]}"', ""))
+    return words[:words.index(">/dev/null")]
 
 
 def test_a_job_that_asks_runs_in_a_confined_container_of_its_own(machine, tmp_path):
     job_id, spec, notes = build(machine, tmp_path, env={"API_TOKEN": "s3cret-value"})
     run = run_part(spec)
-    assert run[:4] == ["docker", "run", "--rm", "--init"]
+    assert run[:4] == ["docker", "create", "--rm", "--init"]
     for flag in (["--cap-drop", "ALL"], ["--security-opt", "no-new-privileges"],
-                 ["--read-only"], ["--network", isolated.network_name(job_id)]):
+                 ["--read-only"], ["--network", isolated.name(job_id)]):
         assert any(run[i:i + len(flag)] == flag for i in range(len(run)))
     assert f"{compose.LABEL_JOB}={job_id}" in run and f"{compose.LABEL_WORKER}=build-1" in run
     assert f"{tmp_path}:{tmp_path}:rw" in run
     assert run[run.index("--workdir") + 1] == str(tmp_path)
-    assert run[-3:] == list(jobspec.build_argv(None, ["make", "test"])[:2]) + [run[-1]]
+    assert run[-3:-1] == ["bash", "-c"] and "make test" in run[-1]
+    assert spec.argv[2].rstrip().endswith(f"docker start --attach {isolated.name(job_id)}")
     assert "isolated: runs in a container" in notes[0]
 
 
 def test_values_reach_the_container_by_name_only(machine, tmp_path):
     _, spec, _ = build(machine, tmp_path, env={"API_TOKEN": "s3cret-value"})
     assert spec.env["API_TOKEN"] == "s3cret-value"  # the unit's environment holds it
-    assert not any("s3cret-value" in arg for arg in spec.argv)
+    assert "s3cret-value" not in spec.argv[2]
     run = run_part(spec)
     assert run[run.index("API_TOKEN") - 1] == "--env"
     assert f"HOME={isolated.HOME}" in run
@@ -70,7 +80,7 @@ def test_nothing_of_the_node_is_mounted_but_what_the_job_needs(machine, paths, t
 def test_mulebox_builds_its_image_once_and_a_project_may_name_its_own(machine, tmp_path):
     _, spec, _ = build(machine, tmp_path)
     recipe = job_image.dockerfile(job_image.base_image())
-    assert job_image.tag(recipe) in run_part(spec) and recipe in spec.argv
+    assert job_image.tag(recipe) in run_part(spec) and shlex.quote(recipe) in spec.argv[2]
     _, own, notes = build(machine, tmp_path, env={isolation.IMAGE_KEY: "ghcr.io/example/ci:1"})
     assert "ghcr.io/example/ci:1" in run_part(own)
     assert isolation.IMAGE_KEY not in own.env
@@ -84,17 +94,12 @@ def test_a_bad_image_name_from_an_older_client_is_refused(machine, tmp_path):
 
 def test_a_job_that_does_not_ask_runs_as_before(machine, tmp_path):
     _, spec, _ = build(machine, tmp_path, needs=())
-    assert "docker" not in spec.argv
+    assert "docker" not in spec.argv[2]
 
 
 def test_isolation_needs_docker(paths, tmp_path):
     with pytest.raises(ExecutorError, match="no Docker"):
         build(runspec.Machine("build-1", paths, None, PortPool()), tmp_path)
-
-
-def test_a_compose_job_cannot_be_isolated_yet(machine, tmp_path):
-    with pytest.raises(ExecutorError, match="compose"):
-        build(machine, tmp_path, env={compose.COMPOSE_FILES_KEY: "compose.yml"})
 
 
 def test_the_image_is_the_nodes_own_system(tmp_path):
@@ -114,4 +119,45 @@ def test_wrap_keeps_everything_but_the_command(tmp_path):
                             read_write=[], read_only=[], uid=1000, gid=1000)
     assert (wrapped.name, wrapped.cwd, wrapped.env, wrapped.log_path) == (
         spec.name, spec.cwd, spec.env, spec.log_path)
-    assert "1000:1000" in wrapped.argv
+    assert "1000:1000" in wrapped.argv[2]
+
+
+def test_the_units_script_makes_the_container_joins_it_and_starts_it(tmp_path, paths):
+    """The script itself, run with a stand-in `docker` that records its calls."""
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    calls = tmp_path / "calls"
+    fake = bin_dir / "docker"
+    fake.write_text(f"""#!/bin/bash
+echo "$*" >> {calls}
+case "$1 $2" in
+  "network ls") echo net-a; echo net-b ;;
+  "image inspect") exit 1 ;;
+esac
+""")
+    fake.chmod(0o755)
+    job_id = new_id("job")
+    generated = tmp_path / "compose.json"
+    generated.write_text("{}")
+    short = Path(tempfile.mkdtemp(prefix="mb", dir="/tmp"))  # a socket path must be short
+    door = short / "door.sock"
+    access = isolated.ComposeAccess("mulebox-x", generated, door,
+                                    ((41000, "db", 5432),))
+    spec = RunSpec("unit", ("bash", "-c", "true"), tmp_path, {"A": "1"}, tmp_path / "log")
+    wrapped = isolated.wrap(spec, job_id, "build-1", image=None, bins=[], read_write=[],
+                            read_only=[], host_lines=["echo compose-up"], access=access)
+    script = wrapped.argv[2].replace(
+        "-m mulebox.worker.docker_door", "-c 'import socket,sys; s=socket.socket(socket.AF_UNIX);"
+        f" s.bind(\"{door}\")' #")
+    done = subprocess.run(["bash", "-c", script], env={**os.environ, "PATH": f"{bin_dir}:/usr/bin:/bin"},
+                          capture_output=True, text=True, timeout=30)
+    assert done.returncode == 0, done.stderr
+    assert done.stdout.startswith("compose-up\nmulebox: building the image")
+    order = [line.split()[0] + " " + line.split()[1] for line in calls.read_text().splitlines()]
+    assert order == ["network create", "image inspect", "build --quiet", "create --rm",
+                     "network ls", "network connect", "network connect", "start --attach"]
+    create = next(ln for ln in calls.read_text().splitlines() if ln.startswith("create"))
+    assert f"{door}:{isolated.DOOR}" in create
+    shutil.rmtree(short)
+    assert f"DOCKER_HOST=unix://{isolated.DOOR}" in create
+    assert isolated.inner_lines(access)[1].startswith(f"  python3 {isolated.FORWARDER}")

@@ -16,7 +16,7 @@ from pathlib import Path
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import RemovalDenied
-from mulebox.worker import caches, docker_cleanup, reclaim, workspace
+from mulebox.worker import caches, docker_cleanup, isolated, reclaim, workspace
 from mulebox.worker.docker import Docker, DockerMissing
 from mulebox.worker.paths import NodePaths
 from mulebox.worker.simulator import Simulators
@@ -39,6 +39,7 @@ class Cleaner:
             self.simulators.remove(job_id)
         if uses_docker and self.docker is not None:
             docker_cleanup.teardown(self.docker, job_id)
+            isolated.remove_door(self.paths, job_id)  # an isolated compose job's socket
             self._give_back_caches(project, job_id)
             if tree is not None:
                 self._give_back_tree(tree, job_id)

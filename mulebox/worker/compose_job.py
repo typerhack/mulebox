@@ -50,6 +50,8 @@ class ComposeJob:
     extra_env: dict[str, str]  # goes into the job's environment
     script: tuple[str, ...]  # runs first in the job's script
     notes: tuple[str, ...]  # told to the job's log
+    project: str = ""  # its Compose project name (common/compose.py)
+    forwards: tuple[tuple[int, str, int], ...] = ()  # (node port, service, its port), TCP only
 
 
 def _config(docker: Docker, env: Mapping[str, str], src: Path) -> dict[str, Any]:
@@ -127,4 +129,6 @@ def prepare(docker: Docker, pool: PortPool, job_id: str, worker: str, files: str
     src.chmod(0o755)  # a container's user is rarely the worker's user
     return ComposeJob(extra_env={**fixed, **port_env, "COMPOSE_FILE": str(generated)},
                       script=script_lines(),
-                      notes=(*_port_notes(ports, assigned), *notes))
+                      notes=(*_port_notes(ports, assigned), *notes), project=project,
+                      forwards=tuple((assigned[port.variable], port.service, port.target)
+                                     for port in ports if port.protocol == "tcp"))
