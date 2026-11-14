@@ -1035,7 +1035,7 @@ runs a job.
       CocoaPods job on a Mac node leaves the node user's `~/.cocoapods` untouched.
       Done 2026-11-14 (1.22.2): `pod install` of Alamofire on the Mac node wrote the index to
       `repos/` in the project's cache; `~/.cocoapods` kept its 779 files, none changed.
-- [~] M25.6 A job goes to a node of another system or architecture than its project was set up
+- [x] M25.6 A job goes to a node of another system or architecture than its project was set up
       for, and fails there. Found 2026-11-14: with the Mac node at `normal`, then `fallback` with
       the Linux node full, it took a real project's Linux jobs; one failed in its container, as
       `node_modules` from the Linux node held x86-64 native packages and the Mac's Docker is
@@ -1044,7 +1044,11 @@ runs a job.
       job's needs (`os:` in `.mulebox.yml`, `any` for none), older workers and clients keep
       working (design.md, Which node runs a job), with tests. Done when: with a Mac node online
       and the Linux node full, a Linux project's job waits for the Linux node.
-- [~] M25.7 Dev mode (the user's ask, 2026-11-14, after M25.6's failed job): a node being set up
+      Done 2026-11-14 (1.23.1): the Mac node out of dev mode at `normal` with 2 slots free and the
+      Linux node full, two jobs of a throwaway Linux project waited ("the machines are busy") and
+      ran on the Linux node; an `os: any` job sent beside them ran on the Mac (Darwin arm64). A
+      Linux project's job sent `--on` the Mac was refused at once, naming the system.
+- [x] M25.7 Dev mode (the user's ask, 2026-11-14, after M25.6's failed job): a node being set up
       or tried out takes only jobs sent to it with `--on`. `dev = true` in node.toml,
       `mulebox setup --dev`, `mulebox machine config --dev on|off` and the settings window; never
       the coordinator's own node. Built 2026-11-14 (1.23.0), with tests; seen in Edge on the
@@ -1052,6 +1056,10 @@ runs a job.
       jobs sent with --on", the Dev mode panel and a change pending, then applied). Done when: a
       Mac node set up with `--dev` takes no project's job while the Linux node is full, and runs
       one sent `--on` it.
+      Done 2026-11-14 (1.23.1): `mulebox setup <mac> --worker-of <node> --dev` put the Mac in the
+      line as `dev`, offering `macos`; a job sent `--on` it ran there (Darwin arm64); with the
+      Linux node full and the Mac's 2 slots free, a job with no `--on` waited 22 s and more, then
+      ran on the Linux node. Asked from afar, dev mode showed at once. The node was removed after.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

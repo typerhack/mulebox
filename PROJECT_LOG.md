@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.23.1 - 2026-11-14 - patch
+- Roadmap: M25.6 (a job only on a node of its project's system) and M25.7 (dev mode) done on the real Mac node beside the Linux node: a Linux project's jobs waited for the Linux node with the Mac free, an `os: any` job ran on the Mac, and in dev mode the Mac took only a job sent `--on` it. The Mac node was removed and cleaned up after. Docs only.
+
 ## 1.23.0 - 2026-11-14 - minor
 - A job runs only on a node of its project's system (M25.6): a Mac node had taken a Linux project's job, which failed on x86-64 packages in arm64 Docker. Each worker offers `linux` or `macos` (`common/systems.py`, `compose.worker_capabilities`); the coordinator adds the system to every job's needs at submit (`needs.required`): `macos` for `xcode` or `simulator`, else `linux`, or `os:` in `.mulebox.yml` (`any` adds none). The client sends `os:` as written and adds nothing, so clients of any version get the rule; an older coordinator ignores the field. Workers older than 1.23 are read as `macos` if they offer Xcode or a simulator, else `linux`. `doctor` and the contract show the same need.
 - Dev mode (M25.7, the user's ask): a node being set up or tried out takes only jobs sent to it with `--on`, and its own runners' slots and upgrades. `dev = true` in node.toml, `mulebox setup --dev` (with `--worker-of`), `mulebox machine config <node> --dev on|off`, and a Dev mode panel in the dashboard's settings window; the machine shows as Dev with no slot free. Asking for it from afar counts at once (`workers.dev_asked`); no other node waits for a dev node; a job only dev nodes could run says why it waits and how to end it. The coordinator's own node can never be in dev mode: node.toml refuses it, and so does a change from afar (meta `coordinator_host`).
