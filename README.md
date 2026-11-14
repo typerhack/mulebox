@@ -1,11 +1,11 @@
 # mulebox
 
-Send your AI coding agents' builds and tests to the Linux machines on your network.
+Send your AI coding agents' builds and tests to the Linux and Mac machines on your network.
 
 Agents (Claude Code, Codex, and others) edit code on your dev machine. Builds, type checks, linting
 and test suites are slow, hot and noisy, and several agents running them at once can freeze the
 dev machine. With mulebox, an agent types `mulebox check` instead. The job waits its turn in **one
-line** shared by every project and agent, runs on a Linux node, and the agent gets the
+line** shared by every project and agent, runs on a node, and the agent gets the
 output and the exit code as if the command had run locally.
 
 ![The mulebox dashboard: CPU, memory, disk and machines on top, the jobs running and waiting below](docs/images/queue-dark.png)
@@ -48,8 +48,8 @@ machine, here and now, and it takes your CI along in the same line.
 ## Install
 
 You need a Linux machine with systemd, git and Python 3.12 or newer, which your dev machine reaches
-over ssh with a key, at an address that does not change (below). A Mac can be a node too; that is
-new and not yet run on a real Mac node ([A Mac as a node](docs/install.md#a-mac-as-a-node)).
+over ssh with a key, at an address that does not change (below). A Mac can be a node too, beside Linux
+nodes or alone ([A Mac as a node](docs/install.md#a-mac-as-a-node)).
 
 ### Give every machine a fixed address
 
@@ -121,7 +121,7 @@ Two kinds of machine:
 
 - the **dev machine**: where you and your agents edit code: a laptop, a desktop or another Linux PC. It runs only the
   `mulebox` command, which talks to the nodes over ssh.
-- **nodes**: the Linux machines that run the jobs. Each runs a
+- **nodes**: the Linux machines and Macs that run the jobs. Each runs a
   **worker**, which runs jobs. One node is also the **coordinator**: it holds the line of jobs
   and their history, and serves the dashboard.
 
@@ -134,14 +134,17 @@ Two kinds of machine:
 
 - The dev machine only ever talks to the coordinator. It does not know how many nodes there are,
   so adding one changes nothing for agents or projects.
-- Workers ask the coordinator for work. A job goes to the first node with a free slot that has
-  what the job needs (Docker, Playwright, a toolchain). A worker reaches the coordinator with a
-  key that can do nothing but worker requests.
+- Workers ask the coordinator for work. A job goes to a node with a free slot that has what the
+  job needs (Docker, Playwright, a toolchain, Xcode). Of the free ones, a `preferred` node goes
+  before a `fallback` one, then the node that ran the branch's last job, as it holds the branch's
+  folder and installed dependencies, then the node with more free slots; none waits longer than
+  30 s for a better one. `--on <node>` sends a job to one node alone. A worker reaches the
+  coordinator with a key that can do nothing but worker requests.
 - The dashboard runs only on the coordinator. Workers send their CPU, memory and network readings
   with every heartbeat, so one page shows every node.
 - One node is enough to start: it is both coordinator and worker. A second joins with
   `mulebox setup <second-node> --worker-of <first-node>`. A node can be drained, resumed and removed
-  (`mulebox machine`). More than one node has been tried with a stand-in container only, so far.
+  (`mulebox machine`). Run so far with a Linux node and a Mac node side by side.
 
 ## The dashboard
 
@@ -273,10 +276,16 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
 - **Browser tests.** Playwright against the job's containers, with browsers kept for the next job.
 - **Several jobs per project**, each with its own command, setup, ports and containers or none, and
   `env:` values that build on each other.
-- **Apple platforms** on a Mac node (new, not yet run on a real one): a job pins an Xcode version,
-  gets a simulator of its own, removed on every outcome, and caches for SwiftPM and CocoaPods;
-  `init` writes the job for an Xcode project or a Swift package
+- **Apple platforms** on a Mac node: a job pins an Xcode version, gets a simulator of its own,
+  removed on every outcome, and caches for SwiftPM and CocoaPods; `init` writes the job for an
+  Xcode project or a Swift package
   ([Apple builds](docs/install.md#apple-builds-on-a-mac-node)).
+- **Isolated jobs**, for code you have not read: `isolation: container` in `.mulebox.yml` runs
+  each job in a fresh, confined container with no ssh key, `gh` login, mulebox config or other
+  project in sight, and no Docker socket. Its compose services still work, through a narrow door
+  that lets the job reach only its own containers. A node's owner can make it the floor for every
+  job there (`isolation = "container"` in `node.toml`), which a project cannot lower
+  ([design](docs/design.md#isolation-per-job-m231-decided-by-the-user-2026-11-14)).
 - **`mulebox run -- <cmd>`** runs any command on the node; `--in <service>` runs it in a compose
   service, `--take <path>` brings a changed file, such as a lockfile, back to the dev machine.
 
@@ -294,6 +303,8 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   message. A run's CPU counts its containers.
 - **Steered like any job**: freeze, boost, move in line, open on GitHub, cancel on GitHub.
 - **Shared caches**: a runner can download through the project's package caches (`runner caches`).
+- **On the node you pick**: give a node's runner a label of its own and name it in `runs-on:`, so a
+  workflow goes to that node, such as a Mac for an iOS build ([GitHub runners](docs/install.md#github-runners)).
 - **Public repositories only in a container** (`runner register --isolated`). See below for why.
 
 **Public repositories.** On a public repository anyone can fork it and open a pull request,
@@ -363,8 +374,8 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **More nodes**: `mulebox setup <node> --worker-of <coordinator>` adds a worker, with a key that can
   only ask for work. Jobs go to a node that has what they need.
 - **Linux and macOS**: services run under systemd on Linux and launchd on a Mac, managed the same
-  way on both (`mulebox service status|restart|logs`). macOS nodes are new and not yet run on a real
-  Mac node.
+  way on both (`mulebox service status|restart|logs`). On a Mac a job runs in a process group of
+  its own, found and stopped after a worker restart, and its GitHub runners are launchd agents.
 - **Survives restarts**: services come back by themselves after a reboot; a running job ends as
   `interrupted` (exit 75) and is not run again by itself, and waiting jobs run.
 - **On your own machines**: jobs travel over ssh to machines you own; no cloud service, no port open
@@ -372,7 +383,8 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **Private by default**: files that look like secrets are never uploaded, and logs are scrubbed of
   secrets before they are stored or shown.
 - **Stays in its folders**: mulebox writes and deletes only inside its own roots on a node, checked
-  for links and mounts. Jobs run under systemd with limits, and nothing is left behind.
+  for links and mounts. Jobs run under systemd with limits on Linux, in a process group of their
+  own on a Mac, and nothing is left behind.
 - **Old logs go by themselves** after 30 days; job records stay.
 
 ## Commands
@@ -386,7 +398,7 @@ command prints. The ones you and your agents use:
 | Command | What it does |
 | --- | --- |
 | `mulebox init` | write `.mulebox.yml` from the project's own files |
-| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested |
+| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone |
 | `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service |
 | `mulebox warm` | get toolchains, images, caches and installs ready ahead of a job |
 | `mulebox doctor` | check the project and the node before sending anything; changes nothing |

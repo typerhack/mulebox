@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.22.2 - 2026-11-14 - patch
+- README brought up to 1.22: Mac nodes run for real beside a Linux node, which free node takes a job and `--on <node>`, isolated jobs and a node's floor, a CI workflow on one node by its runner's label, jobs in a process group on a Mac. The dashboard has not changed since the screenshots of 1.17.15, so they stay. Docs only.
+
 ## 1.22.1 - 2026-11-14 - patch
 - `cache-cocoapods` keeps CocoaPods' spec index too (M25.5): a job's `pod install` wrote the trunk index into the node user's `~/.cocoapods`, outside mulebox's roots, as only `CP_CACHE_DIR` was set. `CP_HOME_DIR` now names the same folder; downloads go to its `Pods/`, the index to its `repos/` (`worker/caches.py`). Roadmap: M25.4 done on the real node. Test in `tests/worker/test_caches.py`; docs/agents.md, docs/install.md.
 
