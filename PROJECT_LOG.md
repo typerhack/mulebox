@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.32.2 - 2026-11-15 - patch
+- README: agents asking for more space (a section with four new pictures: requests in the strip, the review window, the Agents window, the settings history), the Storage settings as they are since 1.30 (space for mulebox beside the disk floor, slimming), the new commands, and an open page reloading itself after an upgrade. Every picture retaken from the stand-in data.
+- `tools/screenshots.py`: the four new shots; the others are taken with no agent request (`MULEBOX_MOCK_ASKS=none`). `web/dev/asks.ts`: the made-up history tells a story that holds (Allow for a few minutes, a change applied in it, then Ask me first again).
+
 ## 1.32.1 - 2026-11-15 - patch
 - Review window, from the drill on the real node: after Approve, Undo appeared where Approve was, so a double-click took the yes back at once. Undo takes no click for its first 1.5 s (`web/src/features/asks/UndoButton.tsx`, in the window and the strip), and "Another value" turns into the stepper in its own place, so Decline no longer slides under the pointer. Test in `web/src/features/asks/strip.test.tsx`.
 - Settings changed in the dashboard's node settings window are recorded in the history as from that window and address, not as `mulebox machine config` (`dashboard/node_settings.py`).

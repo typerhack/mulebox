@@ -164,7 +164,7 @@ theme and follows the system's by default.
 | History, searchable | Job minutes, by kind, project and machine |
 | ![A node's settings, Jobs tab: slots, priority, dev mode and what the node reports, each setting with mulebox's suggestion beside yours](docs/images/node-settings-dark.png) | ![The Order panel: the rules for the order of the line, each waiting row saying why it stands where it does](docs/images/order-light.png) |
 | A node's slots, priority and dev mode, with the suggestion | Rules for the order of the line |
-| ![The Storage page: a node's disk as one ruler with its reserve, the automatic cleanup and what it last did, then every project and its branch folders with what happens to each](docs/images/storage-dark.png) | ![The Storage tab of a node's settings: free space to keep, the most mulebox may use, when unused folders go, the latest folder, cleaning up on its own, cleaning Docker too, idle projects and the size at which agents are warned](docs/images/storage-settings-light.png) |
+| ![The Storage page: a node's disk as one ruler with its reserve, the automatic cleanup and what it last did, then every project and its branch folders with what happens to each](docs/images/storage-dark.png) | ![The Storage tab of a node's settings: the space mulebox may use beside the disk floor, when unused folders go and idle ones are slimmed, the latest folder, cleaning up on its own, cleaning Docker too, and idle projects](docs/images/storage-settings-light.png) |
 | What mulebox holds on a node, and what goes when | A node's disk settings, with what they would do |
 
 The Storage page shows, per node, what mulebox holds on its disk and what happens to each part: the
@@ -173,17 +173,45 @@ with size, last job and when each goes on its own, package caches, toolchains, r
 Docker's totals with what the last cleanup freed there. Each folder's path can be copied, a project or
 branch marked to keep, and a clean lists what it removes before anything goes. A project with no
 job for two weeks gets a suggestion on its row. At the top, one line says whether the automatic
-cleanup is on and what it does, what the last one removed, and what mulebox holds against the size
-at which it warns; Run now runs a cleanup at once. At the bottom, the cleanup history lists every
+cleanup is on and what it does, what the last one removed, and what mulebox holds against the space
+it may use; Run now runs a cleanup at once, and says first how much it removes and slims. At the bottom, the cleanup history lists every
 cleanup with why it ran, each folder it removed and why, what it freed in Docker, the free space
 before and after, and any error. The rules are a node's settings, in the Storage
-tab of its settings window, two to a row: how much space to keep free and the most mulebox may
-use, after how many days an unused branch folder goes and whether each project's latest folder
-stays, whether the node cleans up on its own and cleans Docker too, and when an idle project is
-suggested for cleaning and past what size agents are told to tell you; one line says what the
-values on screen would do before they are saved.
+tab of its settings window: first the space mulebox may use (20 GB by default, agents told from 80%
+of it) beside the disk floor, which counts only when the disk is nearly full for another reason;
+then after how many hours an idle branch folder is slimmed and after how many days an unused one
+goes, whether each project's latest folder stays, whether the node cleans up on its own and cleans
+Docker too, and when an idle project is suggested for cleaning. One line says what the values on
+screen would do before they are saved.
 
 ![The cleanup history: each cleanup with why it ran, the folders it removed and why, what Docker freed, the free space before and after, and an error](docs/images/storage-history-light.png)
+
+### When an agent needs more space
+
+From 80% of the space mulebox may use on a node, every command an agent runs tells it to ask you
+for more. With your yes it sends `mulebox storage ask --size 30GB --reason "..."`, and the request
+shows in the strip under the header, on every page, within seconds: Approve, Review or Decline.
+Review shows the agent's reason, who asked, and a bar of what mulebox holds, the limit now and what
+the yes would add, with a sentence that follows another value as you change it, including whether
+the disk would stay above its floor. Several requests for one node get one answer. The agent hears
+the answer in its next command, and while a request waits it is told not to ask again.
+
+| | |
+| --- | --- |
+| ![Two agents' requests for more space in the strip under the header, each with Approve, Review and Decline, and a grey line for a change applied without asking](docs/images/ask-strip-light.png) | ![The review window: the agent's reason, who asked, the space bar with what the yes adds and the 80% mark, and Approve, Another value and Decline](docs/images/ask-review-dark.png) |
+| Requests in the strip, on every page | One request, with the space bar |
+
+Whether a request needs your yes is your choice, in the Agents window in the header (or `mulebox
+agents ask|allow`): Ask me first, as installed, or Allow, and record it, which applies a request
+at once and tells you in a grey line with Undo. Every change of a node's setting, asked by an agent
+or made by you in the settings window or with `mulebox machine config`, goes into the settings
+history on the Storage page and `mulebox storage changes`: the old and new value, who asked and
+why, who confirmed, when the node took it, and Undo for a node's latest change.
+
+| | |
+| --- | --- |
+| ![The Agents window: Ask me first or Allow, and record it, with what each does](docs/images/agents-light.png) | ![The settings history: changes applied without asking, approved at another value, declined with a note, the Agents option and a change by hand, each with who asked and who confirmed](docs/images/settings-history-light.png) |
+| Whether agents must ask | Every setting change, with who asked and who confirmed |
 
 When a node falls under its reserve and the rules have nothing left to remove, the strip above
 the panels says so on every page, and the owner decides what goes:
@@ -396,12 +424,15 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **Machines page**: every node with its state, load, network, slots, version and last contact,
   and a settings window per node for its slots, priority, dev mode and disk rules.
 - **Storage page**: what mulebox holds on each node and what goes when, the automatic cleanup with
-  Run now, and the history of every cleanup.
+  Run now, the history of every cleanup, and the settings history: every change of a node's
+  setting with who asked and who confirmed, and Undo.
+- **Agents' requests** for more space in the strip, with Approve, another value or Decline, and an
+  Agents window to let them apply at once, recorded.
 - **Order panel**: the rules for the order of the line, set and saved from the page.
 - **Download meters** on a job's card: bytes, total and speed, and a warning when one stalls.
 - **Out of step**: a strip says when a dev machine, a worker or a skill runs another version, with the fix.
 - **Light and dark** themes and two meter styles, remembered per browser, and a layout that works on
-  a phone.
+  a phone. An open page reloads itself after an upgrade, once no window is open on it.
 - **From any device on your LAN**, with a password, a firewall rule and optional HTTPS, or read-only
   (`controls = false`).
 - **Light on the node**: about 0.6% of one core and 46 MB with a page open.
@@ -470,6 +501,10 @@ command prints. The ones you and your agents use:
 | `mulebox project clean`, `reset` | remove old branch folders, or a project's whole folder, on every node |
 | `mulebox project keep <project>` | keep a project's folders, or a branch's, from the automatic cleanup |
 | `mulebox storage` | what mulebox holds on each node, and what goes when |
+| `mulebox storage ask --size 30GB --reason "..."` | an agent, with your yes: more space for mulebox on a node |
+| `mulebox storage requests`, `approve`, `decline` | answer agents' requests (`--size` for another value, `--note` for the agent) |
+| `mulebox storage changes`, `undo <id>` | every setting change with who asked and who confirmed; undo the latest |
+| `mulebox agents ask\|allow` | whether an agent's request waits for your yes or applies at once, recorded |
 
 **Machines and setup**:
 

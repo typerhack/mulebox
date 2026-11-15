@@ -44,7 +44,8 @@ class Shot:
     wait: float = 4.0
 
 
-CLEAN = {"MULEBOX_MOCK_CLEAN": "1"}
+CLEAN = {"MULEBOX_MOCK_CLEAN": "1", "MULEBOX_MOCK_ASKS": "none"}  # no agent request but where shown
+ASKS = {**CLEAN, "MULEBOX_MOCK_ASKS": "two"}
 SHOTS = [
     Shot("queue-dark", "#/", env=CLEAN),
     Shot("queue-light", "#/", "light", env=CLEAN),
@@ -78,6 +79,15 @@ SHOTS = [
     Shot("low-space-light", "#/", "light", height=560, env={**CLEAN, "MULEBOX_MOCK_SCENE": "lowspace"}),
     Shot("storage-review-dark", "#/", env={**CLEAN, "MULEBOX_MOCK_SCENE": "lowspace"},
          script="[...document.querySelectorAll('button')].find(b => b.textContent === 'Review what goes').click()"),
+    Shot("ask-strip-light", "#/", "light", height=560, env=ASKS),
+    Shot("ask-review-dark", "#/", height=860, env={**CLEAN, "MULEBOX_MOCK_ASKS": "one"},
+         script="[...document.querySelectorAll('button')].find(b => b.textContent === 'Review').click()"),
+    Shot("agents-light", "#/", "light", height=640, env=CLEAN,
+         script="document.querySelector('[aria-label=\"Agents: what agents may do\"]').click()"),
+    Shot("settings-history-light", "#/storage", "light", height=760, env=ASKS,
+         script="(async () => { await new Promise(r => setTimeout(r, 800));"
+                " const h = document.querySelector('section[aria-label=\"Settings history\"]');"
+                " h.scrollIntoView(); window.scrollBy(0, -60); })()"),
     Shot("sign-in-light", "page:login.html", "light", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("sign-in-dark", "page:login.html", width=1000, height=640, env=CLEAN, wait=2.0),
     Shot("design-system-light", "file:design-system/specimen.html", "light", height=1100, wait=2.0,

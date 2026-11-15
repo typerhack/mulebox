@@ -35,11 +35,13 @@ const asked = (list: Ask[], note: string | null = null) => ({
   value: list.reduce((a, b) => (parseFloat(b.value) > parseFloat(a) ? b.value : a), list[0].value), note,
   asks: list.map(({ value, reason, project, job_id, client, asked_at }) => ({ value, reason, project, job_id, client, asked_at })) });
 const changes: Change[] = [
+  { id: id("chg"), node: null, setting: "agents", old: "allow", new: "ask", how: "agents", asked: null,
+    by: "the dashboard, from 192.168.1.50", at: now() - 60, in_force_at: null, undo_of: null },
   { id: id("chg"), node: "build-2", setting: "max_size", old: "6GB", new: "8GB", how: "allowed",
     asked: asked([ask("build-2", "8GB", 2, "example-ios", "bob-desktop", "Two simulator runtimes no longer fit beside DerivedData.")]),
     by: null, at: now() - 110, in_force_at: now() - 104, undo_of: null },
-  { id: id("chg"), node: null, setting: "agents", old: "allow", new: "ask", how: "agents", asked: null,
-    by: "the dashboard, from 192.168.1.50", at: now() - 3 * 3600, in_force_at: null, undo_of: null },
+  { id: id("chg"), node: null, setting: "agents", old: "ask", new: "allow", how: "agents", asked: null,
+    by: "the dashboard, from 192.168.1.50", at: now() - 240, in_force_at: null, undo_of: null },
   { id: id("chg"), node: "build-2", setting: "max_size", old: "6GB", new: "6GB", how: "declined",
     asked: asked([ask("build-2", "12GB", 300, "example-ios", "bob-desktop", "DerivedData for the two schemes takes about 14 GB per branch.")], "Clean the old schemes first."),
     by: "the dashboard, from 192.168.1.50", at: now() - 5 * 3600, in_force_at: null, undo_of: null },
