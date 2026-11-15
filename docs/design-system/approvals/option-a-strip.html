@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: approvals, option A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="approvals.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option A <span class="pick-tag">Fable suggests</span></h1>
+        <p class="doc-lead"><b>In the strip under the header, with a review window.</b> A request is a line in the strip that already says what is out of step, on every page, until it is answered. The line can be answered where it is; Review opens a window with the reason, the space bar and the other value. The header's mark counts what waits.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#one">One request</a><a href="#several">Several waiting</a><a href="#other">Approve another value</a><a href="#decided">Decided, in the history</a><a href="index.html">All options</a><a href="report.html">Report</a></nav>
+  </header>
+
+  <section class="case" id="one"><h2>One request</h2>
+    <p>The line names the node, the value asked and who asked. Approve and Decline answer at once; Review opens the window below.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right"><span class="hmark warn" title="1 to answer"><i data-i="circle-question-mark" class="s"></i><span class="num">1</span></span></span></div>
+      <div class="gap">
+        <div class="strip" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490"><i data-i="circle-question-mark" class="q"></i>
+          <div class="strip-lines">
+            <div class="strip-line" data-waiting>
+              <p><b>An agent asks for 30.0 GB of space on build-1, up from 20.0 GB.</b> <span>mulebox holds 16.4 GB there. Asked for example-app from alice-laptop, 12 min ago.</span></p>
+              <span class="acts"><button class="btn" type="button" data-do="approve">Approve 30.0 GB</button><button class="btn" type="button" aria-haspopup="dialog">Review</button><button class="btn ghost" type="button" data-do="decline">Decline</button></span></div>
+            <div class="strip-line" data-decided><p data-said></p><span class="acts"><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></span></div>
+          </div></div>
+        <p class="as-today">The top row and the page, as today.</p>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">What Review opens, over the page:</p>
+    <section class="float win" role="dialog" aria-label="Request for more space"><header class="float-head"><div><h3><i data-i="hard-drive"></i>Request for more space</h3><p class="sm t2">build-1, asked 12 min ago</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="float-body"><article class="req" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" ><header class="req-head"><h4><i data-i="circle-question-mark"></i>Raise the space for mulebox on build-1 from 20.0 GB to 30.0 GB?</h4><span>12 min ago</span></header><blockquote class="req-why">The release branch builds three images and four branches are open this week, about 9 GB more than fits. The cleanup has run; I would rather not drop the package caches.
+  <cite>Written by the agent that asked</cite></blockquote><p class="from"><span><i data-i="bot" class="s"></i>An agent working on <code>example-app</code></span><span><i data-i="laptop" class="s"></i><code>alice-laptop</code></span><span><code>job-01JCX4M7Q2</code></span></p><div data-space></div><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 30.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn primary" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></article></div></section><ul class="notes"><li><b>Good at</b>Seen on any page within seconds, in the place the owner already looks for what waits. One click for a plain yes; the window for a considered one.</li><li><b>Costs</b>A strip line is short: the reason is only in the window. An amber line above the panels for as long as the owner does not answer.</li></ul>
+  </section>
+
+  <section class="case" id="several"><h2>Several waiting</h2>
+    <p>Up to two requests are two lines. From three, the strip keeps one line with the count and Review opens them as a list, grouped by node. Two requests for one setting of one node get one answer.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right"><span class="hmark warn" title="3 to answer"><i data-i="circle-question-mark" class="s"></i><span class="num">3</span></span></span></div>
+      <div class="gap">
+        <div class="strip"><i data-i="circle-question-mark" class="q"></i>
+          <div class="strip-lines"><div class="strip-line">
+            <p><b>3 requests for more space wait for your answer.</b> <span>2 for build-1 (example-app, example-shop), 1 for build-mac (example-ios). The oldest was asked 1 h ago.</span></p>
+            <span class="acts"><button class="btn" type="button" aria-haspopup="dialog">Review all 3</button></span></div></div></div>
+        <p class="as-today">The top row and the page, as today.</p>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">What Review all opens:</p>
+    <section class="float win" role="dialog" aria-label="Requests for more space"><header class="float-head"><div><h3><i data-i="hard-drive"></i>Requests for more space</h3><p class="sm t2">3 waiting on 2 nodes</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="float-body">
+      <div class="group"><div class="node-h"><strong>build-1</strong><span>2 requests for its space, one answer</span></div>
+        <article class="req" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" data-asks="2">
+          <header class="req-head"><h4><i data-i="circle-question-mark"></i>Raise the space for mulebox from 20.0 GB to 30.0 GB, the larger of the two?</h4><span>12 min and 3 min ago</span></header>
+          <blockquote class="req-why">The release branch builds three images and four branches are open this week, about 9 GB more than fits.
+            <cite>Asks 30.0 GB: the agent of <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>, 12 min ago</cite></blockquote>
+          <blockquote class="req-why">The import job unpacks a 3 GB fixture set per branch. 24 GB would cover two branches at once.
+            <cite>Asks 24.0 GB: the agent of <code>example-shop</code> from <code>alice-laptop</code>, <code>job-01JCX5T0RA</code>, 3 min ago</cite></blockquote>
+          <div data-space></div><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 30.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div>
+        </article></div>
+      <div class="group"><div class="node-h"><strong>build-mac</strong><span>1 request</span></div>
+        <article class="req" data-req data-node="build-mac" data-held="17.1" data-limit="20" data-ask="40" data-free="212" data-floor="50" data-clean="0.6" data-disk="500" ><header class="req-head"><h4><i data-i="circle-question-mark"></i>Raise the space for mulebox from 20.0 GB to 40.0 GB?</h4><span>1 h ago</span></header><blockquote class="req-why">DerivedData for the two schemes takes about 14 GB per branch, and the simulator runtimes are counted too.
+  <cite>Written by the agent that asked</cite></blockquote><p class="from"><span><i data-i="bot" class="s"></i>An agent working on <code>example-ios</code></span><span><i data-i="laptop" class="s"></i><code>bob-desktop</code></span><span><code>job-01JCX52KD8</code></span></p><div data-space></div><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 40.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></article></div>
+    </div></section><ul class="notes"><li><b>Good at</b>The strip stays one line however many wait. Each node is answered with its own disk in view.</li><li><b>Costs</b>With several, the answer always takes the window. The list can get long: five nodes are five bars.</li></ul>
+  </section>
+
+  <section class="case" id="other"><h2>Approve another value</h2>
+    <p>Another value turns the Approve button's number into a stepper. The bar and the sentence under it follow, so the owner sees what 25 GB does before saying yes. Try the stepper.</p>
+    <section class="float win" role="dialog" aria-label="Request for more space"><header class="float-head"><div><h3><i data-i="hard-drive"></i>Request for more space</h3><p class="sm t2">build-1, asked 12 min ago</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="float-body"><article class="req" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" data-edit data-value="25"><header class="req-head"><h4><i data-i="circle-question-mark"></i>Raise the space for mulebox on build-1 from 20.0 GB to 30.0 GB?</h4><span>12 min ago</span></header><blockquote class="req-why">The release branch builds three images and four branches are open this week, about 9 GB more than fits. The cleanup has run; I would rather not drop the package caches.
+  <cite>Written by the agent that asked</cite></blockquote><p class="from"><span><i data-i="bot" class="s"></i>An agent working on <code>example-app</code></span><span><i data-i="laptop" class="s"></i><code>alice-laptop</code></span><span><code>job-01JCX4M7Q2</code></span></p><div data-space></div><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 30.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn primary" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></article></div></section><ul class="notes"><li><b>Good at</b>The answer is still one button, and it names the value it sets. The agent is told both numbers.</li><li><b>Costs</b>The other value is one step away from the strip, never on it.</li></ul>
+  </section>
+
+  <section class="case" id="decided"><h2>Decided, in the history</h2>
+    <p>Once answered, the line says what was decided, with Undo until the node has taken it, then leaves the strip. Every answer stays in the settings history, on the Storage page under the cleanup history.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span class="on">Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <div class="said"><i data-i="circle-check" class="yes"></i><p><b>Approved at 25.0 GB, not the 30.0 GB asked.</b> <span>build-1 takes it with its next check-in; the agent reads the answer in its next command.</span></p>
+          <button class="btn ghost" type="button"><i data-i="undo-2" class="s"></i>Undo</button></div>
+        <section class="panel"><div class="panel-body"><section class="hist" aria-label="Settings history"><div class="hist-h"><h4><i data-i="history" class="s"></i>Settings history <small>every change of a node's setting, newest first</small></h4></div>
+<div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>build-1, space for mulebox: 20.0 GB to 25.0 GB.</b> Asked 30.0 GB; approved at another value.</p>
+    <p>Asked by an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>: <q>The release branch builds three images and four branches are open this week.</q></p>
+    <p>Confirmed on the dashboard, from <code>192.168.1.50</code>. In force 8 s later.</p></div>
+  <time datetime="2026-11-15T10:42">Today 10:42</time></div>
+<div class="hist-row" data-how="declined"><i data-i="ban"></i>
+  <div><p><b>build-mac, space for mulebox: stays 20.0 GB.</b> Asked 40.0 GB; declined.</p>
+    <p>Asked by an agent working on <code>example-ios</code> from <code>bob-desktop</code>, <code>job-01JCX52KD8</code>: <q>DerivedData for the two schemes takes about 14 GB per branch.</q></p>
+    <p>Declined on the dashboard, from <code>192.168.1.50</code>, with the note <q>Clean the old schemes first.</q></p></div>
+  <time datetime="2026-11-15T09:15">Today 09:15</time></div>
+<div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>build-1, space for mulebox: 15.0 GB to 20.0 GB.</b> Asked 20.0 GB; approved as asked.</p>
+    <p>Asked by an agent working on <code>example-shop</code> from <code>alice-laptop</code>, <code>job-01JCQ9E3ZB</code>: <q>A second service image no longer fits beside the caches.</q></p>
+    <p>Confirmed with <code>mulebox storage approve</code> on <code>alice-laptop</code>.</p></div>
+  <time datetime="2026-11-09T17:03">9 Nov 17:03</time></div>
+<div class="hist-row" data-how="hand"><i data-i="pencil"></i>
+  <div><p><b>build-1, space for mulebox: 20.0 GB to 15.0 GB.</b> Nobody asked.</p>
+    <p>Changed in the node's settings window, from <code>192.168.1.50</code>.</p></div>
+  <time datetime="2026-11-02T08:20">2 Nov 08:20</time></div></section></div></section>
+      </div>
+    </div>
+    <ul class="notes"><li><b>Good at</b>One history for every setting of every node, asked or changed by hand: who asked, why, old and new value, who confirmed, when.</li><li><b>Costs</b>The history is a page away from where the answer was given.</li></ul>
+  </section>
+</div>
+<script src="approvals.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

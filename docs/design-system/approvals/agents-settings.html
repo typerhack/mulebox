@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: the Agents window</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="approvals.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Agents settings </h1>
+        <p class="doc-lead"><b>One window for what agents may do, opened from the header.</b> The owner chooses whether an agent's request for a setting change needs a yes. The choice is for every node, so it is not in a node's settings: a new Agents button in the header opens a window of its own, with room for more options about agents later.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#where">Where it opens</a><a href="#states">Both states</a><a href="#allow">The prompt with Allow</a><a href="#history">In the history</a><a href="index.html">All mockups</a><a href="report.html">Report</a></nav>
+  </header>
+
+  <section class="case" id="where"><h2>Where it opens</h2>
+    <p>A button with the agent mark in the header's right group, before the theme switches, on every page. Dashed here only to show that it is new. A request's own window also links to it: "Always allow this" is one click from there.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right hbtns"><button class="icon-btn new" type="button" title="Agents" aria-label="Agents: what agents may do" aria-expanded="true"><i data-i="bot" class="s"></i></button></span></div><p class="as-today">The top row and the page, as today.</p></div>
+    <ul class="notes"><li><b>Good at</b>Found without knowing it exists, and it says by its place that it is not about one node.</li><li><b>Costs</b>One more button in a header that is already full at 390 px; there it sits with the switches in the second row.</li></ul>
+  </section>
+
+  <section class="case" id="states"><h2>Both states</h2>
+    <p>Ask me first is how mulebox is installed. The two dashed options are examples of what could follow, to show the window has room; neither is planned. The radio marks answer a click.</p>
+    <div class="two"><section class="float win" role="dialog" aria-label="Agents"><header class="float-head"><div><h3><i data-i="bot"></i>Agents</h3><p class="sm t2">What agents may do on every node. Saved on the coordinator.</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="float-body"><div class="opt-line"><b>When an agent asks for more space, or another setting change</b><div class="marks" role="radiogroup" aria-label="When an agent asks for a setting change" data-note="says-ask"><button type="button" role="radio" aria-checked="true" data-says="Nothing changes until you answer. The agent keeps working with what there is.">Ask me first</button><button type="button" role="radio" aria-checked="false" data-says="The change is made at once and recorded with who asked and why. You are told, and can undo it.">Allow, and record it</button></div><small id="says-ask">Nothing changes until you answer. The agent keeps working with what there is.</small></div><div class="opt-line example"><span class="eg">Example of a later option, not planned</span><b>Without asking, an agent may raise the space up to</b><span class="row tight"><span class="stepper"><button type="button" disabled aria-label="5 GB less"><i data-i="minus" class="s"></i></button><output>40 GB</output><button type="button" disabled aria-label="5 GB more"><i data-i="plus" class="s"></i></button></span><span class="unit">per node</span></span><small>Counts only with Allow, and record it.</small></div><div class="opt-line example"><span class="eg">Example of a later option, not planned</span><b>Settings an agent may ask for</b><div class="ticks"><label><input type="checkbox" checked>Space for mulebox</label><label><input type="checkbox">Slots</label><label><input type="checkbox">Priority</label></div><small>A request for anything else is refused at once, and the agent is told why.</small></div></div><footer class="float-foot"><p>As installed.</p><button class="btn ghost" type="button">Close</button><button class="btn primary" type="button" disabled>Save</button></footer></section><section class="float win" role="dialog" aria-label="Agents"><header class="float-head"><div><h3><i data-i="bot"></i>Agents</h3><p class="sm t2">What agents may do on every node. Saved on the coordinator.</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="float-body"><div class="opt-line"><b>When an agent asks for more space, or another setting change</b><div class="marks" role="radiogroup" aria-label="When an agent asks for a setting change" data-note="says-allow"><button type="button" role="radio" aria-checked="false" data-says="Nothing changes until you answer. The agent keeps working with what there is.">Ask me first</button><button type="button" role="radio" aria-checked="true" data-says="The change is made at once and recorded with who asked and why. You are told, and can undo it.">Allow, and record it</button></div><small id="says-allow">The change is made at once and recorded with who asked and why. You are told, and can undo it.</small></div><div class="opt-line example"><span class="eg">Example of a later option, not planned</span><b>Without asking, an agent may raise the space up to</b><span class="row tight"><span class="stepper"><button type="button" aria-label="5 GB less"><i data-i="minus" class="s"></i></button><output>40 GB</output><button type="button" aria-label="5 GB more"><i data-i="plus" class="s"></i></button></span><span class="unit">per node</span></span><small>A request above it waits for your answer, as with Ask me first.</small></div><div class="opt-line example"><span class="eg">Example of a later option, not planned</span><b>Settings an agent may ask for</b><div class="ticks"><label><input type="checkbox" checked>Space for mulebox</label><label><input type="checkbox">Slots</label><label><input type="checkbox">Priority</label></div><small>A request for anything else is refused at once, and the agent is told why.</small></div></div><footer class="float-foot"><p>Changed: agents are no longer held up by a request.</p><button class="btn ghost" type="button">Close</button><button class="btn primary" type="button">Save</button></footer></section></div>
+    <ul class="notes"><li><b>Good at</b>One sentence under the choice says what it does, in the owner's words. A later option is one more line.</li><li><b>Costs</b>With one real option the window is nearly empty today.</li></ul>
+  </section>
+
+  <section class="case" id="allow"><h2>The prompt with Allow</h2>
+    <p>Nothing waits, so nothing asks. The same place that would have asked now tells, once, what was changed and for whom, with Undo. It goes when dismissed or after a day; the history keeps it.</p>
+    <h3 class="sub-h">With option A, the strip <span class="pick-tag">Fable suggests</span></h3>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right hbtns"><button class="icon-btn" type="button" title="Agents" aria-label="Agents: what agents may do"><i data-i="bot" class="s"></i></button></span></div>
+      <div class="gap"><div class="strip calm"><i data-i="bot"></i>
+        <div class="strip-lines"><div class="strip-line"><p><b>build-1 now has 30.0 GB of space for mulebox, up from 20.0 GB.</b> <span>Applied without asking, as you allowed. Asked for example-app from alice-laptop, 2 min ago.</span></p>
+          <span class="acts"><button class="btn" type="button"><i data-i="undo-2" class="s"></i>Undo</button><button class="btn ghost" type="button">Got it</button></span></div></div></div><p class="as-today">The top row and the page, as today.</p></div>
+    </div>
+    <p class="stage-cap win-cap">A grey line, not amber: nothing is wrong and nothing waits. The header's mark does not count it.</p>
+    <h3 class="sub-h">With option B, the Storage page's space panel</h3>
+    <div class="stage">
+      <section class="panel"><header class="panel-head strong"><h3><i data-i="hard-drive"></i>Space for mulebox on build-1</h3><span class="panel-note num">16.4 GB of 30.0 GB</span></header>
+        <div class="panel-body gap"><div class="said"><i data-i="bot"></i><p><b>build-1 now has 30.0 GB of space for mulebox, up from 20.0 GB.</b> <span>Applied without asking, as you allowed. Asked for example-app from alice-laptop, 2 min ago.</span></p>
+          <button class="btn ghost" type="button"><i data-i="undo-2" class="s"></i>Undo</button></div></div></section>
+    </div>
+    <h3 class="sub-h">With option C, the node's row</h3>
+    <div class="stage"><div class="cols"><section class="panel machines-box" aria-label="Machines">
+  <header class="panel-head"><h3><i data-i="server"></i>Machines</h3><span class="panel-note num">2 of 2 online, 1 slot free</span></header>
+  <div class="panel-body">
+    <div class="machine"><div class="row apart"><span class="row tight"><strong>build-1</strong><span class="mark" title="Dashboard host"><i data-i="house" class="s"></i></span></span>
+        <span class="row tight"><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><button class="icon-btn" type="button" aria-label="Pause build-1"><i data-i="pause" class="s"></i></button><button class="icon-btn" type="button" aria-label="Settings of build-1"><i data-i="settings-2" class="s"></i></button></span></div>
+      <p class="inline-warn"><i data-i="bot" class="s"></i>Space raised to 30.0 GB for an agent<button type="button">Undo</button></p>
+      <div class="stack labels-4"><div class="meter-row"><span>CPU</span><span class="meter" style="--v: 41%"><i></i></span><span class="num">41%</span></div>
+        <div class="meter-row"><span>Mem</span><span class="meter" style="--v: 62%"><i></i></span><span class="num">62%</span></div></div>
+      <p class="slots sm"><span class="slot-boxes"><i class="busy"></i><i class="busy"></i></span>0 of 2 slots free</p></div>
+    <div class="machine"><div class="row apart"><strong>build-mac</strong><span class="row tight"><span class="st" data-state="passed"><i data-i="circle-check"></i>Idle</span><button class="icon-btn" type="button" aria-label="Settings of build-mac"><i data-i="settings-2" class="s"></i></button></span></div>
+      
+      <p class="slots sm"><span class="slot-boxes"><i></i></span>1 of 1 slot free</p></div>
+  </div></section><p class="as-today">CPU, Memory and Disk, as today.</p></div></div>
+    <ul class="notes"><li><b>Good at</b>The owner who allowed it still learns of every change, where a request would have been.</li><li><b>Costs</b>With many agents and Allow, tells can pile up; from three they fold into one line, as requests do.</li></ul>
+  </section>
+
+  <section class="case" id="history"><h2>In the history</h2>
+    <p>The entry has the agent's mark where an answered request has a tick, says "applied without asking, as you allowed" and "nobody confirmed", and keeps an Undo button for as long as it is the node's latest change of that setting.</p>
+    <div class="stage"><section class="panel"><div class="panel-body"><section class="hist" aria-label="Settings history"><div class="hist-h"><h4><i data-i="history" class="s"></i>Settings history <small>every change of a node's setting, newest first</small></h4></div>
+<div class="hist-row" data-how="auto"><i data-i="bot"></i>
+  <div><p><b>build-1, space for mulebox: 20.0 GB to 30.0 GB.</b> Asked 30.0 GB; applied without asking, as you allowed.</p>
+    <p>Asked by an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>: <q>The release branch builds three images and four branches are open this week.</q></p>
+    <p>Nobody confirmed. In force 6 s later.</p>
+    <button class="btn" type="button"><i data-i="undo-2" class="s"></i>Undo: back to 20.0 GB</button></div>
+  <time datetime="2026-11-15T11:20">Today 11:20</time></div><div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>build-1, space for mulebox: 20.0 GB to 25.0 GB.</b> Asked 30.0 GB; approved at another value.</p>
+    <p>Asked by an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>: <q>The release branch builds three images and four branches are open this week.</q></p>
+    <p>Confirmed on the dashboard, from <code>192.168.1.50</code>. In force 8 s later.</p></div>
+  <time datetime="2026-11-15T10:42">Today 10:42</time></div>
+<div class="hist-row" data-how="hand"><i data-i="pencil"></i>
+  <div><p><b>Agents, when an agent asks for a setting change: Ask me first to Allow, and record it.</b> Nobody asked.</p><p>Changed in the Agents window, from <code>192.168.1.50</code>.</p></div>
+  <time datetime="2026-11-15T10:50">Today 10:50</time></div>
+    </section></div></section></div>
+    <ul class="notes"><li><b>Good at</b>The change of the Agents option is itself an entry, so the history explains why a later change had no confirmer.</li><li><b>Costs</b>Undo from the history lowers a limit mulebox may have filled since; the cleanup then has to bring it back under.</li></ul>
+  </section>
+</div>
+<script src="approvals.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

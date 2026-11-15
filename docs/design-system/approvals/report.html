@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Approval mockups report</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="approvals.css">
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>Approval mockups report</h1>
+      <p class="doc-lead">Fable's report on the approval mockups of 2026-11-15: three places for the prompt, the Agents window, and what it recommends. <a href="index.html">Open the mockups</a>.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <div class="rep">
+    <section>
+      <h2>What I suggest</h2>
+      <div class="pick"><p><b>Option A, the strip, with the Agents button in the header.</b> A request is the one storage event where somebody is waiting on the owner: every command the agent runs repeats the warning until it is answered. So it belongs where the owner cannot miss it, on any page, and the dashboard already has that place and the owner already picked it for the low-space warning. With Allow, the same strip tells in grey what was changed.</p></div>
+      <p>Two parts are worth taking from the others whatever is picked: B's idea that the Storage page's space panel shows "25.0 GB pending, 20.0 GB now" after an answer, and C's rows (Runs with, Asked, Yours) if requests for slots or priority come later, since those settings live in that window.</p>
+    </section>
+    <section>
+      <h2>The three options</h2>
+      <ul>
+        <li><b><a href="option-a-strip.html">A, the strip.</a></b> One click for a plain yes, a window for the reason, the bar and another value. From three requests the strip folds to one line. Weakness: the reason is not on the line, and an amber line stays above the panels until answered.</li>
+        <li><b><a href="option-b-storage.html">B, the Storage page.</a></b> The best place to decide, since the bar, the cleanup and the projects are already there, and no window is needed. Weakness: only a count on a tab says something waits, and a request for a setting that is not storage has no home.</li>
+        <li><b><a href="option-c-settings.html">C, the node's settings.</a></b> The most honest model: a request is a pending setting. Weakness: the quietest signal, one window per node, and no history across nodes.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>One part in all three: the space bar</h2>
+      <p>The answer is a number, so each prompt draws it: what mulebox holds, the limit now, the part the yes would add (hatched), and the dotted mark from which agents are told to ask again. Under it, one sentence says what the value does, and it changes with the stepper.</p>
+      <p>The example was chosen to give "another value" a reason. On build-1, 30 GB filled to the limit would leave the disk 47.4 GB free, under its floor of 49 GB; the sentence says so and names 28 GB as the most that stays clear. That is what the owner needs to pick 25.</p>
+    </section>
+    <section>
+      <h2><a href="agents-settings.html">The Agents window</a></h2>
+      <ul>
+        <li><b>Where:</b> a new button with the agent mark in the header. The choice is for every node, so a node's settings window would be the wrong place, and the header has no menu to put it in today.</li>
+        <li><b>The choice</b> is two radio marks, the control the design system already has, with one sentence under it. Two dashed lines are examples only: a ceiling an agent may raise to without asking, and which settings an agent may ask for.</li>
+        <li><b>With Allow</b> nothing asks. The place that would have asked tells once, in grey, with Undo and "Got it"; the header's mark does not count it. In the history the entry carries the agent's mark, "applied without asking, as you allowed" and "nobody confirmed", with an Undo button.</li>
+        <li>Changing the Agents option is itself a history entry, so a later change with no confirmer is explained.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Guessed, for you to correct</h2>
+      <ul>
+        <li><b>Two requests for one setting of one node get one answer</b>, offered at the larger value. The other reading is one answer each, the later one winning.</li>
+        <li><b>Who confirmed:</b> the dashboard has no sign-in, so the history says "on the dashboard, from 192.168.1.50", or the command and dev machine when answered from the terminal. <code>mulebox storage approve</code> is a made-up name.</li>
+        <li><b>After Decline</b> the agent "is not told to ask again for 7 days", and Decline can carry a short note for the agent. Both made up.</li>
+        <li><b>Undo</b> is offered until the node has taken the value, and from the history while the entry is the node's latest change of that setting. Undo after mulebox filled the new space leaves it over its limit until the cleanup catches up.</li>
+        <li><b>The tell under Allow</b> goes when dismissed or after a day. Made up.</li>
+        <li><b>The strip stays amber</b> for a request, with a question mark for its icon, since the node is past 80% when one arrives. A request for another setting, with nothing near a limit, might want the grey line.</li>
+        <li><b>Sizes</b> are written with one decimal, as the dashboard's formatter prints them ("20.0 GB"), where the brief says "20 GB".</li>
+      </ul>
+    </section>
+    <section>
+      <h2>Checked</h2>
+      <p id="checked">In headless Chrome only, not in Edge: option A and the Agents window at 1440 px in the dark theme, and all four pages in a 390 px frame in the light theme, where nothing ran past the right edge. Option B was not looked at as a picture at 1440 px, and the index and this report not at all. The steppers and buttons were not clicked in a browser.</p>
+    </section>
+  </div>
+</div>
+<script src="approvals.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

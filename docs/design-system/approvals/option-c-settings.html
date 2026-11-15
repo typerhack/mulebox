@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: approvals, option C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="approvals.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option C </h1>
+        <p class="doc-lead"><b>A count on the node's settings button, and a Requests tab in its window.</b> A request is a pending change to a node's setting, so it lives in that node's settings window, in the window's own rows: Runs with, Asked, Yours. The node's row in the Machines box says that it asks, and its settings button carries the count.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#one">One request</a><a href="#several">Several waiting</a><a href="#other">Approve another value</a><a href="#decided">Decided, in the history</a><a href="index.html">All mockups</a><a href="report.html">Report</a></nav>
+  </header>
+
+  <section class="case" id="one"><h2>One request</h2>
+    <p>The Machines box is in the top row of every page. The node's row gets one line and a count on its settings button; both open the window on its Requests tab.</p>
+    <div class="stage"><div class="cols"><section class="panel machines-box" aria-label="Machines">
+  <header class="panel-head"><h3><i data-i="server"></i>Machines</h3><span class="panel-note num">2 of 2 online, 1 slot free</span></header>
+  <div class="panel-body">
+    <div class="machine"><div class="row apart"><span class="row tight"><strong>build-1</strong><span class="mark" title="Dashboard host"><i data-i="house" class="s"></i></span></span>
+        <span class="row tight"><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><button class="icon-btn" type="button" aria-label="Pause build-1"><i data-i="pause" class="s"></i></button><button class="icon-btn has" type="button" aria-label="Settings of build-1, 1 to answer"><i data-i="settings-2" class="s"></i><span class="badge num">1</span></button></span></div>
+      <p class="inline-warn"><i data-i="circle-question-mark" class="s"></i>An agent asks for more space<button type="button">Answer</button></p>
+      <div class="stack labels-4"><div class="meter-row"><span>CPU</span><span class="meter" style="--v: 41%"><i></i></span><span class="num">41%</span></div>
+        <div class="meter-row"><span>Mem</span><span class="meter" style="--v: 62%"><i></i></span><span class="num">62%</span></div></div>
+      <p class="slots sm"><span class="slot-boxes"><i class="busy"></i><i class="busy"></i></span>0 of 2 slots free</p></div>
+    <div class="machine"><div class="row apart"><strong>build-mac</strong><span class="row tight"><span class="st" data-state="passed"><i data-i="circle-check"></i>Idle</span><button class="icon-btn" type="button" aria-label="Settings of build-mac"><i data-i="settings-2" class="s"></i></button></span></div>
+      
+      <p class="slots sm"><span class="slot-boxes"><i></i></span>1 of 1 slot free</p></div>
+  </div></section><p class="as-today">CPU, Memory and Disk, as today.</p></div></div>
+    <p class="stage-cap win-cap">What the button opens:</p>
+    <section class="float win" role="dialog" aria-label="Settings of build-1"><header class="float-head"><div><h3><i data-i="settings-2"></i>build-1</h3><p class="sm t2">Node settings</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="tabs in-win" role="tablist"><button type="button" role="tab" aria-selected="false">Slots and priority</button><button type="button" role="tab" aria-selected="false">Storage</button><button type="button" role="tab" aria-selected="true">Requests<span class="count num">1</span></button></div><div class="float-body"><div class="req" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" ><div class="set-rows"><p class="set-mean">Space for mulebox: the most mulebox may hold on this node. Agents are told to ask from 80% of it.</p><div class="set-row"><span>Runs with</span><b class="num">20.0 GB</b></div><div class="set-row"><span>Asked</span><b class="num">30.0 GB</b><small>By an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>, 12 min ago: The release branch builds three images and four branches are open this week, about 9 GB more than fits.</small></div><div class="set-row yours" data-waiting><span>Yours</span><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span></span><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><small data-differs>Differs from what was asked. The agent is told both values.</small></div></div><div data-space></div><div class="req-acts" data-waiting><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn primary" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section><ul class="notes"><li><b>Good at</b>No new place and no new grammar: a request is the Asked row of a setting, answered like any setting. Works for any setting an agent may ask about later.</li><li><b>Costs</b>A small mark in a box of many marks. With more than a few nodes the row can be scrolled out of the Machines box.</li></ul>
+  </section>
+
+  <section class="case" id="several"><h2>Several waiting</h2>
+    <p>Each node counts its own. Two requests for one setting are two Asked rows over one Yours row.</p>
+    <div class="stage"><div class="cols"><section class="panel machines-box" aria-label="Machines">
+  <header class="panel-head"><h3><i data-i="server"></i>Machines</h3><span class="panel-note num">2 of 2 online, 1 slot free</span></header>
+  <div class="panel-body">
+    <div class="machine"><div class="row apart"><span class="row tight"><strong>build-1</strong><span class="mark" title="Dashboard host"><i data-i="house" class="s"></i></span></span>
+        <span class="row tight"><span class="st" data-state="running"><i data-i="loader-circle"></i>Busy</span><button class="icon-btn" type="button" aria-label="Pause build-1"><i data-i="pause" class="s"></i></button><button class="icon-btn has" type="button" aria-label="Settings of build-1, 2 to answer"><i data-i="settings-2" class="s"></i><span class="badge num">2</span></button></span></div>
+      <p class="inline-warn"><i data-i="circle-question-mark" class="s"></i>2 agents ask for more space<button type="button">Answer</button></p>
+      <div class="stack labels-4"><div class="meter-row"><span>CPU</span><span class="meter" style="--v: 41%"><i></i></span><span class="num">41%</span></div>
+        <div class="meter-row"><span>Mem</span><span class="meter" style="--v: 62%"><i></i></span><span class="num">62%</span></div></div>
+      <p class="slots sm"><span class="slot-boxes"><i class="busy"></i><i class="busy"></i></span>0 of 2 slots free</p></div>
+    <div class="machine"><div class="row apart"><strong>build-mac</strong><span class="row tight"><span class="st" data-state="passed"><i data-i="circle-check"></i>Idle</span><button class="icon-btn has" type="button" aria-label="Settings of build-mac, 1 to answer"><i data-i="settings-2" class="s"></i><span class="badge num">1</span></button></span></div>
+      <p class="inline-warn"><i data-i="circle-question-mark" class="s"></i>An agent asks for more space<button type="button">Answer</button></p>
+      <p class="slots sm"><span class="slot-boxes"><i></i></span>1 of 1 slot free</p></div>
+  </div></section><p class="as-today">CPU, Memory and Disk, as today.</p></div></div>
+    <p class="stage-cap win-cap">The window of build-1:</p>
+    <section class="float win" role="dialog" aria-label="Settings of build-1"><header class="float-head"><div><h3><i data-i="settings-2"></i>build-1</h3><p class="sm t2">Node settings</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="tabs in-win" role="tablist"><button type="button" role="tab" aria-selected="false">Slots and priority</button><button type="button" role="tab" aria-selected="false">Storage</button><button type="button" role="tab" aria-selected="true">Requests<span class="count num">2</span></button></div><div class="float-body"><div class="req" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" data-asks="2" ><div class="set-rows"><p class="set-mean">Space for mulebox: the most mulebox may hold on this node. Agents are told to ask from 80% of it.</p><div class="set-row"><span>Runs with</span><b class="num">20.0 GB</b></div><div class="set-row"><span>Asked</span><b class="num">30.0 GB</b><small>By an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>, 12 min ago: The release branch builds three images and four branches are open this week, about 9 GB more than fits.</small></div><div class="set-row"><span>Asked</span><b class="num">24.0 GB</b><small>By an agent working on <code>example-shop</code> from <code>alice-laptop</code>, <code>job-01JCX5T0RA</code>, 3 min ago: The import job unpacks a 3 GB fixture set per branch.</small></div><div class="set-row yours" data-waiting><span>Yours</span><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span></span><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><small data-differs>Differs from what was asked. The agent is told both values.</small></div></div><div data-space></div><div class="req-acts" data-waiting><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn primary" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section><ul class="notes"><li><b>Good at</b>One answer per setting is natural here: there is only one Yours row.</li><li><b>Costs</b>One window per node: three nodes with requests are three windows to open and close.</li></ul>
+  </section>
+
+  <section class="case" id="other"><h2>Approve another value</h2>
+    <p>The Yours row is a stepper, as slots have. The bar follows. Try the stepper.</p>
+    <section class="float win" role="dialog" aria-label="Settings of build-1"><header class="float-head"><div><h3><i data-i="settings-2"></i>build-1</h3><p class="sm t2">Node settings</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="tabs in-win" role="tablist"><button type="button" role="tab" aria-selected="false">Slots and priority</button><button type="button" role="tab" aria-selected="false">Storage</button><button type="button" role="tab" aria-selected="true">Requests<span class="count num">1</span></button></div><div class="float-body"><div class="req" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" data-edit data-value="25"><div class="set-rows"><p class="set-mean">Space for mulebox: the most mulebox may hold on this node. Agents are told to ask from 80% of it.</p><div class="set-row"><span>Runs with</span><b class="num">20.0 GB</b></div><div class="set-row"><span>Asked</span><b class="num">30.0 GB</b><small>By an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>, 12 min ago: The release branch builds three images and four branches are open this week, about 9 GB more than fits.</small></div><div class="set-row yours" data-waiting><span>Yours</span><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span></span><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><small data-differs>Differs from what was asked. The agent is told both values.</small></div></div><div data-space></div><div class="req-acts" data-waiting><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn primary" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section><ul class="notes"><li><b>Good at</b>Setting another value is what this window is for.</li><li><b>Costs</b>The reason is small print in a row, where the other options give it a quote of its own.</li></ul>
+  </section>
+
+  <section class="case" id="decided"><h2>Decided, in the history</h2>
+    <p>The tab loses its count and shows the answer, then the node's own history under it: only this node's changes.</p>
+    <section class="float win" role="dialog" aria-label="Settings of build-1"><header class="float-head"><div><h3><i data-i="settings-2"></i>build-1</h3><p class="sm t2">Node settings</p></div><button class="icon-btn bare x" type="button" aria-label="Close"><i data-i="x" class="s"></i></button></header><div class="tabs in-win" role="tablist"><button type="button" role="tab" aria-selected="false">Slots and priority</button><button type="button" role="tab" aria-selected="false">Storage</button><button type="button" role="tab" aria-selected="true">Requests</button></div><div class="float-body"><div class="gap"><div class="said"><i data-i="circle-check" class="yes"></i><p><b>Approved at 25.0 GB, not the 30.0 GB asked.</b> <span>build-1 takes it with its next check-in; the agent reads the answer in its next command.</span></p>
+        <button class="btn ghost" type="button"><i data-i="undo-2" class="s"></i>Undo</button></div>
+      <section class="hist" aria-label="History of build-1"><div class="hist-h"><h4><i data-i="history" class="s"></i>History of build-1 <small>every change of its settings, newest first</small></h4></div><div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>Space for mulebox: 20.0 GB to 25.0 GB.</b> Asked 30.0 GB; approved at another value.</p>
+    <p>Asked by an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>: <q>The release branch builds three images and four branches are open this week.</q></p>
+    <p>Confirmed on the dashboard, from <code>192.168.1.50</code>. In force 8 s later.</p></div>
+  <time datetime="2026-11-15T10:42">Today 10:42</time></div><div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>Space for mulebox: 15.0 GB to 20.0 GB.</b> Asked 20.0 GB; approved as asked.</p>
+    <p>Asked by an agent working on <code>example-shop</code> from <code>alice-laptop</code>, <code>job-01JCQ9E3ZB</code>: <q>A second service image no longer fits beside the caches.</q></p>
+    <p>Confirmed with <code>mulebox storage approve</code> on <code>alice-laptop</code>.</p></div>
+  <time datetime="2026-11-09T17:03">9 Nov 17:03</time></div>
+<div class="hist-row" data-how="hand"><i data-i="pencil"></i>
+  <div><p><b>Slots: 2 to 3, then back to 2.</b> Nobody asked.</p><p>Changed in this window, from <code>192.168.1.50</code>.</p></div>
+  <time datetime="2026-11-13T14:10">13 Nov 14:10</time></div></section></div></div></section><ul class="notes"><li><b>Good at</b>The history sits with the settings it is about, slots and priority included.</li><li><b>Costs</b>No view across nodes: who asked for what last week takes a window per node.</li></ul>
+  </section>
+</div>
+<script src="approvals.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

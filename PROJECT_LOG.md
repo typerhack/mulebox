@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.31.1 - 2026-11-15 - patch
+- Mockups of the approval prompt for agents' requests for more space and of the Agents window (`docs/design-system/approvals/`, Fable's): three places for the prompt and the Agents option, with a report. The user picked option A, the strip under the header; marked on the index.
+
 ## 1.31.0 - 2026-11-15 - minor
 - A dashboard page left open across an upgrade reloads itself (the user's ask: it showed the old page until reloaded by hand). The dashboard restarts with every upgrade, so the page's live stream drops and opens again; on each reopening it reads `/healthz`, and when the version differs from the one it loaded with, it reloads, keeping its address. Not under an open window, such as a node's settings, where it would lose unsaved changes: it waits until no window is open (`web/src/lib/upgraded.ts`, `web/src/state/live.ts`). Test in `web/src/lib/upgraded.test.ts`.
 

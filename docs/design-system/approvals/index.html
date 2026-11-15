@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: approvals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="approvals.css">
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>Approval mockups</h1>
+      <p class="doc-lead">Mockups of 2026-11-15, to pick from before anything is built. From 80% of a node's space for mulebox, an agent is told to ask its user, and with a yes sends <code>mulebox storage request --size 30GB --reason "..."</code>. The request waits on the coordinator for the owner. Two things to decide: where the owner sees and answers it, and the window where the owner says whether agents must ask at all.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <nav class="index" aria-label="Mockups">
+    <a class="picked" href="option-a-strip.html">
+      <span class="letter" aria-hidden="true">A</span>
+      <h2>In the strip under the header<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests</span> <span class="pick-tag">Picked by the user, 2026-11-15</span>
+      <p>A line in the strip that already says what is out of step, on every page, with a review window.</p>
+      <ul><li><b>Seen</b> on any page, at once.</li><li><b>Answered</b> on the line, or in the window with the reason and another value.</li><li><b>History</b> on the Storage page, all nodes.</li></ul>
+    </a>
+    <a href="option-b-storage.html">
+      <span class="letter" aria-hidden="true">B</span>
+      <h2>A card in the Storage page's space panel<i data-i="chevron-right"></i></h2>
+      <p>The request sits inside the panel that shows what mulebox holds against its limit.</p>
+      <ul><li><b>Seen</b> as a count on the Storage tab.</li><li><b>Answered</b> in the card, the panel's bar moving with the value.</li><li><b>History</b> on the same page.</li></ul>
+    </a>
+    <a href="option-c-settings.html">
+      <span class="letter" aria-hidden="true">C</span>
+      <h2>A Requests tab in the node's settings<i data-i="chevron-right"></i></h2>
+      <p>A count on the node's settings button; the request is the Asked row of the setting.</p>
+      <ul><li><b>Seen</b> on the node's row in the Machines box.</li><li><b>Answered</b> in the settings window's own rows.</li><li><b>History</b> per node, in the window.</li></ul>
+    </a>
+    <a href="agents-settings.html">
+      <span class="letter" aria-hidden="true"><i data-i="bot" class="l"></i></span>
+      <h2>The Agents window<i data-i="chevron-right"></i></h2>
+      <p>Ask me first, or Allow, and record it: for every node, opened from the header. With what the prompt becomes under Allow, for A, B and C.</p>
+      <ul><li><b>Opens</b> from a new header button.</li><li><b>With Allow</b>, a grey line tells what was changed, with Undo. <span class="pick-tag">Fable suggests A's strip</span></li><li><b>History</b> says "applied without asking, as you allowed".</li></ul>
+    </a>
+  </nav>
+  <p class="foot">Every option shows one waiting request, several waiting, approve with another value, and the decided state in the history. <a href="report.html">Fable's report</a> has the reasoning and the open questions.</p>
+  <p class="foot">Static pages with example data: build-1 is a Linux node with a 490 GB disk and 61.0 GB free, where mulebox holds 16.4 GB of a 20 GB limit; build-mac is a Mac node. Names and addresses are examples. The steppers, Approve, Decline and Undo answer a click; nothing is saved. Colours, type, space, corners and motion come from <a href="../tokens.css">tokens.css</a> through the shared mockup stylesheets. New parts, to be added to <a href="../../design-system.md">design-system.md</a> with what is picked: the space bar, the request, the settings history row, and the Agents button.</p>
+</div>
+<script src="approvals.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

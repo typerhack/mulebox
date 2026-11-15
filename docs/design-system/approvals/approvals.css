@@ -1,0 +1,201 @@
+/* The approval mockups of 2026-11-15: where the owner answers an agent's request for more
+   space. On top of the storage mockups' file; every colour, size, space, corner and duration
+   is a token of tokens.css or derived from one. */
+@import "../storage/storage.css";
+
+:root {
+  --col-xs: calc(var(--space-7) * 3);            /* 120px */
+  --read: 68ch;
+}
+
+/* The mockup page: one option per page, four cases on it. */
+.case { padding-top: var(--space-7); }
+.case > h2 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; }
+.case > p { max-width: var(--read); margin: var(--space-1) 0 var(--space-4); color: var(--text-2); }
+.opt-title { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); }
+.opt-title .pick-tag { margin-left: 0; font-size: var(--text-sm); }
+.win { margin-top: var(--space-3); }
+.win-cap { margin: var(--space-4) 0 0; }
+.app-bar .badge { margin-left: calc(var(--space-1) * -1); }
+
+/* A request: what is asked, why, by whom, what it would do, and the answers. */
+.req { display: grid; gap: var(--space-3); min-width: 0; }
+.req + .req { padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.req-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); }
+.req-head h4 { display: flex; align-items: flex-start; gap: var(--space-2); min-width: 0; font-size: var(--text-lg); font-weight: 600; line-height: 1.3; }
+.req-head h4 > svg { margin-top: var(--hair); color: var(--status-warning); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.req-head > span { color: var(--text-2); font-size: var(--text-sm); white-space: nowrap; }
+.req-why { margin: 0; padding-left: var(--space-3); border-left: var(--hair) solid var(--border-strong); max-width: var(--read); }
+.req-why > cite { display: block; margin-top: var(--space-1); color: var(--text-2); font-size: var(--text-sm); font-style: normal; }
+.req-why + .req-why { margin-top: calc(var(--space-1) * -1); }
+.from { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); min-width: 0; color: var(--text-2); font-size: var(--text-sm); }
+.from > span { display: inline-flex; align-items: center; gap: var(--space-1); min-width: 0; overflow-wrap: anywhere; }
+.from code { color: var(--text-1); }
+.req-acts { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+.req-acts > .other { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-right: auto; font-size: var(--text-sm); }
+.stepper > output { min-width: calc(var(--space-1) * 13); padding: 0 var(--space-2); }
+.note-in { flex: 1 1 var(--col-l); min-width: 0; height: var(--ctl); padding: 0 var(--space-2); border: 1px solid var(--border-strong); border-radius: var(--radius-m);
+  background: var(--surface-1); color: var(--text-1); font: inherit; }
+.note-in::placeholder { color: var(--text-3); }
+.said { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--surface-2); }
+.said > svg { stroke-width: calc(var(--icon-stroke) + 0.25); }
+.said > .yes { color: var(--status-passed); }
+.said > .no { color: var(--status-cancelled); }
+.said > p { flex: 1 1 var(--col-l); min-width: 0; }
+.said > p > span { color: var(--text-2); }
+
+/* What a request shows by its state: waiting (no data-state), approved, declined; and the
+   stepper only once another value is wanted. */
+[data-req][data-state] [data-waiting], [data-req]:not([data-state]) [data-decided],
+[data-req]:not([data-edit]) [data-other], [data-req][data-edit] [data-open-other],
+[data-req]:not([data-state="approved"]) .yes, [data-req]:not([data-state="declined"]) .no { display: none; }
+
+/* The space for mulebox as one bar: what it holds, the limit now, the limit asked, and where
+   agents are told. Drawn to one scale, so a new value moves only its own mark. */
+.space { display: grid; gap: var(--space-2); min-width: 0; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--surface-2); }
+.panel-body > .space, .space.bare { padding: 0; border: 0; background: none; }
+.space-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-4); font-size: var(--text-sm); }
+.space-top b { font-weight: 600; }
+.space-top .big { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; }
+.space-top .lvl { display: inline-flex; align-items: center; gap: var(--space-1); font-weight: 600; }
+.space-top .lvl > svg { color: var(--status-warning); }
+.space-bar { position: relative; height: var(--space-4); overflow: hidden; border: 1px solid var(--border-strong); border-radius: var(--radius-s); background: var(--surface-3); }
+.space-bar > i { position: absolute; top: 0; bottom: 0; left: 0; transition: width var(--dur-base) var(--ease), left var(--dur-base) var(--ease); }
+.space-bar > .room { width: var(--p-limit); background: var(--surface-1); }
+.space-bar > .more { left: var(--p-limit); width: calc(var(--p-to) - var(--p-limit)); background: var(--hatch), var(--surface-1); box-shadow: inset 0 0 0 1px var(--accent); }
+.space-bar > .held { width: var(--p-held); background: var(--status-warning); }
+.space-bar > .now { left: calc(var(--p-limit) - 1px); width: var(--hair); background: var(--text-1); }
+.space-bar > .tell { left: var(--p-tell); width: 0; border-left: var(--hair) dotted var(--text-1); }
+.space-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-sm); color: var(--text-2); }
+.space-key > li { display: inline-flex; align-items: center; gap: var(--space-2); }
+.space-key b { color: var(--text-1); font-weight: 600; }
+.sw.held { background: var(--status-warning); }
+.sw.more { background: var(--hatch); border-color: var(--accent); }
+.sw.line { width: var(--hair); border: 0; border-radius: 0; background: var(--text-1); }
+.sw.dots { width: 0; border: 0; border-left: var(--hair) dotted var(--text-1); border-radius: 0; background: none; }
+.space-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-s)), 1fr)); gap: var(--space-2) var(--space-4); padding-top: var(--space-2); border-top: 1px solid var(--border); font-size: var(--text-sm); }
+.space-facts dt { color: var(--text-2); }
+.space-facts dd { font-weight: 600; }
+.space-facts dd > span { font-weight: 400; color: var(--text-2); }
+.would { display: flex; align-items: flex-start; gap: var(--space-2); font-size: var(--text-sm); max-width: var(--read); }
+.would > svg { margin-top: var(--hair); color: var(--text-2); }
+.would[data-level="warn"] > svg { color: var(--status-warning); }
+
+/* The strip's own parts (option A). */
+.strip .acts { align-items: center; }
+.strip > svg.q { color: var(--status-warning); }
+
+/* A short row for a request in a list of several. */
+.ask-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: start; padding: var(--space-3) 0; border-top: 1px solid var(--border); min-width: 0; }
+.ask-row:first-child { border-top: 0; padding-top: 0; }
+.ask-row > svg { margin-top: var(--hair); color: var(--status-warning); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.ask-row p > span, .ask-row small { color: var(--text-2); }
+.ask-row small { display: block; font-size: var(--text-sm); }
+.ask-row > .acts { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.node-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-strong); }
+.node-h strong { font-size: var(--text-lg); font-weight: 600; }
+.node-h span { color: var(--text-2); font-size: var(--text-sm); }
+.group + .group { margin-top: var(--space-5); }
+.group { display: grid; gap: var(--space-3); min-width: 0; }
+@media (max-width: 560px) {
+  .ask-row { grid-template-columns: auto minmax(0, 1fr); }
+  .ask-row > .acts { grid-column: 2; justify-content: flex-start; }
+}
+
+/* The settings history: every change of a setting, asked or made by hand. */
+.hist { min-width: 0; }
+.hist-h { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-3); padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-strong); }
+.hist-h h4 { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); font-weight: 600; }
+.hist-h h4 small { color: var(--text-2); font-size: var(--text-sm); font-weight: 400; }
+.hist-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3); align-items: start; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+.hist-row > svg { margin-top: var(--hair); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.hist-row[data-how="approved"] > svg { color: var(--status-passed); }
+.hist-row[data-how="declined"] > svg { color: var(--status-cancelled); }
+.hist-row[data-how="hand"] > svg { color: var(--text-2); }
+.hist-row b { font-weight: 600; }
+.hist-row p + p, .hist-row q { color: var(--text-2); font-size: var(--text-sm); }
+.hist-row q { quotes: none; font-style: normal; }
+.hist-row p + p code { color: var(--text-1); }
+.hist-row > time { color: var(--text-2); font-size: var(--text-sm); white-space: nowrap; text-align: right; }
+@media (max-width: 560px) {
+  .hist-row { grid-template-columns: auto minmax(0, 1fr); }
+  .hist-row > time { grid-column: 2; text-align: left; }
+}
+
+/* Option C: the count on a node's settings button, and the tabs of its window. */
+.icon-btn.has { position: relative; overflow: visible; }
+.icon-btn.has > .badge { position: absolute; top: calc(var(--space-2) * -1); right: calc(var(--space-2) * -1); background: var(--status-warning); color: var(--surface-1); }
+.tabs.in-win { padding: 0 var(--space-4); }
+.set-row .stepper { margin-left: auto; }
+.set-row.yours { align-items: center; }
+.set-row > b, .set-row > .num { font-weight: 600; color: var(--text-1); }
+.machines-box { width: min(100%, var(--col-xl)); }
+.float-foot .other { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-right: auto; font-size: var(--text-sm); }
+.float-head .x { flex: none; }
+
+/* The index and the report. */
+.index { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-xl)), 1fr)); margin-top: var(--space-6); }
+.index > a { display: grid; gap: var(--space-2); align-content: start; padding: var(--space-4); border: 1px solid var(--border-strong); border-radius: var(--radius-l);
+  background: var(--surface-1); text-decoration: none; transition: background var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease); }
+.index > a:hover { background: var(--surface-2); border-color: var(--text-1); }
+.index > a.picked { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.index .letter { font: 600 var(--text-display)/1 var(--font-mono); }
+.index h2 { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; line-height: 1.2; }
+.index p { color: var(--text-2); }
+.index .pick-tag { justify-self: start; margin: 0; }
+.index ul { display: grid; gap: var(--space-1); padding-top: var(--space-3); border-top: 1px solid var(--border); font-size: var(--text-sm); color: var(--text-2); }
+.index li b { color: var(--text-1); font-weight: 600; }
+.foot { margin-top: var(--space-6); color: var(--text-2); font-size: var(--text-sm); max-width: 76ch; }
+.rep { max-width: 76ch; }
+.rep section { padding-top: var(--space-6); }
+.rep h2 { font-size: var(--text-xl); font-weight: 600; letter-spacing: -0.015em; margin-bottom: var(--space-3); }
+.rep p, .rep li { color: var(--text-2); line-height: 1.55; }
+.rep p + p { margin-top: var(--space-2); }
+.rep b { color: var(--text-1); font-weight: 600; }
+.rep ul { display: grid; gap: var(--space-2); padding-left: var(--space-4); list-style: disc; }
+.rep a { color: var(--text-1); }
+.pick { margin-top: var(--space-3); padding: var(--space-3) var(--space-4); border: 1px solid var(--accent); border-radius: var(--radius-l); background: var(--surface-1); }
+.pick p { color: var(--text-1); }
+
+@media (pointer: coarse), (max-width: 520px) {
+  .note-in { height: var(--ctl-touch); }
+}
+
+/* The Agents window: a choice as radio marks (design-system.md, the segmented choice), the
+   header's button, and options that are only examples of what may come. */
+.marks { display: inline-flex; flex-wrap: wrap; gap: 0 var(--space-1); max-width: 100%; }
+.marks > button { display: inline-flex; align-items: center; gap: var(--space-2); height: var(--ctl); padding: 0 var(--space-2); border: 0; border-radius: var(--radius-m);
+  background: none; color: var(--text-2); font-size: var(--text-sm); font-weight: 500; white-space: nowrap; transition: background var(--dur-fast) var(--ease); }
+.marks > button::before { content: ""; flex: none; width: var(--icon-s); height: var(--icon-s); padding: var(--hair); border: calc(var(--icon-stroke) * 1px) solid var(--border-strong);
+  border-radius: var(--radius-full); background-clip: content-box; }
+.marks > button[aria-checked="true"] { color: var(--text-1); font-weight: 600; }
+.marks > button[aria-checked="true"]::before { border-color: var(--accent); background-color: var(--accent); }
+.marks > button[aria-checked="false"]:hover { background: var(--surface-3); color: var(--text-1); }
+.marks > button:disabled { color: var(--text-3); }
+.marks > button:disabled::before { border-color: var(--border); }
+.marks > button:disabled[aria-checked="true"]::before { border-color: var(--text-3); background-color: var(--text-3); }
+.opt-line { display: grid; gap: var(--space-2); padding: var(--space-4) 0; border-top: 1px solid var(--border); min-width: 0; }
+.opt-line:first-child { border-top: 0; padding-top: 0; }
+.opt-line:last-child { padding-bottom: 0; }
+.opt-line > b { font-weight: 600; }
+.opt-line > small { color: var(--text-2); font-size: var(--text-sm); max-width: var(--read); }
+.opt-line.example { margin-top: var(--space-3); padding: var(--space-3); border: 1px dashed var(--border-strong); border-radius: var(--radius-m); }
+.opt-line.example + .opt-line.example { margin-top: var(--space-2); }
+.eg { justify-self: start; padding: 0 var(--space-2); border: 1px solid var(--border-strong); border-radius: var(--radius-s); color: var(--text-2); font-size: var(--text-xs); line-height: 1.7; }
+.ticks { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: var(--text-sm); }
+.ticks label { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--ctl-s); }
+.ticks input { width: var(--icon); height: var(--icon); margin: 0; accent-color: var(--accent); }
+.win.narrow { width: min(100%, calc(var(--space-7) * 14)); margin-left: 0; margin-right: 0; }
+.two { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-xl)), 1fr)); align-items: start; }
+.two .win { margin-top: 0; width: 100%; }
+.hbtns { display: inline-flex; align-items: center; gap: var(--space-2); }
+.icon-btn.new { outline: var(--hair) dashed var(--accent); outline-offset: var(--hair); }
+.hist-row[data-how="auto"] > svg { color: var(--text-1); }
+.hist-row .btn { margin-top: var(--space-2); }
+.sub-h { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-5) 0 var(--space-2); font-size: var(--text-base); font-weight: 600; }
+.sub-h .pick-tag { margin-left: 0; }
+@media (pointer: coarse), (max-width: 520px) {
+  .marks > button { height: var(--ctl-touch); }
+  .ticks label { min-height: var(--ctl-touch); }
+}

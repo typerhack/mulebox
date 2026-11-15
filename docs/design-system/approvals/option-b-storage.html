@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: approvals, option B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="approvals.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option B </h1>
+        <p class="doc-lead"><b>A card in the Storage page's space panel.</b> The request sits where the space is: on the Storage page, inside the panel that shows what mulebox holds against its limit. The card is answered in place, with the bar above it moving. The Storage tab carries the count; nothing is added above the panels.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#one">One request</a><a href="#several">Several waiting</a><a href="#other">Approve another value</a><a href="#decided">Decided, in the history</a><a href="index.html">All options</a><a href="report.html">Report</a></nav>
+  </header>
+
+  <section class="case" id="one"><h2>One request</h2>
+    <p>The Storage tab shows a count on every page. On the Storage page the space panel comes first, and the request is a card inside it.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span class="on">Storage<span class="badge num">1</span></span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap"><p class="as-today">The top row and the page, as today.</p><section class="panel" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490"><header class="panel-head strong"><h3><i data-i="hard-drive"></i>Space for mulebox on build-1</h3><span class="panel-note">1 request waits</span></header><div class="panel-body gap"><div data-space class="bare"></div><div class="confirm"><header class="req-head"><h4><i data-i="circle-question-mark"></i>An agent asks to raise this limit to 30.0 GB</h4><span>12 min ago</span></header><blockquote class="req-why">The release branch builds three images and four branches are open this week, about 9 GB more than fits. The cleanup has run; I would rather not drop the package caches.
+  <cite>Written by the agent that asked</cite></blockquote><p class="from"><span><i data-i="bot" class="s"></i>An agent working on <code>example-app</code></span><span><i data-i="laptop" class="s"></i><code>alice-laptop</code></span><span><code>job-01JCX4M7Q2</code></span></p><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 30.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section>
+        <p class="as-today">The cleanup line and the projects, as today.</p>
+      </div>
+    </div>
+    <ul class="notes"><li><b>Good at</b>Everything needed to decide is already on this page: the bar, the cleanup, the projects that take the space. No window.</li><li><b>Costs</b>Only a count on a tab says that something waits. An owner watching the Queue can miss it for hours while every agent command repeats the warning.</li></ul>
+  </section>
+
+  <section class="case" id="several"><h2>Several waiting</h2>
+    <p>Each node's space panel holds its own requests. Two requests for one node are one card with one answer.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span class="on">Storage<span class="badge num">3</span></span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <section class="panel" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" data-asks="2"><header class="panel-head strong"><h3><i data-i="hard-drive"></i>Space for mulebox on build-1</h3><span class="panel-note">2 requests wait</span></header><div class="panel-body gap"><div data-space class="bare"></div><div class="confirm"><header class="req-head"><h4><i data-i="circle-question-mark"></i>Two agents ask to raise this limit: to 30.0 GB and to 24.0 GB</h4><span>12 min and 3 min ago</span></header>
+          <blockquote class="req-why">The release branch builds three images and four branches are open this week, about 9 GB more than fits.
+            <cite>Asks 30.0 GB: the agent of <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code></cite></blockquote>
+          <blockquote class="req-why">The import job unpacks a 3 GB fixture set per branch.
+            <cite>Asks 24.0 GB: the agent of <code>example-shop</code> from <code>alice-laptop</code>, <code>job-01JCX5T0RA</code></cite></blockquote><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 30.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section><section class="panel" data-req data-node="build-mac" data-held="17.1" data-limit="20" data-ask="40" data-free="212" data-floor="50" data-clean="0.6" data-disk="500"><header class="panel-head strong"><h3><i data-i="hard-drive"></i>Space for mulebox on build-mac</h3><span class="panel-note">1 request waits</span></header><div class="panel-body gap"><div data-space class="bare"></div><div class="confirm"><header class="req-head"><h4><i data-i="circle-question-mark"></i>An agent asks to raise this limit to 40.0 GB</h4><span>1 h ago</span></header><blockquote class="req-why">DerivedData for the two schemes takes about 14 GB per branch, and the simulator runtimes are counted too.
+  <cite>Written by the agent that asked</cite></blockquote><p class="from"><span><i data-i="bot" class="s"></i>An agent working on <code>example-ios</code></span><span><i data-i="laptop" class="s"></i><code>bob-desktop</code></span><span><code>job-01JCX52KD8</code></span></p><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 40.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section>
+      </div>
+    </div>
+    <ul class="notes"><li><b>Good at</b>Requests sort themselves by node, each beside its own numbers.</li><li><b>Costs</b>The page gets long: the second node's request is below the first node's projects unless panels with a request are moved up.</li></ul>
+  </section>
+
+  <section class="case" id="other"><h2>Approve another value</h2>
+    <p>Another value opens the stepper in the card. The panel's own bar shows the new limit as it is set. Try the stepper.</p>
+    <div class="stage"><section class="panel" data-req data-node="build-1" data-held="16.4" data-limit="20" data-ask="30" data-free="61" data-floor="49" data-clean="1.8" data-disk="490" data-edit data-value="25"><header class="panel-head strong"><h3><i data-i="hard-drive"></i>Space for mulebox on build-1</h3><span class="panel-note">1 request waits</span></header><div class="panel-body gap"><div data-space class="bare"></div><div class="confirm"><header class="req-head"><h4><i data-i="circle-question-mark"></i>An agent asks to raise this limit to 30.0 GB</h4><span>12 min ago</span></header><blockquote class="req-why">The release branch builds three images and four branches are open this week, about 9 GB more than fits. The cleanup has run; I would rather not drop the package caches.
+  <cite>Written by the agent that asked</cite></blockquote><p class="from"><span><i data-i="bot" class="s"></i>An agent working on <code>example-app</code></span><span><i data-i="laptop" class="s"></i><code>alice-laptop</code></span><span><code>job-01JCX4M7Q2</code></span></p><div class="req-acts" data-waiting><span class="other" data-other><span class="stepper"><button type="button" data-gb-step="-1" aria-label="1 GB less"><i data-i="minus" class="s"></i></button><output data-v-num></output><button type="button" data-gb-step="1" aria-label="1 GB more"><i data-i="plus" class="s"></i></button></span><span class="t2" data-differs>asked: 30.0 GB</span></span><button class="btn ghost" type="button" data-do="decline">Decline</button><button class="btn" type="button" data-do="other" data-open-other><i data-i="pencil" class="s"></i>Another value</button><button class="btn" type="button" data-do="approve">Approve <span class="num" data-v></span></button></div><div class="said" data-decided><i data-i="circle-check" class="yes"></i><i data-i="ban" class="no"></i><p data-said></p><button class="btn ghost" type="button" data-do="undo"><i data-i="undo-2" class="s"></i>Undo</button></div></div></div></section></div>
+    <ul class="notes"><li><b>Good at</b>The value is tried on the real panel, not on a copy of it.</li><li><b>Costs</b>The card and the bar can be a screen apart on a phone.</li></ul>
+  </section>
+
+  <section class="case" id="decided"><h2>Decided, in the history</h2>
+    <p>The card turns into its answer, with Undo until the node has taken it. The settings history is a list on the same page, under the cleanup history.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span class="on">Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <section class="panel"><header class="panel-head strong"><h3><i data-i="hard-drive"></i>Space for mulebox on build-1</h3><span class="panel-note pending"><i data-i="clock" class="s"></i>25.0 GB pending, 20.0 GB now</span></header>
+          <div class="panel-body gap"><div class="said"><i data-i="circle-check" class="yes"></i><p><b>Approved at 25.0 GB, not the 30.0 GB asked.</b> <span>build-1 takes it with its next check-in; the agent reads the answer in its next command.</span></p>
+            <button class="btn ghost" type="button"><i data-i="undo-2" class="s"></i>Undo</button></div></div></section>
+        <section class="panel"><div class="panel-body"><section class="hist" aria-label="Settings history"><div class="hist-h"><h4><i data-i="history" class="s"></i>Settings history <small>every change of a node's setting, newest first</small></h4></div>
+<div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>build-1, space for mulebox: 20.0 GB to 25.0 GB.</b> Asked 30.0 GB; approved at another value.</p>
+    <p>Asked by an agent working on <code>example-app</code> from <code>alice-laptop</code>, <code>job-01JCX4M7Q2</code>: <q>The release branch builds three images and four branches are open this week.</q></p>
+    <p>Confirmed on the dashboard, from <code>192.168.1.50</code>. In force 8 s later.</p></div>
+  <time datetime="2026-11-15T10:42">Today 10:42</time></div>
+<div class="hist-row" data-how="declined"><i data-i="ban"></i>
+  <div><p><b>build-mac, space for mulebox: stays 20.0 GB.</b> Asked 40.0 GB; declined.</p>
+    <p>Asked by an agent working on <code>example-ios</code> from <code>bob-desktop</code>, <code>job-01JCX52KD8</code>: <q>DerivedData for the two schemes takes about 14 GB per branch.</q></p>
+    <p>Declined on the dashboard, from <code>192.168.1.50</code>, with the note <q>Clean the old schemes first.</q></p></div>
+  <time datetime="2026-11-15T09:15">Today 09:15</time></div>
+<div class="hist-row" data-how="approved"><i data-i="circle-check"></i>
+  <div><p><b>build-1, space for mulebox: 15.0 GB to 20.0 GB.</b> Asked 20.0 GB; approved as asked.</p>
+    <p>Asked by an agent working on <code>example-shop</code> from <code>alice-laptop</code>, <code>job-01JCQ9E3ZB</code>: <q>A second service image no longer fits beside the caches.</q></p>
+    <p>Confirmed with <code>mulebox storage approve</code> on <code>alice-laptop</code>.</p></div>
+  <time datetime="2026-11-09T17:03">9 Nov 17:03</time></div>
+<div class="hist-row" data-how="hand"><i data-i="pencil"></i>
+  <div><p><b>build-1, space for mulebox: 20.0 GB to 15.0 GB.</b> Nobody asked.</p>
+    <p>Changed in the node's settings window, from <code>192.168.1.50</code>.</p></div>
+  <time datetime="2026-11-02T08:20">2 Nov 08:20</time></div></section></div></section>
+      </div>
+    </div>
+    <ul class="notes"><li><b>Good at</b>Request, answer and history never leave one page.</li><li><b>Costs</b>A later request for a setting that is not about storage would have no home here.</li></ul>
+  </section>
+</div>
+<script src="approvals.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>
