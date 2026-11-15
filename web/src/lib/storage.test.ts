@@ -29,8 +29,18 @@ describe("a node's storage report", () => {
 
   it("lists what goes next soonest first, and never a kept or latest folder", () => {
     expect(goingNext(report()).map((f) => f.folder)).toEqual(["fix-login-33333333", "chore-deps-44444444"]);
-    expect(nextLine(report())).toBe("1 branch folder goes within a day, 500.0 MB.");
-    expect(nextLine(report({ projects: [] }))).toBe("Nothing is due to go on its own.");
+    expect(nextLine(report(), NOW)).toBe("1 branch folder goes within a day, 500.0 MB.");
+    expect(nextLine(report({ projects: [] }), NOW)).toBe("Nothing is due to go on its own.");
+  });
+
+  it("says what Run now removes, and when the node does it by itself", () => {
+    const due = (more = {}) => report({ ...more, projects: [{ project: "example-app", home: 0, caches: 0, folders: [
+      { folder: "a", size: 2 * GB, last_used: NOW, fate: "remove", removed_in: null, why: "gone" },
+      { folder: "b", size: GB, last_used: NOW, fate: "remove", removed_in: null, why: "gone" }] }] });
+    expect(nextLine(due({ next_sweep: NOW + 41 * 60 }), NOW)).toBe("Run now removes 2 branch folders, 3.0 GB; the next cleanup does in 41 minutes.");
+    expect(nextLine(due(), NOW)).toBe("Run now removes 2 branch folders, 3.0 GB; the next cleanup does too.");
+    expect(nextLine(due({ policy: { ...report().policy, auto_clean: false } }), NOW))
+      .toBe("Run now removes 2 branch folders, 3.0 GB; with the cleanup off nothing goes by itself.");
   });
 
   it("counts idle projects that wait for a word, and nodes under their reserve", () => {

@@ -46,7 +46,7 @@ def register(actions: argparse._SubParsersAction) -> None:
                         help="remove on its own; off, it only says what would go")
     config.add_argument("--docker-clean", choices=("on", "off"),
                         help="also remove Docker build cache and images unused that long")
-    config.add_argument("--warn-size", help='warn agents when mulebox holds more ("50GB", or off)')
+    config.add_argument("--warn-size", help='warn agents when mulebox holds more ("20GB", or off)')
     config.add_argument("--max-size", help='the most mulebox may hold; it removes the oldest '
                         'folders past it ("100GB", or off)')
     config.add_argument("--cancel", action="store_true", help="drop a change still waiting")
@@ -81,7 +81,7 @@ def lines(view: dict[str, Any]) -> list[str]:
             out.append("cleanup:   " + ("on its own" if current["auto_clean"] else
                                         "off: nothing goes on its own, it only says what would")
                        + "; Docker " + ("too" if current["docker_clean"] else "never")
-                       + "; warns over " + str(current.get("warn_size", "50GB")).lower()
+                       + "; warns over " + str(current.get("warn_size", ns.DEFAULTS["warn_size"])).lower()
                        + "; at most " + str(current.get("max_size", "off")).lower())
     if tip:
         out.append(f"suggested: {tip['slots']} slot(s), from {tip['reason']}")

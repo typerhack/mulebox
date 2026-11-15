@@ -42,7 +42,11 @@ export interface Report {
   held?: number;                         // all mulebox holds on the node, in bytes (1.26)
   over?: number;                         // bytes still over `max_size` after the cleanup (1.26)
   sweep?: Sweep | null;                  // the node's last cleanup (1.26)
+  measured_at?: number;                  // when the sizes were measured; `at` is when the plan was made (1.28)
+  next_sweep?: number;                   // when the node's next cleanup runs on its own (1.28)
 }
+// When the sizes in a report were measured: a node from 1.28 plans again between cleanups.
+export const measuredAt = (report: Report) => report.measured_at ?? report.at;
 export interface NodeStorage { node: string; online: boolean; version?: string | null; report: Report | null }
 export interface Keep { project: string; branch: string | null }
 export interface StorageBody {
@@ -154,12 +158,16 @@ export function goingNext(report: Report): CouldGo[] {
   const due = (f: Folder) => (f.fate === "remove" ? -1 : f.removed_in ?? Infinity);
   return all.filter((f) => f.fate === "remove" || f.fate === "stays").sort((a, b) => due(a) - due(b));
 }
-export function nextLine(report: Report): string {
+// What a cleanup removes now, and when the node does it by itself: Run now removes the same.
+export function nextLine(report: Report, now: number): string {
   const next = goingNext(report);
   const soon = next.filter((f) => f.fate === "remove" || (f.removed_in ?? Infinity) < 1);
   const due = next.filter((f) => f.fate === "remove");
   if (due.length) {
-    return `${plural(due.length, "branch folder")} ${report.policy.auto_clean === false ? "would go with the cleanup on" : `${due.length === 1 ? "goes" : "go"} at the next cleanup`}, ${bytes(sum(due.map((f) => f.size)))}.`;
+    const what = `${plural(due.length, "branch folder")}, ${bytes(sum(due.map((f) => f.size)))}`;
+    if (report.policy.auto_clean === false) return `Run now removes ${what}; with the cleanup off nothing goes by itself.`;
+    const minutes = report.next_sweep === undefined ? null : Math.max(1, Math.round((report.next_sweep - now) / 60));
+    return `Run now removes ${what}; ${minutes === null ? "the next cleanup does too" : `the next cleanup does in ${plural(minutes, "minute")}`}.`;
   }
   if (!next.length) return "Nothing is due to go on its own.";
   if (!soon.length) return `Nothing goes within a day. The next folder goes ${inDays(next[0].removed_in ?? 0)}.`;

@@ -59,7 +59,7 @@ export const cleaned = (): Sweep => sweep(0.2, {
 });
 export const modern = (more: Partial<Report> = {}): Report => report({
   policy: { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14, auto_clean: true, docker_clean: true,
-            warn_size: "50GB", max_size: "OFF" },
+            warn_size: "20GB", max_size: "OFF" },
   held: 13 * GB, over: 0, sweep: cleaned(), ...more,
 });
 export const withHistory = (made: Report = modern(), history: Sweep[] = [cleaned(), sweep(1.2)]): StorageBody => {

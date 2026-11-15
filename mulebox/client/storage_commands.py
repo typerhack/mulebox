@@ -63,6 +63,21 @@ def _fate(folder: dict[str, Any]) -> str:
     return FATES.get(folder.get("fate"), str(folder.get("fate")))
 
 
+def next_line(report: dict[str, Any], now: float) -> str | None:
+    """What a cleanup would remove now: the folders planned to go, and when that happens."""
+    due = [f for p in report.get("projects", []) for f in p.get("folders", [])
+           if f.get("fate") == "remove"]
+    if not due:
+        return None
+    what = f"{len(due)} branch folder(s), {units.size(sum(f['size'] for f in due))}"
+    if (report.get("policy") or {}).get("auto_clean") is False:
+        return f"would go: {what} (automatic cleanup is off; `mulebox storage clean` removes them)"
+    upcoming = report.get("next_sweep")
+    when = (f"in {max(1, round((upcoming - now) / 60))} min" if isinstance(upcoming, (int, float))
+            else "at the next cleanup")
+    return f"goes {when}: {what} (`mulebox storage clean` removes them now)"
+
+
 def node_lines(node: dict[str, Any], names: dict[str, dict[str, str]], now: float) -> list[str]:
     """One node's report in words."""
     report = node.get("report")
@@ -71,10 +86,13 @@ def node_lines(node: dict[str, Any], names: dict[str, dict[str, str]], now: floa
         return [f"{node['node']}: {state}, no report yet (a mulebox older than 1.24, or its first "
                 "sweep has not run; it runs a minute after the worker starts)"]
     disk = report["disk"]
-    minutes = max(0, int((now - report["at"]) / 60))
+    minutes = max(0, int((now - report.get("measured_at", report["at"])) / 60))
     out = [f"{node['node']}: {state}, measured {minutes} min ago",
            f"  disk: {units.size(disk['total'] - disk['free'])} used of {units.size(disk['total'])}, "
            f"{units.size(disk['free'])} free, keeping {units.size(disk['reserve'])} free"]
+    due = next_line(report, now)
+    if due:
+        out.append(f"  {due}")
     for project in report.get("projects", []):
         folders = project.get("folders", [])
         total = sum(f["size"] for f in folders) + project.get("home", 0)

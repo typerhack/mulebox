@@ -560,7 +560,7 @@ Each node cleans up on its own, every hour (design.md, Disk use and cleanup on i
 - Docker's unused build cache, and the images mulebox's jobs pulled and no longer use, go too;
   your own images and every volume stay;
 - past `max_size`, when you set one, the oldest folders that may go are removed;
-- past 50 GB (`warn_size`), every command an agent runs tells it to tell you.
+- past 20 GB (`warn_size`, yours to change), every command an agent runs tells it to tell you.
 
 All of it is the node's settings. It never removes a folder a job runs in, or what you keep:
 

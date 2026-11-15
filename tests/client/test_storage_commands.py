@@ -108,3 +108,19 @@ def test_history_says_what_each_cleanup_did(remote, capsys):
     assert run("storage", "--history", "5", "--json") == 0
     body = json.loads(capsys.readouterr().out)
     assert body["history"][0]["trigger"] == "hourly"
+
+
+def test_what_goes_now_is_said_with_when_and_how_much():
+    gone = {"folder": "a", "size": 2 * GB, "fate": "remove", "why": "gone"}
+    report = {**REPORT, "next_sweep": NOW + 30 * 60, "measured_at": NOW - 600,
+              "projects": [{**REPORT["projects"][0],
+                            "folders": [*REPORT["projects"][0]["folders"], gone, gone]}]}
+    lines = storage_commands.node_lines({"node": "build-1", "online": True, "report": report},
+                                        {}, NOW)
+    assert lines[0] == "build-1: online, measured 10 min ago"  # sizes' time, not the plan's
+    assert lines[2] == ("  goes in 30 min: 2 branch folder(s), 4.0 GB "
+                        "(`mulebox storage clean` removes them now)")
+    off = {**report, "policy": {**storage_policy.DEFAULTS, "auto_clean": False}}
+    assert "would go: 2 branch folder(s), 4.0 GB" in storage_commands.node_lines(
+        {"node": "build-1", "online": True, "report": off}, {}, NOW)[2]
+    assert storage_commands.next_line(REPORT, NOW) is None

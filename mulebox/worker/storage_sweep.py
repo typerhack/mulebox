@@ -16,6 +16,10 @@ on its own). Split from agent.py: `Agent` provides `node`, `paths`, `docker`, `a
 - **The report** of the last sweep goes with the next claim or heartbeat as `storage`, once;
   the coordinator keeps it for `mulebox storage` and the dashboard. The user's keep marks come
   back in every reply as `storage_keeps`.
+- **Re-planned between sweeps**: when the gone branches or the keep marks change, and every
+  `REPLAN_EVERY_S`, the plan is made again on the last measurement (sizes are not measured
+  again, last jobs and free space are), so what the report says goes next is what a sweep
+  would remove now, not what it would have at the last measurement.
 """
 
 from __future__ import annotations
@@ -37,6 +41,7 @@ EVERY_S = 3600.0
 LOW_CHECK_S = 60.0  # how often free space is looked at, a cheap call
 LOW_EVERY_S = 600.0  # the least time between sweeps started for low space
 SETTLE_S = 1.0  # after claims stop, for a claim already on its way to land in `active`
+REPLAN_EVERY_S = 900.0  # the plan on the last measurement is made again at least this often
 
 
 class Storing:
@@ -45,7 +50,8 @@ class Storing:
             self._storage = {"keeps": set(), "gone": set(), "report": None, "offered": None,
                              "sent": None, "thread": None, "removing": False, "last": None,
                              "next": time.time() + FIRST_AFTER_S, "low_check": 0.0,
-                             "first": True, "lock": threading.Lock()}
+                             "first": True, "lock": threading.Lock(), "measured": None,
+                             "replan": False}
         return self._storage
 
     # -- what goes out and comes back with claims and heartbeats -----------------------
@@ -68,13 +74,16 @@ class Storing:
         state["sent"] = state["offered"]
         keeps = reply.get("storage_keeps")
         if isinstance(keeps, list):
-            state["keeps"] = {(k.get("project"), k.get("branch")) for k in keeps
-                              if isinstance(k, dict) and isinstance(k.get("project"), str)}
+            keeps = {(k.get("project"), k.get("branch")) for k in keeps
+                     if isinstance(k, dict) and isinstance(k.get("project"), str)}
+            state["replan"] |= keeps != state["keeps"]
+            state["keeps"] = keeps
         gone = reply.get("storage_gone")
         if isinstance(gone, dict):
-            state["gone"] = {(project, slug(branch)) for project, names in gone.items()
-                             if isinstance(names, list) for branch in names
-                             if isinstance(branch, str)}
+            gone = {(project, slug(branch)) for project, names in gone.items()
+                    if isinstance(names, list) for branch in names if isinstance(branch, str)}
+            state["replan"] |= gone != state["gone"]
+            state["gone"] = gone
 
     # -- the sweep ---------------------------------------------------------------------
     def _housekeeping(self, now: float) -> bool:
@@ -89,7 +98,18 @@ class Storing:
             state["thread"] = threading.Thread(target=self._sweep, args=(trigger,), daemon=True,
                                                name="mulebox-storage")
             state["thread"].start()
+        elif thread is None and self._replan_due(state):
+            state["replan"] = False
+            state["thread"] = threading.Thread(target=self._replan, daemon=True,
+                                               name="mulebox-storage-plan")
+            state["thread"].start()
         return busy or state["removing"]
+
+    @staticmethod
+    def _replan_due(state: dict[str, Any]) -> bool:
+        report = state["report"]
+        return (state["measured"] is not None and report is not None
+                and (state["replan"] or time.time() - report["at"] >= REPLAN_EVERY_S))
 
     def _sweep_due(self, state: dict[str, Any]) -> str | None:
         """Why a sweep is due now (`start`, `hourly`, `low`), or None."""
@@ -153,12 +173,7 @@ class Storing:
         folders, held = storage_scan.measure(self.paths)
         disk = storage_scan.disk(self.paths)
         before, reserve = disk["free"], policy.reserve(disk["total"])
-        running, unsure = self._in_use()
-        plan = storage_rules.plan(
-            folders, policy, time.time(), self._keep_set(),
-            running | {(f.project, f.folder) for f in folders if f.project in unsure},
-            disk["free"], reserve, state["gone"])
-        storage_rules.trim(plan, storage_report.held_total(folders, held), policy.max_bytes())
+        plan = self._plan(folders, held, disk, state)
         errors: list[str] = []
         act = by_hand or policy.auto_clean
         removed = self._remove(plan.to_remove, state, errors) if act and plan.to_remove else []
@@ -177,9 +192,52 @@ class Storing:
         sweep = storage_report.sweep_record(started, trigger, policy.auto_clean, removed, pruned,
                                             before, disk["free"], errors,
                                             0 if act else len(plan.to_remove))
-        return storage_report.build(plan, removed, held, disk, reserve, policy.report(),
-                                    storage_scan.docker(self.docker),
-                                    storage_scan.where(self.paths), sweep)
+        gone = {(f.project, f.folder) for f in removed}
+        state["measured"] = {"at": started, "held": held, "sweep": sweep,
+                             "docker": storage_scan.docker(self.docker),
+                             "folders": [f for f in folders if (f.project, f.folder) not in gone]}
+        state["replan"] = False
+        return self._report(plan, removed, state)
+
+    def _plan(self, folders: list[storage_rules.Folder], held: dict[str, Any],
+              disk: dict[str, int], state: dict[str, Any]) -> storage_rules.Plan:
+        policy = self.node.storage
+        running, unsure = self._in_use()
+        plan = storage_rules.plan(
+            folders, policy, time.time(), self._keep_set(),
+            running | {(f.project, f.folder) for f in folders if f.project in unsure},
+            disk["free"], policy.reserve(disk["total"]), state["gone"])
+        return storage_rules.trim(plan, storage_report.held_total(folders, held),
+                                  policy.max_bytes())
+
+    def _report(self, plan: storage_rules.Plan, removed: list[storage_rules.Folder],
+                state: dict[str, Any]) -> dict[str, Any]:
+        measured, policy = state["measured"], self.node.storage
+        disk = storage_scan.disk(self.paths)
+        report = storage_report.build(plan, removed, measured["held"], disk,
+                                      policy.reserve(disk["total"]), policy.report(),
+                                      measured["docker"], storage_scan.where(self.paths),
+                                      measured["sweep"])
+        upcoming = state["next"] if state["next"] > time.time() else time.time() + EVERY_S
+        return {**report, "measured_at": measured["at"], "next_sweep": upcoming}
+
+    def _replan(self) -> None:
+        """The plan made again on the last measurement: a folder removed since drops out, last
+        jobs and free space are read again (cheap), sizes stay as measured."""
+        state = self._store()
+        with state["lock"]:
+            try:
+                measured = state["measured"]
+                folders = [storage_rules.Folder(f.project, f.folder, f.size,
+                                                storage_scan.last_used(self.paths, f.project, f.folder))
+                           for f in measured["folders"]
+                           if (self.paths.project_home(f.project) / "trees" / f.folder).is_dir()]
+                measured["folders"] = folders
+                disk = storage_scan.disk(self.paths)
+                state["report"] = self._report(self._plan(folders, measured["held"], disk, state),
+                                               [], state)
+            except Exception:  # noqa: BLE001 - a plan must never stop the worker
+                LOG.exception("storage plan failed")
 
     def _remove(self, planned: list[storage_rules.Folder], state: dict[str, Any],
                 errors: list[str]) -> list[storage_rules.Folder]:

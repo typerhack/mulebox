@@ -64,7 +64,7 @@ export const priorityLabel = (value: string | null | undefined) =>
 
 // node.toml's own defaults for the disk settings, when the server names none.
 export const STORAGE_DEFAULTS = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
-                                  auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
+                                  auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "20GB" };
 // A size setting with no limit, as the node writes it back (common/storage_policy.py).
 export const OFF = "OFF";
 export const ON_OFF: { value: string; label: string }[] = [{ value: "on", label: "On" }, { value: "off", label: "Off" }];

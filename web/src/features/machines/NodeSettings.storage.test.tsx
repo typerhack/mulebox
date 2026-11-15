@@ -8,7 +8,7 @@ import { storageStore } from "../../state/storage";
 import { cell, open, reply, view } from "./testing";
 
 const DISK = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 };
-const MORE = { auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
+const MORE = { auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "20GB" };
 const with126 = (more: Partial<NodeSettings> = {}) => withDisk({
   current: { slots: 2, priority: "normal", dev: false, ...DISK, ...MORE }, defaults: { ...DISK, ...MORE }, ...more });
 const LIMITS = ["Most mulebox may use", "Clean up on its own", "Clean Docker too", "Warn agents over"];
@@ -90,7 +90,7 @@ describe("the Storage tab of a node's settings window", () => {
     expect(cell("Most mulebox may use", "Suggested")).toBe("Offno limit: the free space to keep guards the disk");
     expect(cell("Most mulebox may use", "Yours")).toContain("No limit; mulebox holds 13.0 GB now");
     expect(cell("Most mulebox may use", "Runs with")).toBe("Off nowas suggested");
-    expect(cell("Warn agents over", "Suggested")).toBe("50 GBthe default for every node");
+    expect(cell("Warn agents over", "Suggested")).toBe("20 GBthe default for every node");
     expect(cell("Warn agents over", "Yours")).toContain("mulebox holds 13.0 GB now");
     expect(cell("Clean up on its own", "Runs with")).toBe("On nowas suggested");
     expect(cell("Clean Docker too", "Yours")).toContain("Each cleanup also removes Docker build cache");

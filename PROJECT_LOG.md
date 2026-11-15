@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.28.0 - 2026-11-15 - minor
+- What goes is said as it is: the Storage page said "14 branch folders go within a day, 6.5 GB" while Run now would have removed about 17 GB of folders whose branches were gone, as the dev machine's branch list came after the node's last measurement (seen on the real node). The worker now makes its plan again on the last measurement when the gone branches or keep marks change, and every 15 minutes, without measuring sizes again (`worker/storage_sweep.py`). The report carries `measured_at` and `next_sweep`; the page and `mulebox storage` say "Run now removes N branch folders, X GB; the next cleanup does in M minutes". Tests in `tests/worker/test_storage_sweep.py`, `tests/client/test_storage_commands.py`, `web/src/lib/storage.test.ts`.
+- `warn_size` is 20 GB by default, from 50 GB (the user's call), still a node setting each owner changes (`mulebox machine config <node> --warn-size`, the settings window).
+
 ## 1.27.6 - 2026-11-14 - patch
 - docs/phases.md: M25.9 moved from the M24 list to M25, where it belongs.
 

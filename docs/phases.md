@@ -1105,12 +1105,16 @@ runs a job.
       again. Open: why the prune leaves those images.
       Run 2026-11-14 (1.27.2): two branches deleted on the dev machine, their folders removed by the
       node's next cleanup with "its branch is on no dev machine"; agents told of 56 GB over 50 GB.
-- [ ] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox
+- [~] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox
       still holds 56 GB on the node, most of it 131 branch folders of a few projects, about 280 MB each.
       The user wants the projects' share, Docker apart, at 10 to 15 GB. To work out: why so many
       folders count as live (dev machines keep old local branches; lists arrive only from 1.26
       clients), a shorter or size-led rule, and agents asked to check and delete their merged
       branches (the skill). Done when: the node's projects hold 15 GB or less in normal use.
+      Found 2026-11-15: the dev machine has 2 or 3 branches per project, so its agents delete them
+      already; the folders stayed as lists only came from 1.26 clients (miu had none yet) and the
+      node was off overnight. 1.28.0: the page's figure follows a new list at once, `warn_size` 20 GB.
+      Next: idle branch folders slimmed (their ignored files, `node_modules`, `vendor`, `.next`).
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

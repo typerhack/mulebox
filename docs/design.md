@@ -478,7 +478,7 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 | `auto_clean` | true | the sweep removes on its own; off, it only says what would go, and removes when the user runs it (`mulebox storage clean`, the dashboard's Run now) |
 | `docker_clean` | true | Docker's unused build cache, dangling images and the images mulebox's jobs pulled and no job used since go too (below) |
 | `max_size` | `"off"` | the most mulebox's folders may take on the node; past it the oldest folders that may go are removed, never a running, kept or latest one |
-| `warn_size` | `"50GB"` | past it, every command from a project tells the agent to tell its user, who may ask an agent to look (1.26.0) |
+| `warn_size` | `"20GB"` | past it, every command from a project tells the agent to tell its user, who may ask an agent to look (1.26.0) |
 
 - **Last use** of a folder is the time of its last job on this node: every job commits in its
   folder, so git's log of the folder's branch (`repo.git/logs/refs/heads/tree-<folder>`) has it,
@@ -513,6 +513,13 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
   will happen to each), its package caches, toolchains and browsers, GitHub runners, logs and
   snapshots, Docker's own totals (`docker system df`), and where each part is on the node (`paths`, for the dashboard's "copy path"). The coordinator keeps the last report
   per node (`workers.storage`) for `mulebox storage` and the dashboard's `/api/storage`.
+- **What goes now is said as it is** (1.28.0, the user's ask: the page said 6.5 GB would go
+  within a day while a cleanup would have removed 17 GB of gone branches, as the branch list had
+  come after the last measurement): between sweeps the worker makes the plan again on its last
+  measurement when the gone branches or keep marks change, and every 15 minutes (sizes as
+  measured, last jobs and free space read again), and sends the new report. It carries
+  `measured_at` and `next_sweep`, and the dashboard and `mulebox storage` say "Run now removes N
+  branch folders, X GB; the next cleanup does in M minutes".
 - **Docker** (1.26.0, `docker_clean`): a job's own images, containers, networks and volumes go
   with its cleanup already. The sweep also removes build cache unused for `unused_days` (`builder
   prune --filter until=`, which goes by the cache's last use) and dangling images older than

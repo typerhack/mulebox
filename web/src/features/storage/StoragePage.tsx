@@ -10,7 +10,7 @@ import { useRef, useState } from "react";
 import { problemText } from "../../lib/api";
 import { ago, bytes, plural } from "../../lib/format";
 import { useStore } from "../../lib/store";
-import { branchOf, cleanable, held, sendKeep, sendRemove, suggestions } from "../../lib/storage";
+import { branchOf, cleanable, held, measuredAt, sendKeep, sendRemove, suggestions } from "../../lib/storage";
 import { tickStore, useMachines } from "../../state/live";
 import { hostOf, pick, pickStore } from "../../state/picked";
 import { markGone, refreshStorage, setKeeps, useStorage } from "../../state/storage";
@@ -95,7 +95,7 @@ export function StoragePage() {
         <Segmented small label="Node" value={name} choices={body.nodes.map((n) => ({ value: n.node, label: n.node }))}
           onChange={(next) => { setAsking(null); pick(next); }} />
       )}
-      note={report ? `${name} holds ${bytes(held(report))}, measured ${ago(report.at, now)}` : undefined}
+      note={report ? `${name} holds ${bytes(held(report))}, measured ${ago(measuredAt(report), now)}` : undefined}
       bodyClassName="grid gap-3">
       {!body.editable && (
         <p className="flex items-start gap-3 rounded-m border border-line-strong bg-surface-2 px-3 py-2">

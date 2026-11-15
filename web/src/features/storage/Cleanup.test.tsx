@@ -67,7 +67,7 @@ describe("the automatic cleanup line", () => {
 
   it("says what mulebox holds against the size at which it warns, and what still blocks the limit", () => {
     show(withHistory(modern({ held: 56.8 * GB })));
-    expect(line().textContent).toContain("mulebox holds 56.8 GB on this node; warns agents over 50.0 GB. That is 6.8 GB over the size at which agents are warned.");
+    expect(line().textContent).toContain("mulebox holds 56.8 GB on this node; warns agents over 20.0 GB. That is 36.8 GB over the size at which agents are warned.");
     cleanup();
     const over = modern({ held: 62 * GB, over: 2 * GB, policy: { ...modern().policy, max_size: "60GB" } });
     expect(sizeState(over)).toMatchObject({ warned: true, over: 2 * GB, blocks: ["latest", "kept"] });
@@ -75,7 +75,7 @@ describe("the automatic cleanup line", () => {
     expect(line().textContent).toContain("Still 2.0 GB over the limit: what is left are latest and kept folders, which the cleanup never removes.");
     cleanup();
     show(withHistory(modern({ held: 13 * GB })));
-    expect(line().textContent).toContain("mulebox holds 13.0 GB on this node; warns agents over 50.0 GB.");
+    expect(line().textContent).toContain("mulebox holds 13.0 GB on this node; warns agents over 20.0 GB.");
     expect(line().textContent).not.toContain("over the size");
   });
 });

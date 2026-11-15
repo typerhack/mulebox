@@ -386,7 +386,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
 | `GET /api/machines` | machines panel snapshot (above) |
-| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names. A report holds `at`, `disk` (`total`, `free`, `reserve`), `policy`, `projects` (`project`, `home`, `caches`, `folders` with `folder`, `size`, `last_used`, `fate`, `removed_in`), `shared`, `paths` (where each part is on the node, since 1.25), `docker`, `idle`, `short` and `removed` (Storage page, above) |
+| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names. A report holds `at`, `disk` (`total`, `free`, `reserve`), `policy`, `projects` (`project`, `home`, `caches`, `folders` with `folder`, `size`, `last_used`, `fate`, `removed_in`), `shared`, `paths` (where each part is on the node, since 1.25), `docker`, `idle`, `short` and `removed` (Storage page, above); from 1.28 `measured_at` (when the sizes were measured; `at` is when the plan was made) and `next_sweep` (when the node's next cleanup runs by itself) |
 | `POST /api/storage/keep` | body `{project, branch?, keep?}` (`keep` false drops the mark); `{keeps}`. Controls on only, protected like them; 400 on a bad body |
 | `POST /api/storage/remove` | body `{project, branch?}`: `project_order` reset with `yes`, as `mulebox project reset --yes`; `{group, nodes, done}`. Controls on only, protected like them |
 | `POST /api/storage/sweep` | body `{node?, docker?}` (docker true by default): the cleanup now on every node or one, a `sweep` order; `{group, nodes, done}`, followed at `/api/storage/remove/{group}`. Controls on only |
@@ -412,7 +412,7 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
  "applies": true,
  "current": {"slots": 2, "priority": "normal", "dev": false, "keep_free": "10%",
              "unused_days": 7, "keep_latest": true, "idle_days": 14, "auto_clean": true,
-             "docker_clean": true, "warn_size": "50GB", "max_size": "OFF"},
+             "docker_clean": true, "warn_size": "20GB", "max_size": "OFF"},
  "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
  "suggested": {"slots": 4, "reason": "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job"},
  "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"],
@@ -421,7 +421,7 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
              "auto_clean": [false, true], "docker_clean": [false, true], "warn_size": {"off": "off"},
              "max_size": {"off": "off"}},
  "defaults": {"keep_free": "10%", "unused_days": 7, "keep_latest": true, "idle_days": 14,
-              "auto_clean": true, "docker_clean": true, "warn_size": "50GB", "max_size": "OFF"},
+              "auto_clean": true, "docker_clean": true, "warn_size": "20GB", "max_size": "OFF"},
  "editable": true}
 ```
 

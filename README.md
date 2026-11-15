@@ -377,7 +377,7 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   branch folders, `project reset` a whole project, on every node. Each node also cleans up on
   its own: the folder of a branch your dev machines no longer have goes at once, one unused for
   7 days after that, Docker's unused build cache and the images its jobs no longer use too, and
-  past a size you set the oldest go first; past 50 GB agents are told to tell you. All of it is
+  past a size you set the oldest go first; past 20 GB (yours to change) agents are told to tell you. All of it is
   your setting; `mulebox storage` shows what it holds and what goes when, `--history` every
   cleanup and what it removed, `storage clean` runs one now (`--no-docker` leaves Docker),
   `project keep` keeps a folder.

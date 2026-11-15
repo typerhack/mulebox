@@ -154,3 +154,51 @@ def test_a_sweep_is_due_an_hour_after_the_last_or_when_space_runs_short(worker, 
     state["last"] = time.time()
     state["low_check"] = 0.0
     assert agent._sweep_due(state) is None  # not again within LOW_EVERY_S
+
+
+def _wait_plan(agent):
+    thread = agent._store()["thread"]
+    if thread is not None:
+        thread.join(5)
+
+
+def test_a_new_gone_list_changes_what_the_report_says_goes_without_measuring(worker, send,
+                                                                            monkeypatch):
+    latest, old = send("main", 1), send("feature/a", 2)
+    agent = worker()
+    agent._sweep()
+    first = agent._storage_fields()["storage"]
+    agent._take_replies({})
+    fates = {f["folder"]: f["fate"] for f in first["projects"][0]["folders"]}
+    assert fates[old.name] == "stays" and first["next_sweep"] > time.time()
+
+    def no_measure(*args, **kwargs):
+        raise AssertionError("a plan must not measure again")
+    monkeypatch.setattr(storage_scan, "measure", no_measure)
+    agent._store()["next"] = float("inf")
+    agent._take_replies({"storage_gone": {"example-app": ["feature/a"]}})
+    agent._housekeeping(time.time())
+    _wait_plan(agent)
+    report = agent._storage_fields()["storage"]  # offered again, as it changed
+    folder = next(f for f in report["projects"][0]["folders"] if f["folder"] == old.name)
+    assert (folder["fate"], folder["why"]) == ("remove", "gone") and folder["size"] > 0
+    assert report["measured_at"] == first["measured_at"] and report["at"] > first["at"]
+    assert old.is_dir()  # a plan removes nothing
+    agent._take_replies({"storage_gone": {"example-app": ["feature/a"]}})
+    assert agent._store()["replan"] is False  # the same list again plans nothing
+
+
+def test_a_plan_follows_a_folder_removed_since_and_runs_at_least_every_15_minutes(worker, send):
+    send("main", 1)
+    old = send("feature/a", 2)
+    agent = worker()
+    agent._sweep()
+    agent._store()["next"] = float("inf")
+    assert agent._replan_due(agent._store()) is False
+    import shutil
+    shutil.rmtree(old)
+    agent._store()["report"]["at"] -= storage_sweep.REPLAN_EVERY_S
+    agent._housekeeping(time.time())
+    _wait_plan(agent)
+    names = [f["folder"] for f in agent._store()["report"]["projects"][0]["folders"]]
+    assert old.name not in names

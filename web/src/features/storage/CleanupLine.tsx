@@ -123,7 +123,7 @@ export function CleanupLine({ node, online, report, editable, machine, now, chil
           </>
         ) : report.removed.count ? `The last cleanup, ${ago(report.at, now)}, removed ${plural(report.removed.count, "branch folder")}, ${bytes(report.removed.bytes)}. `
           : `The last cleanup, ${ago(report.at, now)}, removed nothing. `}
-        {nextLine(report)}{!online && " The node is offline now."}
+        {nextLine(report, now)}{!online && " The node is offline now."}
       </p>
       <Size report={report} />
       {problem && (

@@ -14,7 +14,7 @@ Project folders, Disk use and cleanup on its own). Read from node.toml, changed 
 - `max_size`: the most mulebox's own folders may take on the node (`"100GB"`); past it the sweep
   removes the oldest folders that may go, never a running, kept or latest one. `"off"` (the
   default) for no limit.
-- `warn_size`: when mulebox's own folders on the node pass this size (`"50GB"`), every command
+- `warn_size`: when mulebox's own folders on the node pass this size (`"20GB"`, the default), every command
   from a project tells the agent to tell its user, who may ask an agent to look; `"off"` for none.
 """
 
@@ -29,7 +29,7 @@ FIELDS = ("keep_free", "unused_days", "keep_latest", "idle_days", "auto_clean", 
 FLAGS = ("keep_latest", "auto_clean", "docker_clean")
 DEFAULTS: dict[str, Any] = {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                             "idle_days": 14, "auto_clean": True, "docker_clean": True,
-                            "warn_size": "50GB", "max_size": "OFF"}
+                            "warn_size": "20GB", "max_size": "OFF"}
 MAX_DAYS = 365
 MAX_SHARE = 90
 UNITS = {"MB": 10**6, "GB": 10**9, "TB": 10**12}
