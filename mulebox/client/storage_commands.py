@@ -7,6 +7,7 @@ use and cleanup on its own).
                                                   the node's automatic cleanup is off
     mulebox project keep <project> [--branch B]   no automatic rule removes it, on any node
     mulebox project keep <project> [--branch B] --off
+    mulebox storage ask|requests|approve|decline|changes|undo   client/asks_commands.py
 
 The numbers are each node's last sweep (worker/storage_sweep.py), an hour old at most.
 """
@@ -19,6 +20,7 @@ import sys
 import time
 from typing import Any
 
+from mulebox.client import asks_commands
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import request
 from mulebox.common import units
@@ -34,11 +36,12 @@ def register(sub: argparse._SubParsersAction) -> None:
     show.add_argument("--history", nargs="?", type=int, const=20, metavar="N",
                       help="the last N cleanups (20)")
     show.set_defaults(func=guarded(_show))
-    actions = show.add_subparsers(dest="action", metavar="clean")
+    actions = show.add_subparsers(dest="action", metavar="clean|ask|requests|approve|decline|changes|undo")
     clean = actions.add_parser("clean", help="run the cleanup now on every node, or one")
     clean.add_argument("--node", help="this node only")
     clean.add_argument("--no-docker", action="store_true", help="leave Docker as it is")
     clean.set_defaults(func=guarded(_clean))
+    asks_commands.register_actions(actions)
 
 
 def register_keep(actions: argparse._SubParsersAction) -> None:

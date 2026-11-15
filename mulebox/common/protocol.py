@@ -134,6 +134,8 @@ class MessageType(StrEnum):
     STORAGE_OK = "storage_ok"
     STORAGE_KEEP = "storage_keep"
     STORAGE_KEEP_OK = "storage_keep_ok"
+    ASKS = "asks"
+    ASKS_OK = "asks_ok"
 
 
 REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
@@ -210,6 +212,10 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     MessageType.STORAGE_OK: frozenset({"nodes", "keeps"}),
     MessageType.STORAGE_KEEP: frozenset({"project"}),
     MessageType.STORAGE_KEEP_OK: frozenset({"keeps"}),
+    # client -> coordinator: agents asking for more space, the answer, the settings history and
+    # the Agents option (coordinator/asks_api.py).
+    MessageType.ASKS: frozenset(),
+    MessageType.ASKS_OK: frozenset({"asks", "changes", "agents"}),
     # client -> coordinator: `action` get, set (`rules`, a partial change) or reset of the
     # order rules (coordinator/line_rules.py).
     MessageType.QUEUE_RULES: frozenset(),

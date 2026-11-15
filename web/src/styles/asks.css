@@ -1,0 +1,42 @@
+/* Agents' requests (docs/design-system/approvals/, option A): the space bar of a request,
+   drawn to one scale so a new value moves only its own marks, and the reason as a quote.
+   Values are tokens or sizes named in theme.css. */
+
+@layer components {
+  /* What mulebox holds, the limit now (a line), the part a yes adds (hatched, outlined in the
+     accent) and the dotted mark from which agents are told again. `--p-*` come from the
+     component. The held part is a meter: warning from 80% of the limit. */
+  .space-bar { position: relative; height: var(--space-4); overflow: hidden; border: 1px solid var(--border-strong);
+    border-radius: var(--radius-s); background: var(--surface-3); }
+  .space-bar > i { position: absolute; top: 0; bottom: 0; left: 0;
+    transition: width var(--dur-base) var(--ease), left var(--dur-base) var(--ease); }
+  .space-bar > .room { width: var(--p-limit); background: var(--surface-1); }
+  .space-bar > .more { left: var(--p-limit); width: calc(var(--p-to) - var(--p-limit)); background-color: var(--surface-1);
+    box-shadow: inset 0 0 0 1px var(--accent); }
+  .space-bar > .held { width: var(--p-held); background: var(--meter-fill); }
+  .space-bar[data-level="warn"] > .held { background: var(--status-warning); }
+  .space-bar > .now { left: calc(var(--p-limit) - 1px); width: var(--spacing-hair); background: var(--text-1); }
+  .space-bar > .tell { left: var(--p-tell); width: 0; border-left: var(--spacing-hair) dotted var(--text-1); }
+  .space-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+  .space-key > li { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .swatch.held { background: var(--meter-fill); }
+  .swatch.held[data-level="warn"] { background: var(--status-warning); }
+  .swatch.more { border-color: var(--accent); }
+  .swatch.line { width: var(--spacing-hair); border: 0; border-radius: 0; background: var(--text-1); }
+  .swatch.dots { width: 0; border: 0; border-left: var(--spacing-hair) dotted var(--text-1); border-radius: 0; }
+  .space-facts { display: grid; gap: var(--space-2) var(--space-4); padding-top: var(--space-2); border-top: 1px solid var(--border);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--spacing-col-s)), 1fr)); }
+
+  /* The agent's own words, set off by a line. */
+  .ask-why { margin: 0; padding-left: var(--space-3); border-left: var(--spacing-hair) solid var(--border-strong); max-width: var(--spacing-read); }
+  .ask-why > cite { display: block; margin-top: var(--space-1); color: var(--text-2); font-size: var(--text-sm); font-style: normal; }
+
+  /* A settings history entry: its icon, what happened, when. In a narrow box the time goes under. */
+  .change-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-3);
+    align-items: start; padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .change-row q { quotes: none; }
+  @variant @max-md {
+    .change-row { grid-template-columns: auto minmax(0, 1fr); }
+    .change-row > time { grid-column: 2; text-align: left; }
+  }
+}

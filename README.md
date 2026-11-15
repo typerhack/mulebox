@@ -378,7 +378,7 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   its own: the folder of a branch your dev machines no longer have goes at once, one unused for
   12 hours is slimmed (its installed packages and build output go, its files stay), one unused
   for 7 days goes, Docker's unused build cache and the images its jobs no longer use too, and
-  past the space it may use (20 GB by default, yours to change) the oldest are slimmed, then removed, and from 80% of it agents are told to ask you for more. All of it is
+  past the space it may use (20 GB by default, yours to change) the oldest are slimmed, then removed, and from 80% of it agents are told to ask you for more: their request shows in the dashboard's strip for you to approve, at another size or not, or applies at once if you allow agents to, and every setting change is recorded with who asked and who confirmed. All of it is
   your setting; `mulebox storage` shows what it holds and what goes when, `--history` every
   cleanup and what it removed, `storage clean` runs one now (`--no-docker` leaves Docker),
   `project keep` keeps a folder.

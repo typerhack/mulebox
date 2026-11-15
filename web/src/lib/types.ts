@@ -1,6 +1,8 @@
 // The shapes the dashboard's API sends (docs/interfaces-m2.md). Every field a server may
 // leave out is optional: an older server, or a worker that has not reported, is not an error.
 
+import type { Ask, Change } from "./asks";
+
 export type JobKind = "job" | "runner" | "upgrade";
 
 export interface Question {
@@ -199,6 +201,8 @@ export interface MachinesPanel {
   online: number;
   free_slots: number;
   notices?: Notice[];
+  asks?: Ask[];          // agents' requests that wait for the owner (lib/asks.ts)
+  allowed?: Change[];    // changes applied without asking in the last day
 }
 
 export interface Disk {

@@ -10,6 +10,7 @@ import { makeScene } from "./scenes.ts";
 import { answerSettings, withSettings } from "./settings.ts";
 import { keepMark, removeRead, removeStart, storageBody, sweepStart } from "./storage.ts";
 import { answerHistory, historyRows } from "./history.ts";
+import { asksBody, asksLive, asksPost } from "./asks.ts";
 import { changeRules, rulesBody } from "./order.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
@@ -42,7 +43,8 @@ function panel() {
            notices: CLEAN ? [] : [{ kind: "client", level: "warning", name: "laptop.local",
                        text: `Dev machine laptop.local runs mulebox 0.0.1, the node ${VERSION}.`, fix: "Upgrade mulebox on it: `pipx upgrade mulebox` (or `uv tool upgrade mulebox` if uv installed it)." },
                      ...machines.filter((m) => m.version !== VERSION).map((m) => ({ kind: "worker", level: "danger", name: m.name,
-                       text: `Worker ${m.name} runs mulebox ${m.version}, the coordinator ${VERSION}.`, fix: `Run \`mulebox setup ${m.name}\`.` }))] };
+                       text: `Worker ${m.name} runs mulebox ${m.version}, the coordinator ${VERSION}.`, fix: `Run \`mulebox setup ${m.name}\`.` }))],
+           ...asksLive() };
 }
 const publish = () => viewers.forEach((res) => { send(res, "queue", snapshot()); send(res, "machines", panel()); });
 const find = (id: string) => [...queue.running, ...queue.queued, ...queue.recent].find((row) => row.job_id === id);
@@ -120,6 +122,14 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
     if (!post) return json(res, rulesBody());
     const refusal = changeRules(await body(req));
     return refusal ? text(res, refusal, 409) : json(res, rulesBody());
+  }
+  if (path === "/api/asks") {
+    const editable = CONTROLS, history = Number(url.searchParams.get("history") ?? 50);
+    if (!post) return json(res, asksBody(editable, history));
+    const answer = asksPost(await body(req), `the dashboard, from ${req.socket.remoteAddress ?? "an unknown address"}`);
+    if (Array.isArray(answer)) return text(res, answer[1], answer[0]);
+    publish();
+    return json(res, { ...asksBody(editable, history), ...answer });
   }
   if (path === "/api/queue") return json(res, snapshot());
   if (path === "/api/machines") return json(res, panel());

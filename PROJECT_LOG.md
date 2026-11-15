@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.32.0 - 2026-11-15 - minor
+- Agents ask for more space (M25.10, the user's ask): from 80% of a node's `max_size`, an agent asks its user and, with their yes, runs `mulebox storage ask --size 30GB --reason "..."`. The request waits on the coordinator (`setting_asks`, schema 27, `coordinator/setting_asks.py`); the owner answers in the dashboard's strip, option A of the mockups (Approve, another value, Decline with a note), or with `mulebox storage approve|decline`. Several requests for one node get one answer at the largest value asked. The agent hears the answer once in its next command (`space_answers`); while one waits, or for 7 days after a decline, its notice says so.
+- The Agents option (the user's call: many trust their agents): "Ask me first", as installed, or "Allow, and record it", which applies a request at once and tells the owner in a grey strip line with Undo; the Agents window in the header, `mulebox agents ask|allow`.
+- Settings history (`setting_changes`, `coordinator/setting_changes.py`): every change of a node's setting, by the owner in the settings window or `mulebox machine config`, an answered request, one applied without asking, an undo and a change of the Agents option, with old and new value, who asked and why, who confirmed and when the node took it; on the Storage page and `mulebox storage changes`, with Undo for a node's latest change (`mulebox storage undo`).
+- The `asks` request (`coordinator/asks_api.py`), `GET|POST /api/asks` (`dashboard/asks_api.py`), `asks` and `allowed` on the live machines panel; the web part in `web/src/features/asks/`, `lib/asks.ts`, `lib/asksText.ts`, `state/asks.ts`. The skill tells agents to ask only with their user's yes and never to answer a request.
+- Tests in `tests/coordinator/test_setting_asks.py`, `tests/client/test_asks_commands.py`, `tests/dashboard/test_asks_api.py`, `web/src/features/asks/strip.test.tsx`, `windows.test.tsx`.
+
 ## 1.31.1 - 2026-11-15 - patch
 - Mockups of the approval prompt for agents' requests for more space and of the Agents window (`docs/design-system/approvals/`, Fable's): three places for the prompt and the Agents option, with a report. The user picked option A, the strip under the header; marked on the index.
 

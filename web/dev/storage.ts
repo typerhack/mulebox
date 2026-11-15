@@ -3,6 +3,8 @@
 // made up. MULEBOX_MOCK_SCENE=lowspace puts build-1 under its reserve with a list of what
 // could go next, for the strip's warning and the review window.
 
+import { limitOf } from "./asks.ts";
+
 const GB = 1e9, DAY = 86400;
 const LOW = process.env.MULEBOX_MOCK_SCENE === "lowspace";
 const OFF = process.env.MULEBOX_MOCK_SCENE === "cleanupoff";  // automatic cleanup off: folders that would go, a size limit passed
@@ -97,9 +99,12 @@ function short() {
   return { need, could_free: could.reduce((a, f) => a + f.size, 0), folders: could };
 }
 
+// The space for mulebox as the agents' requests left it (asks.ts); the cleanup-off scene keeps its own.
+const limited = (node: string) => ({ ...policy, max_size: OFF ? policy.max_size : limitOf(node) });
+
 function reports() {
   const main = {
-    at: now() - 12 * 60, disk: { total: 490 * GB, free: (LOW ? 46 : 80) * GB, reserve: 49 * GB }, policy, projects,
+    at: now() - 12 * 60, disk: { total: 490 * GB, free: (LOW ? 46 : 80) * GB, reserve: 49 * GB }, policy: limited("build-1"), projects,
     shared: { toolchains: 2.1 * GB, browsers: 1.3 * GB, caches_other: 0.2 * GB, runners: 4.1 * GB, staging: 0.4 * GB, jobs: 0.1 * GB },
     paths: where("/home/alice"),
     docker: { images: { size: 9.8 * GB, reclaimable: 3.6 * GB, count: 23 }, containers: { size: 0.2 * GB, reclaimable: 0, count: 6 },
@@ -112,7 +117,7 @@ function reports() {
     + Object.values(main.shared).reduce((a, b) => a + b, 0);
   delete main.sweep.node;
   const ios = project("example-ios", 6, 3.3 * GB, 0.4, 1.2 * GB);
-  const mac = { at: now() - 41 * 60, disk: { total: 994 * GB, free: 382 * GB, reserve: 99.4 * GB }, policy, projects: [ios],
+  const mac = { at: now() - 41 * 60, disk: { total: 994 * GB, free: 382 * GB, reserve: 99.4 * GB }, policy: limited("build-2"), projects: [ios],
                 shared: { toolchains: 0.3 * GB, browsers: 0, caches_other: 0, runners: 1.3 * GB, staging: 0.1 * GB, jobs: 0 },
                 paths: where("/Users/alice"), docker: null, idle: [], short: null, removed: { count: 0, bytes: 0 } };
   return [main, mac];

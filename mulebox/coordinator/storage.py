@@ -21,7 +21,7 @@ from typing import Any
 from mulebox.common import storage_policy
 from mulebox.common.branch_folder import slug
 from mulebox.common.protocol import Message, MessageType
-from mulebox.coordinator import branch_lists, projects, storage_history, workers
+from mulebox.coordinator import branch_lists, projects, setting_asks, storage_history, workers
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
 
@@ -73,15 +73,16 @@ def body(conn: sqlite3.Connection, now: float, history: int = 50) -> dict[str, A
             "history": storage_history.recent(conn, history)}
 
 
-def heavy(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
+def heavy(conn: sqlite3.Connection, now: float, online: bool = True) -> list[dict[str, Any]]:
     """Online nodes where mulebox holds more than its warning size, `WARN_SHARE` of the node's
     `max_size` (or, from a node older than 1.30, its own `warn_size`), for every command from
-    a project to pass on to the user (client/attention.py)."""
+    a project to pass on to the user (client/attention.py), with a request for more space that
+    waits or was declined lately (setting_asks.state_of)."""
     out = []
     for row in workers.listing(conn):
         text = conn.execute("SELECT storage FROM workers WHERE worker = ?",
                             (row["worker"],)).fetchone()["storage"]
-        if not text or not workers.is_online(row, now):
+        if not text or (online and not workers.is_online(row, now)):
             continue
         report = json.loads(text)
         policy = report.get("policy") or {}
@@ -90,7 +91,8 @@ def heavy(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
                  else storage_policy.warn_bytes(str(policy.get("warn_size", "OFF"))))
         held = report.get("held")
         if limit is not None and isinstance(held, int) and held > limit:
-            out.append({"worker": row["worker"], "held": held, "warn": limit, "max": most})
+            out.append({"worker": row["worker"], "held": held, "warn": limit, "max": most,
+                        **(setting_asks.state_of(conn, row["worker"], now) if online else {})})
     return out
 
 

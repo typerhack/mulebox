@@ -1,5 +1,5 @@
 // The header: the name and version, the views (Storage with the count of what waits there), the out-of-step mark, Queue actions, whether
-// the page is live, and the two switches each viewer sets for themselves.
+// the page is live, the Agents window, and the two switches each viewer sets for themselves.
 
 import { ChartColumn, HardDrive, History, List, LogOut, Radio, Server, type LucideIcon } from "lucide-react";
 
@@ -11,6 +11,7 @@ import { useStorage } from "../../state/storage";
 import { Button } from "../../ui/Button";
 import { cx } from "../../ui/cx";
 import { Tip } from "../../ui/Tip";
+import { AgentsButton } from "../asks/Agents";
 import { QueueActions } from "../jobs/QueueActions";
 import { MeterSwitch, ThemeSwitch } from "./Switches";
 import { OutOfStepMark } from "./OutOfStep";
@@ -60,6 +61,7 @@ export function Header({ page }: { page: Route["page"] }) {
           <OutOfStepMark />
           <QueueActions />
           <Live />
+          <AgentsButton />
           <MeterSwitch />
           <ThemeSwitch />
           {health.sign_in && (

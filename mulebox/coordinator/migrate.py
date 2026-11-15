@@ -44,6 +44,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   `jobs.workflow`, a GitHub run's workflow name from its runner's hook, for the order rules.
 - 22 -> 23: `jobs.deferred_at`, when a node first left a job to a better node (node_choice.py),
   so that wait is bounded from then and not from the job's arrival; NULL until then.
+- 26 -> 27: `setting_asks` and `setting_changes`: agents' requests for more space and the
+  settings history (setting_asks.py, setting_changes.py).
 - 23 -> 24: `project_orders`, `project reset` and `clean` for every node (project_orders.py).
 """
 
@@ -104,6 +106,36 @@ CREATE TABLE IF NOT EXISTS storage_sweeps (
     PRIMARY KEY (worker, started)
 )
 """
+SETTING_ASKS = """
+CREATE TABLE IF NOT EXISTS setting_asks (
+    ask_id TEXT PRIMARY KEY,
+    node TEXT NOT NULL,
+    setting TEXT NOT NULL,
+    value TEXT NOT NULL,
+    reason TEXT NOT NULL,
+    project TEXT,
+    job_id TEXT,
+    client TEXT,
+    asked_at REAL NOT NULL,
+    state TEXT NOT NULL,
+    answer TEXT,
+    change_id TEXT,
+    told_at REAL
+)"""
+SETTING_CHANGES = """
+CREATE TABLE IF NOT EXISTS setting_changes (
+    change_id TEXT PRIMARY KEY,
+    node TEXT,
+    setting TEXT NOT NULL,
+    old TEXT,
+    new TEXT,
+    how TEXT NOT NULL,
+    asked TEXT,
+    by TEXT,
+    at REAL NOT NULL,
+    in_force_at REAL,
+    undo_of TEXT
+)"""
 _STEPS: dict[int, tuple[str, ...]] = {
     1: (
         "ALTER TABLE jobs ADD COLUMN kind TEXT NOT NULL DEFAULT 'job'",
@@ -150,6 +182,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     23: (PROJECT_ORDERS,),
     24: (STORAGE_KEEPS, "ALTER TABLE workers ADD COLUMN storage TEXT"),
     25: (PROJECT_BRANCHES, STORAGE_SWEEPS),
+    26: (SETTING_ASKS, SETTING_CHANGES),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

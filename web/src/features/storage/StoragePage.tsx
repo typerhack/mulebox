@@ -1,7 +1,7 @@
 // The Storage page (the user's pick, "by project"): for the node the top row shows, its disk
 // as one ruler, its automatic cleanup (what it does, what the last one did, Run now), then
 // everything mulebox holds there: projects and their branch folders, caches, toolchains,
-// runners and Docker's totals, and last the history of its cleanups.
+// runners and Docker's totals, then the history of its cleanups and of every node's settings.
 // The numbers are the node's last report, an hour old at most; the page measures nothing.
 
 import { Folder, HardDrive, Lock } from "lucide-react";
@@ -18,6 +18,7 @@ import { Button } from "../../ui/Button";
 import { WithCode } from "../../ui/Code";
 import { Panel } from "../../ui/Panel";
 import { Segmented } from "../../ui/Segmented";
+import { SettingsHistory } from "../asks/SettingsHistory";
 import { CleanupHistory } from "./CleanupHistory";
 import { CleanupLine } from "./CleanupLine";
 import { DiskRuler } from "./DiskRuler";
@@ -127,6 +128,7 @@ export function StoragePage() {
           </div>
           <CleanupHistory sweeps={(body.history ?? []).filter((sweep) => sweep.node === node.node)} body={body}
             days={report.policy.unused_days} now={now} />
+          <SettingsHistory now={now} />
           {showNext && (
             <GoingNextWindow node={node.node} body={body} report={report} now={now} opener={nextButton}
               onKeep={body.editable ? keep : undefined} onClose={() => setShowNext(false)} />

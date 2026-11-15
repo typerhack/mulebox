@@ -575,10 +575,23 @@ mulebox machine config build-2 --keep-free 20%    # or 50GB; --unused-days 3, --
 mulebox machine config build-2 --keep-latest off  # the latest folder goes after unused-days too
 mulebox machine config build-2 --slim-hours 24    # slim idle folders later; 0 never slims
 mulebox machine config build-2 --max-size 40GB    # space for mulebox; agents told from 80% of it
+mulebox storage requests                          # agents' requests for more space that wait
+mulebox storage approve --node build-2            # yes, at the size asked; --size 25GB for another
+mulebox storage decline --node build-2 --note "clean the old schemes first"
+mulebox storage changes                           # every setting change: who asked, why, who confirmed
+mulebox storage undo chg-0123456789ab             # back to the value before that change
+mulebox agents allow                              # apply agents' requests at once, recorded; `ask` waits
 mulebox machine config build-2 --auto-clean off   # it only says what would go; --docker-clean off
 mulebox storage --history                         # every cleanup: what it removed, why, what it freed
 mulebox storage clean                             # the cleanup now; --node build-2, --no-docker
 ```
+
+From 80% of the space, an agent asks you, and with your yes sends `mulebox storage ask`. Its
+request shows on the dashboard in the strip under the header, on every page, with Approve,
+Review and Decline; the answer reaches the agent in its next command. With `mulebox agents
+allow` (or the Agents window in the header) a request is applied at once, and the strip tells
+you in grey, with Undo. Every change, asked or made by hand, is in the settings history on the
+Storage page and in `mulebox storage changes`.
 
 When a node is still short of space after its sweep, or a project had no job for `idle_days`,
 `mulebox storage` and the dashboard say so and give the `project reset` to run: that choice

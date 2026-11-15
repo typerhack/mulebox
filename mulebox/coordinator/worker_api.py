@@ -34,7 +34,7 @@ def claim(req: Request) -> Message:
                       dev=bool((settings or {}).get("dev")))
     with req.store.write() as conn:  # after the claim, which records a new worker
         storage.keep_report(conn, worker, req.body)
-        waiting = {**node_settings.settle(conn, worker, settings),
+        waiting = {**node_settings.settle(conn, worker, settings, req.now),
                    **project_orders.hand_out(conn, worker, req.now), **storage.reply_fields(conn, req.now)}
     if job is None:
         return req.reply(MessageType.CLAIM_NONE, waiting)
@@ -73,7 +73,8 @@ def heartbeat(req: Request) -> Message:
         job = leases.renew_worker_in(conn, job, req.now)
         workers.touch(conn, job["worker"], req.now, v.load(req.body))
         storage.keep_report(conn, job["worker"], req.body)
-        waiting = {**node_settings.settle(conn, job["worker"], node_settings.reported(req.body)),
+        settings = node_settings.reported(req.body)
+        waiting = {**node_settings.settle(conn, job["worker"], settings, req.now),
                    **project_orders.hand_out(conn, job["worker"], req.now),
                    **storage.reply_fields(conn, req.now)}
         _activity(conn, req, job)

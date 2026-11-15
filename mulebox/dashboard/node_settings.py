@@ -58,7 +58,8 @@ async def post_settings(request: web.Request) -> web.Response:
     name = request.match_info["name"]
     change = await _change(request)
     try:
-        reply = await request.app[keys.CANCELLER].node_settings(name, **change)
+        by = f"the node's settings window, from {request.remote or 'an unknown address'}"
+        reply = await request.app[keys.CANCELLER].node_settings(name, **change, by=by)
     except CoordinatorError as exc:
         raise controls.refused(exc, "machine") from None
     _log.info("machine %s: settings %s from the dashboard by %s", name, change, request.remote)

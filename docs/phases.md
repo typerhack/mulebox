@@ -1117,6 +1117,15 @@ runs a job.
       The first cleanup on 1.28.0 removed 64 folders of gone branches, 17.0 GB, as predicted.
       1.29.0: idle branch folders slimmed after `slim_hours` (12): what git ignores goes, the
       checkout stays, the next job installs again.
+- [~] M25.10 Agents ask for more space (the user's ask, 2026-11-15): from 80% of `max_size` an agent
+      asks its user, and with their yes runs `mulebox storage ask`; the owner answers on the
+      dashboard's strip (option A of design-system/approvals/, the user's pick) or with `mulebox
+      storage approve|decline`, or lets agents' requests apply at once and be recorded (the Agents
+      window, `mulebox agents allow`). Every setting change goes into a settings history with who
+      asked, why and who confirmed, with Undo (design.md, Agents asking for more space). Built
+      2026-11-15 (1.32.0), with tests on the real coordinator code. Done when: on the real node an
+      agent's request shows in the strip in Edge, an approval at another value reaches node.toml,
+      the agent's next command tells the answer, and the history shows it with Undo.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

@@ -18,7 +18,7 @@ from mulebox.common.protocol import JobState
 from mulebox.common.redact import Redactor
 from mulebox.common.status import ACTIVE, STOP_TEXT, current_stage, shown_state, snapshot
 from mulebox.coordinator import (api, attendance, clients, line, line_rules, node_settings, queue,
-                                 stats, stats_api, steps, storage, usual, workers)
+                                 setting_asks, stats, stats_api, steps, storage, usual, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -88,6 +88,7 @@ class DashboardData:
             found = workers.listing(conn)
             panel = machines.snapshot(found, active, now, self.local_name)
             panel["notices"] = notices.notices(get_version(), found, clients.recent(conn, now), now)
+            panel.update(setting_asks.live(conn, now))  # the strip's requests (asks_api.py)
             return panel, found
 
     def node_settings(self, name: str, now: float) -> dict[str, Any] | None:
@@ -95,6 +96,11 @@ class DashboardData:
         with self.store.read() as conn:
             found = workers.get(conn, name)
             return None if found is None else node_settings.view(conn, found, now)
+
+    def asks(self, history: int) -> dict[str, Any]:
+        """Requests for more space, the settings history, the Agents option (setting_asks.py)."""
+        with self.store.read() as conn:
+            return setting_asks.body(conn, history)
 
     def storage(self, now: float) -> dict[str, Any]:
         """What mulebox holds on each node (coordinator/storage.py `body`)."""

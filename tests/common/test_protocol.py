@@ -25,7 +25,7 @@ SAMPLE_VALUES = {
     "action": "drain", "group": "grp-1", "order_id": "ord-1",
     "running": [],
     "paused": {},
-    "rules": {}, "nodes": [], "keeps": [],
+    "rules": {}, "nodes": [], "keeps": [], "asks": [], "changes": [], "agents": "ask",
     "need": None,
     "steps": [],
     "hosts": [],
@@ -103,7 +103,7 @@ def test_enum_values_match_contract():
         "reach", "reach_ok", "reserve", "acquire", "release", "runner_jobs", "drain", "drain_ok",
         "machine", "machine_ok", "taken", "take", "take_ok",
         "project_order", "project_order_ok", "order_done", "order_done_ok",
-        "storage", "storage_ok", "storage_keep", "storage_keep_ok"}
+        "storage", "storage_ok", "storage_keep", "storage_keep_ok", "asks", "asks_ok"}
 
 
 def test_transition_table_is_exact():

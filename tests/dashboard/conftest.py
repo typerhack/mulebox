@@ -134,13 +134,17 @@ class FakeCanceller:
         return self._answer((worker, action), MessageType.MACHINE_OK,
                             {"worker": worker, "action": action, "running": []})
 
-    async def node_settings(self, worker, **change):
+    async def node_settings(self, worker, by=None, **change):
+        self.by = by  # who changed it, for the settings history
         return self._answer((worker, change), MessageType.NODE_SETTINGS_OK,
                             {"worker": worker, "current": {"slots": 2, "priority": "normal"},
                              "pending": {k: v for k, v in change.items() if k != "cancel"} or None,
                              "suggested": None})
 
     async def send(self, msg):
+        if msg.type is MessageType.ASKS:
+            return self._answer((msg.type.value, msg.body), MessageType.ASKS_OK,
+                                {"asks": [], "changes": [], "agents": "ask", "change_id": "chg-1"})
         kind = {MessageType.STORAGE_KEEP: MessageType.STORAGE_KEEP_OK,
                 MessageType.PROJECT_ORDER: MessageType.PROJECT_ORDER_OK}[msg.type]
         return self._answer((msg.type.value, msg.body), kind,

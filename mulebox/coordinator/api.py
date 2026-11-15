@@ -12,10 +12,11 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common import take_paths
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import (attendance, branch_lists, clients, holds, job_control, leases,
-                                 line, line_rules, machine_api, needs, node_settings, project_orders,
-                                 project_pause, projects, queue, reuse, runner_api, stats_api,
-                                 steps, storage, taken, upgrades, usual, worker_api, workers)
+from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
+                                 leases, line, line_rules, machine_api, needs, node_settings,
+                                 project_orders, project_pause, projects, queue, reuse, runner_api,
+                                 setting_asks, stats_api, steps, storage, taken, upgrades, usual,
+                                 worker_api, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -136,7 +137,8 @@ def _news(conn: Any, project: str, now: float) -> dict[str, Any]:
     return {"questions": [{**job_dict(job), **found} for job in rows
                           if (found := attendance.fields(job, now, limits))],
             "finished_away": [result_body(job) for job in finished],
-            "low_disks": workers.low_disks(conn, now), "heavy_nodes": storage.heavy(conn, now)}
+            "low_disks": workers.low_disks(conn, now), "heavy_nodes": storage.heavy(conn, now),
+            "space_answers": setting_asks.news(conn, project, now)}
 
 
 def job_ok(req: Request) -> Message:
@@ -263,6 +265,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.ORDER_DONE: project_orders.done,
     MessageType.STORAGE: storage.read,
     MessageType.STORAGE_KEEP: storage.keep,
+    MessageType.ASKS: asks_api.control,
     MessageType.JOB_CONTROL: job_control.control,
     MessageType.UPGRADE: upgrades.upgrade,
     MessageType.PROJECT_PAUSE: project_pause.control,

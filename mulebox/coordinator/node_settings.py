@@ -7,7 +7,8 @@ reply to the worker's next claim or heartbeat (`node_settings`, `node_settings_a
 writes it and reports, and what it reports clears the values it now has (`settle`).
 
 - `node_settings` request: `worker`, and `slots`, `priority`, `dev` or `cancel: true` (drop what waits);
-  with none of them it only reads. Refused for a worker that never reported settings (a mulebox
+  with none of them it only reads. `by` says who changed it, for the settings history
+  (setting_changes.py): "mulebox machine config" when absent. Refused for a worker that never reported settings (a mulebox
   older than this), so a change is not left waiting for good. Replied `node_settings_ok`, `view`.
 - Priority in claims: node_choice.py.
 """
@@ -16,12 +17,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from typing import Any
 
 from mulebox.common import node_settings as ns
 from mulebox.common import storage_policy
 from mulebox.common.protocol import Message, MessageType
-from mulebox.coordinator import workers
+from mulebox.coordinator import setting_changes, workers
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
 from mulebox.coordinator.errors import BadRequest, Conflict, NotFound
@@ -62,8 +64,8 @@ def reported(body: dict[str, Any]) -> dict[str, Any] | None:
     return out
 
 
-def settle(conn: sqlite3.Connection, worker: str | None, settings: dict[str, Any] | None
-           ) -> dict[str, Any]:
+def settle(conn: sqlite3.Connection, worker: str | None, settings: dict[str, Any] | None,
+           now: float | None = None) -> dict[str, Any]:
     """Keep what `worker` reported, drop the asked values it now has; for the reply, the change
     still waiting for it (`node_settings`, `node_settings_at`), or nothing."""
     row = conn.execute("SELECT wanted, wanted_at FROM workers WHERE worker = ?",
@@ -77,6 +79,9 @@ def settle(conn: sqlite3.Connection, worker: str | None, settings: dict[str, Any
                      (json.dumps(settings, sort_keys=True), settings["slots"], worker))
         if left != wanted:
             _keep_wanted(conn, worker, left, row["wanted_at"])
+            setting_changes.in_force(conn, str(worker), {key: settings.get(key) for key in wanted
+                                                          if key not in left},
+                                     time.time() if now is None else now)
         wanted = left
     return {"node_settings": wanted, "node_settings_at": row["wanted_at"]} if wanted else {}
 
@@ -139,30 +144,49 @@ def request(req: Request) -> Message:
     if not changes and not drop:
         with req.store.read() as conn:
             return req.reply(MessageType.NODE_SETTINGS_OK, view(conn, _require(conn, name), req.now))
+    by = v.text(req.body, "by", None) or "mulebox machine config"
     with req.store.write() as conn:
-        found = _require(conn, name)
-        current = found.get("settings")
-        if current is None:
-            raise Conflict(f"{name} has not reported its settings: it runs a mulebox older than "
-                           "this one, or has not claimed yet; upgrade it first "
-                           f"(`mulebox setup {name}`), or edit its node.toml")
-        if changes.get("dev") and name == workers.host(conn):
-            raise Conflict(f"dev mode is for other nodes: {name} is the coordinator, which every "
-                           "job goes through; put a node added with --worker-of in dev mode")
-        for key in changes:
-            if key not in current and key not in _ALWAYS:
-                raise Conflict(f"{name} runs a mulebox older than {_SINCE.get(key, '1.24')}, "
-                               f"which has no {_WHAT.get(key, key)}; upgrade it first "
-                               f"(`mulebox setup {name}`)")
-        wanted = {} if drop else dict(found.get("wanted") or {})
-        wanted.update(changes)
-        wanted = {key: value for key, value in wanted.items() if current.get(key) != value}
-        _keep_wanted(conn, name, wanted, req.now)
-        if "error" in current:  # it was about the change asked before; the worker tries this one
-            current = {key: value for key, value in current.items() if key != "error"}
-            conn.execute("UPDATE workers SET settings = ? WHERE worker = ?",
-                         (json.dumps(current, sort_keys=True), name))
+        before = values(conn, name)
+        change(conn, name, changes, req.now, drop=drop)
+        for key, value in changes.items():  # the settings history (setting_changes.py)
+            if before.get(key) != value:
+                setting_changes.record(conn, node=name, setting=key, old=before.get(key),
+                                       new=value, how="owner", at=req.now, by=by)
         return req.reply(MessageType.NODE_SETTINGS_OK, view(conn, _require(conn, name), req.now))
+
+
+def values(conn: sqlite3.Connection, name: str) -> dict[str, Any]:
+    """What a node runs with, with a change that waits for it on top: what a new change replaces."""
+    found = _require(conn, name)
+    return {**(found.get("settings") or {}), **(found.get("wanted") or {})}
+
+
+def change(conn: sqlite3.Connection, name: str, changes: dict[str, Any], now: float, *,
+           drop: bool = False) -> None:
+    """Ask `name` for `changes` (checked), on its next claim or heartbeat; the rules for every
+    change from afar, from the owner or an agent's answered request (setting_asks.py)."""
+    found = _require(conn, name)
+    current = found.get("settings")
+    if current is None:
+        raise Conflict(f"{name} has not reported its settings: it runs a mulebox older than "
+                       "this one, or has not claimed yet; upgrade it first "
+                       f"(`mulebox setup {name}`), or edit its node.toml")
+    if changes.get("dev") and name == workers.host(conn):
+        raise Conflict(f"dev mode is for other nodes: {name} is the coordinator, which every "
+                       "job goes through; put a node added with --worker-of in dev mode")
+    for key in changes:
+        if key not in current and key not in _ALWAYS:
+            raise Conflict(f"{name} runs a mulebox older than {_SINCE.get(key, '1.24')}, "
+                           f"which has no {_WHAT.get(key, key)}; upgrade it first "
+                           f"(`mulebox setup {name}`)")
+    wanted = {} if drop else dict(found.get("wanted") or {})
+    wanted.update(changes)
+    wanted = {key: value for key, value in wanted.items() if current.get(key) != value}
+    _keep_wanted(conn, name, wanted, now)
+    if "error" in current:  # it was about the change asked before; the worker tries this one
+        current = {key: value for key, value in current.items() if key != "error"}
+        conn.execute("UPDATE workers SET settings = ? WHERE worker = ?",
+                     (json.dumps(current, sort_keys=True), name))
 
 
 def _require(conn: sqlite3.Connection, name: str) -> dict[str, Any]:

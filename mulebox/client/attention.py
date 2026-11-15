@@ -170,6 +170,8 @@ def tell(body: dict[str, Any], err: TextIO) -> None:
         report.status(err, WARNING + disk.warning(str(low.get("worker")), int(low.get("free") or 0)))
     for heavy in _dicts(body.get("heavy_nodes")):
         report.status(err, heavy_line(heavy))
+    for answer in _dicts(body.get("space_answers")):
+        report.status(err, answer_line(answer))
 
 
 def heavy_line(heavy: dict[str, Any]) -> str:
@@ -181,10 +183,34 @@ def heavy_line(heavy: dict[str, Any]) -> str:
         return (f"notice for the user: mulebox holds {held} on {node}, over the "
                 f"{units.size(int(heavy.get('warn') or 0))} it warns at. Tell the user; "
                 "`mulebox storage` shows what it holds and what goes when")
-    return (f"notice for the user: mulebox holds {held} on {node} of the {units.size(most)} it "
-            "may use there; past that it removes older branch folders on its own. Tell the user "
-            "and ask whether to give it more; only with their yes: `mulebox machine config "
-            f"{node} --max-size <size>`. `mulebox storage` shows what it holds and what goes when")
+    start = (f"notice for the user: mulebox holds {held} on {node} of the {units.size(most)} it "
+             "may use there; past that it removes older branch folders on its own. ")
+    asked, declined = heavy.get("asked"), heavy.get("declined")
+    if isinstance(asked, dict):
+        return start + (f"You asked for {asked.get('value')}; it waits for the owner's answer on "
+                        "the dashboard. Keep working; do not ask again")
+    if isinstance(declined, dict):
+        note = f" with the note: {declined['note']}" if declined.get("note") else ""
+        return start + (f"The owner declined {declined.get('value')}{note}. Do not ask again; "
+                        "tell the user if a job cannot run for lack of space")
+    return start + ("Tell the user and ask whether to give it more; only with their yes: "
+                    f"`mulebox storage ask --node {node} --size <size> --reason \"<why>\"`, which "
+                    "they answer on the dashboard. `mulebox storage` shows what it holds and what "
+                    "goes when")
+
+
+def answer_line(ask: dict[str, Any]) -> str:
+    """The owner's answer to this project's request for more space, told once."""
+    node, answer = ask.get("node"), ask.get("answer") or {}
+    if ask.get("state") == "declined":
+        note = f", with the note: {answer['note']}" if answer.get("note") else ""
+        return (f"the owner declined more space on {node} ({ask.get('value')} asked){note}. "
+                "Do not ask again; tell the user if a job cannot run for lack of space")
+    if ask.get("state") == "applied":
+        return (f"more space on {node}: mulebox may use {answer.get('value')} there, applied "
+                "without asking as the owner allows agents to; it is recorded")
+    other = "" if answer.get("value") == ask.get("value") else f", not the {ask.get('value')} asked"
+    return f"the owner approved more space on {node}: mulebox may use {answer.get('value')}{other}"
 
 
 def _dicts(items: Any) -> list[dict[str, Any]]:

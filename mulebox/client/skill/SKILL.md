@@ -134,12 +134,17 @@ different versions, tell the user.
   cleanup after the next job sent from this repository, which tells mulebox your branches. To
   free it at once: `mulebox project reset <project> --branch <branch> --yes`.
 - A notice that mulebox holds more than a node warns at is for the user: tell them, in your
-  reply, with the size. Clean nothing on your own.
+  reply, with the size, and ask whether to give it more. Clean nothing on your own. Only with
+  their yes: `mulebox storage ask --size <size> --reason "<why, one sentence for them>"`
+  (`--node` with several nodes). It waits for their answer on the dashboard, or applies at once
+  if they allow agents to; keep working, your next command tells the answer. Ask once: while it
+  waits, or after a decline, the notice says so. Never run `mulebox storage approve`, `decline`,
+  `undo` or `mulebox agents`: those are the owner's.
 - When the user asks you to check mulebox's disk: run `mulebox storage` (what each node holds
   and what goes when) and `mulebox storage --history` (what each cleanup removed and why). Say
   what takes the space and what you would remove. With their go: `mulebox project reset ...
   --yes` for folders, `mulebox project keep ...` for ones to keep, `mulebox storage clean` to
-  run the cleanup now, `mulebox machine config <node> --max-size ...` for a limit. Report a
+  run the cleanup now, `mulebox storage ask` for more space (above). Report a
   cleanup that removed the wrong thing as a mulebox problem (below).
 
 ## When something goes wrong

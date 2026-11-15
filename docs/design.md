@@ -558,6 +558,40 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 - An older worker sends no report and sweeps nothing; the dashboard says to upgrade it. An older
   coordinator ignores the report and sends no keep marks.
 
+### Agents asking for more space (the user's decisions, 2026-11-15)
+
+From 80% of a node's `max_size` every command from a project tells the agent to ask its user for
+more. Five projects at once may need more than 20 GB, and the user should not have to find the
+setting: the agent asks for them, and every change is recorded.
+
+- **The request**: with its user's yes, the agent runs `mulebox storage ask --size 30GB --reason
+  "..."` (`--node` when there are several). The coordinator keeps it in `setting_asks` (schema
+  27) with the project, the dev machine, the job and the reason (coordinator/setting_asks.py).
+  Only `max_size` can be asked for, and only more than the node has.
+- **Who confirms is the owner's choice**, the Agents option (`mulebox agents ask|allow`, the
+  Agents window): "Ask me first", as installed, keeps a request waiting for the owner's answer;
+  "Allow, and record it" applies it at once (many owners trust their agents). Either way it is in
+  the settings history.
+- **The answer**, on the dashboard's strip under the header (option A of the mockups in
+  design-system/approvals/, the user's pick): Approve, Decline with an optional note, or another
+  value; or `mulebox storage approve|decline`. Several requests for one setting of one node get
+  one answer, offered at the largest value asked. A yes goes to the node as the owner's own
+  change would (node_settings.change), on its next check-in.
+- **The agent hears the answer** in its next command from that project (`space_answers`, once);
+  while a request waits, the notice says so and not to ask again, and for 7 days after a decline
+  it says the owner declined, with the note.
+- **The settings history** (`setting_changes`, the newest 2000): every change of a node's
+  setting, by the owner in the settings window or with `mulebox machine config`, an answered
+  request, one applied without asking, an undo, and a change of the Agents option itself, so a
+  later change with no confirmer is explained. Each has the old and new value, who asked and
+  why, who confirmed (the dashboard has no sign-in, so "the dashboard, from <address>", or the
+  command and dev machine), and when the node took it. A change can be undone while it is the
+  node's latest of that setting, once; undoing a raise mulebox has filled leaves the node over
+  its limit until the cleanup catches up.
+- **What it does not do**: the commands have no sign-in either, so "Ask me first" keeps an
+  honest agent waiting for its user, not a rogue one; the skill tells agents never to answer a
+  request. A worker needs no change: the answer reaches it as any setting from afar.
+
 ## Package caches
 
 A new project folder, a lockfile change or a compose job's fresh containers still mean an

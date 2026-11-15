@@ -44,6 +44,7 @@ describe("the automatic cleanup line", () => {
     vi.stubGlobal("fetch", vi.fn((url: string, init?: RequestInit) => {
       if (url === "/api/session") return reply({ action_token: "token" });
       if (url === "/api/storage") return reply(storageStore.get().body);
+      if (url.startsWith("/api/asks")) return reply({ asks: [], changes: [], agents: "ask", editable: true });  // the settings history
       asked.push(`${init?.method ?? "GET"} ${url} ${init?.body ?? ""}`.trim());
       if (init?.method === "POST") return reply({ group: "grp-9", nodes: ["build-1"], offline: [], done: false });
       return reply({ group: "grp-9", done: true, action: "sweep", answers: [

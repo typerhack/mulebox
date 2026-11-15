@@ -7,9 +7,11 @@
 //
 // The strip also says when a node is under its free-space reserve and the cleanup rules have
 // nothing left to remove (the user's pick for that warning): its line opens the review
-// window, where the owner decides what goes (features/storage/ReviewWindow.tsx).
+// window, where the owner decides what goes (features/storage/ReviewWindow.tsx). And it holds
+// agents' requests for more space, amber until answered (features/asks/AskLines.tsx); the mark
+// counts them. What was answered or allowed is a grey strip of its own (CalmStrip.tsx).
 
-import { OctagonAlert, TriangleAlert } from "lucide-react";
+import { CircleQuestionMark, OctagonAlert, TriangleAlert } from "lucide-react";
 import { useRef, useState } from "react";
 
 import type { Notice } from "../../lib/types";
@@ -18,6 +20,8 @@ import { lowNodes } from "../../lib/storage";
 import { tickStore, useMachines } from "../../state/live";
 import { useStore } from "../../lib/store";
 import { useStorage } from "../../state/storage";
+import { useWaiting } from "../../state/asks";
+import { AskLines } from "../asks/AskLines";
 import { Button } from "../../ui/Button";
 import { WithCode } from "../../ui/Code";
 import { cx } from "../../ui/cx";
@@ -31,10 +35,11 @@ const toneOf = (level: string) => (level === "danger" ? "text-danger" : "text-wa
 
 export function OutOfStepMark() {
   const items = useMachines()?.notices ?? [];
-  const low = lowNodes(useStorage().body).length, count = items.length + low;
+  const asks = useWaiting().reduce((n, group) => n + group.asks.length, 0);
+  const low = lowNodes(useStorage().body).length, count = items.length + low + asks;
   if (!count) return null;
-  const level = worst(items), Icon = iconOf(level);
-  const word = low ? `${count} to look at` : `${count} out of step`;
+  const level = worst(items), Icon = items.length || low ? iconOf(level) : CircleQuestionMark;
+  const word = asks && count === asks ? `${count} to answer` : low || asks ? `${count} to look at` : `${count} out of step`;
   const show = () => {
     const strip = document.getElementById(STRIP_ID);
     strip?.scrollIntoView({ block: "start" });
@@ -55,14 +60,15 @@ export function OutOfStepStrip() {
   const items = useMachines()?.notices ?? [];
   const { body } = useStorage();
   const low = lowNodes(body);
+  const asks = useWaiting().length;
   const [reviewing, setReviewing] = useState<string | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);
   useStore(tickStore);
   const reviewed = low.find((node) => node.node === reviewing);
-  if (!items.length && !low.length) return null;
+  if (!items.length && !low.length && !asks) return null;
   const level = worst(items);
   return (
-    <section id={STRIP_ID} role="status" aria-label={items.length ? "Out of step" : "Low disk space"} tabIndex={-1}
+    <section id={STRIP_ID} role="status" aria-label={items.length ? "Out of step" : low.length ? "Low disk space" : "Requests from agents"} tabIndex={-1}
       className={cx("scroll-mt-8 rounded-m border px-3 py-2",
                     level === "danger" ? "border-danger bg-failed-soft" : "border-warning bg-warning-soft")}>
       <ul className="grid gap-1">
@@ -96,6 +102,7 @@ export function OutOfStepStrip() {
             )}
           </li>
         ))}
+        <AskLines />
       </ul>
       {reviewed?.report && body && (
         <ReviewWindow node={reviewed.node} body={body} report={reviewed.report} now={Date.now() / 1000} opener={opener}

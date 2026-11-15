@@ -395,6 +395,8 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /api/storage/remove` | body `{project, branch?}`: `project_order` reset with `yes`, as `mulebox project reset --yes`; `{group, nodes, done}`. Controls on only, protected like them |
 | `POST /api/storage/sweep` | body `{node?, docker?}` (docker true by default): the cleanup now on every node or one, a `sweep` order; `{group, nodes, done}`, followed at `/api/storage/remove/{group}`. Controls on only |
 | `GET /api/storage/remove/{group}` | that removal's answers per node, as `mulebox project reset` waits for them |
+| `GET /api/asks?history=N` | `asks_ok`'s body (interfaces-m1.md, `asks`) plus `editable`: `asks` (requests that wait), `changes` (the settings history, newest first, N rows, 50 by default) and `agents` (`ask` or `allow`), from the store (1.32) |
+| `POST /api/asks` | body `{action: "answer", approve, node?, value?, note?}`, `{action: "undo", change}` or `{action: "agents", option}`; the new body plus `change_id`. Who answered is recorded as "the dashboard, from <address>". Controls on only, protected like them; 409 or 404 with the coordinator's words |
 | `GET /api/history?limit=&before=&project=&job=&client=&worker=&kind=&result=&q=` | `{jobs, next_before}`, finished jobs newest first, and on the first page (no `before`) `choices`, every value of each filter as `/api/stats` gives it; `limit` 1..200, default 50; page with `before = next_before`, which keeps the filters. `project`, `job`, `client`, `worker` and `kind` (job or runner) are exact values; `result` is passed, failed (timed out and interrupted too) or cancelled (stopped as stuck too), as `shown_state` shows them, a GitHub run with no result of its own matching none; `q` is part of the project, job name or branch in any case, `%` and `_` taken as typed. Values up to 200 characters; 400 on a bad value |
 | `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested`, `log_size`, while it runs `activity` as in a `status` reply, and while it waits under an order rule `place_reason` and `order`; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
@@ -404,6 +406,25 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/stats?from=&to=&day_starts=&by=&project=&job=&client=&worker=&kind=` | job minutes, the `stats_ok` body of interfaces-m1.md (`day_starts` and `by` comma-separated); 400 on a bad value |
 
 Bad numbers in `limit` or `before` give 400. An unusable offset or event id is ignored.
+
+## Requests for more space (`dashboard/asks_api.py`, `coordinator/setting_asks.py`)
+
+Rules: docs/design.md, Agents asking for more space. The machines panel of the live stream carries
+`asks` (requests that wait, each `{id, node, setting, value, reason, project, job_id, client,
+asked_at, state, answer, change_id}`) and `allowed` (settings history rows applied without asking
+in the last day), so the strip shows them within seconds. A waiting request is an amber line in
+the strip under the header, on every page, with Approve (at the largest value asked for that node),
+Review and Decline; from three, one line with the count and Review all. Review opens a window
+with the reason, who asked, the space bar (held, the limit now, the part a yes adds, the 80% mark)
+and another value. An answered request stays in the strip, with Undo, until the node has taken
+it. An `allowed` row is a grey line with Undo and Got it, which hides it in this browser. The
+header's Agents button opens the Agents window: Ask me first or Allow, and record it. The Storage
+page shows the settings history under the cleanup history, with Undo on a row that is `undoable`.
+
+A history row: `{id, node (null for the Agents option), setting, old, new, how (owner, approved,
+approved_other, declined, allowed, undo, agents), asked ({value, note, asks: [...]} or null), by
+(who confirmed, null when nobody did), at, in_force_at (when the node reported the new value),
+undo_of, undoable}`.
 
 ## Node settings (`dashboard/node_settings.py`, `coordinator/node_settings.py`)
 
