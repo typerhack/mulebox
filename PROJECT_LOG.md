@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.32.3 - 2026-11-15 - patch
+- An open dashboard reloads itself after an upgrade also when its tab was in the background: the user's page stayed on the old version after 1.32.2. A tab the browser puts to sleep runs no code while the dashboard restarts, so it missed the stream reopening that told the page. The page now also reads the version when it comes back into view and every minute (`web/src/state/live.ts`). Test in `web/src/state/live.test.ts`.
+
 ## 1.32.2 - 2026-11-15 - patch
 - README: agents asking for more space (a section with four new pictures: requests in the strip, the review window, the Agents window, the settings history), the Storage settings as they are since 1.30 (space for mulebox beside the disk floor, slimming), the new commands, and an open page reloading itself after an upgrade. Every picture retaken from the stand-in data.
 - `tools/screenshots.py`: the four new shots; the others are taken with no agent request (`MULEBOX_MOCK_ASKS=none`). `web/dev/asks.ts`: the made-up history tells a story that holds (Allow for a few minutes, a change applied in it, then Ask me first again).

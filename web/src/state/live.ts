@@ -33,7 +33,11 @@ async function sessionEnded() {
 }
 
 // The version the page loaded with, from its first `/healthz`; a later one that differs means
-// the dashboard was upgraded under it (lib/upgraded.ts).
+// the dashboard was upgraded under it (lib/upgraded.ts). Read when the stream opens, when the page
+// comes back into view, and every minute: a tab the browser put to sleep in the background runs no
+// code while the dashboard restarts, and missed the reopening that would have told it (seen in
+// Edge, 1.32.2).
+const HEALTH_EVERY_MS = 60_000;
 let loaded: string | undefined;
 let waiting: (() => void) | undefined;
 async function readHealth() {
@@ -62,8 +66,16 @@ export function startLive(): () => void {
     },
   });
   const clock = setInterval(() => { if (!document.hidden) tickStore.set((n) => n + 1); }, 1000);
+  const health = setInterval(() => void readHealth(), HEALTH_EVERY_MS);
+  const seen = () => { if (!document.hidden) void readHealth(); };
+  document.addEventListener("visibilitychange", seen);
+  window.addEventListener("pageshow", seen);  // back from the browser's page cache
   void actionToken();
-  return () => { stop(); clearInterval(clock); waiting?.(); };
+  return () => {
+    stop(); clearInterval(clock); clearInterval(health); waiting?.();
+    document.removeEventListener("visibilitychange", seen);
+    window.removeEventListener("pageshow", seen);
+  };
 }
 
 export const useQueue = () => useStore(queueStore, (state) => state.snapshot);

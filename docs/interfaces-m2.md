@@ -377,7 +377,7 @@ What the protection below keeps out is other web pages in the same browser.
 
 | Route | Reply |
 | --- | --- |
-| `GET /healthz` | `{ok, version, lan, sign_in}`; `lan` is true on the LAN listener, `sign_in` when it needs a password. The page reads it each time its live stream opens, and reloads itself when `version` differs from the one it loaded with, once no window is open (1.31) |
+| `GET /healthz` | `{ok, version, lan, sign_in}`; `lan` is true on the LAN listener, `sign_in` when it needs a password. The page reads it each time its live stream opens, when it comes back into view and every minute, and reloads itself when `version` differs from the one it loaded with, once no window is open (1.31; view and minute 1.32.3, for a tab the browser put to sleep in the background) |
 | `GET`, `POST /login` | sign-in page and form; LAN listener only, else 404 |
 | `POST /logout` | ends the session, 204; LAN listener only, else 404 |
 | `GET /api/session` | `{action_token, cancel_token}` (the same value): what this page sends with a change, null with the controls off |
