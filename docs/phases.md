@@ -969,7 +969,7 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,
 crabbox, local-ci). mulebox runs builds, tests and runners only; the agent's own work stays on the dev
 machine. Its place after M23 is not settled. Each needs a design note in design.md before it is built.
-- [~] M24.1 Proof that tests ran: mulebox reads the job's test report (JUnit XML, or the runner's own
+- [x] M24.1 Proof that tests ran: mulebox reads the job's test report (JUnit XML, or the runner's own
       summary) and counts the tests. A pass with zero tests, or with fewer tests than the last pass on
       the branch, fails with its own exit code and says so, unless the project allows the drop.
       The user's choices 2026-11-15: automatic with `tests: false` and `tests: required`, the same
@@ -985,6 +985,12 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       line in words for fewer, none and an allowed drop, a strip and a Tests panel on the job's
       page; with component tests, and seen in headless Chrome on stand-in data at 390 and 1440 px
       in both themes.
+      Done 2026-11-15 (1.35.2) on the real node with a throwaway project: 40 tests passed; then 38
+      exited 8 ("the last pass on main ran 40 tests"); 38 with `--fewer-tests` and a reason
+      passed with it; "no tests ran" exited 8; `status --json` gave verdict, counts and the
+      command's exit. On the deployed dashboard in the browser, that exit 8 showed its strip
+      with the command and its Tests panel beside the last pass, and this repository's gate its
+      count with its summary line underlined. The drill's project was reset on the node.
 - [ ] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
       (a limit, then the usual cleanup), and `mulebox check --from-stage <stage>` sends the changes and
       runs again from there, with no new setup and no new `compose up`.

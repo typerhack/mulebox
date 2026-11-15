@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.35.3 - 2026-11-15 - patch
+- docs/phases.md: M24.1 done, with the drill on the real node (a pass, fewer, fewer with a reason, none) and the deployed dashboard showing an exit 8 and an underlined summary line.
+
 ## 1.35.2 - 2026-11-15 - patch
 - README: a running job that looks stuck, judged on its evidence, with a picture; proof that tests ran (exit 8, `--fewer-tests`, `tests: false`) in the agent features, exit codes and commands, with pictures of the counts in the Jobs box and of a job's page; `run --bare` and `--take` in the commands.
 - tools/screenshots.py: three new pictures (`stuck-dark`, `tests-light`, `tests-job-dark`), and every picture taken again on 1.35.2.
