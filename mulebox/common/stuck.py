@@ -7,7 +7,8 @@ the coordinator's time of that report:
 - `idle_s`: nothing moved, counting output, the job's own CPU and bytes, its services' CPU and
   traffic; null when part of it cannot be read, and not knowing is never stuck;
 - `compute_idle_s`: the same without bytes, so a job moving only a trickle of data shows;
-- `io_kib_s`: what the job's own processes read and write; null on a Mac node;
+- `io_kib_s`: what the job's own processes read and write; null on a Mac node. A transfer
+  counts each byte twice (read, then written), so half of it is the rate a person would name;
 - `download`: what its log says it is downloading (common/download_watch.py);
 - `last_line`: the last thing it printed, redacted.
 
@@ -33,6 +34,7 @@ from mulebox.common.units import duration, rate, size
 
 STUCK_AFTER_MIN = 2  # the node's default; a project may raise it, never lower it
 SLOW_BYTES_S = 50 * 1000.0
+BOTH_WAYS = 2.0  # a download is read from its socket and written to its file: each byte twice
 WAITING_FOR = 5  # times the limit a job that said it waits may stay still before it is stuck
 VERDICTS = ("working", "slow", "waiting", "asking", "stuck")
 QUIET = ("waiting", "asking", "stuck")  # nothing moved: these have `since`
@@ -82,9 +84,10 @@ def _slow(report: dict[str, Any], compute_idle: float | None, limit: float) -> d
             and item.get("waiting_on_network"):
         return {"verdict": "slow", "text": f"Downloading slowly: {_download_text(item)}."}
     io = _number(report.get("io_kib_s"))
-    if compute_idle is not None and compute_idle >= limit and io is not None \
-            and 0 < io * 1024 < SLOW_BYTES_S:
-        return {"verdict": "slow", "text": f"Moving only {rate(io * 1024)} of data, with no "
+    moved = None if io is None else io * 1024 / BOTH_WAYS
+    if compute_idle is not None and compute_idle >= limit and moved is not None \
+            and 0 < moved < SLOW_BYTES_S:
+        return {"verdict": "slow", "text": f"Moving only {rate(moved)} of data, with no "
                 f"output and almost no CPU for {duration(compute_idle)}."}
     return None
 

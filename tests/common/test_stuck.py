@@ -42,8 +42,8 @@ def test_a_mac_node_says_it_did_not_read_data():
 def test_a_trickle_of_data_with_no_cpu_is_slow_not_stuck():
     seen = look(idle_s=5.0, compute_idle_s=200.0, io_kib_s=6.0)
     assert seen["verdict"] == "slow"
-    assert seen["text"] == ("Moving only 6.1 KB/s of data, with no output and almost no CPU "
-                            "for 3m 20s.")
+    assert seen["text"] == ("Moving only 3.1 KB/s of data, with no output and almost no CPU "
+                            "for 3m 20s.")  # each byte read and written: half of 6 KiB/s
 
 
 def test_a_slow_download_from_the_log_is_slow():

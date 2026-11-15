@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.33.1 - 2026-11-15 - patch
+- A slow download read as `working`, not `slow`, in the drill on the real node: a job's own I/O counts each byte twice, read from the socket and written to the file, so a 15 KB/s download measured over the 50 KB/s line. The slow rule now takes half of `io_kib_s` as the rate (`common/stuck.py` `BOTH_WAYS`). Test in `tests/common/test_stuck.py`.
+
 ## 1.33.0 - 2026-11-15 - minor
 - A job that looks stuck is said early (M24.8, the user's ask), judged on its evidence rather than a timer: its output, its own CPU, the bytes its own processes read and write (`/proc/<pid>/io`, so a slow download at next to no CPU counts as working; `worker/cgroups.py` `io_bytes`, `job_meter.py`), its services' CPU and traffic, the download its log shows and its last line. One verdict per running job (`common/stuck.py`): `working`, `slow` (only a slow download or a trickle of data moves), `waiting` (its last line says it waits; `stuck` after five times the limit), `asking` (its last line wants input a job never gets) or `stuck`, with a sentence of its evidence. It stops nothing.
 - `stuck_after_min` (2) in `[limits]` of node.toml; a project raises it in `.mulebox.yml`, for all jobs or one (`jobs.stuck_after_min`, schema 28). The worker reports `compute_idle_s` and `io_kib_s`, and the coordinator keeps when it heard a report (`at`).
