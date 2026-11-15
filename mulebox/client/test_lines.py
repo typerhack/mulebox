@@ -53,5 +53,8 @@ def sentence(result: dict[str, Any]) -> str:
         return (f"; {ran}, {_before(tests)}. If tests were removed on purpose: "
                 'mulebox check --fewer-tests "<why>"')
     if verdict == "allowed":
-        return f"; {ran}, fewer than {_before(tests)}, allowed: {tests.get('fewer')}"
+        compared = tests.get("compared") or {}
+        where = f" on {compared['branch']}" if compared.get("branch") else ""
+        return (f"; {ran}, allowed with fewer than the last pass{where} "
+                f"({_plural(compared.get('ran'))}): {tests.get('fewer')}")
     return f"; {ran}"

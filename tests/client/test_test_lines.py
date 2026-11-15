@@ -29,7 +29,7 @@ def test_fewer_names_the_last_pass_and_the_flag():
 
 def test_allowed_shows_the_reason():
     line = report.outcome_line("j1", result("allowed", compared=COMPARED, fewer="dropped old API"))
-    assert "allowed: dropped old API" in line
+    assert line.endswith("allowed with fewer than the last pass on main (40 tests): dropped old API")
 
 
 def test_zero_and_missing_say_what_to_do():

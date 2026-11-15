@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.35.1 - 2026-11-15 - patch
+- Fix: a project order (`project reset`, `clean`, Run now) went out on a GitHub runner slot's heartbeat, whose reply the runner supervisor never reads, so it was marked taken and never ran; the command waited 5 minutes and said the node did not answer. Seen on the node with a CI run holding a slot. Orders now go only on the worker's claims and its own jobs' heartbeats (coordinator/worker_api.py), with a test that failed before.
+- A node that does not answer an order is told plainly: it did not answer in 5 minutes, try again, and where to see its version; before, it blamed a mulebox older than 1.22.0 on a node running 1.34.0.
+- The end line of a run allowed with fewer tests reads "allowed with fewer than the last pass on main (40 tests): <why>".
+
 ## 1.35.0 - 2026-11-15 - minor
 - The tests a job ran, on the dashboard (M24.1, option B of design-system/tests/, the user's pick). A finished row in the Failed, Passed and Recent tabs and in History shows its count as a quiet number ("3675 tests", "+12" when the suite grew); fewer tests, no tests and a drop the agent allowed add a line in words under the job's name, the allowed one with the agent's reason; an ordinary failure keeps its count and adds nothing (`web/src/lib/tests.ts`, `features/jobs/TestsBits.tsx`, `DoneList.tsx`).
 - The job's page has a strip under the header saying what happened and what to do, with `mulebox check --fewer-tests "<reason>"` to copy for a fewer failure, "Go to the runner's summary" and "Open the last pass", and a Tests panel under Stages with each runner beside the last pass (`features/job/TestsNote.tsx`, `TestsPanel.tsx`). The runners' own summary lines in a finished job's log are underlined through the CSS Custom Highlight API, so the log stays text (`features/job/logMarks.ts`, `styles/tests.css`). Also worded: `missing` (`tests: required`, no summary), which the mockup did not have.

@@ -74,8 +74,11 @@ def heartbeat(req: Request) -> Message:
         workers.touch(conn, job["worker"], req.now, v.load(req.body))
         storage.keep_report(conn, job["worker"], req.body)
         settings = node_settings.reported(req.body)
-        waiting = {**node_settings.settle(conn, job["worker"], settings, req.now),
-                   **project_orders.hand_out(conn, job["worker"], req.now),
+        # A runner slot's heartbeat comes from the runner supervisor, which reads no orders:
+        # one handed out there would be marked taken and never run (runners/supervise.py).
+        orders = ({} if job["kind"] == RUNNER_KIND
+                  else project_orders.hand_out(conn, job["worker"], req.now))
+        waiting = {**node_settings.settle(conn, job["worker"], settings, req.now), **orders,
                    **storage.reply_fields(conn, req.now)}
         _activity(conn, req, job)
     return _status(req, job, **waiting)

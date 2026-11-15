@@ -56,6 +56,7 @@ def register(sub: argparse._SubParsersAction) -> None:
 
 
 POLL_S = 1.0
+ANSWER_MIN = 5  # how long the coordinator waits for a node (project_orders.ANSWER_S)
 
 
 def _on_machine(*argv: str) -> int:
@@ -98,7 +99,9 @@ def show(group: dict) -> int:
     code = 0
     for answer in group.get("answers") or ():
         if answer.get("lost"):
-            print(f"{answer['node']}: did not answer; it may run a mulebox older than 1.22.0")
+            print(f"{answer['node']}: did not answer in {ANSWER_MIN} minutes. Try again; "
+                  "if it never answers, see its version in mulebox machine list (1.22.0 or "
+                  "newer answers)")
             code = 1
             continue
         print(f"{answer['node']}:")

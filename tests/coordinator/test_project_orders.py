@@ -77,3 +77,15 @@ def test_a_bad_order_says_why(store, staging):
     reply = order(store, staging, 1.0, action="format")
     assert reply.type is MessageType.ERROR and "reset, clean" in reply.body["message"]
     assert order(store, staging, 1.0, group="grp-none").type is MessageType.ERROR
+
+
+def test_a_runner_slots_heartbeat_carries_no_order(store, staging):
+    """The runner supervisor reads no orders: one given to it would be lost (seen 2026-11-15)."""
+    from .test_reservations import acquire, reserve
+    seen(store, staging, now=1000.0, **{"build-1": 1})
+    slot = reserve(store, staging, now=1000.0, worker="build-1")
+    acquire(store, staging, slot, now=1000.0)
+    order(store, staging, 1001.0, action="reset", project="example-app")
+    beat = api.handle(store, staging, request("heartbeat", job_id=slot, lease="worker"), 1002.0)
+    assert "orders" not in beat.body
+    assert [o["action"] for o in orders_of(store, staging, "build-1", 1003.0)] == ["reset"]

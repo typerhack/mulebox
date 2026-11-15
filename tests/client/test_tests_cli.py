@@ -20,7 +20,7 @@ def test_fewer_tests_fail_and_a_reason_lets_them_pass(local, in_project, capsys)
     assert code == report.EXIT_TESTS and "the last pass on main ran 40 tests" in err
     code, err = sent(local, capsys, "==== 38 passed in 1.00s ====\n",
                      "--fewer-tests", "removed the old importer")
-    assert code == 0 and "allowed: removed the old importer" in err
+    assert code == 0 and "(40 tests): removed the old importer" in err
 
 
 def test_a_pass_with_no_tests_is_exit_8(local, in_project, capsys):

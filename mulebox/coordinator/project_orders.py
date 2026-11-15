@@ -16,6 +16,7 @@ printed. The client reads the group (`project_order` with `group`) until every n
   `node` alone, with `docker` to remove Docker's unused build cache and images too; it runs
   even with the node's `auto_clean` off, as the user asked for it.
 - An order no node answered in `ANSWER_S` counts as lost: the node may be on an older mulebox.
+  Orders go out only on replies the worker reads: its claims and its own jobs' heartbeats.
 """
 
 from __future__ import annotations
