@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.33.3 - 2026-11-15 - patch
+- docs/phases.md: M24.8 done, with the drill on the real node (stuck in status, events and wait at about 2 minutes; a busy silent job working; asking on the dashboard in Edge; a slow download slow).
+
 ## 1.33.2 - 2026-11-15 - patch
 - The slow sentence gives the job's reading and writing as measured, not a halved figure called a rate: in the drill on the real node an 8 KB/s download read 8.1 KiB/s, as a server can send without a count and buffers come in bursts, so 1.33.1's half said 4.1 KB/s. The slow line stays twice 50 KB/s (`common/stuck.py`); design.md says so. Tests in `tests/common/test_stuck.py`.
 

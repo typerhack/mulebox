@@ -1002,7 +1002,7 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       worktree and the node's project tree removed.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
-- [~] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
+- [x] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
       next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
       `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and
       how to look or stop it, so an agent stops waiting on a hung job instead of rerunning it.
@@ -1015,6 +1015,12 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       job in `.mulebox.yml`; `stuck` and `moving` events, `looks` in `status`, contract schema 16;
       on the dashboard, option B of design-system/stuck/ (the user's pick). With tests, and seen in
       Edge on the stand-in data at 1440 and 400 px.
+      Done 2026-11-15 (1.33.2) on the real node with a throwaway project: a silent hung job was
+      said stuck at 2m 03s in `mulebox status`, as a `stuck` event in `mulebox events` (quiet
+      122.6 s) and as a warning in `mulebox wait`; a silent job at a full core stayed `working`;
+      a job asking `[y/N]` read `asking` at 2m 24s and showed "Asks for input" on the deployed
+      dashboard in Edge; a silent 8 KB/s download read `slow`, not stuck (1.33.1 and 1.33.2 came
+      from it). The drill's project was removed from the node.
 
 ## M25: Several nodes (the user's ask, 2026-11-14)
 How work spreads over several nodes, and what reaches each of them. Design: design.md, Which node
