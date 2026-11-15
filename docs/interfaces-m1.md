@@ -67,7 +67,8 @@ Exit codes for client failures (not job failures): 2 usage/config error, 3 node
 unreachable (`SSHUnavailable`), 4 protocol/remote error, 130 cancelled by Ctrl-C.
 A finished job maps: passed -> its exit code (0), failed -> its exit code, or 5 if it could not start (no command ran),
 timed_out -> 124 (a worker older than 0.37 only), cancelled -> 130, interrupted -> 75, a
-stop (`cancelled` with a `stop_reason`, docs/design.md, Time limits) -> 76.
+stop (`cancelled` with a `stop_reason`, docs/design.md, Time limits) -> 76. A pass that did not
+prove its tests ran becomes `failed` with exit code 8 on the coordinator (coordinator/test_proof.py).
 
 ## Wire usage (protocol.py; replies reuse `request_id`)
 
@@ -82,9 +83,9 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 
 | Request | Body (required + used extras) | Reply |
 | --- | --- | --- |
-| submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch`, `branches` (the dev machine's own branch names, up to 5000, for the nodes' cleanup; design.md, Disk use and cleanup on its own), `detached` | submit_ok (job_id, state, `detached`); repeat key returns the same job. A client that asked for `detached` and does not see it echoed cancels the job |
+| submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch`, `branches` (the dev machine's own branch names, up to 5000, for the nodes' cleanup; design.md, Disk use and cleanup on its own), `detached`, `tests` (`{mode: auto\|off\|required, base: default branch or null, fewer: reason}`; missing is `auto`) | submit_ok (job_id, state, `detached`); repeat key returns the same job. A client that asked for `detached` and does not see it echoed cancels the job |
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
-| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity` (with `download`, interfaces.md), `looks` (the verdict of common/stuck.py, null when there is none); `stop_reason` on a stopped job) |
+| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity` (with `download`, interfaces.md), `looks` (the verdict of common/stuck.py, null when there is none); `stop_reason` on a stopped job; `tests` on a finished job whose log was counted: `runners` (`{name: {ran, skipped}}`), `ran`, `skipped`, `verdict` (`ok`, `zero`, `fewer`, `allowed`, `missing` or null), `compared` (the pass it was held to: `job_id`, `branch`, `ran`, `runners`), `command_exit` on exit 8, and what it was sent with; queue entries and the watch stream's `result` carry the same) |
 | cancel | job_id | status_ok |
 | heartbeat | job_id, lease (`client`/`worker`), + `attempt_id`, `activity` (its `download` too, interfaces.md), `load`, `storage` and `settings` (as in claim) for worker | status_ok (+ `cancel`; `node_settings` and `storage_keeps` as in claim) |
 | queue | + `limit` (default 20 recent finished), + `news_for` (a project: its news, below) | queue_ok (jobs: list of job dicts; `dashboard`, see below; with `news_for`, `questions`, `finished_away`, `low_disks`, `heavy_nodes` (each with `asked` or `declined` from 1.32, a request for more space that waits or was declined in the last 7 days) and `space_answers` (1.32: this project's requests answered since its agent last heard, told once)) |

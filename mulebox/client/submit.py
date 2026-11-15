@@ -79,6 +79,7 @@ def run_job(
     options: JobOptions | None = None,
     take: tuple[str, ...] = (),
     on: str | None = None,
+    fewer_tests: str | None = None,
 ) -> int:
     """Run a job on the nodes as if it ran here; return its exit code. `on`: that node only.
 
@@ -101,8 +102,8 @@ def run_job(
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {units.size(snap.size)}")
         body = submit_body(project, job, argv, snap, detach,
-                           reuse=isinstance(target, str) and not (again or warm), take=take,
-                           on=on)
+                           reuse=isinstance(target, str) and not (again or warm or fewer_tests),
+                           take=take, on=on, fewer_tests=fewer_tests)
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         if on and reply.body.get("on") != on:

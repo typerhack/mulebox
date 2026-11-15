@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: the tests a job ran</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tests.css">
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>The tests a job ran</h1>
+      <p class="doc-lead">Mockups of 2026-11-15 for M24.1, to pick from before anything is built. When an agent's job passes, mulebox counts the tests its runners ran. A pass with no tests, or with fewer than the last pass, becomes a failure with exit code 8, unless the agent let it through with a reason. The question here is how a finished job shows that count on its row and on its page.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <nav class="index" aria-label="Mockups">
+    <a href="option-a-number.html">
+      <span class="letter" aria-hidden="true">A</span>
+      <h2>The number alone<i data-i="chevron-right"></i></h2>
+      <p>An icon and the count at the end of the row; the icon's shape and colour say how it stands, the sentence is a tooltip or a tap.</p>
+      <ul><li><b>Row</b> unchanged in height.</li><li><b>Why it failed</b> in a tooltip, on request.</li><li><b>Job's page</b> one clause and rows in Job details.</li></ul>
+    </a>
+    <a class="picked" href="option-b-line.html">
+      <span class="letter" aria-hidden="true">B</span>
+      <h2>A line when it matters<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests</span>
+      <p>The count as a quiet number; fewer tests, no tests and an allowed drop say so in words under the job's name, with the agent's reason.</p>
+      <ul><li><b>Row</b> one line taller, only for those three.</li><li><b>Why it failed</b> in words on the row.</li><li><b>Job's page</b> a strip with the way on, and a Tests panel by runner.</li></ul>
+    </a>
+    <a href="option-c-chart.html">
+      <span class="letter" aria-hidden="true">C</span>
+      <h2>The suite over time<i data-i="chevron-right"></i></h2>
+      <p>"Fewer tests" and "No tests ran" as states of their own, and the last runs' counts as small bars on every row.</p>
+      <ul><li><b>Row</b> same height, with a small chart.</li><li><b>Why it failed</b> in the state's own words.</li><li><b>Job's page</b> a chart of the last 16 runs by runner.</li></ul>
+    </a>
+  </nav>
+  <p class="foot"><b>Why B.</b> The new failure is the one thing here an owner must not misread: a job that failed because tests went missing looks, in a list, exactly like a job with a broken test. Only B says which it is in words on the row, with the numbers and with no hover, so it reads the same on a phone; it reuses the line a failed GitHub job already has, and it is the only one that puts the agent's reason for a drop where the owner will see it. It also keeps quiet: a normal pass is one number. A is lighter but hides the reason behind a learned icon. C is the most telling for a suite's growth, but a drop of 8 in 3470 cannot be seen in bars from zero, and it costs a chart on every row; its chart could join B's Tests panel later.</p>
+  <p class="foot">Every option shows the same seven jobs: a normal pass, a pass with 12 more tests, a failure for 8 fewer, a failure for a runner that ran none, a pass allowed with fewer and its reason, a lint with no summary, and an ordinary failed command. Each page has the Jobs box, the job's page, the other situations and the History page at 390 px. The rest of the dashboard is as today. Static pages with example data; colours, type, space and corners come from tokens.css; the icons are Lucide, outline.</p>
+</div>
+<script src="tests.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

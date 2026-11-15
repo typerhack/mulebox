@@ -51,7 +51,7 @@ def client_os() -> str:
 
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
                 detach: bool = False, reuse: bool = False, take: tuple[str, ...] = (),
-                on: str | None = None) -> dict:
+                on: str | None = None, fewer_tests: str | None = None) -> dict:
     return {
         "project": project.project,
         "job": job,
@@ -74,6 +74,8 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         **({"os": project.system} if project.system else {}),  # the coordinator adds the need
         "timeout_min": project.timeout_min,
         **({"stuck_after_min": project.stuck_after_min} if project.stuck_after_min else {}),
+        "tests": {"mode": project.tests, "base": snap.default_branch or None,
+                  **({"fewer": fewer_tests} if fewer_tests else {})},  # coordinator/test_proof.py
         **({"detached": True} if detach else {}),
         **({"reuse": True} if reuse else {}),
         **({"take": list(take)} if take else {}),

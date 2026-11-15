@@ -1,0 +1,112 @@
+/* The "proof that tests ran" mockups of 2026-11-15 (M24.1): how a finished job shows the tests
+   it ran. On top of the "looks stuck" mockups' file, which brings the job page; every colour,
+   size, space, corner and duration is a token of tokens.css or derived from one. */
+@import "../stuck/stuck.css";
+
+:root { --bar-h: calc(var(--space-7) * 3); --spark-h: var(--space-4); --spark-w: calc(var(--space-1) * 0.75); }
+
+/* A count's colour sits on its icon only: failed when the count failed the job, warning when
+   a drop was allowed, the secondary text colour for a plain fact. */
+[data-tone="failed"] { --tone: var(--status-failed); }
+[data-tone="warn"] { --tone: var(--status-warning); }
+[data-tone="plain"] { --tone: var(--text-2); }
+.st[data-state="failed"] { --st: var(--status-failed); }
+
+/* Finished jobs as rows, as web/src/features/jobs/DoneList.tsx lays them out. */
+.tabs > button > svg { color: var(--text-2); }
+.d-list { margin-top: var(--space-3); border-top: 1px solid var(--border); }
+.d-row { position: relative; display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-4); padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border); }
+.d-row > .st { align-self: center; min-width: var(--col-xs); font-weight: 500; }
+.d-main { display: flex; flex: 1 1 var(--col-l); flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-3); min-width: 0; }
+.d-main > .src { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text-2); font-size: var(--text-sm); white-space: nowrap; }
+.d-end { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-4); color: var(--text-2); font-size: var(--text-sm); }
+.d-why { display: flex; align-items: flex-start; gap: var(--space-2); flex: 1 0 100%; min-width: 0; color: var(--text-2); font-size: var(--text-sm); overflow-wrap: anywhere; }
+.d-why > svg { flex: none; margin-top: var(--hair); color: var(--tone); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.d-why > span { min-width: 0; }
+.d-why b { color: var(--text-1); font-weight: 600; }
+
+/* The count itself: an icon, the number, and how it differs from the last pass. */
+.t-count { display: inline-flex; align-items: center; gap: var(--space-1); color: var(--text-1); font-weight: 500; white-space: nowrap; }
+.t-count > svg { color: var(--tone); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.t-count > .d { color: var(--text-2); font-weight: 400; }
+.t-count > .w { color: var(--text-2); font-weight: 400; }
+.t-count > .w.touch { display: none; }
+button.t-count { min-height: var(--ctl-s); margin: calc(var(--space-1) * -1) 0; padding: 0 var(--space-1); border: 0; border-radius: var(--radius-s); background: none;
+  font: inherit; font-weight: 500; }
+button.t-count:hover, button.t-count[aria-expanded="true"] { background: var(--surface-3); }
+.t-tip { display: none; position: absolute; z-index: 3; top: calc(100% - var(--space-1)); right: 0; width: max-content; max-width: min(var(--pop-w), 100%);
+  padding: var(--space-1) var(--space-2); border-radius: var(--radius-s); background: var(--text-1); color: var(--surface-0); font-size: var(--text-sm); }
+.tip-open > .t-tip { display: block; }
+
+/* Option C: the last passes as small bars, from zero, the newest last. */
+.spark { display: inline-flex; align-items: flex-end; gap: calc(var(--hair) / 2); height: var(--spark-h); border-bottom: 1px solid var(--border-strong); }
+.spark > i { width: var(--spark-w); height: calc(var(--n) * 100%); background: var(--chart-1); }
+.spark > i:last-child { width: calc(var(--spark-w) * 2); background: var(--text-1); }
+
+/* The job's page. */
+.jp-head > .jp-say { flex: 1 0 100%; max-width: none; color: var(--text-2); font-size: var(--text-sm); }
+.jp-left { display: grid; gap: var(--app-gap); min-width: 0; align-content: start; }
+.jp-left > .as-today { margin: 0; }
+.t-strip > svg { color: var(--tone); }
+.t-strip code { overflow-wrap: anywhere; }
+.t-strip .cmd { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); }
+.t-runs { display: grid; min-width: 0; }
+.t-runs > div { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 var(--space-3); padding: var(--space-2) 0; border-top: 1px solid var(--border); }
+.t-runs > div:first-child { border-top: 0; padding-top: 0; }
+.t-runs dt { font: 500 var(--text-base)/1.5 var(--font-mono); }
+.t-runs dd { min-width: 0; }
+.t-runs dd b { font-weight: 600; }
+.t-runs .was { display: flex; align-items: flex-start; gap: var(--space-2); flex: 1 0 100%; color: var(--text-2); font-size: var(--text-sm); }
+.t-runs .was > svg { flex: none; margin-top: var(--hair); color: var(--tone); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.t-foot { margin-top: var(--space-2); padding-top: var(--space-2); border-top: 1px solid var(--border); color: var(--text-2); font-size: var(--text-sm); }
+.t-reason { display: flex; align-items: flex-start; gap: var(--space-2); margin-top: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--border);
+  border-radius: var(--radius-m); background: var(--surface-2); }
+.t-reason > svg { flex: none; margin-top: var(--hair); color: var(--text-2); }
+.t-reason b { display: block; font-size: var(--text-sm); font-weight: 600; color: var(--text-2); }
+.t-facts { display: grid; gap: var(--space-3) var(--space-5); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-s)), 1fr)); margin-top: var(--space-3); }
+.t-facts dt { color: var(--text-2); font-size: var(--text-sm); }
+.t-facts dd { overflow-wrap: anywhere; }
+.t-details { padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-l); background: var(--surface-1); }
+.t-details > summary { color: var(--text-2); font-size: var(--text-sm); font-weight: 600; cursor: pointer; }
+
+/* Option C's chart: one bar per run, stacked by runner, from zero. */
+.bars { display: flex; align-items: flex-end; gap: var(--hair); height: var(--bar-h); border-bottom: 1px solid var(--border-strong); }
+.bar { display: flex; flex: 1 1 0; flex-direction: column-reverse; align-items: stretch; gap: var(--hair); min-width: 0; max-width: var(--space-5); height: 100%; padding: 0;
+  border: 0; border-radius: var(--radius-s) var(--radius-s) 0 0; background: none; }
+.bar:hover { background: var(--surface-3); }
+.bar > i { flex: none; height: calc(var(--n) * (100% - var(--space-6))); background: var(--chart-1); }
+.bar > i + i { background: var(--chart-2); }
+.bar > i:last-of-type { border-radius: calc(var(--hair) / 2) calc(var(--hair) / 2) 0 0; }
+.bar > svg { flex: none; align-self: center; margin-bottom: var(--hair); color: var(--tone); stroke-width: calc(var(--icon-stroke) + 0.25); }
+.bar > svg.i.s { width: min(100%, var(--icon-s)); }
+.readout { min-height: calc(var(--text-sm) * 3.2); margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-2); }
+.readout b { color: var(--text-1); font-weight: 600; }
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-bottom: var(--space-3); color: var(--text-2); font-size: var(--text-sm); }
+.legend > span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.legend i { width: var(--slot); height: var(--slot); border-radius: calc(var(--hair) / 2); background: var(--chart-1); }
+.legend span + span i { background: var(--chart-2); }
+.legend svg { color: var(--tone); }
+.t-table { margin-top: var(--space-2); font-size: var(--text-sm); color: var(--text-2); }
+.t-table > summary { cursor: pointer; font-weight: 500; }
+.t-table table { width: 100%; margin-top: var(--space-2); border-collapse: collapse; }
+.t-table th, .t-table td { padding: var(--space-1) var(--space-3) var(--space-1) 0; border-top: 1px solid var(--border); text-align: right; font-weight: 400; }
+.t-table th:first-child, .t-table td:first-child { text-align: left; font-family: var(--font-mono); }
+.t-table thead th { color: var(--text-2); font-weight: 600; border-top: 0; }
+
+/* The other situations, one small figure each. */
+.v-fig > .bit { display: grid; gap: var(--space-2); min-width: 0; align-content: start; }
+.bit > .st.big { justify-self: start; }
+.bit > .jp-say { color: var(--text-2); font-size: var(--text-sm); }
+.none { color: var(--text-2); font-size: var(--text-sm); padding: var(--space-3); border: 1px dashed var(--border-strong); border-radius: var(--radius-m); }
+
+/* A 390 px screen, and touch: no hover, so the word stands beside the number. */
+.narrow .d-row > .st { min-width: 0; }
+.narrow .t-count > .w.touch { display: inline; }
+.narrow button.t-count { min-height: var(--ctl-touch); }
+@media (pointer: coarse), (max-width: 520px) {
+  .d-row > .st { min-width: 0; }
+  .t-count > .w.touch { display: inline; }
+  button.t-count { min-height: var(--ctl-touch); }
+  .tabs > button { height: var(--ctl-touch); }
+}

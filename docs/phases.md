@@ -969,9 +969,18 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,
 crabbox, local-ci). mulebox runs builds, tests and runners only; the agent's own work stays on the dev
 machine. Its place after M23 is not settled. Each needs a design note in design.md before it is built.
-- [ ] M24.1 Proof that tests ran: mulebox reads the job's test report (JUnit XML, or the runner's own
+- [~] M24.1 Proof that tests ran: mulebox reads the job's test report (JUnit XML, or the runner's own
       summary) and counts the tests. A pass with zero tests, or with fewer tests than the last pass on
       the branch, fails with its own exit code and says so, unless the project allows the drop.
+      The user's choices 2026-11-15: automatic with `tests: false` and `tests: required`, the same
+      branch else the default branch, `--fewer-tests "<why>"`, the dashboard from mockups.
+      Built 2026-11-15 (1.34.0): the runners' own summaries (common/test_counts.py: pytest, vitest,
+      jest, Pest, PHPUnit, cargo, mocha, Playwright, XCTest, Swift Testing, go test -v), judged at
+      the job's end (coordinator/test_proof.py, schema 29), exit 8, contract schema 17 and the
+      skill; JUnit later. Tests with the real coordinator and client code. Mockups in
+      design-system/tests/. Done when: on the real node a pass with no tests and one with fewer
+      fail with exit 8, `--fewer-tests` passes with its reason, and the picked view shows them on
+      the deployed dashboard in Edge.
 - [ ] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
       (a limit, then the usual cleanup), and `mulebox check --from-stage <stage>` sends the changes and
       runs again from there, with no new setup and no new `compose up`.

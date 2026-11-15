@@ -21,7 +21,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from mulebox.client import report
+from mulebox.client import report, test_lines
 from mulebox.common.network_errors import LOST
 from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, NOT_STARTED_NOTE
 
@@ -145,7 +145,7 @@ def relevant_lines(tail: LogTail, limit: int = MAX_LINES) -> list[str]:
 
 def wanted(result: dict[str, Any]) -> bool:
     """Passed and cancelled jobs have nothing to summarize."""
-    return result.get("outcome") in ENDED_BADLY
+    return result.get("outcome") in ENDED_BADLY and not test_lines.failed_on_tests(result)
 
 
 def _stage(result: dict[str, Any], lines: list[str]) -> str | None:

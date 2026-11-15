@@ -31,6 +31,8 @@ def job_dict(job: dict[str, Any], position: int | None = None,
     data.update(controls(job))
     if job.get("ci_result"):  # how a GitHub job went, as its runner said (runners/diary.py)
         data["ci_result"] = job["ci_result"]
+    if "runners" in (job.get("tests") or {}):  # the tests it ran (test_proof.py)
+        data["tests"] = job["tests"]
     if job.get("kind") == "job" and job.get("pinned_worker"):
         data["on"] = job["pinned_worker"]  # sent with `--on`: that node only
     return data
@@ -121,6 +123,8 @@ def status_body(job: dict[str, Any], position: int | None = None,
         body["duration_s"] = job["duration_s"]
         if job["stop_reason"]:
             body["stop_reason"] = job["stop_reason"]
+        if "runners" in (job.get("tests") or {}):
+            body["tests"] = job["tests"]
     if job["state"] == JobState.QUEUED and position is not None:
         body["position"] = position
     if job["state"] in ACTIVE_STATES:

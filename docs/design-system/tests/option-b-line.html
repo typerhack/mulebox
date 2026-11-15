@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: the tests a job ran, option B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tests.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option B <span class="pick-tag">Fable suggests</span></h1>
+        <p class="doc-lead"><b>A line when it matters: the count stays a quiet number, and a job whose count failed it, or was let through, says so in words under its name.</b> The line sits where a GitHub job already says which step failed. On the job's page a strip says what happened and what to do, and a Tests panel sets every runner beside the last pass.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#rows">Jobs box</a><a href="#page">The job's page</a><a href="#bits">The other situations</a><a href="#narrow">History at 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="rows"><h2>Finished jobs in the Jobs box</h2>
+    <p>Every job with a summary shows "3675 tests" before the node and the run time, with "+12" when the suite grew. Three kinds of job add a line: fewer tests (list-minus, failed colour), no tests (list-x, failed colour), and a drop the agent allowed (list-minus, warning colour, with its reason in its own words). An ordinary failure keeps its count and adds nothing.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <section class="panel"><div class="panel-body">
+          <div class="tabs" role="tablist" aria-label="Jobs"><button type="button" role="tab" aria-selected="false" disabled>Queue <span class="count">0</span></button><button type="button" role="tab" aria-selected="false" data-tab="failed">Failed <span class="count">3</span></button><button type="button" role="tab" aria-selected="false" data-tab="passed">Passed <span class="count">4</span></button><button type="button" role="tab" aria-selected="true" data-tab="all">Recent</button></div>
+          <ol class="d-list" data-rows="b" data-last="machine"></ol>
+        </div></section>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">The Failed, Passed and Recent tabs answer a click. A row is the one of today (state, job, branch, id, where it came from, node, run time) with what this option adds.</p>
+  </section>
+
+  <section class="case" id="page"><h2>The job's page, failed for fewer tests</h2>
+    <p>The state stays "Failed". A danger strip under the header says that the command passed and which runner dropped, with the command that lets a drop through and two ways on. Under Stages, the Tests panel lists each runner: what ran, what was skipped, and the difference from the pass it was compared with, which is a link. In the log the runners' own summary lines are underlined.</p>
+    <div class="stage" data-page="b"></div>
+  </section>
+
+  <section class="case" id="bits"><h2>The same part of the page in the other situations</h2>
+    <p>The strip and the Tests panel for each of the other six jobs. A normal pass and an ordinary failure have the panel and no strip; an allowed drop has a warning strip and the reason in the panel.</p>
+    <div class="v-grid" data-bits="b"></div>
+  </section>
+
+  <section class="case" id="narrow"><h2>The History page at 390 px</h2>
+    <p>The line spans the row under the name, so the words never sit in a narrow column; the count, the time and the run time wrap under it.</p>
+    <div class="stage narrow"><div class="gap">
+      <section class="panel"><header class="panel-head strong"><h3>History</h3><span class="panel-note">5 shown, more below</span></header><div class="panel-body">
+        <p class="as-today">Search and filters, as today.</p>
+        <ol class="d-list" data-rows="b" data-last="finished" data-only="fewer,zero,allowed,more,lint"></ol></div></section></div>
+    </div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>A failure for fewer tests cannot be mistaken for a broken test: the row says which it is, with the numbers, with no hover and the same on a phone. The agent's reason is on the row, where the owner will see it. Jobs with nothing to say stay one line.</li><li><b>Costs</b>Three kinds of row are one line taller. The job's page gains a panel under Stages, so the left column is longer.</li><li><b>Without a pointer</b>Nothing to open on a row; the job's name leads to the page, where the strip's buttons are 44 px on touch.</li></ul>
+  <p class="foot">Static page with example data: build-1 is a node, the projects and branches are examples. The strip is the danger and warning strip of the design system; the row's line follows the "why" line of a failed GitHub job in DoneList.tsx.</p>
+</div>
+<script src="tests.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

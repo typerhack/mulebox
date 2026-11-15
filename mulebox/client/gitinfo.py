@@ -113,6 +113,13 @@ def branches(root: Path) -> tuple[str, ...]:
     return () if len(names) > MAX_BRANCHES else tuple(sorted(names))  # a cut list would lie
 
 
+def default_branch(root: Path) -> str:
+    """The remote's default branch (`origin/HEAD`, such as `main`), or "" when it has none."""
+    proc = _git(root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD", check=False)
+    name = proc.stdout.decode().strip() if proc.returncode == 0 else ""
+    return name.partition("/")[2] if "/" in name else name
+
+
 def branch(root: Path) -> str:
     """`git rev-parse --abbrev-ref HEAD` (`HEAD` when detached), or "" without commits."""
     proc = _git(root, "rev-parse", "--abbrev-ref", "HEAD", check=False)

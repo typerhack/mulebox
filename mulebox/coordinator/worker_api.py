@@ -10,7 +10,7 @@ from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.coordinator import (leases, node_settings, project_orders, queue, recovery,
-                                 reservations, steps, storage, workers)
+                                 reservations, steps, storage, test_proof, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -122,10 +122,16 @@ def result(req: Request) -> Message:
     outcome = Outcome(v.text(req.body, "outcome"))
     exit_code = v.integer(req.body, "exit_code", None)
     duration_s = v.number(req.body, "duration_s", None)
+    with req.store.read() as conn:  # counted before the write: a log can be megabytes
+        before = _current_job(conn, req)
+    runners = test_proof.counted(before, req.staging.log_path(before["job_id"]))
     with req.store.write() as conn:
         job = _current_job(conn, req)
         if job["state"] == JobState.FINISHED:
             raise Conflict(f"job {job['job_id']} already finished ({job['outcome']})")
+        tests, outcome, exit_code = test_proof.judge(conn, job, runners, outcome, exit_code)
+        if tests is not None:
+            st.update_job(conn, job["job_id"], tests=tests)
         # A job that ended by itself before its stop arrived was not stopped.
         kept = job["stop_reason"] if outcome is Outcome.CANCELLED else None
         job = st.finish(conn, job, outcome, req.now, exit_code=exit_code, duration_s=duration_s,

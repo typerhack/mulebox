@@ -49,6 +49,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 23 -> 24: `project_orders`, `project reset` and `clean` for every node (project_orders.py).
 - 27 -> 28: `jobs.stuck_after_min`, a project's own longer limit before its job looks stuck
   (common/stuck.py); NULL for the node's.
+- 28 -> 29: `jobs.tests` (JSON, default '{}'), the test settings a job was sent with and the tests it ran
+  (test_proof.py); empty for older jobs.
 """
 
 import sqlite3
@@ -186,6 +188,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     25: (PROJECT_BRANCHES, STORAGE_SWEEPS),
     26: (SETTING_ASKS, SETTING_CHANGES),
     27: ("ALTER TABLE jobs ADD COLUMN stuck_after_min INTEGER",),
+    28: ("ALTER TABLE jobs ADD COLUMN tests TEXT NOT NULL DEFAULT '{}'",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

@@ -52,6 +52,9 @@ def register(sub: argparse._SubParsersAction) -> None:
                        help="print the job id once it is queued and leave it running")
     check.add_argument("--again", action="store_true",
                        help="run even if these exact files were already tested")
+    check.add_argument("--fewer-tests", metavar="REASON",
+                       help="let this run pass with fewer tests than the last pass, because tests "
+                            "were removed on purpose; the reason is kept with the job")
     _on(check)
     check.set_defaults(func=guarded(_check))
 
@@ -168,7 +171,7 @@ def _check(args: argparse.Namespace) -> int:
     return github_status.around(
         project, root, args.job, args.detach, sys.stderr,
         lambda: run_job(project, args.job, root, connect(), detach=args.detach, again=args.again,
-                        on=args.on))
+                        on=args.on, fewer_tests=args.fewer_tests))
 
 
 def _warm(args: argparse.Namespace) -> int:

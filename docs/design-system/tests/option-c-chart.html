@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: the tests a job ran, option C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="tests.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option C</h1>
+        <p class="doc-lead"><b>The suite over time: a state of its own for a count that failed, and the last runs as bars.</b> "Fewer tests" and "No tests ran" take the place of "Failed", and each row draws the job's last 12 counts. The job's page charts the last 16 runs by runner, with this run and the pass it was compared with marked.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#rows">Jobs box</a><a href="#page">The job's page</a><a href="#bits">The other situations</a><a href="#narrow">History at 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="rows"><h2>Finished jobs in the Jobs box</h2>
+    <p>The state column tells a count failure from an ordinary one: list-minus "Fewer tests", list-x "No tests ran", still in the Failed tab. Before the node, 12 small bars from zero (the newest, in ink, last), the count and the difference. A drop to zero is plain to see; a drop of 8 in 3470 is not, so the number carries it. An allowed drop keeps "Passed" and quotes the reason.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <section class="panel"><div class="panel-body">
+          <div class="tabs" role="tablist" aria-label="Jobs"><button type="button" role="tab" aria-selected="false" disabled>Queue <span class="count">0</span></button><button type="button" role="tab" aria-selected="false" data-tab="failed">Failed <span class="count">3</span></button><button type="button" role="tab" aria-selected="false" data-tab="passed">Passed <span class="count">4</span></button><button type="button" role="tab" aria-selected="true" data-tab="all">Recent</button></div>
+          <ol class="d-list" data-rows="c" data-last="machine"></ol>
+        </div></section>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">The Failed, Passed and Recent tabs answer a click. A row is the one of today (state, job, branch, id, where it came from, node, run time) with what this option adds.</p>
+  </section>
+
+  <section class="case" id="page"><h2>The job's page, failed for fewer tests</h2>
+    <p>The state reads "Fewer tests" and the line under it says what was counted. Under Stages, one bar per run, stacked by runner and starting at zero: the compared pass carries a check, this run its verdict's icon. Hover, focus or tap a bar for its numbers in the line below; "As a table" gives the same figures.</p>
+    <div class="stage" data-page="c"></div>
+  </section>
+
+  <section class="case" id="bits"><h2>The same part of the page in the other situations</h2>
+    <p>The state and the chart for each of the other six jobs. The zero case is where the chart is at its best.</p>
+    <div class="v-grid" data-bits="c"></div>
+  </section>
+
+  <section class="case" id="narrow"><h2>The History page at 390 px</h2>
+    <p>The bars keep their width and the count wraps with the time; the state's two or three words stay on the first line.</p>
+    <div class="stage narrow"><div class="gap">
+      <section class="panel"><header class="panel-head strong"><h3>History</h3><span class="panel-note">5 shown, more below</span></header><div class="panel-body">
+        <p class="as-today">Search and filters, as today.</p>
+        <ol class="d-list" data-rows="c" data-last="finished" data-only="fewer,zero,allowed,more,lint"></ol></div></section></div>
+    </div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>Shows how a suite grew, which the design note wants kept. A runner that fell to zero is seen at once. The state column sorts count failures from broken tests with no extra line.</li><li><b>Costs</b>The heaviest: bars on every row of a list of 50, a new state in the status language, and a new request for a job's past counts. A small drop, the common case, is invisible in bars from zero. The reason for an allowed drop is the only words on a row.</li><li><b>Without a pointer</b>Bars are buttons and the readout is always shown; rows need no tap.</li></ul>
+  <p class="foot">Static page with example data: build-1 is a node, the projects and branches are examples. Bars use the chart series colours in their fixed order (teal, then ochre) and always come with a legend and their numbers in words; status colour is on icons only.</p>
+</div>
+<script src="tests.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

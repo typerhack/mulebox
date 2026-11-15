@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.34.0 - 2026-11-15 - minor
+- M24.1 built: a pass must show its tests ran. common/test_counts.py reads the summaries of pytest, vitest, jest, Pest, PHPUnit, cargo, mocha, Playwright, XCTest, Swift Testing and go test -v from the job's log.
+- coordinator/test_proof.py judges at the job's end: a runner that ran none, or fewer tests than the last pass on the branch (else the default branch), turns the pass into a failure with exit 8; the counts are kept for every outcome in jobs.tests (schema 29).
+- `mulebox check --fewer-tests "<why>"` lets one run pass with fewer and keeps the reason; it always runs again. `tests: false` (project or job) turns it off, `tests: required` also fails a pass with no summary.
+- The end line of a job says how many tests ran, and on exit 8 what it was compared with and what to do; status, queue and events carry `tests`.
+- Contract schema 17 with a Tests section and exit 8; its rule texts moved to client/contract_rules.py. The skill teaches it, and now also names run --in, --bare, --take, check --on and os:, and Mac nodes.
+- Docs: design.md (Proof that tests ran), agents.md 1b and exit 8, interfaces-m1.md, phases.md. Dashboard mockups for the user to pick in docs/design-system/tests/.
+
 ## 1.33.3 - 2026-11-15 - patch
 - docs/phases.md: M24.8 done, with the drill on the real node (stuck in status, events and wait at about 2 minutes; a busy silent job working; asking on the dashboard in Edge; a slow download slow).
 

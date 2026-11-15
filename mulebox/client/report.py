@@ -20,6 +20,7 @@ from mulebox.common.status import (
     stopped,
 )
 from mulebox.common.units import duration as format_duration
+from mulebox.client import test_lines
 
 __all__ = ["duration_of", "format_duration"]  # re-exported: common modules own them
 
@@ -31,6 +32,7 @@ EXIT_CANCELLED = 130
 EXIT_TIMED_OUT = 124
 EXIT_INTERRUPTED = 75
 EXIT_STOPPED = 76  # stuck, and the agent did not answer: the check said nothing
+EXIT_TESTS = test_lines.EXIT_TESTS  # passed, but did not prove its tests ran
 
 PREFIX = "mulebox: "
 LONG_QUEUE_POSITION = 2  # jobs ahead in line, not only one running
@@ -80,9 +82,11 @@ def outcome_line(job_id: str, result: dict[str, Any]) -> str:
     detail = ""
     if outcome == Outcome.FAILED:
         detail = " (could not start)" if code is None else f" (exit {code})"
+        if test_lines.failed_on_tests(result):
+            detail = f" (exit {code}: tests)"
     if outcome == Outcome.TIMED_OUT:
         detail = " (job timeout reached)"
-    return f"job {job_id} {outcome}{detail} in {took}"
+    return f"job {job_id} {outcome}{detail} in {took}{test_lines.sentence(result)}"
 
 
 def log_expired(body: dict[str, Any]) -> bool:

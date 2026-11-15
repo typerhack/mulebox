@@ -48,6 +48,7 @@ class JobOptions:
     compose: bool = True
     ports: tuple[str, ...] = ()
     stuck_after_min: int | None = None  # None: the top-level one
+    tests: str | None = None  # None: the top-level one (tests_mode)
 
 
 MAX_STUCK_AFTER_MIN = 24 * 60
@@ -59,6 +60,21 @@ def stuck_after(reader: Reader) -> int | None:
     if "stuck_after_min" not in reader.data:
         return None
     return reader.integer("stuck_after_min", 0, 1, MAX_STUCK_AFTER_MIN)
+
+
+TESTS_MODES = {True: "auto", False: "off", "auto": "auto", "required": "required"}
+
+
+def tests_mode(reader: Reader) -> str | None:
+    """`tests:`: whether a pass is held to its test count (docs/design.md, Proof that tests ran):
+    true (the default, when a runner's summary shows), false, or required; None if unset."""
+    if "tests" not in reader.data:
+        return None
+    reader.seen.add("tests")
+    value = reader.data["tests"]
+    if not isinstance(value, (bool, str)) or value not in TESTS_MODES:
+        reader.fail("tests", "must be true, false or required")
+    return TESTS_MODES[value]
 
 
 def port_problem(name: str) -> str | None:
@@ -115,7 +131,7 @@ def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
         commands[name] = entry.text("run")
         options[name] = JobOptions(setup=_line(entry, "setup"), install=_line(entry, "install"),
                                    compose=entry.boolean("compose", True), ports=_ports(entry),
-                                   stuck_after_min=stuck_after(entry))
+                                   stuck_after_min=stuck_after(entry), tests=tests_mode(entry))
         entry.finish()
     if "check" not in commands:
         reader.fail("jobs", "must define a 'check' job")
@@ -149,5 +165,6 @@ def for_job(project: Any, name: str | None,
 
     env, dropped = env_rules.without(project.env, gone)
     stuck = project.stuck_after_min if options.stuck_after_min is None else options.stuck_after_min
+    tests = project.tests if options.tests is None else options.tests
     return dataclasses.replace(project, setup=setup, install=install, compose=files, env=env,
-                               host_ports=options.ports, stuck_after_min=stuck), dropped
+                               host_ports=options.ports, stuck_after_min=stuck, tests=tests), dropped

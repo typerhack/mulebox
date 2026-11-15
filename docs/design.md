@@ -290,6 +290,38 @@ dashboard. It is a judgement with its evidence, and stops nothing: the rules abo
   only its output and the `docker` client's own I/O count (worker/job_meter.py); a long silent
   build of its own can read as `stuck`. The verdict shows its evidence, so an agent can tell.
 
+## Proof that tests ran (M24.1, agreed 2026-11-15)
+
+A command that exits 0 says nothing about how many tests ran. A renamed folder, a filter left in,
+a config that no longer finds the tests, or tests an agent deleted all still pass. mulebox counts
+the tests a job ran and holds a pass to that count. The user's answers of 2026-11-15:
+
+- **Automatic, with an opt-out.** When a job passes, the coordinator reads its stored log for
+  the summaries test runners print (common/test_counts.py): pytest, vitest, jest, Go's `-v`
+  lines, cargo, PHPUnit and Pest, Playwright, mocha, and `swift test` and `xcodebuild test`.
+  Counted per runner: tests that ran (passed and failed) and those skipped. A job that prints no
+  summary is not checked. `tests: false` on a job (or for all) turns it off, for a lint or a
+  build; `tests: required` also fails a pass with no summary at all, for a script that can
+  silently run nothing.
+- **Zero fails.** A pass in which a runner ran no test (all skipped, nothing collected) fails.
+- **Fewer fails.** A pass with fewer tests than the last pass of the same job, for any runner
+  that pass had, fails. Compared with the same branch, else, on a branch's first pass, with the
+  default branch (the dev machine sends it, `origin/HEAD`, else `main`). `mulebox run` is only
+  held to zero: its command changes from run to run.
+- **A drop on purpose is said.** `mulebox check --fewer-tests "<reason>"` lets one run pass with
+  fewer tests; the reason is kept with the job and shown in `status`, the history and the
+  dashboard. The skill tells agents to use it only when they removed tests on purpose, and to
+  say so to the user.
+- **Its own exit code, 8**, outcome `failed`, with what was counted and what it was compared
+  with in the result, the failure summary, `status` and `events`. It is the project's doing, so
+  it is a failure and not a "could not start". The command's own exit code is kept beside it.
+- **Every count kept** with the job (`jobs.tests`, JSON), passes and failures alike, so the
+  history shows how a suite grew. A result given back for the same files carries its counts.
+- **Not covered:** GitHub runs (GitHub has their output), and a runner mulebox does not know
+  (it prints nothing it can read, so it is not checked, as with `tests: false`). A test report
+  file (JUnit XML) can be added later if such a runner turns up.
+- **Dashboard:** counts on a finished job's card and page, from mockups the user picks.
+
 ## Results an agent need not repeat
 
 A job is the same job when the project, the job's name, the exact files, uncommitted changes

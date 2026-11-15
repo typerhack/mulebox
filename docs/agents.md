@@ -92,6 +92,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 3 | node unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the node refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 5 | the job could not start (toolchain would not install, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
+| 8 | the command passed, but did not prove its tests ran: a runner ran none, or fewer than the last pass on the branch, else the default branch (section 1c) | a real failure: fix the tests; if they were removed on purpose, `mulebox check --fewer-tests "<why>"` |
 | 75 | the job was interrupted on the node (restart, crash) | run it again once |
 | 76 | `stopped: stuck`: it did nothing and nobody answered its question (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
 | 124 | the job hit a hard `timeout_min`, which only a node older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
@@ -218,6 +219,29 @@ is there or not.
   forces a run.
 - **GitHub runner reservations** are not touched by any of this: GitHub owns those jobs.
 
+## 1b. Proof that tests ran
+
+A pass counts only if its log shows its tests ran. When a job ends, the node reads the summary
+lines of pytest, vitest, jest, Pest, PHPUnit, cargo, mocha, Playwright, XCTest, Swift Testing and
+`go test -v`, and keeps the counts with the job, for every outcome.
+
+- **None ran.** A pass where a runner said it ran no test (pytest's `no tests ran`, a filter that
+  matched nothing) fails with exit 8.
+- **Fewer than before.** A pass where a runner ran fewer tests than the last pass of the same job
+  on the same branch, or on the default branch for a branch with no pass yet, fails with exit 8.
+  More tests, or a runner new to the job, are fine.
+- **On purpose.** `mulebox check --fewer-tests "<why>"` lets this one run pass with fewer, and
+  keeps the reason with the job, where the user sees it. It always runs the job again.
+- **No summary.** A job whose log shows no runner's summary (a build, lint, a runner mulebox does
+  not read) is not checked. `tests: required` fails such a pass with exit 8 too.
+- **Off.** `tests: false`, on the project or on one job, turns all of it off.
+- `mulebox run` is held only to "none ran", as its command changes from run to run. `mulebox warm`
+  and GitHub runs are not counted.
+
+The end line of a job says how many ran (`38 tests ran (pytest 38)`), and on exit 8 what it was
+compared with and what to do; `mulebox status --json` and `events` give them as `tests`. The
+command's own exit code stays there as `tests.command_exit`.
+
 ## 2. Setting up a project (`.mulebox.yml`)
 
 Do this once per repository, on a branch, following the project's own rules for commits
@@ -260,6 +284,7 @@ github_status: true             # post `check`'s result to the pushed commit on 
 isolation: container            # run each job in a confined container (below); default none
 image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
 os: any                         # linux, macos or any; default linux, macos for xcode or simulator
+tests: required                 # true (default), false, or required: a pass must show a summary (1b)
 ```
 
    `os:` says which nodes may run the project's jobs. Without it a job runs only on a Linux

@@ -5,7 +5,7 @@ description: Run a project's builds, type checks, lint and tests on a node throu
 
 # mulebox
 
-mulebox runs heavy commands on a Linux node through one shared queue. You keep
+mulebox runs heavy commands on a node (Linux or Mac) through one shared queue. You keep
 editing, searching and using git here; builds and tests go through `mulebox`.
 
 ## Start here
@@ -27,9 +27,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 16. Keep it current, in every session, before
+This skill was written for contract schema 17. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 16, run `mulebox skill update`, then read the
+its first line gives a schema higher than 17, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -43,6 +43,32 @@ SKILL.md it names again, as this session loaded the old text. Tell the user it w
 - **`mulebox` is not found, or a command exits 3:** stop and tell the user. Never fall back
   to running heavy commands on this machine. That rule matters most: it is what keeps the
   dev machine free.
+
+## Tests must show they ran
+
+A pass counts only if its log shows its tests ran. mulebox reads the summary line of pytest,
+vitest, jest, Pest, PHPUnit, cargo, mocha, Playwright, XCTest, Swift Testing and `go test -v`.
+A pass where a runner ran no test, or ran fewer tests than the last pass on the branch (else
+the default branch), fails with an exit code of its own (the contract lists it). The end line says how many ran and what it was compared
+with.
+
+- That failure is real: a wrong path, a filter that matches nothing, or tests lost by
+  mistake. Find why and fix it. Do not work around it.
+- If tests were removed on purpose, and only then: `mulebox check --fewer-tests "<why>"`. The
+  reason is kept with the job and shown to the user, so write it for them.
+- A job that runs no tests (a build, lint) needs nothing: no summary, no check. If it is meant to
+  run none but prints a summary, `tests: false` on that job in `.mulebox.yml` turns it off; ask
+  the user before setting it. `tests: required` also fails a pass with no summary at all.
+
+## Other commands
+
+- `mulebox run -- <cmd>` runs one command, such as a single test file. `--in <service>` runs it
+  in a compose service, `--bare` without the project's setup and containers, and `--take <path>`
+  brings a file or folder it made back here.
+- `mulebox check --on <node>` sends a job to that node alone, such as a node the user is setting
+  up (a node in dev mode takes only these). Use it only when the user asks for that node.
+- A project runs on the system it was set up for (`os:` in `.mulebox.yml`, `any` for none), so a
+  Linux project's job never goes to a Mac node. Change it only with the user.
 
 ## Long jobs
 
