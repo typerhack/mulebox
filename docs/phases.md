@@ -1102,7 +1102,11 @@ runs a job.
       reclaimed nothing on this containerd image store (a throwaway rebuild left no untagged image
       to try it on: the store dropped the old one at once).
       Tagged images pulled before 1.26 are not in the ledger, so they stay until a job uses them
-      again. Open: why the prune leaves those images.
+      again. Why the prune left those images, 2026-11-15 (1.32.4): a project's CI step runs
+      `docker build` with no tag, so each run leaves an untagged image whose provenance names its
+      commit; `until` counts from when the node stored an image (the oldest on 2026-11-08), not
+      from `Created`, which cached steps keep. They go once a week old; the 88 share their layers,
+      131 MB in all. Seen on the dev machine's Docker: three such images pruned by `until`.
       Run 2026-11-14 (1.27.2): two branches deleted on the dev machine, their folders removed by the
       node's next cleanup with "its branch is on no dev machine"; agents told of 56 GB over 50 GB.
 - [~] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox

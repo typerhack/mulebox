@@ -536,7 +536,10 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 - **Docker** (1.26.0, `docker_clean`): a job's own images, containers, networks and volumes go
   with its cleanup already. The sweep also removes build cache unused for `unused_days` (`builder
   prune --filter until=`, which goes by the cache's last use) and dangling images older than
-  that. Docker keeps no time of last use for an image, and between jobs every base image a
+  that. On the containerd image store an image's age counts from when the node stored it, not
+  from its `Created` date, which a build with cached steps keeps from its first build; a CI step
+  that runs `docker build` with no tag leaves one such image per run, its layers shared, so they
+  take little room and go once a week old. Docker keeps no time of last use for an image, and between jobs every base image a
   project pulls is "unused" by Docker's count, so the worker notes the images each compose job's
   services pull when it starts (`worker/image_use.py`); an image no job used for `unused_days`,
   and no container uses, is removed by name (`worker/docker_prune.py`). An image mulebox never

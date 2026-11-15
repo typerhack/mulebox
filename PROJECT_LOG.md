@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.32.4 - 2026-11-15 - patch
+- Why the node's Docker cleanup left 88 untagged images (M25.8): a project's CI step runs `docker build` with no tag, so each run leaves an untagged image whose provenance names its commit. On the containerd image store `image prune --filter until=` counts from when the node stored an image, not from its `Created` date, which cached steps keep from the first build; the oldest was stored 2026-11-08, so none was a week old yet. Nothing to fix: they go once 7 days old, and the 88 share their layers (131 MB in all). docs/design.md says how the age is counted; docs/phases.md records it.
+
 ## 1.32.3 - 2026-11-15 - patch
 - An open dashboard reloads itself after an upgrade also when its tab was in the background: the user's page stayed on the old version after 1.32.2. A tab the browser puts to sleep runs no code while the dashboard restarts, so it missed the stream reopening that told the page. The page now also reads the version when it comes back into view and every minute (`web/src/state/live.ts`). Test in `web/src/state/live.test.ts`.
 
