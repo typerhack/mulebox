@@ -51,6 +51,24 @@ export interface Looks {
   quiet_s?: number | null;
 }
 
+// The tests a finished job ran, as its log's runner summaries say (docs/design.md, Proof that
+// tests ran; coordinator/test_proof.py). `verdict` is null for a job that did not pass, or
+// one with no summary; `compared` is the pass it was held to.
+export interface RunnerCount { ran?: number | null; skipped?: number | null }
+export interface Tests {
+  mode?: string | null;
+  base?: string | null;
+  fewer?: string | null;                       // the agent's reason for fewer tests
+  runners?: Record<string, RunnerCount> | null;
+  ran?: number | null;
+  skipped?: number | null;
+  verdict?: "ok" | "zero" | "fewer" | "allowed" | "missing" | string | null;
+  compared?: { job_id?: string | null; branch?: string | null; ran?: number | null; finished_at?: number | null;
+               runners?: Record<string, RunnerCount> | null } | null;
+  command_exit?: number | null;
+  lines?: Record<string, string[]> | null;     // each runner's summary lines, as in the log
+}
+
 export interface CiResult {
   outcome?: string;
   step?: string;
@@ -87,6 +105,7 @@ export interface Job {
   question?: Question | null;
   doing?: Doing | null;
   looks?: Looks | null;
+  tests?: Tests | null;
   needs?: string[];
   can_run_on?: string[];
   waiting_for?: string | null;

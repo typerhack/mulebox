@@ -10,6 +10,7 @@ import { makeScene } from "./scenes.ts";
 import { answerSettings, withSettings } from "./settings.ts";
 import { keepMark, removeRead, removeStart, storageBody, sweepStart } from "./storage.ts";
 import { answerHistory, historyRows } from "./history.ts";
+import { TEST_LOGS } from "./tests.ts";
 import { asksBody, asksLive, asksPost } from "./asks.ts";
 import { changeRules, rulesBody } from "./order.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
@@ -21,8 +22,11 @@ const scene = makeScene(process.env.MULEBOX_MOCK_SCENE);
 const queue = scene?.queue ?? makeQueue();
 let machines = makeMachines(queue, scene?.machines);
 const viewers = new Set<ServerResponse>();
-// A scene has no finished jobs of its own: the History page then shows the default queue's.
-const history = historyRows(queue.recent.length ? queue.recent : makeQueue().recent, now());
+// A scene with no finished jobs of its own: the History page then shows the default queue's.
+// The `tests` scene's finished jobs are the history as they are, each once.
+const history = process.env.MULEBOX_MOCK_SCENE === "tests" ? queue.recent
+  : historyRows(queue.recent.length ? queue.recent : makeQueue().recent, now());
+const logOf = (row: MockJob) => TEST_LOGS[row.job_id] ?? (row.kind === "runner" ? CI_LOG : AGENT_LOG);
 
 const send = (res: ServerResponse, event: string, data: unknown, id?: number) =>
   res.write(`${id === undefined ? "" : `id: ${id}\n`}event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -89,7 +93,7 @@ function body(req: IncomingMessage): Promise<Record<string, any>> {  // eslint-d
 }
 
 function logStream(res: ServerResponse, row: MockJob) {
-  const lines = row.kind === "runner" ? CI_LOG : AGENT_LOG;
+  const lines = logOf(row);
   sse(res);
   let offset = 0, sent = 0;
   const push = () => {
@@ -182,7 +186,7 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
     const row = find(decodeURIComponent(jobMatch[1]));
     if (!row) return text(res, "no such job", 404);
     if (!jobMatch[2]) return json(res, detail(row));
-    if (jobMatch[2] === "log.txt") return text(res, (row.kind === "runner" ? CI_LOG : AGENT_LOG).join("\n"));
+    if (jobMatch[2] === "log.txt") return text(res, logOf(row).join("\n"));
     if (jobMatch[2] === "log") return logStream(res, row);
     if (post && row.state === "finished") return text(res, "the job has finished", 409);
     if (post && jobMatch[2] === "cancel") {

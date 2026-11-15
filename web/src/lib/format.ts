@@ -61,6 +61,15 @@ export function day(seconds: number, now: number): string {
   return date.toLocaleDateString([], { day: "numeric", month: "short", ...(sameYear ? {} : { year: "numeric" }) });
 }
 
+// A moment short enough for a sentence: "today 12:05", "yesterday 17:20", "3 Oct 09:41".
+export function dayTime(seconds: number, now: number): string {
+  const date = new Date(seconds * 1000), today = new Date(now * 1000);
+  const days = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()
+    - new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()) / 86_400_000);
+  const time = date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return `${days === 0 ? "today" : days === 1 ? "yesterday" : day(seconds, now)} ${time}`;
+}
+
 // A link target only when it is really http(s): stored values never become script URLs.
 export function safeUrl(text: string | null | undefined): string | null {
   if (!text) return null;

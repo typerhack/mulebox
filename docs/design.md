@@ -320,7 +320,9 @@ the tests a job ran and holds a pass to that count. The user's answers of 2026-1
 - **Not covered:** GitHub runs (GitHub has their output), and a runner mulebox does not know
   (it prints nothing it can read, so it is not checked, as with `tests: false`). A test report
   file (JUnit XML) can be added later if such a runner turns up.
-- **Dashboard:** counts on a finished job's card and page, from mockups the user picks.
+- **Dashboard:** counts on a finished job's row and page, option B of design-system/tests/, the
+  user's pick (1.35.0; interfaces-m2.md): a quiet number, a line in words when the count failed
+  the job or a drop was allowed, and on the page a strip and a Tests panel.
 
 ## Results an agent need not repeat
 

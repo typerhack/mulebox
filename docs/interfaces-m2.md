@@ -49,6 +49,27 @@ Input is a public job dict; every function tolerates missing or malformed fields
 - A finished job's state carries its mark in every view: a check for passed, a cross for
   failed, a warning for timed out, interrupted or stopped, a stop sign for cancelled. A failed
   GitHub job's row also says the step that failed and GitHub's message on it.
+- The tests a finished job ran (1.35.0; design.md, Proof that tests ran; design-system/tests/,
+  option B, the user's pick). A finished job's row and detail carry `tests` as a `status` reply
+  does (interfaces-m1.md), once its log was counted; `tests.compared` also has `finished_at`. A
+  job with a runner's summary shows its count on its row in the Failed, Passed and Recent tabs
+  and in History, before the node or the time: "3675 tests", and "+12" when a pass ran more than
+  the pass it was compared with. Three verdicts add a line in words under the job's name, where a
+  GitHub job says its failed step, coloured on its icon only: `fewer` ("8 fewer tests than the
+  last pass: pytest ran 3462, was 3470") and `zero` ("vitest ran no tests: all 213 were skipped")
+  in the failed colour, `allowed` ("72 fewer tests, allowed. The agent's reason: ...") in the
+  warning colour; `missing` (`tests: required`, no summary) has the line and no number. An
+  ordinary failure keeps its count and adds nothing; a job with no summary shows nothing.
+  On the job's page a strip under the header says what happened: danger for `fewer`, `zero` and
+  `missing`, with "Go to the runner's summary" (the log scrolls to it) and "Open the last pass",
+  and for `fewer` the command `mulebox check --fewer-tests "<reason>"` with a copy button;
+  warning for `allowed`, with the reason. Under Stages, a Tests panel lists each runner: what
+  ran, what was skipped, how that differs from the last pass, the agent's reason, and the pass
+  it was compared with as a link with its branch and time. Once a finished job's log is on the
+  page, the runners' own summary lines in it are underlined (CSS Custom Highlight API; the page
+  finds the lines with its own loose patterns, `web/src/features/job/logMarks.ts`, the counting
+  stays in common/test_counts.py). `web/src/lib/tests.ts`, `features/jobs/TestsBits.tsx`,
+  `features/job/TestsNote.tsx`, `TestsPanel.tsx`.
 - Elapsed: waiting time when queued, running time when active, run time when finished.
 - `fingerprint(jobs)`: what changes when a view must redraw. Elapsed time is left out, so a
   ticking clock never causes an event. Where a waiting job may go (below) is in, so a

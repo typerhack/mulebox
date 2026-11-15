@@ -17,10 +17,13 @@
 //   order: the order rules on (dev/order.ts): seven jobs for the next free machine, each with
 //          the reason for its place, one moved by hand.
 //   looks: a running job in each verdict of "A job that looks stuck" (dev/looks.ts).
+//   tests: nothing running; a finished job in each situation of "Proof that tests ran"
+//          (dev/tests.ts), on the Failed, Passed and Recent tabs, the History page and its own page.
 
 import { job, type MockJob } from "./fixtures.ts";
 import { looksScene } from "./looks.ts";
 import { orderScene } from "./order.ts";
+import { testsScene } from "./tests.ts";
 
 const now = () => Date.now() / 1000;
 type More = Record<string, unknown>;
@@ -108,8 +111,10 @@ export const SETTINGS_SCENE: Record<string, More> = {
 
 export function makeScene(name: string | undefined) {
   const made = name === "split" || name === "settings" ? split() : name === "wide" ? wide()
-    : name === "downloads" ? downloads() : name === "order" ? orderScene() : name === "looks" ? looksScene() : null;
+    : name === "downloads" ? downloads() : name === "order" ? orderScene() : name === "looks" ? looksScene()
+    : name === "tests" ? testsScene() : null;
   if (!made) return null;
   made.queued.forEach((row: MockJob, index) => { row.position = index + 1; row.elapsed_s ??= 25 * (index + 1); });
-  return { queue: { running: made.running as MockJob[], queued: made.queued as MockJob[], recent: [] as MockJob[] }, machines: made.machines };
+  const recent: MockJob[] = "recent" in made ? (made.recent as MockJob[]) : [];
+  return { queue: { running: made.running as MockJob[], queued: made.queued as MockJob[], recent }, machines: made.machines };
 }

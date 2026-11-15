@@ -39,6 +39,13 @@ def test_fewer_than_the_branch_last_pass_fail(store, staging):
     assert job["tests"]["verdict"] == "fewer" and job["tests"]["compared"]["ran"] == 40
 
 
+def test_the_pass_it_was_compared_with_says_when_it_finished(store, staging):
+    before = ends(store, staging, PASS_40)
+    compared = ends(store, staging, PASS_38)["tests"]["compared"]
+    assert compared["job_id"] == before["job_id"]
+    assert compared["finished_at"] == before["finished_at"] == T0 + 50
+
+
 def test_a_reason_lets_fewer_pass(store, staging):
     ends(store, staging, PASS_40)
     job = ends(store, staging, PASS_38, mode="auto", fewer="removed the old importer")
@@ -93,3 +100,8 @@ def test_warm_is_not_counted(store, staging):
 def test_an_older_client_is_auto():
     assert settings({}) == {"mode": "auto", "base": None, "fewer": None}
     assert settings({"tests": {"mode": "bogus", "fewer": "x" * 999}})["fewer"] == "x" * 300
+
+
+def test_the_summary_lines_are_kept_for_the_dashboard(store, staging):
+    job = ends(store, staging, "\x1b[32m==== 40 passed, 2 skipped in 3.10s ====\x1b[0m\nok\n")
+    assert job["tests"]["lines"] == {"pytest": ["==== 40 passed, 2 skipped in 3.10s ===="]}

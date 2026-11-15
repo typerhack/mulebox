@@ -1,0 +1,9 @@
+/* The tests a job ran (docs/design-system/tests/, option B): the runners' own summary lines in
+   a finished job's log are underlined, in the failed colour when the count failed the job.
+   The lines are ranges of the CSS Custom Highlight API (features/job/logMarks.ts), so the log
+   stays plain text. */
+
+@layer components {
+  ::highlight(test-summary) { text-decoration: underline 2px; text-decoration-color: var(--text-1); color: var(--text-1); }
+  ::highlight(test-summary-failed) { text-decoration: underline 2px; text-decoration-color: var(--status-danger); color: var(--text-1); }
+}

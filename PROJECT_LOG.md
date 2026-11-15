@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.35.0 - 2026-11-15 - minor
+- The tests a job ran, on the dashboard (M24.1, option B of design-system/tests/, the user's pick). A finished row in the Failed, Passed and Recent tabs and in History shows its count as a quiet number ("3675 tests", "+12" when the suite grew); fewer tests, no tests and a drop the agent allowed add a line in words under the job's name, the allowed one with the agent's reason; an ordinary failure keeps its count and adds nothing (`web/src/lib/tests.ts`, `features/jobs/TestsBits.tsx`, `DoneList.tsx`).
+- The job's page has a strip under the header saying what happened and what to do, with `mulebox check --fewer-tests "<reason>"` to copy for a fewer failure, "Go to the runner's summary" and "Open the last pass", and a Tests panel under Stages with each runner beside the last pass (`features/job/TestsNote.tsx`, `TestsPanel.tsx`). The runners' own summary lines in a finished job's log are underlined through the CSS Custom Highlight API, so the log stays text (`features/job/logMarks.ts`, `styles/tests.css`). Also worded: `missing` (`tests: required`, no summary), which the mockup did not have.
+- `tests.compared` carries the compared pass's `finished_at` (`coordinator/test_proof.py`), for "the last pass on main, today 12:05". Rows, history and the job detail already carried `tests` once counted; a test now holds that.
+- Stand-in data: `MULEBOX_MOCK_SCENE=tests` (`web/dev/tests.ts`), a finished job in each situation with its own log. Seen in headless Chrome at 390 and 1440 px in both themes, no sideways scroll.
+- Docs: interfaces-m2.md, interfaces-m1.md, design-system.md, design.md, phases.md (M24.1 stays open for the drill on the real node), web/README.md.
+- The coordinator keeps each runner's summary lines (`tests.lines`, common/test_counts.py `read`), and the job page finds them in the log by their text, so the dashboard keeps no second set of patterns (AGENTS.md rule 4).
+
 ## 1.34.0 - 2026-11-15 - minor
 - M24.1 built: a pass must show its tests ran. common/test_counts.py reads the summaries of pytest, vitest, jest, Pest, PHPUnit, cargo, mocha, Playwright, XCTest, Swift Testing and go test -v from the job's log.
 - coordinator/test_proof.py judges at the job's end: a runner that ran none, or fewer tests than the last pass on the branch (else the default branch), turns the pass into a failure with exit 8; the counts are kept for every outcome in jobs.tests (schema 29).

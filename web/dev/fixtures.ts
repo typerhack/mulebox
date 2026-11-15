@@ -102,16 +102,17 @@ export function detail(row: MockJob) {
   const lengths: [string, number][] = [["prepare", 2], ["toolchain", 1], ["images", 16], ["services", 9], ["setup", 12], ["command", 94]];
   let at = start;
   const finished = row.state === "finished";
+  const broke = row.outcome === "failed" && row.kind === "job" && row.exit_code !== 8;  // exit 8: the command passed
   const steps = row.kind !== "job" || row.state === "queued" ? [] : lengths.map(([stage, length], index) => {
     const from = at;
     at += length;
     const open = !finished && index === lengths.length - 1;
     return { seq: index, stage, started_at: from, finished_at: open ? null : at, bytes_downloaded: stage === "images" ? 396e6 : null,
-             failing_line: row.outcome === "failed" && index === lengths.length - 1 ? "FAIL src/cart/totals.test.ts" : null };
+             failing_line: broke && index === lengths.length - 1 ? "FAIL src/cart/totals.test.ts" : null };
   });
   return {
     ...row, base_commit: "9f2c41d07a3e5b6c", timeout_min: 20, toolchain: {}, command: "pnpm run check",
-    duration_s: finished ? 200 : null, steps, failed_stage: row.outcome === "failed" && row.kind === "job" ? "command" : null,
+    duration_s: finished ? (row.duration_s as number | undefined) ?? 200 : null, steps, failed_stage: broke ? "command" : null,
     usual: row.kind === "job" ? { runs: 9, job_s: 240, stages: { prepare: 3, toolchain: 1, images: 18, services: 10, setup: 14, command: 190 } } : null,
     activity: finished ? null : { output_idle_s: 45, job_cpu_pct: 320 }, log_size: 1200,
   };

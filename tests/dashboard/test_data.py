@@ -230,3 +230,25 @@ def test_a_running_job_that_looks_stuck_says_so_on_its_row_and_page(store, stagi
     row = next(item for item in data.queue_jobs(1310.0) if item["job_id"] == job["job_id"])
     assert row["looks"]["verdict"] == "stuck" and "Looks stuck" in row["looks"]["text"]
     assert data.job(job["job_id"], 1310.0)["looks"]["verdict"] == "stuck"
+
+
+def test_a_finished_job_carries_its_tests_only_when_they_were_counted(store, staging):
+    from mulebox.dashboard.data import DashboardData
+    from tests.coordinator.test_test_proof import PASS_38, PASS_40, ends
+
+    first = ends(store, staging, PASS_40)
+    fewer = ends(store, staging, PASS_38)
+    lint = ends(store, staging, "eslint: no problems\n", job="lint")  # counted: no runner
+    off = ends(store, staging, PASS_38, job="build", mode="off")
+    data = DashboardData(store, staging)
+    for rows in (data.queue_jobs(2000.0), data.history()["jobs"]):
+        by_id = {row["job_id"]: row for row in rows}
+        assert by_id[fewer["job_id"]]["tests"]["verdict"] == "fewer"
+        assert by_id[fewer["job_id"]]["exit_code"] == 8
+        assert by_id[fewer["job_id"]]["tests"]["compared"]["job_id"] == first["job_id"]
+        assert by_id[lint["job_id"]]["tests"]["runners"] == {}
+        assert "tests" not in by_id[off["job_id"]]  # only what it was sent with: not counted
+    detail = data.job(fewer["job_id"], 2000.0)
+    assert detail["tests"]["runners"] == {"pytest": {"ran": 38, "skipped": 0}}
+    assert detail["tests"]["compared"]["finished_at"] == first["finished_at"]
+    assert "tests" not in data.job(off["job_id"], 2000.0)

@@ -205,6 +205,16 @@ Drawn in the specimen, in both themes:
   the page has controls, the two-step "Cancel job". On the job's page the same verdict is a
   strip under the header, in the danger, warning or plain colours of its level, with "Go to its
   last line" (`web/src/features/jobs/LooksLine.tsx`, `web/src/features/job/LooksNote.tsx`).
+- The tests a finished job ran (the user's pick of three, 2026-11-15;
+  [design-system/tests/](design-system/tests/index.html), option B; design.md, Proof that tests
+  ran): on its row the count is a quiet number with `list-checks` in `--text-2` ("3675 tests",
+  "+12" when the suite grew). Only a count that failed the job or was let through adds a line
+  in words under the job's name, the colour on its icon alone: `list-minus` (fewer) and `list-x`
+  (none) in `--status-failed`, `list-minus` in `--status-warning` for a drop the agent allowed,
+  with its reason in its own words. On the job's page the same is a danger or warning strip
+  under the header with its fix, and a Tests panel under Stages with each runner beside the
+  last pass; the runners' summary lines in the log are underlined
+  (`web/src/features/jobs/TestsBits.tsx`, `web/src/features/job/TestsNote.tsx`, `TestsPanel.tsx`).
 - Tooltip, empty state.
 - Tables: the first and the last cell of a row keep `--space-3` from the row's edges, header
   included, so a shaded row never has its name or its buttons on its border (the user's ask,

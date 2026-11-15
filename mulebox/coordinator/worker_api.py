@@ -124,12 +124,12 @@ def result(req: Request) -> Message:
     duration_s = v.number(req.body, "duration_s", None)
     with req.store.read() as conn:  # counted before the write: a log can be megabytes
         before = _current_job(conn, req)
-    runners = test_proof.counted(before, req.staging.log_path(before["job_id"]))
+    in_log = test_proof.counted(before, req.staging.log_path(before["job_id"]))
     with req.store.write() as conn:
         job = _current_job(conn, req)
         if job["state"] == JobState.FINISHED:
             raise Conflict(f"job {job['job_id']} already finished ({job['outcome']})")
-        tests, outcome, exit_code = test_proof.judge(conn, job, runners, outcome, exit_code)
+        tests, outcome, exit_code = test_proof.judge(conn, job, in_log, outcome, exit_code)
         if tests is not None:
             st.update_job(conn, job["job_id"], tests=tests)
         # A job that ended by itself before its stop arrived was not stopped.

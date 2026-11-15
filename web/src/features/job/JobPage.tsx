@@ -2,13 +2,14 @@
 // A GitHub job's page says GitHub has its output and shows its steps (CiSteps.tsx).
 
 import { ArrowLeft, ExternalLink, Server } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { tokenStore } from "../../lib/api";
 import { WAITING, clock, isCI, nameParts, repository, safeUrl, stateOf } from "../../lib/format";
 import { quietText } from "../../lib/quiet";
 import { useStore } from "../../lib/store";
 import type { JobDetail } from "../../lib/types";
+import { testsView } from "../../lib/tests";
 import { tickStore, useMachines, useQueue } from "../../state/live";
 import { LinkButton } from "../../ui/Button";
 import { Panel } from "../../ui/Panel";
@@ -17,8 +18,11 @@ import { Branch, JobId, Marks, Source } from "../jobs/JobBits";
 import { CiSteps } from "./CiSteps";
 import { CancelControl, SteerButtons, cancellable, said, steers } from "./JobControls";
 import { AloneNote, GoingBack, JobFacts, resultText } from "./JobParts";
-import { LogPanel } from "./LogPanel";
+import { LOG_ID, LogPanel } from "./LogPanel";
+import { clearSummaries, underlineSummaries } from "./logMarks";
 import { LooksNote } from "./LooksNote";
+import { TestsNote } from "./TestsNote";
+import { TestsPanel } from "./TestsPanel";
 import { useJob } from "./useJob";
 import { RunTimePanel, StagesPanel } from "./Waterfall";
 
@@ -46,9 +50,14 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
   const result = resultText(job), line = problem ?? said(job);
   const onEnd = useCallback((final: JobDetail, atEnd: boolean) => {
     finish(final);
+    // The whole log is on the page now: underline the runners' own summary lines in it.
+    const tests = testsView(final);
+    if (tests?.counted) underlineSummaries(document.getElementById(LOG_ID), tests.summaries, tests.tone === "failed");
     // Only for a job watched to its end, and never while its log is being read further up.
     if (first.state !== "finished" && atEnd) setGoBack(true);
   }, [finish, first.state]);
+
+  useEffect(() => clearSummaries, []);
 
   return (
     <div className="@container grid min-w-0 gap-gap">
@@ -85,6 +94,7 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
       {goBack && <GoingBack onStay={() => setGoBack(false)} />}
       <AloneNote job={shownJob} />
       <LooksNote job={{ ...job, looks: live ? live.looks : job.looks, doing: live?.doing ?? job.doing }} />
+      <TestsNote job={job} />
       {ci && (
         <p className="max-w-read text-sm text-ink-2">
           GitHub Actions runs this job of {repository(job)} on this machine and holds one of its build slots while it
@@ -93,8 +103,11 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
         </p>
       )}
       <div className="job-split">
-        {ci ? <RunTimePanel job={job} live={live} cores={cores} now={now} />
-            : <StagesPanel job={job} live={live} cores={cores} now={now} />}
+        <div className="grid min-w-0 content-start gap-gap">
+          {ci ? <RunTimePanel job={job} live={live} cores={cores} now={now} />
+              : <StagesPanel job={job} live={live} cores={cores} now={now} />}
+          <TestsPanel job={job} now={now} />
+        </div>
         {ci ? <CiSteps job={job} now={now} onState={setState} onEnd={onEnd} />
             : <LogPanel jobId={job.job_id} quiet={job.state === "finished" ? "" : quietText(job.activity)} onState={setState} onEnd={onEnd} />}
       </div>

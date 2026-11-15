@@ -63,3 +63,13 @@ def test_colours_are_taken_out_and_a_gate_sums_and_keeps_runners_apart():
                                   "  12 passed (30.1s)", "Executed 3 tests, with 0 failures"])
 def test_ordinary_lines_are_no_count(line):
     assert count([line]) == {}
+
+
+def test_read_keeps_each_runners_summary_lines_but_go_has_none():
+    from mulebox.common.test_counts import read
+    counts, lines = read(["      Tests  3 passed (3)\n", "--- PASS: TestA (0.00s)\n",
+                          "Test Suite 'All tests' passed at 2026\n",
+                          "Executed 4 tests, with 0 failures (0 unexpected) in 0.1s\n"])
+    assert set(counts) == {"vitest", "go", "xctest"}
+    assert lines == {"vitest": ["      Tests  3 passed (3)"],
+                     "xctest": ["Executed 4 tests, with 0 failures (0 unexpected) in 0.1s"]}

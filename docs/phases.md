@@ -981,6 +981,10 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       design-system/tests/. Done when: on the real node a pass with no tests and one with fewer
       fail with exit 8, `--fewer-tests` passes with its reason, and the picked view shows them on
       the deployed dashboard in Edge.
+      Dashboard built 2026-11-15 (1.35.0), option B, the user's pick: the count on finished rows, a
+      line in words for fewer, none and an allowed drop, a strip and a Tests panel on the job's
+      page; with component tests, and seen in headless Chrome on stand-in data at 390 and 1440 px
+      in both themes.
 - [ ] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
       (a limit, then the usual cleanup), and `mulebox check --from-stage <stage>` sends the changes and
       runs again from there, with no new setup and no new `compose up`.

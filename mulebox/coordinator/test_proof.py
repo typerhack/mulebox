@@ -46,16 +46,16 @@ def settings(body: dict[str, Any]) -> dict[str, Any]:
             "fewer": fewer[:MAX_REASON] if fewer else None}
 
 
-def counted(job: dict[str, Any], log: Path) -> test_counts.Counts | None:
-    """The job's counts from its log, None when it is not counted at all."""
+def counted(job: dict[str, Any], log: Path) -> tuple[test_counts.Counts, test_counts.Lines] | None:
+    """The job's counts and summary lines from its log, None when it is not counted at all."""
     said = job.get("tests") or {}
     if job.get("kind") != "job" or job.get("job") == "warm" or said.get("mode") == "off":
         return None
     try:
         with log.open(encoding="utf-8", errors="replace") as lines:
-            return test_counts.count(lines)
+            return test_counts.read(lines)
     except OSError:
-        return {}
+        return {}, {}
 
 
 def _last_pass(conn: sqlite3.Connection, job: dict[str, Any], branch: str | None
@@ -63,7 +63,7 @@ def _last_pass(conn: sqlite3.Connection, job: dict[str, Any], branch: str | None
     if not branch:
         return None
     row = conn.execute(
-        "SELECT job_id, branch, tests FROM jobs WHERE project = ? AND job = ? AND branch = ? "
+        "SELECT job_id, branch, tests, finished_at FROM jobs WHERE project = ? AND job = ? AND branch = ? "
         "AND outcome = 'passed' AND job_id != ? AND tests LIKE '%\"runners\"%' "
         "ORDER BY finished_at DESC LIMIT 1",
         (job["project"], job["job"], branch, job["job_id"])).fetchone()
@@ -71,7 +71,7 @@ def _last_pass(conn: sqlite3.Connection, job: dict[str, Any], branch: str | None
         return None
     tests = json.loads(row[2] or "{}")
     return {"job_id": row[0], "branch": row[1], "ran": tests.get("ran"),
-            "runners": tests.get("runners") or {}}
+            "runners": tests.get("runners") or {}, "finished_at": row[3]}
 
 
 def _verdict(job: dict[str, Any], runners: test_counts.Counts,
@@ -89,14 +89,16 @@ def _verdict(job: dict[str, Any], runners: test_counts.Counts,
     return "ok"
 
 
-def judge(conn: sqlite3.Connection, job: dict[str, Any], runners: test_counts.Counts | None,
+def judge(conn: sqlite3.Connection, job: dict[str, Any],
+          found_in_log: tuple[test_counts.Counts, test_counts.Lines] | None,
           outcome: Outcome, exit_code: int | None) -> tuple[dict[str, Any] | None, Outcome,
                                                             int | None]:
     """(what `jobs.tests` becomes, the outcome, the exit code)."""
-    if runners is None:
+    if found_in_log is None:
         return job.get("tests"), outcome, exit_code
+    runners, lines = found_in_log
     said = job.get("tests") or {}
-    found = {**said, "runners": runners, "ran": test_counts.total(runners),
+    found = {**said, "runners": runners, "lines": lines, "ran": test_counts.total(runners),
              "skipped": sum(item["skipped"] for item in runners.values()),
              "verdict": None, "compared": None}
     if outcome is not Outcome.PASSED:
