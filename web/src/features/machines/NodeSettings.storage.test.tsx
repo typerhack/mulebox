@@ -113,6 +113,20 @@ describe("the Storage tab of a node's settings window", () => {
     expect(posts).toEqual([{ auto_clean: false, max_size: "12GB", warn_size: "OFF" }]);
   });
 
+  it("offers slimming on a node of 1.29 and sends the hours, and leaves it out before", async () => {
+    const posts = await openStorage(with126({ current: { slots: 2, priority: "normal", dev: false, ...DISK, ...MORE, slim_hours: 12 },
+                                              defaults: { ...DISK, ...MORE, slim_hours: 12 } }));
+    expect(cell("Slim idle folders", "Suggested")).toBe("12 hoursthe default for every node");
+    expect(cell("Slim idle folders", "Runs with")).toBe("12 hours nowas suggested");
+    fireEvent.change(screen.getByRole("textbox", { name: "Hours before an idle branch folder is slimmed" }), { target: { value: "0" } });
+    expect(cell("Slim idle folders", "Runs with")).toContain("Never unsaved");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save changes" })); });
+    expect(posts).toEqual([{ slim_hours: 0 }]);
+    cleanup();
+    await openStorage(with126());
+    expect(screen.queryByRole("region", { name: "Slim idle folders" })).toBeNull();
+  });
+
   it("says a node before 1.24 has no disk settings, and offers none", async () => {
     await openStorage(view());
     expect(screen.getByText(/runs a mulebox older than 1.24/)).toBeTruthy();

@@ -10,7 +10,7 @@ import pytest
 from mulebox.common.ids import new_id
 from mulebox.common.storage_policy import StoragePolicy
 from mulebox.worker import project_home as home
-from mulebox.worker import storage_scan, storage_sweep
+from mulebox.worker import storage_clearing, storage_scan, storage_sweep
 from mulebox.worker.agent import Agent
 from mulebox.worker.job import ActiveJob
 
@@ -29,7 +29,7 @@ class NoDocker:
 
 @pytest.fixture(autouse=True)
 def no_settle(monkeypatch):
-    monkeypatch.setattr(storage_sweep, "SETTLE_S", 0.0)
+    monkeypatch.setattr(storage_clearing, "SETTLE_S", 0.0)
 
 
 @pytest.fixture
@@ -128,12 +128,12 @@ def test_claims_stop_only_while_folders_are_removed(worker, send, monkeypatch):
     send("pr/1", 20)
     agent = worker()
     seen = []
-    real = storage_sweep.project_disk.remove_worktree
+    real = storage_clearing.project_disk.remove_worktree
 
     def watch(*args, **kwargs):
         seen.append(agent._housekeeping(time.time()))
         return real(*args, **kwargs)
-    monkeypatch.setattr(storage_sweep.project_disk, "remove_worktree", watch)
+    monkeypatch.setattr(storage_clearing.project_disk, "remove_worktree", watch)
     agent._store()["next"] = float("inf")  # no sweep of its own from _housekeeping
     agent._sweep()
     assert seen == [True]

@@ -20,13 +20,15 @@ def held_total(folders: list[storage_rules.Folder], held: dict[str, Any]) -> int
 
 def sweep_record(started: float, trigger: str, auto: bool, removed: list[storage_rules.Folder],
                  docker: dict[str, Any] | None, free_before: int, free_after: int,
-                 errors: list[str], would: int) -> dict[str, Any]:
+                 errors: list[str], would: int,
+                 slimmed: list[storage_rules.Folder] = ()) -> dict[str, Any]:
     """One cleanup, for the history: when and why it ran, what it removed and what it freed."""
     return {"started": started, "seconds": round(time.time() - started, 1), "trigger": trigger,
             "auto": auto, "would_remove": would,
             "removed": [{"project": f.project, "folder": f.folder, "size": f.size, "why": f.why}
                         for f in removed[:MAX_LISTED]],
             "count": len(removed), "bytes": sum(f.size for f in removed), "docker": docker,
+            "slimmed": len(slimmed), "slimmed_bytes": sum(f.frees or 0 for f in slimmed),
             "free_before": free_before, "free_after": free_after, "errors": errors[:20]}
 
 
@@ -43,7 +45,8 @@ def build(plan: storage_rules.Plan, removed: list[storage_rules.Folder], held: d
         projects.setdefault(folder.project, {"project": folder.project, "home": 0, "caches": 0,
                                              "folders": []})["folders"].append(
             {"folder": folder.folder, "size": folder.size, "last_used": folder.last_used,
-             "fate": folder.fate, "removed_in": folder.removed_in, "why": folder.why})
+             "fate": folder.fate, "removed_in": folder.removed_in, "why": folder.why,
+             "slim": folder.slim, "frees": folder.frees})
     kept = [f for f in plan.folders if (f.project, f.folder) not in gone]
     return {"at": time.time(), "disk": {**disk, "reserve": reserve}, "policy": policy,
             "held": held_total(kept, held), "over": plan.over,

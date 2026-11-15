@@ -42,6 +42,8 @@ def register(actions: argparse._SubParsersAction) -> None:
     config.add_argument("--keep-latest", choices=("on", "off"),
                         help="keep each project's latest folder however old")
     config.add_argument("--idle-days", type=int, help="suggest cleaning a project idle this long")
+    config.add_argument("--slim-hours", type=int, help="slim a branch folder unused this long: "
+                        "what git ignores in it goes, the checkout stays (0: never)")
     config.add_argument("--auto-clean", choices=("on", "off"),
                         help="remove on its own; off, it only says what would go")
     config.add_argument("--docker-clean", choices=("on", "off"),
@@ -83,6 +85,10 @@ def lines(view: dict[str, Any]) -> list[str]:
                        + "; Docker " + ("too" if current["docker_clean"] else "never")
                        + "; warns over " + str(current.get("warn_size", ns.DEFAULTS["warn_size"])).lower()
                        + "; at most " + str(current.get("max_size", "off")).lower())
+        if "slim_hours" in current:
+            hours = current["slim_hours"]
+            out.append("slimming:  " + (f"a branch folder unused {hours} hours loses what git "
+                                        "ignores in it" if hours else "off"))
     if tip:
         out.append(f"suggested: {tip['slots']} slot(s), from {tip['reason']}")
     if pending:
@@ -112,7 +118,8 @@ def _config(args: argparse.Namespace) -> int:
                               else args.keep_latest == "on"), ("idle_days", args.idle_days),
                              ("auto_clean", _flag(args.auto_clean)),
                              ("docker_clean", _flag(args.docker_clean)),
-                             ("warn_size", args.warn_size), ("max_size", args.max_size))
+                             ("warn_size", args.warn_size), ("max_size", args.max_size),
+                             ("slim_hours", args.slim_hours))
                             if value is not None}
     if args.cancel:
         body["cancel"] = True

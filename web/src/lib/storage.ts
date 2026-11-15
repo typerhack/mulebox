@@ -8,12 +8,17 @@ import { bytes, plural } from "./format";
 
 export type Fate = "running" | "kept" | "latest" | "remove" | "stays";
 export type Why = "gone" | "unused" | "size";   // why a folder goes: its branch is gone, no job for long, over the size limit
-export interface Folder { folder: string; size: number; last_used: number | null; fate: Fate; removed_in: number | null; why?: Why | null }
+// `slim` (1.29): "done", slimmed and no job since; "due", slimmed at the next cleanup, which frees `frees` bytes.
+export interface Folder {
+  folder: string; size: number; last_used: number | null; fate: Fate; removed_in: number | null; why?: Why | null;
+  slim?: "done" | "due" | null; frees?: number | null;
+}
 export interface Project { project: string; home: number; caches: number; folders: Folder[] }
 // The last four are a 1.26 node's: an older one sends none, and cleans folders on its own.
 export interface Policy {
   keep_free: string; unused_days: number; keep_latest: boolean; idle_days: number;
   auto_clean?: boolean; docker_clean?: boolean; max_size?: string; warn_size?: string;
+  slim_hours?: number;                   // a 1.29 node's
 }
 // One cleanup of a node: when and why it ran, what it removed and what that freed.
 export type Trigger = "start" | "hourly" | "low" | "now";
@@ -23,6 +28,7 @@ export interface Sweep {
   started: number; seconds: number; trigger: Trigger; auto: boolean; would_remove: number;
   removed: Removed[]; count: number; bytes: number; docker: DockerFreed | null;
   free_before: number; free_after: number; errors: string[];
+  slimmed?: number; slimmed_bytes?: number;  // folders slimmed and what that freed (1.29)
 }
 export interface DockerPart { size: number | null; reclaimable: number | null; count: number | null }
 export interface Idle { project: string; days: number | null; size: number; kept: boolean }
@@ -103,7 +109,7 @@ export function whyText(why: Why | null | undefined, days: number): string {
   if (why === "size") return "over the size limit";
   return `no job for ${plural(days, "day")}`;
 }
-export function fateText(folder: Pick<Folder, "fate" | "removed_in" | "why">, policy?: Policy): string {
+export function fateText(folder: Pick<Folder, "fate" | "removed_in" | "why" | "slim">, policy?: Policy): string {
   if (folder.fate === "running") return "A job runs in it now";
   if (folder.fate === "kept") return "Kept by you";
   if (folder.fate === "latest") return "Kept: the project's latest";
@@ -111,7 +117,10 @@ export function fateText(folder: Pick<Folder, "fate" | "removed_in" | "why">, po
     const why = policy ? `: ${whyText(folder.why, policy.unused_days)}` : "";
     return policy?.auto_clean === false ? `Would go (automatic cleanup is off)${why}` : `Goes at the next cleanup${why}`;
   }
-  return folder.removed_in === null ? "Stays" : `Removed ${inDays(folder.removed_in)}`;
+  const later = folder.removed_in === null ? "Stays" : `Removed ${inDays(folder.removed_in)}`;
+  if (folder.slim === "done") return `Slimmed; ${later.toLowerCase()}`;
+  if (folder.slim === "due") return `Slimmed at the next cleanup; ${later.toLowerCase()}`;
+  return later;
 }
 
 // A size setting ("50GB", "500MB", "1TB") in bytes; null for "OFF" or none.
@@ -132,6 +141,7 @@ export function policyLines(policy: Policy): { on: boolean; rules: string[] } {
     policy.keep_latest ? "keeps each project's latest folder" : "a project's latest folder goes like the rest",
     `keeps ${policy.keep_free} of the disk free`,
     ...(limit === null ? [] : [`holds at most ${bytes(limit)}`]),
+    ...(policy.slim_hours ? [`slims a branch folder after ${plural(policy.slim_hours, "hour")} with no job`] : []),
     policy.docker_clean === undefined ? "leaves Docker alone"
       : !policy.docker_clean ? "Docker cleanup is off"
         : on ? "cleans Docker's unused build cache and images" : "would clean Docker's unused build cache and images",
@@ -163,11 +173,14 @@ export function nextLine(report: Report, now: number): string {
   const next = goingNext(report);
   const soon = next.filter((f) => f.fate === "remove" || (f.removed_in ?? Infinity) < 1);
   const due = next.filter((f) => f.fate === "remove");
-  if (due.length) {
-    const what = `${plural(due.length, "branch folder")}, ${bytes(sum(due.map((f) => f.size)))}`;
-    if (report.policy.auto_clean === false) return `Run now removes ${what}; with the cleanup off nothing goes by itself.`;
+  const thin = next.filter((f) => f.fate === "stays" && f.slim === "due");
+  if (due.length || thin.length) {
+    const what = [due.length && `removes ${plural(due.length, "branch folder")}, ${bytes(sum(due.map((f) => f.size)))}`,
+                  thin.length && `slims ${plural(thin.length, "branch folder")}, ${bytes(sum(thin.map((f) => f.frees ?? 0)))}`]
+      .filter(Boolean).join(" and ");
+    if (report.policy.auto_clean === false) return `Run now ${what}; with the cleanup off nothing goes by itself.`;
     const minutes = report.next_sweep === undefined ? null : Math.max(1, Math.round((report.next_sweep - now) / 60));
-    return `Run now removes ${what}; ${minutes === null ? "the next cleanup does too" : `the next cleanup does in ${plural(minutes, "minute")}`}.`;
+    return `Run now ${what}; ${minutes === null ? "the next cleanup does too" : `the next cleanup does in ${plural(minutes, "minute")}`}.`;
   }
   if (!next.length) return "Nothing is due to go on its own.";
   if (!soon.length) return `Nothing goes within a day. The next folder goes ${inDays(next[0].removed_in ?? 0)}.`;

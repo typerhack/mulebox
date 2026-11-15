@@ -474,6 +474,7 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 | `keep_free` | `"10%"` | free space mulebox leaves on the disk of its folders: a share of it (1 to 90%) or a size (`"50GB"`) |
 | `unused_days` | 7 | a branch folder with no job for this long is removed on its own |
 | `keep_latest` | true | each project's latest folder stays however old, so the next job after a break is still quick |
+| `slim_hours` | 12 | a branch folder with no job for this long loses what git ignores in it (installed packages, build output), its files stay; 0 never (1.29.0) |
 | `idle_days` | 14 | a project with no job for this long gets a suggestion to clean its latest folder, never a removal |
 | `auto_clean` | true | the sweep removes on its own; off, it only says what would go, and removes when the user runs it (`mulebox storage clean`, the dashboard's Run now) |
 | `docker_clean` | true | Docker's unused build cache, dangling images and the images mulebox's jobs pulled and no job used since go too (below) |
@@ -513,6 +514,18 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
   will happen to each), its package caches, toolchains and browsers, GitHub runners, logs and
   snapshots, Docker's own totals (`docker system df`), and where each part is on the node (`paths`, for the dashboard's "copy path"). The coordinator keeps the last report
   per node (`workers.storage`) for `mulebox storage` and the dashboard's `/api/storage`.
+- **Slim folders** (1.29.0, the user's ask, M25.9: most of a folder is what its jobs installed
+  and built, 277 MB of a 364 MB folder of one project, `.next` 27 GB of another's 35 GB, and most
+  branches get no job again): a folder with no job for `slim_hours` (12; 0 never) loses what git
+  ignores in it (`git ls-files --others --ignored --directory`), through safepath, and keeps the
+  checkout and its git history (`worker/slim.py`). Never the latest, a kept or a running folder,
+  and only a `stays` one: a folder that goes anyway is removed, not slimmed. Slimming forgets the
+  folder's `setup` and `install`, so its next job runs them again, and leaves a mark,
+  `state/<folder>.slim`, which that job's `prepare` takes away. Before it runs, the report says
+  what it frees (`frees`): the bytes of files whose every hard link is inside what goes
+  (`common/tree_size.freed`), so a pnpm `node_modules`, linked from its store, counts as little.
+  The cost: a branch's next job after a day installs again from the package caches, and a build
+  starts without its own cache (`.next/cache`).
 - **What goes now is said as it is** (1.28.0, the user's ask: the page said 6.5 GB would go
   within a day while a cleanup would have removed 17 GB of gone branches, as the branch list had
   come after the last measurement): between sweeps the worker makes the plan again on its last

@@ -117,6 +117,7 @@ export function CleanupLine({ node, online, report, editable, machine, now, chil
             <strong className="font-medium text-ink-1">
               The last cleanup, {ago(last.started, now)} ({TRIGGERS[last.trigger]?.toLowerCase() ?? last.trigger}),{" "}
               {last.count ? `removed ${plural(last.count, "branch folder")}, ${bytes(last.bytes)}` : "removed no branch folder"}
+              {last.slimmed ? `, slimmed ${plural(last.slimmed, "branch folder")}, ${bytes(last.slimmed_bytes ?? 0)}` : ""}
               {last.docker ? ` and freed ${bytes(freedDocker)} in Docker` : ""}.
             </strong>{" "}
             {last.errors.length > 0 && `${plural(last.errors.length, "error")}, in the history below. `}

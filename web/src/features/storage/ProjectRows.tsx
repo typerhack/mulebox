@@ -84,7 +84,9 @@ function projectFate(project: Project, report: Report, body: StorageBody, ctl: C
   }
   const soon = next.filter((f) => (f.removed_in ?? Infinity) < 1);
   if (soon.length) return <FateLine icon={Timer} strong>{plural(soon.length, "folder")} {soon.length === 1 ? "goes" : "go"} within a day</FateLine>;
-  if (next.length) return <FateLine icon={Clock}>{fateText(next[0]).replace("Removed", "Next goes")}</FateLine>;
+  const thin = next.filter((f) => f.fate === "stays" && f.slim === "due");
+  if (thin.length) return <FateLine icon={Timer}>{plural(thin.length, "folder")} slimmed at the next cleanup</FateLine>;
+  if (next.length) return <FateLine icon={Clock}>{fateText({ ...next[0], slim: null }).replace("Removed", "Next goes")}</FateLine>;
   return <FateLine icon={Flag}>Nothing goes on its own</FateLine>;
 }
 

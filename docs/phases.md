@@ -1114,7 +1114,9 @@ runs a job.
       Found 2026-11-15: the dev machine has 2 or 3 branches per project, so its agents delete them
       already; the folders stayed as lists only came from 1.26 clients (miu had none yet) and the
       node was off overnight. 1.28.0: the page's figure follows a new list at once, `warn_size` 20 GB.
-      Next: idle branch folders slimmed (their ignored files, `node_modules`, `vendor`, `.next`).
+      The first cleanup on 1.28.0 removed 64 folders of gone branches, 17.0 GB, as predicted.
+      1.29.0: idle branch folders slimmed after `slim_hours` (12): what git ignores goes, the
+      checkout stays, the next job installs again.
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

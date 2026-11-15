@@ -173,7 +173,8 @@ says how old.
 - **Settings.** The node's settings window has a Storage tab for `keep_free`, `unused_days`,
   `keep_latest` and `idle_days`, and from a node on 1.26 `max_size` ("Most mulebox may use"),
   `auto_clean` ("Clean up on its own"), `docker_clean` ("Clean Docker too") and `warn_size` ("Warn
-  agents over"), hidden for an older node (Node settings below). One line says what the values on
+  agents over"), and from a node on 1.29 `slim_hours` ("Slim idle folders", 0 never), each
+  hidden for an older node (Node settings below). One line says what the values on
   screen would do at the next cleanup, worked out in the page from the node's last report
   (`lib/storage.ts`, `preview`): what goes, also past the size limit (the oldest folders that may
   go, as `storage_rules.trim`), how mulebox then stands against that limit, and, with cleanup on
@@ -386,7 +387,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
 | `GET /api/machines` | machines panel snapshot (above) |
-| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names. A report holds `at`, `disk` (`total`, `free`, `reserve`), `policy`, `projects` (`project`, `home`, `caches`, `folders` with `folder`, `size`, `last_used`, `fate`, `removed_in`), `shared`, `paths` (where each part is on the node, since 1.25), `docker`, `idle`, `short` and `removed` (Storage page, above); from 1.28 `measured_at` (when the sizes were measured; `at` is when the plan was made) and `next_sweep` (when the node's next cleanup runs by itself) |
+| `GET /api/storage` | `storage_ok`'s body (interfaces-m1.md) plus `editable`: each node's last report, the keep marks and branch names. A report holds `at`, `disk` (`total`, `free`, `reserve`), `policy`, `projects` (`project`, `home`, `caches`, `folders` with `folder`, `size`, `last_used`, `fate`, `removed_in`, and from 1.29 `slim` (`done`, `due` or null) and `frees` (what slimming a `due` folder gives back)), `shared`, `paths` (where each part is on the node, since 1.25), `docker`, `idle`, `short` and `removed` (Storage page, above); from 1.28 `measured_at` (when the sizes were measured; `at` is when the plan was made) and `next_sweep` (when the node's next cleanup runs by itself) |
 | `POST /api/storage/keep` | body `{project, branch?, keep?}` (`keep` false drops the mark); `{keeps}`. Controls on only, protected like them; 400 on a bad body |
 | `POST /api/storage/remove` | body `{project, branch?}`: `project_order` reset with `yes`, as `mulebox project reset --yes`; `{group, nodes, done}`. Controls on only, protected like them |
 | `POST /api/storage/sweep` | body `{node?, docker?}` (docker true by default): the cleanup now on every node or one, a `sweep` order; `{group, nodes, done}`, followed at `/api/storage/remove/{group}`. Controls on only |

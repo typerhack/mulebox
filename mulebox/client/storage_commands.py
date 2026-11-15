@@ -59,23 +59,28 @@ def _ago(when: float | None, now: float) -> str:
 def _fate(folder: dict[str, Any]) -> str:
     if folder.get("fate") == "stays" and folder.get("removed_in") is not None:
         days = max(1, round(folder["removed_in"]))
-        return f"goes in {days} day{'s' if days != 1 else ''}"
+        slimmed = {"done": "slimmed, ", "due": f"slims next ({units.size(folder.get('frees') or 0)}), "
+                   }.get(folder.get("slim"), "")
+        return f"{slimmed}goes in {days} day{'s' if days != 1 else ''}"
     return FATES.get(folder.get("fate"), str(folder.get("fate")))
 
 
 def next_line(report: dict[str, Any], now: float) -> str | None:
     """What a cleanup would remove now: the folders planned to go, and when that happens."""
-    due = [f for p in report.get("projects", []) for f in p.get("folders", [])
-           if f.get("fate") == "remove"]
-    if not due:
+    every = [f for p in report.get("projects", []) for f in p.get("folders", [])]
+    due = [f for f in every if f.get("fate") == "remove"]
+    thin = [f for f in every if f.get("fate") == "stays" and f.get("slim") == "due"]
+    if not due and not thin:
         return None
-    what = f"{len(due)} branch folder(s), {units.size(sum(f['size'] for f in due))}"
+    what = " and ".join(part for part in (
+        due and f"removes {len(due)} branch folder(s), {units.size(sum(f['size'] for f in due))}",
+        thin and f"slims {len(thin)}, {units.size(sum(f.get('frees') or 0 for f in thin))}") if part)
     if (report.get("policy") or {}).get("auto_clean") is False:
-        return f"would go: {what} (automatic cleanup is off; `mulebox storage clean` removes them)"
+        return f"a cleanup {what} (automatic cleanup is off; `mulebox storage clean` runs it)"
     upcoming = report.get("next_sweep")
     when = (f"in {max(1, round((upcoming - now) / 60))} min" if isinstance(upcoming, (int, float))
             else "at the next cleanup")
-    return f"goes {when}: {what} (`mulebox storage clean` removes them now)"
+    return f"the cleanup {when} {what} (`mulebox storage clean` runs it now)"
 
 
 def node_lines(node: dict[str, Any], names: dict[str, dict[str, str]], now: float) -> list[str]:
@@ -139,6 +144,8 @@ def history_lines(sweeps: list[dict[str, Any]], now: float) -> list[str]:
         took = (docker.get("build_cache") or 0) + (docker.get("images") or 0)
         out.append(f"{sweep['node']}: {_ago(sweep.get('started'), now)}, {sweep.get('trigger')}: "
                    f"{sweep.get('count', 0)} folder(s), {units.size(sweep.get('bytes', 0))}"
+                   + (f", slimmed {sweep['slimmed']}, {units.size(sweep.get('slimmed_bytes', 0))}"
+                      if sweep.get("slimmed") else "")
                    + (f", docker {units.size(took)}" if docker else "")
                    + f"; free {units.size(sweep.get('free_before', 0))} to "
                    f"{units.size(sweep.get('free_after', 0))} ({units.size(max(freed, 0))} more)"

@@ -86,6 +86,7 @@ export function CleanupHistory({ sweeps, body, days, now }: Props) {
                 <span className={sweep.count ? "num font-medium" : "num text-ink-2"}>
                   {sweep.count ? `${plural(sweep.count, "folder")} removed, ${bytes(sweep.bytes)}`
                     : sweep.would_remove ? `none removed; ${sweep.would_remove} would go` : "no folder removed"}</span>
+                {sweep.slimmed ? <span className="num font-medium">{plural(sweep.slimmed, "folder")} slimmed, {bytes(sweep.slimmed_bytes ?? 0)}</span> : null}
                 <span className={docker ? "num font-medium" : "num text-ink-2"}>{docker === null ? "Docker not cleaned" : `Docker ${bytes(docker)} freed`}</span>
                 <span className="num">free {bytes(sweep.free_before)} to {bytes(sweep.free_after)}</span>
                 <span className="inline-flex items-center gap-1 font-medium whitespace-nowrap">

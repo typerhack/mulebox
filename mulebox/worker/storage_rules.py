@@ -16,6 +16,10 @@ Past the node's `max_size` (mulebox's own folders, caches and tools together), `
 marks the oldest `stays` folders `remove` (`why: size`) until mulebox is back under it; what it
 cannot reach that way (latest, kept and running folders stay) is left as `over`.
 
+A `stays` folder with no job for `slim_hours` is slimmed (`slim: due`, worker/slim.py): what git
+ignores in it goes, the checkout stays; one slimmed already says `slim: done`. Its `frees` is
+what slimming gives back, measured by the sweep.
+
 An idle project (its latest folder unused for `idle_days`) gets a suggestion, not a removal.
 When the disk would still be under the reserve after the removals, `short` lists what could go
 next, oldest first, until it covers the gap: the user decides on those.
@@ -30,6 +34,8 @@ from mulebox.common.storage_policy import StoragePolicy
 
 DAY = 86400.0
 RUNNING, KEPT, LATEST, REMOVE, STAYS = "running", "kept", "latest", "remove", "stays"
+DONE, DUE = "done", "due"  # a folder's `slim`
+HOUR = 3600.0
 
 
 @dataclass
@@ -41,6 +47,8 @@ class Folder:
     fate: str = STAYS
     removed_in: float | None = None  # days, for `stays`
     why: str | None = None  # for `remove`: `gone` or `unused`
+    slim: str | None = None  # `done`: slimmed and no job since; `due`: slimmed at the next sweep
+    frees: int | None = None  # for `due`: the bytes slimming gives back
 
 
 @dataclass
@@ -53,6 +61,10 @@ class Plan:
     @property
     def to_remove(self) -> list[Folder]:
         return [f for f in self.folders if f.fate == REMOVE]
+
+    @property
+    def to_slim(self) -> list[Folder]:
+        return [f for f in self.folders if f.fate == STAYS and f.slim == DUE]
 
 
 def _is_kept(folder: Folder, keeps: set[tuple[str, str | None]]) -> bool:
@@ -89,6 +101,10 @@ def plan(folders: list[Folder], policy: StoragePolicy, now: float,
                 folder.fate, folder.why = REMOVE, "unused"
             else:
                 folder.fate, folder.removed_in = STAYS, max(0.0, policy.unused_days - age)
+            if folder.slim != DONE:
+                idle = age * DAY / HOUR
+                folder.slim = (DUE if folder.fate == STAYS and policy.slim_hours
+                               and idle >= policy.slim_hours else None)
         if newest is None:
             continue
         idle_days = (now - newest.last_used) / DAY if newest.last_used else None
@@ -103,7 +119,7 @@ def plan(folders: list[Folder], policy: StoragePolicy, now: float,
 
 def _short(out: Plan, free: int, reserve: int) -> dict[str, Any] | None:
     """What could go next when the planned removals leave the disk under the reserve."""
-    after = free + sum(f.size for f in out.to_remove)
+    after = free + sum(f.size for f in out.to_remove) + sum(f.frees or 0 for f in out.to_slim)
     if after >= reserve:
         return None
     need = reserve - after

@@ -6,6 +6,9 @@ Project folders, Disk use and cleanup on its own). Read from node.toml, changed 
   90) or a size (`"50GB"`, `"500MB"`, `"1TB"`, decimal as every size shown).
 - `unused_days`: a branch folder with no job for this long is removed on its own (1 to 365).
 - `keep_latest`: each project's latest folder stays however old.
+- `slim_hours`: a branch folder with no job for this long is slimmed: what git ignores in it
+  (`node_modules`, `vendor`, build output) goes, the checkout stays (worker/slim.py); never the
+  project's latest, a kept or a running one. 0 for never (0 to 720).
 - `idle_days`: a project with no job for this long gets a suggestion, never a removal (1 to 365).
 - `auto_clean`: the sweep removes on its own; off, it only measures and says what would go.
 - `docker_clean`: the sweep also removes Docker's build cache, dangling images and the images
@@ -25,12 +28,14 @@ from dataclasses import dataclass
 from typing import Any
 
 FIELDS = ("keep_free", "unused_days", "keep_latest", "idle_days", "auto_clean", "docker_clean",
-          "warn_size", "max_size")
+          "warn_size", "max_size", "slim_hours")
 FLAGS = ("keep_latest", "auto_clean", "docker_clean")
 DEFAULTS: dict[str, Any] = {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                             "idle_days": 14, "auto_clean": True, "docker_clean": True,
-                            "warn_size": "20GB", "max_size": "OFF"}
+                            "warn_size": "20GB", "max_size": "OFF",
+                            "slim_hours": 12}
 MAX_DAYS = 365
+MAX_HOURS = 720
 MAX_SHARE = 90
 UNITS = {"MB": 10**6, "GB": 10**9, "TB": 10**12}
 _SIZE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(%|MB|GB|TB)\s*$", re.IGNORECASE)
@@ -46,6 +51,7 @@ class StoragePolicy:
     docker_clean: bool = DEFAULTS["docker_clean"]
     warn_size: str = DEFAULTS["warn_size"]
     max_size: str = DEFAULTS["max_size"]
+    slim_hours: int = DEFAULTS["slim_hours"]
 
     def reserve(self, total: int) -> int:
         """The bytes to keep free on a disk of `total` bytes."""
@@ -115,6 +121,14 @@ def check_days(name: str, value: Any) -> int:
     return value
 
 
+def check_hours(name: str, value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{name} must be a whole number of hours, got {value!r}")
+    if not 0 <= value <= MAX_HOURS:
+        raise ValueError(f"{name} must be from 0 (never) to {MAX_HOURS} hours, got {value}")
+    return value
+
+
 def check_flag(name: str, value: Any) -> bool:
     if not isinstance(value, bool):
         raise ValueError(f"{name} must be true or false, got {value!r}")
@@ -129,6 +143,8 @@ def check(name: str, value: Any) -> Any:
         return check_size(name, value)
     if name in FLAGS:
         return check_flag(name, value)
+    if name == "slim_hours":
+        return check_hours(name, value)
     return check_days(name, value)
 
 

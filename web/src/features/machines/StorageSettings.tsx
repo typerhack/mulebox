@@ -3,11 +3,11 @@
 // viewer set, what the node runs with. Above them one line says what the values on screen
 // would do at the node's next cleanup, worked out from its last storage report, before a save.
 
-import { Flag, HardDrive, Lightbulb, Timer, TriangleAlert } from "lucide-react";
+import { Flag, HardDrive, Lightbulb, Shrink, Timer, TriangleAlert } from "lucide-react";
 import { useId } from "react";
 
 import { bytes, plural } from "../../lib/format";
-import { DAYS_RANGE, LATEST, STORAGE_DEFAULTS, rowOf, type Draft, type NodeSettings, type SettingKey } from "../../lib/nodeSettings";
+import { DAYS_RANGE, HOURS_RANGE, LATEST, STORAGE_DEFAULTS, rowOf, type Draft, type NodeSettings, type SettingKey } from "../../lib/nodeSettings";
 import { formatKeepFree, parseKeepFree, preview, previewText, reserveOf, type Report } from "../../lib/storage";
 import { Panel } from "../../ui/Panel";
 import { Segmented } from "../../ui/Segmented";
@@ -26,6 +26,7 @@ interface Props {
 }
 
 const days = (n: number | null | undefined) => (typeof n === "number" ? plural(n, "day") : "-");
+const hours = (n: number | null | undefined) => (typeof n !== "number" ? "-" : n === 0 ? "Never" : plural(n, "hour"));
 const latest = (keep: boolean | null | undefined) => (keep === null || keep === undefined ? "-" : keep ? "Keep" : "Remove");
 const UNITS = [{ value: "%", label: "%" }, { value: "GB", label: "GB" }];
 const MAX_GB = 9999;
@@ -57,6 +58,9 @@ export function StorageSettings({ view, draft, report, locked, busy, onEdit, onD
   const panels = useLimitPanels({ view, draft, defaults, days: mine.unused_days, report, off, busy, onEdit, drop });
   const would = known && report ? preview(report, limits ? { ...mine, ...more } : mine, Date.now() / 1000) : null;
   const reserve = size(mine.keep_free);
+  const thin = rowOf(view, draft, "slim_hours");
+  const slims = typeof view.current?.slim_hours === "number";  // a node older than 1.29 slims nothing
+  const slimHours = thin.yours ?? defaults.slim_hours;
 
   return (
     <div className="grid gap-gap">
@@ -104,6 +108,21 @@ export function StorageSettings({ view, draft, report, locked, busy, onEdit, onD
             <RunsWith now={unused.now === null ? null : days(unused.now)} yours={days(unused.yours)} mark={unused.mark} online={view.online}
               same={unused.now === defaults.unused_days} drop={drop("unused_days")} busy={busy} />
           </Panel>
+          {slims && (
+            <Panel subgrid title="Slim idle folders" label="Slim idle folders" icon={<Shrink aria-hidden className="size-icon" />} bodyClassName={ROWS}>
+              {meaning("A branch folder with no job this long loses what git ignores in it (installed packages, build output); its files stay, and its next job installs again")}
+              <Row label="Suggested" note="the default for every node"><span className="num font-medium">{hours(defaults.slim_hours)}</span></Row>
+              <Row label="Yours" note="0 never slims">
+                <span className="ml-auto inline-flex items-center gap-2">
+                <Stepper value={slimHours} min={view.choices?.slim_hours?.min ?? HOURS_RANGE.min} max={view.choices?.slim_hours?.max ?? HOURS_RANGE.max}
+                  label="Hours before an idle branch folder is slimmed" unit="hour" disabled={off} onChange={(next) => onEdit({ slim_hours: next })} />
+                <span className="text-ink-2">hours</span>
+                </span>
+              </Row>
+              <RunsWith now={thin.now === null ? null : hours(thin.now)} yours={hours(thin.yours)} mark={thin.mark} online={view.online}
+                same={thin.now === defaults.slim_hours} drop={drop("slim_hours")} busy={busy} />
+            </Panel>
+          )}
           <Panel subgrid title="Latest folder" label="Latest folder" icon={<Flag aria-hidden className="size-icon" />} bodyClassName={ROWS}>
             {meaning("What happens to each project's most recent folder")}
             <Row label="Suggested" note="so a project's next job after a break is still quick"><span className="font-medium">Keep</span></Row>

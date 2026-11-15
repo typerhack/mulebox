@@ -43,6 +43,15 @@ describe("a node's storage report", () => {
       .toBe("Run now removes 2 branch folders, 3.0 GB; with the cleanup off nothing goes by itself.");
   });
 
+  it("says what slimming frees, beside what goes, and a slim folder's fate", () => {
+    const thin = { folder: "c", size: GB, last_used: NOW, fate: "stays" as const, removed_in: 5, slim: "due" as const, frees: 0.9 * GB };
+    const both = report({ next_sweep: NOW + 60, projects: [{ project: "example-app", home: 0, caches: 0, folders: [
+      { folder: "a", size: 2 * GB, last_used: NOW, fate: "remove", removed_in: null, why: "gone" }, thin] }] });
+    expect(nextLine(both, NOW)).toBe("Run now removes 1 branch folder, 2.0 GB and slims 1 branch folder, 900.0 MB; the next cleanup does in 1 minute.");
+    expect(fateText(thin)).toBe("Slimmed at the next cleanup; removed in 5 days");
+    expect(fateText({ ...thin, slim: "done" })).toBe("Slimmed; removed in 5 days");
+  });
+
   it("counts idle projects that wait for a word, and nodes under their reserve", () => {
     expect(suggestionCount(body())).toBe(1);
     expect(suggestionCount(body({}, report({ idle: [{ project: "example-docs", days: 16, size: 1, kept: true }] })))).toBe(0);

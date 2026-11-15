@@ -42,7 +42,7 @@ def unused(names: list[str], used: dict[str | None, float], cutoff: float) -> li
     return [name for name in newest_first[1:] if last.get(name, 0.0) < cutoff]
 
 
-def _remove(path: Path, paths: NodePaths, reclaim: Reclaim) -> None:
+def remove_path(path: Path, paths: NodePaths, reclaim: Reclaim) -> None:
     try:
         remove_tree(path, paths.roots)
     except RemovalDenied:
@@ -53,8 +53,9 @@ def _remove(path: Path, paths: NodePaths, reclaim: Reclaim) -> None:
 def remove_worktree(paths: NodePaths, project: str, name: str, reclaim: Reclaim) -> None:
     """One branch's worktree and what is known about its `setup` and `install`."""
     home = paths.project_home(project)
-    _remove(home / "trees" / name, paths, reclaim)
-    for kind in (project_home.SETUP, project_home.INSTALL):
+    remove_path(home / "trees" / name, paths, reclaim)
+    for kind in (project_home.SETUP, project_home.INSTALL,
+                 project_home.SLIM):
         remove_tree(home / "state" / f"{name}.{kind}", paths.roots)
     repo = home / "repo.git"
     workspace.git(repo, "worktree", "prune")
@@ -64,5 +65,5 @@ def remove_worktree(paths: NodePaths, project: str, name: str, reclaim: Reclaim)
 def remove_project(paths: NodePaths, project: str, reclaim: Reclaim) -> None:
     """The whole project folder."""
     for tree in trees(paths, project):
-        _remove(tree, paths, reclaim)
+        remove_path(tree, paths, reclaim)
     remove_tree(paths.project_home(project), paths.roots)

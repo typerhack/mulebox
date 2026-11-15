@@ -118,9 +118,18 @@ def test_what_goes_now_is_said_with_when_and_how_much():
     lines = storage_commands.node_lines({"node": "build-1", "online": True, "report": report},
                                         {}, NOW)
     assert lines[0] == "build-1: online, measured 10 min ago"  # sizes' time, not the plan's
-    assert lines[2] == ("  goes in 30 min: 2 branch folder(s), 4.0 GB "
-                        "(`mulebox storage clean` removes them now)")
+    assert lines[2] == ("  the cleanup in 30 min removes 2 branch folder(s), 4.0 GB "
+                        "(`mulebox storage clean` runs it now)")
     off = {**report, "policy": {**storage_policy.DEFAULTS, "auto_clean": False}}
-    assert "would go: 2 branch folder(s), 4.0 GB" in storage_commands.node_lines(
-        {"node": "build-1", "online": True, "report": off}, {}, NOW)[2]
+    assert "a cleanup removes 2 branch folder(s), 4.0 GB (automatic cleanup is off" in \
+        storage_commands.node_lines({"node": "build-1", "online": True, "report": off}, {}, NOW)[2]
     assert storage_commands.next_line(REPORT, NOW) is None
+    thin = {"folder": "b", "size": GB, "fate": "stays", "removed_in": 5.0, "slim": "due",
+            "frees": 900_000_000}
+    both = {**report, "projects": [{**report["projects"][0],
+                                    "folders": [*report["projects"][0]["folders"], thin]}]}
+    assert storage_commands.next_line(both, NOW) == (
+        "the cleanup in 30 min removes 2 branch folder(s), 4.0 GB and slims 1, 900.0 MB "
+        "(`mulebox storage clean` runs it now)")
+    assert storage_commands._fate(thin) == "slims next (900.0 MB), goes in 5 days"
+    assert storage_commands._fate({**thin, "slim": "done"}) == "slimmed, goes in 5 days"

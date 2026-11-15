@@ -55,3 +55,44 @@ def _walk(top: str, wanted: dict[str, Path],
                 if inside is not None:
                     found[inside] = found.get(inside, 0) + info.st_size
     return total, found
+
+
+
+def freed(roots: Iterable[Path]) -> int:
+    """The bytes removing all of `roots` gives back: a file counts only when every hard link to
+    it is inside them (a pnpm `node_modules` links its store, which stays, so its files free
+    nothing). Symlinks are not followed."""
+    total, links = 0, dict[tuple[int, int], list[int]]()
+
+    def count(info: os.stat_result) -> None:
+        nonlocal total
+        if info.st_nlink <= 1:
+            total += info.st_size
+            return
+        seen = links.setdefault((info.st_dev, info.st_ino), [info.st_nlink, 0, info.st_size])
+        seen[1] += 1
+
+    stack: list[str] = []
+    for root in roots:
+        try:
+            if root.is_dir() and not root.is_symlink():
+                stack.append(str(root))
+            else:
+                count(root.lstat())
+        except OSError:
+            continue
+    while stack:
+        try:
+            entries = os.scandir(stack.pop())
+        except OSError:
+            continue
+        with entries:
+            for entry in entries:
+                try:
+                    if entry.is_dir(follow_symlinks=False):
+                        stack.append(entry.path)
+                    else:
+                        count(entry.stat(follow_symlinks=False))
+                except OSError:
+                    continue
+    return total + sum(size for nlink, inside, size in links.values() if inside >= nlink)

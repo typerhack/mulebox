@@ -95,4 +95,4 @@ def test_settings_read_with_defaults_and_spelling_kept_plain():
     assert policy == StoragePolicy(keep_free="50GB", unused_days=3)
     assert read({}).report() == {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                                  "idle_days": 14, "auto_clean": True, "docker_clean": True,
-                                 "warn_size": "20GB", "max_size": "OFF"}
+                                 "warn_size": "20GB", "max_size": "OFF", "slim_hours": 12}

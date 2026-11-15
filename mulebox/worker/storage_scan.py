@@ -18,10 +18,10 @@ import shutil
 from typing import Any
 
 from mulebox.common.tree_size import sizes
-from mulebox.worker import project_disk
+from mulebox.worker import project_disk, slim
 from mulebox.worker.docker import Docker, DockerError
 from mulebox.worker.paths import NodePaths
-from mulebox.worker.storage_rules import Folder
+from mulebox.worker.storage_rules import DONE, Folder
 
 DOCKER_TIMEOUT_S = 30.0
 _DOCKER_SIZE = re.compile(r"^\s*([\d.]+)\s*([kKMGT]?B)")
@@ -50,7 +50,8 @@ def measure(paths: NodePaths) -> tuple[list[Folder], dict[str, Any]]:
     for home in homes:
         trees = project_disk.trees(paths, home.name)
         total, each = sizes(home, trees, seen)
-        folders += [Folder(home.name, tree.name, each[tree], last_used(paths, home.name, tree.name))
+        folders += [Folder(home.name, tree.name, each[tree], last_used(paths, home.name, tree.name),
+                           slim=DONE if slim.is_slim(paths, home.name, tree.name) else None)
                     for tree in trees]
         projects[home.name] = {"home": total - sum(each.values()), "caches": 0}
     packages = paths.cache / "packages"

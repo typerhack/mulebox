@@ -46,6 +46,7 @@ BASE = "mulebox-base"
 CHECKOUT_DIR = 0o755
 INCOMING = "incoming"
 SETUP, INSTALL = "setup", "install"  # what is known about each, in `state/`
+SLIM = "slim"  # the folder was slimmed (slim.py) and no job has run in it since
 SETUP_INPUTS = (
     "package.json", "pnpm-lock.yaml", "package-lock.json", "yarn.lock", "bun.lock", "composer.json",
     "composer.lock", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt",
@@ -158,6 +159,7 @@ def prepare(paths: NodePaths, project: str, branch: str | None, job_id: str,
             snapshot: Path) -> Synced:
     """Make the branch's worktree hold the snapshot."""
     tree = tree_for(paths, project, branch)
+    remove_tree(_state(paths, project, branch, SLIM), paths.roots)  # full again after its setup
     incoming = workspace.job_dir(paths, project, job_id) / INCOMING
     remove_tree(incoming, paths.roots)
     extract_tar(snapshot, incoming, paths.roots)

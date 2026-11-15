@@ -556,6 +556,8 @@ its name (design.md, Project folders).
 
 Each node cleans up on its own, every hour (design.md, Disk use and cleanup on its own):
 - the folder of a branch your dev machines no longer have goes at once;
+- a branch folder with no job for 12 hours is slimmed: what git ignores in it (installed
+  packages, build output such as `.next`) goes and its files stay, so its next job installs again;
 - a branch folder with no job for 7 days goes, but each project's latest stays;
 - Docker's unused build cache, and the images mulebox's jobs pulled and no longer use, go too;
   your own images and every volume stay;
@@ -569,6 +571,7 @@ mulebox storage                                   # each node: disk, mulebox's f
 mulebox project keep example-app --branch main    # no automatic rule removes it; --off ends it
 mulebox machine config build-2 --keep-free 20%    # or 50GB; --unused-days 3, --idle-days 30
 mulebox machine config build-2 --keep-latest off  # the latest folder goes after unused-days too
+mulebox machine config build-2 --slim-hours 24    # slim idle folders later; 0 never slims
 mulebox machine config build-2 --max-size 100GB   # the most mulebox may hold; --warn-size 80GB
 mulebox machine config build-2 --auto-clean off   # it only says what would go; --docker-clean off
 mulebox storage --history                         # every cleanup: what it removed, why, what it freed
@@ -594,7 +597,7 @@ until the machine writes it into its own `node.toml`, within seconds while it is
 is back; there is no restart, and it counts from the next job. Fewer slots than jobs running stops
 no job: the machine takes no new one until it is under the new count. Only `slots`, `priority`,
 `dev` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`,
-`docker_clean`, `max_size`, `warn_size`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+`docker_clean`, `max_size`, `warn_size`, `slim_hours`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.
 

@@ -32,19 +32,19 @@ from typing import Any
 from mulebox.common.log import get_logger
 from mulebox.common.branch_folder import slug
 from mulebox.common.units import size as shown
-from mulebox.worker import (docker_prune, project_disk, project_home, project_work, storage_report,
-                            storage_rules, storage_scan)
+from mulebox.worker import (docker_prune, project_home, slim, storage_report, storage_rules,
+                            storage_scan)
+from mulebox.worker.storage_clearing import Clearing
 
 LOG = get_logger("worker.storage")
 FIRST_AFTER_S = 60.0
 EVERY_S = 3600.0
 LOW_CHECK_S = 60.0  # how often free space is looked at, a cheap call
 LOW_EVERY_S = 600.0  # the least time between sweeps started for low space
-SETTLE_S = 1.0  # after claims stop, for a claim already on its way to land in `active`
 REPLAN_EVERY_S = 900.0  # the plan on the last measurement is made again at least this often
 
 
-class Storing:
+class Storing(Clearing):
     def _store(self) -> dict[str, Any]:
         if not hasattr(self, "_storage"):
             self._storage = {"keeps": set(), "gone": set(), "report": None, "offered": None,
@@ -177,6 +177,7 @@ class Storing:
         errors: list[str] = []
         act = by_hand or policy.auto_clean
         removed = self._remove(plan.to_remove, state, errors) if act and plan.to_remove else []
+        slimmed = self._slim(plan.to_slim, state, errors) if act and plan.to_slim else []
         docker = bool(act and policy.docker_clean) if docker is None else docker
         pruned = None
         if docker and self.docker is not None:
@@ -187,11 +188,11 @@ class Storing:
                 errors.append(f"docker: {exc}"[:300])
         if pruned and pruned.get("error"):
             errors.append(pruned["error"])
-        if removed or pruned:
+        if removed or slimmed or pruned:
             disk = storage_scan.disk(self.paths)
         sweep = storage_report.sweep_record(started, trigger, policy.auto_clean, removed, pruned,
                                             before, disk["free"], errors,
-                                            0 if act else len(plan.to_remove))
+                                            0 if act else len(plan.to_remove), slimmed)
         gone = {(f.project, f.folder) for f in removed}
         state["measured"] = {"at": started, "held": held, "sweep": sweep,
                              "docker": storage_scan.docker(self.docker),
@@ -207,8 +208,15 @@ class Storing:
             folders, policy, time.time(), self._keep_set(),
             running | {(f.project, f.folder) for f in folders if f.project in unsure},
             disk["free"], policy.reserve(disk["total"]), state["gone"])
-        return storage_rules.trim(plan, storage_report.held_total(folders, held),
-                                  policy.max_bytes())
+        storage_rules.trim(plan, storage_report.held_total(folders, held), policy.max_bytes())
+        for folder in plan.to_slim:
+            if folder.frees is None:
+                try:
+                    folder.frees = slim.would_free(self.paths, folder.project, folder.folder)
+                except Exception as exc:  # noqa: BLE001 - an estimate must not stop the plan
+                    LOG.warning("could not measure %s/%s: %s", folder.project, folder.folder, exc)
+                    folder.frees = 0
+        return plan
 
     def _report(self, plan: storage_rules.Plan, removed: list[storage_rules.Folder],
                 state: dict[str, Any]) -> dict[str, Any]:
@@ -229,7 +237,9 @@ class Storing:
             try:
                 measured = state["measured"]
                 folders = [storage_rules.Folder(f.project, f.folder, f.size,
-                                                storage_scan.last_used(self.paths, f.project, f.folder))
+                                                storage_scan.last_used(self.paths, f.project, f.folder),
+                                                slim=f.slim if f.slim == storage_rules.DONE else None,
+                                                frees=f.frees)
                            for f in measured["folders"]
                            if (self.paths.project_home(f.project) / "trees" / f.folder).is_dir()]
                 measured["folders"] = folders
@@ -239,34 +249,13 @@ class Storing:
             except Exception:  # noqa: BLE001 - a plan must never stop the worker
                 LOG.exception("storage plan failed")
 
-    def _remove(self, planned: list[storage_rules.Folder], state: dict[str, Any],
-                errors: list[str]) -> list[storage_rules.Folder]:
-        state["removing"] = True  # the loop claims nothing from its next step on
-        time.sleep(SETTLE_S)
-        reclaim = project_work._reclaimer(self.node, self.paths)
-        done = []
-        for folder in planned:
-            running, unsure = self._in_use()
-            if (folder.project, folder.folder) in running or folder.project in unsure:
-                folder.fate, folder.why = storage_rules.RUNNING, None
-                continue
-            try:
-                project_disk.remove_worktree(self.paths, folder.project, folder.folder, reclaim)
-            except Exception as exc:  # noqa: BLE001 - one folder must not stop the rest
-                LOG.warning("could not remove %s/%s: %s", folder.project, folder.folder, exc)
-                errors.append(f"{folder.project}/{folder.folder}: {exc}"[:300])
-                folder.fate, folder.why = storage_rules.STAYS, None
-                continue
-            LOG.info("removed %s/%s, %d bytes, %s", folder.project, folder.folder, folder.size,
-                     folder.why)
-            done.append(folder)
-        state["removing"] = False
-        return done
-
 
 def summary(record: dict[str, Any]) -> str:
     """A sweep's record in a few lines, for the user who ran it."""
     lines = [f"removed {record['count']} branch folder(s), {shown(record['bytes'])}"]
+    if record.get("slimmed"):
+        lines.append(f"slimmed {record['slimmed']} branch folder(s), "
+                     f"{shown(record['slimmed_bytes'])}")
     pruned = record.get("docker")
     if pruned:
         lines.append(f"docker: build cache {shown(pruned['build_cache'])}, "
