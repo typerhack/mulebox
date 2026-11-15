@@ -7,8 +7,10 @@ the coordinator's time of that report:
 - `idle_s`: nothing moved, counting output, the job's own CPU and bytes, its services' CPU and
   traffic; null when part of it cannot be read, and not knowing is never stuck;
 - `compute_idle_s`: the same without bytes, so a job moving only a trickle of data shows;
-- `io_kib_s`: what the job's own processes read and write; null on a Mac node. A transfer
-  counts each byte twice (read, then written), so half of it is the rate a person would name;
+- `io_kib_s`: what the job's own processes read and write; null on a Mac node. It is no
+  transfer rate: a download is read and written, a server may send without a count, and
+  buffers come in bursts. So the slow line is twice SLOW_BYTES_S, and the sentence gives the
+  figure as measured, as reading and writing;
 - `download`: what its log says it is downloading (common/download_watch.py);
 - `last_line`: the last thing it printed, redacted.
 
@@ -34,7 +36,7 @@ from mulebox.common.units import duration, rate, size
 
 STUCK_AFTER_MIN = 2  # the node's default; a project may raise it, never lower it
 SLOW_BYTES_S = 50 * 1000.0
-BOTH_WAYS = 2.0  # a download is read from its socket and written to its file: each byte twice
+BOTH_WAYS = 2.0  # a download is read from its socket and written to its file
 WAITING_FOR = 5  # times the limit a job that said it waits may stay still before it is stuck
 VERDICTS = ("working", "slow", "waiting", "asking", "stuck")
 QUIET = ("waiting", "asking", "stuck")  # nothing moved: these have `since`
@@ -84,11 +86,12 @@ def _slow(report: dict[str, Any], compute_idle: float | None, limit: float) -> d
             and item.get("waiting_on_network"):
         return {"verdict": "slow", "text": f"Downloading slowly: {_download_text(item)}."}
     io = _number(report.get("io_kib_s"))
-    moved = None if io is None else io * 1024 / BOTH_WAYS
-    if compute_idle is not None and compute_idle >= limit and moved is not None \
-            and 0 < moved < SLOW_BYTES_S:
-        return {"verdict": "slow", "text": f"Moving only {rate(moved)} of data, with no "
-                f"output and almost no CPU for {duration(compute_idle)}."}
+    measured = None if io is None else io * 1024
+    if compute_idle is not None and compute_idle >= limit and measured is not None \
+            and 0 < measured < SLOW_BYTES_S * BOTH_WAYS:
+        return {"verdict": "slow", "text": f"Only a trickle of data moves: its processes read and "
+                f"write {rate(measured)}, with no output and almost no CPU for "
+                f"{duration(compute_idle)}."}
     return None
 
 

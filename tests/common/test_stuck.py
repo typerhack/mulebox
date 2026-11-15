@@ -42,8 +42,8 @@ def test_a_mac_node_says_it_did_not_read_data():
 def test_a_trickle_of_data_with_no_cpu_is_slow_not_stuck():
     seen = look(idle_s=5.0, compute_idle_s=200.0, io_kib_s=6.0)
     assert seen["verdict"] == "slow"
-    assert seen["text"] == ("Moving only 3.1 KB/s of data, with no output and almost no CPU "
-                            "for 3m 20s.")  # each byte read and written: half of 6 KiB/s
+    assert seen["text"] == ("Only a trickle of data moves: its processes read and write "
+                            "6.1 KB/s, with no output and almost no CPU for 3m 20s.")
 
 
 def test_a_slow_download_from_the_log_is_slow():
@@ -91,3 +91,8 @@ def test_no_verdict_for_a_job_that_is_not_simply_running(job):
 def test_not_knowing_is_never_stuck():
     assert look(idle_s=None, compute_idle_s=None) is None
     assert stuck.verdict(JOB, {}, "command", LIMIT, NOW) is None
+
+
+def test_data_under_twice_the_slow_line_is_slow_and_above_it_working():
+    assert look(idle_s=5.0, compute_idle_s=200.0, io_kib_s=90.0)["verdict"] == "slow"
+    assert look(idle_s=5.0, compute_idle_s=200.0, io_kib_s=120.0)["verdict"] == "working"

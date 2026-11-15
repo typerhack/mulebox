@@ -259,7 +259,8 @@ dashboard. It is a judgement with its evidence, and stops nothing: the rules abo
   and what its log says: download progress (common/download_watch.py) and the last lines.
 - **What it says.** One verdict per running job, with what it is based on:
   - `working`: something moved in the last `stuck_after_min` (2). Nothing is shown.
-  - `slow`: the only thing that moved is I/O or a download, below 50 KB/s for that long. A
+  - `slow`: the only thing that moved is a download below 50 KB/s, as its log says, or the job's
+    own reading and writing below 100 KB/s (a download is both read and written) for that long. A
     warning, not a stuck job: "downloading slowly, 12 KB/s, 41 MB of 300 MB".
   - `waiting`: nothing moved, and its last line says it waits on purpose (a retry with a delay,
     "waiting for", a sleep). Said as it is, with the line.
