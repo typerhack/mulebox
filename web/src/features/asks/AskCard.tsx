@@ -3,7 +3,7 @@
 // (the Approve button's number becomes a stepper) and Approve. Once answered it says what was
 // decided, with Undo until the node has taken it.
 
-import { Ban, Bot, CircleCheck, CircleQuestionMark, Laptop, Pencil, Undo2 } from "lucide-react";
+import { Ban, Bot, CircleCheck, CircleQuestionMark, Laptop, Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { gbValue, wholeGb, type AskGroup, type NodeRoom } from "../../lib/asks";
@@ -14,6 +14,7 @@ import { answer, decidedStore, undo } from "../../state/asks";
 import { Button } from "../../ui/Button";
 import { Stepper } from "../../ui/Stepper";
 import { SpaceBar } from "./SpaceBar";
+import { UndoButton } from "./UndoButton";
 
 interface Props { group: AskGroup; room: NodeRoom | null; now: number; editable: boolean; withNode: boolean; primary: boolean }
 
@@ -85,7 +86,7 @@ export function AskCard({ group, room, now, editable, withNode, primary }: Props
           <p role="status" className="min-w-0 flex-1 basis-col-l"><strong className="font-semibold">{decided.line.head}</strong>{" "}
             <span className="text-ink-2">{decided.line.rest}</span></p>
           {decided.approve && decided.change && (
-            <Button tone="ghost" disabled={busy} onClick={() => void undoIt(decided.change)}><Undo2 aria-hidden className="size-icon-s" />Undo</Button>
+            <UndoButton disabled={busy} onUndo={() => void undoIt(decided.change)} />
           )}
         </div>
       ) : declining ? (
@@ -98,14 +99,15 @@ export function AskCard({ group, room, now, editable, withNode, primary }: Props
         </div>
       ) : (
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button tone="ghost" disabled={busy || !editable} onClick={() => setDeclining(true)}>Decline</Button>
           {other && sizes && (
-            <span className="mr-auto inline-flex flex-wrap items-center gap-2 text-sm">
+            // In the place of "Another value", so nothing else moves under the pointer.
+            <span className="inline-flex flex-wrap items-center gap-2 text-sm">
+              {gb !== asked && <span className="text-ink-2">asked: {valueText(group.setting, group.largest)}</span>}
               <Stepper value={gb} min={1} max={most} label="Space for mulebox, in GB" unit="GB" units="GB" disabled={busy || !editable}
                 onChange={setGb} />
-              {gb !== asked && <span className="text-ink-2">asked: {valueText(group.setting, group.largest)}</span>}
             </span>
           )}
-          <Button tone="ghost" disabled={busy || !editable} onClick={() => setDeclining(true)}>Decline</Button>
           {sizes && !other && (
             <Button disabled={busy || !editable} onClick={() => { setGb(asked); setOther(true); }}><Pencil aria-hidden className="size-icon-s" />Another value</Button>
           )}

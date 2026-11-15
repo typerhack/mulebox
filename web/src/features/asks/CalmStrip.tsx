@@ -3,7 +3,7 @@
 // day, "as you allowed", with Undo and Got it, which hides it in this browser. The header's
 // mark counts none of it.
 
-import { Ban, Bot, CircleCheck, Undo2 } from "lucide-react";
+import { Ban, Bot, CircleCheck } from "lucide-react";
 import { useState } from "react";
 
 import { tokenStore } from "../../lib/api";
@@ -12,6 +12,7 @@ import { useStore } from "../../lib/store";
 import { decidedStore, dropDecided, gotIt, undo, undoneStore, useAllowed } from "../../state/asks";
 import { tickStore } from "../../state/live";
 import { Button } from "../../ui/Button";
+import { UndoButton } from "./UndoButton";
 
 function Said({ line }: { line: Line }) {
   return (
@@ -33,7 +34,7 @@ export function CalmStrip() {
   const now = Date.now() / 1000;
   const undoIt = async (change: string) => { setBusy(true); setProblem(await undo(change)); setBusy(false); };
   const undoButton = (change: string, tone: "ghost" | "secondary" = "ghost") => (
-    <Button tone={tone} disabled={busy || !editable} onClick={() => void undoIt(change)}><Undo2 aria-hidden className="size-icon-s" />Undo</Button>
+    <UndoButton tone={tone} disabled={busy || !editable} onUndo={() => void undoIt(change)} />
   );
   return (
     <section role="status" aria-label="Answered and allowed" className="rounded-m border border-line bg-surface-2 px-3 py-2">

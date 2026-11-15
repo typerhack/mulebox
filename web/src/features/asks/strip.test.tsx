@@ -3,10 +3,18 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { NOW } from "../../lib/storage.testing";
 import { asksBody, change, lay, page, request, reset, serve } from "./testing";
+import { ARM_MS } from "./UndoButton";
 
 afterEach(() => { cleanup(); reset(); });
 const strip = () => screen.getByRole("status", { name: "Requests from agents" });
 const calm = () => screen.getByRole("status", { name: "Answered and allowed" });
+// Undo takes no click for its first moment (UndoButton): it starts disabled, then works.
+async function clickUndo() {
+  const button = within(calm()).getByRole("button", { name: "Undo" }) as HTMLButtonElement;
+  expect(button.disabled).toBe(true);
+  await act(async () => { await new Promise((done) => setTimeout(done, ARM_MS + 50)); });
+  await act(async () => { fireEvent.click(within(calm()).getByRole("button", { name: "Undo" })); });
+}
 
 describe("requests in the strip", () => {
   it("is one amber line per request, naming the node, the value, what mulebox holds and who asked", () => {
@@ -52,7 +60,7 @@ describe("requests in the strip", () => {
     expect(screen.queryByRole("status", { name: "Requests from agents" })).toBeNull();
     expect(screen.queryByRole("button", { name: /to answer/ })).toBeNull();
     expect(calm().textContent).toContain("Approved: 30.0 GB. build-1 takes it with its next check-in; the agent reads the answer in its next command.");
-    await act(async () => { fireEvent.click(within(calm()).getByRole("button", { name: "Undo" })); });
+    await clickUndo();
     expect(posts[1]).toEqual({ action: "undo", change: "chg-9" });
   });
 });
@@ -65,7 +73,7 @@ describe("a change applied without asking", () => {
     expect(calm().textContent).toContain("build-1 now has 30.0 GB of space for mulebox, up from 20.0 GB. "
       + "Applied without asking, as you allowed. Asked for example-app from alice-laptop, 2 min ago.");
     expect(screen.queryByRole("button", { name: /show$/ })).toBeNull();
-    await act(async () => { fireEvent.click(within(calm()).getByRole("button", { name: "Undo" })); });
+    await clickUndo();
     expect(posts).toEqual([{ action: "undo", change: "chg-1" }]);
     expect(calm().textContent).toContain("Undone: build-1 is back to 20.0 GB.");
     fireEvent.click(within(calm()).getByRole("button", { name: "Got it" }));

@@ -1117,7 +1117,7 @@ runs a job.
       The first cleanup on 1.28.0 removed 64 folders of gone branches, 17.0 GB, as predicted.
       1.29.0: idle branch folders slimmed after `slim_hours` (12): what git ignores goes, the
       checkout stays, the next job installs again.
-- [~] M25.10 Agents ask for more space (the user's ask, 2026-11-15): from 80% of `max_size` an agent
+- [x] M25.10 Agents ask for more space (the user's ask, 2026-11-15): from 80% of `max_size` an agent
       asks its user, and with their yes runs `mulebox storage ask`; the owner answers on the
       dashboard's strip (option A of design-system/approvals/, the user's pick) or with `mulebox
       storage approve|decline`, or lets agents' requests apply at once and be recorded (the Agents
@@ -1126,6 +1126,14 @@ runs a job.
       2026-11-15 (1.32.0), with tests on the real coordinator code. Done when: on the real node an
       agent's request shows in the strip in Edge, an approval at another value reaches node.toml,
       the agent's next command tells the answer, and the history shows it with Undo.
+      Done 2026-11-15 (1.32.1): on the real node, a request from `mulebox storage ask` showed in the
+      strip in Edge within seconds; in Review, another value of 22 GB moved the bar and sentence, and
+      Approve put `max_size = "22GB"` in node.toml, in force 1 s later, recorded as confirmed on the
+      dashboard from its address. A second request declined with a note from the CLI was told once
+      in the agent's next command. Undo from the history put node.toml back at 20 GB. Found there and
+      fixed 1.32.1: after Approve, Undo appeared under the pointer, so a double-click took the yes
+      back; Undo now waits 1.5 s, and the stepper takes the place of "Another value". The same
+      deploy showed an open page reloading itself on the upgrade (1.31.0).
 
 ## Parking lot
 - From similar tools (2026-11-12), weighed and left for later:

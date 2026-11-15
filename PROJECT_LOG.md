@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.32.1 - 2026-11-15 - patch
+- Review window, from the drill on the real node: after Approve, Undo appeared where Approve was, so a double-click took the yes back at once. Undo takes no click for its first 1.5 s (`web/src/features/asks/UndoButton.tsx`, in the window and the strip), and "Another value" turns into the stepper in its own place, so Decline no longer slides under the pointer. Test in `web/src/features/asks/strip.test.tsx`.
+- Settings changed in the dashboard's node settings window are recorded in the history as from that window and address, not as `mulebox machine config` (`dashboard/node_settings.py`).
+- docs/phases.md: M25.10 done, with the drill on the real node; the page reloading itself on an upgrade seen there too.
+
 ## 1.32.0 - 2026-11-15 - minor
 - Agents ask for more space (M25.10, the user's ask): from 80% of a node's `max_size`, an agent asks its user and, with their yes, runs `mulebox storage ask --size 30GB --reason "..."`. The request waits on the coordinator (`setting_asks`, schema 27, `coordinator/setting_asks.py`); the owner answers in the dashboard's strip, option A of the mockups (Approve, another value, Decline with a note), or with `mulebox storage approve|decline`. Several requests for one node get one answer at the largest value asked. The agent hears the answer once in its next command (`space_answers`); while one waits, or for 7 days after a decline, its notice says so.
 - The Agents option (the user's call: many trust their agents): "Ask me first", as installed, or "Allow, and record it", which applies a request at once and tells the owner in a grey strip line with Undo; the Agents window in the header, `mulebox agents ask|allow`.
