@@ -3,6 +3,7 @@
 
 import { actionToken, getJson } from "../lib/api";
 import { liveStream } from "../lib/live";
+import { isNewer, reloadWhenFree } from "../lib/upgraded";
 import { createStore, useStore } from "../lib/store";
 import type { MachinesPanel, QueueSnapshot, Sample } from "../lib/types";
 
@@ -31,6 +32,18 @@ async function sessionEnded() {
   else connStore.set({ state: "lost", text: "Closed; reload the page" });
 }
 
+// The version the page loaded with, from its first `/healthz`; a later one that differs means
+// the dashboard was upgraded under it (lib/upgraded.ts).
+let loaded: string | undefined;
+let waiting: (() => void) | undefined;
+async function readHealth() {
+  const health = await getJson<{ version?: string; sign_in?: boolean }>("/healthz").catch(() => null);
+  if (!health) return;
+  healthStore.set(health);
+  loaded ??= health.version;
+  if (isNewer(loaded, health.version) && !waiting) waiting = reloadWhenFree();
+}
+
 export function startLive(): () => void {
   const stop = liveStream(() => "/api/events", {
     queue: (event) => queueStore.set({ snapshot: parse<QueueSnapshot>(event), at: performance.now() }),
@@ -38,7 +51,10 @@ export function startLive(): () => void {
     metrics: (event) => samplesStore.set((samples) => [...samples, parse<Sample>(event)].slice(-MAX_SAMPLES)),
     metrics_history: (event) => samplesStore.set(parse<{ history: Sample[] }>(event).history.slice(-MAX_SAMPLES)),
   }, {
-    opened: () => connStore.set({ state: "live", text: "Live" }),
+    opened: () => {
+      connStore.set({ state: "live", text: "Live" });
+      void readHealth();
+    },
     lost: (closed) => {
       connStore.set({ state: "lost", text: "Reconnecting" });
       // The browser retries a dropped connection by itself, but gives up on a refused one.
@@ -47,9 +63,7 @@ export function startLive(): () => void {
   });
   const clock = setInterval(() => { if (!document.hidden) tickStore.set((n) => n + 1); }, 1000);
   void actionToken();
-  getJson<{ version?: string; sign_in?: boolean }>("/healthz").then((health) => healthStore.set(health))
-    .catch(() => undefined);
-  return () => { stop(); clearInterval(clock); };
+  return () => { stop(); clearInterval(clock); waiting?.(); };
 }
 
 export const useQueue = () => useStore(queueStore, (state) => state.snapshot);

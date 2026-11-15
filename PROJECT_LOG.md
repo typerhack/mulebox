@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.31.0 - 2026-11-15 - minor
+- A dashboard page left open across an upgrade reloads itself (the user's ask: it showed the old page until reloaded by hand). The dashboard restarts with every upgrade, so the page's live stream drops and opens again; on each reopening it reads `/healthz`, and when the version differs from the one it loaded with, it reloads, keeping its address. Not under an open window, such as a node's settings, where it would lose unsaved changes: it waits until no window is open (`web/src/lib/upgraded.ts`, `web/src/state/live.ts`). Test in `web/src/lib/upgraded.test.ts`.
+
 ## 1.30.1 - 2026-11-15 - patch
 - Space for mulebox: its two parts, the space it may use and the disk floor, set their rows on one shared grid, so their meaning, Suggested, Yours and Runs with lines and dividers sit at the same height side by side (the user saw them out of line). The parts use the subgrid the settings panels side by side already use (`.setting-parts` in `web/src/styles/components.css`).
 
