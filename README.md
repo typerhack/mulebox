@@ -226,6 +226,12 @@ fast, and warns when no bytes arrive for a while:
 
 ![Running jobs and GitHub runs with their download meters: a known total, an open track and a stalled download](docs/images/downloads-dark.png)
 
+A running job that has gone quiet is judged on its evidence: its output, its own CPU, what its
+processes read and write, its services and its downloads. Its card says which it is: a slow
+download, waiting on purpose, asking for input it will never get, or stuck:
+
+![Running jobs on two machines: one working, a slow download, one waiting on purpose, one asking for input and one that looks stuck](docs/images/stuck-dark.png)
+
 A machine with many cores can show its busiest cores and one line for the rest (compact view,
 left). On a phone the page stacks into one column (right).
 
@@ -239,6 +245,19 @@ Every screen is built on one small design system, Gauge: its tokens, components 
 ([specimen.html](docs/design-system/specimen.html)).
 
 ![The Gauge design system's reference page](docs/images/design-system-light.png)
+
+### Proof that tests ran
+
+A pass counts only if its log shows its tests ran. A finished job shows how many tests it ran. A
+pass with fewer tests than the last pass, or none, is a failure, said in words under its name; a
+drop the agent allowed shows the agent's reason:
+
+![Finished jobs with their test counts: fewer tests than the last pass, a runner that ran none, a drop allowed with the agent's reason, and a job that requires a summary and printed none](docs/images/tests-light.png)
+
+The job's page says what happened and what to do, with each runner beside the last pass, and
+underlines the runners' own summary lines in the log:
+
+![A job that failed on fewer tests: the strip with the command to allow it, the Tests panel per runner and the underlined summary lines in its log](docs/images/tests-job-dark.png)
 
 All pictures come from made-up data (`tools/screenshots.py`).
 
@@ -281,12 +300,21 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   recent result, failures included. `--again` forces a run.
 - **Failures read fast.** A failed job ends with a short summary of the error and the stage it failed
   in (`logs <id> --summary`), with a hint when the failure reads like a lost network.
+- **A pass proves its tests ran.** mulebox reads the summary of pytest, vitest, jest, Pest, PHPUnit,
+  cargo, mocha, Playwright, XCTest, Swift Testing and `go test -v`. A pass where a runner ran no test,
+  or fewer than the last pass on the branch (else the default branch), fails with exit 8 and says
+  why. Tests removed on purpose: `mulebox check --fewer-tests "<why>"`, and the reason is kept.
+  `tests: false` turns it off for a job that runs none.
 - **Clear exit codes.** The check's own code on a failure; 5 for a job that could not start (a missing
-  tool, an unreachable image, a bad lockfile); 2 for a config error, caught before anything is sent;
-  75 for a job a restart interrupted; 76 for a stuck job that was stopped.
+  tool, an unreachable image, a bad lockfile); 8 for a pass that did not prove its tests ran; 2 for a
+  config error, caught before anything is sent; 75 for a job a restart interrupted; 76 for a stuck job
+  that was stopped.
 - **Long jobs ask, they do not die.** There is no hard time limit. A long job asks its agent if all is
   well, with its last output line; the agent answers `mulebox ok`. Only a job that is really stuck,
   with no answer, stops.
+- **A stuck job is said early.** After 2 minutes with nothing moving (a project may allow more), a
+  running job is said to look stuck in `status`, `wait` and `events`, with what it last printed, so an
+  agent stops waiting on a hung job. A slow download or a job waiting on purpose is told apart.
 - **The position in line, and why.** A waiting job says where it stands, what runs ahead of it, and
   why it waits: its branch is busy, no machine has what it needs, a machine is paused.
 - **Checked before anything is sent.** `mulebox doctor` checks the config, the node's tools and
@@ -468,8 +496,8 @@ command prints. The ones you and your agents use:
 | Command | What it does |
 | --- | --- |
 | `mulebox init` | write `.mulebox.yml` from the project's own files |
-| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone |
-| `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service |
+| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone, `--fewer-tests "<why>"` lets a pass with fewer tests count |
+| `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service, `--bare` without setup and containers, `--take <path>` brings a file it made back |
 | `mulebox warm` | get toolchains, images, caches and installs ready ahead of a job |
 | `mulebox doctor` | check the project and the node before sending anything; changes nothing |
 | `mulebox contract` | how this project works through mulebox, written for agents |

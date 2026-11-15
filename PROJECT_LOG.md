@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.35.2 - 2026-11-15 - patch
+- README: a running job that looks stuck, judged on its evidence, with a picture; proof that tests ran (exit 8, `--fewer-tests`, `tests: false`) in the agent features, exit codes and commands, with pictures of the counts in the Jobs box and of a job's page; `run --bare` and `--take` in the commands.
+- tools/screenshots.py: three new pictures (`stuck-dark`, `tests-light`, `tests-job-dark`), and every picture taken again on 1.35.2.
+
 ## 1.35.1 - 2026-11-15 - patch
 - Fix: a project order (`project reset`, `clean`, Run now) went out on a GitHub runner slot's heartbeat, whose reply the runner supervisor never reads, so it was marked taken and never ran; the command waited 5 minutes and said the node did not answer. Seen on the node with a CI run holding a slot. Orders now go only on the worker's claims and its own jobs' heartbeats (coordinator/worker_api.py), with a test that failed before.
 - A node that does not answer an order is told plainly: it did not answer in 5 minutes, try again, and where to see its version; before, it blamed a mulebox older than 1.22.0 on a node running 1.34.0.

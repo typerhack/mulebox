@@ -64,6 +64,19 @@ SHOTS = [
     Shot("downloads-dark", "#/", height=700, env={**CLEAN, "MULEBOX_MOCK_SCENE": "downloads"},
          script="[...document.querySelectorAll('h1,h2,h3')].find(h => h.textContent.trim() === 'Jobs')"
                 "?.scrollIntoView(); window.scrollBy(0, -88)"),
+    Shot("tests-light", "#/", "light", height=820, env={**CLEAN, "MULEBOX_MOCK_SCENE": "tests"},
+         script="(async () => { [...document.querySelectorAll('[role=tab]')]"
+                ".find(t => t.textContent.startsWith('Recent')).click();"
+                " await new Promise(r => setTimeout(r, 300));"
+                " [...document.querySelectorAll('h1,h2,h3')].find(h => h.textContent.trim() === 'Jobs')"
+                ".scrollIntoView(); window.scrollBy(0, -60); })()"),
+    Shot("tests-job-dark", "#/job/job-01EXAMPLEX5A1E5", height=860,
+         env={**CLEAN, "MULEBOX_MOCK_SCENE": "tests"},
+         script="[...document.querySelectorAll('a,button')].find(a => a.textContent.includes('Back to the queue'))"
+                "?.scrollIntoView(); window.scrollBy(0, -76)"),
+    Shot("stuck-dark", "#/", height=760, env={**CLEAN, "MULEBOX_MOCK_SCENE": "looks"},
+         script="[...document.querySelectorAll('h1,h2,h3')].find(h => h.textContent.trim() === 'Jobs')"
+                "?.scrollIntoView(); window.scrollBy(0, -60)"),
     Shot("storage-dark", "#/storage", height=1180, env=CLEAN,
          script="(async () => { [...document.querySelectorAll('button[aria-expanded]')]"
                 ".find(b => b.textContent.includes('example-app')).click();"
