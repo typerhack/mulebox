@@ -230,19 +230,17 @@ class Storing(Clearing):
         return {**report, "measured_at": measured["at"], "next_sweep": upcoming}
 
     def _replan(self) -> None:
-        """The plan made again on the last measurement: a folder removed since drops out, last
-        jobs and free space are read again (cheap), sizes stay as measured."""
+        """The plan made again on the last measurement: a folder removed since drops out, one
+        made or used by a job since is measured alone, the rest keep their size; last jobs and
+        free space are read again (storage_scan.refresh)."""
         state = self._store()
         with state["lock"]:
             try:
                 measured = state["measured"]
-                folders = [storage_rules.Folder(f.project, f.folder, f.size,
-                                                storage_scan.last_used(self.paths, f.project, f.folder),
-                                                slim=f.slim if f.slim == storage_rules.DONE else None,
-                                                frees=f.frees)
-                           for f in measured["folders"]
-                           if (self.paths.project_home(f.project) / "trees" / f.folder).is_dir()]
-                measured["folders"] = folders
+                started = time.time()
+                folders = storage_scan.refresh(self.paths, measured["folders"],
+                                               measured.get("sized", measured["at"]))
+                measured["folders"], measured["sized"] = folders, started
                 disk = storage_scan.disk(self.paths)
                 state["report"] = self._report(self._plan(folders, measured["held"], disk, state),
                                                [], state)

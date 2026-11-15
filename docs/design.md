@@ -529,8 +529,9 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 - **What goes now is said as it is** (1.28.0, the user's ask: the page said 6.5 GB would go
   within a day while a cleanup would have removed 17 GB of gone branches, as the branch list had
   come after the last measurement): between sweeps the worker makes the plan again on its last
-  measurement when the gone branches or keep marks change, and every 15 minutes (sizes as
-  measured, last jobs and free space read again), and sends the new report. It carries
+  measurement when the gone branches or keep marks change, and every 15 minutes (last jobs
+  and free space read again; a folder made or used by a job since is measured alone, the rest
+  keep their measured size), and sends the new report. It carries
   `measured_at` and `next_sweep`, and the dashboard and `mulebox storage` say "Run now removes N
   branch folders, X GB; the next cleanup does in M minutes".
 - **Docker** (1.26.0, `docker_clean`): a job's own images, containers, networks and volumes go

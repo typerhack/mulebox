@@ -202,3 +202,22 @@ def test_a_plan_follows_a_folder_removed_since_and_runs_at_least_every_15_minute
     _wait_plan(agent)
     names = [f["folder"] for f in agent._store()["report"]["projects"][0]["folders"]]
     assert old.name not in names
+
+
+def test_a_plan_shows_a_folder_made_since_and_measures_one_a_job_used(worker, send, monkeypatch):
+    send("main", 1)
+    used = send("feature/a", 2)
+    agent = worker()
+    agent._sweep()
+    agent._store()["next"] = float("inf")
+    newer = send("feature/b", 0, size=5000)  # a job's folder made after the measurement
+    (used / "node_modules" / "more.js").write_text("y" * 9000)
+    later = time.time() + 5
+    log = used.parents[1] / "repo.git" / "logs" / "refs" / "heads" / f"tree-{used.name}"
+    os.utime(log, (later, later))  # a job ran in it since
+    agent._store()["replan"] = True
+    agent._housekeeping(time.time())
+    _wait_plan(agent)
+    rows = {f["folder"]: f for f in agent._store()["report"]["projects"][0]["folders"]}
+    assert newer.name in rows and rows[newer.name]["size"] >= 5000
+    assert rows[used.name]["size"] >= 9000

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.29.1 - 2026-11-15 - patch
+- A plan between cleanups lists the branch folders again: one made since the last measurement shows at once, and one a job used since is measured again, alone (`storage_scan.refresh`). Before, a project could read "0 folders, last job never" for up to an hour while its job ran (seen on the real node). Test in `tests/worker/test_storage_sweep.py`.
+
 ## 1.29.0 - 2026-11-15 - minor
 - Idle branch folders are slimmed (M25.9, the user's pick): a folder with no job for `slim_hours` (12 by default, 0 never; a node setting, `mulebox machine config --slim-hours`, the settings window's "Slim idle folders") loses what git ignores in it, installed packages and build output such as `.next`, and keeps its checkout; never the latest, a kept or a running folder. Its next job runs `setup` and `install` again. On the real node most of a folder is that: 340 of 364 MB in one project, `.next` 27 of 35 GB in another (`worker/slim.py`, the plan in `storage_rules.py`, carried out by `storage_clearing.py`, split from `storage_sweep.py`).
 - What slimming frees is said before it runs, counting a file only when every hard link to it goes (`common/tree_size.freed`), so a pnpm `node_modules` does not count its store: the page and `mulebox storage` say "Run now removes N branch folders, X GB and slims M, Y GB", and the history and a slim folder's row say it was slimmed.

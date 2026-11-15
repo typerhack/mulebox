@@ -67,6 +67,26 @@ def measure(paths: NodePaths) -> tuple[list[Folder], dict[str, Any]]:
     return folders, {"projects": projects, "shared": shared}
 
 
+def refresh(paths: NodePaths, known: list[Folder], since: float) -> list[Folder]:
+    """The branch folders as they are now, from the last measurement: one gone since drops
+    out, one made since or used by a job since `since` is measured alone (a few folders, so
+    seconds), the rest keep their measured size with their last job read again."""
+    by_name = {(f.project, f.folder): f for f in known}
+    homes = sorted(p for p in paths.projects.iterdir() if p.is_dir()) if paths.projects.is_dir() else []
+    out = []
+    for home in homes:
+        for tree in project_disk.trees(paths, home.name):
+            used = last_used(paths, home.name, tree.name)
+            old = by_name.get((home.name, tree.name))
+            slimmed = DONE if slim.is_slim(paths, home.name, tree.name) else None
+            if old is not None and (used is None or used <= since):
+                out.append(Folder(old.project, old.folder, old.size, used, slim=slimmed,
+                                  frees=old.frees))
+            else:
+                out.append(Folder(home.name, tree.name, sizes(tree)[0], used, slim=slimmed))
+    return out
+
+
 def where(paths: NodePaths) -> dict[str, str]:
     """Where each part is on this node, for the dashboard's "copy path": a project's home is
     `<projects>/<project>`, a branch folder `<projects>/<project>/trees/<folder>`, a project's
