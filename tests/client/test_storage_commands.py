@@ -133,3 +133,15 @@ def test_what_goes_now_is_said_with_when_and_how_much():
         "(`mulebox storage clean` runs it now)")
     assert storage_commands._fate(thin) == "slims next (900.0 MB), goes in 5 days"
     assert storage_commands._fate({**thin, "slim": "done"}) == "slimmed, goes in 5 days"
+
+
+def test_warn_size_is_refused_and_an_old_node_toml_with_it_still_reads(remote, capsys):
+    assert run("machine", "config", "build-1", "--max-size", "30GB") == 0
+    from mulebox.coordinator import node_settings
+    with pytest.raises(Exception, match="no setting since 1.30"):
+        node_settings._changes({"warn_size": "50GB"})
+    from mulebox.common.config_node import storage
+    from mulebox.common.config_reader import Reader
+    from pathlib import Path
+    reader = Reader(Path("node.toml"), {"warn_size": "50GB", "max_size": "30GB"})
+    assert storage(reader).max_size == "30GB" and "warn_size" in reader.seen

@@ -173,13 +173,18 @@ def tell(body: dict[str, Any], err: TextIO) -> None:
 
 
 def heavy_line(heavy: dict[str, Any]) -> str:
-    """A node where mulebox holds more than its warning size: for the agent to tell its user."""
-    node = str(heavy.get("worker"))
-    return (f"notice for the user: mulebox holds {units.size(int(heavy.get('held') or 0))} on {node}, "
-            f"over the {units.size(int(heavy.get('warn') or 0))} it warns at. Tell the user; with "
-            "their go, `mulebox storage` shows what it holds and what goes when, and `mulebox "
-            "project reset <project> --branch <branch> --yes` removes a folder no longer needed "
-            f"(change the size: `mulebox machine config {node} --warn-size 80GB`)")
+    """A node where mulebox holds more than its warning size, 80% of the space it may use: for
+    the agent to tell its user, who decides whether to give it more."""
+    node, held = str(heavy.get("worker")), units.size(int(heavy.get("held") or 0))
+    most = heavy.get("max")
+    if not isinstance(most, int):  # a coordinator older than 1.30, or a node with no limit
+        return (f"notice for the user: mulebox holds {held} on {node}, over the "
+                f"{units.size(int(heavy.get('warn') or 0))} it warns at. Tell the user; "
+                "`mulebox storage` shows what it holds and what goes when")
+    return (f"notice for the user: mulebox holds {held} on {node} of the {units.size(most)} it "
+            "may use there; past that it removes older branch folders on its own. Tell the user "
+            "and ask whether to give it more; only with their yes: `mulebox machine config "
+            f"{node} --max-size <size>`. `mulebox storage` shows what it holds and what goes when")
 
 
 def _dicts(items: Any) -> list[dict[str, Any]]:

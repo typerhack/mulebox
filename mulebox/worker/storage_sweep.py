@@ -208,22 +208,26 @@ class Storing(Clearing):
             folders, policy, time.time(), self._keep_set(),
             running | {(f.project, f.folder) for f in folders if f.project in unsure},
             disk["free"], policy.reserve(disk["total"]), state["gone"])
-        storage_rules.trim(plan, storage_report.held_total(folders, held), policy.max_bytes())
         for folder in plan.to_slim:
             if folder.frees is None:
-                try:
-                    folder.frees = slim.would_free(self.paths, folder.project, folder.folder)
-                except Exception as exc:  # noqa: BLE001 - an estimate must not stop the plan
-                    LOG.warning("could not measure %s/%s: %s", folder.project, folder.folder, exc)
-                    folder.frees = 0
-        return plan
+                folder.frees = self._frees(folder)
+        return storage_rules.trim(plan, storage_report.held_total(folders, held),
+                                  policy.max_bytes(), self._frees)
+
+    def _frees(self, folder: storage_rules.Folder) -> int:
+        """What slimming the folder gives back now (slim.would_free), 0 when it cannot say."""
+        try:
+            return slim.would_free(self.paths, folder.project, folder.folder)
+        except Exception as exc:  # noqa: BLE001 - an estimate must not stop the plan
+            LOG.warning("could not measure %s/%s: %s", folder.project, folder.folder, exc)
+            return 0
 
     def _report(self, plan: storage_rules.Plan, removed: list[storage_rules.Folder],
                 state: dict[str, Any]) -> dict[str, Any]:
         measured, policy = state["measured"], self.node.storage
         disk = storage_scan.disk(self.paths)
         report = storage_report.build(plan, removed, measured["held"], disk,
-                                      policy.reserve(disk["total"]), policy.report(),
+                                      policy.reserve(disk["total"]), policy.shown(),
                                       measured["docker"], storage_scan.where(self.paths),
                                       measured["sweep"])
         upcoming = state["next"] if state["next"] > time.time() else time.time() + EVERY_S

@@ -28,6 +28,7 @@ next, oldest first, until it covers the gap: the user decides on those.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from collections.abc import Callable
 from typing import Any
 
 from mulebox.common.storage_policy import StoragePolicy
@@ -135,17 +136,28 @@ def _short(out: Plan, free: int, reserve: int) -> dict[str, Any] | None:
     return {"need": need, "could_free": total, "folders": could}
 
 
-def trim(out: Plan, held: int, limit: int | None) -> Plan:
-    """Mark the oldest folders that may go for removal until mulebox's `held` bytes, less what is
-    planned already, are under `limit`."""
+def trim(out: Plan, held: int, limit: int | None,
+         frees: Callable[[Folder], int] | None = None) -> Plan:
+    """Bring mulebox's `held` bytes, less what is planned already, under `limit`: first slim the
+    oldest folders that may be slimmed (`frees` says what each gives back; none, no slimming),
+    then remove the oldest that may go. What stays over is `over`."""
     if limit is None:
         return out
-    over = held - sum(f.size for f in out.to_remove) - limit
-    for folder in sorted((f for f in out.folders if f.fate == STAYS),
-                         key=lambda f: f.last_used or 0.0):
+    over = (held - sum(f.size for f in out.to_remove)
+            - sum(f.frees or 0 for f in out.to_slim) - limit)
+    oldest = sorted((f for f in out.folders if f.fate == STAYS), key=lambda f: f.last_used or 0.0)
+    for folder in oldest if frees is not None else ():
         if over <= 0:
             break
+        if folder.slim is None:
+            folder.slim, folder.frees = DUE, frees(folder)
+            over -= folder.frees
+    for folder in oldest:
+        if over <= 0:
+            break
+        thinned = (folder.frees or 0) if folder.slim == DUE else 0
         folder.fate, folder.why, folder.removed_in = REMOVE, "size", None
-        over -= folder.size
+        folder.slim, folder.frees = None, None
+        over -= folder.size - thinned
     out.over = max(0, over)
     return out

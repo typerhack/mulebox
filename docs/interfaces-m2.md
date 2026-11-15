@@ -135,7 +135,8 @@ says how old.
 - **The automatic cleanup** (since 1.26) is one block under the ruler, from the report's `policy`,
   `sweep`, `held` and `over`: whether it is on and each rule in words (what is off is said as off),
   what the last cleanup removed and freed in Docker, what goes next, and what mulebox holds against
-  `warn_size` and `max_size`, in the warning colour past `warn_size`; with `over` above 0 it names
+  the space it may use (`max_size`), and from what size agents are told (`warn_size` in the report: 80%
+  of `max_size` from a node on 1.30, its own setting before), in the warning colour past that; with `over` above 0 it names
   what blocks the limit (latest, kept or running folders). With the controls on, Settings opens the
   node's settings window on its Storage tab, and Run now sends `POST /api/storage/sweep {node,
   docker: true}`, reads `GET /api/storage/remove/<group>` until every node answered, shows each
@@ -170,10 +171,12 @@ says how old.
   button opens the review window: `short.folders`, oldest first, the `stays` ones ticked until
   they cover `short.need`, a `latest` one offered unticked, a `kept` one not offered. Each ticked
   folder is removed with its own `POST /api/storage/remove`.
-- **Settings.** The node's settings window has a Storage tab for `keep_free`, `unused_days`,
-  `keep_latest` and `idle_days`, and from a node on 1.26 `max_size` ("Most mulebox may use"),
-  `auto_clean` ("Clean up on its own"), `docker_clean` ("Clean Docker too") and `warn_size` ("Warn
-  agents over"), and from a node on 1.29 `slim_hours` ("Slim idle folders", 0 never), each
+- **Settings.** The node's settings window has a Storage tab. Its first panel, across the row, is
+  "Space for mulebox" (`SpaceSettings.tsx`, 1.30): "Space it may use" (`max_size`, from a node on
+  1.26; agents are told from 80% of it) and "Disk floor" (`keep_free`), side by side, one under the
+  other on a phone. Then `unused_days`, `keep_latest` and `idle_days`, from a node on 1.26
+  `auto_clean` ("Clean up on its own") and `docker_clean` ("Clean Docker too"), and from a node on
+  1.29 `slim_hours` ("Slim idle folders", 0 never), each
   hidden for an older node (Node settings below). One line says what the values on
   screen would do at the next cleanup, worked out in the page from the node's last report
   (`lib/storage.ts`, `preview`): what goes, also past the size limit (the oldest folders that may
@@ -382,7 +385,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, moved}` (`moved`: front, before or after, only the moved job pinned; a `priority` only on rows moved before 1.17.1), and `place_reason` and `order` for a queued job |
 | `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
 | `GET /api/machines/{name}/settings` | the settings window (Node settings, below); 404 for a name the store does not know |
-| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`, `docker_clean`, `warn_size`, `max_size` (a node on 1.26), or `{cancel: true}`; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
+| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`, `docker_clean`, `max_size` (a node on 1.26), `slim_hours` (1.29), or `{cancel: true}`; `warn_size` is refused from 1.30; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for`; every queued row `place_reason` and `order` while an order rule is on, and a moved row (`moved`) always (interfaces-m1.md, `queue_rules`); a GitHub slot also `workflow` |
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |
@@ -413,16 +416,16 @@ Node settings. Both GET and POST answer the same body, the coordinator's `node_s
  "applies": true,
  "current": {"slots": 2, "priority": "normal", "dev": false, "keep_free": "10%",
              "unused_days": 7, "keep_latest": true, "idle_days": 14, "auto_clean": true,
-             "docker_clean": true, "warn_size": "20GB", "max_size": "OFF"},
+             "docker_clean": true, "max_size": "20GB", "slim_hours": 12},
  "pending": {"slots": 3}, "pending_since": 1789000000.0, "error": null,
  "suggested": {"slots": 4, "reason": "16 cores and 34.4 GB of memory, at about 4 cores and 6 GB a job"},
  "choices": {"slots": {"min": 1, "max": 64}, "priority": ["preferred", "normal", "fallback"],
              "dev": [false, true], "keep_free": {"max_share": 90}, "unused_days": {"min": 1, "max": 365},
              "keep_latest": [false, true], "idle_days": {"min": 1, "max": 365},
-             "auto_clean": [false, true], "docker_clean": [false, true], "warn_size": {"off": "off"},
+             "auto_clean": [false, true], "docker_clean": [false, true], "warn_share": 0.8,
              "max_size": {"off": "off"}},
  "defaults": {"keep_free": "10%", "unused_days": 7, "keep_latest": true, "idle_days": 14,
-              "auto_clean": true, "docker_clean": true, "warn_size": "20GB", "max_size": "OFF"},
+              "auto_clean": true, "docker_clean": true, "max_size": "20GB", "slim_hours": 12},
  "editable": true}
 ```
 

@@ -41,7 +41,7 @@ def test_a_change_waits_goes_back_in_a_claim_and_clears_once_reported(store, sta
                                "unused_days": {"min": 1, "max": 365},
                                "keep_latest": [False, True], "idle_days": {"min": 1, "max": 365},
                                "auto_clean": [False, True], "docker_clean": [False, True],
-                               "warn_size": {"off": "off"}, "max_size": {"off": "off"},
+                               "warn_share": 0.8, "max_size": {"off": "off"},
                                    "slim_hours": {"min": 0, "max": 720}}
     assert view["defaults"] == storage_policy.DEFAULTS
     _, view = ask(store, staging, slots=3, now=11.0)

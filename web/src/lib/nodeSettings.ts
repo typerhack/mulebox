@@ -10,7 +10,7 @@ import { unsent as unsentOf } from "./edits";
 import { REREAD_MS } from "./turns";
 
 export const STORAGE_KEYS = ["keep_free", "unused_days", "keep_latest", "idle_days",
-                             "auto_clean", "docker_clean", "max_size", "warn_size", "slim_hours"] as const;
+                             "auto_clean", "docker_clean", "max_size", "slim_hours"] as const;
 export const KEYS = ["slots", "priority", "dev", ...STORAGE_KEYS] as const;
 export type SettingKey = typeof KEYS[number];
 // `dev` is missing from a node older than 1.23, which has no dev mode; the four disk settings
@@ -19,7 +19,7 @@ export type SettingKey = typeof KEYS[number];
 export interface Values {
   slots: number; priority: string; dev?: boolean;
   keep_free?: string; unused_days?: number; keep_latest?: boolean; idle_days?: number;
-  auto_clean?: boolean; docker_clean?: boolean; max_size?: string; warn_size?: string; slim_hours?: number;
+  auto_clean?: boolean; docker_clean?: boolean; max_size?: string; slim_hours?: number;
 }
 export type Draft = Partial<Values>;
 
@@ -38,7 +38,7 @@ export interface NodeSettings {
   choices?: { slots?: { min: number; max: number }; priority?: string[]; dev?: boolean[];
               keep_free?: { max_share: number }; unused_days?: { min: number; max: number };
               idle_days?: { min: number; max: number }; auto_clean?: boolean[]; docker_clean?: boolean[];
-              max_size?: Record<string, string>; warn_size?: Record<string, string>;
+              max_size?: Record<string, string>; warn_share?: number;
               slim_hours?: { min: number; max: number } };
   defaults?: Pick<Values, typeof STORAGE_KEYS[number]>;  // what mulebox suggests for the disk settings
   editable: boolean;
@@ -65,7 +65,7 @@ export const priorityLabel = (value: string | null | undefined) =>
 
 // node.toml's own defaults for the disk settings, when the server names none.
 export const STORAGE_DEFAULTS = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
-                                  auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "20GB",
+                                  auto_clean: true, docker_clean: true, max_size: "20GB",
                                   slim_hours: 12 };
 // A size setting with no limit, as the node writes it back (common/storage_policy.py).
 export const OFF = "OFF";

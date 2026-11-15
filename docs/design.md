@@ -471,15 +471,14 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
 
 | Setting in node.toml | Default | Meaning |
 | --- | --- | --- |
-| `keep_free` | `"10%"` | free space mulebox leaves on the disk of its folders: a share of it (1 to 90%) or a size (`"50GB"`) |
+| `keep_free` | `"10%"` | the disk floor: free space mulebox leaves on the disk of its folders, a share of it (1 to 90%) or a size (`"50GB"`); it counts only when the disk is nearly full for another reason |
 | `unused_days` | 7 | a branch folder with no job for this long is removed on its own |
 | `keep_latest` | true | each project's latest folder stays however old, so the next job after a break is still quick |
 | `slim_hours` | 12 | a branch folder with no job for this long loses what git ignores in it (installed packages, build output), its files stay; 0 never (1.29.0) |
 | `idle_days` | 14 | a project with no job for this long gets a suggestion to clean its latest folder, never a removal |
 | `auto_clean` | true | the sweep removes on its own; off, it only says what would go, and removes when the user runs it (`mulebox storage clean`, the dashboard's Run now) |
 | `docker_clean` | true | Docker's unused build cache, dangling images and the images mulebox's jobs pulled and no job used since go too (below) |
-| `max_size` | `"off"` | the most mulebox's folders may take on the node; past it the oldest folders that may go are removed, never a running, kept or latest one |
-| `warn_size` | `"20GB"` | past it, every command from a project tells the agent to tell its user, who may ask an agent to look (1.26.0) |
+| `max_size` | `"20GB"` | space for mulebox: the most it may hold on the node, everything it keeps; past it the oldest folders are slimmed, then the oldest that may go removed, never a running, kept or latest one; from 80% of it every command from a project tells the agent to ask its user for more; `"off"` for no limit and no warning (1.30.0; `"off"` before) |
 
 - **Last use** of a folder is the time of its last job on this node: every job commits in its
   folder, so git's log of the folder's branch (`repo.git/logs/refs/heads/tree-<folder>`) has it,
@@ -548,8 +547,14 @@ someone ran `project clean`. So each node now keeps its own disk in check, and t
   after and any error, goes with the report and is kept per node (`storage_sweeps`, the newest
   1000), for `mulebox storage --history` and the dashboard, so a cleanup that does the wrong
   thing can be seen and fixed.
-- **Too much held**: past `warn_size` every command from a project adds a notice for the agent
-  to tell its user (`heavy_nodes`, client/attention.py); past `max_size` the sweep itself trims.
+- **Space for mulebox** (1.30.0, the user's call: three settings, the free space to keep, a size
+  limit and a warning size, were one idea): `max_size` is the one limit, 20 GB by default, and
+  `keep_free` the disk's floor beside it, in one panel. From 80% of `max_size` (`WARN_SHARE`)
+  every command from a project adds a notice for the agent to ask its user for more space
+  (`heavy_nodes`, client/attention.py); past it the sweep trims, slimming the oldest folders first
+  and removing only when that is not enough. `warn_size`, a setting from 1.26 to 1.29, is gone:
+  a node.toml that has it still reads, the coordinator refuses it from afar, and a node's report
+  carries the worked-out size under that name for coordinators older than 1.30.
 - An older worker sends no report and sweeps nothing; the dashboard says to upgrade it. An older
   coordinator ignores the report and sends no keep marks.
 

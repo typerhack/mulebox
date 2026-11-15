@@ -52,12 +52,17 @@ def test_run_now_goes_to_the_node_asked_for(store, staging):
 
 
 def test_a_node_over_its_warning_size_is_named_to_every_command(store, staging):
-    over = {**report(1.0, 0.5), "held": 60 * 10**9, "policy": {"warn_size": "50GB"}}
+    over = {**report(1.0, 0.5), "held": 60 * 10**9, "policy": {"warn_size": "50GB"}}  # before 1.30
     claim(store, staging, 1.0, storage=over)
     from mulebox.coordinator import storage
     with store.read() as conn:
         assert storage.heavy(conn, 2.0) == [{"worker": "build-1", "held": 60 * 10**9,
-                                             "warn": 50 * 10**9}]
+                                             "warn": 50 * 10**9, "max": None}]
+    claim(store, staging, 2.0, storage={**over, "held": 17 * 10**9, "at": 3.0,
+                                        "policy": {"max_size": "20GB", "warn_size": "16GB"}})
+    with store.read() as conn:  # from 1.30: 80% of the space mulebox may use
+        assert storage.heavy(conn, 3.0) == [{"worker": "build-1", "held": 17 * 10**9,
+                                             "warn": 16 * 10**9, "max": 20 * 10**9}]
     claim(store, staging, 3.0, storage={**over, "at": 4.0, "policy": {"warn_size": "OFF"}})
     with store.read() as conn:
         assert storage.heavy(conn, 4.0) == []

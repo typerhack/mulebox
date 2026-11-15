@@ -36,14 +36,15 @@ function useStorageTab(open: boolean) {
 
 function Size({ report }: { report: Report }) {
   const size = sizeState(report);
-  const limits = [size.warn !== null && `warns agents over ${bytes(size.warn)}`,
-                  size.max !== null && `removes older folders over ${bytes(size.max)}`].filter(Boolean).join("; ");
+  const limits = size.max !== null
+    ? ` of the ${bytes(size.max)} it may use${size.warn !== null ? `; agents are told from ${bytes(size.warn)}` : ""}`
+    : size.warn !== null ? `; warns agents over ${bytes(size.warn)}` : "";
   return (
     <p className={cx("flex items-start gap-2 text-sm", size.warned || size.over > 0 ? "font-medium text-warning" : "text-ink-2")}>
       {(size.warned || size.over > 0) && <TriangleAlert aria-hidden className="status-icon mt-px size-icon-s flex-none" />}
       <span>
-        mulebox holds <strong className="num font-semibold">{bytes(size.held)}</strong> on this node{limits ? `; ${limits}` : ""}.
-        {size.warned && size.warn !== null && ` That is ${bytes(size.held - size.warn)} over the size at which agents are warned.`}
+        mulebox holds <strong className="num font-semibold">{bytes(size.held)}</strong> on this node{limits}.
+        {size.warned && size.warn !== null && " Agents are told to ask you for more space."}
         {size.over > 0 && size.max !== null && ` Still ${bytes(size.over)} over the limit: what is left ${
           size.blocks.length ? `are ${size.blocks.join(", ").replace(/, ([^,]*)$/, " and $1")} folders, which the cleanup never removes` : "is not branch folders"}.`}
       </span>

@@ -148,8 +148,9 @@ export function policyLines(policy: Policy): { on: boolean; rules: string[] } {
   ] };
 }
 
-// What mulebox holds against its limits: past `warn_size` agents are warned, past `max_size`
-// the cleanup removes older folders; `over` is what it could not reach.
+// What mulebox holds against the space it may use (`max_size`): past `warn_size`, 80% of it
+// as the node reports it (its own setting before 1.30), agents are told; past `max_size` the
+// cleanup slims, then removes older folders; `over` is what it could not reach.
 export interface SizeState { held: number; warn: number | null; max: number | null; warned: boolean; over: number; blocks: string[] }
 export function sizeState(report: Report): SizeState {
   const total = held(report), warn = sizeBytes(report.policy.warn_size), max = sizeBytes(report.policy.max_size);

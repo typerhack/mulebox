@@ -29,8 +29,10 @@ def priority(reader: Reader) -> str:
 
 
 def storage(reader: Reader) -> storage_policy.StoragePolicy:
-    """`keep_free`, `unused_days`, `keep_latest` and `idle_days` (common/storage_policy.py)."""
+    """The storage settings (common/storage_policy.py)."""
     found = {name: reader.get(name, None) for name in storage_policy.FIELDS}
+    for name in storage_policy.GONE:  # read, so an old node.toml is no error, and left aside
+        reader.get(name, None)
     try:
         return storage_policy.read({k: v for k, v in found.items() if v is not None})
     except ValueError as exc:

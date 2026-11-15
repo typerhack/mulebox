@@ -74,8 +74,9 @@ def body(conn: sqlite3.Connection, now: float, history: int = 50) -> dict[str, A
 
 
 def heavy(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
-    """Online nodes where mulebox holds more than their `warn_size`, for every command from a
-    project to pass on to the user (client/attention.py)."""
+    """Online nodes where mulebox holds more than its warning size, `WARN_SHARE` of the node's
+    `max_size` (or, from a node older than 1.30, its own `warn_size`), for every command from
+    a project to pass on to the user (client/attention.py)."""
     out = []
     for row in workers.listing(conn):
         text = conn.execute("SELECT storage FROM workers WHERE worker = ?",
@@ -83,11 +84,13 @@ def heavy(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
         if not text or not workers.is_online(row, now):
             continue
         report = json.loads(text)
-        limit = storage_policy.warn_bytes(str((report.get("policy") or {}).get(
-            "warn_size", storage_policy.DEFAULTS["warn_size"])))
+        policy = report.get("policy") or {}
+        most = storage_policy.warn_bytes(str(policy.get("max_size", "OFF")))
+        limit = (int(most * storage_policy.WARN_SHARE) if most is not None
+                 else storage_policy.warn_bytes(str(policy.get("warn_size", "OFF"))))
         held = report.get("held")
         if limit is not None and isinstance(held, int) and held > limit:
-            out.append({"worker": row["worker"], "held": held, "warn": limit})
+            out.append({"worker": row["worker"], "held": held, "warn": limit, "max": most})
     return out
 
 

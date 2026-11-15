@@ -93,3 +93,20 @@ def test_a_due_folder_says_what_slimming_frees_before_it_runs(worker, paths, tmp
                if f["folder"] == idle.name)
     assert (row["slim"], row["frees"]) == ("due", 10010)
     assert (idle / "node_modules").is_dir()  # with the cleanup off, only said
+
+
+def test_over_the_limit_the_oldest_are_slimmed_first_then_removed():
+    def made():
+        return [Folder("app", "new", 100, NOW - 1 * HOUR), Folder("app", "mid", 100, NOW - 2 * HOUR),
+                Folder("app", "old", 100, NOW - 3 * HOUR)]
+    policy = StoragePolicy(slim_hours=0)
+    plan = storage_rules.plan(made(), policy, NOW, set(), set())
+    storage_rules.trim(plan, held=300, limit=230, frees=lambda f: 50)
+    assert {f.folder for f in plan.to_slim} == {"old", "mid"} and plan.to_remove == []
+    plan = storage_rules.plan(made(), policy, NOW, set(), set())
+    storage_rules.trim(plan, held=300, limit=150, frees=lambda f: 50)
+    assert [f.folder for f in plan.to_remove] == ["old"] and [f.folder for f in plan.to_slim] == ["mid"]
+    assert plan.over == 0
+    plan = storage_rules.plan(made(), policy, NOW, set(), set())
+    storage_rules.trim(plan, held=300, limit=10, frees=lambda f: 50)
+    assert {f.folder for f in plan.to_remove} == {"old", "mid"} and plan.over == 300 - 200 - 10

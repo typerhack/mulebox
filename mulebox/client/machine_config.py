@@ -48,9 +48,9 @@ def register(actions: argparse._SubParsersAction) -> None:
                         help="remove on its own; off, it only says what would go")
     config.add_argument("--docker-clean", choices=("on", "off"),
                         help="also remove Docker build cache and images unused that long")
-    config.add_argument("--warn-size", help='warn agents when mulebox holds more ("20GB", or off)')
-    config.add_argument("--max-size", help='the most mulebox may hold; it removes the oldest '
-                        'folders past it ("100GB", or off)')
+    config.add_argument("--max-size", help='space for mulebox: the most it may hold; past it the '
+                        'oldest folders are slimmed, then removed; agents are told from 80%% of it '
+                        '("20GB", or off)')
     config.add_argument("--cancel", action="store_true", help="drop a change still waiting")
     config.add_argument("--wait", action="store_true",
                         help=f"return once the machine applied it (up to {WAIT_S:.0f} s)")
@@ -83,8 +83,9 @@ def lines(view: dict[str, Any]) -> list[str]:
             out.append("cleanup:   " + ("on its own" if current["auto_clean"] else
                                         "off: nothing goes on its own, it only says what would")
                        + "; Docker " + ("too" if current["docker_clean"] else "never")
-                       + "; warns over " + str(current.get("warn_size", ns.DEFAULTS["warn_size"])).lower()
-                       + "; at most " + str(current.get("max_size", "off")).lower())
+                       + "; space for mulebox " + str(current.get("max_size", "off")).lower()
+                       + ("" if str(current.get("max_size", "off")).upper() == "OFF"
+                          else ", agents told from 80% of it"))
         if "slim_hours" in current:
             hours = current["slim_hours"]
             out.append("slimming:  " + (f"a branch folder unused {hours} hours loses what git "
@@ -118,7 +119,7 @@ def _config(args: argparse.Namespace) -> int:
                               else args.keep_latest == "on"), ("idle_days", args.idle_days),
                              ("auto_clean", _flag(args.auto_clean)),
                              ("docker_clean", _flag(args.docker_clean)),
-                             ("warn_size", args.warn_size), ("max_size", args.max_size),
+                             ("max_size", args.max_size),
                              ("slim_hours", args.slim_hours))
                             if value is not None}
     if args.cancel:

@@ -34,11 +34,11 @@ describe("a node's settings", () => {
   it("take the disk suggestions the node reports, and none an older node lacks", () => {
     const disk = { keep_free: "20%", unused_days: 3, keep_latest: false, idle_days: 9 };
     const defaults = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
-                       auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
+                       auto_clean: true, docker_clean: true, max_size: "OFF" };
     expect(asSuggested(view({ current: { slots: 2, priority: "normal", ...disk }, defaults })))
       .toEqual({ slots: 4, priority: "normal", keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14 });
     expect(asSuggested(view({ current: { slots: 2, priority: "normal", ...disk, auto_clean: false, docker_clean: false,
-                                         max_size: "80GB", warn_size: "OFF" }, defaults })))
+                                         max_size: "80GB" }, defaults })))
       .toEqual({ slots: 4, priority: "normal", ...defaults });
   });
 

@@ -65,18 +65,22 @@ describe("the automatic cleanup line", () => {
     expect(within(line()).queryByRole("button", { name: "Settings" })).toBeNull();
   });
 
-  it("says what mulebox holds against the size at which it warns, and what still blocks the limit", () => {
-    show(withHistory(modern({ held: 56.8 * GB })));
-    expect(line().textContent).toContain("mulebox holds 56.8 GB on this node; warns agents over 20.0 GB. That is 36.8 GB over the size at which agents are warned.");
+  it("says what mulebox holds against the space it may use, when agents are told, and what still blocks it", () => {
+    const space = (more = {}) => modern({ ...more, policy: { ...modern().policy, max_size: "20GB", warn_size: "16GB" } });
+    show(withHistory(space({ held: 17 * GB })));
+    expect(line().textContent).toContain("mulebox holds 17.0 GB on this node of the 20.0 GB it may use; agents are told from 16.0 GB. Agents are told to ask you for more space.");
+    cleanup();
+    show(withHistory(modern({ held: 56.8 * GB })));  // a node before 1.30: its own warning size, no limit
+    expect(line().textContent).toContain("mulebox holds 56.8 GB on this node; warns agents over 20.0 GB. Agents are told to ask you for more space.");
     cleanup();
     const over = modern({ held: 62 * GB, over: 2 * GB, policy: { ...modern().policy, max_size: "60GB" } });
     expect(sizeState(over)).toMatchObject({ warned: true, over: 2 * GB, blocks: ["latest", "kept"] });
     show(withHistory(over));
     expect(line().textContent).toContain("Still 2.0 GB over the limit: what is left are latest and kept folders, which the cleanup never removes.");
     cleanup();
-    show(withHistory(modern({ held: 13 * GB })));
-    expect(line().textContent).toContain("mulebox holds 13.0 GB on this node; warns agents over 20.0 GB.");
-    expect(line().textContent).not.toContain("over the size");
+    show(withHistory(space({ held: 13 * GB })));
+    expect(line().textContent).toContain("mulebox holds 13.0 GB on this node of the 20.0 GB it may use; agents are told from 16.0 GB.");
+    expect(line().textContent).not.toContain("ask you");
   });
 });
 

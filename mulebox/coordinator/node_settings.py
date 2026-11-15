@@ -29,11 +29,11 @@ from mulebox.coordinator.store import ACTIVE_STATES
 
 MAX_ERROR = 500
 _ALWAYS = ("slots", "priority")  # every node that reports settings has these
-_SINCE = {"dev": "1.23", "auto_clean": "1.26", "docker_clean": "1.26", "warn_size": "1.26",
+_SINCE = {"dev": "1.23", "auto_clean": "1.26", "docker_clean": "1.26",
           "max_size": "1.26", "slim_hours": "1.29"}  # the rest: 1.24
 _WHAT = {"dev": "dev mode", **{name: "storage settings" for name in storage_policy.FIELDS},
          "auto_clean": "automatic cleanup switch", "docker_clean": "Docker cleanup",
-         "warn_size": "size warning", "max_size": "size limit", "slim_hours": "folder slimming"}
+         "max_size": "space for mulebox", "slim_hours": "folder slimming"}
 MAX_REPORTED = 4096  # slots a report may say, past the 64 a request may ask
 _ACTIVE = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
 
@@ -114,7 +114,7 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
                     "keep_free": {"max_share": storage_policy.MAX_SHARE},
                     "unused_days": {"min": 1, "max": storage_policy.MAX_DAYS},
                     "keep_latest": [False, True], "auto_clean": [False, True],
-                    "docker_clean": [False, True], "warn_size": {"off": "off"},
+                    "docker_clean": [False, True], "warn_share": storage_policy.WARN_SHARE,
                     "max_size": {"off": "off"},
                     "idle_days": {"min": 1, "max": storage_policy.MAX_DAYS},
                     "slim_hours": {"min": 0, "max": storage_policy.MAX_HOURS}},
@@ -123,6 +123,9 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
 
 
 def _changes(body: dict[str, Any]) -> dict[str, Any]:
+    if body.get("warn_size") is not None:
+        raise BadRequest(f"warn_size is no setting since 1.30: agents are told from "
+                         f"{storage_policy.WARN_SHARE:.0%} of max_size; set that instead")
     asked = {key: body[key] for key in ns.EDITABLE if body.get(key) is not None}
     try:
         return ns.checked(asked)

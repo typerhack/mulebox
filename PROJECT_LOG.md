@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.30.0 - 2026-11-15 - minor
+- Space for mulebox, one panel (the user's call: the free space to keep, a size limit and a warning size were one idea in three panels): `max_size` is the space mulebox may use on a node, 20 GB by default (off before), and agents are told from 80% of it to ask their user for more; `keep_free` sits beside it as the disk floor, which counts only when the disk is nearly full for another reason (`web/src/features/machines/SpaceSettings.tsx`, the setting rules in `common/storage_policy.py`).
+- Past the limit the cleanup slims the oldest folders first and removes only when that is not enough (`storage_rules.trim`).
+- `warn_size` is no setting any more: a node.toml that has it still reads, `machine config --warn-size` is gone and the coordinator refuses it from afar; a node's report carries 80% of `max_size` under that name, so coordinators older than 1.30 still warn, and a newer coordinator still warns for an older node by its own `warn_size`.
+- Tests in `tests/worker/test_slim.py`, `tests/coordinator/test_storage_history.py`, `tests/client/test_storage_commands.py`, `web/src/features/machines/NodeSettings.storage.test.tsx`, `web/src/features/storage/Cleanup.test.tsx`.
+
 ## 1.29.1 - 2026-11-15 - patch
 - A plan between cleanups lists the branch folders again: one made since the last measurement shows at once, and one a job used since is measured again, alone (`storage_scan.refresh`). Before, a project could read "0 folders, last job never" for up to an hour while its job ran (seen on the real node). Test in `tests/worker/test_storage_sweep.py`.
 
