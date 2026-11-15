@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.30.1 - 2026-11-15 - patch
+- Space for mulebox: its two parts, the space it may use and the disk floor, set their rows on one shared grid, so their meaning, Suggested, Yours and Runs with lines and dividers sit at the same height side by side (the user saw them out of line). The parts use the subgrid the settings panels side by side already use (`.setting-parts` in `web/src/styles/components.css`).
+
 ## 1.30.0 - 2026-11-15 - minor
 - Space for mulebox, one panel (the user's call: the free space to keep, a size limit and a warning size were one idea in three panels): `max_size` is the space mulebox may use on a node, 20 GB by default (off before), and agents are told from 80% of it to ask their user for more; `keep_free` sits beside it as the disk floor, which counts only when the disk is nearly full for another reason (`web/src/features/machines/SpaceSettings.tsx`, the setting rules in `common/storage_policy.py`).
 - Past the limit the cleanup slims the oldest folders first and removes only when that is not enough (`storage_rules.trim`).

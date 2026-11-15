@@ -36,11 +36,13 @@ const gbOf = (size: string | null | undefined) => {
   return found?.unit === "GB" ? found.amount : null;
 };
 
+// Each part sets its title and rows on the rows of the grid around it (`.setting-panel`, as the
+// panels side by side do), so the two parts' meaning, Suggested, Yours and Runs with line up.
 function Part({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={title} className="min-w-0">
+    <section aria-label={title} className="setting-panel min-w-0">
       <h3 className="pb-2 text-sm font-semibold">{title}</h3>
-      <div className={ROWS}>{children}</div>
+      <div className={`setting-panel-body ${ROWS}`}>{children}</div>
     </section>
   );
 }
@@ -68,7 +70,7 @@ export function SpaceSettings({ view, draft, defaults, report, limits, off, busy
 
   return (
     <Panel title="Space for mulebox" label="Space for mulebox" icon={<HardDrive aria-hidden className="size-icon" />} className="col-span-full">
-      <div className="grid gap-x-6 gap-y-5 @sm:grid-cols-2">
+      <div className="setting-parts">
         {limits && (
           <Part title="Space it may use">
             {meaning("Everything mulebox keeps on this node. Past it the oldest folders are slimmed, then removed, never a running, kept or latest one; agents are told from 80% of it and ask you for more")}

@@ -169,9 +169,11 @@
      by side; one column when the window is narrow. Each panel (`Panel` with `subgrid`) takes
      five rows of this grid, its title and four rows of its body, so the panels of a row are as
      tall as each other and their Suggested, Yours and Runs with rows line up. */
-  .setting-panels { display: grid; gap: var(--app-gap); grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+  /* Settings panels side by side, and the parts side by side inside one panel ("Space for
+     mulebox"): each a subgrid of the rows below, so their rows line up. */
+  .setting-panels, .setting-parts { display: grid; gap: var(--app-gap); grid-template-columns: minmax(0, 1fr); align-items: stretch; }
   @variant @sm {
-    .setting-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .setting-panels, .setting-parts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
   .setting-panel { display: grid; grid-row: span 5; grid-template-rows: subgrid; row-gap: 0; }
   .setting-panel-body { display: grid; grid-row: span 4; grid-template-rows: subgrid; row-gap: 0; }
