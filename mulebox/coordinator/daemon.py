@@ -12,6 +12,7 @@ from collections.abc import Callable
 
 from mulebox.common.config import DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS, NodeConfig
 from mulebox.common.log import get_logger
+from mulebox.common.stuck import STUCK_AFTER_MIN
 from mulebox.coordinator import attendance, leases, recovery, retention, workers
 from mulebox.coordinator.node import open_local
 from mulebox.coordinator.staging import Staging
@@ -61,7 +62,8 @@ def limits_of(node: NodeConfig) -> attendance.Limits:
     if not node.limits:
         return attendance.Limits()
     return attendance.Limits(node.limits["unattended_idle_min"] * 60.0,
-                             node.limits["unattended_max_hours"] * 3600.0)
+                             node.limits["unattended_max_hours"] * 3600.0,
+                             node.limits.get("stuck_after_min", STUCK_AFTER_MIN) * 60.0)
 
 
 def serve(node: NodeConfig, stop: threading.Event | None = None) -> int:

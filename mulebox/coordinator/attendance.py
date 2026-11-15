@@ -27,16 +27,16 @@ import sqlite3
 from dataclasses import dataclass
 from typing import Any
 
-from mulebox.common import download_watch
+from mulebox.common import download_watch, stuck
 from mulebox.common.config import DEFAULT_UNATTENDED_IDLE_MIN, DEFAULT_UNATTENDED_MAX_HOURS
 from mulebox.common.protocol import JobState
 from mulebox.common.status import STOP_STUCK, STOP_TEXT, STOP_UNKNOWN, current_stage
 from mulebox.coordinator.store import Store
 
-_IDLE_KEY, _MAX_KEY = "unattended_idle_s", "unattended_max_s"
+_IDLE_KEY, _MAX_KEY, _STUCK_KEY = "unattended_idle_s", "unattended_max_s", "stuck_after_s"
 _RUNNING = (JobState.STARTING, JobState.RUNNING)
-_REPORTED = ("output_idle_s", "idle_s", "job_cpu_pct", "cpu_pct", "net_kib_s",
-             "last_line")
+_REPORTED = ("output_idle_s", "idle_s", "compute_idle_s", "job_cpu_pct", "io_kib_s", "cpu_pct",
+             "net_kib_s", "last_line")
 LIMITS_BY_COORDINATOR = "coordinator"  # in claim_ok: the worker sets no runtime limit of its own
 
 
@@ -44,21 +44,24 @@ LIMITS_BY_COORDINATOR = "coordinator"  # in claim_ok: the worker sets no runtime
 class Limits:
     idle_s: float = DEFAULT_UNATTENDED_IDLE_MIN * 60.0
     max_s: float = DEFAULT_UNATTENDED_MAX_HOURS * 3600.0
+    stuck_s: float = stuck.STUCK_AFTER_MIN * 60.0
 
 
 def save_limits(store: Store, limits: Limits) -> None:
     with store.write() as conn:
         conn.executemany("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)",
-                         ((_IDLE_KEY, str(limits.idle_s)), (_MAX_KEY, str(limits.max_s))))
+                         ((_IDLE_KEY, str(limits.idle_s)), (_MAX_KEY, str(limits.max_s)),
+                          (_STUCK_KEY, str(limits.stuck_s))))
 
 
 def read_limits(conn: sqlite3.Connection) -> Limits:
     """What the service saved; the defaults before it first ran."""
-    rows = dict(conn.execute("SELECT key, value FROM meta WHERE key IN (?, ?)",
-                             (_IDLE_KEY, _MAX_KEY)).fetchall())
+    rows = dict(conn.execute("SELECT key, value FROM meta WHERE key IN (?, ?, ?)",
+                             (_IDLE_KEY, _MAX_KEY, _STUCK_KEY)).fetchall())
     defaults = Limits()
     return Limits(float(rows.get(_IDLE_KEY, defaults.idle_s)),
-                  float(rows.get(_MAX_KEY, defaults.max_s)))
+                  float(rows.get(_MAX_KEY, defaults.max_s)),
+                  float(rows.get(_STUCK_KEY, defaults.stuck_s)))
 
 
 def question(job: dict[str, Any], now: float, limits: Limits) -> dict[str, Any] | None:
@@ -105,11 +108,25 @@ def activity(job: dict[str, Any], rows: list[dict[str, Any]], now: float) -> dic
             "download": download_watch.clean(report.get("download"))}
 
 
+def stuck_limit_s(job: dict[str, Any], limits: Limits) -> float:
+    """How long a job may do nothing before it looks stuck: the node's, or the project's when
+    that is longer (a project can only raise it)."""
+    return max(limits.stuck_s, float(job.get("stuck_after_min") or 0) * 60.0)
+
+
+def looks(job: dict[str, Any], rows: list[dict[str, Any]], now: float,
+          limits: Limits) -> dict[str, Any] | None:
+    """The job's verdict, working or not (common/stuck.py); None when there is none to give."""
+    return stuck.verdict(job, job.get("activity"), current_stage(job, rows),
+                         stuck_limit_s(job, limits), now)
+
+
 def status_fields(job: dict[str, Any], rows: list[dict[str, Any]], now: float,
                   limits: Limits) -> dict[str, Any]:
     """What a `status` reply adds."""
     return {"question": question(job, now, limits),
-            "activity": activity(job, rows, now) if job["state"] in _RUNNING else None}
+            "activity": activity(job, rows, now) if job["state"] in _RUNNING else None,
+            "looks": looks(job, rows, now, limits) if job["state"] in _RUNNING else None}
 
 
 def check_in_number(job: dict[str, Any], now: float) -> int:

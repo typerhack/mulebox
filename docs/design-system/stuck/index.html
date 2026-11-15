@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: a job that looks stuck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="stuck.css">
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>A job that looks stuck</h1>
+      <p class="doc-lead">Mockups of 2026-11-15 for M24.8, to pick from before anything is built. The coordinator gives every running job one verdict from what it can see of it: working, slow, waiting, asking or stuck, with a sentence in plain words. The question here is how the dashboard shows it, so that the owner understands the situation from the card.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <nav class="index" aria-label="Mockups">
+    <a href="option-a-icon.html">
+      <span class="letter" aria-hidden="true">A</span>
+      <h2>The icon, with a tooltip<i data-i="chevron-right"></i></h2>
+      <p>The verdict's icon takes the place of the turning one; hover, focus or a tap shows the sentence.</p>
+      <ul><li><b>Card</b> unchanged in size.</li><li><b>Reason</b> in a tooltip, on request.</li><li><b>Ways on</b> as today: the page, the three dots.</li></ul>
+    </a>
+    <a class="picked" href="option-b-line.html">
+      <span class="letter" aria-hidden="true">B</span>
+      <h2>A line on the card<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests</span>
+      <p>The icon with two or three words and one figure, always shown; it opens in place to the sentence and the two ways on.</p>
+      <ul><li><b>Card</b> one line taller.</li><li><b>Reason</b> in words on the card, the sentence one tap away.</li><li><b>Ways on</b> on the card: its log, cancel.</li></ul>
+    </a>
+    <a href="option-c-evidence.html">
+      <span class="letter" aria-hidden="true">C</span>
+      <h2>A mark, the evidence and the strip<i data-i="chevron-right"></i></h2>
+      <p>A mark beside the three dots opens a panel with every reading; the strip under the header counts the jobs that will not go on.</p>
+      <ul><li><b>Card</b> one more icon beside the three dots.</li><li><b>Reason</b> in a panel, with what it is based on.</li><li><b>Ways on</b> in the panel; seen from every page.</li></ul>
+    </a>
+  </nav>
+  <p class="foot"><b>Why B.</b> The ask was that the owner understands the situation from the dashboard. Only B says it in words on the card with no hover or tap, which also makes it the one that works the same on a phone; it follows a pattern the card already has (the Down meter's "No bytes for 75 s"), and it keeps the turning icon, since the job is in fact still running. A is the lightest but shows only that something is off. C explains the most and costs the most; its strip could be added to B later if stuck jobs go unseen on other pages.</p>
+  <p class="foot">Every option shows the five verdicts on running cards with one opened, the stuck job's page, and a 390 px screen. The rest of the dashboard is as today. Static pages with example data: build-1 is a node, the projects and branches are examples. Colours, type, space and corners come from tokens.css; the icons are Lucide, outline.</p>
+</div>
+<script src="stuck.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

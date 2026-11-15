@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: a job that looks stuck, option B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="stuck.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option B <span class="pick-tag">Fable suggests</span></h1>
+        <p class="doc-lead"><b>A line on the card: the icon, two or three words and the one figure that matters, opening in place to the sentence and the two ways on.</b> The card says what is wrong without being asked, in the grammar of the Down meter's "No bytes for 75 s" line. The state icon keeps turning: the job is still running.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#cards">The five verdicts</a><a href="#page">The job's page</a><a href="#narrow">At 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="cards"><h2>The five verdicts on running cards</h2>
+    <p>A working card is as today. The other four gain one line across the card's foot: the verdict's icon in its level's colour, its name, and how long or how fast. The stuck card's line is open.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <div><div class="lane-head"><strong>build-1</strong><span class="lane-note">5 running, 0 of 5 slots free</span></div>
+          <div class="v-grid" data-cards="b" data-open="stuck"></div></div>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">Opened, the line shows the server's sentence at the card's full width and two buttons: its log, and cancel (which asks once more, as it does today). Closed, a card is one line taller than today.</p>
+  </section>
+
+  <section class="case" id="page"><h2>The job's page, stuck</h2>
+    <p>The state stays "Running". Under the header a danger strip says the verdict with the last line, in the place and shape of today's "Needs an answer" note; "Go to its last line" scrolls the log to it. In the log the last line is underlined and the quiet time stands after it.</p>
+    <div class="stage" data-page="b"></div>
+  </section>
+
+  <section class="case" id="narrow"><h2>At 390 px</h2>
+    <p>The line spans the card, so the sentence never sits in a narrow column; the buttons are 44 px high and wrap.</p>
+    <div class="stage narrow"><div class="gap">
+      <section class="panel"><div class="panel-body"><div class="lane-head"><strong>build-1</strong><span class="lane-note">2 of 5 shown</span></div>
+        <div class="v-grid" data-cards="b" data-only="slow,stuck" data-open="stuck"></div></div></section></div>
+    </div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>Readable at a glance and from across the room: words, not only a shape. Nothing depends on hover. The sentence and the ways on are one tap away, on the card.</li><li><b>Costs</b>A card with a verdict is one line taller, and taller again while open; two cards of a row can differ in height.</li><li><b>Without a pointer</b>The line is a button (aria-expanded); it opens in the flow of the page, so nothing can be cut off at an edge.</li></ul>
+  <p class="foot">Static page with example data. The sentences are the coordinator's own, as docs/design.md gives them; the icons are snail for slow, hourglass for waiting on purpose, text-cursor-input for asking and octagon-alert for stuck, each with its own shape and in its level's colour. What opens answers a click; nothing is saved.</p>
+</div>
+<script src="stuck.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

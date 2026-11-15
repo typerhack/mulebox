@@ -4,7 +4,9 @@ A job's own processes are in its systemd unit. Its compose services are in the c
 which Docker creates: `system.slice/docker-<id>.scope` with the systemd driver, `docker/<id>` with
 cgroupfs. Each container has its own network namespace, so `/proc/<pid>/net/dev` of any process
 in it counts that container's traffic alone. A unit shares the machine's namespace, so a job's own
-processes have no network reading, only CPU. A file that cannot be read is no reading.
+processes have no network reading, only CPU and the bytes they read and write
+(`/proc/<pid>/io`: files, pipes and sockets alike, so a slow download at next to no CPU still
+counts). A file that cannot be read is no reading.
 """
 
 from __future__ import annotations
@@ -89,6 +91,28 @@ def group_net_bytes(group: Path, proc: Path = PROC) -> int | None:
         return net_bytes((proc / pids[0] / "net" / "dev").read_text(encoding="ascii"))
     except (OSError, ValueError, IndexError):
         return None
+
+
+def io_bytes(group: Path, proc: Path = PROC) -> dict[str, int] | None:
+    """Bytes each process in `group` has read and written (`rchar` plus `wchar`), by pid. A
+    process of another user, or one that just ended, is left out; None when the group cannot be
+    read at all."""
+    try:
+        pids = (group / "cgroup.procs").read_text(encoding="ascii").split()
+    except OSError:
+        return None
+    out: dict[str, int] = {}
+    for pid in pids:
+        try:
+            text = (proc / pid / "io").read_text(encoding="ascii")
+        except OSError:
+            continue
+        fields = dict(line.split(": ", 1) for line in text.splitlines() if ": " in line)
+        try:
+            out[pid] = int(fields["rchar"]) + int(fields["wchar"])
+        except (KeyError, ValueError):
+            continue
+    return out
 
 
 def runner_group(runner: str, root: Path = ROOT) -> Path | None:

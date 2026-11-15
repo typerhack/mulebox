@@ -14,7 +14,10 @@ known, and `stop_reason` for outcome `stopped`), `check_in` (`number`, `elapsed_
 `output_idle_s`, `last_line`, `idle_s`, `job_cpu_pct`, `cpu_pct`, `net_kib_s`; every
 `timeout_min`, readings null when the worker could not measure them).
 `taken_back`: seen once, by the watcher that takes the job back) or `stage` (`stage`, `number`,
-`started_at`: the job entered a stage; someone who connects late gets the current one).
+`started_at`: the job entered a stage; someone who connects late gets the current one), `stuck`
+(`verdict`: `slow`, `waiting`, `asking` or `stuck`; `text`, `since` and `quiet_s` when nothing
+moved, `stage`, `last_line`, `limit_s`, `number`: a running job looks stuck, docs/design.md) or
+`moving` (`number`, `since`, `stage`: it works again).
 `exit_code` is the code the command exits with. Readers must ignore events and keys they do not
 know.
 """
@@ -25,7 +28,7 @@ import json
 from collections.abc import Callable
 from typing import Any
 
-from mulebox.client import attention, report
+from mulebox.client import attention, report, stuck_lines
 from mulebox.client.submit import RemoteLike, Streams, Watcher
 from mulebox.common.protocol import Message, MessageType
 from mulebox.common.status import NOTICES, job_event
@@ -52,6 +55,10 @@ def as_text(event: Event) -> str:
     kind = event["event"]
     if kind == "check_in":
         return attention.check_in_line(str(event.get("job_id")), event)
+    if kind == "stuck":
+        return stuck_lines.stuck_line(str(event.get("job_id")), event, attention.WARNING)
+    if kind == "moving":
+        return stuck_lines.moving_line(str(event.get("job_id")), event)
     if kind == "stage":
         return f"stage {event.get('stage')}"
     if kind == "queued":

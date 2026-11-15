@@ -33,3 +33,17 @@ def rate(bytes_per_s: float) -> str:
 def rate_kib(kib_s: float) -> str:
     """A `*_kib_s` reading -> `614.0 KB/s`: the field stays binary, the label decimal."""
     return rate(kib_s * KIB)
+
+
+def duration(seconds: float | None) -> str:
+    """`42s`, `3m 05s`, `1h 02m`; `-` when unknown."""
+    if seconds is None:
+        return "-"
+    total = int(max(0, round(seconds)))
+    if total < 60:
+        return f"{total}s"
+    minutes, secs = divmod(total, 60)
+    if minutes < 60:
+        return f"{minutes}m {secs:02d}s"
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours}h {minutes:02d}m"

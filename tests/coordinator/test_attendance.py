@@ -153,7 +153,8 @@ def test_status_has_the_activity_and_the_question(store, staging):
     body = call(store, staging, "status", T0 + 42, job_id=job["job_id"]).body
     assert body["question"] is None
     assert body["activity"] == {"elapsed_s": 42.0, "stage": None, "output_idle_s": 12.5,
-                                "idle_s": 2.0, "job_cpu_pct": None, "cpu_pct": 180.0,
+                                "idle_s": 2.0, "compute_idle_s": None, "job_cpu_pct": None,
+                                "io_kib_s": None, "cpu_pct": 180.0,
                                 "net_kib_s": 1.5, "last_line": None, "download": None}
     assert call(store, staging, "status", ASKED, job_id=job["job_id"]).body["question"]["reason"]
 
@@ -194,7 +195,8 @@ def test_a_running_job_checks_in_every_timeout_min(store, staging):
     found = [b["check_in"] for b in stream(store, staging, job["job_id"], T0 + 1500, lease=True)
              if "check_in" in b]
     assert found == [{"number": 2, "elapsed_s": 1500.0, "stage": None, "output_idle_s": 30.0,
-                      "idle_s": 1.0, "job_cpu_pct": None, "cpu_pct": 99.0,
+                      "idle_s": 1.0, "compute_idle_s": None, "job_cpu_pct": None,
+                      "io_kib_s": None, "cpu_pct": 99.0,
                       "net_kib_s": 2.0, "last_line": None, "download": None}]
 
 

@@ -183,6 +183,7 @@ def test_a_heartbeat_carries_the_runner_jobs_cpu_and_step(gh_env, link, paths, s
     supervisor.tick(T0, link.call)
     supervisor.tick(T0 + SUPERVISE_S, link.call)
     activity = store.get_job(job_id)["activity"]
+    assert activity.pop("at") > 0  # when the coordinator heard it (common/stuck.py ages it)
     assert activity == {"job_cpu_pct": 200.0, "step": "Run pnpm check", "download": None}
 
 

@@ -47,6 +47,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 26 -> 27: `setting_asks` and `setting_changes`: agents' requests for more space and the
   settings history (setting_asks.py, setting_changes.py).
 - 23 -> 24: `project_orders`, `project reset` and `clean` for every node (project_orders.py).
+- 27 -> 28: `jobs.stuck_after_min`, a project's own longer limit before its job looks stuck
+  (common/stuck.py); NULL for the node's.
 """
 
 import sqlite3
@@ -183,6 +185,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     24: (STORAGE_KEEPS, "ALTER TABLE workers ADD COLUMN storage TEXT"),
     25: (PROJECT_BRANCHES, STORAGE_SWEEPS),
     26: (SETTING_ASKS, SETTING_CHANGES),
+    27: ("ALTER TABLE jobs ADD COLUMN stuck_after_min INTEGER",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

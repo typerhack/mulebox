@@ -13,6 +13,7 @@ import { useLog, type Stream } from "./useLog";
 
 const KEEP_CHARS = 1024 * 1024;  // cap the page, not the job: the full log has its own link
 const NEAR_END = 24;
+export const LOG_ID = "job-log";  // the strip of a job that looks stuck scrolls it to its last line
 const STREAM_WORD: Record<Stream, string> = {
   connecting: "Connecting", open: "Stream open", lost: "Reconnecting", ended: "Stream ended",
 };
@@ -81,7 +82,7 @@ export function LogPanel({ jobId, quiet, onState, onEnd }: Props) {
           <LinkButton tone="ghost" href={`/api/jobs/${encodeURIComponent(jobId)}/log.txt`}>Full log as text</LinkButton>
         </span>
       )}>
-      <pre ref={pre} tabIndex={0} aria-label="Job log" onScroll={onScroll} className={LOG_BOX} />
+      <pre ref={pre} id={LOG_ID} tabIndex={0} aria-label="Job log" onScroll={onScroll} className={LOG_BOX} />
       {(note || quiet) && (
         <p role="status" className="mt-2 flex items-start gap-2 text-sm text-ink-2">
           <Clock aria-hidden className="mt-px size-icon-s" /><span>{[note, quiet].filter(Boolean).join(". ")}</span>

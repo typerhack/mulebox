@@ -9,6 +9,7 @@ from typing import Any
 from mulebox.common import compose, env_rules, systems
 from mulebox.common import isolation as isolation_rules
 from mulebox.common.config_reader import Reader
+from mulebox.common.stuck import STUCK_AFTER_MIN
 
 
 def compose_files(reader: Reader, project_dir: Path, project_file: str) -> tuple[str, ...]:
@@ -59,14 +60,16 @@ def retention(reader: Reader, log_default: int, step_default: int) -> dict[str, 
 
 
 def limits(reader: Reader, idle_default: int, hours_default: int) -> dict[str, int]:
-    """`[limits]` of node.toml: how long a job nobody watches may go on."""
+    """`[limits]` of node.toml: how long a job nobody watches may go on, and how long a job may
+    do nothing before it looks stuck (common/stuck.py)."""
     sub = reader.table("limits")
     idle = sub.integer("unattended_idle_min", idle_default, 1)
     hours = sub.integer("unattended_max_hours", hours_default, 1)
+    stuck = sub.integer("stuck_after_min", STUCK_AFTER_MIN, 1)
     sub.finish()
     if hours * 60 < idle:
         sub.fail("unattended_max_hours", "must not be shorter than unattended_idle_min")
-    return {"unattended_idle_min": idle, "unattended_max_hours": hours}
+    return {"unattended_idle_min": idle, "unattended_max_hours": hours, "stuck_after_min": stuck}
 
 
 def isolation_fields(reader: Reader) -> dict[str, Any]:

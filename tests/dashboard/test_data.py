@@ -217,3 +217,16 @@ def test_queue_rows_carry_the_coordinators_reason_and_controls(store, staging, d
     row = next(j for j in data.queue_jobs(NOW + 2) if j["job_id"] == job_id)
     assert row["paused"] is True and row["waiting_for"]
     assert fingerprint(data.queue_jobs(NOW + 2)) != before
+
+
+def test_a_running_job_that_looks_stuck_says_so_on_its_row_and_page(store, staging):
+    from mulebox.dashboard.data import DashboardData
+    from tests.coordinator.test_attendance import beat, running
+
+    job = running(store, staging, now=1000.0)
+    beat(store, staging, job, 1300.0, idle_s=250.0, compute_idle_s=250.0, io_kib_s=0.0,
+         output_idle_s=250.0, last_line="Running migrations...")
+    data = DashboardData(store, staging)
+    row = next(item for item in data.queue_jobs(1310.0) if item["job_id"] == job["job_id"])
+    assert row["looks"]["verdict"] == "stuck" and "Looks stuck" in row["looks"]["text"]
+    assert data.job(job["job_id"], 1310.0)["looks"]["verdict"] == "stuck"

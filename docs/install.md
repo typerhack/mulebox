@@ -233,6 +233,9 @@ passes `CODE_SIGNING_ALLOWED=NO`; signing for a device or the App Store stays wi
   or network, with its question unanswered for a `timeout_min`, to count as stuck;
   `unattended_max_hours` (default 24) is the same for a job that cannot be measured. A working job
   has no limit, and GitHub runner jobs are not affected. The names date from before 0.55.0.
+  `stuck_after_min` (default 2) is how long a running job may do nothing before it is said to
+  look stuck, with its evidence; it stops nothing, and a project can set more in `.mulebox.yml`
+  (design.md, A job that looks stuck).
   What counts as activity: [agents.md](agents.md), 1a. Upgrade workers and the coordinator
   together: an older worker keeps `timeout_min` as a hard limit (exit 124).
 - `dashboard`: `mode = "local"` serves the web dashboard on this machine's 127.0.0.1 only;

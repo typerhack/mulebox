@@ -7,6 +7,9 @@
   reads the job's status. They never decide anything: on a real machine a desktop and a VPN kept
   them far above any idle level.
 
+`compute_idle_s` is the same without the bytes the job's own processes read and write
+(`io_kib_s`), so a job moving only a trickle of bytes can be told apart (common/stuck.py).
+
 `idle_s` is null whenever part of this is unknown: no reading of the job's unit, its containers
 not known yet, or the `images` stage, which is often quiet and can spend its CPU on a build with
 no output. Null is never read as idle (coordinator/attendance.py).
@@ -94,9 +97,13 @@ def report(machine: MachineMeter, job: JobMeter, started_at: float, output_at: f
     the stage's last output, redacted: inside `command`, the only sign of which step is on.
     `download` is what it is downloading, when the watch sees anything."""
     output_idle = max(0.0, now - max(started_at, output_at))
-    idle = None
+    idle = compute_idle = None
     if job.busy_at is not None and stage != IMAGES:
         idle = round(min(output_idle, now - job.busy_at), 1)
-    return {"output_idle_s": round(output_idle, 1), "idle_s": idle, "job_cpu_pct": job.cpu_pct,
-            "cpu_pct": machine.cpu_pct, "net_kib_s": machine.net_kib_s, "last_line": last_line,
+    if job.cpu_busy_at is not None and stage != IMAGES:
+        compute_idle = round(min(output_idle, now - job.cpu_busy_at), 1)
+    return {"output_idle_s": round(output_idle, 1), "idle_s": idle,
+            "compute_idle_s": compute_idle, "job_cpu_pct": job.cpu_pct,
+            "io_kib_s": job.io_kib_s, "cpu_pct": machine.cpu_pct,
+            "net_kib_s": machine.net_kib_s, "last_line": last_line,
             "download": download(watch, machine, job, stage, now)}

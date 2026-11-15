@@ -19,8 +19,9 @@ from mulebox.common.status import (
     step_duration_s,
     stopped,
 )
+from mulebox.common.units import duration as format_duration
 
-__all__ = ["duration_of"]  # re-exported: the shared status model owns it
+__all__ = ["duration_of", "format_duration"]  # re-exported: common modules own them
 
 EXIT_USAGE = 2  # usage or config error
 EXIT_UNREACHABLE = 3  # node unreachable
@@ -67,20 +68,6 @@ def exit_code_for(result: dict[str, Any]) -> int:
     if outcome == Outcome.CANCELLED:
         return EXIT_CANCELLED
     return EXIT_INTERRUPTED  # interrupted, or an outcome this client does not know
-
-
-def format_duration(seconds: float | None) -> str:
-    """`42s`, `3m 05s`, `1h 02m`; `-` when unknown."""
-    if seconds is None:
-        return "-"
-    total = int(max(0, round(seconds)))
-    if total < 60:
-        return f"{total}s"
-    minutes, secs = divmod(total, 60)
-    if minutes < 60:
-        return f"{minutes}m {secs:02d}s"
-    hours, minutes = divmod(minutes, 60)
-    return f"{hours}h {minutes:02d}m"
 
 
 def outcome_line(job_id: str, result: dict[str, Any]) -> str:

@@ -3,8 +3,9 @@
 The machine's readings cannot say: on a real machine with a desktop and a VPN they never came
 near idle, so a stuck job looked active for its whole life. So only the job counts here:
 
-- its own processes, the systemd unit: at least UNIT_CPU_SHARE of a core. A sleeping process uses
-  nothing measurable and a quiet download a few percent, so this can be low.
+- its own processes, the systemd unit: at least UNIT_CPU_SHARE of a core, or IO_ACTIVE_KIB_S
+  read and written (cgroups.py `io_bytes`). A sleeping process uses nothing measurable and a
+  quiet download a few percent of CPU, and a slow one next to none, so its bytes count too.
 - its compose services, found by label: at least SERVICE_CPU_SHARE of a core together, as
   databases waiting in containers use a little all the time, or NET_ACTIVE_KIB_S of their traffic.
 
@@ -28,7 +29,8 @@ SAMPLE_S = 10.0  # also how current a job's card is on the dashboard (web/src/li
 UNIT_CPU_SHARE = 0.01  # of one core
 SERVICE_CPU_SHARE = 0.10  # of one core: idle databases in containers stay below this
 NET_ACTIVE_KIB_S = 4.0  # about 256 KiB a minute
-_UNIT, _SERVICE, _NET = "unit", "service:", "net:"
+IO_ACTIVE_KIB_S = 4.0  # the job's own processes: read and written, sockets included
+_UNIT, _SERVICE, _NET, _IO = "unit", "service:", "net:", "io:"
 
 Reading = dict[str, float]  # counters by source; a source may come and go
 Reader = Callable[[], Reading | None]
@@ -53,6 +55,8 @@ def read_job(job_id: str, containers: ContainerList | None) -> Reading | None:
     if ids is None:
         return None
     reading = {_UNIT: used}
+    for pid, value in (cgroups.io_bytes(cgroups.unit_group(unit_name(job_id))) or {}).items():
+        reading[f"{_IO}{pid}"] = float(value)
     for container in ids:
         group = cgroups.container_group(container)
         cpu = cgroups.cpu_seconds(group) if group else None
@@ -77,7 +81,9 @@ class JobMeter:
         self._at: float | None = None
         self._tried: float | None = None
         self.busy_at: float | None = None  # agent clock; None while it cannot tell
+        self.cpu_busy_at: float | None = None  # the same, CPU and services only, not bytes
         self.cpu_pct: float | None = None
+        self.io_kib_s: float | None = None  # the job's own processes; None where not read
 
     def update(self, now: float) -> None:
         """Take a sample once SAMPLE_S has passed. A failed read forgets everything."""
@@ -87,6 +93,7 @@ class JobMeter:
         reading = self._read()
         if reading is None:
             self._last, self._at, self.busy_at, self.cpu_pct = None, None, None, None
+            self.cpu_busy_at, self.io_kib_s = None, None
             return
         if self._last is not None and self._at is not None and now > self._at:
             self._judge(reading, self._last, now - self._at, now, self._at)
@@ -97,8 +104,15 @@ class JobMeter:
         unit = _grown(now_read, last, _UNIT) / span
         services = _grown(now_read, last, _SERVICE) / span
         net_kib_s = _grown(now_read, last, _NET) / 1024.0 / span
+        io_kib_s = _grown(now_read, last, _IO) / 1024.0 / span
         self.cpu_pct = round((unit + services) * 100.0, 1)
-        if unit >= UNIT_CPU_SHARE or services >= SERVICE_CPU_SHARE or net_kib_s >= NET_ACTIVE_KIB_S:
+        self.io_kib_s = round(io_kib_s, 1) if any(k.startswith(_IO) for k in now_read) else None
+        computing = unit >= UNIT_CPU_SHARE or services >= SERVICE_CPU_SHARE
+        if computing:
+            self.cpu_busy_at = now
+        elif self.cpu_busy_at is None:
+            self.cpu_busy_at = before
+        if computing or net_kib_s >= NET_ACTIVE_KIB_S or io_kib_s >= IO_ACTIVE_KIB_S:
             self.busy_at = now
         elif self.busy_at is None:
             self.busy_at = before

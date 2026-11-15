@@ -18,6 +18,7 @@ import { CiSteps } from "./CiSteps";
 import { CancelControl, SteerButtons, cancellable, said, steers } from "./JobControls";
 import { AloneNote, GoingBack, JobFacts, resultText } from "./JobParts";
 import { LogPanel } from "./LogPanel";
+import { LooksNote } from "./LooksNote";
 import { useJob } from "./useJob";
 import { RunTimePanel, StagesPanel } from "./Waterfall";
 
@@ -83,6 +84,7 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
       </header>
       {goBack && <GoingBack onStay={() => setGoBack(false)} />}
       <AloneNote job={shownJob} />
+      <LooksNote job={{ ...job, looks: live ? live.looks : job.looks, doing: live?.doing ?? job.doing }} />
       {ci && (
         <p className="max-w-read text-sm text-ink-2">
           GitHub Actions runs this job of {repository(job)} on this machine and holds one of its build slots while it

@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, TextIO
 
-from mulebox.client import report
+from mulebox.client import report, stuck_lines
 from mulebox.client.remote import Remote, request
 from mulebox.client.report import format_duration
 from mulebox.common import units
@@ -134,6 +134,12 @@ def notice(job_id: str, body: dict[str, Any]) -> tuple[Any, str] | None:
     check_in = body.get("check_in")
     if isinstance(check_in, dict):
         return ("check_in", check_in.get("number")), check_in_line(job_id, check_in)
+    for name in ("stuck", "moving"):
+        seen = body.get(name)
+        if isinstance(seen, dict):
+            line = (stuck_lines.stuck_line(job_id, seen, WARNING) if name == "stuck"
+                    else stuck_lines.moving_line(job_id, seen))
+            return (name, seen.get("number")), line
     return None
 
 
@@ -154,6 +160,9 @@ def status_lines(body: dict[str, Any]) -> list[str]:
         if network_trouble(activity):
             lines.append("  warning: its last line reads as a lost connection; downloads may be "
                          "retrying, and this is the machine's network, not the project")
+    looks = stuck_lines.status_line(job_id, body.get("looks"))
+    if looks:
+        lines.append(looks)
     if isinstance(view, dict):
         lines.append(f"  question: is everything OK? It {stops_in(view)}. "
                      f"Yes: mulebox ok {job_id}. No: mulebox cancel {job_id}")

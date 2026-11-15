@@ -27,9 +27,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 15. Keep it current, in every session, before
+This skill was written for contract schema 16. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 15, run `mulebox skill update`, then read the
+its first line gives a schema higher than 16, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -81,6 +81,11 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
   output and that line, the job's CPU, and the machine's CPU and network. `mulebox status <job-id>` shows the same at any
   time. Look at them and decide: let it run, or stop it with `mulebox cancel <job-id>`. A job can
   be busy and silent for minutes, so a quiet log alone proves nothing.
+- A running job that has done nothing for 2 minutes (`stuck_after_min`) looks stuck: a `stuck`
+  event, a warning in `check` and `wait`, a line in `mulebox status`, each with its evidence.
+  `slow` and `waiting` go on by themselves. `asking` (it wants input it will never get) and
+  `stuck` do not: read `mulebox logs <job-id>`, then cancel it or keep waiting. Never send the
+  same job again while it runs. `moving` says it works again.
 - A job that is working always finishes, whether you are there or not. If you went away, your
   next `mulebox` command in the project prints the result: do not retest.
 - Every `timeout_min` a running job asks if all is well. Look at the activity, then answer:

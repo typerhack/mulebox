@@ -13,6 +13,8 @@ stream gets the latest one, so someone who reconnects still hears it; a client t
 by number. A `result` reaching a client tells the job's result, so it is not reported again
 (reuse.py); a client that has gone hears it at its next command. `mulebox events` also gets a
 `status_ok` with `stage` as a job enters each stage; a stream with the log already shows that.
+Every stream gets `stuck` when a running job starts to look stuck and `moving` when it works
+again (stuck_notices.py).
 
 Streams, clock and sleep are injected so the loop runs in tests without real stdin.
 """
@@ -24,7 +26,7 @@ from typing import BinaryIO
 
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, attendance, leases, queue, reuse, steps, usual
+from mulebox.coordinator import api, attendance, leases, queue, reuse, steps, stuck_notices, usual
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.errors import CoordinatorError, NotFound
@@ -85,6 +87,14 @@ def _send_result(store: Store, job: dict, client_there: bool, send: Callable[[],
         raise
 
 
+def _rows(store: Store, job_id: str, teller: stuck_notices.Teller, now: float) -> list | None:
+    """The job's stage rows when the teller is about to look; none read in between."""
+    if teller.looked_at is not None and now - teller.looked_at < stuck_notices.LOOK_S:
+        return None
+    with store.read() as conn:
+        return steps.for_job(conn, job_id)
+
+
 def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout: BinaryIO,
           *, clock: Callable[[], float] = time.time,
           sleep: Callable[[float], None] = time.sleep, poll_s: float = POLL_S) -> int:
@@ -108,6 +118,8 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
         write_message(stdout, Message(type_, msg.request_id, body))
 
     last: tuple[str, int | None, str | None] | None = None
+    with store.read() as conn:
+        teller = stuck_notices.Teller(attendance.read_limits(conn))
     checked_in = 0
     stage_seq: int | None = None
     while True:
@@ -144,6 +156,9 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
                 send(MessageType.STATUS_OK, status_body(job, stage={
                     "stage": rows[-1]["stage"], "number": stage_seq,
                     "started_at": rows[-1]["started_at"]}))
+        if job["state"] in (JobState.STARTING, JobState.RUNNING):
+            for name, body in teller.notices(job, _rows(store, job_id, teller, now), now):
+                send(MessageType.STATUS_OK, status_body(job, **{name: body}))
         if job["state"] == JobState.FINISHED:
             _send_result(store, job, reader.is_alive(),
                          lambda: send(MessageType.RESULT, result_body(job, **failed)), clock())

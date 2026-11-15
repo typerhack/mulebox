@@ -84,7 +84,7 @@ codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
 | --- | --- | --- |
 | submit | project, job, argv, idempotency_key, fingerprint, base_commit, client, + `setup`, `toolchain`, `needs`, `timeout_min`, `branch`, `branches` (the dev machine's own branch names, up to 5000, for the nodes' cleanup; design.md, Disk use and cleanup on its own), `detached` | submit_ok (job_id, state, `detached`); repeat key returns the same job. A client that asked for `detached` and does not see it echoed cancels the job |
 | rpc-upload (argv) | job_id, sha256 of the tar.gz | status_ok (state `queued`) or error |
-| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity` (with `download`, interfaces.md); `stop_reason` on a stopped job) |
+| status | job_id | status_ok (+ `project`, `job`, `branch`, `kind`, `detached`, `created_at`, `started_at`, `finished_at`, `log_size`, `attended`, `unattended`, `activity` (with `download`, interfaces.md), `looks` (the verdict of common/stuck.py, null when there is none); `stop_reason` on a stopped job) |
 | cancel | job_id | status_ok |
 | heartbeat | job_id, lease (`client`/`worker`), + `attempt_id`, `activity` (its `download` too, interfaces.md), `load`, `storage` and `settings` (as in claim) for worker | status_ok (+ `cancel`; `node_settings` and `storage_keeps` as in claim) |
 | queue | + `limit` (default 20 recent finished), + `news_for` (a project: its news, below) | queue_ok (jobs: list of job dicts; `dashboard`, see below; with `news_for`, `questions`, `finished_away`, `low_disks`, `heavy_nodes` (each with `asked` or `declined` from 1.32, a request for more space that waits or was declined in the last 7 days) and `space_answers` (1.32: this project's requests answered since its agent last heard, told once)) |
@@ -128,7 +128,7 @@ Watch stream: after the `watch` request line the client keeps stdin open and wri
 or whatever `lease` says for a detached job, which is how `wait` and `events` count as watching.
 `reach` (`hosts`, at most 8) answers `reach_ok` with `hosts` as host to true or false: whether a TCP
 connection to each opened, for `mulebox doctor`.
-A `status_ok` may carry `stage` (`log: false` only, as a job enters a stage), or `check_in` (every `timeout_min`, a question: `job_ok` with `job_id` answers it). `submit` with
+A `status_ok` may carry `stage` (`log: false` only, as a job enters a stage), `check_in` (every `timeout_min`, a question: `job_ok` with `job_id` answers it), `stuck` (a running job starts to look stuck: the verdict of common/stuck.py with `number`) or `moving` (it works again). `submit` with
 `reuse: true` may answer with `already`, the earlier job's result, and that job's id, and
 `submit_ok` and `queue` with `news_for` carry `questions` and `finished_away`. The server polls every 0.5 s and writes `log_chunk` for new log bytes and
 `status_ok` on state changes; it ends with `result` (job dict fields) and exits 0.

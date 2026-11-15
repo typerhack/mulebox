@@ -99,6 +99,7 @@ class ProjectConfig:
     install: str | None = None
     compose: tuple[str, ...] = ()
     timeout_min: int = DEFAULT_TIMEOUT_MIN
+    stuck_after_min: int | None = None  # raises the node's; per job too (config_jobs.py)
     exclude: tuple[str, ...] = ()
     ignore_changes: tuple[str, ...] = ()  # paths whose changes never change a result
     github_status: bool = False  # post check results to the pushed commit (client/github_status.py)
@@ -186,6 +187,7 @@ def load_project_config(path: Path) -> ProjectConfig:
         jobs=jobs,
         job_options=options,
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
+        stuck_after_min=config_jobs.stuck_after(reader),
         exclude=reader.strings("exclude"),
         ignore_changes=reader.strings("ignore_changes"),
         github_status=reader.boolean("github_status", False),

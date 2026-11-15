@@ -37,6 +37,20 @@ export interface Doing {
   download?: Download | null;
 }
 
+// What a running job looks like from outside (docs/design.md, A job that looks stuck): one
+// verdict from its output, CPU, I/O, services and log, with the coordinator's own sentence.
+// `since` (epoch seconds) and `quiet_s` come with waiting, asking and stuck.
+export type Verdict = "working" | "slow" | "waiting" | "asking" | "stuck";
+export interface Looks {
+  verdict: Verdict | string;
+  text?: string | null;
+  stage?: string | null;
+  last_line?: string | null;
+  limit_s?: number | null;
+  since?: number | null;
+  quiet_s?: number | null;
+}
+
 export interface CiResult {
   outcome?: string;
   step?: string;
@@ -72,6 +86,7 @@ export interface Job {
   ci_result?: CiResult | null;
   question?: Question | null;
   doing?: Doing | null;
+  looks?: Looks | null;
   needs?: string[];
   can_run_on?: string[];
   waiting_for?: string | null;

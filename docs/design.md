@@ -246,6 +246,49 @@ the agent decides. The rules are in `coordinator/attendance.py`; agents read the
 Until 0.55.0 a job was stopped for having nobody watching it: `unattended`, with limits of 15
 minutes and 24 hours. Real use showed that wasted working jobs, so it went.
 
+## A job that looks stuck (M24.8, agreed 2026-11-15)
+
+Time limits stop a stuck job only after a question has gone unanswered for a `timeout_min`, so at
+the earliest an hour in with the default. Until then an agent that follows a hung job sees nothing
+wrong, waits, or gives up and runs it again. This tells it early, and tells the owner on the
+dashboard. It is a judgement with its evidence, and stops nothing: the rules above are unchanged.
+
+- **Evidence, not a timer** (the user's ask). A job is judged on everything mulebox can see of it:
+  its output, its own CPU, the bytes its own processes read and write (`/proc/<pid>/io`, so a
+  download at a few KB/s and near-zero CPU still counts as working), its services' CPU and traffic,
+  and what its log says: download progress (common/download_watch.py) and the last lines.
+- **What it says.** One verdict per running job, with what it is based on:
+  - `working`: something moved in the last `stuck_after_min` (2). Nothing is shown.
+  - `slow`: the only thing that moved is I/O or a download, below 50 KB/s for that long. A
+    warning, not a stuck job: "downloading slowly, 12 KB/s, 41 MB of 300 MB".
+  - `waiting`: nothing moved, and its last line says it waits on purpose (a retry with a delay,
+    "waiting for", a sleep). Said as it is, with the line.
+  - `asking`: nothing moved, and its last line reads as a question for input (`[y/N]`,
+    `Password:`, `Press any key`). Jobs get no input, so it will not go on: stuck, with the line.
+  - `stuck`: nothing moved and the log gives no reason. With how long, the stage and the last line.
+- **Not knowing is not stuck.** A job whose activity cannot be read (the `images` stage, its
+  containers not known yet) is never `stuck`, nor is a paused, queued or cancelled one, or a
+  GitHub run. On a Mac node a job's own I/O is not read (no per-process counters there), so only
+  CPU, services, output and the log count, as the hint says.
+- **Once per spell.** A verdict is told when it starts, and `working` again when the job moves, so
+  an agent can go back to waiting.
+- **Where.** `mulebox status` shows the verdict, its evidence, and the two ways on: `mulebox logs
+  <id>` to look, `mulebox cancel <id>` to stop it. `mulebox events` gets a `stuck` event (`verdict`,
+  `text`, `stage`, `last_line`, `limit_s`, and `since` and `quiet_s` when nothing moved) and `moving`. `wait` and an attached `check`
+  print the same line on stderr, once per spell. The contract and the skill say what to do: read
+  the last lines, then cancel or keep waiting, and never send the same job again while it runs.
+  The dashboard shows it as a line across the running card's foot (icon, short label, its one
+  figure), which opens to the sentence, the log and Cancel, and as a strip on the job's page:
+  option B of design-system/stuck/, the user's pick.
+- **How fast.** The worker samples every 10 s and reports with every heartbeat (3 s), so a
+  verdict comes within about 15 s after the limit.
+- **The limit.** `stuck_after_min` in `[limits]` of the coordinator's node.toml, written to `meta`
+  like the others. A project whose jobs are quiet for long on purpose sets `stuck_after_min:` in
+  `.mulebox.yml`, per job or for all; it can raise the node's limit, never lower it.
+- **Blind spot.** A `docker run` or `docker build` the job starts itself has no mulebox label, so
+  only its output and the `docker` client's own I/O count (worker/job_meter.py); a long silent
+  build of its own can read as `stuck`. The verdict shows its evidence, so an agent can tell.
+
 ## Results an agent need not repeat
 
 A job is the same job when the project, the job's name, the exact files, uncommitted changes

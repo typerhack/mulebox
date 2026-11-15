@@ -34,7 +34,8 @@ from mulebox.common.status import STAGES
 # 13: `take_it_back` is gone: it was `its_result` under a second name
 # 14: `mulebox run --in <service>`
 # 15: a `toolchain` stage, only when a job installs a pinned one
-SCHEMA = 15
+# 16: `stuck` and `moving` events and `looks` in status: a running job that looks stuck
+SCHEMA = 16
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -131,6 +132,9 @@ EVENTS = (
     "check_in comes every timeout_min of a running job, with elapsed_s, stage, output_idle_s, "
     "last_line (the job's last output, redacted), idle_s, job_cpu_pct, cpu_pct and net_kib_s; "
     "a reading it could not measure is null",
+    "stuck comes when a running job starts to look stuck, with verdict (slow, waiting, asking "
+    "or stuck), text, stage, last_line and limit_s, and since and quiet_s when nothing moved; "
+    "moving comes when it works again",
     "after finished, read mulebox logs <job-id> --summary if the job failed",
 )
 TIME_LIMITS = (
@@ -146,6 +150,12 @@ TIME_LIMITS = (
     "a queued job is never stopped, and a job goes on if its client goes away; Ctrl-C and "
     "mulebox cancel stop it",
     "a stopped job shows stopped: stuck and exits 76: it says nothing about the code",
+    "a running job that has done nothing for stuck_after_min (2, a project may set more) looks "
+    "stuck: a stuck event, a warning in check and wait, and a line in mulebox status, with its "
+    "evidence; slow (only a slow download or a trickle of data moves) and waiting (its last line "
+    "says it waits) go on by themselves; asking (its last line wants input it never gets) and "
+    "stuck do not: read mulebox logs <job-id>, then cancel it or keep waiting, and never send "
+    "the same job again while it runs; it is a hint and stops nothing",
     "mulebox status shows the activity and any waiting question at any time",
     "any mulebox command in the project prints waiting questions and the results of jobs that "
     "finished while you were away, on stderr; --json stays clean; mulebox contract does not, as "

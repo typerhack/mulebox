@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: a job that looks stuck, option C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="stuck.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option C</h1>
+        <p class="doc-lead"><b>A mark beside the three dots that opens what the verdict is based on, and the strip under the header counts the jobs that will not go on.</b> The fullest answer: the sentence, each reading mulebox has of the job, and the two ways on, in a panel. Asking and stuck also reach every page through the strip.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#cards">The five verdicts</a><a href="#page">The job's page</a><a href="#narrow">At 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="cards"><h2>The five verdicts on running cards</h2>
+    <p>A working card is as today. The other four carry a mark where frozen and boosted are shown, in the level's colour. The strip names the two danger jobs; slow and waiting stay off it. The stuck card's panel is open.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right"><span class="hmark danger" title="2 jobs will not go on"><i data-i="octagon-alert" class="s"></i><span class="num">2</span></span></span></div>
+      <div class="gap"><div class="strip danger" role="status"><i data-i="octagon-alert"></i><div class="strip-lines"><div class="strip-line">
+          <p><b>2 running jobs will not go on by themselves.</b> <span>Each shows why on its card.</span></p></div>
+          <ul class="jobs"><li><i data-i="octagon-alert" class="s"></i><a href="#page">example-app / migrate</a><span>looks stuck, quiet for 5m 10s</span></li>
+          <li><i data-i="text-cursor-input" class="s"></i><a href="#page">example-site / build</a><span>asks for input, for 2m 30s</span></li></ul></div></div>
+        <p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <div><div class="lane-head"><strong>build-1</strong><span class="lane-note">5 running, 0 of 5 slots free</span></div>
+          <div class="v-grid" data-cards="c" data-open="stuck"></div></div>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">The panel hangs under the card: the sentence, then output, CPU, I/O, services, stage and last line, each with how long it has been still, then the buttons.</p>
+  </section>
+
+  <section class="case" id="page"><h2>The job's page, stuck</h2>
+    <p>"Running" keeps its place and "Looks stuck" stands beside it, as Frozen and Boosted do. The panel beside the log lists the same readings as the card's panel, so the verdict can be checked against the log.</p>
+    <div class="stage" data-page="c"></div>
+  </section>
+
+  <section class="case" id="narrow"><h2>At 390 px</h2>
+    <p>The strip stacks its lines. The mark and the three dots are 44 px each, which leaves the card's text about 45 px less than today; the panel is as wide as the card.</p>
+    <div class="stage narrow"><div class="gap"><div class="strip danger" role="status"><i data-i="octagon-alert"></i><div class="strip-lines"><div class="strip-line">
+          <p><b>2 running jobs will not go on by themselves.</b> <span>Each shows why on its card.</span></p></div>
+          <ul class="jobs"><li><i data-i="octagon-alert" class="s"></i><a href="#page">example-app / migrate</a><span>looks stuck, quiet for 5m 10s</span></li>
+          <li><i data-i="text-cursor-input" class="s"></i><a href="#page">example-site / build</a><span>asks for input, for 2m 30s</span></li></ul></div></div>
+      <section class="panel"><div class="panel-body"><div class="lane-head"><strong>build-1</strong><span class="lane-note">2 of 5 shown</span></div>
+        <div class="v-grid" data-cards="c" data-only="slow,stuck" data-open="stuck"></div></div></section></div>
+    </div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>The owner sees why mulebox thinks so, which matters for the blind spot (a silent docker build of the job's own). A stuck job is seen from the Storage or History page too.</li><li><b>Costs</b>The most to build: a strip line, a mark, a panel and a page panel. On the card it is still only an icon until pressed. A second button narrows the card's text on a phone. The strip can feel loud for a judgement that stops nothing.</li><li><b>Without a pointer</b>The mark is a button that opens a dialog panel with a close button and Escape; the strip is plain text and links.</li></ul>
+  <p class="foot">Static page with example data. The sentences are the coordinator's own, as docs/design.md gives them; the icons are snail for slow, hourglass for waiting on purpose, text-cursor-input for asking and octagon-alert for stuck, each with its own shape and in its level's colour. What opens answers a click; nothing is saved.</p>
+</div>
+<script src="stuck.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

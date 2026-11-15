@@ -18,7 +18,7 @@ npm run dev          # http://localhost:5173/app/ with made-up data
 kind of row, and controls that change it, so menus, arrows, Pause and Cancel can be tried without
 touching a real queue, and a history of 120 jobs to search, filter and page (`dev/history.ts`).
 `MULEBOX_MOCK_MACHINES=20 npm run dev` gives twenty machines.
-`MULEBOX_MOCK_SCENE=split|wide|downloads|settings|order` picks another queue (`dev/scenes.ts`);
+`MULEBOX_MOCK_SCENE=split|wide|downloads|settings|order|looks` picks another queue (`dev/scenes.ts`);
 `downloads` has the Down meter in each state, `settings` has node settings in every state the
 settings window shows (with `MULEBOX_MOCK_MACHINES=4`, build-4 on 1.25 without the settings of
 1.26, and build-2 with a size limit and cleanup on its own off), `order` has the order rules on (`dev/order.ts`), and

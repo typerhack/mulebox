@@ -63,7 +63,7 @@ def _activity(conn: Any, req: Request, job: dict[str, Any]) -> None:
     if not isinstance(report, dict):
         return
     idle = v.number(report, "idle_s", None)
-    st.update_job(conn, job["job_id"], activity=report,
+    st.update_job(conn, job["job_id"], activity={**report, "at": req.now},  # stuck.py ages it
                   active_at=None if idle is None else req.now - max(0.0, idle))
 
 

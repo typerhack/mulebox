@@ -193,6 +193,18 @@ Drawn in the specimen, in both themes:
   track stays as it is. It is not load: one solid fill in both meter styles, and no warning at
   80% (`web/src/features/jobs/DownloadMeter.tsx`).
 - Warning strip (amber) and danger strip (red), each with its fix.
+- A running job's verdict (the user's pick of three, 2026-11-15;
+  [design-system/stuck/](design-system/stuck/index.html), option B; design.md, A job that looks
+  stuck): one line across the foot of its card, above a hairline, with the verdict's icon in its
+  level's colour, its name in words and one figure: `snail` in `--status-warning` for "Slow
+  download" with the rate, `hourglass` in `--status-queued` for "Waiting on purpose",
+  `text-cursor-input` and `octagon-alert` in `--status-danger` for "Asks for input" and "Looks
+  stuck", each with how long the job has been quiet, counting on. A working job shows nothing,
+  and the state icon keeps turning, as the job still runs. The line is a button (28px, 44px on
+  touch): pressed, it opens in place to the coordinator's sentence, "Open its log" and, where
+  the page has controls, the two-step "Cancel job". On the job's page the same verdict is a
+  strip under the header, in the danger, warning or plain colours of its level, with "Go to its
+  last line" (`web/src/features/jobs/LooksLine.tsx`, `web/src/features/job/LooksNote.tsx`).
 - Tooltip, empty state.
 - Tables: the first and the last cell of a row keep `--space-3` from the row's edges, header
   included, so a shaded row never has its name or its buttons on its border (the user's ask,

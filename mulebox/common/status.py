@@ -49,7 +49,7 @@ SHOWN_STOPPED = "stopped: stuck"
 STOP_STUCK, STOP_UNKNOWN = "stuck", "stuck_unknown"
 STOP_TEXT = {STOP_STUCK: "no activity and no answer from the agent",
              STOP_UNKNOWN: "no answer from the agent, and its activity cannot be read"}
-NOTICES = ("check_in", "stage")
+NOTICES = ("check_in", "stage", "stuck", "moving")  # stuck, moving: common/stuck.py
 
 
 def number(value: Any) -> float | None:
@@ -211,7 +211,8 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
     started, the owner's controls (paused, boost, priority, moved), or a frozen job would not say
     so, and why a waiting row is where it is (`place_reason`), which aging can change with nothing
     else changing; it is said in whole aging steps (coordinator/line_why.py), so this does not
-    redraw every minute.
+    redraw every minute. A running job's verdict (`looks`, common/stuck.py) counts by its kind
+    only: its quiet time ticks in the viewer from `since`.
 
     Elapsed times are left out on purpose: viewers tick them locally from the timestamps.
     """
@@ -220,7 +221,7 @@ def fingerprint(jobs: list[dict[str, Any]]) -> tuple:
          j.get("worker"), j.get("started_at"), j.get("finished_at"),
          j.get("waiting_for"), tuple(j.get("can_run_on") or ()), left_mark(j), doing_mark(j),
          bool(j.get("paused")), bool(j.get("boost")), j.get("priority") or 0, j.get("moved"),
-         j.get("place_reason"))
+         j.get("place_reason"), (j.get("looks") or {}).get("verdict"))
         for j in jobs
     )
 

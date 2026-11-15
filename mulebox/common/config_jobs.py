@@ -47,6 +47,18 @@ class JobOptions:
     install: str | None = None  # the same
     compose: bool = True
     ports: tuple[str, ...] = ()
+    stuck_after_min: int | None = None  # None: the top-level one
+
+
+MAX_STUCK_AFTER_MIN = 24 * 60
+
+
+def stuck_after(reader: Reader) -> int | None:
+    """`stuck_after_min:`, minutes a job may do nothing before it looks stuck; None if unset.
+    It only ever raises the node's limit (common/stuck.py)."""
+    if "stuck_after_min" not in reader.data:
+        return None
+    return reader.integer("stuck_after_min", 0, 1, MAX_STUCK_AFTER_MIN)
 
 
 def port_problem(name: str) -> str | None:
@@ -102,7 +114,8 @@ def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
         entry = sub.table(name)
         commands[name] = entry.text("run")
         options[name] = JobOptions(setup=_line(entry, "setup"), install=_line(entry, "install"),
-                                   compose=entry.boolean("compose", True), ports=_ports(entry))
+                                   compose=entry.boolean("compose", True), ports=_ports(entry),
+                                   stuck_after_min=stuck_after(entry))
         entry.finish()
     if "check" not in commands:
         reader.fail("jobs", "must define a 'check' job")
@@ -135,5 +148,6 @@ def for_job(project: Any, name: str | None,
                                       and used.startswith(PORT_PREFIX))
 
     env, dropped = env_rules.without(project.env, gone)
+    stuck = project.stuck_after_min if options.stuck_after_min is None else options.stuck_after_min
     return dataclasses.replace(project, setup=setup, install=install, compose=files, env=env,
-                               host_ports=options.ports), dropped
+                               host_ports=options.ports, stuck_after_min=stuck), dropped

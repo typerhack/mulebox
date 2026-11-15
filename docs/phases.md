@@ -1002,12 +1002,19 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       worktree and the node's project tree removed.
 - [ ] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
-- [ ] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
+- [~] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
       next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
       `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and
       how to look or stop it, so an agent stops waiting on a hung job instead of rerunning it.
       A design note in design.md first. Done when: a real hung job on the node is reported as
       stuck by all three within the limit, and a quiet job that works is not.
+      Built 2026-11-15 (1.33.0): judged on evidence, not a timer (the user's ask): output, the
+      job's own CPU and the bytes its processes read and write, its services, its download and
+      its last line, into `working`, `slow`, `waiting`, `asking` or `stuck` (common/stuck.py;
+      design.md, A job that looks stuck). `stuck_after_min` 2 in node.toml, raised per project or
+      job in `.mulebox.yml`; `stuck` and `moving` events, `looks` in `status`, contract schema 16;
+      on the dashboard, option B of design-system/stuck/ (the user's pick). With tests, and seen in
+      Edge on the stand-in data at 1440 and 400 px.
 
 ## M25: Several nodes (the user's ask, 2026-11-14)
 How work spreads over several nodes, and what reaches each of them. Design: design.md, Which node

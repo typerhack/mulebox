@@ -122,6 +122,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 {"estimate_s": 214.0, "event": "queued", "job_id": "job-...", "position": 2, "running_ahead": ["job-..."], "state": "queued", "v": 1, "waiting_for": null}
 {"event": "started", "job_id": "job-...", "machine": "build-1", "state": "running", "v": 1}
 {"cpu_pct": 212.5, "elapsed_s": 1800.2, "event": "check_in", "idle_s": 4.1, "job_id": "job-...", "net_kib_s": 0.3, "number": 1, "output_idle_s": 41.0, "last_line": "Compiling app", "stage": "command", "state": "running", "v": 1}
+{"event": "stuck", "job_id": "job-...", "last_line": "Running migrations...", "limit_s": 120.0, "number": 1, "quiet_s": 190.0, "since": 1763201000.0, "stage": "command", "state": "running", "text": "Looks stuck: no output, no CPU and no data moving for 3m 10s in stage command. Last line: \"Running migrations...\".", "v": 1, "verdict": "stuck"}
 {"duration_s": 212.4, "event": "finished", "exit_code": 2, "job_id": "job-...", "outcome": "failed", "stage": "setup", "state": "finished", "stop_reason": null, "v": 1}
 ```
 
@@ -190,10 +191,20 @@ is there or not.
   at 60; with `timeout_min: 1`, at 1 and 2. It then shows `stopped: stuck`
   and exits 76, which is not a failed check: it says nothing about the code.
 - **Activity** is the job's, not the machine's: new output, its own processes using at least 1% of
-  a core, its compose services using at least a tenth of a core together, or their traffic
+  a core or reading and writing 4 KiB/s (sockets too, so a slow download counts; not on a Mac
+  node), its compose services using at least a tenth of a core together, or their traffic
   reaching 4 KiB/s. A `docker run` or `docker build` of the job's own is seen only through its
   output. While a job cannot be measured, and during `images`, nothing counts as idle; such a job
   stops only after 24 hours with its question unanswered (`unattended_max_hours`).
+- **A job that looks stuck is said early.** Once a running job has done nothing for
+  `stuck_after_min` (2; `[limits]` in the coordinator's `node.toml`, and a project may set more in
+  `.mulebox.yml`, for all jobs or one), it gets a verdict with its evidence: `slow` (only a slow
+  download or a trickle of data moves), `waiting` (its last line says it waits, such as a retry;
+  `stuck` after five times the limit), `asking` (its last line wants input, which a job never
+  gets) or `stuck`. `mulebox events` prints a `stuck` event, an attached `check` or `wait` a
+  warning, and `mulebox status` a line; `moving` says it works again. It stops nothing. For
+  `asking` and `stuck`, read `mulebox logs <job-id>`, then cancel it or keep waiting; never send
+  the same job again while it runs.
 - **A queued job is never stopped, and a job goes on if its client goes away**, however that
   happens. Ctrl-C and `mulebox cancel` stop it.
 - **Three ways to wait:** follow it (`mulebox check`, or `mulebox events --job <job-id> --json`), be
@@ -242,6 +253,7 @@ jobs:
   test: pnpm exec vitest run
   typecheck: pnpm typecheck
 timeout_min: 30                 # how often a running job checks in; not a limit (section 1a)
+stuck_after_min: 5              # optional: quiet longer than the node's 2 min before it looks stuck
 exclude: [reports/]             # extra paths never uploaded (secrets are excluded already)
 ignore_changes: ["*.md", docs/] # sent, but an edit there keeps a passed result (below)
 github_status: true             # post `check`'s result to the pushed commit on GitHub (below)

@@ -1,6 +1,6 @@
 // A running job's card: its state as an icon, name, branch and id, where it came from, what
-// it is doing, the time so far beside the usual, the cores the job alone uses, and what it
-// downloads while it does.
+// it is doing, the time so far beside the usual, the cores the job alone uses, what it
+// downloads while it does, and, across its foot, what it looks like when it is not working.
 
 import { stateOf, stateText } from "../../lib/format";
 import { coresText, doingWord } from "../../lib/doing";
@@ -14,6 +14,7 @@ import { Status } from "../../ui/Status";
 import { Branch, Elapsed, JobId, JobName, Marks, OfUsual, QuestionMark, Source } from "./JobBits";
 import { DownloadMeter } from "./DownloadMeter";
 import { JobMenu, MoveButtons } from "./JobMenu";
+import { LooksLine } from "./LooksLine";
 
 export function JobCard({ job, cores, total }: { job: Job; cores: number | null | undefined; total: number }) {
   const state = stateOf(job);
@@ -21,7 +22,7 @@ export function JobCard({ job, cores, total }: { job: Job; cores: number | null 
   const pct = job.doing?.cpu_pct;
   const word = doingWord(job.doing);
   return (
-    <article className="on-card flex min-w-0 items-start gap-3 rounded-m border border-line bg-surface-2 p-3">
+    <article className="on-card flex min-w-0 flex-wrap items-start gap-3 rounded-m border border-line bg-surface-2 p-3">
       <Status state={state} word={frozen ? `${stateText(state)}, frozen` : undefined} iconOnly still={frozen}
         size="l" className="mt-px" />
       <div className="grid min-w-0 flex-1 gap-1">
@@ -40,6 +41,7 @@ export function JobCard({ job, cores, total }: { job: Job; cores: number | null 
         <QuestionMark job={job} />
       </div>
       <div className="flex flex-none items-center gap-2"><Marks job={job} /><JobMenu job={job} total={total} /></div>
+      <LooksLine job={job} />
     </article>
   );
 }

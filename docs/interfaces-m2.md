@@ -55,6 +55,9 @@ Input is a public job dict; every function tolerates missing or malformed fields
   capable machine going offline redraws the queue. So is a card's activity (`doing`: stage,
   step, CPU in steps of 10% of a core): before 0.75.2 it was not, and a long job's card kept
   what it showed at its start until something else in the queue changed or the page reloaded.
+  A running job's `looks` (1.33.0) is its verdict, as in a `status` reply: `verdict` (`working`,
+  `slow`, `waiting`, `asking`, `stuck`), `text`, `stage`, `last_line`, `limit_s`, and `since` and
+  `quiet_s` when nothing moved; absent when there is none. It counts by its verdict only.
   `doing.download` (1.15.0) is what the job is downloading, null when nothing is, in the shape
   of interfaces.md, download_watch.py; it counts in steps of 5% of its total (4 MiB with no
   total), and when it starts or stops waiting on the network or stalling. A rate alone changes
@@ -398,7 +401,7 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/asks?history=N` | `asks_ok`'s body (interfaces-m1.md, `asks`) plus `editable`: `asks` (requests that wait), `changes` (the settings history, newest first, N rows, 50 by default) and `agents` (`ask` or `allow`), from the store (1.32) |
 | `POST /api/asks` | body `{action: "answer", approve, node?, value?, note?}`, `{action: "undo", change}` or `{action: "agents", option}`; the new body plus `change_id`. Who answered is recorded as "the dashboard, from <address>". Controls on only, protected like them; 409 or 404 with the coordinator's words |
 | `GET /api/history?limit=&before=&project=&job=&client=&worker=&kind=&result=&q=` | `{jobs, next_before}`, finished jobs newest first, and on the first page (no `before`) `choices`, every value of each filter as `/api/stats` gives it; `limit` 1..200, default 50; page with `before = next_before`, which keeps the filters. `project`, `job`, `client`, `worker` and `kind` (job or runner) are exact values; `result` is passed, failed (timed out and interrupted too) or cancelled (stopped as stuck too), as `shown_state` shows them, a GitHub run with no result of its own matching none; `q` is part of the project, job name or branch in any case, `%` and `_` taken as typed. Values up to 200 characters; 400 on a bad value |
-| `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested`, `log_size`, while it runs `activity` as in a `status` reply, and while it waits under an order rule `place_reason` and `order`; 404 if unknown |
+| `GET /api/jobs/{id}` | job detail with redacted `command`, `cancel_requested`, `log_size`, while it runs `activity` and `looks` as in a `status` reply, and while it waits under an order rule `place_reason` and `order`; 404 if unknown |
 | `GET /api/jobs/{id}/log.txt` | the stored log as plain text |
 | `GET /api/jobs/{id}/log` | live log, SSE (below) |
 | `GET /api/events` | queue, machines and metrics, SSE (below) |

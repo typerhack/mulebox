@@ -11,6 +11,7 @@ from typing import Any
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common import take_paths
+from mulebox.common.config_jobs import MAX_STUCK_AFTER_MIN
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
                                  leases, line, line_rules, machine_api, needs, node_settings,
@@ -83,6 +84,7 @@ def submit(req: Request) -> Message:
         "needs": needs.required(v.strings(body, "needs"), v.string_map(body, "env"),
                                 needs.asked_os(body)),
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
+        "stuck_after_min": v.integer(body, "stuck_after_min", None, 1, MAX_STUCK_AFTER_MIN),
         "detached": v.flag(body, "detached"),
         "take": _take(body),
         "pinned_worker": v.text(body, "on", None),  # `--on <node>`: that node only

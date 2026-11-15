@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: a job that looks stuck, option A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="stuck.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option A</h1>
+        <p class="doc-lead"><b>The verdict's icon takes the place of the turning one, with its sentence as a tooltip.</b> The smallest change: a card keeps its size and its rows. A job that is not working stops turning, and the icon that stands there says why. Hover, focus or a tap shows the server's sentence.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#cards">The five verdicts</a><a href="#page">The job's page</a><a href="#narrow">At 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="cards"><h2>The five verdicts on running cards</h2>
+    <p>A working card is as today. On the other four the leading icon is the verdict, in its level's colour, and no longer turns. The tooltip of the stuck card is open.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap">
+        <p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <div><div class="lane-head"><strong>build-1</strong><span class="lane-note">5 running, 0 of 5 slots free</span></div>
+          <div class="v-grid" data-cards="a" data-open="stuck"></div></div>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">The tooltip is the app's own (dark, small type), so it holds the sentence and nothing to press: the two ways on stay the card's link to its page and Cancel in the three dots.</p>
+  </section>
+
+  <section class="case" id="page"><h2>The job's page, stuck</h2>
+    <p>The state reads "Looks stuck" where "Running" stood, and the sentence is a line under the title, where a job's page already says how it went. The buttons are today's.</p>
+    <div class="stage" data-page="a"></div>
+  </section>
+
+  <section class="case" id="narrow"><h2>At 390 px</h2>
+    <p>The card is unchanged in width and height. A tap on the icon opens the tooltip over the card's own lines; a second tap or Escape closes it.</p>
+    <div class="stage narrow"><div class="gap">
+      <section class="panel"><div class="panel-body"><div class="lane-head"><strong>build-1</strong><span class="lane-note">2 of 5 shown</span></div>
+        <div class="v-grid" data-cards="a" data-only="slow,stuck" data-open="stuck"></div></div></section></div>
+    </div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>No card grows, so the queue keeps its shape; nothing new to learn about a card's layout.</li><li><b>Costs</b>The reason is hidden until asked for, so the dashboard shows that something is wrong but not what. The turning icon, the one sign that a job is running, is gone from the card. Four more icons to know by shape.</li><li><b>Without a pointer</b>The icon is a button with a 44 px target; a tap opens the tooltip, which a screen reader gets as the button's description.</li></ul>
+  <p class="foot">Static page with example data. The sentences are the coordinator's own, as docs/design.md gives them; the icons are snail for slow, hourglass for waiting on purpose, text-cursor-input for asking and octagon-alert for stuck, each with its own shape and in its level's colour. What opens answers a click; nothing is saved.</p>
+</div>
+<script src="stuck.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

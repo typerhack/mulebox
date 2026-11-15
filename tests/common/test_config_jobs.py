@@ -118,3 +118,17 @@ def test_a_job_without_containers_does_not_inherit_an_install_that_needs_them(tm
     assert for_job(project, "check")[0].install == install
     assert for_job(project, "lint")[0].install == (install if kept else None)
     assert for_job(project, "own")[0].install == "npm ci"
+
+
+def test_stuck_after_min_for_all_and_for_one_job(tmp_path):
+    project = load(tmp_path, "  check: pnpm check\n  e2e:\n    run: pnpm e2e\n"
+                             "    stuck_after_min: 15\n", head=HEAD + "stuck_after_min: 5\n")
+    assert project.stuck_after_min == 5
+    assert for_job(project, "check")[0].stuck_after_min == 5
+    assert for_job(project, "e2e")[0].stuck_after_min == 15
+    assert load(tmp_path, "  check: pnpm check\n").stuck_after_min is None
+
+
+def test_stuck_after_min_must_be_a_positive_number(tmp_path):
+    with pytest.raises(ConfigError, match="stuck_after_min"):
+        load(tmp_path, "  check: pnpm check\n", head=HEAD + "stuck_after_min: 0\n")

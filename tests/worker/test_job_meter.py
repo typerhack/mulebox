@@ -101,6 +101,30 @@ def test_no_process_in_the_group_is_no_reading(tmp_path):
     assert cgroups.group_net_bytes(tmp_path, tmp_path) is None
 
 
+def test_a_slow_download_of_the_job_itself_is_activity_but_not_computing():
+    meter = judged({"unit": 0.0, "io:7": 0.0}, {"unit": 0.0, "io:7": SAMPLE_S * 6 * 1024})
+    assert meter.busy_at == SAMPLE_S and meter.cpu_busy_at == 0.0 and meter.io_kib_s == 6.0
+
+
+def test_a_process_that_ended_takes_no_bytes_back():
+    meter = judged({"unit": 0.0, "io:7": 9e9}, {"unit": 0.0, "io:8": 10.0})
+    assert meter.busy_at == 0.0 and meter.io_kib_s == 0.0
+
+
+def test_no_io_reading_is_none_not_zero():
+    assert judged({"unit": 0.0}, {"unit": 0.0}).io_kib_s is None
+
+
+def test_io_bytes_per_process_leaves_out_those_it_cannot_read(tmp_path):
+    (tmp_path / "cgroup.procs").write_text("42\n43\n44\n")
+    (tmp_path / "42").mkdir()
+    (tmp_path / "42" / "io").write_text("rchar: 100\nwchar: 23\nsyscr: 4\nread_bytes: 0\n")
+    (tmp_path / "44").mkdir()
+    (tmp_path / "44" / "io").write_text("nonsense\n")
+    assert cgroups.io_bytes(tmp_path, tmp_path) == {"42": 123}
+    assert cgroups.io_bytes(tmp_path / "gone", tmp_path) is None
+
+
 class Daemon:
     def __init__(self):
         self.release = threading.Event()

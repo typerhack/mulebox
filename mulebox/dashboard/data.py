@@ -51,8 +51,13 @@ class DashboardData:
             limits = attendance.read_limits(conn)
             typical = usual.lengths(conn, [job for job, _ in rows
                                            if job["state"] != JobState.FINISHED])
-            doing = {job["job_id"]: _doing(job, steps.for_job(conn, job["job_id"]))
-                     for job, _ in rows if job["state"] in ACTIVE}
+            stages = {job["job_id"]: steps.for_job(conn, job["job_id"])
+                      for job, _ in rows if job["state"] in ACTIVE}
+            doing = {job_id: _doing(job, stages[job_id]) for job, _ in rows
+                     if (job_id := job["job_id"]) in stages}
+            # Whether a running job looks stuck, with its evidence (common/stuck.py).
+            looks = {job_id: seen for job, _ in rows if (job_id := job["job_id"]) in stages
+                     and (seen := attendance.looks(job, stages[job_id], now, limits))}
             # The coordinator's own reason (paused, held, behind an upgrade, a paused project,
             # nothing fits), the one `mulebox status` and `queue` give.
             why = {job["job_id"]: reason for job, _ in rows
@@ -64,6 +69,7 @@ class DashboardData:
                  **attendance.fields(job, now, limits), **order.explain(job),
                  **({"usual_s": typical[job["job_id"]]} if typical.get(job["job_id"]) else {}),
                  **({"doing": doing[job["job_id"]]} if job["job_id"] in doing else {}),
+                 **({"looks": looks[job["job_id"]]} if job["job_id"] in looks else {}),
                  **({"waiting_for": why[job["job_id"]]} if job["job_id"] in why else {}),
                  **({"branch_busy": busy[job["job_id"]]} if job["job_id"] in busy else {})}
                 for job, pos in rows]
@@ -123,7 +129,8 @@ class DashboardData:
         detail = {**reservation_dict(job, place), **{n: job[n] for n in DETAIL_FIELDS},
                   "steps": rows, "usual": typical, "failed_stage": failed,
                   **attendance.fields(job, now, limits), **why,
-                  "activity": attendance.status_fields(job, rows, now, limits)["activity"]}
+                  **{key: attendance.status_fields(job, rows, now, limits)[key]
+                     for key in ("activity", "looks")}}
         detail["shown_state"] = shown_state(detail)
         detail["stop_text"] = STOP_TEXT.get(detail.get("stop_reason"))
         detail["command"] = self._redactor.redact(shlex.join(job["argv"])) if job["argv"] else ""

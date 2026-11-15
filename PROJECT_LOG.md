@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.33.0 - 2026-11-15 - minor
+- A job that looks stuck is said early (M24.8, the user's ask), judged on its evidence rather than a timer: its output, its own CPU, the bytes its own processes read and write (`/proc/<pid>/io`, so a slow download at next to no CPU counts as working; `worker/cgroups.py` `io_bytes`, `job_meter.py`), its services' CPU and traffic, the download its log shows and its last line. One verdict per running job (`common/stuck.py`): `working`, `slow` (only a slow download or a trickle of data moves), `waiting` (its last line says it waits; `stuck` after five times the limit), `asking` (its last line wants input a job never gets) or `stuck`, with a sentence of its evidence. It stops nothing.
+- `stuck_after_min` (2) in `[limits]` of node.toml; a project raises it in `.mulebox.yml`, for all jobs or one (`jobs.stuck_after_min`, schema 28). The worker reports `compute_idle_s` and `io_kib_s`, and the coordinator keeps when it heard a report (`at`).
+- Agents: `looks` in `mulebox status`, `stuck` and `moving` events in `mulebox events` (`coordinator/stuck_notices.py`), a warning in `wait` and an attached `check` (`client/stuck_lines.py`); contract schema 16, and the skill says what to do: read the log, cancel or keep waiting, never send the same job again while it runs.
+- Dashboard, option B of `docs/design-system/stuck/` (the user's pick of three): a line across a running card's foot with the verdict's icon, label and one figure, opening to the sentence, the log and Cancel, and a strip on the job's page (`web/src/features/jobs/LooksLine.tsx`, `features/job/LooksNote.tsx`, `lib/looks.ts`); the stand-in scene `MULEBOX_MOCK_SCENE=looks`. `format_duration` moved to `common/units.py` as `duration`.
+- Tests in `tests/common/test_stuck.py`, `tests/coordinator/test_stuck_notices.py`, `tests/client/test_stuck_lines.py`, `tests/worker/test_job_meter.py`, `tests/common/test_config_jobs.py`, `tests/dashboard/test_data.py`, `web/src/features/jobs/LooksLine.test.tsx`.
+
 ## 1.32.4 - 2026-11-15 - patch
 - Why the node's Docker cleanup left 88 untagged images (M25.8): a project's CI step runs `docker build` with no tag, so each run leaves an untagged image whose provenance names its commit. On the containerd image store `image prune --filter until=` counts from when the node stored an image, not from its `Created` date, which cached steps keep from the first build; the oldest was stored 2026-11-08, so none was a week old yet. Nothing to fix: they go once 7 days old, and the 88 share their layers (131 MB in all). docs/design.md says how the age is counted; docs/phases.md records it.
 

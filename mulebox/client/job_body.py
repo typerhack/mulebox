@@ -73,6 +73,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "needs": list(project.all_needs),
         **({"os": project.system} if project.system else {}),  # the coordinator adds the need
         "timeout_min": project.timeout_min,
+        **({"stuck_after_min": project.stuck_after_min} if project.stuck_after_min else {}),
         **({"detached": True} if detach else {}),
         **({"reuse": True} if reuse else {}),
         **({"take": list(take)} if take else {}),
