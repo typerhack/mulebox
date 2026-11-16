@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.35.5 - 2026-11-16 - patch
+- docs/phases.md, parking lot: remote access while away (a VPS as a connector, wstunnel or Headscale, the dashboard behind a client certificate) and waking a node (BIOS power restore, an ESP32 with a W5500 on a cable to the node), from the user's research.
+
 ## 1.35.4 - 2026-11-16 - patch
 - docs/phases.md: M23.12, sudden power loss on a node (the user's ask: power cuts are common there), with what the node must do when the power returns and the drill that closes it.
 

@@ -1181,6 +1181,18 @@ runs a job.
       deploy showed an open page reloading itself on the upgrade (1.31.0).
 
 ## Parking lot
+- Remote access while away, and waking a node (the user's ask, 2026-11-16; researched, nothing
+  built). A VPS as a connector only, never a node or the coordinator: a coordinator there could make
+  the home node run any code. The node dials out to it with SSH inside TLS/WebSocket on 443
+  (wstunnel), as filtered networks block plain SSH and WireGuard; Headscale with its own DERP relay
+  on 443 if a private network for every device is wanted later. The dev machine reaches the node
+  through the VPS with SSH checked end to end, so `check`, uploads and `dashboard open` work
+  unchanged. The dashboard at a VPS address only behind a client certificate, as it has full
+  controls and no sign-in. Waking a node after a power cut or a shutdown: "restore on AC power loss"
+  in its BIOS first; then an ESP32 with a W5500 Ethernet module on a short cable straight to the
+  node's wired port (Wake-on-LAN; Wi-Fi cards rarely wake), on Wi-Fi to the VPS, pinging the node
+  through the cable to tell whether it is on; a PC817 on the power-button pins if a frozen node must
+  be restarted. The power loss itself: M23.12.
 - From similar tools (2026-11-12), weighed and left for later:
   - Signed results (macserve): a signed record of commit, files, toolchain, exit code and test counts.
     Little use on a LAN; again only if M24.6 makes results count outside it.
