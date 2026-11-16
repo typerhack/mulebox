@@ -964,6 +964,15 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       "864 MB to download" (the dashboard counts in 1024s), the file's name and "542 KB/s, whole
       node"; the job was cancelled and its project home removed. Open: a real slow cache restore
       on a CI run, with its meter filling.
+- [ ] M23.12 Sudden power loss (the user's ask, 2026-11-16: power cuts at the node's place are
+      common). Every drill so far rebooted cleanly, so the worker could report its job as it stopped;
+      a cut gives it no such chance. What a node must do when the power comes back by itself (the
+      BIOS's "restore on AC power loss"): services up unattended, the job that was running
+      `interrupted` (exit 75, not replayed) and its waiting dev machine told so, the queue and the
+      store intact (SQLite after a cut mid-write), half-made job and branch folders, simulators,
+      containers, networks and runner reservations found and removed, queued jobs run. Done when:
+      the user cuts the node's power with a job running, one queued and a CI run holding a slot,
+      and after the power returns all of the above holds with nothing left behind.
 
 ## M24: Answers an agent can trust
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,

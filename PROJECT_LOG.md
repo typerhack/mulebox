@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.35.4 - 2026-11-16 - patch
+- docs/phases.md: M23.12, sudden power loss on a node (the user's ask: power cuts are common there), with what the node must do when the power returns and the drill that closes it.
+
 ## 1.35.3 - 2026-11-15 - patch
 - docs/phases.md: M24.1 done, with the drill on the real node (a pass, fewer, fewer with a reason, none) and the deployed dashboard showing an exit 8 and an underlined summary line.
 
