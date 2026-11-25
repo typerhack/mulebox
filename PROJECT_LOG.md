@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.38.1 - 2026-11-25 - patch
+- A job that would fit but waits behind a bigger one its node keeps room for said "the machines are busy"; it now says "waiting for room: <node> keeps its room for <job> ahead of it, which needs 5 cores" (coordinator/sizes.py), and one core is "1 core", with a test. Found in the drill that closed M23.2 on the real node (docs/phases.md).
+
 ## 1.38.0 - 2026-11-25 - minor
 - Job sizes (M23.2, docs/design.md, Job sizes; placement only and room for the owner are the user's decisions): `size: {cores: 4, memory: 6GB}` in `.mulebox.yml`, for all jobs or per job (common/job_size.py, config_jobs.py). A node shares its cores and memory, less `keep_cores` and `keep_memory` kept for its owner, among the jobs it runs; `slots` stays the most at once. A job with no size, and a part left out, counts as one slot's share, so nothing changes until a project declares one. Kept in `jobs.size` (schema 32).
 - The claim (coordinator/sizes.py, queue.py): a node takes a job only where its size fits; the first job in line it could take but has no room for keeps that room, so small jobs cannot starve it; a job too big for that node ever is passed over for a bigger one. A size no node can give is refused at submit (exit 4) with each node's budget; a job held back by its size says "waiting for room" with what is free.

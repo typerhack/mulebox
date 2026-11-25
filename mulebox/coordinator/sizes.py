@@ -68,12 +68,28 @@ def refusal(fleet: list[dict[str, Any]], wanted: list[str], size: Size,
             f"job (what each has after what it keeps for its owner: {room}): {HOW_TO_FIT}")
 
 
+def _kept_for(conn: sqlite3.Connection, job: dict[str, Any], worker: dict[str, Any],
+              budget: Budget, on_it: list[Size | None], order: Any) -> dict[str, Any] | None:
+    """The job ahead of `job` in line that `worker` keeps its room for (queue.py), or None."""
+    have = set(worker["capabilities"])
+    for row in order.rows:
+        if row["job_id"] == job["job_id"]:
+            return None
+        if (row["kind"] == "job" and set(row["needs"]) <= have and not row["paused"]
+                and row["pinned_worker"] in (None, worker["worker"])
+                and budget.holds(row["size"] or None)
+                and not job_size.fits(budget, on_it, row["size"] or None)):
+            return row
+    return None
+
+
 def waiting(conn: sqlite3.Connection, job: dict[str, Any], fleet: list[dict[str, Any]],
-            now: float) -> str | None:
-    """`waiting_for` of a queued job that only its size holds back, or None."""
+            now: float, order: Any = None) -> str | None:
+    """`waiting_for` of a queued job that only sizes hold back, its own or that of the job
+    ahead its node keeps room for, or None."""
     nodes = [w for w in needs.capable(needs.fleet_for(fleet, job), job["needs"])
              if workers.is_online(w, now) and not w.get("draining")]
-    short = []
+    short, kept = [], []
     for worker in nodes:
         budget = budget_of(worker)
         if budget is None:
@@ -82,9 +98,19 @@ def waiting(conn: sqlite3.Connection, job: dict[str, Any], fleet: list[dict[str,
         if len(on_it) >= budget.slots:
             return None  # simply busy: the queue working
         if job_size.fits(budget, on_it, job.get("size") or None):
-            return None
+            ahead = _kept_for(conn, job, worker, budget, on_it, order) if order else None
+            if ahead is None:
+                return None
+            kept.append(f"{worker['worker']} keeps its room for {ahead['job_id']} ahead of it, "
+                        f"which needs {_need(ahead)}")
+            continue
         short.append(f"{worker['worker']} has {job_size.room_words(budget, on_it)}")
+    if kept and not short:
+        return "waiting for room: " + "; ".join(kept)
     if not short:
         return None
-    need = job_size.words(job["size"]) if job.get("size") else "one slot's share of a node"
-    return f"waiting for room: it needs {need}; {', '.join(short)}"
+    return f"waiting for room: it needs {_need(job)}; {', '.join(short + kept)}"
+
+
+def _need(job: dict[str, Any]) -> str:
+    return job_size.words(job["size"]) if job.get("size") else "one slot's share of a node"

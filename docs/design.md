@@ -1005,7 +1005,8 @@ runner's size can also be set after it is registered (`mulebox runner size`).
   (coordinator/sizes.py, queue.py). A job too big for one node ever is passed over there, for a
   bigger node. A job bigger than every node's budget is refused at submit (exit 4), with each
   node's budget. A job that a node with a free slot cannot take for its size says so in
-  `waiting_for`: "waiting for room: it needs 6 cores; build-1 has 2 cores and 14.0 GB free".
+  `waiting_for`: "waiting for room: it needs 6 cores; build-1 has 2 cores and 14.0 GB free", and
+  a job behind it that would fit names the job the room is kept for.
 - **GitHub runs**: a runner holds a size of its own (`runner register|add --cores --memory`, or
   `mulebox runner size <runner>` later), kept in its `.mulebox-runner.json` and sent by the
   job-started hook with each reservation, the slot share when not given, as the runner does not

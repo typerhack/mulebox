@@ -32,6 +32,11 @@ def test_a_big_job_waits_for_room_and_keeps_it(store, staging):
         assert "waiting for room: it needs 6 cores and 4.0 GB; build-1 has 2 cores" in (
             waiting_for(conn, job, 1000.0) or "")
     assert store.get_job(small)["state"] == "queued"
+    job = store.get_job(small)
+    with store.read() as conn:  # it would fit, but the room is kept for the big job
+        assert waiting_for(conn, job, 1000.0) == (
+            f"waiting for room: build-1 keeps its room for {big} ahead of it, which needs "
+            "6 cores and 4.0 GB")
 
 
 def test_a_job_too_big_for_this_node_is_passed_over(store, staging):

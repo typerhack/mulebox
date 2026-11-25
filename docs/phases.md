@@ -867,7 +867,7 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       node's node.toml while it ran (no restart), a project that said nothing ran isolated (no
       `~/.mulebox`, no Docker socket, "isolated: runs in a container" in its log), and one with
       `isolation: none` was refused at submit with the reason and the fix. node.toml was put back.
-- [~] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
+- [x] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
       lot's job weights. Built 2026-11-25 (1.38.0), with tests on the real coordinator code:
@@ -875,6 +875,14 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       runner sizes, `doctor` warnings (design.md, Job sizes). Done when: on the real node, a big
       sized job waits for room while smaller jobs behind it do not start, then runs; a size no node
       can give is refused; `keep_cores` set from afar takes effect on the next claim.
+      Done 2026-11-25 (1.38.1) on the real node (8 cores, 2 slots) with a throwaway project: a
+      5-core job ran; a second 5-core job waited "for room" with 3 cores free, and a 1-core job
+      behind it waited too, with a slot and the cores free; a 64-core job was refused at submit
+      (exit 4) with the node's budget; `--keep-cores 2 --keep-memory 2GB` from the dev machine
+      reached node.toml with no restart and the free room read 1 core at once. When the first job
+      ended, the second started and the small one 0.5 s after it, side by side; all passed. The
+      settings were put back and the project removed. Found there and fixed 1.38.1: the small job
+      said "the machines are busy"; it now names the job its room is kept for.
 - [x] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
       go ahead, a branch (such as `main`), a workflow or a project first. Built 2026-11-13 (1.17.0):
       `coordinator/line.py` and `line_rules.py` (design.md, Order of the line), project, branch and

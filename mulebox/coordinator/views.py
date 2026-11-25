@@ -71,9 +71,10 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -
     reason = needs.waiting_for(needs.fleet_for(workers.listing(conn), job), job["needs"], now,
                                bool(job.get("pinned_worker")))
     if reason is None:
-        from mulebox.coordinator import sizes  # sizes -> needs -> views
+        from mulebox.coordinator import line, sizes  # sizes -> needs -> views
 
-        reason = sizes.waiting(conn, job, needs.fleet_for(workers.listing(conn), job), now)
+        reason = sizes.waiting(conn, job, needs.fleet_for(workers.listing(conn), job), now,
+                               order or line.read(conn, now))
     if reason is None and job["pinned_worker"]:
         return f"sent with --on {job['pinned_worker']}: it waits for that node alone"
     return reason

@@ -137,4 +137,4 @@ def fits(budget: Budget, running: list[Size | None], size: Size | None) -> bool:
 def room_words(budget: Budget, running: list[Size | None]) -> str:
     left = free(budget, running)
     cores = max(0.0, math.floor(left["cores"] * 10) / 10)
-    return f"{cores:g} cores and {units.size(max(0, left['memory']))} free"
+    return f"{cores:g} {'core' if cores == 1 else 'cores'} and {units.size(max(0, left['memory']))} free"
