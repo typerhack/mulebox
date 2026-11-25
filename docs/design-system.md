@@ -34,7 +34,7 @@ Every color is a role. A role is used only for what its name says.
 | Accent | `--accent`, `--accent-hover`, `--accent-ink`, `--focus` | the primary action, the selected tab, focus, meters |
 | Status | `--status-running`, `-queued`, `-passed`, `-failed`, `-cancelled`, `-warning`, `-danger`, `--on-danger` | job results and alerts, on the icon only |
 | Strip tints | `--status-warning-soft`, `--status-failed-soft` | the background of the warning and danger strips, nothing else |
-| Meters and graph | `--meter-track`, `--meter-fill`, `--graph-line` | resource meters and the CPU line |
+| Meters and graph | `--meter-track`, `--meter-fill`, `--meter-fill-soft`, `--graph-line` | resource meters and the CPU line; the soft fill only for the second part of a usage bar (Components) |
 | Chart series | `--chart-1` to `--chart-6` | the marks and legend swatches of charts with more than one series, in this fixed order: teal, ochre, indigo, rose, slate, light blue |
 | Load ramp | `--ramp-lo`, `--ramp-mid`, `--ramp-hi` | the Rainbow meter style only (below) |
 
@@ -132,6 +132,9 @@ them in light, Gauge in dark, and they want the viewer to choose.
 - Layouts work from 390 px (no sideways scroll) to 1440x900.
 - A row never squeezes text into a column narrower than its words. If it does not fit, the row
   wraps or the fact moves to the job's page.
+- The header's views (six since Usage, 2026-11-25) stay on one line while they fit. Under 760px
+  they are a row of their own under the name, and wrap to a second line there when they do not
+  fit: no entry shrinks, loses its word or scrolls sideways, and each keeps its 44px.
 
 ## Corners
 
@@ -167,7 +170,8 @@ One radius per level, stepped by size:
   cancelled `ban`. Marks: frozen `snowflake`, paused `pause`, boosted `zap`. Alerts: warning
   `triangle-alert`, danger `octagon-alert`. Menus: `ellipsis` (three dots). Move in line:
   `chevrons-up`, `chevron-up`, `chevron-down`, `chevrons-down`. Copy: `copy`, then `check` for a
-  moment once copied.
+  moment once copied. Usage: cores `cpu`, memory `memory-stick`, a gap in the measurements
+  `circle-dashed`, a list sorted heaviest first `arrow-down-wide-narrow`.
 - On cards the icon stands alone and the word is its tooltip. In tables and on a job's page the
   icon comes with its word.
 
@@ -215,6 +219,20 @@ Drawn in the specimen, in both themes:
   under the header with its fix, and a Tests panel under Stages with each runner beside the
   last pass; the runners' summary lines in the log are underlined
   (`web/src/features/jobs/TestsBits.tsx`, `web/src/features/job/TestsNote.tsx`, `TestsPanel.tsx`).
+- Usage bars (the user's picks, 2026-11-25, of [design-system/usage/](design-system/usage/index.html):
+  the Usage page of option A, one run as in option B; design.md, Job usage). A usage bar is 12px
+  high and its whole track is the node, ruled in units (a core, or a few GB), so the bars of one
+  node share one scale. The solid part (`--meter-fill`) ends at the usual peak, the soft part
+  (`--meter-fill-soft`) at the highest, and the numbers are always written under it. It is a
+  measurement, not load: one solid fill in both meter styles, like the download meter, and never
+  a warning colour, however full. A gap is said in words after `circle-dashed`, never drawn as
+  zero. On a job's page there is no bar: each peak is one line under the stage it happened in,
+  led by `cpu` or `memory-stick` in `--text-1`, and the average is the panel's last line, above
+  a hairline (`web/src/features/usage/`, `web/src/features/job/UsageLines.tsx`).
+- The ink tick: a 2px line in `--text-1` across a bar, always a value to hold the bar against,
+  never the bar's own. On a stage it is where the stage usually ends, on a usage bar the size
+  that fits every run, on a running job's Cores meter its peak so far, on the disk ruler the
+  reserve. What it means there is said in the key beside the bar.
 - Tooltip, empty state.
 - Tables: the first and the last cell of a row keep `--space-3` from the row's edges, header
   included, so a shaded row never has its name or its buttons on its border (the user's ask,

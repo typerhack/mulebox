@@ -1,19 +1,22 @@
 // The Stages panel: the waterfall of lib/timeline.ts, its axis and key, and the cores the job
-// uses now. For a GitHub run, whose stages GitHub keeps, one bar for the whole run.
+// uses now. For a GitHub run, whose stages GitHub keeps, one bar for the whole run. What the
+// run used (UsageLines.tsx) is written under the stage of each peak, and as the last line.
 
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 import { coresText } from "../../lib/doing";
 import { duration, roughly } from "../../lib/format";
 import { timeline, type StageRow } from "../../lib/timeline";
 import type { Job, JobDetail } from "../../lib/types";
+import type { RunBody } from "../../lib/usage";
 import { Meter } from "../../ui/Meter";
 import { Panel } from "../../ui/Panel";
 import { Status } from "../../ui/Status";
+import { usedOf, type Used } from "./UsageLines";
 
 const share = (part: number, whole: number) => `${((100 * part) / whole).toFixed(2)}%`;
 
-function Row({ row, scale }: { row: StageRow; scale: number }) {
+function Row({ row, scale, under }: { row: StageRow; scale: number; under?: ReactNode }) {
   const bar = { "--from": share(row.from, scale), "--len": share(row.length, scale) } as CSSProperties;
   const tick = row.usualAt === null ? null : ({ "--at": share(row.usualAt, scale) } as CSSProperties);
   return (
@@ -31,26 +34,35 @@ function Row({ row, scale }: { row: StageRow; scale: number }) {
       {row.extra && (row.extra.code
         ? <code className="block truncate text-xs text-ink-1" title={row.extra.text}>{row.extra.text}</code>
         : <p className="text-sm text-ink-2">{row.extra.text}</p>)}
+      {under}
     </li>
   );
 }
 
-const Key = () => (
+const Tick = () => <i className="block h-3 w-hair bg-ink-1" />;
+// `usual`: the stages carry the tick; `peak`: the Cores meter does.
+const Key = ({ usual, peak }: { usual: boolean; peak: boolean }) => (usual || peak ? (
   <p className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-2">
     <span className="inline-flex items-center gap-2"><i className="block h-meter w-4 rounded-meter bg-meter-fill" />This run</span>
-    <span className="inline-flex items-center gap-2"><i className="block h-3 w-hair bg-ink-1" />Where it usually ends</span>
+    {usual && <span className="inline-flex items-center gap-2"><Tick />Where it usually ends</span>}
+    {peak && <span className="inline-flex items-center gap-2"><Tick />On Cores: its peak so far</span>}
   </p>
-);
+) : null);
 
-function Cores({ live, cores }: { live: Job | null; cores: number | null | undefined }) {
-  const pct = live?.doing?.cpu_pct;
+const pctOf = (live: Job | null) => live?.doing?.cpu_pct;
+const metered = (live: Job | null, cores: number | null | undefined) => typeof pctOf(live) === "number" && Boolean(cores);
+
+function Cores({ live, cores, use }: { live: Job | null; cores: number | null | undefined; use: Used }) {
+  const pct = pctOf(live);
   if (typeof pct !== "number" || !cores) return null;
-  return <Meter name="Cores" value={pct / cores} text={coresText(pct)} label={`Cores this job uses: ${coresText(pct)} of ${cores}`} />;
+  const peak = use.peakText ? `, its peak so far ${use.peakText}` : "";
+  return <Meter name="Cores" value={pct / cores} mark={use.peakShare} text={coresText(pct)} label={`Cores this job uses: ${coresText(pct)} of ${cores}${peak}`} />;
 }
 
-interface Props { job: JobDetail; live: Job | null; cores: number | null | undefined; now: number }
+// `used`: what the run used, once asked (useRunUsage.ts); `version`: the mulebox of its node.
+interface Props { job: JobDetail; live: Job | null; cores: number | null | undefined; now: number; used?: RunBody | null; version?: string | null }
 
-export function StagesPanel({ job, live, cores, now }: Props) {
+export function StagesPanel({ job, live, cores, now, used, version }: Props) {
   const made = timeline(job, now);
   if (!made) {
     return (
@@ -60,23 +72,27 @@ export function StagesPanel({ job, live, cores, now }: Props) {
     );
   }
   const note = `${duration(made.elapsed)}${made.running ? " so far" : ""}${made.usual ? ` of usually ${roughly(made.usual)}` : ""}`;
+  const use = usedOf(used ?? null, made.rows.map((row) => row.name), false, version);
   return (
     <Panel title="Stages" label="Stages" note={note} strong bodyClassName="grid gap-3">
-      <ol className="grid gap-2">{made.rows.map((row, index) => <Row key={`${row.name}-${index}`} row={row} scale={made.scale} />)}</ol>
+      <ol className="grid gap-2">
+        {made.rows.map((row, index) => <Row key={`${row.name}-${index}`} row={row} scale={made.scale} under={use.under.get(index)} />)}
+      </ol>
       <div className="stage text-xs text-ink-3" aria-hidden>
         <span />
         <div className="num flex justify-between">{made.axis.map((text, index) => <span key={index}>{text}</span>)}</div>
         <span />
       </div>
-      <Key />
-      <Cores live={live} cores={cores} />
+      <Key usual peak={use.peakShare !== null && metered(live, cores)} />
+      <Cores live={live} cores={cores} use={use} />
+      {use.foot}
     </Panel>
   );
 }
 
 // A GitHub run: how long it has run beside what its job usually takes, and its cores, which
 // count the run's Compose containers.
-export function RunTimePanel({ job, live, cores, now }: Props) {
+export function RunTimePanel({ job, live, cores, now, used, version }: Props) {
   const started = job.started_at ?? job.created_at ?? now;
   const elapsed = Math.max(0, (job.finished_at ?? now) - started);
   const usual = live?.usual_s ?? null;
@@ -91,13 +107,14 @@ export function RunTimePanel({ job, live, cores, now }: Props) {
     took: duration(elapsed), extra: null,
     tip: `This run: ${duration(elapsed)}${running ? " so far" : ""}${usual ? `, usually ${duration(usual)}` : ""}`,
   };
+  const use = usedOf(used ?? null, [row.name], true, version);
   return (
     <Panel title="Time" label="Time" strong bodyClassName="grid gap-3"
       note={`${duration(elapsed)}${usual ? ` of usually ${roughly(usual)}` : ""}`}>
-      <ol><Row row={row} scale={scale} /></ol>
-      {usual ? <Key /> : null}
-      <Cores live={live} cores={cores} />
-      {running && <p className="text-sm text-ink-2">The cores count the run's Compose containers.</p>}
+      <ol><Row row={row} scale={scale} under={use.under.get(0)} /></ol>
+      <Key usual={Boolean(usual)} peak={use.peakShare !== null && metered(live, cores)} />
+      <Cores live={live} cores={cores} use={use} />
+      {use.foot ?? (running && <p className="text-sm text-ink-2">The cores count the run's Compose containers.</p>)}
     </Panel>
   );
 }

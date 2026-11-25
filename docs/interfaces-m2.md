@@ -21,7 +21,7 @@ The contract for `mulebox/dashboard/`, `mulebox/common/status.py` and
 - The code: `web/src/lib/` (lanes, menus, formats, the log's steps, the chart),
   `web/src/state/` (the stream into stores, the picked machine) and `web/src/features/` (one
   folder per view). Pages: the queue (`#/`), a job (`#/job/<id>`), history (`#/history`), statistics
-  (`#/stats`) and machines (`#/machines`); the machine picked for CPU, Memory and Disk
+  (`#/stats`), usage (`#/usage`) and machines (`#/machines`); the machine picked for CPU, Memory and Disk
   (`/api/metrics?machine=`, asked every 2 s while another machine than the host is picked),
   the meter style switch (Auto, Gauge, Rainbow, kept per browser as `mulebox-meters`), and a
   GitHub job's log drawn as its steps, each with its length (live while it runs) and result
@@ -138,6 +138,25 @@ added up; the last 14 days as stacked columns; one table, by project, type, sour
 job name, for today or all time, the top 8 with a way to show all. Two `/api/stats` requests
 per change, with this browser's own midnights; again each minute while the page is open. The
 design is option A of three the user was shown on 2026-11-10.
+
+## Usage page and a run's usage (`web/src/features/usage/`, `web/src/features/job/UsageLines.tsx`, `web/src/lib/usage.ts`)
+
+What jobs really used, from `GET /api/usage` (design.md, Job usage; the picks of 2026-11-25 from
+design-system/usage/). `#/usage`, the sixth view in the header: filters (project, node, type),
+passed runs or all runs, and under each node a row per project and job, heaviest first (by the
+larger share its highest peaks take of the node): cores and memory as bars whose whole length
+is that node, solid to the usual peak, soft to the highest, an ink tick at the size that fits
+every run, the numbers in words under each. When jobs ran on several nodes the page asks once
+more per node (`worker=`), so a node's bars are its own runs on its own scale. A job's name
+opens its runs in History. A gap is said in words (too short for cores; not measured, with
+`mulebox setup <node>` when the node's mulebox is older than 1.36.0). Asked again each minute.
+
+On a job's page nothing new is drawn: `GET /api/usage/<job_id>`, once for a finished job and
+every 10 s while it runs and its page is in view, puts each peak as one line under the stage
+it happened in (a GitHub run's two lines under its one bar, naming the step), the average
+cores as the panel's last line, and an ink tick on the running job's Cores meter at its peak
+so far. A 404 from an older coordinator shows nothing on a job's page and one calm sentence
+on the Usage page.
 
 ## Storage page (`web/src/features/storage/`, `web/src/lib/storage.ts`, `web/src/state/storage.ts`)
 

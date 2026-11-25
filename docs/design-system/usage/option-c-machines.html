@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: job usage, option C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="usage.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option C</h1>
+        <p class="doc-lead"><b>On the Machines page: a node's cores as boxes, and how many of a job fit at once.</b> No new page. Under the Machines table each node lists what its jobs need, drawn in the boxes the slots already use: one per core, one per 2 GB. The last column does the sum job sizes will do: how many of this job the node could run side by side. On a job's page, one sentence and rows in Job details.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#summary">The summary</a><a href="#narrow">At 390 px</a><a href="#page">One run, on its page</a><a href="#bits">Running and the gaps</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="summary"><h2>What a node's jobs need, on the Machines page</h2>
+    <p>Count the boxes with colour: that is the size that fits every run. The solid part is the usual peak, the pale part reaches the highest. "Side by side" divides the node by that size and says which of the two runs out first.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span class="on">Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap"><p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <p class="as-today">The Machines table (state, readings, slots, offers, version, last seen), as today.</p>
+        <p class="u-key"><span><i class="k cell"></i>Used at the usual peak</span><span><i class="k cell hi"></i>Up to the highest peak</span><span><i class="k cell free"></i>Left of the node</span></p>
+        <div class="gap" data-summary="c"></div>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">Read only. The node's own settings stay behind its settings window; a job's name opens its runs in History.</p>
+  </section>
+
+  <section class="case" id="narrow"><h2>The same panel at 390 px</h2>
+    <p>Boxes keep their size and wrap if a node has many cores; each row folds to labelled lines.</p>
+    <div class="stage narrow"><div class="gap" data-summary="c" data-only="1,8,9"></div></div>
+  </section>
+
+  <section class="case" id="page"><h2>One run, on the job's page</h2>
+    <p>One sentence under the result, and the figures as rows in Job details. Nothing is drawn.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div><div data-page="c"></div></div>
+  </section>
+
+  <section class="case" id="bits"><h2>The same while running, and the gaps</h2>
+    <p>The sentence says "so far" and what the job uses now.</p>
+    <div class="v-grid" data-bits="c"></div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>Speaks the language of what comes next: whole cores, and "2 at a time". It sits beside the slots it will replace, and shows at once that two slots are wrong for some jobs in both directions.</li><li><b>Costs</b>It answers a question nothing acts on yet, and "at a time" can read as a promise. The Machines page grows by a panel per node. Boxes show memory coarsely (2 GB each), and a node with 32 cores is a long row. The job page tells, it does not show.</li><li><b>Without a pointer</b>Everything is on the page.</li></ul>
+  <p class="foot">Static page with example data. The boxes are the slot boxes of the Machines box, a little larger.</p>
+</div>
+<script src="usage.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

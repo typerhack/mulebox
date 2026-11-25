@@ -13,6 +13,7 @@ import { answerHistory, historyRows } from "./history.ts";
 import { TEST_LOGS } from "./tests.ts";
 import { asksBody, asksLive, asksPost } from "./asks.ts";
 import { changeRules, rulesBody } from "./order.ts";
+import { runBody, usageBody } from "./usage.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
 const CONTROLS = process.env.MULEBOX_MOCK_CONTROLS !== "off";
@@ -148,6 +149,11 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
     return status === 200 ? json(res, body) : text(res, String(body), status);
   }
   if (path === "/api/stats") return json(res, stats((url.searchParams.get("day_starts") ?? "").split(",").filter(Boolean).map(Number)));
+  if (path === "/api/usage") return json(res, usageBody(machines.map((m) => m.name), url.searchParams));
+  if (path.startsWith("/api/usage/")) {
+    const row = find(decodeURIComponent(path.slice(11)));
+    return row ? json(res, runBody(machines.map((m) => m.name), row)) : text(res, "no such job", 404);
+  }
   if (path === "/api/metrics") {
     const name = url.searchParams.get("machine"), row = machines.find((m) => m.name === name);
     if (name && !row) return text(res, "no such machine", 404);

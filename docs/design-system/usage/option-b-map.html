@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: job usage, option B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="usage.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option B <span class="pick-tag">Fable suggests for one run</span></h1>
+        <p class="doc-lead"><b>A map in Statistics: every job as a point inside its node.</b> Statistics gains a second part, Job sizes, under Job minutes. The frame is one node, cores across and memory up; a job sits where its highest peaks are, with a line back to its usual ones. On a job's page nothing new is added: the peaks are written under the stage they happened in.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#summary">The summary</a><a href="#narrow">At 390 px</a><a href="#page">One run, on its page</a><a href="#bits">Running and the gaps</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="summary"><h2>Job sizes, on the Statistics page</h2>
+    <p>One node at a time, as each has its own size. Up and to the right is heavy; anything left of and under the dashed lines takes less than half the node in both, so two such jobs fit at once. Points are numbered like the list beside the map, which holds the same figures; a point answers hover, focus and a tap in the line under the map.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span>Storage</span><span>History</span><span class="on">Statistics</span></nav></div>
+      <div class="gap"><p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <p class="as-today">Job minutes: the totals, the last 14 days and the table, as today.</p>
+        <section class="panel"><header class="panel-head strong"><h3>Job sizes</h3><span class="panel-note">The last 20 passed runs of each job</span></header><div class="panel-body gap">
+          <div class="u-filters"><span class="marks" role="radiogroup" aria-label="Node"><button type="button" role="radio" aria-checked="true" data-show-node="build-1">build-1</button><button type="button" role="radio" aria-checked="false" data-show-node="mac-1">mac-1</button><button type="button" role="radio" aria-checked="false" data-show-node="build-2">build-2</button></span><span class="t2 num">8 cores and 16.0 GB on build-1</span></div>
+          <p class="u-key"><span><i class="k dot"></i>Agent job, at its highest peak</span><span><i class="k sq"></i>GitHub run, at its highest peak</span><span><i class="k tail"></i>Line back to its usual peak</span><span><i class="k half"></i>Half the node</span></p>
+          <div data-summary="b"></div>
+        </div></section>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">The node choice and the points answer a click. A job with no cores measured cannot be placed; it stays in the list with the reason.</p>
+  </section>
+
+  <section class="case" id="narrow"><h2>The same part at 390 px</h2>
+    <p>The map keeps its shape above the list; points are 44 px targets. The list folds each job to its name and three labelled lines (the first four shown).</p>
+    <div class="stage narrow"><div class="gap">
+      <section class="panel"><header class="panel-head strong"><h3>Job sizes</h3></header><div class="panel-body gap">
+        <div data-summary="b" data-only="1"></div></div></section></div>
+    </div>
+  </section>
+
+  <section class="case" id="page"><h2>One run, on the job's page <span class="pick-tag">Fable suggests</span></h2>
+    <p>No new panel. Under the stage where each peak happened, one line with its icon: the cores of the busiest 10 s, the most memory held, each against the node. The average is the panel's last line. The stage is the new fact here, and the stages are already drawn.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div><div data-page="b"></div></div>
+  </section>
+
+  <section class="case" id="bits"><h2>The same panel while running, and the gaps</h2>
+    <p>While a job runs, the Cores meter of today gains an ink line at its peak so far, and the lines under the stages say "so far". A GitHub run's Time panel has one bar, so both lines sit under it.</p>
+    <div class="v-grid" data-bits="b"></div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>The only view that shows cores and memory together, which is what a size is: one look finds the jobs that are big in both, and which pairs fit side by side. No new entry in the header. The job page stays as calm as today.</li><li><b>Costs</b>One node per view, and a map needs learning; twelve points are fine, forty are not. Small jobs crowd the corner, so the list carries them. Numbers on the job page are words only, with no bar against the node.</li><li><b>Without a pointer</b>Points are buttons and the line under the map always shows one; the list repeats every figure.</li></ul>
+  <p class="foot">Static page with example data. The two series take the chart colours in their fixed order, teal for agent jobs and ochre for GitHub runs, as on the Statistics page, and differ in shape too (round and square); labels stay in the text colours.</p>
+</div>
+<script src="usage.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

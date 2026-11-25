@@ -1,7 +1,7 @@
 // The header: the name and version, the views (Storage with the count of what waits there), the out-of-step mark, Queue actions, whether
 // the page is live, the Agents window, and the two switches each viewer sets for themselves.
 
-import { ChartColumn, HardDrive, History, List, LogOut, Radio, Server, type LucideIcon } from "lucide-react";
+import { ChartColumn, Cpu, HardDrive, History, List, LogOut, Radio, Server, type LucideIcon } from "lucide-react";
 
 import type { Route } from "../../lib/router";
 import { useStore } from "../../lib/store";
@@ -20,6 +20,7 @@ const VIEWS: [Route["page"], string, string, LucideIcon][] = [
   ["queue", "#/", "Queue", List], ["machines", "#/machines", "Machines", Server],
   ["storage", "#/storage", "Storage", HardDrive],
   ["history", "#/history", "History", History], ["stats", "#/stats", "Statistics", ChartColumn],
+  ["usage", "#/usage", "Usage", Cpu],
 ];
 
 function Live() {
@@ -45,7 +46,7 @@ export function Header({ page }: { page: Route["page"] }) {
         <a href="#/" className="text-lg font-semibold tracking-tight no-underline">mulebox</a>
         <span className="font-mono text-xs text-ink-3">{health.version ?? ""}</span>
         <nav aria-label="Views"
-          className="ml-4 flex gap-5 self-stretch touch:gap-3 max-md:order-3 max-md:ml-0 max-md:basis-full max-md:border-t max-md:border-line">
+          className="ml-4 flex gap-x-5 self-stretch touch:gap-x-3 max-md:order-3 max-md:ml-0 max-md:basis-full max-md:flex-wrap max-md:border-t max-md:border-line">
           {VIEWS.map(([id, href, name, Icon]) => (
             <a key={id} href={href} aria-current={id === current ? "page" : undefined}
               className="inline-flex min-h-head items-center gap-2 border-y-2 border-transparent font-medium whitespace-nowrap text-ink-2 no-underline hover:text-ink-1 on:border-b-accent on:font-semibold on:text-ink-1 max-md:min-h-ctl-touch">

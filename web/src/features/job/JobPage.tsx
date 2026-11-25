@@ -24,6 +24,7 @@ import { LooksNote } from "./LooksNote";
 import { TestsNote } from "./TestsNote";
 import { TestsPanel } from "./TestsPanel";
 import { useJob } from "./useJob";
+import { useRunUsage } from "./useRunUsage";
 import { RunTimePanel, StagesPanel } from "./Waterfall";
 
 const Crumb = () => (
@@ -43,7 +44,8 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
   const ci = isCI(job);
   const live = [...(snapshot?.running ?? []), ...(snapshot?.queued ?? [])].find((row) => row.job_id === job.job_id) ?? null;
   const shownJob: JobDetail = { ...job, question: job.state === "finished" ? null : live?.question ?? job.question };
-  const cores = machines?.machines.find((m) => m.name === job.worker)?.cores;
+  const node = machines?.machines.find((m) => m.name === job.worker);
+  const cores = node?.cores, used = useRunUsage(job);
   const shown = job.state === "finished" ? stateOf(job) : state ?? stateOf(job);
   const [project, name] = nameParts(job);
   const run = safeUrl(job.run_url);
@@ -104,8 +106,8 @@ function Loaded({ job, first, finish, merge }: { job: JobDetail; first: JobDetai
       )}
       <div className="job-split">
         <div className="grid min-w-0 content-start gap-gap">
-          {ci ? <RunTimePanel job={job} live={live} cores={cores} now={now} />
-              : <StagesPanel job={job} live={live} cores={cores} now={now} />}
+          {ci ? <RunTimePanel job={job} live={live} cores={cores} now={now} used={used} version={node?.version} />
+              : <StagesPanel job={job} live={live} cores={cores} now={now} used={used} version={node?.version} />}
           <TestsPanel job={job} now={now} />
         </div>
         {ci ? <CiSteps job={job} now={now} onState={setState} onEnd={onEnd} />

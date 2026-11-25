@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: job usage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="usage.css">
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>What each job really used</h1>
+      <p class="doc-lead">Mockups of 2026-11-25 for M23.8, to pick from before anything is built. Every agent job and every GitHub run now keeps its peak cores (the busiest 10 s), its peak memory, the stage of each and its average. Two questions: where the summary per project and job lives and how it reads against the node's size, and how one run shows its usage on its page.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <nav class="index" aria-label="Mockups">
+    <a class="picked" href="option-a-page.html">
+      <span class="letter" aria-hidden="true">A</span>
+      <h2>A Usage page of ranges<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests for the summary</span>
+      <p>Its own entry in the header; a row per job, each measure a bar whose whole length is the node, with the usual peak, the highest and the size that fits.</p>
+      <ul><li><b>Summary</b> a page beside Statistics, grouped by node.</li><li><b>Heavy</b> is a long bar; the numbers under it.</li><li><b>One run</b> a Usage panel under Stages, two bars against the node.</li></ul>
+    </a>
+    <a class="picked" href="option-b-map.html">
+      <span class="letter" aria-hidden="true">B</span>
+      <h2>A map in Statistics<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests for one run</span>
+      <p>A second part of Statistics; a node as a frame, cores across and memory up, every job a point in it, with the list beside it.</p>
+      <ul><li><b>Summary</b> a section of Statistics, one node at a time.</li><li><b>Heavy</b> is up and to the right.</li><li><b>One run</b> no new panel: each peak written under its stage.</li></ul>
+    </a>
+    <a href="option-c-machines.html">
+      <span class="letter" aria-hidden="true">C</span>
+      <h2>Boxes on the Machines page<i data-i="chevron-right"></i></h2>
+      <p>Under each node, its jobs in the boxes slots use, one per core, and how many of each job would fit side by side.</p>
+      <ul><li><b>Summary</b> a panel per node on Machines.</li><li><b>Heavy</b> is "1 at a time".</li><li><b>One run</b> a sentence and rows in Job details.</li></ul>
+    </a>
+  </nav>
+  <p class="foot"><b>The summary: A.</b> The owner's question is "what does each job need, on this node", once per job, and a row with two bars on the node's own scale answers it without anything to learn; its figures are the ones <code>mulebox usage</code> prints, it stays readable at 390 px and at a hundred jobs, and it shows spread, which decides whether a size should follow the usual run or the worst one. B's map is the better picture of "big in both" but shows one node at a time and crowds; it could join A's page later, above the rows. C does the sum of job sizes before job sizes exist, and "2 at a time" on a page that acts on nothing would mislead.</p>
+  <p class="foot"><b>One run: B.</b> What a single run adds to the summary is where its peaks happened, and the stages are already drawn: two lines under them say it with no new panel, on a page that already holds Stages, Tests, the log and the details. A's panel is clearer against the node and is the fallback if words prove too quiet; C's sentence is the least to build and the easiest to miss.</p>
+  <p class="foot">Every option shows the same twelve jobs on three nodes: build-1 (Linux, 8 cores, 16.0 GB), mac-1 (macOS, 10 cores, 32.0 GB) and build-2, whose older worker sends no usage. Agent jobs and GitHub runs are mixed; one job is too short to measure cores. Each page has the summary, the summary at 390 px, a finished job's page, and the same part for a running job, a running GitHub run and the two gaps. The rest of the dashboard is as today. Static pages with example data; colours, type, space and corners come from tokens.css; the icons are Lucide, outline.</p>
+</div>
+<script src="usage.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

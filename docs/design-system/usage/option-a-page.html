@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: job usage, option A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="usage.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option A <span class="pick-tag">Fable suggests for the summary</span></h1>
+        <p class="doc-lead"><b>A Usage page: every job as a range on its node.</b> Usage gets its own entry in the header, after Statistics. A row per project and job, grouped by node; each measure is a bar whose whole length is that node, so a heavy job is simply a long bar. On a job's page, a Usage panel under Stages draws the run's two peaks the same way.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#summary">The summary</a><a href="#narrow">At 390 px</a><a href="#page">One run, on its page</a><a href="#bits">Running and the gaps</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="summary"><h2>The Usage page <span class="pick-tag">Fable suggests</span></h2>
+    <p>Each track is the node: 8 cores ruled core by core, 16.0 GB ruled every 2 GB. The solid part ends at the usual peak (the median of the last 20 passed runs), the pale part at the highest, and the ink line is the size that fits every run. Bars of one node share one scale, so they compare down the column; the numbers are always written under them. Heaviest first.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span><span class="on">Usage</span></nav></div>
+      <div class="gap"><p class="as-today">The top row (CPU, Memory, Disk, Machines), as today.</p>
+        <section class="panel"><header class="panel-head strong"><h3>Usage</h3><span class="panel-note">What each job really used, measured every 10 s</span></header><div class="panel-body gap">
+          <div class="u-filters"><button class="btn" type="button">All projects<i data-i="chevron-down" class="s"></i></button><button class="btn" type="button">All nodes<i data-i="chevron-down" class="s"></i></button><button class="btn" type="button">Agent jobs and GitHub runs<i data-i="chevron-down" class="s"></i></button><span class="marks" role="radiogroup" aria-label="Which runs count"><button type="button" role="radio" aria-checked="true">Passed runs</button><button type="button" role="radio" aria-checked="false">All runs</button></span><span class="t2 num">the last 20 of each job</span></div>
+          <p class="u-key"><span><i class="k"></i>Usual peak, the median</span><span><i class="k hi"></i>Highest peak</span><span><i class="k fit"></i>Fits every run: the highest, rounded up</span></p>
+          <div data-summary="a"></div>
+        </div></section>
+      </div>
+    </div>
+    <p class="stage-cap win-cap">"Passed runs" and "All runs" answer a click, as <code>--all</code> does in <code>mulebox usage</code>; the other filters are drawn only. A job's name opens its runs in History. Nothing here changes a node: it is read only until job sizes exist.</p>
+  </section>
+
+  <section class="case" id="narrow"><h2>The same page at 390 px</h2>
+    <p>The column headings go, and each bar carries its own label with the node's size. Nothing is dropped and nothing scrolls sideways.</p>
+    <div class="stage narrow"><div class="gap">
+      <section class="panel"><header class="panel-head strong"><h3>Usage</h3></header><div class="panel-body gap">
+        <p class="as-today">Filters and the key, as above.</p>
+        <div data-summary="a" data-only="1,3,9,12"></div></div></section></div>
+    </div>
+  </section>
+
+  <section class="case" id="page"><h2>One run, on the job's page</h2>
+    <p>A Usage panel under Stages. The fill ends at this run's peak, on the node's scale; the ink line is the job's usual peak, the same mark the stages use for "where it usually ends". Under each bar: the stage the peak happened in, and for cores the average over the run.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span><span>Usage</span></nav></div><div data-page="a"></div></div>
+  </section>
+
+  <section class="case" id="bits"><h2>The same panel while running, and the gaps</h2>
+    <p>A running job shows its peaks so far and what it uses now. A GitHub run has no stages of its own, so its peaks name none. A gap is said in words with a dashed circle, never drawn as zero.</p>
+    <div class="v-grid" data-bits="a"></div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>Answers "what does this job need, against this node" in one look and in one line of numbers, the same figures <code>mulebox usage</code> prints. Spread shows: a job whose pale part is long peaks high only now and then. Holds at 20 nodes and 100 jobs, as rows do.</li><li><b>Costs</b>A sixth entry in the header. Cores and memory are read one after the other, so "big in both" is two looks. The job page grows by a panel between Stages and Tests.</li><li><b>Without a pointer</b>Every number is on the page; a bar's tooltip only repeats its line.</li></ul>
+  <p class="foot">Static page with example data: build-1, mac-1 and build-2 are nodes, the projects and branches are examples. The bars are one solid fill in both meter styles, like the download meter: they are not load, so no warning colour at 80%.</p>
+</div>
+<script src="usage.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

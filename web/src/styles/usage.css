@@ -1,0 +1,55 @@
+/* Job usage (docs/design-system/usage/; design-system.md, Usage bars): the Usage page's bars,
+   each against its node, and on a job's page the peaks under their stages and the tick on its
+   Cores meter. A usage bar is a measurement, not load: one solid fill in both meter styles and
+   no warning colour. */
+
+@layer components {
+  /* A range against the node: the track is the whole node, ruled every `--unit` (a core, or a
+     few GB). Solid to the usual peak, soft to the highest; the ink tick is the size that fits. */
+  .use-range { position: relative; min-width: 0; height: var(--space-3); border-radius: var(--radius-meter);
+    background: var(--meter-track); }
+  .use-range > i { position: absolute; top: 0; bottom: 0; left: 0; border-radius: var(--radius-meter); }
+  .use-range > .hi { width: var(--hi); background: var(--meter-fill-soft); }
+  .use-range > .med { width: var(--med); background: var(--meter-fill); transition: width var(--dur-base) var(--ease); }
+  .use-range::after { content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background-image: linear-gradient(to right, transparent calc(100% - 1px), var(--surface-1) calc(100% - 1px));
+    background-size: var(--unit) 100%; }
+  .use-range > .fit, .meter-tick { position: absolute; z-index: 1; top: calc(var(--space-1) * -1);
+    bottom: calc(var(--space-1) * -1); left: var(--at); width: 2px; margin-left: -1px; border-radius: 0;
+    background: var(--text-1); }
+  /* A meter with an ink tick across it (ui/Meter.tsx, `mark`): a running job's peak so far. */
+  .meter-marked { position: relative; min-width: 0; }
+
+  /* The summary as rows: a job, its cores, its memory, the size that fits. One set of columns
+     for the heading and every row, so the bars of a node share one scale and line up. In a
+     narrow box the heading goes and each part says its own name. */
+  .use-list { container-type: inline-size; display: grid; min-width: 0; }
+  .use-node { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--space-1) var(--space-3);
+    padding: var(--space-5) 0 var(--space-2); }
+  .use-list > :first-child > .use-node { padding-top: var(--space-2); }
+  .use-head, .use-row { display: grid; gap: var(--space-1) var(--space-5); align-items: center;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1.3fr) calc(var(--space-7) * 3.25); }
+  .use-head { padding-bottom: var(--space-2); border-bottom: 1px solid var(--border-strong); color: var(--text-2);
+    font-size: var(--text-sm); font-weight: var(--font-weight-semibold); }
+  .use-row { padding: var(--space-3) 0; border-bottom: 1px solid var(--border); min-width: 0; }
+  .use-row > * { min-width: 0; }
+  .use-row > .use-wide { grid-column: 2 / -1; }
+  .use-name > small { flex-basis: 100%; padding-left: calc(var(--spacing-icon-s) + var(--space-2)); }
+  .use-lab { display: none; }
+  .use-fit { display: grid; }
+  @variant @max-md {
+    .use-head { display: none; }
+    .use-node { border-bottom: 1px solid var(--border-strong); }
+    .use-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-2); }
+    .use-row > .use-wide { grid-column: auto; }
+    .use-name > small { flex-basis: auto; padding-left: 0; }
+    .use-lab { display: block; }
+    .use-fit { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 var(--space-2); }
+    .use-fit > .use-lab { flex-basis: 100%; }
+  }
+
+  /* On a job's page: a peak, one line under the stage it happened in, set under the stage's name. */
+  .stage-peak { display: flex; align-items: flex-start; gap: var(--space-2); min-width: 0;
+    padding-left: calc(var(--spacing-icon-s) + var(--space-2)); color: var(--text-2); font-size: var(--text-sm); }
+  .stage-peak > svg { flex: none; margin-top: 2px; color: var(--text-1); }
+}

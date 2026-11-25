@@ -10,7 +10,7 @@ const COUNT = Number(process.env.MULEBOX_MOCK_MACHINES ?? 2);
 // out-of-step notice (for screenshots).
 export const VERSION = readFileSync(new URL("../../VERSION", import.meta.url), "utf8").trim();
 export const CLEAN = Boolean(process.env.MULEBOX_MOCK_CLEAN);
-const OFFERS = [["docker", "node 22", "python 3.12"], ["docker", "playwright"], ["docker", "node 22"]];
+const OFFERS = [["linux", "docker", "node 22", "python 3.12"], ["linux", "docker", "playwright"], ["macos", "docker", "node 22"]];
 
 export interface MockJob { [key: string]: unknown; job_id: string; state: string; kind: string; position?: number | null }
 

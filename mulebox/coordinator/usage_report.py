@@ -98,7 +98,7 @@ def machines(conn: sqlite3.Connection) -> dict[str, dict[str, Any]]:
 def run(conn: sqlite3.Connection, job_id: str, now: float) -> dict[str, Any]:
     """One run: its peaks so far (or in all), its average cores and what it ran on."""
     job = st.require_job(conn, job_id)
-    measured = job["usage"] or None
+    measured = job["usage"] or {}
     going = job["state"] != JobState.FINISHED.value
     ran = (now - job["started_at"]) if going and job["started_at"] else job["duration_s"]
     return {"job_id": job["job_id"], "project": job["project"], "job": job["job"],

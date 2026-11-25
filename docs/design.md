@@ -974,9 +974,36 @@ from another guess. So every job and every GitHub run keeps what it really used.
   `--runs N`, and `--json`. Failed and cancelled runs are left out of the figures, as a failure can
   end early and look small; `--all` takes them in. `mulebox usage <job-id>` gives one run's numbers
   and the stages of its peaks, and `mulebox status <id>` a line of them.
-- **The dashboard** shows it too, now (the user's decision), from `/api/usage`: the view from
-  mockups the user picks (design-system/usage/).
+- **The dashboard** shows it too, now (the user's decision), from `/api/usage`: a Usage page,
+  every job as a range on its node, and on a job's page each peak under the stage it happened
+  in (the user's picks of design-system/usage/, 2026-11-25: the page of option A, one run as in
+  option B; interfaces-m2.md, Usage page).
 - **Nothing acts on it yet.** It is read only; M23.2 decides what sizes do with it.
+
+## Job sizes (M23.2, 2026-11-25: placement only and room for the owner are the user's decisions; the rest proposed)
+
+Fixed slots treat a lint run and a full browser suite alike. With sizes, a job says what it needs,
+and a node fits as many jobs as its cores and memory hold. Proposals, for the user to decide:
+
+- **A size per job**: `size: {cores: 4, memory: 6GB}` in `.mulebox.yml`, for all jobs or per job.
+  A job with none counts as one of today's slots (the node's cores and memory over its `slots`),
+  so nothing changes for a project until it declares sizes. `mulebox usage` gives the size that
+  fits (Job usage, above); `mulebox doctor` warns when a declared size is far from what was
+  measured, either way.
+- **A budget per node**: its cores and memory, less `keep` for its owner (`keep_cores`,
+  `keep_memory` in node.toml, set from afar like `slots`), for a node that is also someone's PC.
+  `slots` stays as the most jobs at once, so a node of many small jobs still has a cap.
+- **Placement, not limits**: a size decides where and when a job starts; it does not cap the
+  job (no CPU quota, no memory limit). A job that uses more than it said slows its neighbours,
+  and `mulebox usage` shows it. Hard limits would turn a wrong size into a failed job.
+- **No starving the big job**: when the first job in line that a node could run does not fit in
+  what is free there, the node keeps that room for it: it starts no job behind it until it fits.
+  So small jobs cannot keep a big one waiting for ever. A job bigger than every node's budget is
+  refused at submit, with the sizes.
+- **GitHub runs**: a runner holds a size of its own (`runner register --cores --memory`), the
+  slot share when not given, as the runner does not know the run's size before it starts.
+- **Older nodes and clients**: a node that does not report a budget keeps counting slots, and a
+  job's size counts there as one slot.
 
 ## GitHub Actions
 

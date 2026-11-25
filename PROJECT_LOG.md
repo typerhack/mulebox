@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.37.0 - 2026-11-25 - minor
+- Job usage on the dashboard (M23.8, the user's picks of design-system/usage/: option A's page, option B's lines on a job's page). A Usage page after Storage in the header: a row per project and job by node, heaviest first, cores and memory as bars on the node's own scale (usual peak solid, highest pale, a tick at the size that fits every run); passed or all runs. On a job's page each peak is a line under the stage it came in, the average the panel's last line, and a running job's Cores meter has a tick at its peak so far, read from `/api/usage/<id>` every 10 s (web/src/features/usage/, features/job/UsageLines.tsx).
+- Design system: `--meter-fill-soft`, usage bars as a measurement (no warning colour), the ink tick, four icons, and the header wrapping to a second line on a narrow screen.
+- `/api/usage/<id>` gives `usage: {}` for a run not measured, as `status` does.
+- docs/design.md: Job sizes (M23.2), the design note, with the user's decisions: a size places a job and caps nothing, and a node keeps `keep_cores` and `keep_memory` for its owner.
+
 ## 1.36.0 - 2026-11-25 - minor
 - Job usage (M23.8, docs/design.md, Job usage; the user's decisions: GitHub runs too, and the dashboard now): every job and GitHub run keeps its peak cores (the busiest 10 s), its peak memory (the working set of its own processes and compose services), the stage or step of each, and its CPU seconds. The worker's and the runner supervisor's meters keep them (common/usage.py, worker/job_meter.py, runners/runner_meter.py, on Linux and macOS) and send them as `usage` with heartbeats and the result; the coordinator keeps them in `jobs.usage` (schema 30).
 - `mulebox usage`: per project and job over its last 20 passed runs, the median and highest peaks and the size that would have fitted every run (whole cores, memory in 0.5 GB steps), with the machines' sizes; `mulebox usage <job-id>` for one run, and a usage line in `mulebox status` (coordinator/usage_report.py, usage_api.py, client/usage_commands.py). `/api/usage` and `/api/usage/<job_id>` give the same to the dashboard; its view comes from mockups the user picks.

@@ -13,10 +13,11 @@ describe("the header's views", () => {
   it("has Storage after Machines, each with its icon", () => {
     show();
     const links = [...screen.getByRole("navigation", { name: "Views" }).querySelectorAll("a")];
-    expect(links.map((link) => link.textContent)).toEqual(["Queue", "Machines", "Storage", "History", "Statistics"]);
+    expect(links.map((link) => link.textContent)).toEqual(["Queue", "Machines", "Storage", "History", "Statistics", "Usage"]);
     expect(links.every((link) => link.querySelector("svg"))).toBe(true);
     expect(links[2].getAttribute("href")).toBe("#/storage");
     expect(links[2].getAttribute("aria-current")).toBe("page");
+    expect(links[5].getAttribute("href")).toBe("#/usage");
   });
 
   it("counts the idle projects that wait for a word on Storage, and nothing when none does", () => {

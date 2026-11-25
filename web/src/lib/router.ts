@@ -1,11 +1,11 @@
-// The hash routes of the page: `#/` the queue, `#/machines`, `#/storage`, `#/history`, `#/stats` and
+// The hash routes of the page: `#/` the queue, `#/machines`, `#/storage`, `#/history`, `#/stats`, `#/usage` and
 // `#/job/<id>`. A hash needs nothing from the server, so a reload stays where it was. A page
 // may carry its own settings after `?`, as History does its filters (lib/history.ts).
 
 import { useSyncExternalStore } from "react";
 
 export type Route =
-  | { page: "queue" } | { page: "machines" } | { page: "storage" } | { page: "history" } | { page: "stats" }
+  | { page: "queue" } | { page: "machines" } | { page: "storage" } | { page: "history" } | { page: "stats" } | { page: "usage" }
   | { page: "job"; jobId: string };
 
 export function parseRoute(hash: string): Route {
@@ -15,7 +15,7 @@ export function parseRoute(hash: string): Route {
     try { jobId = decodeURIComponent(jobId); } catch { /* a broken escape: use it as typed */ }
     return { page: "job", jobId };
   }
-  for (const page of ["machines", "storage", "history", "stats"] as const) {
+  for (const page of ["machines", "storage", "history", "stats", "usage"] as const) {
     if (path === page || path.startsWith(`${page}/`)) return { page };
   }
   return { page: "queue" };

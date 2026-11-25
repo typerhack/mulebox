@@ -17,6 +17,7 @@ import { JobsBox } from "./features/jobs/JobsBox";
 import { MachinesPage } from "./features/machines/MachinesPage";
 import { StatsPage } from "./features/stats/StatsPage";
 import { StoragePage } from "./features/storage/StoragePage";
+import { UsagePage } from "./features/usage/UsagePage";
 import { TopRow } from "./features/top/TopRow";
 import { TipProvider } from "./ui/Tip";
 
@@ -36,7 +37,8 @@ export function App() {
           : route.page === "machines" ? <MachinesPage />
           : route.page === "storage" ? <StoragePage />
             : route.page === "history" ? <HistoryPage />
-              : route.page === "stats" ? <StatsPage /> : <JobsBox />}
+              : route.page === "stats" ? <StatsPage />
+                : route.page === "usage" ? <UsagePage /> : <JobsBox />}
       </main>
       <AskWindowHost />
     </TipProvider>
