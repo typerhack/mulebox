@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.42.4 - 2026-11-25 - patch
+- docs/releasing.md: the web checks `mulebox check` does not run (`npm run lint` with its class check, types, tests), and why the `macos` job runs on GitHub's machines and what to do when GitHub gives it none.
+
 ## 1.42.3 - 2026-11-25 - patch
 - README: a node that rests, with two new pictures from the stand-in (resting-dark: the strip, the box and the waiting jobs; health-tab-light: the Health tab), taken by tools/screenshots.py.
 - The Health tab's check rows use flex, not an arbitrary grid column: CI's class check (`npm run lint`) refused `grid-cols-[auto_1fr]` from 1.42.0.

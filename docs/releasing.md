@@ -22,6 +22,15 @@ uvx --from actionlint-py actionlint .github/workflows/ci.yml
 mulebox check
 ```
 
+`mulebox check` runs the Python suite only. For a change under `web/`, run CI's own steps there
+too: `npm run lint` (eslint and the class check; plain `eslint` misses values typed into a class
+name), `npm run typecheck` and `npx vitest run`.
+
+The `macos` job runs on GitHub's own `macos-15` machines, never on a node: this repository is
+public, and a Mac node has no sealed container to keep a stranger's code from the owner's files.
+GitHub sometimes gives it no machine before its time limit, and the job is cancelled with no
+step run. That is not a failure of the code: re-run it (`gh run rerun <id> --failed`).
+
 ## The dashboard's front end
 
 `web/` builds into `mulebox/dashboard/app/`, which is not in git: every way a package is made
