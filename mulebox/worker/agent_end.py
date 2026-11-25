@@ -87,7 +87,7 @@ class Ending:
             self._call(request(
                 MessageType.RESULT, job_id=job.job_id, outcome=job.outcome.value,
                 exit_code=job.exit_code, duration_s=round(job.duration_s, 3),
-                attempt_id=job.attempt_id), now)
+                attempt_id=job.attempt_id, usage=job.meter.peaks.as_dict()), now)
         except LinkError:
             return
         job.result_sent = True

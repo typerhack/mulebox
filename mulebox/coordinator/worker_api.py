@@ -8,6 +8,7 @@ renews their worker lease); they end through `release` (runner_api.py). A valid 
 
 from typing import Any
 
+from mulebox.common import usage
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.coordinator import (leases, node_settings, project_orders, queue, recovery,
                                  reservations, steps, storage, test_proof, workers)
@@ -62,9 +63,12 @@ def _activity(conn: Any, req: Request, job: dict[str, Any]) -> None:
     report = req.body.get("activity")
     if not isinstance(report, dict):
         return
+    report = dict(report)
+    peaks = usage.clean(report.pop("usage", None))  # kept apart: it outlives the run
     idle = v.number(report, "idle_s", None)
     st.update_job(conn, job["job_id"], activity={**report, "at": req.now},  # stuck.py ages it
-                  active_at=None if idle is None else req.now - max(0.0, idle))
+                  active_at=None if idle is None else req.now - max(0.0, idle),
+                  **({"usage": peaks} if peaks else {}))
 
 
 def heartbeat(req: Request) -> Message:
@@ -135,6 +139,9 @@ def result(req: Request) -> Message:
         tests, outcome, exit_code = test_proof.judge(conn, job, in_log, outcome, exit_code)
         if tests is not None:
             st.update_job(conn, job["job_id"], tests=tests)
+        peaks = usage.clean(req.body.get("usage"))  # the last readings, after the last heartbeat
+        if peaks:
+            st.update_job(conn, job["job_id"], usage=peaks)
         # A job that ended by itself before its stop arrived was not stopped.
         kept = job["stop_reason"] if outcome is Outcome.CANCELLED else None
         job = st.finish(conn, job, outcome, req.now, exit_code=exit_code, duration_s=duration_s,

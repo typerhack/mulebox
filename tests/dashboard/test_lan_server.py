@@ -67,7 +67,7 @@ async def sign_in(http, url, given=PASSWORD):
 def test_nothing_is_readable_before_signing_in(lan):
     async def go(http, url):
         statuses = {}
-        for path in ("/api/queue", "/api/history", "/api/metrics", "/api/stats", "/api/events", "/healthz",
+        for path in ("/api/queue", "/api/history", "/api/metrics", "/api/stats", "/api/usage", "/api/events", "/healthz",
                      "/api/jobs/x", "/api/jobs/x/log.txt", "/app/assets/index-abc.js", "/app/index.html",
                      "/app/login.html", "/app/fonts/../index.html", "/app/fonts/%2e%2e/index.html"):
             reply = await http.get(url + path, allow_redirects=False)

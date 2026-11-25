@@ -191,3 +191,25 @@ def test_stats_counts_a_running_job_and_checks_its_query(call, run_job):
     assert list(found["by"]) == ["project", "worker"] and found["by"]["worker"][0]["key"] == "wrk-a"
     assert found["days"][0]["seconds"] == 120.0 and "project" in found["choices"]
     assert bad == [400, 400, 400]
+
+
+def test_usage_gives_each_jobs_peaks_and_one_run(call, run_job, store, staging):
+    from mulebox.coordinator import api
+    from tests.coordinator.helpers import request
+
+    job_id, state = run_job(now=NOW - 120)
+    api.handle(store, staging, request("job_update", state="cleaning", **state), NOW)
+    api.handle(store, staging, request(
+        "result", outcome="passed", exit_code=0, duration_s=60.0,
+        usage={"peak_cores": 2.5, "peak_memory": 10**9, "cpu_s": 60.0, "samples": 6}, **state), NOW)
+
+    async def go(client):
+        listed = await (await client.get("/api/usage?runs=5")).json()
+        one = await (await client.get(f"/api/usage/{job_id}")).json()
+        bad = [(await client.get(url)).status for url in (
+            "/api/usage?runs=x", "/api/usage?kind=upgrade", "/api/usage/job-none")]
+        return listed, one, bad
+    listed, one, bad = call(go)
+    assert listed["jobs"][0]["cores"] == {"median": 2.5, "max": 2.5} and listed["runs"] == 5
+    assert one["run"]["average_cores"] == 1.0
+    assert bad == [400, 400, 404]

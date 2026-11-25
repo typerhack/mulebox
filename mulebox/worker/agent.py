@@ -238,7 +238,7 @@ class Agent(Ending, Skipping, Ordering, Storing):
 
     def _tend(self, job: ActiveJob, now: float) -> None:
         self.meter.update(now)
-        job.meter.update(now)
+        job.meter.update(now, job.steps.stage)
         job.last_output = now if job.tailer.read_new() else job.last_output
         if self._online(now):
             try:

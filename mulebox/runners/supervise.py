@@ -231,8 +231,9 @@ class Supervisor:
 
     def _activity(self, job_id: str, runner: str, now: float) -> dict[str, Any]:
         follower = self.logs.get(job_id)
-        cpu = self.meter.cpu_pct(job_id, runner, now)
-        return {"job_cpu_pct": cpu, "step": follower[0].step if follower else None,
+        step = follower[0].step if follower else None
+        cpu = self.meter.cpu_pct(job_id, runner, now, step if isinstance(step, str) else None)
+        return {"job_cpu_pct": cpu, "step": step, "usage": self.meter.usage(job_id),
                 "download": self._download(follower[0] if follower else None, job_id, cpu, now)}
 
     def _download(self, follower: RunnerLog | None, job_id: str, cpu: float | None,

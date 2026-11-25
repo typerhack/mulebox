@@ -59,11 +59,19 @@ def settle(polled):
 
 def test_the_reader_keys_each_process_so_new_ones_count_from_nothing():
     reader = darwin_jobs.JobReader(lambda: 500, None, lambda: darwin_jobs.parse_ps(PS))
-    assert reader() == {"unit:500": 1.5, "unit:501": 60.25}
+    assert reader() == {"unit:500": 1.5, "unit:501": 60.25, "memory": 3 * 1024 * 1024}
     meter = JobMeter(reader)
     meter.update(0.0)
     meter.update(SAMPLE_S)
-    assert meter.cpu_pct == 0.0  # nothing grew between two equal readings
+    assert meter.cpu_pct == 0.0  # nothing grew between two equal readings, memory is no counter
+    assert meter.peaks.as_dict()["peak_memory"] == 3 * 1024 * 1024
+
+
+def test_containers_add_their_memory():
+    stats = darwin_jobs.ContainerStats(lambda: ["c1"], FakeEngine({"c1": {"cpu_s": 4.0, "memory": 4096.0}}))
+    settle(stats)
+    got = darwin_jobs.JobReader(lambda: 500, stats, lambda: darwin_jobs.parse_ps(PS))()
+    assert got["memory"] == 3 * 1024 * 1024 + 4096
 
 
 def test_unknown_is_never_idle():

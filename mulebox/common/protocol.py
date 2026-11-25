@@ -124,6 +124,8 @@ class MessageType(StrEnum):
     QUEUE_RULES_OK = "queue_rules_ok"
     STATS = "stats"
     STATS_OK = "stats_ok"
+    USAGE = "usage"
+    USAGE_OK = "usage_ok"
     NODE_SETTINGS = "node_settings"
     NODE_SETTINGS_OK = "node_settings_ok"
     PROJECT_ORDER = "project_order"
@@ -223,6 +225,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: job minutes in a range (coordinator/stats.py).
     MessageType.STATS: frozenset(),
     MessageType.STATS_OK: frozenset({"total", "by", "days"}),
+    # client -> coordinator: what jobs really used, or one run (coordinator/usage_report.py).
+    MessageType.USAGE: frozenset(),
+    MessageType.USAGE_OK: frozenset({"machines"}),
     # client -> coordinator: read a node's settings, or ask for `slots` and `priority` (or
     # `cancel` a waiting change); replied with node_settings_ok (coordinator/node_settings.py).
     MessageType.NODE_SETTINGS: frozenset({"worker"}),

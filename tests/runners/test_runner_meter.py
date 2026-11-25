@@ -132,7 +132,7 @@ def test_on_a_mac_the_runner_is_its_agents_process_group_and_its_containers():
             break
         time.sleep(0.02)
         first = read("r1")
-    assert first == {"unit:500": 2.0, "unit:501": 3.0}
+    assert first == {"unit:500": 2.0, "unit:501": 3.0, "memory": 2048.0}
     assert read("r2") is None  # no agent running: unknown
     mac = RunnerMeter.for_platform(Known(), Services(), platform="darwin")
     assert isinstance(mac.read, runner_meter.DarwinRunnerReading)
@@ -156,3 +156,17 @@ def test_on_a_mac_launchd_is_asked_for_the_group_once_while_it_lives():
     for _ in range(3):
         read("r1")
     assert asked == ["r1"]
+
+
+def test_the_meter_keeps_a_runs_peaks_with_its_step():
+    from mulebox.runners.runner_meter import MEMORY, RunnerMeter
+
+    used = iter([{"runner": 0.0, MEMORY: 100.0}, {"runner": 30.0, MEMORY: 400.0}])
+    meter = RunnerMeter(read=lambda runner: next(used))
+    assert meter.cpu_pct("job-a", "r1", 0.0, "Set up job") is None
+    assert meter.cpu_pct("job-a", "r1", 10.0, "Run tests") == 300.0  # memory is not CPU
+    assert meter.usage("job-a") == {"peak_cores": 3.0, "peak_cores_stage": "Run tests",
+                                    "peak_memory": 400, "peak_memory_stage": "Run tests",
+                                    "cpu_s": 30.0, "samples": 2}
+    meter.forget(set())
+    assert meter.usage("job-a") is None

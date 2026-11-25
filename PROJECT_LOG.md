@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.36.0 - 2026-11-25 - minor
+- Job usage (M23.8, docs/design.md, Job usage; the user's decisions: GitHub runs too, and the dashboard now): every job and GitHub run keeps its peak cores (the busiest 10 s), its peak memory (the working set of its own processes and compose services), the stage or step of each, and its CPU seconds. The worker's and the runner supervisor's meters keep them (common/usage.py, worker/job_meter.py, runners/runner_meter.py, on Linux and macOS) and send them as `usage` with heartbeats and the result; the coordinator keeps them in `jobs.usage` (schema 30).
+- `mulebox usage`: per project and job over its last 20 passed runs, the median and highest peaks and the size that would have fitted every run (whole cores, memory in 0.5 GB steps), with the machines' sizes; `mulebox usage <job-id>` for one run, and a usage line in `mulebox status` (coordinator/usage_report.py, usage_api.py, client/usage_commands.py). `/api/usage` and `/api/usage/<job_id>` give the same to the dashboard; its view comes from mockups the user picks.
+
 ## 1.35.5 - 2026-11-16 - patch
 - docs/phases.md, parking lot: remote access while away (a VPS as a connector, wstunnel or Headscale, the dashboard behind a client certificate) and waking a node (BIOS power restore, an ESP32 with a W5500 on a cable to the node), from the user's research.
 

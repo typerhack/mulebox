@@ -514,6 +514,7 @@ command prints. The ones you and your agents use:
 | `mulebox ok <id>` | answer a long job's question: all is well, let it go on |
 | `mulebox projects` | every project that has run, with its folder and size on the node |
 | `mulebox stats` | how long jobs ran, today, by day and in total |
+| `mulebox usage` | the peak cores and memory each job really used, and a size that fits it |
 
 **Steer the line**:
 

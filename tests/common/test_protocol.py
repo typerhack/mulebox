@@ -21,7 +21,7 @@ S = JobState
 
 SAMPLE_VALUES = {
     "seconds": 60,
-    "total": {}, "by": {}, "days": [],
+    "total": {}, "by": {}, "days": [], "machines": {},
     "action": "drain", "group": "grp-1", "order_id": "ord-1",
     "running": [],
     "paused": {},
@@ -103,7 +103,7 @@ def test_enum_values_match_contract():
         "reach", "reach_ok", "reserve", "acquire", "release", "runner_jobs", "drain", "drain_ok",
         "machine", "machine_ok", "taken", "take", "take_ok",
         "project_order", "project_order_ok", "order_done", "order_done_ok",
-        "storage", "storage_ok", "storage_keep", "storage_keep_ok", "asks", "asks_ok"}
+        "storage", "storage_ok", "storage_keep", "storage_keep_ok", "asks", "asks_ok", "usage", "usage_ok"}
 
 
 def test_transition_table_is_exact():

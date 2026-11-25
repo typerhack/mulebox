@@ -937,6 +937,47 @@ restart.
   it was left (Which node runs a job, above). Runner reservations are pinned to their machine
   and do not use it.
 
+## Job usage (M23.8, the user's decisions, 2026-11-25)
+
+Slots are a guess: 2 on a node with 8 cores and 16 GB, whatever its jobs need. Job sizes (M23.2)
+replace the guess with what each job declares, and the numbers must come from measurements, not
+from another guess. So every job and every GitHub run keeps what it really used.
+
+- **What is kept, per run.** The highest number of cores it used (`peak_cores`), the most memory
+  it held (`peak_memory`, bytes), the stage each happened in, its CPU seconds in all (`cpu_s`, so
+  the average is `cpu_s` over its run time) and how many readings it is based on (`samples`).
+  Agent jobs and GitHub runs alike (the user's decision): CI runs hold slots too, so M23.2 sizes
+  them as well.
+- **What counts as the job.** The same as for its activity (worker/job_meter.py): its own
+  processes (its unit on Linux, its process group on a Mac) and its compose services, found by
+  label; for a GitHub run, the runner's service or its isolated place, and the containers whose
+  Compose folder is in the runner's `_work` (runners/runner_meter.py). The same blind spot: a
+  plain `docker run` or `docker build` of its own is not counted.
+- **Cores** are the job's CPU seconds over each 10 s reading, so a peak is the busiest 10 s, not
+  a spike of a few milliseconds: a size is about what a job keeps busy, and a short spike shares
+  well. A run shorter than two readings has no cores and says so, never 0.
+- **Memory** is the working set, the same as the dashboard's "used by jobs": `memory.current`
+  less the page cache the kernel can drop at once (`inactive_file`), for the unit and each
+  container, summed at each reading; on a Mac, the resident memory of the group's processes plus
+  the engine's figure for each container. The kernel's own `memory.peak` was weighed and left
+  out: it counts page cache, so a build reading many files would look many GB larger than it is.
+  A peak between two readings can be missed; 10 s is short beside what a size is for.
+- **Where it travels.** The worker keeps the running peaks for each job and sends them as
+  `usage` with every heartbeat and with the result, the GitHub supervisor with each of its
+  heartbeats. The coordinator keeps the last one in `jobs.usage` (schema 30), so a job cut short
+  keeps what was measured until then. A worker older than this sends none: its runs read "not
+  measured", never 0.
+- **`mulebox usage`**: for each project and job (a GitHub run's job is its workflow job), over its
+  last 20 passed runs: how many, the median and the highest peak of cores and of memory, and the
+  size that would have fitted every one of them, the highest peaks rounded up (cores to a whole
+  core, memory to 0.5 GB). Filters `--project`, `--job`, `--machine`, `--kind job|runner`,
+  `--runs N`, and `--json`. Failed and cancelled runs are left out of the figures, as a failure can
+  end early and look small; `--all` takes them in. `mulebox usage <job-id>` gives one run's numbers
+  and the stages of its peaks, and `mulebox status <id>` a line of them.
+- **The dashboard** shows it too, now (the user's decision), from `/api/usage`: the view from
+  mockups the user picks (design-system/usage/).
+- **Nothing acts on it yet.** It is read only; M23.2 decides what sizes do with it.
+
 ## GitHub Actions
 
 - Register a repository's runner on every eligible worker with shared labels

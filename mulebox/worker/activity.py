@@ -106,4 +106,5 @@ def report(machine: MachineMeter, job: JobMeter, started_at: float, output_at: f
             "compute_idle_s": compute_idle, "job_cpu_pct": job.cpu_pct,
             "io_kib_s": job.io_kib_s, "cpu_pct": machine.cpu_pct,
             "net_kib_s": machine.net_kib_s, "last_line": last_line,
+            "usage": job.peaks.as_dict(),
             "download": download(watch, machine, job, stage, now)}

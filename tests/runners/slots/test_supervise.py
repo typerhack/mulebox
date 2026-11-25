@@ -185,6 +185,8 @@ def test_a_heartbeat_carries_the_runner_jobs_cpu_and_step(gh_env, link, paths, s
     activity = store.get_job(job_id)["activity"]
     assert activity.pop("at") > 0  # when the coordinator heard it (common/stuck.py ages it)
     assert activity == {"job_cpu_pct": 200.0, "step": "Run pnpm check", "download": None}
+    usage = store.get_job(job_id)["usage"]  # kept apart from the activity, for after the run
+    assert usage["peak_cores"] == 2.0 and usage["peak_cores_stage"] == "Run pnpm check"
 
 
 def test_a_heartbeat_carries_an_isolated_runners_download_with_its_own_traffic(

@@ -189,6 +189,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     26: (SETTING_ASKS, SETTING_CHANGES),
     27: ("ALTER TABLE jobs ADD COLUMN stuck_after_min INTEGER",),
     28: ("ALTER TABLE jobs ADD COLUMN tests TEXT NOT NULL DEFAULT '{}'",),
+    29: ("ALTER TABLE jobs ADD COLUMN usage TEXT NOT NULL DEFAULT '{}'",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

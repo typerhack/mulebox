@@ -26,7 +26,7 @@ from mulebox.worker import background
 from mulebox.worker.docker_stats import Engine
 
 Process = tuple[int, int, float, int]  # pid, pgid, CPU seconds, resident bytes
-_UNIT, _SERVICE, _NET = "unit:", "service:", "net:"  # job_meter.py's sources
+_UNIT, _SERVICE, _NET, _MEMORY = "unit:", "service:", "net:", "memory"  # job_meter.py's
 LISTING_AGE_S = 1.0
 PS_TIMEOUT_S = 3.0
 _last: tuple[float, list[Process] | None] = (float("-inf"), None)
@@ -120,6 +120,7 @@ class JobReader:
                                    if pgid == group}
         if not reading:
             return None  # not started yet, or already gone
+        memory = float(group_memory({group}, table))
         if self._containers is not None:
             stats = self._containers.value()
             if stats is None:
@@ -128,4 +129,6 @@ class JobReader:
                 reading[f"{_SERVICE}{container}"] = numbers["cpu_s"]
                 if "net" in numbers:
                     reading[f"{_NET}{container}"] = numbers["net"]
+                memory += numbers.get("memory", 0.0)
+        reading[_MEMORY] = memory
         return reading

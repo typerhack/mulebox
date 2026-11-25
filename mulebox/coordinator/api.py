@@ -17,7 +17,7 @@ from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, ho
                                  leases, line, line_rules, machine_api, needs, node_settings,
                                  project_orders, project_pause, projects, queue, reuse, runner_api,
                                  setting_asks, stats_api, steps, storage, taken, test_proof, upgrades,
-                                 usual, worker_api, workers)
+                                 usage_api, usual, worker_api, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -274,6 +274,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.PROJECT_PAUSE: project_pause.control,
     MessageType.QUEUE_RULES: line_rules.control,
     MessageType.STATS: stats_api.summary,
+    MessageType.USAGE: usage_api.usage,
     MessageType.LOGS: logs,
     MessageType.TAKE: taken.take,
     MessageType.TAKEN: taken.taken,

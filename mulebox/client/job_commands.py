@@ -13,7 +13,7 @@ import sys
 import time
 from typing import Any
 
-from mulebox.client import attention, events, report
+from mulebox.client import attention, events, report, usage_commands
 from mulebox.client.commands import connect, guarded, project_here
 from mulebox.client.log_commands import note_expired_log
 from mulebox.client.remote import request
@@ -21,6 +21,7 @@ from mulebox.client.submit import Streams, Watcher, stale_check
 from mulebox.common import status
 from mulebox.common.config import ConfigError
 from mulebox.common.protocol import MessageType
+from mulebox.common.usage import average_cores
 
 
 def register(sub: argparse._SubParsersAction) -> None:
@@ -92,6 +93,15 @@ def _status_line(job_id: str, body: dict[str, Any]) -> str:
     return f"job {job_id}: {report.state_line(body) or body.get('state')}"
 
 
+def _usage_lines(body: dict[str, Any]) -> list[str]:
+    """What the run used so far, once it has started; an older coordinator says nothing."""
+    if "usage" not in body or not body.get("started_at"):
+        return []
+    done = body.get("duration_s")
+    ran = done if done is not None else time.time() - body["started_at"]
+    return [f"  usage: {usage_commands.peaks_line(body['usage'], average_cores(body['usage'], ran))}"]
+
+
 def _status(args: argparse.Namespace) -> int:
     body = connect().call(request(MessageType.STATUS, job_id=args.job_id)).body
     if args.json:
@@ -99,6 +109,6 @@ def _status(args: argparse.Namespace) -> int:
     else:
         print("\n".join([_status_line(args.job_id, body), *report.place_lines(body),
                          *report.stage_lines(body, time.time()),
-                         *attention.status_lines(body)]))
+                         *attention.status_lines(body), *_usage_lines(body)]))
     report.dashboard_hint(sys.stderr, body, args.job_id)
     return 0

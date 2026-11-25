@@ -428,6 +428,8 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/events` | queue, machines and metrics, SSE (below) |
 | `GET /api/metrics?machine=` | no `machine`, or the host's own name: `{history, drops, machine, host: true}`, the kept samples, viewers dropped so far and the host's worker name (null when none runs there). Another worker: `{machine, host: false, last_seen, history}` (Metrics, below); 404 for a name the store does not know |
 | `GET /api/stats?from=&to=&day_starts=&by=&project=&job=&client=&worker=&kind=` | job minutes, the `stats_ok` body of interfaces-m1.md (`day_starts` and `by` comma-separated); 400 on a bad value |
+| `GET /api/usage?project=&job=&worker=&kind=&runs=&all=1` | what jobs really used, the `usage_ok` body of interfaces-m1.md; 400 on a bad value |
+| `GET /api/usage/<job_id>` | one run's `usage_ok` body; 404 for an unknown job |
 
 Bad numbers in `limit` or `before` give 400. An unusable offset or event id is ignored.
 

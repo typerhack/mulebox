@@ -186,3 +186,36 @@ def test_a_reading_has_the_unit_and_each_container(monkeypatch, tmp_path):
             return ["abc"]
 
     assert job_meter.read_job("job-1", Known()) == {"unit": 3.0, "service:abc": 3.0, "net:abc": 7.0}
+
+
+def test_the_meter_keeps_the_runs_peaks_with_their_stage():
+    values = iter(({"unit": 0.0, "memory": 100.0},
+                   {"unit": 2 * SAMPLE_S, "service:a": 0.0, "memory": 300.0},
+                   None,  # a failed read forgets the counters, never the peaks
+                   {"unit": 2 * SAMPLE_S, "memory": 200.0},
+                   {"unit": 2.5 * SAMPLE_S, "memory": 200.0}))
+    meter = JobMeter(lambda: next(values))
+    for n, stage in enumerate(("setup", "setup", "command", "command", "command")):
+        meter.update(n * SAMPLE_S, stage)
+    assert meter.peaks.as_dict() == {"peak_cores": 2.0, "peak_cores_stage": "setup",
+                                     "peak_memory": 300, "peak_memory_stage": "setup",
+                                     "cpu_s": 25.0, "samples": 4}
+    assert meter.cpu_pct == 50.0  # memory is a gauge, never counted as CPU
+
+
+def test_read_job_sums_the_working_set_of_the_unit_and_its_containers(tmp_path, monkeypatch):
+    unit = tmp_path / "unit"
+    box = tmp_path / "box"
+    for group, current, cache in ((unit, 1000, 200), (box, 500, 0)):
+        group.mkdir()
+        (group / "cpu.stat").write_text(STAT)
+        (group / "memory.current").write_text(f"{current}\n")
+        (group / "memory.stat").write_text(f"anon 1\ninactive_file {cache}\n")
+    monkeypatch.setattr(cgroups, "unit_group", lambda name, root=None: unit)
+    monkeypatch.setattr(cgroups, "container_group", lambda container, root=None: box)
+
+    class Known:
+        def ids(self):
+            return ["c1"]
+
+    assert job_meter.read_job("job-a", Known())["memory"] == 800 + 500

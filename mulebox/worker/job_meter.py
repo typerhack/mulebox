@@ -13,6 +13,9 @@ Blind spot, accepted by the user: a `docker run` or `docker build` of the job's 
 and runs outside the unit. It counts only through its output.
 
 `busy_at` is None when part of this is unknown, and unknown is never idle (worker/activity.py).
+
+Each reading also carries the memory the job holds (`_MEMORY`, a gauge, not a counter), and the
+meter keeps the run's peaks of cores and memory (common/usage.py, docs/design.md, Job usage).
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from collections.abc import Callable
 from typing import Any
 
 from mulebox.common import compose
+from mulebox.common.usage import Peaks
 from mulebox.worker import background, cgroups
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import unit_name
@@ -31,6 +35,7 @@ SERVICE_CPU_SHARE = 0.10  # of one core: idle databases in containers stay below
 NET_ACTIVE_KIB_S = 4.0  # about 256 KiB a minute
 IO_ACTIVE_KIB_S = 4.0  # the job's own processes: read and written, sockets included
 _UNIT, _SERVICE, _NET, _IO = "unit", "service:", "net:", "io:"
+_MEMORY = "memory"  # bytes held now; never summed as growth (no other source starts with it)
 
 Reading = dict[str, float]  # counters by source; a source may come and go
 Reader = Callable[[], Reading | None]
@@ -48,23 +53,30 @@ class ContainerList(background.Polled[list[str]]):
 
 def read_job(job_id: str, containers: ContainerList | None) -> Reading | None:
     """The job's counters. None if its unit cannot be read or its containers are not known."""
-    used = cgroups.cpu_seconds(cgroups.unit_group(unit_name(job_id)))
+    unit = cgroups.unit_group(unit_name(job_id))
+    used = cgroups.cpu_seconds(unit)
     if used is None:
         return None
     ids = containers.ids() if containers is not None else []
     if ids is None:
         return None
     reading = {_UNIT: used}
-    for pid, value in (cgroups.io_bytes(cgroups.unit_group(unit_name(job_id))) or {}).items():
+    memory = cgroups.memory_bytes(unit)
+    for pid, value in (cgroups.io_bytes(unit) or {}).items():
         reading[f"{_IO}{pid}"] = float(value)
     for container in ids:
         group = cgroups.container_group(container)
         cpu = cgroups.cpu_seconds(group) if group else None
         net = cgroups.group_net_bytes(group) if group else None
+        held = cgroups.memory_bytes(group) if group else None
         if cpu is not None:
             reading[f"{_SERVICE}{container}"] = cpu
         if net is not None:
             reading[f"{_NET}{container}"] = float(net)
+        if held is not None and memory is not None:
+            memory += held
+    if memory is not None:
+        reading[_MEMORY] = float(memory)
     return reading
 
 
@@ -84,9 +96,11 @@ class JobMeter:
         self.cpu_busy_at: float | None = None  # the same, CPU and services only, not bytes
         self.cpu_pct: float | None = None
         self.io_kib_s: float | None = None  # the job's own processes; None where not read
+        self.peaks = Peaks()
 
-    def update(self, now: float) -> None:
-        """Take a sample once SAMPLE_S has passed. A failed read forgets everything."""
+    def update(self, now: float, stage: str | None = None) -> None:
+        """Take a sample once SAMPLE_S has passed. A failed read forgets everything but the
+        peaks, which are the run's so far. `stage` is the job's stage now, kept with a peak."""
         if self._tried is not None and now - self._tried < SAMPLE_S:
             return
         self._tried = now
@@ -95,12 +109,17 @@ class JobMeter:
             self._last, self._at, self.busy_at, self.cpu_pct = None, None, None, None
             self.cpu_busy_at, self.io_kib_s = None, None
             return
+        cores = None
         if self._last is not None and self._at is not None and now > self._at:
-            self._judge(reading, self._last, now - self._at, now, self._at)
+            cores = self._judge(reading, self._last, now - self._at, now, self._at)
+        span = now - self._at if cores is not None and self._at is not None else 0.0
+        memory = reading.get(_MEMORY)
+        self.peaks.add(cores, None if memory is None else int(memory), stage, (cores or 0) * span)
         self._last, self._at = reading, now
 
     def _judge(self, now_read: Reading, last: Reading, span: float, now: float,
-               before: float) -> None:
+               before: float) -> float:
+        """Judge the span; return the cores the job kept busy in it."""
         unit = _grown(now_read, last, _UNIT) / span
         services = _grown(now_read, last, _SERVICE) / span
         net_kib_s = _grown(now_read, last, _NET) / 1024.0 / span
@@ -116,6 +135,7 @@ class JobMeter:
             self.busy_at = now
         elif self.busy_at is None:
             self.busy_at = before
+        return unit + services
 
 
 def labelled(docker: Docker, job_id: str) -> Callable[[], list[str]]:

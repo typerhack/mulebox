@@ -12,6 +12,10 @@ On a Mac there are no control groups: the runner's own processes are its launchd
 group, from one `ps` listing (worker/darwin_jobs.py, as for a job), and its containers' CPU comes
 from the engine's API, asked beside the loop.
 
+Each reading also has the memory the run holds (`MEMORY`, the working set of the same groups and
+containers, a gauge), and the meter keeps each run's peaks (common/usage.py; docs/design.md, Job
+usage), the step it was on kept with a peak.
+
 An isolated runner's job runs in a container with a network of its own (place.py), so its
 traffic is the job's alone and is read too, for its download (common/download_watch.py). A
 runner's service shares the node's network, so it has no traffic reading of its own.
@@ -31,6 +35,7 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.mounts import is_within
+from mulebox.common.usage import Peaks
 from mulebox.worker import cgroups, darwin_jobs
 from mulebox.worker.background import Polled
 from mulebox.worker.docker import Docker
@@ -38,6 +43,8 @@ from mulebox.worker.docker import Docker
 WORKDIR_LABEL = "com.docker.compose.project.working_dir"
 _RUNNER = "runner"
 NET = "net:job"  # bytes in and out of an isolated runner's own network
+MEMORY = "memory"  # bytes held now, a gauge: never summed as CPU
+_GAUGES = (NET, MEMORY)
 
 Reading = dict[str, float]  # CPU seconds by source: the runner, and each of its containers
 Reader = Callable[[str], "Reading | None"]  # runner name -> reading
@@ -81,7 +88,11 @@ class CiContainers:
 
 
 class PlaceGroups:
-    """An isolated runner's job runs in a container, not a service (place.py): its control
+    """Each reading also has the memory the run holds (`MEMORY`, the working set of the same groups and
+containers, a gauge), and the meter keeps each run's peaks (common/usage.py; docs/design.md, Job
+usage), the step it was on kept with a peak.
+
+An isolated runner's job runs in a container, not a service (place.py): its control
     group, from the container the runner's marker names, its id asked of Docker once."""
 
     def __init__(self, runners_root: Path, docker: Docker | None = None) -> None:
@@ -116,11 +127,17 @@ def runner_reading(runner: str, containers: CiContainers | None = None,
     traffic = cgroups.group_net_bytes(group) if isolated else None
     if traffic is not None:
         reading[NET] = float(traffic)
+    memory = cgroups.memory_bytes(group)
     for container in containers.of(runner) if containers is not None else []:
         found = cgroups.container_group(container)
         cpu = cgroups.cpu_seconds(found) if found is not None else None
         if cpu is not None:
             reading[container] = cpu
+        held = cgroups.memory_bytes(found) if found is not None else None
+        if held is not None and memory is not None:
+            memory += held
+    if memory is not None:
+        reading[MEMORY] = float(memory)
     return reading
 
 
@@ -179,14 +196,17 @@ class RunnerMeter:
         self.read = read or (lambda runner: runner_reading(runner, self.containers, places))
         self._last: dict[str, tuple[Reading, float]] = {}  # job id -> (reading, at)
         self._net: dict[str, float] = {}  # job id -> its own bytes a second, where measured
+        self._peaks: dict[str, Peaks] = {}  # job id -> the run's peaks so far
 
     def new_round(self) -> None:
         """Called once a supervision round, before the cards are read."""
         if self.containers is not None:
             self.containers.refresh()
 
-    def cpu_pct(self, job_id: str, runner: str, now: float) -> float | None:
-        """Percent of one core the job used since the last reading of it."""
+    def cpu_pct(self, job_id: str, runner: str, now: float,
+                step: str | None = None) -> float | None:
+        """Percent of one core the job used since the last reading of it. The reading also goes
+        into the run's peaks, with `step`, the step it is on."""
         reading = self.read(runner)
         last = self._last.get(job_id)
         self._net.pop(job_id, None)
@@ -194,14 +214,24 @@ class RunnerMeter:
             self._last.pop(job_id, None)
             return None
         self._last[job_id] = (reading, now)
+        peaks = self._peaks.setdefault(job_id, Peaks())
+        memory = reading.get(MEMORY)
+        held = None if memory is None else int(memory)
         if last is None or now <= last[1]:
+            peaks.add(None, held, step)
             return None
         before, at = last
         if NET in reading and NET in before:
             self._net[job_id] = round(max(0.0, reading[NET] - before[NET]) / (now - at), 1)
         used = sum(max(0.0, value - before[key]) for key, value in reading.items()
-                   if key in before and key != NET)
+                   if key in before and key not in _GAUGES)
+        peaks.add(used / (now - at), held, step, used)
         return round(used / (now - at) * 100.0, 1)
+
+    def usage(self, job_id: str) -> dict[str, Any] | None:
+        """The run's peaks so far (common/usage.py); None before its first reading."""
+        peaks = self._peaks.get(job_id)
+        return peaks.as_dict() if peaks is not None else None
 
     def net_bytes_s(self, job_id: str) -> float | None:
         """The job's own traffic over the span of its last `cpu_pct`; None where not measured."""
@@ -211,3 +241,5 @@ class RunnerMeter:
         for job_id in [job_id for job_id in self._last if job_id not in keep]:
             del self._last[job_id]
             self._net.pop(job_id, None)
+        for job_id in [job_id for job_id in self._peaks if job_id not in keep]:
+            del self._peaks[job_id]
