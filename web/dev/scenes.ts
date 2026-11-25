@@ -17,12 +17,14 @@
 //   order: the order rules on (dev/order.ts): seven jobs for the next free machine, each with
 //          the reason for its place, one moved by hand.
 //   looks: a running job in each verdict of "A job that looks stuck" (dev/looks.ts).
+//   resting: a node that rests, one that holds back Docker, one low on disk (dev/resting.ts).
 //   tests: nothing running; a finished job in each situation of "Proof that tests ran"
 //          (dev/tests.ts), on the Failed, Passed and Recent tabs, the History page and its own page.
 
 import { job, type MockJob } from "./fixtures.ts";
 import { looksScene } from "./looks.ts";
 import { orderScene } from "./order.ts";
+import { restingScene } from "./resting.ts";
 import { testsScene } from "./tests.ts";
 
 const now = () => Date.now() / 1000;
@@ -112,7 +114,7 @@ export const SETTINGS_SCENE: Record<string, More> = {
 export function makeScene(name: string | undefined) {
   const made = name === "split" || name === "settings" ? split() : name === "wide" ? wide()
     : name === "downloads" ? downloads() : name === "order" ? orderScene() : name === "looks" ? looksScene()
-    : name === "tests" ? testsScene() : null;
+    : name === "tests" ? testsScene() : name === "resting" ? restingScene() : null;
   if (!made) return null;
   made.queued.forEach((row: MockJob, index) => { row.position = index + 1; row.elapsed_s ??= 25 * (index + 1); });
   const recent: MockJob[] = "recent" in made ? (made.recent as MockJob[]) : [];

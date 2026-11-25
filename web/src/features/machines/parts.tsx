@@ -24,6 +24,7 @@ export function shownState(m: Machine): { state: string; word: string; tip?: str
                          : { state: "paused", word: "Paused", tip: "Paused: takes no new jobs" };
   }
   if (m.state === "dev") return { state: "dev", word: "Dev", tip: "Dev mode: takes only jobs sent to it with --on" };
+  if (m.state === "resting") return { state: "resting", word: "Resting", tip: "Resting: takes no job until its check passes" };
   if (m.state === "busy") return { state: "busy", word: "Busy", tip: "Busy: every slot is in use" };
   return { state: "idle", word: m.jobs.length ? "Working" : "Idle", tip: "Takes jobs" };
 }
@@ -57,13 +58,14 @@ export function StepMark({ machine, notices }: { machine: Machine; notices: Noti
 
 export function usedSlots(m: Machine): number {
   if (!isLive(m)) return 0;
-  return isHeld(m) || m.state === "dev" ? m.jobs.length : Math.max(0, m.slots - m.free_slots);
+  return isHeld(m) || m.state === "dev" || m.state === "resting" ? m.jobs.length : Math.max(0, m.slots - m.free_slots);
 }
 
 export function slotsText(m: Machine): string {
   if (!isLive(m)) return `${m.slots} ${m.slots === 1 ? "slot" : "slots"}`;
   if (isHeld(m)) return `takes no new jobs, ${m.jobs.length} running`;
   if (m.state === "dev") return `takes only jobs sent with --on, ${m.jobs.length} running`;
+  if (m.state === "resting") return m.jobs.length ? `takes no job, ${m.jobs.length} running` : "takes no job";
   return `${m.free_slots} of ${m.slots} ${m.slots === 1 ? "slot" : "slots"} free`;
 }
 
@@ -98,9 +100,15 @@ export function Net({ machine }: { machine: Machine }) {
 export const Offers = ({ machine, word }: { machine: Machine; word?: boolean }) => (machine.capabilities.length ? (
   <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-ink-2">
     {word && "Offers"}
-    {machine.capabilities.map((name) => (
-      <code key={name} className="rounded-s border border-line bg-surface-2 px-1 text-xs whitespace-nowrap">{name}</code>
-    ))}
+    {machine.capabilities.map((name) => {
+      // held back while one of its checks fails (docs/design.md, A node that rests)
+      const off = machine.state !== "offline" && machine.health?.withheld.includes(name);
+      return (
+        <code key={name} title={off ? `Held back until its check passes` : undefined}
+          aria-label={off ? `${name}, held back` : undefined}
+          className={cx("rounded-s border border-line bg-surface-2 px-1 text-xs whitespace-nowrap", off && "text-ink-3 line-through")}>{name}</code>
+      );
+    })}
   </p>
 ) : null);
 

@@ -2,11 +2,15 @@
 // it is doing, the time so far beside the usual, the cores the job alone uses, what it
 // downloads while it does, and, across its foot, what it looks like when it is not working.
 
+import { Bed, Repeat } from "lucide-react";
+
 import { stateOf, stateText } from "../../lib/format";
+import { heldWords } from "../../lib/health";
 import { coresText, doingWord } from "../../lib/doing";
 import { waitReason } from "../../lib/lanes";
 import { placeOf } from "../../lib/order";
 import type { Job } from "../../lib/types";
+import { useMachines } from "../../state/live";
 import { WithCode } from "../../ui/Code";
 import { CopyText } from "../../ui/Copy";
 import { Meter } from "../../ui/Meter";
@@ -65,8 +69,33 @@ function Place({ job }: { job: Job }) {
 
 // A waiting row: its real queue position, the job, why it waits, why it stands there, how long
 // it has waited, the four move arrows as one group, and the three dots.
+// A job a node's checks hold back says so in four words, leading to the strip that has the
+// node's sentence and fix (the user's pick, option B of design-system/resting/).
+function Held({ job }: { job: Job }) {
+  const words = heldWords(job, useMachines()?.machines ?? []);
+  if (!words) return null;
+  const show = (event: React.MouseEvent) => {
+    event.preventDefault();
+    const strip = document.getElementById("out-of-step");
+    strip?.scrollIntoView({ block: "start" });
+    strip?.focus({ preventScroll: true });
+  };
+  return (
+    <a href="#out-of-step" onClick={show} className="inline-flex basis-full items-center gap-1 text-sm font-medium">
+      <Bed aria-hidden className="status-icon size-icon-s text-danger" /><span>{words}</span>
+    </a>
+  );
+}
+
+// Put back in line once, as its node could not set it up (coordinator/health.py).
+const BackInLine = ({ job }: { job: Job }) => (job.retries ? (
+  <span title="Its node could not set it up, so it went back in line. This happens once."
+    className="inline-flex items-center gap-1 text-sm text-ink-2"><Repeat aria-hidden className="size-icon-s" />back in line once</span>
+) : null);
+
 export function WaitRow({ job, total, machineCount }: { job: Job; total: number; machineCount: number | null }) {
-  const reason = waitReason(job, machineCount);
+  const held = Boolean(job.held_by?.length);
+  const reason = held ? null : waitReason(job, machineCount);
   return (
     <li className="wait-row min-w-0 border-b border-line py-2">
       {job.position
@@ -74,6 +103,8 @@ export function WaitRow({ job, total, machineCount }: { job: Job; total: number;
         : <Status state={stateOf(job)} iconOnly />}
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-3">
         <JobName job={job} /><Branch name={job.branch} /><Source job={job} className="text-sm text-ink-2" />
+        <BackInLine job={job} />
+        {held && <Held job={job} />}
         {reason && <Reason text={reason} />}
         <Place job={job} />
         <QuestionMark job={job} />

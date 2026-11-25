@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: a node that rests, option A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="resting.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option A <span class="pick-tag">Fable suggests: its Machines page</span></h1>
+        <p class="doc-lead"><b>On the node: a line under its name, which opens in place to the problem, the fix and Check now.</b> The fault is told where the node is and where the job waits, in the grammar of a stuck job's line. Nothing is added above the panels.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#queue">Queue</a><a href="#two">With two nodes</a><a href="#machines">Machines page</a><a href="#narrow">At 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="queue"><h2>The Queue page</h2>
+    <p>In the Machines box, a node with a problem gets a second line: its icon, two words, one figure and for how long; it leads to the Machines page. In the lane, each waiting job says the node's own sentence, and opens to the fix.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap"><div class="top-row"><p class="as-today">CPU, Memory and Disk, as today.</p><div data-box="a"></div></div>
+      <div data-lane="a" data-open="1"></div></div>
+    </div>
+    <p class="stage-cap win-cap">The box keeps its height: its list scrolls inside, as today, and two more lines fit with three nodes. A struck-out tag on the Machines page names what build-2 holds back.</p>
+  </section>
+
+  <section class="case" id="two"><h2>With one or two nodes</h2>
+    <p>Each node has its full row, so the line opens in place, between the name and the meters: the problem, the fix, and Check now. build-1 is open here, build-2 closed.</p>
+    <div class="stage"><div class="top-row solo"><div data-box="a" data-rows="full" data-nodes="build-1,build-2" data-open="build-1"></div></div></div>
+    <p class="stage-cap win-cap">Open, the row is about seven lines taller, and the top row grows with it; closed, one line taller.</p>
+  </section>
+
+  <section class="case" id="machines"><h2>The Machines page</h2>
+    <p>A node with a problem has a second row under it, always open: the page has the room, and it is where the owner comes to act on a node.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span class="on">Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div data-mpage="a"></div>
+    </div>
+  </section>
+
+  <section class="case" id="narrow"><h2>At 390 px</h2>
+    <p>The line and the reason span their row; buttons are 44 px high.</p>
+    <div class="stage narrow"><div class="gap"><div data-box="a"></div><div data-lane="a" data-open="1"></div></div></div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>The fault sits beside the thing it is about, so nothing has to be matched by name. A waiting job explains itself in full.</li><li><b>Costs</b>The same sentence shows once a waiting job and once on the node: with ten jobs waiting, ten times. With two nodes the top row changes height.</li><li><b>Elsewhere</b>On History, Storage and Statistics nothing says a node rests, unless the header's mark is added too.</li></ul>
+  <p class="foot">Static page with example data: build-1 rests for a full disk, build-2 has no Docker, mac-1 is well. The sentences are the nodes' own, as docs/design.md gives them (A node that rests). Icons: a bed for resting, a warning triangle for one part down, a stethoscope for Check now. What opens answers a click; Check now answers after a moment; nothing is saved.</p>
+</div>
+<script src="resting.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

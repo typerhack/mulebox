@@ -1,7 +1,7 @@
 """The dashboard's controls on a job and on a machine (interfaces-m2.md, Controls).
 
     POST /api/jobs/<id>/control      {"action": "pause|resume|first|up|down|last|boost|normal"}
-    POST /api/machines/<name>/control {"action": "pause|resume"}
+    POST /api/machines/<name>/control {"action": "pause|resume|check"}
 
 The same requests `mulebox pause|resume|first|up|down|last|boost|normal` and `mulebox machine pause|resume`
 send, through the canceller's `mulebox rpc`, so every rule stays in the coordinator
@@ -20,7 +20,8 @@ from mulebox.common.log import get_logger
 from mulebox.dashboard import cancel, keys
 
 JOB_ACTIONS = frozenset({"pause", "resume", "first", "up", "down", "last", "boost", "normal"})
-MACHINE_ACTIONS = {"pause": "drain", "resume": "resume"}  # the dashboard's word -> the request
+MACHINE_ACTIONS = {"pause": "drain", "resume": "resume",  # the dashboard's word -> the request
+                   "check": "check"}  # Check now: the node checks itself at once (M23.5)
 _log = get_logger(__name__)
 
 

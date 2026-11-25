@@ -3,7 +3,8 @@
 `free_slots` in the workers table is what the worker last said in a claim, and a busy
 worker does not claim, so that value goes stale; free slots are counted from the jobs
 that hold a slot instead. An offline machine offers nothing, whatever it last reported, and a
-draining one (`mulebox machine drain`) nothing new.
+draining one (`mulebox machine drain`) nothing new, and a resting one (design.md, A node that
+rests) nothing at all until its check passes: its `health` says why, with the fix.
 """
 
 from __future__ import annotations
@@ -11,12 +12,14 @@ from __future__ import annotations
 from typing import Any
 
 from mulebox.common.status import left_mark
-from mulebox.coordinator.workers import OFFLINE_AFTER_S, is_dev, is_online
+from mulebox.coordinator import health
+from mulebox.coordinator.workers import OFFLINE_AFTER_S, disk_total, is_dev, is_online
 
-__all__ = ["AVAILABLE", "BUSY", "DRAINING", "OFFLINE", "OFFLINE_AFTER_S", "fingerprint", "machine",
-           "readings", "snapshot", "with_readings"]
+__all__ = ["AVAILABLE", "BUSY", "DRAINING", "OFFLINE", "OFFLINE_AFTER_S", "RESTING", "fingerprint",
+           "machine", "readings", "snapshot", "with_readings"]
 
 AVAILABLE, BUSY, DRAINING, OFFLINE = "available", "busy", "draining", "offline"
+RESTING = "resting"  # its own check fails: it takes no job (worker/health.py)
 DEV = "dev"  # dev mode: takes only jobs sent to it with --on (common/node_settings.py)
 JOB_FIELDS = ("job_id", "project", "job", "kind")
 READINGS = ("cpu_pct", "mem_pct")
@@ -39,15 +42,20 @@ def machine(worker: dict[str, Any], jobs: list[dict[str, Any]], now: float,
     online = is_online(worker, now)
     draining = bool(worker.get("draining"))  # absent in a store not yet upgraded
     dev = is_dev(worker)
-    free = max(0, slots - len(jobs)) if online and not draining and not dev else 0
-    state = (OFFLINE if not online else DRAINING if draining else DEV if dev
-             else AVAILABLE if free else BUSY)
+    report = health.of(worker) if online else None
+    resting = bool(report and report.get("resting"))
+    free = max(0, slots - len(jobs)) if online and not draining and not dev and not resting else 0
+    state = (OFFLINE if not online else DRAINING if draining else RESTING if resting
+             else DEV if dev else AVAILABLE if free else BUSY)
     return {"name": worker["worker"], "state": state, "slots": slots, "free_slots": free,
             "capabilities": worker["capabilities"], "last_seen": worker["last_seen"],
             "host": host is not None and worker["worker"] == host, "version": worker.get("version"),
             # node settings (coordinator/node_settings.py): null priority before a worker reports
             "priority": (worker.get("settings") or {}).get("priority"),
             "settings_pending": bool(worker.get("wanted")),
+            # its own checks, null while offline or before 1.41; the disk it reports on
+            "health": report, "disk_free": worker.get("disk_free") if online else None,
+            "disk_total": disk_total(worker) if online else None,
             **_load(worker.get("load") if online else None),
             "jobs": [_job(job) for job in jobs]}
 
@@ -88,13 +96,29 @@ def snapshot(workers: list[dict[str, Any]], active: list[dict[str, Any]],
             "free_slots": sum(row["free_slots"] for row in rows)}
 
 
+def _health_mark(row: dict[str, Any]) -> tuple:
+    """What of a row's health changes the panel: each check's round too (one a minute at most
+    while one fails, every five otherwise), so "checked" and an answer to Check now show."""
+    report = row.get("health") or {}
+    return (report.get("resting"), tuple((p["check"], p["message"]) for p in report.get("problems", ())),
+            tuple(report.get("withheld", ())), report.get("round"), report.get("answers"),
+            report.get("min_free"))
+
+
+def _disk_mark(row: dict[str, Any]) -> int | None:
+    """Free space to the whole GB, so the strip's warning follows without a flood of events."""
+    free = row.get("disk_free")
+    return None if free is None else free // 1_000_000_000
+
+
 def fingerprint(panel: dict[str, Any]) -> tuple:
     """What changes the panel. `last_seen` is left out: it moves every second. Readings
     count to the whole percent, so a live meter moves without a flood of events, and
     a waiting question's time left to the whole minute: browsers tick it."""
     whole = (lambda v: None if v is None else round(v))
     return tuple((row["name"], row["state"], row["slots"], row["free_slots"], row.get("version"),
-                  row.get("priority"), row.get("settings_pending"),
+                  row.get("priority"), row.get("settings_pending"), _health_mark(row),
+                  _disk_mark(row),
                   tuple(row["capabilities"]), tuple((j["job_id"], left_mark(j)) for j in row["jobs"]),
                   *(whole(row.get(key)) for key in READINGS))
                  for row in panel["machines"]) + tuple(

@@ -91,7 +91,10 @@ The dashboard's queue rows add, on waiting agent jobs only: `needs`, `can_run_on
 workers whose capabilities cover them, online or not: the same test `queue.claim` makes)
 and `waiting_for` (needs.py, when a queued job cannot start now), and on every queued job
 `branch_busy`, the job holding its branch (views.py `running_ahead`), which the row names as
-`mulebox queue` does ("XFZPMD is running on this branch"). None of it is an
+`mulebox queue` does ("XFZPMD is running on this branch"). With `waiting_for`, `held_by` names
+the nodes whose own checks keep the job waiting (every node that would take it rests or holds
+back what it needs), and `retries` is 1 on a job put back in line as its node could not set it
+up. None of it is an
 assignment: the queue is one line, and the first capable worker with a free slot takes the
 job. A running job has its `worker`; a runner reservation its `pinned_worker`.
 
@@ -278,6 +281,14 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
   `priority` (`preferred`, `normal` or `fallback` as the worker last reported it, null before)
   and `settings_pending` (true while a change of its settings waits for it; both publish a
   `machines` event when they change). Plus `total`, `online` and `free_slots` for the cluster.
+- **A node that rests** (design.md, A node that rests; 1.42): `state` is `resting` while a
+  whole-node check fails (no slot free); `health` is the node's own report, null while offline or
+  from a worker older than 1.41: `resting`, `problems` (each `check`, `message`, `fix` and
+  `since`), `withheld` (capabilities left out of its claims), `round` and `answers`, and from
+  1.42 `ran` (the checks it runs; those not in `problems` pass), `checked_at`, `next_at` and
+  `min_free` (bytes). `disk_free` and `disk_total` are its fullest disk, for the warning under
+  10% free (or 10 GB). A `machines` event is published when a check runs, a problem comes or
+  goes, or the free space moves a whole GB.
 - **Readings.** `cpu_pct` (average over the cores), `mem_pct` and `cores` are what each worker
   last reported with a claim or heartbeat (`workers.load`, M5.3), at most every 2 s; null while
   it is offline or has not reported, and then the box reads `no live data`, never a guess. The
@@ -426,9 +437,9 @@ What the protection below keeps out is other web pages in the same browser.
 | `GET /api/session` | `{action_token, cancel_token}` (the same value): what this page sends with a change, null with the controls off |
 | `POST /api/jobs/{id}/cancel` | `{job_id, state, outcome, cancel_requested}`; rules in Controls |
 | `POST /api/jobs/{id}/control` | body `{action}`: pause, resume, first, up, down, last, boost, normal; `{job_id, action, state, position, paused, boost, moved}` (`moved`: front, before or after, only the moved job pinned; a `priority` only on rows moved before 1.17.1), and `place_reason` and `order` for a queued job |
-| `POST /api/machines/{name}/control` | body `{action}`: pause or resume; `{machine, action, running}` |
+| `POST /api/machines/{name}/control` | body `{action}`: pause, resume, or check (the node checks itself at once, as `mulebox machine check`; its row's `health.answers` counts one more when it did); `{machine, action, running}` |
 | `GET /api/machines/{name}/settings` | the settings window (Node settings, below); 404 for a name the store does not know |
-| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_cores`, `keep_memory` (1.38), `keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`, `docker_clean`, `max_size` (a node on 1.26), `slim_hours` (1.29), or `{cancel: true}`; `warn_size` is refused from 1.30; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
+| `POST /api/machines/{name}/settings` | body with any of `slots`, `priority`, `dev`, `keep_cores`, `keep_memory` (1.38), `keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`, `docker_clean`, `max_size` (a node on 1.26), `slim_hours` (1.29), `min_free` (1.41; `choices.min_free` gives `min_gb` and `max_gb`, the node's disk), or `{cancel: true}`; `warn_size` is refused from 1.30; the new window. Only with the controls on, protected like them (Controls); 400 on a value out of range or another key, 409 with the coordinator's words for a refusal, 404 for an unknown machine |
 | `GET /api/queue` | status-model snapshot: `now`, `running`, `queued`, `recent`; waiting agent jobs carry `needs`, `can_run_on`, `waiting_for`; every queued row `place_reason` and `order` while an order rule is on, and a moved row (`moved`) always (interfaces-m1.md, `queue_rules`); a GitHub slot also `workflow` |
 | `GET /api/queue/rules` | the order rules: `queue_rules_ok`'s body, `{rules, defaults, levels, projects, project_activity, now}` (interfaces-m1.md), read from the store. `projects` is the list of names it always was; `project_activity` (since 1.17.7) is `[{name, last_run, runs_7d}]` for the same projects, by name: `last_run` in seconds, `runs_7d` the jobs and GitHub runs of the seven days before `now`. The Order panel lists the projects with `runs_7d` above 0 as active and the rest by `last_run`; a page given no `project_activity` shows one list |
 | `POST /api/queue/rules` | body `{rules: {...}}`, a partial change (maps merge, level 0 removes), or `{reset: true}`; the new body, as `GET` gives it. Sent as `queue_rules` like the other controls, and protected like them; 409 with the coordinator's words for a bad level or name, 405 with the controls off |

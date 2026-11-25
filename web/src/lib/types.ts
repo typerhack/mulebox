@@ -1,6 +1,8 @@
 // The shapes the dashboard's API sends (docs/interfaces-m2.md). Every field a server may
 // leave out is optional: an older server, or a worker that has not reported, is not an error.
 
+import type { Health } from "./health";
+
 import type { Ask, Change } from "./asks";
 
 export type JobKind = "job" | "runner" | "upgrade";
@@ -110,6 +112,8 @@ export interface Job {
   can_run_on?: string[];
   waiting_for?: string | null;
   branch_busy?: string | null;
+  held_by?: string[];             // nodes whose own checks keep it waiting (A node that rests)
+  retries?: number;               // put back in line once, as its node could not set it up
   workflow?: string | null;
   // Why a waiting row stands where it does, while an order rule is on or it was moved
   // (docs/design.md, Order of the line).
@@ -200,7 +204,7 @@ export interface QueueSnapshot {
   recent: Job[];
 }
 
-export type MachineState = "available" | "busy" | "offline" | "draining" | "dev";
+export type MachineState = "available" | "busy" | "offline" | "draining" | "dev" | "resting";
 
 export interface Machine {
   name: string;
@@ -219,6 +223,9 @@ export interface Machine {
   version?: string | null;
   priority?: string | null;       // null before the worker reported its settings
   settings_pending?: boolean;     // a change from afar waits for the node (Node settings)
+  health?: Health | null;         // null while offline or before 1.41
+  disk_free?: number | null;      // its fullest disk, as it last said
+  disk_total?: number | null;
 }
 
 export interface Notice {

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: a node that rests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="resting.css">
+</head>
+<body>
+<div class="doc">
+  <header class="doc-top">
+    <div>
+      <h1>A node that rests</h1>
+      <p class="doc-lead">Mockups of 2026-11-25 for M23.5, to pick from before anything is built. A node checks itself; while a check fails it rests and takes no job, or holds back only Docker or Xcode. Each problem comes with what is wrong, how to fix it and since when. The question here is where the dashboard says so, and how loudly: on the node, in the strip, or on request.</p>
+    </div>
+    <button class="btn" type="button" data-theme-switch></button>
+  </header>
+  <nav class="index" aria-label="Mockups">
+    <a href="option-a-row.html">
+      <span class="letter" aria-hidden="true">A</span>
+      <h2>On the node<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests: its Machines page</span>
+      <p>A line under the node's name, and the node's sentence on each waiting job; both open in place to the fix and Check now.</p>
+      <ul><li><b>Machines box</b> one line more a node with a problem.</li><li><b>Machines page</b> a second row, always open.</li><li><b>Waiting job</b> the full reason, opening to the fix.</li><li><b>Above the panels</b> nothing.</li></ul>
+    </a>
+    <a class="picked" href="option-b-strip.html">
+      <span class="letter" aria-hidden="true">B</span>
+      <h2>In the strip<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests</span>
+      <p>One line a node in the strip above the panels, on every page, with the fix and Check now. Node and job carry an icon and a few words.</p>
+      <ul><li><b>Machines box</b> as today, with the state's icon.</li><li><b>Machines page</b> the state, and withheld tags struck out.</li><li><b>Waiting job</b> four words that lead to the strip.</li><li><b>Above the panels</b> the problem, said once.</li></ul>
+    </a>
+    <a href="option-c-window.html">
+      <span class="letter" aria-hidden="true">C</span>
+      <h2>On request<i data-i="chevron-right"></i></h2>
+      <span class="pick-tag">Fable suggests: its Health tab</span>
+      <p>A mark on the node and on the job opens a small panel; a Health tab in the node's settings lists every check and holds the least free space.</p>
+      <ul><li><b>Machines box</b> the state icon is a button.</li><li><b>Machines page</b> a Health column.</li><li><b>Waiting job</b> a mark beside its time.</li><li><b>Node settings</b> a Health tab, with min_free.</li></ul>
+    </a>
+  </nav>
+
+  <section class="case" id="parts"><h2>What Fable suggests, part by part</h2>
+    <p>The options differ in where the problem is said, so parts of them go together.</p>
+    <dl class="facts">
+      <dt>Telling the owner</dt><dd><span class="pick-tag">B</span>The strip. A resting node runs nothing until someone acts, so it should be seen from every page, once, with its fix. It is where the low-space warning already is, which a rest for disk grows out of.</dd>
+      <dt>Machines box</dt><dd><span class="pick-tag">B</span>The state icon only. The top row keeps its size with any number of nodes.</dd>
+      <dt>Machines page</dt><dd><span class="pick-tag">A</span>The second row under the node. The page has the room, and with several nodes down it keeps each fix beside its node; the strip stays above it.</dd>
+      <dt>Waiting job</dt><dd><span class="pick-tag">B</span>Four words and the icon. The agent gets the full sentence in its terminal; the owner needs to know which node, and where the fix is.</dd>
+      <dt>Node settings</dt><dd><span class="pick-tag">C</span>The Health tab, with any option: the passing checks and min_free have no other home.</dd>
+    </dl>
+  </section>
+
+  <section class="case" id="same"><h2>The same in every option</h2>
+    <p>Long before a rest, the disk warning: under 10% free (or 10 GB) the strip says so in amber, as the low-space warning does today. And the state icons: a bed for resting, in the danger colour; a triangle for one part down, in the warning colour; a capability held back stays named, struck out.</p>
+    <div class="stage"><div class="gap"><div data-warnstrip></div>
+      <div class="row"><span class="st" data-state="resting"><i data-i="bed"></i><span>Resting</span></span><span class="st" data-state="warning"><i data-i="triangle-alert"></i><span>No Docker</span></span>
+        <span class="tags"><code class="tag">linux</code><code class="tag off">docker</code><code class="tag off">compose-v1</code></span>
+        <button class="btn" type="button" data-check><i data-i="stethoscope" class="s"></i>Check now</button><span class="h-when num" role="status">checked 20 s ago, again in 40 s</span></div></div>
+    </div>
+  </section>
+  <p class="foot">Static pages with example data; both themes with the button above, or ?theme=light and ?theme=dark. Every colour, size and space comes from ../tokens.css.</p>
+</div>
+<script src="resting.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

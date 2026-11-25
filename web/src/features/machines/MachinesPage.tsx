@@ -1,9 +1,11 @@
 // The Machines page: every machine with its state, readings, slots, offers, version and when
 // it was last seen, sortable, with its Pause and settings buttons and a way to show it in the top row. On a
-// narrow screen each machine is a card and the sort is a select.
+// narrow screen each machine is a card and the sort is a select. A node that rests or holds
+// something back has a second row under it, always open, with the problem, the fix and Check now
+// (the user's pick, option A's Machines page, design-system/resting/).
 
 import { ChevronDown, ChevronUp, Eye } from "lucide-react";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 
 import { ago, percent } from "../../lib/format";
 import { useStore } from "../../lib/store";
@@ -13,10 +15,12 @@ import { hostOf, pick, pickStore } from "../../state/picked";
 import { IconButton } from "../../ui/Button";
 import { MeterBar } from "../../ui/Meter";
 import { Empty, Panel } from "../../ui/Panel";
+import { isSick } from "../../lib/health";
+import { HealthMark, HealthUnder } from "./Health";
 import { NodeSettingsButton } from "./NodeSettings";
 import { HostMark, MachinePause, MachineState, Net, Offers, Slots, StepMark, isLive, shownState } from "./parts";
 
-const ORDER = ["busy", "draining", "paused", "dev", "idle", "offline"];
+const ORDER = ["busy", "draining", "paused", "resting", "dev", "idle", "offline"];
 type Sorter = (m: Machine, index: number) => number | string;
 const COLUMNS: [string, string, Sorter][] = [
   ["name", "Name", (_, index) => index],
@@ -82,14 +86,15 @@ export function MachinesPage() {
             </thead>
             <tbody>
               {sorted.map((m) => (
-                <tr key={m.name} className={m.name === shownName ? "lg:bg-surface-2" : undefined}>
+                <Fragment key={m.name}>
+                <tr className={m.name === shownName ? "lg:bg-surface-2" : undefined}>
                   <td className="wide max-lg:text-lg">
                     <span className="inline-flex items-center gap-2 whitespace-nowrap">
                       <strong className="font-semibold">{m.name}</strong><HostMark machine={m} />
                       {m.host && <span className="text-sm font-normal text-ink-2">Dashboard host</span>}
                     </span>
                   </td>
-                  <td data-label="State"><MachineState machine={m} /></td>
+                  <td data-label="State"><span className="inline-flex items-center gap-2"><MachineState machine={m} /><HealthMark machine={m} /></span></td>
                   <td data-label="CPU"><Reading value={m.cpu_pct} label={`${m.name} CPU`} /></td>
                   <td data-label="Memory"><Reading value={m.mem_pct} label={`${m.name} memory`} /></td>
                   <td data-label="Network" className="text-sm text-ink-2">
@@ -113,6 +118,10 @@ export function MachinesPage() {
                     </span>
                   </td>
                 </tr>
+                {isSick(m) && (
+                  <tr className="health-row"><td className="wide" colSpan={COLUMNS.length + 1}><HealthUnder machine={m} /></td></tr>
+                )}
+                </Fragment>
               ))}
             </tbody>
           </table>

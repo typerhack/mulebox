@@ -18,12 +18,21 @@ import { cx } from "../../ui/cx";
 import { Tip } from "../../ui/Tip";
 import { Window } from "../../ui/Window";
 import { useStorage } from "../../state/storage";
-import { Tabs } from "../../ui/Tabs";
+import { Tabs, type TabItem } from "../../ui/Tabs";
+import { isResting, isSick } from "../../lib/health";
+import { HealthTab } from "./HealthTab";
 import { SettingsRows } from "./SettingsRows";
 import { StorageSettings } from "./StorageSettings";
 
-type Tab = "jobs" | "storage";
-const TABS: { id: Tab; label: string }[] = [{ id: "jobs", label: "Jobs" }, { id: "storage", label: "Storage" }];
+type Tab = "jobs" | "storage" | "health";
+// Health: every check the node runs, and the least free space (features/machines/HealthTab.tsx).
+function tabsOf(machine: Machine): TabItem<Tab>[] {
+  const Mark = isResting(machine) ? OctagonAlert : TriangleAlert;
+  const extra = isSick(machine) ? (
+    <Mark role="img" aria-label="a check fails" className={cx("status-icon size-icon-s", isResting(machine) ? "text-danger" : "text-warning")} />
+  ) : undefined;
+  return [{ id: "jobs", label: "Jobs" }, { id: "storage", label: "Storage" }, { id: "health", label: "Health", extra }];
+}
 
 type Tone = "calm" | "warning" | "danger";
 const TONES: Record<Tone, [string, string]> = {
@@ -125,6 +134,7 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
           <p className="mr-auto min-w-0 flex-1 basis-col-m text-sm text-ink-2">
             {problem ? <strong role="alert" className="font-semibold text-ink-1">{problem.text}</strong>
               : locked ? "Nothing here can be changed from this page."
+              : tab === "health" ? "Checks are read from the node; only the least free space is a setting. It applies at its next check."
               : tab === "storage" ? "Applies from the node's next cleanup. A project or branch you marked to keep is exempt from all of it."
               : "Applies to the next job; running jobs keep their slot. A suggestion you take is saved as a fixed value of yours."}
           </p>
@@ -165,10 +175,13 @@ export function NodeSettingsWindow({ machine, opener, onClose }: WindowProps) {
               <strong className="font-semibold">{name} is offline.</strong> It takes the pending change when it is back.
             </Strip>
           )}
-          <Tabs label="Settings" items={TABS} value={tab} onChange={setTab} panelId="node-settings-tab" className="mb-3" />
+          <Tabs label="Settings" items={tabsOf(machine)} value={tab} onChange={setTab} panelId="node-settings-tab" className="mb-3" />
           <div id="node-settings-tab" role="tabpanel" aria-labelledby={`tab-${tab}`}>
             {tab === "jobs" ? (
               <SettingsRows machine={machine} view={view} draft={draft} locked={locked} busy={busy}
+                onEdit={(change) => setDraft((had) => ({ ...had, ...change }))} onDrop={dropOne} />
+            ) : tab === "health" ? (
+              <HealthTab machine={machine} view={view} draft={draft} locked={locked} busy={busy}
                 onEdit={(change) => setDraft((had) => ({ ...had, ...change }))} onDrop={dropOne} />
             ) : (
               <StorageSettings view={view} draft={draft} report={report} locked={locked} busy={busy}

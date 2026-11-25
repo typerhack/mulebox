@@ -1,0 +1,153 @@
+/* The "a node that rests" mockups of 2026-11-25 (M23.5): how a resting node, a node without
+   Docker and the jobs that wait for them show on the dashboard. On top of the approval mockups'
+   file; every colour, size, space, corner and duration is a token of tokens.css or derived
+   from one. */
+@import "../approvals/approvals.css";
+
+/* A problem's colour sits on its icon only: danger for a node that takes no job, warning for
+   one part down. */
+[data-level="danger"] { --tone: var(--status-danger); }
+[data-level="warn"] { --tone: var(--status-warning); }
+.st[data-state="resting"] { --st: var(--status-danger); }
+.st.big { font-size: var(--text-lg); font-weight: 600; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+/* The page the mockups sit in: the three panels that stay as today, and the Machines box. */
+.top-row { display: grid; gap: var(--app-gap); grid-template-columns: minmax(0, 1fr) var(--col-xl); align-items: stretch; }
+.top-row > .as-today { margin: 0; }
+.top-row.solo { grid-template-columns: minmax(0, var(--col-xl)); }
+@media (max-width: 760px) { .top-row { grid-template-columns: minmax(0, 1fr); } }
+
+/* The Machines box. A line a node when there are three or more, a full row each for two. */
+.m-box { position: relative; }
+.m-list { border-top: 1px solid var(--border); }
+.m-slim { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 var(--space-2);
+  min-height: var(--ctl-touch); padding-left: var(--space-2); border-bottom: 1px solid var(--border); }
+.m-id { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.m-id strong { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m-id .mark { color: var(--text-2); }
+.m-id .h-warn, td .h-warn { color: var(--status-warning); }
+.h-warn > svg, .h-mark > svg, .h-line > svg:first-child, .h-under > svg, .h-strip li > svg, .h-pop h3 > svg, .h-checks li > svg, .why-short > svg { stroke-width: calc(var(--icon-stroke) + 0.25); }
+.slots, .slot-boxes { flex-wrap: nowrap; white-space: nowrap; }
+.m-ctl, .m-state { display: inline-flex; align-items: center; gap: var(--space-2); white-space: nowrap; }
+.m-all { display: flex; align-items: center; justify-content: space-between; min-height: var(--ctl-s); margin-top: var(--space-2); font-size: var(--text-sm); font-weight: 500; text-decoration: none; }
+.m-all:hover { text-decoration: underline; }
+.machine .offers, .m-table .offers { align-items: baseline; gap: var(--space-1) var(--space-2); }
+/* A capability the node holds back: still named, struck through, outlined in dashes. */
+.tag.off { border-style: dashed; border-color: var(--border-strong); background: none; color: var(--text-2); text-decoration: line-through; }
+
+/* Option A: a line under the node, which opens in place (or leads to the Machines page). */
+.h-line { display: flex; align-items: center; gap: var(--space-1) var(--space-2); width: 100%; min-width: 0; min-height: var(--ctl-s); padding: 0; border: 0;
+  border-radius: var(--radius-s); background: none; font-size: var(--text-sm); text-align: left; text-decoration: none; }
+.h-line:hover { background: var(--surface-3); }
+.h-line > svg:first-child { color: var(--tone); }
+.h-line b { font-weight: 600; white-space: nowrap; }
+.h-line > .when { margin-left: auto; color: var(--text-2); }
+.h-line > .chev { color: var(--text-2); transition: transform var(--dur-base) var(--ease); }
+.h-line > .when + .chev { margin-left: 0; }
+.h-line[aria-expanded="true"] > .chev { transform: rotate(180deg); }
+.m-slim > .h-line { grid-column: 1 / -1; margin-bottom: var(--space-1); }
+.h-box { display: grid; gap: var(--space-2); min-width: 0; padding: var(--space-1) 0; border-block: 1px solid var(--border); }
+.h-more { display: grid; gap: var(--space-2); min-width: 0; padding-bottom: var(--space-1); }
+
+/* What is wrong, the fix, and Check now: the same three parts wherever they show. */
+.h-prob { display: grid; gap: var(--space-1); min-width: 0; }
+.h-prob > p, .h-fix { max-width: var(--read); overflow-wrap: anywhere; }
+.h-prob b { font-weight: 600; }
+.h-fix { color: var(--text-2); font-size: var(--text-sm); }
+.h-fix code, .h-strip code { white-space: nowrap; padding: 0 var(--space-1); border: 1px solid var(--border); border-radius: var(--radius-s); background: var(--surface-1); color: var(--text-1); }
+.h-acts { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); min-width: 0; }
+.h-when { color: var(--text-2); font-size: var(--text-sm); white-space: normal; }
+.h-under { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-m); background: var(--surface-2); }
+.h-under > svg { flex: none; margin-top: var(--hair); color: var(--tone); }
+
+/* Option B: the strip, a line a node, each with its own level's icon. */
+.h-strip { display: block; scroll-margin-top: var(--space-4); }
+.h-strip > ul { display: grid; gap: var(--space-2); }
+.h-strip li { display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-2) var(--space-3); min-width: 0; }
+.h-strip li + li { padding-top: var(--space-2); border-top: 1px solid var(--border); }
+.h-strip li > svg { flex: none; margin-top: var(--hair); color: var(--tone); }
+.h-strip li > p { flex: 1 1 var(--col-l); min-width: 0; overflow-wrap: anywhere; }
+.h-strip li > p > b { font-weight: 600; }
+.h-strip li > p > span { color: var(--text-2); }
+.hmark.danger > svg { color: var(--status-danger); }
+
+/* Option C: a mark that opens the node's health, and the Health tab of its settings window. */
+.h-mark { color: var(--tone); }
+/* In a node's line the mark is as small as the state icon it stands for, with a 44px target. */
+.m-id > .h-mark.h-mark { position: relative; width: var(--icon); height: var(--icon); border-radius: var(--radius-s); }
+.m-id > .h-mark::after { content: ""; position: absolute; inset: calc(var(--space-3) * -1); }
+.wait-row:has(.why) { align-items: start; }
+.wait-row:has(.why) > .pos { padding-top: var(--hair); }
+.h-state { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--ctl-s); padding: 0 var(--space-1); border: 0; border-radius: var(--radius-s); background: none; }
+.h-state:hover, .h-state[aria-expanded="true"] { background: var(--surface-3); }
+.h-state > .chev { color: var(--text-2); }
+.h-pop { text-align: left; font-size: var(--text-base); }
+.h-pop .float-head { padding: var(--space-3); }
+.h-pop .float-head h3 > svg { color: var(--tone); }
+.h-pop .float-body { display: grid; gap: var(--space-2); padding: var(--space-3); }
+.h-pop .float-foot { justify-content: flex-start; padding: var(--space-3); }
+.machine > .h-pop { top: calc(var(--space-3) + var(--ctl-s) + var(--space-1)); }
+.pop-cell { position: relative; }
+.pop-cell > .h-pop { width: var(--pop-w); right: 0; max-width: calc(100cqw - var(--space-6)); }
+.h-win { margin-top: 0; }
+.h-win .tabs .st { margin-left: calc(var(--space-1) * -1); }
+.h-sum { display: grid; gap: var(--space-2); justify-items: start; }
+.h-sum > p { max-width: var(--read); }
+.h-checks { display: grid; border-top: 1px solid var(--border); }
+.h-checks > li { display: grid; grid-template-columns: auto minmax(calc(var(--space-7) * 2.5), max-content) minmax(0, 1fr); align-items: baseline; gap: var(--space-1) var(--space-3);
+  padding: var(--space-2) 0; border-bottom: 1px solid var(--border); }
+.h-checks > li > svg { align-self: center; color: var(--status-passed); }
+.h-checks > li.fails > svg { color: var(--status-danger); }
+.h-checks b { font-weight: 600; }
+.h-checks .h-prob { grid-column: 2 / -1; }
+.h-win .field { border-top: 0; padding: 0; }
+
+/* The Machines page: a table that turns into cards when its panel is narrow. */
+.m-page { container-type: inline-size; }
+.m-table { width: 100%; border-collapse: collapse; }
+.m-table th { padding: var(--space-2) var(--space-4) var(--space-2) 0; border-bottom: 1px solid var(--border-strong); color: var(--text-2); font-size: var(--text-sm); font-weight: 600; text-align: left; white-space: nowrap; }
+.m-table td { padding: var(--space-1) var(--space-4) var(--space-1) 0; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.m-table th:first-child, .m-table td:first-child { padding-left: var(--space-3); }
+.m-table th:last-child, .m-table td:last-child { padding-right: var(--space-3); }
+.m-table .end { text-align: right; }
+.m-table tr.has-sub > td { border-bottom: 0; }
+.m-table tr.h-sub > td { padding: 0 var(--space-3) var(--space-3); }
+.reading { display: flex; align-items: center; gap: var(--space-3); min-width: calc(var(--space-7) * 2.5); }
+.reading > .meter { flex: 1; }
+.reading > .num { min-width: var(--space-7); font-size: var(--text-sm); font-weight: 500; text-align: right; }
+@container (max-width: 900px) {
+  .m-table thead { display: none; }
+  .m-table, .m-table tbody { display: block; }
+  .m-table tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2) var(--space-4); padding: var(--space-3) 0; border-bottom: 1px solid var(--border); }
+  .m-table td, .m-table td:first-child, .m-table td:last-child { display: block; padding: 0; border: 0; text-align: left; }
+  .m-table td[data-label]::before { content: attr(data-label); display: block; color: var(--text-2); font-size: var(--text-xs); }
+  .m-table td.wide { grid-column: 1 / -1; }
+  .m-table tr.has-sub { padding-bottom: 0; border-bottom: 0; }
+  .m-table tr.h-sub { padding-top: var(--space-3); }
+  .pop-cell { position: static; }
+  .m-table tr { position: relative; }
+  .pop-cell > .h-pop { top: auto; width: 100%; max-width: none; }
+}
+
+/* A waiting job that waits for the resting node. */
+.wait-main .why { flex: 1 0 100%; display: grid; gap: var(--space-2); min-width: 0; }
+.why .h-line { align-items: flex-start; min-height: 0; padding: var(--space-1) 0; }
+.why .h-line > svg { margin-top: var(--hair); }
+.why-text { flex: 0 1 auto; max-width: var(--read); min-width: 0; overflow-wrap: anywhere; color: var(--text-2); }
+.why-text > b { color: var(--text-1); }
+.why .h-more { padding-left: calc(var(--icon-s) + var(--space-2)); }
+.why-short { display: inline-flex; align-items: center; gap: var(--space-1); align-self: center; min-height: var(--ctl-s); font-size: var(--text-sm); font-weight: 500; text-underline-offset: var(--space-1); }
+.why-short > svg { color: var(--tone); }
+.lane-head > .st { font-weight: 500; }
+
+/* A 390 px screen, shown at any width: the page's gutter and touch sizes. */
+.stage.narrow { width: calc(var(--space-1) * 97.5); max-width: 100%; padding: var(--space-4); }
+.narrow .top-row { grid-template-columns: minmax(0, 1fr); }
+.narrow .icon-btn { width: var(--ctl-touch); height: var(--ctl-touch); }
+.narrow .moves .icon-btn { width: calc(var(--ctl-touch) - var(--space-1)); }
+.narrow .btn, .narrow .h-line, .narrow .why-short, .narrow .h-state { min-height: var(--ctl-touch); height: auto; }
+@media (pointer: coarse), (max-width: 520px) {
+  .h-line, .why-short, .h-state { min-height: var(--ctl-touch); }
+  .stage.narrow { padding: var(--space-2); }
+}

@@ -131,9 +131,16 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
                     "docker_clean": [False, True], "warn_share": storage_policy.WARN_SHARE,
                     "max_size": {"off": "off"},
                     "idle_days": {"min": 1, "max": storage_policy.MAX_DAYS},
-                    "slim_hours": {"min": 0, "max": storage_policy.MAX_HOURS}},
+                    "slim_hours": {"min": 0, "max": storage_policy.MAX_HOURS},
+                    # the least free space before a rest, in whole GB up to the node's disk
+                    "min_free": {"min_gb": 1, "max_gb": _disk_gb(worker)}},
         "defaults": dict(storage_policy.DEFAULTS),  # what mulebox suggests for storage
     }
+
+
+def _disk_gb(worker: dict[str, Any]) -> int | None:
+    total = workers.disk_total(worker)
+    return None if total is None else max(1, total // 1_000_000_000)
 
 
 def _whole_gb(load: dict[str, Any]) -> int | None:

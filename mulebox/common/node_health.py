@@ -11,6 +11,10 @@ A worker checks itself (worker/health.py) and sends `health` with every claim an
 `withheld`: capabilities it leaves out of its claims while one part is down (Docker, Xcode); it
 still offers the rest. `round` counts the checks it has run, so `mulebox machine check` can tell a
 fresh answer; `answers` counts the asks it answered with a check started after them. A healthy worker sends no problems; one older than 1.41 sends nothing.
+
+Since 1.42, for the dashboard: `ran`, the checks it runs (those not in `problems` pass),
+`checked_at` and `next_at`, when the last check ended and the next is due, and `min_free`, its
+floor in bytes. Absent from an older worker.
 """
 
 from __future__ import annotations
@@ -57,9 +61,17 @@ def checked(value: Any) -> dict[str, Any] | None:
         problems.append(problem(item["check"], message, _text(item.get("fix")) or "", since))
     withheld = sorted({name for name in value.get("withheld") or []
                        if isinstance(name, str) and name in _ALL_WITHHELD})
-    return {"resting": value.get("resting") is True, "until": _number(value.get("until")),
-            "problems": problems[:MAX_PROBLEMS], "withheld": withheld,
-            "round": _count(value.get("round")), "answers": _count(value.get("answers"))}
+    out = {"resting": value.get("resting") is True, "until": _number(value.get("until")),
+           "problems": problems[:MAX_PROBLEMS], "withheld": withheld,
+           "round": _count(value.get("round")), "answers": _count(value.get("answers"))}
+    if isinstance(value.get("ran"), list):
+        out["ran"] = [name for name in CHECKS if name in value["ran"]]
+    for key in ("checked_at", "next_at"):
+        if _number(value.get(key)) is not None:
+            out[key] = _number(value[key])
+    if _count(value.get("min_free")):
+        out["min_free"] = value["min_free"]
+    return out
 
 
 def _count(value: Any) -> int:

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: a node that rests, option B</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="resting.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option B <span class="pick-tag">Fable suggests</span></h1>
+        <p class="doc-lead"><b>In the strip: one line a node above the panels, with the problem, the fix and Check now.</b> A rest is rare, lasts until someone acts, and is the owner's to fix: what the strip is for. The node and its waiting jobs carry only the icon and a few words, and point to the strip.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#queue">Queue</a><a href="#two">With two nodes</a><a href="#machines">Machines page</a><a href="#narrow">At 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="queue"><h2>The Queue page</h2>
+    <p>The strip is red for a node that takes no job; a node with one part down adds an amber line. The Machines box is as today but for the state icon: a bed for resting, a small triangle beside build-2. A waiting job says in four words why, and its words lead to the strip.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right"><span class="hmark danger" title="2 to look at"><i data-i="octagon-alert"></i><span class="num">2</span></span></span></div>
+      <div class="gap"><div data-hstrip></div><div class="top-row"><p class="as-today">CPU, Memory and Disk, as today.</p><div data-box="b"></div></div>
+      <div data-lane="b"></div></div>
+    </div>
+    <p class="stage-cap win-cap">The header's mark counts both lines and brings the strip back when the page is scrolled, as it does today. When the check passes, the line goes by itself.</p>
+  </section>
+
+  <section class="case" id="two"><h2>With one or two nodes</h2>
+    <p>The full rows are as today: the state says Resting, build-2 gets "No Docker" beside its state and its Docker tags struck out. Nothing opens, so the top row keeps its size.</p>
+    <div class="stage"><div class="gap"><div data-hstrip></div><div class="top-row solo"><div data-box="b" data-rows="full" data-nodes="build-1,build-2"></div></div></div></div>
+  </section>
+
+  <section class="case" id="machines"><h2>The Machines page</h2>
+    <p>The strip is on every page, so the table only gains the state: Resting, and a mark on build-2 with its withheld tags struck out.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span class="on">Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav><span class="right"><span class="hmark danger" title="2 to look at"><i data-i="octagon-alert"></i><span class="num">2</span></span></span></div>
+      <div class="gap"><div data-hstrip></div><div data-mpage="b"></div></div>
+    </div>
+  </section>
+
+  <section class="case" id="narrow"><h2>At 390 px</h2>
+    <p>The strip's buttons drop under its sentence. Only build-1's line is shown here.</p>
+    <div class="stage narrow"><div class="gap"><div data-hstrip="one"></div><div data-box="b"></div><div data-lane="b"></div></div></div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>Seen on every page and from across the room, said once however many jobs wait. The top row, the cards and the rows keep their size. It is the pattern the low-space warning and out-of-step notices already use.</li><li><b>Costs</b>The fault is a scroll away from the node's row and the waiting job, matched by the node's name. Three resting nodes make a tall strip.</li><li><b>Without a pointer</b>Nothing depends on hover: the sentence, the fix and the button are always on the page.</li></ul>
+  <p class="foot">Static page with example data: build-1 rests for a full disk, build-2 has no Docker, mac-1 is well. The sentences are the nodes' own, as docs/design.md gives them (A node that rests). Icons: a bed for resting, a warning triangle for one part down, a stethoscope for Check now. What opens answers a click; Check now answers after a moment; nothing is saved.</p>
+</div>
+<script src="resting.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

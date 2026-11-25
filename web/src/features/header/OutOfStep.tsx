@@ -10,6 +10,10 @@
 // window, where the owner decides what goes (features/storage/ReviewWindow.tsx). And it holds
 // agents' requests for more space, amber until answered (features/asks/AskLines.tsx); the mark
 // counts them. What was answered or allowed is a grey strip of its own (CalmStrip.tsx).
+//
+// And it says a node that rests or holds back Docker or Xcode, once, with the fix and Check now
+// (the user's pick, option B of design-system/resting/), and a disk under 10% free long before
+// that (features/machines/Health.tsx). A resting node makes the strip red.
 
 import { CircleQuestionMark, OctagonAlert, TriangleAlert } from "lucide-react";
 import { useRef, useState } from "react";
@@ -22,6 +26,7 @@ import { useStore } from "../../lib/store";
 import { useStorage } from "../../state/storage";
 import { useWaiting } from "../../state/asks";
 import { AskLines } from "../asks/AskLines";
+import { HealthLines, anyResting, healthCount } from "../machines/Health";
 import { Button } from "../../ui/Button";
 import { WithCode } from "../../ui/Code";
 import { cx } from "../../ui/cx";
@@ -29,16 +34,17 @@ import { Tip } from "../../ui/Tip";
 import { ReviewWindow } from "../storage/ReviewWindow";
 
 const STRIP_ID = "out-of-step";
-const worst = (items: Notice[]) => (items.some((item) => item.level === "danger") ? "danger" : "warning");
+const worst = (items: Notice[], resting = false) =>
+  (resting || items.some((item) => item.level === "danger") ? "danger" : "warning");
 const iconOf = (level: string) => (level === "danger" ? OctagonAlert : TriangleAlert);
 const toneOf = (level: string) => (level === "danger" ? "text-danger" : "text-warning");
 
 export function OutOfStepMark() {
-  const items = useMachines()?.notices ?? [];
+  const panel = useMachines(), items = panel?.notices ?? [], machines = panel?.machines ?? [];
   const asks = useWaiting().reduce((n, group) => n + group.asks.length, 0);
-  const low = lowNodes(useStorage().body).length, count = items.length + low + asks;
+  const low = lowNodes(useStorage().body).length + healthCount(machines), count = items.length + low + asks;
   if (!count) return null;
-  const level = worst(items), Icon = items.length || low ? iconOf(level) : CircleQuestionMark;
+  const level = worst(items, anyResting(machines)), Icon = items.length || low ? iconOf(level) : CircleQuestionMark;
   const word = asks && count === asks ? `${count} to answer` : low || asks ? `${count} to look at` : `${count} out of step`;
   const show = () => {
     const strip = document.getElementById(STRIP_ID);
@@ -57,7 +63,8 @@ export function OutOfStepMark() {
 }
 
 export function OutOfStepStrip() {
-  const items = useMachines()?.notices ?? [];
+  const panel = useMachines(), items = panel?.notices ?? [], machines = panel?.machines ?? [];
+  const sick = healthCount(machines);
   const { body } = useStorage();
   const low = lowNodes(body);
   const asks = useWaiting().length;
@@ -65,13 +72,15 @@ export function OutOfStepStrip() {
   const opener = useRef<HTMLButtonElement | null>(null);
   useStore(tickStore);
   const reviewed = low.find((node) => node.node === reviewing);
-  if (!items.length && !low.length && !asks) return null;
-  const level = worst(items);
+  if (!items.length && !low.length && !asks && !sick) return null;
+  const level = worst(items, anyResting(machines));
+  const label = sick ? "Nodes that need you" : items.length ? "Out of step" : low.length ? "Low disk space" : "Requests from agents";
   return (
-    <section id={STRIP_ID} role="status" aria-label={items.length ? "Out of step" : low.length ? "Low disk space" : "Requests from agents"} tabIndex={-1}
+    <section id={STRIP_ID} role="status" aria-label={label} tabIndex={-1}
       className={cx("scroll-mt-8 rounded-m border px-3 py-2",
                     level === "danger" ? "border-danger bg-failed-soft" : "border-warning bg-warning-soft")}>
       <ul className="grid gap-1">
+        <HealthLines machines={machines} />
         {items.map((item, index) => {
           const Icon = iconOf(item.level);
           return (

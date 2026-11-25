@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.42.0 - 2026-11-25 - minor
+- A node that rests, on the dashboard (M23.5, part 2; the user's pick of design-system/resting/, Fable's mix): the strip says each node's problem once, with its fix, since when, Check now and Open Storage for disk, red while a node rests; an amber line for a disk under 10% free (or 10 GB). The Machines box and lanes show `Resting` with a bed, a triangle beside a node that holds back Docker or Xcode; the Machines page a second row under it, its withheld tags struck out; a waiting job says which node holds it and "back in line once". A Health tab in the node's settings window lists every check and sets `min_free`.
+- The API behind it: a machine row has `state: resting`, `health` and its disk; a worker's report adds `ran`, `checked_at`, `next_at` and `min_free` (common/node_health.py); a waiting job `held_by` and `retries`; `POST /api/machines/<name>/control` takes `check`; the settings window offers `min_free`. Fixed on the way: the Machines box counted a resting node's slots as free.
+- The stand-in's `resting` scene (web/dev/resting.ts); the mockups in docs/design-system/resting/. Docs: design.md, interfaces-m2.md.
+
 ## 1.41.1 - 2026-11-25 - patch
 - docs/phases.md: M23.5 part 1 seen on the real node: a rest for disk from `min_free` set from afar, a job waiting with the reason and the fix, and `mulebox machine check` letting it run at once after the fix.
 

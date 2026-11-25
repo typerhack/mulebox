@@ -928,6 +928,13 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       waited with the same reason and the fix; the cleanup ran first, by its own rules (one folder
       of a gone branch). With `min_free` back at 5 GB, `mulebox machine check` answered "every
       check passes" and the job passed 3 s later. The project was reset after. Open: part 2.
+      Part 2 built 2026-11-25 (1.42.0), the user's pick of design-system/resting/ (Fable's mix:
+      the strip of B, the Machines page of A, the Health tab of C), with component tests, and seen
+      in Edge on the stand-in (`MULEBOX_MOCK_SCENE=resting`) at 1440 and 400 px: the strip with the
+      node's fix and Check now answering, the bed on the box and the lane, the waiting rows, the
+      Machines page's second row, the Health tab and `min_free` saved from it. Done when: on the
+      deployed dashboard in Edge, with `min_free` set above the node's free space, the strip, the
+      box and a waiting job show the rest, and Check now after the fix lets the job run.
 - [x] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
       job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of

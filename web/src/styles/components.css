@@ -119,6 +119,10 @@
   .data-table th:first-child, .data-table td:first-child { padding-left: var(--space-3); }
   .data-table th:last-child, .data-table td:last-child { padding-right: var(--space-3); }
   .data-table th.end, .data-table td.end { text-align: right; }
+  /* A node's health under its row on the Machines page (features/machines/Health.tsx): the
+     two rows read as one. */
+  .data-table tr:has(+ .health-row) td { border-bottom: 0; }
+  .data-table tr.health-row td { padding-top: 0; padding-bottom: var(--space-3); }
   @variant max-lg {
     .data-table.stacks thead { display: none; }
     .data-table.stacks, .data-table.stacks tbody { display: block; }
@@ -128,6 +132,7 @@
     .data-table.stacks td[data-label]::before { content: attr(data-label); display: block;
       color: var(--text-2); font-size: var(--text-xs); }
     .data-table.stacks td.wide { grid-column: 1 / -1; }
+    .data-table.stacks tr:has(+ .health-row) { border-bottom: 0; padding-bottom: 0; }
   }
 
   /* The segmented choice as radio marks (ui/Segmented.tsx; the user's pick, 2026-11-13): no box,

@@ -135,3 +135,25 @@ def test_a_runner_supervisor_s_heartbeat_leaves_the_ask_for_the_worker(store, st
     beat = call(store, staging, "heartbeat", now=T0 + 1, job_id=slot, lease="worker")
     assert "health_check" not in beat.body
     assert claim(store, staging, now=T0 + 2).body.get("health_check") is True
+
+
+def test_a_waiting_job_names_the_nodes_that_hold_it():
+    from mulebox.coordinator import views
+    fleet = [{"worker": "build-1", "capabilities": ["linux"], "last_seen": T0, "health": DISK_LOW},
+             {"worker": "build-2", "capabilities": ["docker", "linux"], "last_seen": T0,
+              "health": DOCKER_DOWN}]
+    job = {"kind": "job", "state": "queued", "needs": ["linux"], "pinned_worker": None}
+    assert "held_by" not in views.placement(fleet, job, T0)  # build-2 takes it
+    docker = {**job, "needs": ["docker", "linux"]}
+    assert views.placement(fleet, docker, T0)["held_by"] == ["build-2"]
+    assert needs.held_by(fleet[:1], ["linux"], T0) == ["build-1"]
+    assert needs.held_by(fleet[:1], ["linux"], T0 + 3600) == []  # offline: not its health
+
+
+def test_the_report_keeps_what_the_dashboard_shows_and_drops_the_rest():
+    from mulebox.common import node_health
+    found = node_health.checked({**DISK_LOW, "ran": ["git", "disk", "nope"], "checked_at": T0,
+                                 "next_at": "soon", "min_free": 5 * 10**9})
+    assert found["ran"] == ["disk", "git"] and found["checked_at"] == T0
+    assert "next_at" not in found and found["min_free"] == 5 * 10**9
+    assert "ran" not in node_health.checked(DISK_LOW)  # an older worker's

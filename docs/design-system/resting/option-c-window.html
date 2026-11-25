@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockup: a node that rests, option C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="resting.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1 class="opt-title">Option C <span class="pick-tag">Fable suggests: its Health tab</span></h1>
+        <p class="doc-lead"><b>On request: a mark on the node and on the waiting job opens its health; a Health tab in the node's settings holds every check.</b> The page stays as calm as today. Whoever wants to know presses the mark and gets the problem, the fix and Check now in a small panel; the settings window lists all the node's checks, and holds the least free space.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <nav class="doc-nav" aria-label="On this page"><a href="#queue">Queue</a><a href="#two">With two nodes</a><a href="#machines">Machines page</a><a href="#window">Health tab</a><a href="#narrow">At 390 px</a><a href="index.html">All options</a></nav>
+  </header>
+
+  <section class="case" id="queue"><h2>The Queue page</h2>
+    <p>The state icon of a resting node is a button; build-2 gets a triangle to press. A waiting job carries the same mark beside its time. Closed, the page is as calm as today.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span class="on">Queue</span><span>Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div class="gap"><div class="top-row"><p class="as-today">CPU, Memory and Disk, as today.</p><div data-box="c"></div></div>
+      <div data-lane="c"></div></div>
+    </div>
+    <p class="stage-cap win-cap">Pressed, build-1's bed opens this panel under its row:</p>
+    <div class="stage"><div class="top-row solo"><div data-box="c" data-open="build-1"></div></div></div>
+    <p class="stage-cap win-cap">"All checks" opens the node's settings window on its Health tab.</p>
+  </section>
+
+  <section class="case" id="two"><h2>With one or two nodes</h2>
+    <p>The state itself is the button, with a small arrow. build-2's panel is open here.</p>
+    <div class="stage"><div class="top-row solo"><div data-box="c" data-rows="full" data-nodes="build-1,build-2" data-open="build-2"></div></div></div>
+  </section>
+
+  <section class="case" id="machines"><h2>The Machines page</h2>
+    <p>A Health column says in two words what fails, or that all checks pass; pressed, it opens the same panel.</p>
+    <div class="stage"><div class="app-bar"><b>mulebox</b><nav aria-label="Pages"><span>Queue</span><span class="on">Machines</span><span>Storage</span><span>History</span><span>Statistics</span></nav></div>
+      <div data-mpage="c" data-open="build-1"></div>
+    </div>
+  </section>
+
+  <section class="case" id="window"><h2>The Health tab of a node's settings</h2>
+    <p>Beside Jobs and Storage. On top the state and Check now; then each check with what it found, the failing one with its fix; last the one setting, the least free space. A mark on the tab says something fails.</p>
+    <div class="stage"><div data-hwin></div></div>
+    <p class="stage-cap win-cap">This tab can go with option A or B as well: it is the only place that shows the checks that pass, and where min_free is set.</p>
+  </section>
+
+  <section class="case" id="narrow"><h2>At 390 px</h2>
+    <p>The panel is as wide as the row it hangs from. The waiting job's panel is open here.</p>
+    <div class="stage narrow"><div class="gap"><div data-box="c"></div><div data-lane="c" data-open="1"></div></div></div>
+  </section>
+
+  <ul class="notes"><li><b>Good at</b>Least on the screen: one icon a node, one a job. The whole picture of a node's health in one place, passing checks too.</li><li><b>Costs</b>The owner has to notice a small red icon and press it; from another page nothing tells. A node that takes no job is said too quietly for what it costs.</li><li><b>Without a pointer</b>The marks are buttons (aria-expanded) with a 44 px target on touch; the panel opens under its row, inside the page.</li></ul>
+  <p class="foot">Static page with example data: build-1 rests for a full disk, build-2 has no Docker, mac-1 is well. The sentences are the nodes' own, as docs/design.md gives them (A node that rests). Icons: a bed for resting, a warning triangle for one part down, a stethoscope for Check now. What opens answers a click; Check now answers after a moment; nothing is saved.</p>
+</div>
+<script src="resting.js"></script>
+<script src="../storage/storage.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>

@@ -60,5 +60,5 @@ const jobUrl = (id: string, what: string) => `/api/jobs/${encodeURIComponent(id)
 export type JobAction = "pause" | "resume" | "first" | "up" | "down" | "last" | "boost" | "normal";
 export const controlJob = (id: string, action: JobAction) => post(jobUrl(id, "control"), { action });
 export const cancelJob = (id: string) => post<{ state?: string }>(jobUrl(id, "cancel"));
-export const controlMachine = (name: string, action: "pause" | "resume") =>
+export const controlMachine = (name: string, action: "pause" | "resume" | "check") =>
   post(`/api/machines/${encodeURIComponent(name)}/control`, { action });

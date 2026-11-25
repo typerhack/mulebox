@@ -55,6 +55,9 @@ def test_a_resting_node_claims_with_no_free_slot(agent, fake_link, checks):
     assert claim["free_slots"] == 0 and claim["slots"] == 1
     assert claim["health"]["resting"] and claim["health"]["problems"][0]["check"] == "disk"
     assert claim["health"]["round"] >= 1
+    # what the dashboard shows beside it: the checks run, when, and the floor
+    assert "disk" in claim["health"]["ran"] and claim["health"]["checked_at"] is not None
+    assert claim["health"]["min_free"] == 5_000_000_000
 
 
 def test_a_withheld_capability_is_left_out_of_claims(node, fake_link, paths, checks):

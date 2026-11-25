@@ -36,6 +36,11 @@ def test_a_machine_is_paused_as_a_drain(lan):
     assert asked == [("build-1", "drain")]
 
 
+def test_check_now_asks_the_node_to_check_itself(lan):
+    status, answer, asked = ask(lan, "/api/machines/build-1/control", {"action": "check"})
+    assert status == 200 and answer["action"] == "check" and asked == [("build-1", "check")]
+
+
 def test_unknown_actions_and_other_pages_are_refused(lan, run_job):
     job_id, _ = run_job()
     assert ask(lan, f"/api/jobs/{job_id}/control", {"action": "explode"})[0] == 400

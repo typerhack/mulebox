@@ -64,7 +64,9 @@ export function makeQueue() {
 }
 
 // `set` changes a machine by name (a scene's slots and state, dev/scenes.ts).
-export function makeMachines(queue: ReturnType<typeof makeQueue>, set: Record<string, { slots?: number; state?: string }> = {}) {
+// `more`, any other fields of the row (the resting scene's health, dev/resting.ts).
+export function makeMachines(queue: ReturnType<typeof makeQueue>,
+                             set: Record<string, { slots?: number; state?: string; more?: Record<string, unknown> }> = {}) {
   return Array.from({ length: COUNT }, (_, index) => {
     const n = index + 1, name = `build-${n}`;
     const jobs = queue.running.filter((row) => row.worker === name);
@@ -78,6 +80,7 @@ export function makeMachines(queue: ReturnType<typeof makeQueue>, set: Record<st
       cpu_pct: offline ? null : n === 1 ? 41 : busy ? 77 : 3 + (n * 7) % 9,
       mem_pct: offline ? null : n === 1 ? 62 : 15 + (n * 5) % 40, cores: n === 1 ? CORES : 8,
       net_in_kib_s: offline ? null : n === 1 ? 3400 : 12 + n, net_out_kib_s: offline ? null : n === 1 ? 212 : 3 + n, jobs,
+      ...set[name]?.more,
     };
   });
 }

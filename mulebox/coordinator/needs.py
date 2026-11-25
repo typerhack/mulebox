@@ -106,6 +106,21 @@ def refusal(workers: list[Worker], needs: list[str]) -> str | None:
     return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
 
 
+def _open(online: list[Worker], pinned: bool) -> list[Worker]:
+    """The online nodes that would take a job but for their health: not draining, not in dev
+    mode unless the job was sent to it by name."""
+    return [w for w in online if not w.get("draining") and (pinned or not is_dev(w))]
+
+
+def held_by(workers: list[Worker], needs: list[str], now: float, pinned: bool = False) -> list[str]:
+    """The nodes whose own checks keep a job with `needs` waiting (design.md, A node that rests):
+    each node that would take it holds it back, and there is one at least. Else empty."""
+    open_ = _open([w for w in capable(workers, needs) if is_online(w, now)], pinned)
+    if not open_ or not all(node_health.blocks(health.of(w), needs) for w in open_):
+        return []
+    return [w["worker"] for w in open_]
+
+
 def waiting_for(workers: list[Worker], needs: list[str], now: float,
                 pinned: bool = False) -> str | None:
     """Why a queued job cannot start right now, or None when a worker for it is online. A node
@@ -116,7 +131,7 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float,
     if not fitting:
         return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
     online = [w for w in fitting if is_online(w, now)]
-    open_ = [w for w in online if not w.get("draining") and (pinned or not is_dev(w))]
+    open_ = _open(online, pinned)
     if any(not node_health.blocks(health.of(w), needs) for w in open_):
         return None
     resting = health.reason(open_, needs)  # it says what is wrong and its fix

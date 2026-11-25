@@ -944,9 +944,17 @@ never only a refusal: it says what is wrong and what the agent can do about it.
   given the run to that runner, so a refused slot would leave the CI run hanging, as with drain.
   With the `container` floor every job runs in Docker, so there Docker down rests the whole node.
 - **Where it shows.** `mulebox machine list` (state `resting` and the reason), `mulebox doctor`,
-  a waiting job's reason in `status`, `queue` and `events`, and the Machines box (a state like
-  `draining`; its look from mockups). The coordinator's own node may rest: it still coordinates,
-  it only runs no job.
+  a waiting job's reason in `status`, `queue` and `events`. The coordinator's own node may rest:
+  it still coordinates, it only runs no job.
+- **On the dashboard** (the user's pick of design-system/resting/, 2026-11-25: Fable's mix). The
+  strip above the panels says each problem once, on every page, in the node's own words with its
+  fix, since when, Check now and, for disk, Open Storage; red while a node rests, amber while one
+  only holds back Docker or Xcode, and an amber line for a disk under 10% free (or 10 GB) long
+  before. The Machines box shows the state's icon (a bed for resting) and a triangle beside a node
+  that holds something back; the Machines page a second row under such a node, always open, and
+  its withheld tags struck out; a waiting job says in a few words which node holds it, leading to
+  the strip, and "back in line once" when its node could not set it up. The node's settings
+  window has a Health tab: every check it runs with what it found, and `min_free`.
 
 ## Node settings (M23.9, M23.4, the user's ask, 2026-11-13)
 

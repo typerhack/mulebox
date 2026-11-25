@@ -50,6 +50,12 @@ def test_git_and_the_executor(node):
     assert found[0] == "executor" and "loginctl enable-linger" in found[2]
 
 
+def test_ran_names_the_checks_run_all_runs():
+    assert health.ran(["node"]) == ["disk", "roots", "git"]
+    assert health.ran(["docker", "xcode"], systemd=True) == ["disk", "roots", "git", "executor",
+                                                             "docker", "xcode"]
+
+
 def test_the_executor_is_checked_only_for_systemd(node, paths):
     assert health.run_all(node, paths, [], None, run=done(1), systemd=False)[0][0] == "git"
     checks = [c for c, _, _ in health.run_all(node, paths, [], None, run=done(1), systemd=True)]

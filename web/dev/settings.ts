@@ -6,12 +6,12 @@ import { SETTINGS_SCENE } from "./scenes.ts";
 
 interface Row { name: string; slots: number; state: string; cores?: number | null; version?: string | null; jobs: unknown[] }
 const DISK = { keep_free: "10%", unused_days: 7, keep_latest: true, idle_days: 14,
-               auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB" };
+               auto_clean: true, docker_clean: true, max_size: "OFF", warn_size: "50GB", min_free: "5GB" };
 // Room kept for the owner (1.38): build-1, the dashboard's host, is also someone's PC.
 const ROOM = { keep_cores: 0, keep_memory: "0GB" };
 const OWNERS_PC = { keep_cores: 2, keep_memory: "4GB" };
 const DISK_KEYS = [...Object.keys(ROOM), ...Object.keys(DISK)];
-const SINCE_126 = ["auto_clean", "docker_clean", "max_size", "warn_size"];
+const SINCE_126 = ["auto_clean", "docker_clean", "max_size", "warn_size", "min_free"];
 interface Kept { disk: Record<string, unknown>; priority: string; dev: boolean; pending: Record<string, unknown> | null; since: number | null; error: string | null; old: boolean }
 const SIZE = /^\s*(off|\d+(\.\d+)?\s*(MB|GB|TB))\s*$/i;
 
@@ -53,7 +53,8 @@ function view(row: Row, editable: boolean) {
                  reason: `${cores} cores and ${memory} GB of memory, at about 4 cores and 6 GB a job` },
     choices: { slots: { min: 1, max: 64 }, priority: PRIORITIES, dev: [false, true],
                keep_cores: { min: 0, max: cores }, keep_memory: { max_gb: memory }, keep_free: { max_share: 90 },
-               unused_days: { min: 1, max: 365 }, keep_latest: [false, true], idle_days: { min: 1, max: 365 } },
+               unused_days: { min: 1, max: 365 }, keep_latest: [false, true], idle_days: { min: 1, max: 365 },
+               min_free: { min_gb: 1, max_gb: 490 } },
     defaults: DISK, editable,
   };
 }

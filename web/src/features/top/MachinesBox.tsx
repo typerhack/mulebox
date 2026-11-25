@@ -13,6 +13,7 @@ import { cx } from "../../ui/cx";
 import { Meter } from "../../ui/Meter";
 import { Empty, Panel } from "../../ui/Panel";
 import { QuestionMark } from "../jobs/JobBits";
+import { HealthMark } from "../machines/Health";
 import { NodeSettingsButton } from "../machines/NodeSettings";
 import { HostMark, MachinePause, MachineState, Net, Offers, Slots, StepMark, isLive } from "../machines/parts";
 
@@ -41,7 +42,7 @@ function FullRow({ machine, panel, picked, now }: RowProps) {
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <span className="inline-flex min-w-0 items-center gap-2">
           <PickName machine={machine} picked={picked} /><HostMark machine={machine} />
-          <StepMark machine={machine} notices={panel.notices} />
+          <StepMark machine={machine} notices={panel.notices} /><HealthMark machine={machine} />
         </span>
         <span className="inline-flex items-center gap-2"><MachineState machine={machine} /><MachinePause machine={machine} /><NodeSettingsButton machine={machine} /></span>
       </div>
@@ -72,7 +73,7 @@ function SlimRow({ machine, panel, picked }: RowProps) {
                        picked && pickedLine, picked && "bg-surface-2")}>
       <span className="inline-flex min-w-0 items-center gap-2">
         <PickName machine={machine} picked={picked}><MachineState machine={machine} iconOnly /></PickName>
-        <HostMark machine={machine} /><StepMark machine={machine} notices={panel.notices} />
+        <HostMark machine={machine} /><StepMark machine={machine} notices={panel.notices} /><HealthMark machine={machine} />
       </span>
       <span className="inline-flex items-center gap-2"><Slots machine={machine} words={false} /><MachinePause machine={machine} /><NodeSettingsButton machine={machine} /></span>
     </div>

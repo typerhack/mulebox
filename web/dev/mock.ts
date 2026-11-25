@@ -14,6 +14,7 @@ import { TEST_LOGS } from "./tests.ts";
 import { asksBody, asksLive, asksPost } from "./asks.ts";
 import { changeRules, rulesBody } from "./order.ts";
 import { runBody, usageBody } from "./usage.ts";
+import { checked } from "./resting.ts";
 import { AGENT_LOG, CI_LOG, CLEAN, VERSION, detail, makeMachines, makeQueue, sample, stats, type MockJob } from "./fixtures.ts";
 
 const CONTROLS = process.env.MULEBOX_MOCK_CONTROLS !== "off";
@@ -184,7 +185,8 @@ async function handle(req: IncomingMessage, res: ServerResponse, next: () => voi
     const row = machines.find((m) => m.name === decodeURIComponent(machineMatch[1]));
     const { action } = await body(req);
     if (!row) return text(res, "no such machine", 404);
-    row.state = action === "pause" ? "draining" : row.free_slots ? "available" : "busy";
+    if (action === "check") setTimeout(() => { checked(row); publish(); }, 1500);
+    else row.state = action === "pause" ? "draining" : row.free_slots ? "available" : "busy";
     publish();
     return json(res, { machine: row.name, action, running: row.jobs.length });
   }

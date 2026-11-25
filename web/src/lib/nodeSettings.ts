@@ -13,7 +13,10 @@ export const STORAGE_KEYS = ["keep_free", "unused_days", "keep_latest", "idle_da
                              "auto_clean", "docker_clean", "max_size", "slim_hours"] as const;
 // Room a node keeps for its owner, out of what sized jobs share (docs/design.md, Job sizes; 1.38).
 export const ROOM_KEYS = ["keep_cores", "keep_memory"] as const;
-export const KEYS = ["slots", "priority", "dev", ...ROOM_KEYS, ...STORAGE_KEYS] as const;
+// The least free space before the node rests (docs/design.md, A node that rests; 1.41), on the
+// window's Health tab.
+export const HEALTH_KEYS = ["min_free"] as const;
+export const KEYS = ["slots", "priority", "dev", ...ROOM_KEYS, ...STORAGE_KEYS, ...HEALTH_KEYS] as const;
 export type SettingKey = typeof KEYS[number];
 // `dev` is missing from a node older than 1.23, which has no dev mode; the four disk settings
 // (docs/design.md, Disk use and cleanup on its own) from one older than 1.24, and the last four
@@ -23,6 +26,7 @@ export interface Values {
   keep_cores?: number; keep_memory?: string;
   keep_free?: string; unused_days?: number; keep_latest?: boolean; idle_days?: number;
   auto_clean?: boolean; docker_clean?: boolean; max_size?: string; slim_hours?: number;
+  min_free?: string;
 }
 export type Draft = Partial<Values>;
 
@@ -43,7 +47,8 @@ export interface NodeSettings {
               keep_free?: { max_share: number }; unused_days?: { min: number; max: number };
               idle_days?: { min: number; max: number }; auto_clean?: boolean[]; docker_clean?: boolean[];
               max_size?: Record<string, string>; warn_share?: number;
-              slim_hours?: { min: number; max: number } };
+              slim_hours?: { min: number; max: number };
+              min_free?: { min_gb: number; max_gb: number | null } };
   defaults?: Pick<Values, typeof STORAGE_KEYS[number]>;  // what mulebox suggests for the disk settings
   editable: boolean;
 }
@@ -80,6 +85,9 @@ export const LATEST: { value: string; label: string; says: string }[] = [
   { value: "keep", label: "Keep", says: "Each project's most recent folder stays however old, so its next job starts warm." },
   { value: "remove", label: "Remove", says: "A project's latest folder goes like the rest once it is unused long enough." },
 ];
+
+// node.toml's own default for the least free space.
+export const MIN_FREE_DEFAULT = "5GB";
 
 // Nothing kept for the owner is the suggestion; memory as node.toml writes it.
 export const ROOM_DEFAULTS = { keep_cores: 0, keep_memory: "0GB" };
@@ -126,7 +134,8 @@ export function asSuggested(view: NodeSettings): Draft {
   const room = Object.fromEntries(ROOM_KEYS.filter((key) => view.current?.[key] !== undefined)
     .map((key) => [key, ROOM_DEFAULTS[key]]));
   return { priority: SUGGESTED_PRIORITY, ...(typeof view.current?.dev === "boolean" ? { dev: false } : {}),
-           ...(view.suggested ? { slots: view.suggested.slots } : {}), ...room, ...disk };
+           ...(view.suggested ? { slots: view.suggested.slots } : {}), ...room, ...disk,
+           ...(view.current?.min_free !== undefined ? { min_free: MIN_FREE_DEFAULT } : {}) };
 }
 
 const url = (name: string) => `/api/machines/${encodeURIComponent(name)}/settings`;

@@ -185,3 +185,20 @@ def test_a_reported_load_shows_while_online_only():
     assert (row["cpu_pct"], row["mem_pct"], row["cores"]) == (30.0, 50.0, 4)
     quiet = machines.machine({**worker(seen=NOW - OFFLINE_AFTER_S - 1), "load": load}, [], NOW)
     assert quiet["cpu_pct"] is None and quiet["cores"] is None
+
+
+DISK = {"check": "disk", "message": "1.0 GB free", "fix": "free space", "since": NOW}
+
+
+def test_a_resting_machine_takes_no_job_and_says_why():
+    resting = {"resting": True, "problems": [DISK], "withheld": [], "round": 2, "checked_at": NOW}
+    row = machines.machine({**worker(), "health": resting, "disk_free": 10**9,
+                            "load": {"disk": {"total": 5 * 10**11}}}, [], NOW)
+    assert row["state"] == machines.RESTING and row["free_slots"] == 0
+    assert row["health"]["problems"][0]["check"] == "disk" and row["health"]["checked_at"] == NOW
+    assert row["disk_free"] == 10**9 and row["disk_total"] == 5 * 10**11
+    quiet = machines.machine({**worker(seen=NOW - OFFLINE_AFTER_S - 1), "health": resting}, [], NOW)
+    assert quiet["state"] == OFFLINE and quiet["health"] is None  # an old report says nothing
+    healthy = machines.snapshot([worker()], [], NOW)
+    assert machines.fingerprint(healthy) != machines.fingerprint(
+        machines.snapshot([{**worker(), "health": resting}], [], NOW))

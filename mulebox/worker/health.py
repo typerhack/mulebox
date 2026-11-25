@@ -134,16 +134,22 @@ def xcode(node: NodeConfig, run: Run | None = None,
             "`sudo xcodebuild -license accept`; jobs without Xcode still run there")
 
 
+def ran(offered: list[str], systemd: bool = False) -> list[str]:
+    """The checks `run_all` runs on a node offering `offered`, in its order, whole-node first:
+    what the dashboard lists as passing when no problem names them."""
+    return ["disk", "roots", "git", *(["executor"] if systemd else []),
+            *(["docker"] if compose.DOCKER_CAPABILITY in offered else []),
+            *(["xcode"] if "xcode" in offered else [])]
+
+
 def run_all(node: NodeConfig, paths: NodePaths, offered: list[str], engine: Docker,
             run: Run = _run, systemd: bool = False) -> list[Problem]:
     """Every failing check, whole-node ones first; `systemd`, jobs run as its user units."""
-    found = [disk(node, paths), roots(node, paths), git(node, run)]
-    if systemd:
-        found.append(executor(node, run))
-    if compose.DOCKER_CAPABILITY in offered:
-        found.append(docker(node, engine))
-    if "xcode" in offered:
-        found.append(xcode(node, None if run is _run else run))
+    each = {"disk": lambda: disk(node, paths), "roots": lambda: roots(node, paths),
+            "git": lambda: git(node, run), "executor": lambda: executor(node, run),
+            "docker": lambda: docker(node, engine),
+            "xcode": lambda: xcode(node, None if run is _run else run)}
+    found = [each[name]() for name in ran(offered, systemd)]
     return [item for item in found if item is not None]
 
 
@@ -180,10 +186,11 @@ class Streak:
 
 def report(problems: list[Problem], since: dict[str, float], offered: list[str],
            streak: Streak, now: float, rounds: int = 0, floor: str = isolation.NONE,
-           answers: int = 0) -> dict[str, Any]:
+           answers: int = 0, seen: dict[str, Any] | None = None) -> dict[str, Any]:
     """The `health` a claim and heartbeat carry; `rounds`, the checks run so far; `answers`, the
     asks of `mulebox machine check` answered. With the `container` floor every job runs in
-    Docker, so Docker down rests the whole node."""
+    Docker, so Docker down rests the whole node. `seen`: what the dashboard shows beside it
+    (`ran`, `checked_at`, `next_at`, `min_free`; node_health.py)."""
     items = list(problems)
     rest = streak.problem(now)
     if rest is not None:
@@ -194,4 +201,4 @@ def report(problems: list[Problem], since: dict[str, float], offered: list[str],
             "until": streak.until if rest is not None else None,
             "problems": [node_health.problem(c, m, f, since.get(c, now)) for c, m, f in items],
             "withheld": node_health.withheld_by(checks, offered), "round": rounds,
-            "answers": answers}
+            "answers": answers, **(seen or {})}

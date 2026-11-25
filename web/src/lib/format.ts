@@ -44,6 +44,10 @@ export function clock(seconds: number | null | undefined): string {
   });
 }
 
+// A time of day, "10:42", as a node's problem says since when.
+export const clockTime = (seconds: number) =>
+  new Date(seconds * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
 // How long ago, in words short enough for a table: "now", "14 min ago", "2 h ago".
 export function ago(seconds: number | null | undefined, now: number): string {
   if (!seconds) return "never";

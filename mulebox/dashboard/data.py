@@ -71,7 +71,9 @@ class DashboardData:
                  **({"doing": doing[job["job_id"]]} if job["job_id"] in doing else {}),
                  **({"looks": looks[job["job_id"]]} if job["job_id"] in looks else {}),
                  **({"waiting_for": why[job["job_id"]]} if job["job_id"] in why else {}),
-                 **({"branch_busy": busy[job["job_id"]]} if job["job_id"] in busy else {})}
+                 **({"branch_busy": busy[job["job_id"]]} if job["job_id"] in busy else {}),
+                 # put back in line once, as its node could not set it up (coordinator/health.py)
+                 **({"retries": job["retries"]} if job.get("retries") else {})}
                 for job, pos in rows]
 
     def queue_snapshot(self, now: float) -> dict[str, Any]:

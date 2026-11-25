@@ -57,8 +57,10 @@ class Checking:
 
     def _run_checks(self, state: dict[str, Any], launched: int) -> None:
         offered = [*self.node.capabilities, *state["offered"]]  # the last claim's: Xcode found
+        systemd = isinstance(self.executor, SystemdExecutor)
         state["found"] = health.run_all(self.node, self.paths, offered, self.docker,
-                                        systemd=isinstance(self.executor, SystemdExecutor))
+                                        systemd=systemd)
+        state["ran"] = health.ran(offered, systemd)
         state["checked"] = launched
 
     def _checked(self, state: dict[str, Any], now: float) -> None:
@@ -74,6 +76,7 @@ class Checking:
         for name in before - names - {"streak"}:
             LOG.info("health: %s passes again", name)
         state["next"] = now + (health.RETRY_S if found else health.EVERY_S)
+        state["at"] = now
         state["round"] += 1
         if state["ask_launch"] and state.get("checked", 0) >= state["ask_launch"]:
             state["answers"], state["ask_launch"] = state["answers"] + 1, 0
@@ -93,8 +96,10 @@ class Checking:
         since = dict(state["since"])
         if streak.until is not None:
             since["streak"] = streak.since or now
+        seen = {"ran": state.get("ran", []), "checked_at": state.get("at"),
+                "next_at": state["next"] or None, "min_free": self.node.storage.min_free_bytes()}
         return health.report(state["found"], since, state["offered"], streak, now, state["round"],
-                             floor=self.node.isolation, answers=state["answers"])
+                             floor=self.node.isolation, answers=state["answers"], seen=seen)
 
     def _start_failed(self, job: ActiveJob, now: float) -> None:
         """A job that could not start: judge it by a check run now."""

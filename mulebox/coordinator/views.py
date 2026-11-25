@@ -101,7 +101,7 @@ def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> d
 
     `needs`, `can_run_on` (workers whose capabilities cover them, online or not: the same
     test `queue.claim` makes) and `waiting_for` (needs.py) when a queued job cannot start
-    now. Nothing is an assignment: the queue is one line, and the first capable worker with
+    now, with `held_by` when the nodes for it rest or hold back what it needs. Nothing is an assignment: the queue is one line, and the first capable worker with
     a free slot takes the job. Empty for anything else: a running job has its `worker`, a
     runner reservation its `pinned_worker`.
     """
@@ -114,6 +114,9 @@ def placement(fleet: list[dict[str, Any]], job: dict[str, Any], now: float) -> d
               if job["state"] == JobState.QUEUED else None)
     if reason:
         out["waiting_for"] = reason
+        held = needs.held_by(fleet, job["needs"], now, bool(job.get("pinned_worker")))
+        if held:
+            out["held_by"] = held  # the dashboard points to those nodes' line in the strip
     return out
 
 
