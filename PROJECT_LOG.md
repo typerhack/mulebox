@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.37.3 - 2026-11-25 - patch
+- Fix: an isolated runner place asked GitHub's API for the latest runner release, with no token, on every start; a day of deploys and the retries of failed rounds used up GitHub's 60 requests an hour for the node's address, every round then failed with "rate limit exceeded", and this repository's CI sat queued with both places offline (seen after the 1.37.2 push). The version is now kept per node in `<cache>/actions-runner/latest.json`, asked again once a day, and the last known one is used when GitHub does not answer; with none kept, the newest place image built on the node stands in (runners/runner_version.py, place_image.newest_built), with tests. docs/install.md says so.
+
 ## 1.37.2 - 2026-11-25 - patch
 - The usage of agent jobs measured by 1.36.0 and 1.37.0 is dropped (schema 31), as their meter added a new container's whole past CPU into one reading; a job read 10.9 cores on an 8-core node and its median stayed above the node. GitHub runs' usage is kept: their meter never did this. With a test.
 - The header on a phone: the gap between the views is `--space-2` and the Storage count a dot (its number in its label and title), so the six views stay on one line at 390px with a count; before, Usage wrapped onto a second line and the sticky header grew to about 136px. docs/design-system.md says so.

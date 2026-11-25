@@ -45,6 +45,16 @@ def tag(version: str) -> str:
     return f"{NAME}:{version}-{digest}"
 
 
+def newest_built(docker: Docker) -> str | None:
+    """The newest runner version whose image of today's recipe is on the node, or None."""
+    try:
+        tags = docker.lines("image", "ls", NAME, "--format", "{{.Tag}}")
+    except DockerError:
+        return None
+    built = [found.partition("-")[0] for found in tags if tag(found.partition("-")[0]) == f"{NAME}:{found}"]
+    return max(built, key=lambda v: tuple(int(p) for p in v.split(".")), default=None)
+
+
 def present(docker: Docker, image: str) -> bool:
     try:
         docker.run("image", "inspect", "--format", "{{.Id}}", image)

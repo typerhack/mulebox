@@ -454,7 +454,8 @@ gets:
 
 - a fresh container from GitHub's runner image with git, curl and shellcheck added, built once per
   runner release on the node (the first `add` takes a few minutes; then a job starts in about
-  10 s), removed when the job ends;
+  10 s), removed when the job ends. The node asks GitHub for the newest runner release at most
+  once a day and keeps the answer, and uses the last one it knows while GitHub does not answer;
 - no folder of the node, no Docker socket, no capabilities, `no-new-privileges` (so `sudo` in a
   workflow fails), limits on memory (three quarters of the node's) and processes, half the CPU
   weight of the node's own processes, and a network of its own;

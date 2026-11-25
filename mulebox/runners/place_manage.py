@@ -72,9 +72,9 @@ def add_isolated(m: Machine, repo: str, *, name: str, labels: Sequence[str],
         raise RunnerError(f"the node's `gh` is not an admin of {repo}, and only an admin can "
                           "make a runner; run `gh auth login` on the node as one")
     docker = docker or Docker()
-    from mulebox.runners.place import latest_version
+    from mulebox.runners import runner_version as kept
 
-    runner_version = (version or latest_version)()
+    runner_version = (version or (lambda: kept.known(m.paths)))()
     m.say(f"Building the runner image for runner {runner_version} (once per version)")
     image = place_image.ensure(docker, m.paths, runner_version)
     place_container.ensure_network(docker)

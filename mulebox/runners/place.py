@@ -40,7 +40,7 @@ from mulebox.common.ids import new_ulid
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import ensure_dir, remove_tree
 from mulebox.runners import guard, hooks, jit, layout, place_bridge, place_container
-from mulebox.runners import place_handover, place_hook, place_image, release
+from mulebox.runners import place_handover, place_hook, place_image, runner_version
 from mulebox.runners.github import GhRun, run_gh
 from mulebox.runners.supervise import PLACE_MARKER as MARKER
 from mulebox.runners.supervise import PLACE_ROUND as ROUND
@@ -57,17 +57,15 @@ DECIDE_WAIT_S = 30.0  # a coordinator call in flight when the container ended
 IO_PREFIX = "io-"
 
 
-def latest_version() -> str:
-    return release.latest_release(None).version
-
-
 class Place:
     def __init__(self, folder: Path, worker: str, link: CoordinatorLink, paths: NodePaths, *,
                  stop: threading.Event, docker: Docker | None = None, gh: GhRun = run_gh,
-                 version: Any = latest_version, popen: Any = subprocess.Popen) -> None:
+                 version: Any = None, popen: Any = subprocess.Popen) -> None:
         self.folder, self.worker, self.link, self.paths = folder, worker, link, paths
         self.stop, self.docker, self.gh = stop, docker or Docker(), gh
-        self.version_of, self.popen = version, popen
+        self.version_of = version or (lambda: runner_version.known(
+            paths, built=lambda: place_image.newest_built(self.docker)))
+        self.popen = popen
         self._version: tuple[float, str] | None = None
         self.handed_over = False  # this round's container is left running for the next worker
 
@@ -88,7 +86,7 @@ class Place:
                 failures += 1
 
     def version(self) -> str:
-        """The newest runner release, asked of GitHub once a day."""
+        """The newest runner release, as runner_version.py keeps it for the node."""
         now = time.monotonic()
         if self._version is None or now - self._version[0] > VERSION_EVERY_S:
             self._version = (now, self.version_of())

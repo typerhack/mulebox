@@ -41,6 +41,10 @@ FetchJson = Callable[[str], Any]
 FetchFile = Callable[[str, Path], None]
 
 
+def valid_version(text: str) -> bool:
+    return bool(_VERSION_RE.fullmatch(text))
+
+
 class ReleaseError(MuleboxError):
     """The runner release could not be found, downloaded or verified."""
 
