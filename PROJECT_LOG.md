@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.38.2 - 2026-11-25 - patch
+- docs/phases.md: M23.8 done. A busy job's card on the node read at most 5.70 cores, and `mulebox usage` gave its peak as 5.7 cores in the same stage.
+
 ## 1.38.1 - 2026-11-25 - patch
 - A job that would fit but waits behind a bigger one its node keeps room for said "the machines are busy"; it now says "waiting for room: <node> keeps its room for <job> ahead of it, which needs 5 cores" (coordinator/sizes.py), and one core is "1 core", with a test. Found in the drill that closed M23.2 on the real node (docs/phases.md).
 

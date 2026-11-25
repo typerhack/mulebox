@@ -943,13 +943,18 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       released as passed, fresh places took the next job, and the run passed.
 - [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
       version back by itself.
-- [~] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
+- [x] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
       sizes come from measurements. Built 2026-11-25 (1.36.0), with tests: agent jobs and GitHub
       runs (the user's choice), kept in `jobs.usage` (schema 30), `mulebox usage`, `status` and
       `/api/usage` (design.md, Job usage). The dashboard view from mockups (design-system/usage/),
       the user's ask to have it now. Done when: on the real node, real jobs and a CI run show
       their peaks in `mulebox usage`, a busy job's peak cores match what its card showed, and the
       picked view runs on the deployed dashboard in Edge.
+      Done 2026-11-25 (1.38.2): a real CI run on the node read 7.3 cores and 5.0 GB in its
+      `Run pnpm check` step, and the Usage page and a job's usage lines ran on the deployed
+      dashboard in Edge (1.37.x). This repository's gate on the node, its card's CPU sampled from
+      `/api/queue` every 3 s: highest 5.70 cores, and `mulebox usage` gave a peak of 5.7 cores in the
+      same stage (command), 853 MB of memory, 3.0 cores on average.
 - [x] M23.9 Config reload: an edited `node.toml` applies to the next job with no service restart.
       Built 2026-11-13 (1.16.0): `slots`, `priority` and `capabilities` from a hand edit (the worker
       looks every 2 s) or from afar, `mulebox machine config <name> --slots N --priority P` and
