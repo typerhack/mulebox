@@ -908,10 +908,14 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Done 2026-11-13 (1.17.18): the Mac node `fallback`, the Linux node `normal`, real drill jobs: with a
       slot free on the Linux node it took the job, twice, and the Mac none; with it full the Mac took the
       job in 7 s.
-- [ ] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
+- [~] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
       takes no job for a while, and others take them. Also before any failure (from macserve,
       2026-11-12): a node checks its own health (Docker answers, toolchains run, disk room) and
       takes no job until the check passes again, and `mulebox machine list` says why.
+      Design note 2026-11-25 (1.40.3): design.md, A node that rests, with the user's decisions:
+      a job a failing node could not start goes back in line once; a failing Docker or Xcode
+      withholds only that capability; a 5 GB floor, with the user warned at 10% free and cleanup
+      run first; a streak of failed starts as a backstop; every rest gives the agent its fix.
 - [x] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
       job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of

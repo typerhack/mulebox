@@ -886,6 +886,60 @@ new node, or from afar like `slots` (Node settings, below), where asking for it 
 before the node has written it. The coordinator's own node can never be in dev mode: every job
 goes through it, so `node.toml` refuses it there and a change from afar is refused.
 
+### A node that rests (M23.5, the user's decisions, 2026-11-25)
+
+A node that cannot set a job up fails every job it takes with exit 5, while a healthy node
+beside it could have run them; with one node, each agent learns the fault only from its own
+failed job. Seen: Docker Desktop not found by the service (1.17.16), ssh blocked by macOS's Local
+Network privacy (1.17.17), a full disk (M16.2). mulebox is a tool for agents, so a rest is
+never only a refusal: it says what is wrong and what the agent can do about it.
+
+- **The node checks itself and takes no job while a check fails.** Checks, each with a short
+  time limit (`worker/health.py`): the disk of its roots has at least `min_free` (5 GB, a node
+  setting, set from afar); the roots can be written; `git` runs; the
+  executor answers (`systemd-run --user` with linger on Linux, process groups on macOS); Docker
+  answers (`docker info`), only on a node that offers `docker`; Xcode answers
+  (`xcodebuild -version`), only on a node that offers `xcode`. Toolchains are not run: they
+  install themselves per job (M17.3), and a broken one fails only the jobs that pin it.
+- **Disk: a warning long before the floor.** The user is warned when a node's disk has under
+  10% free, or 10 GB on a small disk, whichever is more (the worker reports its disk's size beside
+  its free space): in the dashboard's strip and in every agent command from a project, as M16.2's
+  10 GB warning did. The node's own cleanup (Disk use and cleanup on its own) runs at once when
+  free space falls under 10%, and again just before a rest for disk, so `min_free` is reached
+  only when cleanup could not help.
+- **When.** At the worker's start, every 5 minutes while it is up, and at once after any job
+  failed to start. A failing check is tried again every minute until it passes.
+- **One part down is not the whole node.** A failing Docker or Xcode check withholds only that
+  capability: the node still takes jobs that do not need it. Disk, roots, git and executor
+  stop all claims. This is the rest.
+- **The worker decides, the coordinator shows.** A resting worker does not claim. It leaves a
+  withheld capability out of what it claims with, so no coordinator, old or new, gives it such a
+  job. It reports `health` (each failing check, its message and since when) with every claim and
+  heartbeat; the coordinator keeps it in `workers.health` (schema 33). A withheld capability
+  still counts at submit, so a job is not refused for a passing fault: it waits, and its reason
+  says "build-1 is resting: Docker does not answer (since 10:42)" with the fix. A worker older
+  than this reports nothing and reads as healthy.
+- **A failed start goes back in line once.** When a job could not start and the check right after
+  it fails, the fault is the node's, not the job's: the job is queued again (a new attempt, a
+  line in its log) for any node to take, at most once, then exit 5 as today. When the check
+  passes, the failure is the job's own (a refused compose file, a version that does not exist, an
+  image not found), and exit 5 stands.
+- **A streak with no failed check.** Some faults no check sees. Three jobs of two or more projects
+  in a row that could not start on a node, within 15 minutes, rest it for 10 minutes; then it
+  takes one job, and a pass ends the streak. One project failing three times is that project's.
+- **Help for the agent.** Every failing check carries a fix in plain words and, where there is
+  one, the command: "start Docker Desktop on build-1, or ask your user to", "free space on
+  build-1: `mulebox storage clean`", "turn linger on: `loginctl enable-linger alice`". The agent
+  sees it in `check`, `wait`, `status` and `events` while its job waits, and in the exit 5
+  summary when a retried job could not start again. What it can do itself is named first: send
+  the job elsewhere with `--on <node>` when another node offers its needs, or run `mulebox
+  machine check <node>`, which runs the node's checks now and reports them, so after a fix the
+  node takes jobs at once rather than at its next minute.
+- **Where it shows.** `mulebox machine list` (state `resting` and the reason), `mulebox doctor`,
+  a waiting job's reason in `status`, `queue` and `events`, and the Machines box (a state like
+  `draining`; its look from mockups). The coordinator's own node may rest: it still coordinates,
+  it only runs no job.
+
 ## Node settings (M23.9, M23.4, the user's ask, 2026-11-13)
 
 mulebox suggests how a node is set up and does that by default, and the owner decides: a node

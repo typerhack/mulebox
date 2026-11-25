@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.40.3 - 2026-11-25 - patch
+- docs/design.md: design note for M23.5, A node that rests, with the user's decisions (a job back in line once, Docker or Xcode withheld alone, a 5 GB floor and a warning at 10% free, a streak backstop, a fix for the agent on every rest). docs/phases.md: M23.5 started.
+
 ## 1.40.2 - 2026-11-25 - patch
 - docs/phases.md: M25.8 done. A keep and two cleanups run from the Storage page of the deployed dashboard reached the node: kept folders held, then removed once the mark was dropped.
 
