@@ -14,6 +14,7 @@ import { IconButton } from "../../ui/Button";
 import { Fact, Panel } from "../../ui/Panel";
 import { Segmented } from "../../ui/Segmented";
 import { Stepper } from "../../ui/Stepper";
+import { OwnerRoom } from "./OwnerRoom";
 import { Offers } from "./parts";
 
 interface Props {
@@ -147,6 +148,10 @@ export function SettingsRows({ machine, view, draft, locked, busy, onEdit, onDro
             {machine.capabilities.length ? <Offers machine={machine} word /> : <Fact name="Offers">nothing named</Fact>}
           </div>
         </Panel>
+        {typeof view.current?.keep_cores === "number" && (  /* a node older than 1.38 has none */
+          <OwnerRoom view={view} draft={draft} cores={typeof machine.cores === "number" ? machine.cores : null}
+            off={locked || busy} busy={busy} onEdit={onEdit} drop={drop} />
+        )}
       </div>
     </div>
   );

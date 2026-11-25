@@ -38,6 +38,7 @@ def test_a_change_waits_goes_back_in_a_claim_and_clears_once_reported(store, sta
     assert view["choices"] == {"slots": {"min": 1, "max": 64},
                                "priority": ["preferred", "normal", "fallback"],
                                "dev": [False, True], "keep_cores": {"min": 0, "max": 16},
+                               "keep_memory": {"max_gb": 34},
                                "keep_free": {"max_share": 90},
                                "unused_days": {"min": 1, "max": 365},
                                "keep_latest": [False, True], "idle_days": {"min": 1, "max": 365},

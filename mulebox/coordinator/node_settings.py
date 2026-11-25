@@ -123,6 +123,7 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
         "choices": {"slots": {"min": ns.MIN_SLOTS, "max": ns.MAX_SLOTS},
                     "priority": list(ns.PRIORITIES), "dev": [False, True],
                     "keep_cores": {"min": 0, "max": load.get("cores")},
+                    "keep_memory": {"max_gb": _whole_gb(load)},
                     "keep_free": {"max_share": storage_policy.MAX_SHARE},
                     "unused_days": {"min": 1, "max": storage_policy.MAX_DAYS},
                     "keep_latest": [False, True], "auto_clean": [False, True],
@@ -132,6 +133,12 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
                     "slim_hours": {"min": 0, "max": storage_policy.MAX_HOURS}},
         "defaults": dict(storage_policy.DEFAULTS),  # what mulebox suggests for storage
     }
+
+
+def _whole_gb(load: dict[str, Any]) -> int | None:
+    """The node's memory in whole decimal GB, the most `keep_memory` a window offers."""
+    total = (load.get("memory") or {}).get("total")
+    return int(total // 10**9) if isinstance(total, (int, float)) and total > 0 else None
 
 
 def _changes(body: dict[str, Any]) -> dict[str, Any]:

@@ -1,0 +1,80 @@
+/* The "room for the owner" mockups of 2026-11-25 (keep_cores and keep_memory in a node's
+   settings window). On top of the storage mockups' file, which holds the window's rows; every
+   colour, size, space, corner and duration is a token of tokens.css or derived from one. */
+@import "../storage/storage.css";
+
+:root {
+  --frame-w: calc(var(--space-1) * 97.5);       /* 390px: a phone */
+  --bar-h: var(--space-3);                      /* 12px: a share bar */
+}
+
+/* The page around the options. */
+.pick { margin-top: var(--space-5); padding: var(--space-3) var(--space-4); border: 1px solid var(--accent); border-radius: var(--radius-l);
+  background: var(--surface-1); max-width: 80ch; }
+.pick b { font-weight: 600; }
+.stage-cap b { color: var(--text-1); font-weight: 600; }
+.states { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--col-xl)), 1fr)); align-items: start; }
+.states.wide { grid-template-columns: minmax(0, 1fr); }
+.state > p { margin-bottom: var(--space-2); color: var(--text-2); font-size: var(--text-sm); font-weight: 600; }
+.frames { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: flex-start; }
+.frames > figure { width: min(100%, var(--frame-w)); }
+.frames figcaption { margin-bottom: var(--space-2); color: var(--text-2); font-size: var(--text-sm); font-weight: 600; }
+.frames iframe { display: block; width: 100%; height: calc(var(--space-8) * 16); border: 1px solid var(--border-strong); border-radius: var(--radius-l); background: var(--surface-0); }
+
+/* One option alone in a frame: the window fills the phone, as the app's does. */
+body.frame { overflow-x: hidden; }
+body.frame > .float { border-width: 0; border-radius: 0; box-shadow: none; }
+
+/* The window's Jobs tab: panels on the page's colour, two side by side when there is room. */
+.float-body.ground { background: var(--surface-0); }
+.jobs { display: grid; gap: var(--app-gap); grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+.jobs > .full { grid-column: 1 / -1; }
+.jobs > .as-today { margin: 0; min-height: var(--space-8); }
+.jobs > .as-today.tall { min-height: calc(var(--space-8) * 2); }
+.parts { display: grid; gap: var(--space-4) var(--space-6); grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.part { min-width: 0; }
+.part > h4 { padding-bottom: var(--space-2); font-size: var(--text-sm); font-weight: 600; }
+.set-row > .row { justify-content: flex-end; margin-left: auto; }
+.lead-line { padding-bottom: var(--space-3); color: var(--text-2); font-size: var(--text-sm); max-width: 78ch; }
+.link-btn { padding: 0; border: 0; background: none; font-size: var(--text-sm); font-weight: 500; text-decoration: underline; text-underline-offset: var(--space-1); }
+@media (max-width: 560px) {
+  .jobs, .parts { grid-template-columns: minmax(0, 1fr); }
+  .float-body { padding: var(--space-3); }
+  .float-head, .float-foot { padding-left: var(--space-3); padding-right: var(--space-3); }
+  .link-btn { min-height: var(--ctl-touch); }
+}
+
+/* Option B: the two values as rows of the Slots panel. */
+.kept-h { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--space-1) var(--space-3); padding: var(--space-3) 0 0; font-size: var(--text-sm); }
+.kept-h > b { font-weight: 600; }
+.kept-h > small { color: var(--text-2); font-size: var(--text-sm); }
+.set-rows > .kept-row { border-top: 0; padding: var(--space-2) 0 0; }
+.set-rows > .kept-wait { border-top: 0; padding: var(--space-2) 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); font-size: var(--text-sm); }
+
+/* Option C: what jobs get, as two bars and a sentence. A core is a box; memory is one bar.
+   Kept room is hatched; room a pending change will keep has a dashed edge and no hatch. */
+.share { display: grid; gap: var(--space-2); min-width: 0; }
+.share-row { display: grid; grid-template-columns: calc(var(--space-7) * 1.75) minmax(0, 1fr) max-content; gap: var(--space-1) var(--space-3); align-items: center; font-size: var(--text-sm); }
+.share-row > :first-child { display: inline-flex; align-items: center; gap: var(--space-2); color: var(--text-2); }
+.share-row > b { font-weight: 600; }
+.cores, .mem { display: flex; gap: var(--hair); height: var(--bar-h); min-width: 0; }
+.cores > i, .mem > i { flex: 1 1 0; min-width: 0; border: 1px solid var(--meter-fill); border-radius: var(--hair); background: var(--meter-fill); }
+.mem > i { flex: var(--gb) 1 0; }
+.cores > i.kept, .mem > i.kept { border-color: var(--border-strong); background: var(--hatch); }
+.cores > i.soon, .mem > i.soon { border: 1px dashed var(--text-1); background: var(--surface-1); }
+.share-say { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-4); padding-top: var(--space-3); margin-top: var(--space-3);
+  border-top: 1px solid var(--border); }
+.share-say > p { flex: 1 1 var(--col-l); min-width: 0; }
+.share-say > p > small { display: block; color: var(--text-2); font-size: var(--text-sm); }
+.share-say b { font-weight: 600; }
+.share-edit { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-5); }
+.share-edit > label { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--text-2); }
+.share-key { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: var(--space-2); color: var(--text-2); font-size: var(--text-sm); }
+.share-key > span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.share-key i { width: var(--slot); height: var(--slot); border: 1px solid var(--meter-fill); border-radius: var(--hair); background: var(--meter-fill); }
+.share-key i.kept { border-color: var(--border-strong); background: var(--hatch); }
+.share-key i.soon { border: 1px dashed var(--text-1); background: var(--surface-1); }
+@media (max-width: 560px) {
+  .share-row { grid-template-columns: minmax(0, 1fr) max-content; }
+  .share-row > .cores, .share-row > .mem { grid-column: 1 / -1; grid-row: 2; }
+}

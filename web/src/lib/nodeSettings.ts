@@ -11,13 +11,16 @@ import { REREAD_MS } from "./turns";
 
 export const STORAGE_KEYS = ["keep_free", "unused_days", "keep_latest", "idle_days",
                              "auto_clean", "docker_clean", "max_size", "slim_hours"] as const;
-export const KEYS = ["slots", "priority", "dev", ...STORAGE_KEYS] as const;
+// Room a node keeps for its owner, out of what sized jobs share (docs/design.md, Job sizes; 1.38).
+export const ROOM_KEYS = ["keep_cores", "keep_memory"] as const;
+export const KEYS = ["slots", "priority", "dev", ...ROOM_KEYS, ...STORAGE_KEYS] as const;
 export type SettingKey = typeof KEYS[number];
 // `dev` is missing from a node older than 1.23, which has no dev mode; the four disk settings
 // (docs/design.md, Disk use and cleanup on its own) from one older than 1.24, and the last four
 // (common/storage_policy.py) from one older than 1.26, `slim_hours` from one older than 1.29.
 export interface Values {
   slots: number; priority: string; dev?: boolean;
+  keep_cores?: number; keep_memory?: string;
   keep_free?: string; unused_days?: number; keep_latest?: boolean; idle_days?: number;
   auto_clean?: boolean; docker_clean?: boolean; max_size?: string; slim_hours?: number;
 }
@@ -36,6 +39,7 @@ export interface NodeSettings {
   error?: string | null;
   suggested: { slots: number; reason: string } | null;
   choices?: { slots?: { min: number; max: number }; priority?: string[]; dev?: boolean[];
+              keep_cores?: { min: number; max: number | null }; keep_memory?: { max_gb: number | null };
               keep_free?: { max_share: number }; unused_days?: { min: number; max: number };
               idle_days?: { min: number; max: number }; auto_clean?: boolean[]; docker_clean?: boolean[];
               max_size?: Record<string, string>; warn_share?: number;
@@ -77,6 +81,16 @@ export const LATEST: { value: string; label: string; says: string }[] = [
   { value: "remove", label: "Remove", says: "A project's latest folder goes like the rest once it is unused long enough." },
 ];
 
+// Nothing kept for the owner is the suggestion; memory as node.toml writes it.
+export const ROOM_DEFAULTS = { keep_cores: 0, keep_memory: "0GB" };
+// A `keep_memory` such as "4GB" or "512MB" in whole decimal GB, rounded; null if unreadable.
+export function memoryGb(value: string | null | undefined): number | null {
+  const found = /^\s*(\d+(?:\.\d+)?)\s*(MB|GB|TB)\s*$/i.exec(value ?? "");
+  if (!found) return null;
+  const scale = { MB: 1e-3, GB: 1, TB: 1e3 }[found[2].toUpperCase() as "MB" | "GB" | "TB"];
+  return Math.round(Number(found[1]) * scale);
+}
+
 export type Mark = "unsaved" | "pending" | null;
 export interface Row<K extends SettingKey> {
   now: Values[K] | null;     // what the node runs with
@@ -109,8 +123,10 @@ export function asSuggested(view: NodeSettings): Draft {
   const defaults: Draft = { ...STORAGE_DEFAULTS, ...view.defaults };
   const disk = Object.fromEntries(STORAGE_KEYS.filter((key) => view.current?.[key] !== undefined)
     .map((key) => [key, defaults[key]]));
+  const room = Object.fromEntries(ROOM_KEYS.filter((key) => view.current?.[key] !== undefined)
+    .map((key) => [key, ROOM_DEFAULTS[key]]));
   return { priority: SUGGESTED_PRIORITY, ...(typeof view.current?.dev === "boolean" ? { dev: false } : {}),
-           ...(view.suggested ? { slots: view.suggested.slots } : {}), ...disk };
+           ...(view.suggested ? { slots: view.suggested.slots } : {}), ...room, ...disk };
 }
 
 const url = (name: string) => `/api/machines/${encodeURIComponent(name)}/settings`;

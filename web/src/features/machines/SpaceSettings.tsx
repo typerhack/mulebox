@@ -38,7 +38,7 @@ const gbOf = (size: string | null | undefined) => {
 
 // Each part sets its title and rows on the rows of the grid around it (`.setting-panel`, as the
 // panels side by side do), so the two parts' meaning, Suggested, Yours and Runs with line up.
-function Part({ title, children }: { title: string; children: ReactNode }) {
+export function Part({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section aria-label={title} className="setting-panel min-w-0">
       <h3 className="pb-2 text-sm font-semibold">{title}</h3>

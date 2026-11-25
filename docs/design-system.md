@@ -269,7 +269,10 @@ Drawn in the specimen, in both themes:
   first table "hurt the eyes"): a panel per setting, with its name and icon, one line on what it
   means, then Suggested, Yours and Runs with as rows with the name on the left and the value on
   the right, a hairline between rows and the reason on a line under its row; beside them a panel
-  of what the node reports, as the Disk panel lists its facts. Both tabs set their panels two to a
+  of what the node reports, as the Disk panel lists its facts. Under them on the Jobs tab, "Room
+  for you" (1.39, option A of design-system/owner-room/, the user's pick): one full-width panel
+  with two parts, cores and memory kept for the owner, each with the same three rows and a line on
+  what jobs with a size share. Both tabs set their panels two to a
   row, one column under 640px of their own width; the panels of a row are as tall as each other
   and their rows (the meaning, Suggested, Yours, Runs with) line up across the row, each panel's
   rows taken from the grid it sits in (`Panel` with `subgrid`, `.setting-panels`), with the

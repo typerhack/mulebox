@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mulebox mockups: room for the owner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="owner-room.css">
+</head>
+<body>
+<div class="doc">
+  <header>
+    <div class="doc-top">
+      <div>
+        <h1>Room for the owner</h1>
+        <p class="doc-lead">Two new settings per node, for a node that is also someone's PC: cores and memory it keeps for its owner (<code>keep_cores</code>, <code>keep_memory</code>, nothing by default). Jobs that say their size share only what is left; a job with no size still takes one slot. Three ways to show and change them in the node's settings window, on its Jobs tab. The window itself stays as it is.</p>
+      </div>
+      <button class="btn" type="button" data-theme-switch></button>
+    </div>
+    <p class="pick"><b>Fable's pick: A.</b> It is the window's own pattern, the one "Space for mulebox" already uses for two values that belong together, so each value keeps its suggestion, its unsaved and pending marks and its own "Drop it", and the line under Yours says what is left for jobs. C's two bars are the clearest picture of the result and could later replace that line in A; alone, C gives the window a second way to change a setting.</p>
+    <nav class="doc-nav" aria-label="On this page">
+      <a href="#a">A, a "Room for you" panel in the window's rows</a><a href="#b">B, two rows in the Slots panel</a><a href="#c">C, one "What jobs get" line with a Change button</a>
+    </nav>
+  </header>
+
+  <section class="opt" id="a" aria-labelledby="a-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">A</span>
+      <h2 id="a-h">A "Room for you" panel in the window's rows <span class="pick-tag">Fable's pick</span></h2>
+      <p class="opt-idea">One panel under Slots and Priority, with one line on what it does and two parts side by side, Cores kept and Memory kept. Each part has the three rows every setting here has: Suggested, Yours, Runs with.</p></div>
+    <div class="stage"><p class="stage-cap"><b>2 cores and 4 GB kept.</b> build-1 has 8 cores and 16.6 GB, so jobs with a size share 6 cores and 12.6 GB.</p>
+      <div data-window="a:kept"></div></div>
+    <div class="stage"><p class="stage-cap">The panel in its other states.</p>
+      <div class="states wide">
+        <div class="state"><p>Nothing kept, the default</p><div data-part="a:none"></div></div>
+        <div class="state"><p>Saved, waiting for the node</p><div data-part="a:pending"></div></div>
+      </div></div>
+    <div class="stage"><p class="stage-cap">At 390 px, with the change pending.</p>
+      <div class="frames">
+        <figure><figcaption>Light</figcaption><iframe title="Option A at 390 px, light" src="index.html?only=a&amp;state=pending&amp;theme=light"></iframe></figure>
+        <figure><figcaption>Dark</figcaption><iframe title="Option A at 390 px, dark" src="index.html?only=a&amp;state=pending&amp;theme=dark"></iframe></figure>
+      </div></div>
+    <ul class="notes">
+      <li><b>Good at</b>Nothing new to learn or to build: it reads and saves like slots and like "Space for mulebox", and cores and memory can be pending or dropped one at a time.</li>
+      <li><b>Costs</b>Eight rows for two numbers that most nodes leave at nothing, so the Jobs tab grows by about a third.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="b" aria-labelledby="b-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">B</span>
+      <h2 id="b-h">Two rows in the Slots panel</h2>
+      <p class="opt-idea">No new panel. Under the Slots panel's own rows, a small "Kept for you" part with a row for cores and a row for memory, and one line that says what jobs share. Slots and room are both about how much of the node jobs take, so they sit together.</p></div>
+    <div class="stage"><p class="stage-cap"><b>2 cores and 4 GB kept.</b> The Slots panel is now taller than Priority beside it.</p>
+      <div data-window="b:kept"></div></div>
+    <div class="stage"><p class="stage-cap">The panel in its other states.</p>
+      <div class="states">
+        <div class="state"><p>Nothing kept, the default</p><div data-part="b:none"></div></div>
+        <div class="state"><p>Saved, waiting for the node</p><div data-part="b:pending"></div></div>
+      </div></div>
+    <div class="stage"><p class="stage-cap">At 390 px, with the change pending.</p>
+      <div class="frames">
+        <figure><figcaption>Light</figcaption><iframe title="Option B at 390 px, light" src="index.html?only=b&amp;state=pending&amp;theme=light"></iframe></figure>
+        <figure><figcaption>Dark</figcaption><iframe title="Option B at 390 px, dark" src="index.html?only=b&amp;state=pending&amp;theme=dark"></iframe></figure>
+      </div></div>
+    <ul class="notes">
+      <li><b>Good at</b>The smallest change to the window, and the two things that decide how many jobs run at once are in one place.</li>
+      <li><b>Costs</b>No Suggested row and one shared pending line for both values, so it is not the pattern of the panel it sits in. Slots no longer lines up with Priority. Slots counts jobs with no size and this counts jobs with one, which one panel blurs.</li>
+    </ul>
+  </section>
+
+  <section class="opt" id="c" aria-labelledby="c-h">
+    <div class="opt-head"><span class="opt-letter" aria-hidden="true">C</span>
+      <h2 id="c-h">One "What jobs get" line with a Change button</h2>
+      <p class="opt-idea">The result first: the node's cores as boxes and its memory as a bar, the part kept for you hatched, and one sentence. The two values stay out of sight until Change opens them in place; Save is the window's own.</p></div>
+    <div class="stage"><p class="stage-cap"><b>2 cores and 4 GB kept.</b> Six boxes and three quarters of the bar are for jobs.</p>
+      <div data-window="c:kept"></div></div>
+    <div class="stage"><p class="stage-cap">The line in its other states.</p>
+      <div class="states wide">
+        <div class="state"><p>Nothing kept, the default</p><div data-part="c:none"></div></div>
+        <div class="state"><p>After "Keep some for you" or "Change", before Save</p><div data-part="c:open"></div></div>
+        <div class="state"><p>Saved, waiting for the node</p><div data-part="c:pending"></div></div>
+      </div></div>
+    <div class="stage"><p class="stage-cap">At 390 px, with the change pending.</p>
+      <div class="frames">
+        <figure><figcaption>Light</figcaption><iframe title="Option C at 390 px, light" src="index.html?only=c&amp;state=pending&amp;theme=light"></iframe></figure>
+        <figure><figcaption>Dark</figcaption><iframe title="Option C at 390 px, dark" src="index.html?only=c&amp;state=pending&amp;theme=dark"></iframe></figure>
+      </div></div>
+    <ul class="notes">
+      <li><b>Good at</b>Says what the owner wants to know, how much of the PC jobs can count on, without reading two numbers and subtracting. Small while nothing is kept.</li>
+      <li><b>Costs</b>A second way to change a setting in this window, with no Suggested row and one pending mark for both values. The values are a click away, and the bars are new to build.</li>
+    </ul>
+  </section>
+
+  <p class="notes">Every option shows the same node: build-1, 8 cores, 16.6 GB, 2 slots. Priority, Dev mode and "Reported by the node" are drawn as boxes, as they do not change. The theme button switches the wide views; the 390 px frames show both themes. Static page with example data; colours, type, space and corners come from tokens.css; the icons are Lucide, outline.</p>
+</div>
+<script src="owner-room.js"></script>
+<script src="../mockups-2026-11-13.js"></script>
+</body>
+</html>
