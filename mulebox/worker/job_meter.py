@@ -122,9 +122,15 @@ class JobMeter:
         """Judge the span; return the cores the job kept busy in it."""
         unit = _grown(now_read, last, _UNIT) / span
         services = _grown(now_read, last, _SERVICE) / span
+        # A container's counter covers its whole life, so one seen for the first time would add
+        # all it used before into this span (a real job read 10.9 cores on an 8-core node). Its
+        # CPU counts from its second reading, as in runners/runner_meter.py; it still counts as
+        # activity below.
+        steady = sum(max(0.0, value - last[key]) for key, value in now_read.items()
+                     if key.startswith(_SERVICE) and key in last) / span
         net_kib_s = _grown(now_read, last, _NET) / 1024.0 / span
         io_kib_s = _grown(now_read, last, _IO) / 1024.0 / span
-        self.cpu_pct = round((unit + services) * 100.0, 1)
+        self.cpu_pct = round((unit + steady) * 100.0, 1)
         self.io_kib_s = round(io_kib_s, 1) if any(k.startswith(_IO) for k in now_read) else None
         computing = unit >= UNIT_CPU_SHARE or services >= SERVICE_CPU_SHARE
         if computing:
@@ -135,7 +141,7 @@ class JobMeter:
             self.busy_at = now
         elif self.busy_at is None:
             self.busy_at = before
-        return unit + services
+        return unit + steady
 
 
 def labelled(docker: Docker, job_id: str) -> Callable[[], list[str]]:

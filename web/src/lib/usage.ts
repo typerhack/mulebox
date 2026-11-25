@@ -102,6 +102,10 @@ export async function askUsage(filters: UsageFilters, all: boolean): Promise<Usa
     const size = whole.machines[name] ?? {};
     return { name, size, jobs: [...jobs].sort((a, b) => weight(b, size) - weight(a, size)) };
   });
+  // Nodes with measured jobs first, most first; a node that never reported (removed) last.
+  const counted = (group: NodeGroup) => group.jobs.filter((job) => job.measured > 0).length;
+  const known = (group: NodeGroup) => (group.size.cores || group.size.memory ? 1 : 0);
+  nodes.sort((a, b) => known(b) - known(a) || counted(b) - counted(a) || a.name.localeCompare(b.name));
   const projects = filters.project ? null : [...new Set(whole.jobs.map((job) => job.project ?? ""))].filter(Boolean).sort();
   return { nodes, machines: Object.keys(whole.machines).sort(), projects, runs: whole.runs, all: whole.all };
 }

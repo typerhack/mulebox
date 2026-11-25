@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.37.1 - 2026-11-25 - patch
+- Fix: a compose container seen for the first time added all the CPU of its life so far into one 10 s reading, so a real job read a peak of 10.9 cores on an 8-core node and its card jumped the same way. Its CPU now counts from its second reading, as a GitHub runner's containers already did; it still counts as activity (worker/job_meter.py, with a test).
+- The Usage page on real data: jobs with no measured run (all runs before 1.36.0, and those of a removed node) are folded into one line per node after the measured ones, and nodes with measured jobs come first; before, 12 unmeasured jobs of a removed node came first and the real node's rows were 8000 px down.
+
 ## 1.37.0 - 2026-11-25 - minor
 - Job usage on the dashboard (M23.8, the user's picks of design-system/usage/: option A's page, option B's lines on a job's page). A Usage page after Storage in the header: a row per project and job by node, heaviest first, cores and memory as bars on the node's own scale (usual peak solid, highest pale, a tick at the size that fits every run); passed or all runs. On a job's page each peak is a line under the stage it came in, the average the panel's last line, and a running job's Cores meter has a tick at its peak so far, read from `/api/usage/<id>` every 10 s (web/src/features/usage/, features/job/UsageLines.tsx).
 - Design system: `--meter-fill-soft`, usage bars as a measurement (no warning colour), the ink tick, four icons, and the header wrapping to a second line on a narrow screen.

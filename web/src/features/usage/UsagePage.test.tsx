@@ -102,3 +102,23 @@ describe("the Usage page", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("jobs with no measured run", () => {
+  afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+
+  it("are folded into one line after the measured ones, and a node with measured jobs comes first", async () => {
+    JOBS.push(job("example-old", "check", { measured: 0, not_measured: 20, cores: null, memory: null, fits: null }));
+    try {
+      machinesStore.set({ machines: [machine("build-1"), machine("build-2", { version: "1.35.0" })] } as never);
+      serve();
+      show();
+      const fold = await screen.findByText(/1 job with no measured run yet: their runs came before/);
+      expect(fold.closest("details")?.open).toBe(false);
+      const names = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+      expect(names).toEqual(["build-1", "build-2"]);
+      expect(screen.getAllByText(/build-2 runs mulebox 1.35.0/).length).toBeGreaterThan(0);
+    } finally {
+      JOBS.pop();
+    }
+  });
+});

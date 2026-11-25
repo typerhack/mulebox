@@ -91,9 +91,15 @@ function Row({ job, node, size, version, all }: { job: UsageJob; node: string; s
 
 const SYSTEMS: Record<string, string> = { linux: "Linux", macos: "macOS" };
 
-// A node's heading, its column names, and its jobs.
+export const measured = (job: UsageJob) => job.measured > 0 && Boolean(job.cores || job.memory);
+
+// A node's heading, its column names, and its jobs: the measured ones, then the rest folded into
+// one line, as most jobs have no measured run until their node runs 1.36.0 and they run again.
 export function NodeRows({ group, machine, all }: { group: NodeGroup; machine: Machine | undefined; all: boolean }) {
   const { name, size, jobs } = group;
+  const shown = jobs.filter(measured);
+  const rest = jobs.filter((job) => !measured(job));
+  const row = (job: UsageJob) => <Row key={`${job.kind}/${job.project}/${job.job}`} job={job} node={name} size={size} version={machine?.version} all={all} />;
   const system = machine?.capabilities.map((offer) => SYSTEMS[offer]).find(Boolean);
   const facts = [system, size.cores ? coresWord(size.cores) : null, size.memory ? `${bytes(size.memory)} memory` : null].filter(Boolean);
   return (
@@ -105,15 +111,24 @@ export function NodeRows({ group, machine, all }: { group: NodeGroup; machine: M
           <ArrowDownWideNarrow aria-hidden className="size-icon-s" />{jobs.length === 1 ? "1 job" : `${jobs.length} jobs, heaviest first`}
         </span>
       </div>
-      <div className="use-head" aria-hidden>
+      {shown.length > 0 && <div className="use-head" aria-hidden>
         <span>Job</span>
         <span className="inline-flex items-center gap-2"><Cpu className="size-icon-s" />Cores{ofCores(size)}</span>
         <span className="inline-flex items-center gap-2"><MemoryStick className="size-icon-s" />Memory{ofMemory(size)}</span>
         <span>Fits every run</span>
-      </div>
-      <ul>
-        {jobs.map((job) => <Row key={`${job.kind}/${job.project}/${job.job}`} job={job} node={name} size={size} version={machine?.version} all={all} />)}
-      </ul>
+      </div>}
+      {shown.length > 0 && <ul>{shown.map(row)}</ul>}
+      {rest.length > 0 && (
+        <details className="use-rest">
+          <summary className="flex cursor-pointer items-start gap-2 py-3 text-sm text-ink-2">
+            <CircleDashed aria-hidden className="mt-px size-icon-s flex-none" />
+            <span>{plural(rest.length, "job")} with no measured run yet{sendsNoUsage(machine?.version)
+              ? <>: <WithCode text={`${whyNot(name, machine?.version, "their runs")}; \`mulebox setup ${name}\` upgrades it.`} /></>
+              : ": their runs came before this node measured usage."} <span className="text-ink-1 underline">Show them</span></span>
+          </summary>
+          <ul>{rest.map(row)}</ul>
+        </details>
+      )}
     </section>
   );
 }

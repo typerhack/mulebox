@@ -219,3 +219,10 @@ def test_read_job_sums_the_working_set_of_the_unit_and_its_containers(tmp_path, 
             return ["c1"]
 
     assert job_meter.read_job("job-a", Known())["memory"] == 800 + 500
+
+
+def test_a_container_seen_for_the_first_time_adds_no_cores():
+    """Its counter covers its whole life: counted from its second reading, still activity."""
+    meter = judged({"unit": 0.0}, {"unit": SAMPLE_S, "service:new": 500.0})
+    assert meter.cpu_pct == 100.0 and meter.peaks.as_dict()["peak_cores"] == 1.0
+    assert meter.busy_at == SAMPLE_S
