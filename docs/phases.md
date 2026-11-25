@@ -967,7 +967,7 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       job with no restart; three jobs ran at once. A hand edit of node.toml was not tried on the node.
 - [ ] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
       session of your own, waiting in the same line so no job starts under you.
-- [~] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on
+- [x] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on
       the node fetches its npm (41 MB) and pip (10 MB) cache from GitHub's cache storage. The node
       reaches the internet through a VPN tunnel (0.6 MB/s from GitHub against 10 MB/s on the dev
       machine), and a stalled restore holds `setup-node` or `setup-python` for `actions/cache`'s
@@ -989,6 +989,10 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Built 2026-11-25 (1.40.0): caches kept on the node. An isolated place keeps npm's and pip's
       downloads in its own tool cache volume, and ci.yml uses GitHub's cache only on GitHub's
       machines, with tests.
+      Done 2026-11-25 (1.40.0): on the node, a first CI run filled each place's caches (npm 44 MB,
+      pip 1 MB), and in the next no setup step waited on a cache (0 to 1 s), pip installed in 2 to
+      5 s and npm ci from the node's cache in 29 s, unpacking. With no restore from GitHub on the
+      node, the stalled restore and its meter left open above no longer arise there.
 - [ ] M23.12 Sudden power loss (the user's ask, 2026-11-16: power cuts at the node's place are
       common). Every drill so far rebooted cleanly, so the worker could report its job as it stopped;
       a cut gives it no such chance. What a node must do when the power comes back by itself (the
