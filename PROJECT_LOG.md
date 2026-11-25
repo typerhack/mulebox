@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.40.0 - 2026-11-25 - minor
+- CI on the node installs its packages from the node (roadmap M23.11): an isolated runner place keeps npm's and pip's download caches in its own tool cache volume (`npm_config_cache` and `PIP_CACHE_DIR` under `/opt/hostedtoolcache/_packages`, runners/place_container.py), so they last from job to job with no image change. ci.yml uses GitHub's cache storage (`cache: pip`, `cache: npm`) only on GitHub's own machines, as a restore over the node's slow link stalled for minutes. With tests; docs/install.md.
+- docs/phases.md: M25.9 done (the node's projects held about 2 GB today, and its free space stayed at 116 to 121 GB every day since 2026-11-16); M25.8's keep mark and a folder in use were seen held back on the node, with a throwaway project, removed after.
+
 ## 1.39.1 - 2026-11-25 - patch
 - README: a section on what jobs really use and job sizes, with two new pictures, the Usage page (`usage-dark.png`) and the Room for you panel (`owner-room-light.png`); the Machines and Usage pages and the owner's room in the feature lists. `node-settings-dark.png` taken again. The stand-in data gives build-1, the dashboard's host, 2 cores and 4 GB kept for its owner (web/dev/settings.ts), and tools/screenshots.py takes the two new pictures.
 

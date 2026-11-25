@@ -470,7 +470,10 @@ gets:
   workflow fails), limits on memory (three quarters of the node's) and processes, half the CPU
   weight of the node's own processes, and a network of its own;
 - one volume per runner for `/opt/hostedtoolcache`, so setup-python and setup-node download a
-  version once. Only runs the guard let in write to it.
+  version once. npm's and pip's download caches live in it too (`npm_config_cache` and
+  `PIP_CACHE_DIR`), so a job installs packages from the node rather than from GitHub's cache
+  storage; leave `cache:` of setup-node and setup-python off on these runners (mulebox's own
+  ci.yml sets it only on GitHub's machines). Only runs the guard let in write to it.
 
 `--count 2` runs two jobs at once, as two places, `mulebox-ci` and `mulebox-ci-2`, each with its
 own container, slot and tool cache (so each downloads a new Python or Node once). Without it the

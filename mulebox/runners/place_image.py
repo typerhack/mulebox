@@ -4,7 +4,8 @@ repositories).
 GitHub's own runner image, `ghcr.io/actions/actions-runner:<version>`, with what a workflow
 needs before its first step: git (actions/checkout without it fetches a tarball, with no
 history), curl, shellcheck and the archivers setup actions unpack with. `/opt/hostedtoolcache`
-belongs to the runner's user, so the tool cache volume a place mounts there starts writable.
+belongs to the runner's user, so the tool cache volume a place mounts there starts writable;
+npm's and pip's caches live in it too (`PACKAGES`).
 Built once on the node and tagged by the runner version and this recipe, so a job starts in
 seconds; a new runner release or a changed recipe builds a new tag. Older tags stay as cache
 until the owner removes them.
@@ -25,6 +26,9 @@ BASE = "ghcr.io/actions/actions-runner"
 NAME = "mulebox-runner"
 BUILD_TIMEOUT_S = 1800.0
 TOOL_CACHE = "/opt/hostedtoolcache"
+# npm's and pip's download caches, in the same volume so they last from job to job on the node
+# and need no image change (roadmap M23.11); setup actions look only at their own tool folders.
+PACKAGES = f"{TOOL_CACHE}/_packages"
 DOCKERFILE = """FROM {base}:{version}
 USER root
 RUN apt-get update \\

@@ -74,6 +74,9 @@ def test_container_is_confined(tmp_path):
     assert CONFIG not in joined  # the config goes on stdin only
     mounts = [argv[i + 1] for i, a in enumerate(argv) if a == "--volume"]
     assert len(mounts) == 4
+    # npm and pip keep their downloads in the place's own tool cache volume (M23.11)
+    assert "npm_config_cache=/opt/hostedtoolcache/_packages/npm" in argv
+    assert "PIP_CACHE_DIR=/opt/hostedtoolcache/_packages/pip" in argv
 
 
 def test_memory_limit_and_leftovers():

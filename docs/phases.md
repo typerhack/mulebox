@@ -986,6 +986,9 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       "864 MB to download" (the dashboard counts in 1024s), the file's name and "542 KB/s, whole
       node"; the job was cancelled and its project home removed. Open: a real slow cache restore
       on a CI run, with its meter filling.
+      Built 2026-11-25 (1.40.0): caches kept on the node. An isolated place keeps npm's and pip's
+      downloads in its own tool cache volume, and ci.yml uses GitHub's cache only on GitHub's
+      machines, with tests.
 - [ ] M23.12 Sudden power loss (the user's ask, 2026-11-16: power cuts at the node's place are
       common). Every drill so far rebooted cleanly, so the worker could report its job as it stopped;
       a cut gives it no such chance. What a node must do when the power comes back by itself (the
@@ -1172,7 +1175,14 @@ runs a job.
       131 MB in all. Seen on the dev machine's Docker: three such images pruned by `until`.
       Run 2026-11-14 (1.27.2): two branches deleted on the dev machine, their folders removed by the
       node's next cleanup with "its branch is on no dev machine"; agents told of 56 GB over 50 GB.
-- [~] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox
+      Run 2026-11-25 (1.39.1) on the real node with a throwaway project: of three branches deleted on
+      the dev machine, a cleanup run from `mulebox storage clean` removed the gone one, held the one
+      marked with `mulebox project keep` ("kept by you") and, in a second round, the one a job ran
+      in ("a job runs in it"); the new branch stayed as the latest. Docker had been freed by earlier
+      cleanups: two images no job used any more (1.3 GB) and 916 MB of build cache. The project was
+      reset after. Open: a keep and a clean from the Storage page on the deployed dashboard (the
+      browser did not answer that day).
+- [x] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox
       still holds 56 GB on the node, most of it 131 branch folders of a few projects, about 280 MB each.
       The user wants the projects' share, Docker apart, at 10 to 15 GB. To work out: why so many
       folders count as live (dev machines keep old local branches; lists arrive only from 1.26
@@ -1184,6 +1194,9 @@ runs a job.
       The first cleanup on 1.28.0 removed 64 folders of gone branches, 17.0 GB, as predicted.
       1.29.0: idle branch folders slimmed after `slim_hours` (12): what git ignores goes, the
       checkout stays, the next job installs again.
+      Done 2026-11-25 (1.40.0): the node's projects held 1.9 GB of branch folders and 1.2 GB of
+      caches, with real jobs of three projects that day; its free space stayed between 116 and
+      121 GB on every day it ran since 2026-11-16, and gone branches' folders left within the hour.
 - [x] M25.10 Agents ask for more space (the user's ask, 2026-11-15): from 80% of `max_size` an agent
       asks its user, and with their yes runs `mulebox storage ask`; the owner answers on the
       dashboard's strip (option A of design-system/approvals/, the user's pick) or with `mulebox

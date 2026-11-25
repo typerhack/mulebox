@@ -161,3 +161,13 @@ def test_a_stalled_cache_download_gives_up_in_a_minute():
     # (roadmap M23.11); the whole workflow keeps the wait to one minute.
     ci = load(REPO / ".github" / "workflows" / "ci.yml")
     assert ci["env"]["SEGMENT_DOWNLOAD_TIMEOUT_MINS"] == 1
+
+
+def test_node_runs_use_the_places_own_package_caches():
+    # On the node, npm and pip keep their downloads in the place's volume (place_container.py);
+    # GitHub's cache storage, slow over the node's link, is used only on GitHub's machines.
+    ci = load(REPO / ".github" / "workflows" / "ci.yml")
+    for job in ("test", "web"):
+        caches = [step["with"]["cache"] for step in ci["jobs"][job]["steps"]
+                  if "with" in step and "cache" in step["with"]]
+        assert caches and all("runner.environment == 'github-hosted'" in c for c in caches), job

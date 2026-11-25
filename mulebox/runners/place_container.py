@@ -3,7 +3,9 @@
 What it gets, and only that:
 - the place's `hooks` read-only, its `io` and `_diag` folders, and a tool cache volume of its
   own (`/opt/hostedtoolcache`, where setup-python and setup-node keep what they download), so
-  a job does not fetch its toolchains again; it is written only by jobs the guard let in;
+  a job does not fetch its toolchains again, with npm's and pip's download caches inside it
+  (`npm_config_cache`, `PIP_CACHE_DIR`), so a job installs from the node, not from GitHub's
+  cache storage over a slow link (roadmap M23.11); it is written only by jobs the guard let in;
 - no Docker socket, no capability (`--cap-drop ALL`), `no-new-privileges` (so the image's
   sudo does nothing), the runner image's own user;
 - its own network, `mulebox-isolated`, which reaches the internet; the node's dashboard is
@@ -26,7 +28,7 @@ from mulebox.common import confined
 from mulebox.common.confined import CPU_SHARES, PIDS, memory_limit_mb  # noqa: F401
 from mulebox.common.errors import MuleboxError
 from mulebox.runners.place_hook import HOOKS_MOUNT, IO_MOUNT
-from mulebox.runners.place_image import TOOL_CACHE
+from mulebox.runners.place_image import PACKAGES, TOOL_CACHE
 from mulebox.worker.docker import Docker, DockerError
 
 NETWORK = "mulebox-isolated"
@@ -56,6 +58,8 @@ def run_argv(container: str, place: str, image: str, *, hooks_dir: Path, io_dir:
         "--env", f"ACTIONS_RUNNER_HOOK_JOB_STARTED={HOOKS_MOUNT}/started.sh",
         "--env", f"RUNNER_TOOL_CACHE={TOOL_CACHE}",
         "--env", f"AGENT_TOOLSDIRECTORY={TOOL_CACHE}",
+        "--env", f"npm_config_cache={PACKAGES}/npm",
+        "--env", f"PIP_CACHE_DIR={PACKAGES}/pip",
         "--entrypoint", "sh", image, "-c", ENTRY,
     ]
 
