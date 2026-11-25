@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.41.1 - 2026-11-25 - patch
+- docs/phases.md: M23.5 part 1 seen on the real node: a rest for disk from `min_free` set from afar, a job waiting with the reason and the fix, and `mulebox machine check` letting it run at once after the fix.
+
 ## 1.41.0 - 2026-11-25 - minor
 - A node that rests (M23.5, part 1; docs/design.md, A node that rests): each worker checks itself at its start, every 5 minutes, every minute while a check fails, and at once after a job could not start (worker/health.py, agent_health.py): free space under `min_free`, writable roots, `git`, systemd's user manager where jobs run as its units, Docker where offered, Xcode where offered. While a whole-node check fails it claims with no free slot and takes nothing, whatever coordinator it has; a failing Docker or Xcode check only withholds those capabilities. Three jobs of two or more projects in a row that could not start within 15 minutes rest it for 10, then it takes one job at a time until one starts its command.
 - A job that could not start, judged by the check that follows: when that check fails, its result says `node_fault`, and the coordinator puts it back in line once (`jobs.retries`), with a line in its log, its log going on at `log_offset`, for a worker of 1.41 or later only (coordinator/health.py). A worker cannot ask for that move: the coordinator makes it, for this reason only.

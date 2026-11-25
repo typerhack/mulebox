@@ -923,6 +923,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       `mulebox machine list`, a job sent waits with the reason and the fix, and once `min_free` is
       put back, `mulebox machine check` lets it take the job at once. Part 2: the resting state on
       the dashboard, from mockups.
+      Run 2026-11-25 (1.41.0) on the real node: `min_free` set to 999 GB from the dev machine, it
+      read `resting` in `mulebox machine list` with the free space and the fix; a throwaway job
+      waited with the same reason and the fix; the cleanup ran first, by its own rules (one folder
+      of a gone branch). With `min_free` back at 5 GB, `mulebox machine check` answered "every
+      check passes" and the job passed 3 s later. The project was reset after. Open: part 2.
 - [x] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
       job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of
