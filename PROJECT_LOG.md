@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.42.2 - 2026-11-25 - patch
+- Tests: the worker loop's tests no longer run the machine's own health checks (tests/worker/conftest.py). On GitHub's macOS machines, which have no Docker, the Docker check could finish before the first claim and withhold `docker`, failing a claim test since 1.41.0.
+
 ## 1.42.1 - 2026-11-25 - patch
 - A node checks itself at once when its `min_free` changes: in the drill on the real node, a floor set from afar waited for the next 5-minute check. And a report's `ran` now shows only once its check is taken, as `checked_at` does (it raced the first claim).
 - docs/phases.md: M23.5 done. On the deployed dashboard in the browser, the node rested with `min_free` above its free space: the strip in red with its fix, the box `Resting` with no slot free, a waiting job saying "resting: low disk"; with the floor put back, Check now on the strip let the job run.

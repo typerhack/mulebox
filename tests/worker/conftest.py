@@ -10,6 +10,17 @@ from .fakes import FakeLink, make_tar
 ROOT_KEYS = ("jobs", "cache", "staging", "runners")
 
 
+@pytest.fixture(autouse=True)
+def healthy_node(request, monkeypatch):
+    """The worker loop's own checks find nothing, so a test does not hang on this machine's
+    Docker or Xcode: on a machine without Docker its check could withhold `docker` from a claim
+    (seen on GitHub's macOS machines). test_health.py tests the checks themselves."""
+    if request.module.__name__.endswith("test_health"):
+        return
+    from mulebox.worker import health
+    monkeypatch.setattr(health, "run_all", lambda *args, **kwargs: [])
+
+
 @pytest.fixture
 def roots_config(tmp_path):
     config = {}
