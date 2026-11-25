@@ -59,6 +59,13 @@ SHOTS = [
     Shot("phone-dark", "#/", width=390, height=844, env=CLEAN),
     Shot("node-settings-dark", "#/", env=CLEAN,
          script="document.querySelector('[aria-label=\"Settings of build-1\"]').click()"),
+    Shot("owner-room-light", "#/", "light", height=1300, env=CLEAN,
+         script="(async () => { document.querySelector('[aria-label=\"Settings of build-1\"]').click();"
+                " await new Promise(r => setTimeout(r, 1200));"
+                " document.querySelector('section[aria-label=\"Room for you\"]').scrollIntoView({block: 'center'}); })()"),
+    Shot("usage-dark", "#/usage", height=900, env=CLEAN,
+         script="[...document.querySelectorAll('h1,h2,h3')].find(h => h.textContent.trim() === 'Usage')"
+                "?.scrollIntoView(); window.scrollBy(0, -76)"),
     Shot("order-light", "#/", "light", height=1700, env={**CLEAN, "MULEBOX_MOCK_SCENE": "order"},
          script="[...document.querySelectorAll('button')].find(b => b.textContent.startsWith('Order')).click()"),
     Shot("downloads-dark", "#/", height=700, env={**CLEAN, "MULEBOX_MOCK_SCENE": "downloads"},

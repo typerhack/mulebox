@@ -262,6 +262,20 @@ underlines the runners' own summary lines in the log:
 
 ![A job that failed on fewer tests: the strip with the command to allow it, the Tests panel per runner and the underlined summary lines in its log](docs/images/tests-job-dark.png)
 
+### What jobs really use, and job sizes
+
+Every job and GitHub run keeps its peak cores (its busiest 10 s) and memory, with the stage they
+came in. The Usage page (and `mulebox usage`) shows each job's usual and highest peak on its node's
+own scale, and the size that would have fitted every run:
+
+![The Usage page: per node, each job's usual and highest peak of cores and memory as bars, and the size that fits every run](docs/images/usage-dark.png)
+
+That size can go into `.mulebox.yml` as `size: {cores: 4, memory: 6GB}`, so a node fits jobs by
+the cores and memory they need instead of one per slot. A node that is also your PC keeps room for
+you, set in the Room for you panel of its settings window or with `mulebox machine config`:
+
+![A node's settings window: Room for you, with the cores and memory kept for the owner and what jobs with a size share](docs/images/owner-room-light.png)
+
 All pictures come from made-up data (`tools/screenshots.py`).
 
 ### Open it from your phone, with a password
@@ -425,7 +439,9 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   it. Set its slots and priority from the dashboard or `mulebox machine config`, beside a
   suggestion from its cores and memory; the change reaches its `node.toml` and counts from the
   next job, with no restart. A `preferred` node takes jobs first, a `fallback` one only when the
-  others are full. Dev mode keeps a node you are trying out away from your projects' jobs.
+  others are full. Dev mode keeps a node you are trying out away from your projects' jobs. Keep
+  cores and memory for yourself on a node that is also your PC: jobs that declare a size share
+  only the rest.
 - **A project**: pause all its jobs and CI runs, for a set time or until resumed (`mulebox project
   pause`), or give it a level in line (`mulebox project priority`).
 - **Everything at once**: the dashboard's Queue actions pause or resume every machine, and freeze or
@@ -454,7 +470,9 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
 - **History** with search and filters you can share as a link, and **Statistics**: job minutes today,
   by day and since the first job, by kind, project, source and machine (also `mulebox stats`).
 - **Machines page**: every node with its state, load, network, slots, version and last contact,
-  and a settings window per node for its slots, priority, dev mode and disk rules.
+  and a settings window per node for its slots, priority, dev mode, room kept for you and disk rules.
+- **Usage page**: each job's usual and highest peak of cores and memory, on its node's scale, and
+  the size that fits every run; on a job's page, each peak under the stage it came in.
 - **Storage page**: what mulebox holds on each node and what goes when, the automatic cleanup with
   Run now, the history of every cleanup, and the settings history: every change of a node's
   setting with who asked and who confirmed, and Undo.

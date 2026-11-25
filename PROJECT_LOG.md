@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.39.1 - 2026-11-25 - patch
+- README: a section on what jobs really use and job sizes, with two new pictures, the Usage page (`usage-dark.png`) and the Room for you panel (`owner-room-light.png`); the Machines and Usage pages and the owner's room in the feature lists. `node-settings-dark.png` taken again. The stand-in data gives build-1, the dashboard's host, 2 cores and 4 GB kept for its owner (web/dev/settings.ts), and tools/screenshots.py takes the two new pictures.
+
 ## 1.39.0 - 2026-11-25 - minor
 - The node settings window shows and sets the room a node keeps for its owner: a "Room for you" panel on the Jobs tab (option A of design-system/owner-room/, Fable's pick, taken by the user), with "Cores kept" and "Memory kept", each with Suggested (nothing kept), Yours (whole cores, whole GB, and what jobs with a size share) and Runs with, unsaved and pending like every setting (web/src/features/machines/OwnerRoom.tsx). Shown only for a node that reports `keep_cores` (1.38 and later). The window's `choices` give `keep_memory.max_gb`, the node's memory in whole GB. With component tests; the mockups are kept in docs/design-system/owner-room/.
 
