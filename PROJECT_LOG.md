@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.40.2 - 2026-11-25 - patch
+- docs/phases.md: M25.8 done. A keep and two cleanups run from the Storage page of the deployed dashboard reached the node: kept folders held, then removed once the mark was dropped.
+
 ## 1.40.1 - 2026-11-25 - patch
 - docs/phases.md: M23.11 done. On the node a second CI run waited on no cache in its setup steps, pip installed in 2 to 5 s and npm ci in 29 s from the places' own caches.
 

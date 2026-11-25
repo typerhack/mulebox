@@ -1136,7 +1136,7 @@ runs a job.
       line as `dev`, offering `macos`; a job sent `--on` it ran there (Darwin arm64); with the
       Linux node full and the Mac's 2 slots free, a job with no `--on` waited 22 s and more, then
       ran on the Linux node. Asked from afar, dev mode showed at once. The node was removed after.
-- [~] M25.8 Disk use and cleanup on its own (the user's ask, 2026-11-14: the node's disk grew by
+- [x] M25.8 Disk use and cleanup on its own (the user's ask, 2026-11-14: the node's disk grew by
       20 GB, 63 GB of it in 144 branch folders). Each node removes branch folders unused for
       `unused_days` (7), keeps each project's latest one, leaves `keep_free` (10%) of its disk free,
       and suggests cleaning a project idle for `idle_days` (14); all node settings, set from afar.
@@ -1184,8 +1184,12 @@ runs a job.
       marked with `mulebox project keep` ("kept by you") and, in a second round, the one a job ran
       in ("a job runs in it"); the new branch stayed as the latest. Docker had been freed by earlier
       cleanups: two images no job used any more (1.3 GB) and 916 MB of build cache. The project was
-      reset after. Open: a keep and a clean from the Storage page on the deployed dashboard (the
-      browser did not answer that day).
+      reset after.
+      Done 2026-11-25 (1.40.1): on the Storage page of the deployed dashboard, in headless Chrome
+      (the user's exception for that day, as Edge's extension could not navigate), Keep on a
+      throwaway project reached the node ("kept by you"); with two of its branches deleted on the
+      dev machine, Run now held both; Stop keeping and Run now again removed both ("its branch is
+      on no dev machine") and left the latest. The project was reset after.
 - [x] M25.9 Projects down to 10 to 15 GB on a node (the user's ask, 2026-11-14): after 1.27, mulebox
       still holds 56 GB on the node, most of it 131 branch folders of a few projects, about 280 MB each.
       The user wants the projects' share, Docker apart, at 10 to 15 GB. To work out: why so many
