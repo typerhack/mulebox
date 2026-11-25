@@ -32,6 +32,9 @@ class Checking:
     def _health_tick(self, now: float) -> None:
         """Take a finished check, start one when due; each step of the loop."""
         state = self._health_state()
+        floor = self.node.storage.min_free_bytes()
+        if state.setdefault("floor", floor) != floor:  # a new min_free counts at once, not in 5 min
+            state["floor"], state["asked"] = floor, True
         task = state["task"]
         if task is not None and task.done:
             state["task"] = None
@@ -60,7 +63,7 @@ class Checking:
         systemd = isinstance(self.executor, SystemdExecutor)
         state["found"] = health.run_all(self.node, self.paths, offered, self.docker,
                                         systemd=systemd)
-        state["ran"] = health.ran(offered, systemd)
+        state["running"] = health.ran(offered, systemd)  # shown once the check is taken
         state["checked"] = launched
 
     def _checked(self, state: dict[str, Any], now: float) -> None:
@@ -76,7 +79,7 @@ class Checking:
         for name in before - names - {"streak"}:
             LOG.info("health: %s passes again", name)
         state["next"] = now + (health.RETRY_S if found else health.EVERY_S)
-        state["at"] = now
+        state["at"], state["ran"] = now, state.get("running", [])
         state["round"] += 1
         if state["ask_launch"] and state.get("checked", 0) >= state["ask_launch"]:
             state["answers"], state["ask_launch"] = state["answers"] + 1, 0

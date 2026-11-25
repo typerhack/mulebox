@@ -908,7 +908,7 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Done 2026-11-13 (1.17.18): the Mac node `fallback`, the Linux node `normal`, real drill jobs: with a
       slot free on the Linux node it took the job, twice, and the Mac none; with it full the Mac took the
       job in 7 s.
-- [~] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
+- [x] M23.5 A failing node rests: a node whose jobs keep failing to start (exit 5, a broken Docker)
       takes no job for a while, and others take them. Also before any failure (from macserve,
       2026-11-12): a node checks its own health (Docker answers, toolchains run, disk room) and
       takes no job until the check passes again, and `mulebox machine list` says why.
@@ -935,6 +935,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       Machines page's second row, the Health tab and `min_free` saved from it. Done when: on the
       deployed dashboard in Edge, with `min_free` set above the node's free space, the strip, the
       box and a waiting job show the rest, and Check now after the fix lets the job run.
+      Done 2026-11-25 (1.42.1) on the deployed dashboard in the browser: with `min_free` 999 GB
+      the strip read "<node> is resting and takes no job" in red with its fix, the box
+      `Resting` and 0 slots free, a throwaway job "resting: low disk"; with 5 GB back, Check now on
+      the strip cleared it and the job passed. Found there and fixed 1.42.1: a new `min_free`
+      waited for the node's next 5-minute check. The project was reset after.
 - [x] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
       job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of

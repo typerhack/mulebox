@@ -908,8 +908,9 @@ never only a refusal: it says what is wrong and what the agent can do about it.
   10 GB warning did. The node's own cleanup (Disk use and cleanup on its own) runs at once when
   free space falls under 10%, and again just before a rest for disk, so `min_free` is reached
   only when cleanup could not help.
-- **When.** At the worker's start, every 5 minutes while it is up, and at once after any job
-  failed to start. A failing check is tried again every minute until it passes.
+- **When.** At the worker's start, every 5 minutes while it is up, at once after any job
+  failed to start, and at once when its `min_free` changes (1.42.1). A failing check is tried
+  again every minute until it passes.
 - **One part down is not the whole node.** A failing Docker or Xcode check withholds only that
   capability: the node still takes jobs that do not need it. Disk, roots, git and executor
   stop all claims. This is the rest.

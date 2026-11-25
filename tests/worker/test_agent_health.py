@@ -146,3 +146,12 @@ def test_machine_check_is_answered_by_a_check_started_after_the_ask(agent, fake_
     agent.step()  # the running one ends: not the answer
     assert agent._health_report(0.0)["answers"] == 0
     run_until(agent, lambda: agent._health_report(0.0)["answers"] == 1)
+
+
+def test_a_new_min_free_is_checked_at_once(agent, checks):
+    from mulebox.common import storage_policy
+    checked(agent, checks, 1)
+    agent.step()
+    runs = checks.runs
+    agent.node = replace(agent.node, storage=replace(storage_policy.StoragePolicy(), min_free="999GB"))
+    checked(agent, checks, runs + 1)  # not five minutes later
