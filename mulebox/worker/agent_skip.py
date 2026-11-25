@@ -1,21 +1,36 @@
-"""What a job may skip: a `setup` or `install` that nothing it depends on has changed.
+"""A job's project folder, and what it may skip there: a `setup` or `install` that nothing it
+depends on has changed.
 
-Split from agent.py: `Agent` provides `paths`.
+Split from agent.py: `Agent` provides `paths`, `docker` and `node`.
 """
 
+from pathlib import Path
 from typing import Any
 
 from mulebox.common import compose
 from mulebox.common.errors import MuleboxError
+from mulebox.common.safepath import RemovalDenied
 from mulebox.common.log import get_logger
 from mulebox.common.status import COMMAND, SETUP
-from mulebox.worker import project_home
+from mulebox.worker import project_home, reclaim
 from mulebox.worker.job import ActiveJob
 
 LOG = get_logger("worker.agent")
 
 
 class Skipping:
+    def _into_home(self, job: ActiveJob, snapshot: Path) -> project_home.Synced:
+        """The job's files into the project's worktree; a crash can leave root's files there."""
+        branch = job.branch
+        try:
+            return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
+        except (RemovalDenied, PermissionError):
+            if self.docker is None:
+                raise
+        tree = project_home.tree_for(self.paths, job.project, branch)
+        reclaim.reclaim_tree(self.docker, self.paths, tree, job.job_id, self.node.name)
+        return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
+
     def _with_setup(self, job: ActiveJob, claim: dict[str, Any], synced: project_home.Synced
                     ) -> dict[str, Any]:
         """`claim` without its `setup` when nothing it depends on changed."""

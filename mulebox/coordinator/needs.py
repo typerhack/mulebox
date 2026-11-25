@@ -19,7 +19,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import compose, isolation, package_cache, systems
+from mulebox.common import compose, isolation, node_health, package_cache, systems
+from mulebox.coordinator import health
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.workers import is_dev, is_online
 
@@ -115,8 +116,12 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float,
     if not fitting:
         return f"{_nobody_offers(needs, workers)}: {_what_to_do(workers, needs)}"
     online = [w for w in fitting if is_online(w, now)]
-    if any(not w.get("draining") and (pinned or not is_dev(w)) for w in online):
+    open_ = [w for w in online if not w.get("draining") and (pinned or not is_dev(w))]
+    if any(not node_health.blocks(health.of(w), needs) for w in open_):
         return None
+    resting = health.reason(open_, needs)  # it says what is wrong and its fix
+    if resting:
+        return resting
     draining = ", ".join(w["worker"] for w in online if w.get("draining"))
     dev = ", ".join(w["worker"] for w in online if not w.get("draining") and is_dev(w))
     if dev and not draining:

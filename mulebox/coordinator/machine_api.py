@@ -4,6 +4,8 @@
   the caller can wait for an empty list. A GitHub runner on it still takes CI jobs: stop the
   runner too (docs/install.md, More machines).
 - `resume`: it claims again.
+- `check`: it runs its health checks at its next claim or heartbeat and reports them
+  (coordinator/health.py), so after a fix a resting node takes jobs at once.
 - `remove`: the coordinator forgets it. Refused while it is online, as its next claim would bring
   it back, and while a job runs on it or a CI job waits for it. Its key is taken off by the
   client (`mulebox authorize-worker --remove`), which can reach the coordinator's files.
@@ -14,12 +16,12 @@ from __future__ import annotations
 import sqlite3
 
 from mulebox.common.protocol import Message, MessageType
-from mulebox.coordinator import workers
+from mulebox.coordinator import health, workers
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
 from mulebox.coordinator.errors import BadRequest, Conflict, NotFound
 
-ACTIONS = ("drain", "resume", "remove")
+ACTIONS = ("drain", "resume", "remove", "check")
 
 
 def running_on(conn: sqlite3.Connection, worker: str) -> list[str]:
@@ -45,6 +47,8 @@ def machine(req: Request) -> Message:
             if running:
                 raise Conflict(f"{name} still has {len(running)} job(s): {', '.join(running)}")
             workers.forget(conn, name)
+        elif action == "check":
+            health.ask_check(conn, name, req.now)
         else:
             workers.set_draining(conn, name, action == "drain")
     return req.reply(MessageType.MACHINE_OK, {"worker": name, "action": action,

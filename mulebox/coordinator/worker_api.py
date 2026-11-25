@@ -10,7 +10,7 @@ from typing import Any
 
 from mulebox.common import usage
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import (leases, node_settings, project_orders, queue, recovery,
+from mulebox.coordinator import (health, leases, node_settings, project_orders, queue, recovery,
                                  reservations, steps, storage, test_proof, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
@@ -32,10 +32,12 @@ def claim(req: Request) -> Message:
                       version=v.text(req.body, "version", None),
                       disk_free=v.integer(req.body, "disk_free", None, low=0),
                       load=v.load(req.body), priority=(settings or {}).get("priority"),
-                      dev=bool((settings or {}).get("dev")))
+                      dev=bool((settings or {}).get("dev")),
+                      slots=v.integer(req.body, "slots", None, low=0), health=req.body)
     with req.store.write() as conn:  # after the claim, which records a new worker
         storage.keep_report(conn, worker, req.body)
         waiting = {**node_settings.settle(conn, worker, settings, req.now),
+                   **health.hand_out(conn, worker, req.now),
                    **project_orders.hand_out(conn, worker, req.now), **storage.reply_fields(conn, req.now)}
     if job is None:
         return req.reply(MessageType.CLAIM_NONE, waiting)
@@ -77,12 +79,16 @@ def heartbeat(req: Request) -> Message:
         job = leases.renew_worker_in(conn, job, req.now)
         workers.touch(conn, job["worker"], req.now, v.load(req.body))
         storage.keep_report(conn, job["worker"], req.body)
+        health.save(conn, job["worker"], req.body)
         settings = node_settings.reported(req.body)
         # A runner slot's heartbeat comes from the runner supervisor, which reads no orders:
         # one handed out there would be marked taken and never run (runners/supervise.py).
         orders = ({} if job["kind"] == RUNNER_KIND
                   else project_orders.hand_out(conn, job["worker"], req.now))
         waiting = {**node_settings.settle(conn, job["worker"], settings, req.now), **orders,
+                   # the supervisor reads no ask either: it would be taken and lost
+                   **({} if job["kind"] == RUNNER_KIND
+                      else health.hand_out(conn, job["worker"], req.now)),
                    **storage.reply_fields(conn, req.now)}
         _activity(conn, req, job)
     return _status(req, job, **waiting)
@@ -136,6 +142,11 @@ def result(req: Request) -> Message:
         job = _current_job(conn, req)
         if job["state"] == JobState.FINISHED:
             raise Conflict(f"job {job['job_id']} already finished ({job['outcome']})")
+        note = health.retry(conn, job, req.body, outcome, exit_code)
+        if note is not None:  # its node could not set it up: back in line, once
+            size = req.staging.append_log(job["job_id"], job["log_size"], note.encode("utf-8"))
+            st.update_job(conn, job["job_id"], log_size=size)
+            return _status(req, st.require_job(conn, job["job_id"]))
         tests, outcome, exit_code = test_proof.judge(conn, job, in_log, outcome, exit_code)
         if tests is not None:
             st.update_job(conn, job["job_id"], tests=tests)

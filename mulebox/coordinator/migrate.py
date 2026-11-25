@@ -57,6 +57,10 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   cores on an 8-core node). GitHub runs' meter never did, so theirs stay.
 - 31 -> 32: `jobs.size` (JSON, default '{}'), the cores and memory a job declared (sizes.py);
   empty: one slot's share of its node.
+- 32 -> 33: `workers.health` (JSON: the failing checks, withheld capabilities and rest a worker
+  last reported, coordinator/health.py), NULL for a healthy or older worker; `workers.check_asked`,
+  when `mulebox machine check` asked the node to check itself now; and `jobs.retries` (default 0),
+  how often a job went back in line because its node could not set it up.
 """
 
 import sqlite3
@@ -199,6 +203,9 @@ _STEPS: dict[int, tuple[str, ...]] = {
     30: ("UPDATE jobs SET usage = '{}' WHERE kind = 'job' "
          "AND worker_version IN ('1.36.0', '1.37.0')",),
     31: ("ALTER TABLE jobs ADD COLUMN size TEXT NOT NULL DEFAULT '{}'",),
+    32: ("ALTER TABLE workers ADD COLUMN health TEXT",
+         "ALTER TABLE workers ADD COLUMN check_asked REAL",
+         "ALTER TABLE jobs ADD COLUMN retries INTEGER NOT NULL DEFAULT 0"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

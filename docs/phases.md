@@ -916,6 +916,13 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       a job a failing node could not start goes back in line once; a failing Docker or Xcode
       withholds only that capability; a 5 GB floor, with the user warned at 10% free and cleanup
       run first; a streak of failed starts as a backstop; every rest gives the agent its fix.
+      Part 1 built 2026-11-25 (1.41.0), with tests on the real worker loop and coordinator code:
+      `worker/health.py` and `agent_health.py`, `coordinator/health.py`, schema 33, `min_free`,
+      `mulebox machine check`, the 10% warning, the waiting reason with its fix. Done when: on the
+      real node, with `min_free` set above its free space from afar, it shows `resting` in
+      `mulebox machine list`, a job sent waits with the reason and the fix, and once `min_free` is
+      put back, `mulebox machine check` lets it take the job at once. Part 2: the resting state on
+      the dashboard, from mockups.
 - [x] M23.6 Fresh CI runners: a one-job runner per run through GitHub's just-in-time registration,
       removed afterwards, so no run's leftovers reach the next. With a fork guard as the runner's
       job-started hook, the private-repositories-only rule can be weighed again. Moved ahead of

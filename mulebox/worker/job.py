@@ -59,10 +59,18 @@ class ActiveJob:
     take: list[str] = field(default_factory=list)  # files `mulebox run --take` brings back
     taking: list[tuple[int, int, bytes]] = field(default_factory=list)  # chunks yet to send
     controls: JobControls = field(default_factory=JobControls)  # pause and boost (controls.py)
+    judging: int = 0  # it could not start: its result waits for check number `judging` (agent_health.py)
+    node_fault: str | None = None  # why the node, not the job, is at fault; it goes back in line
 
     @property
     def steps(self) -> StepTracker:
         return self.tailer.steps
+
+
+def job_offset(claim: dict[str, Any]) -> int:
+    """Where a job back in line goes on in its log (coordinator/health.py), 0 for a new one."""
+    value = claim.get("log_offset")
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
 
 
 def ended_badly(outcome: Outcome) -> bool:

@@ -112,8 +112,11 @@ class Storing(Clearing):
                 and (state["replan"] or time.time() - report["at"] >= REPLAN_EVERY_S))
 
     def _sweep_due(self, state: dict[str, Any]) -> str | None:
-        """Why a sweep is due now (`start`, `hourly`, `low`), or None."""
+        """Why a sweep is due now (`start`, `hourly`, `low`), or None. `urgent`: the node is about
+        to rest for its disk (agent_health.py), so the sweep runs at once."""
         wall = time.time()
+        if state.pop("urgent", False):
+            return "low"
         if wall >= state["next"]:
             return "start" if state["first"] else "hourly"
         if wall - state["low_check"] < LOW_CHECK_S:

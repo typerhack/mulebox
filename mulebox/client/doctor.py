@@ -193,8 +193,13 @@ def inventory(workers: list[Worker]) -> list[Finding]:
 
 
 def disks(workers: list[Worker]) -> list[Finding]:
-    return [Finding(WARN, "disk", disk.warning(str(w.get("worker")), w["disk_free"]))
-            for w in workers if w.get("online") and disk.is_low(w.get("disk_free"))]
+    found = []
+    for w in workers:
+        total = ((w.get("load") or {}).get("disk") or {}).get("total")
+        if w.get("online") and disk.is_low(w.get("disk_free"), total):
+            found.append(Finding(WARN, "disk", disk.warning(str(w.get("worker")), w["disk_free"],
+                                                            total)))
+    return found
 
 
 def skills(copies: list[Copy], schema: int) -> list[Finding]:

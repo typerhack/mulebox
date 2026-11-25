@@ -532,10 +532,26 @@ coordinator = "ssh://alice@192.168.1.50:22"
 coordinator_key = "/home/alice/.config/mulebox/coordinator_key"
 ```
 
+### A machine that rests
+
+Each node checks itself at its start, every 5 minutes, and at once when a job could not start
+(docs/design.md, A node that rests): free space on its disk, its folders, `git`, systemd's user
+manager on Linux, Docker where it offers Docker, Xcode where it offers Xcode. While a check fails
+it takes no job and `mulebox machine list` shows it `resting`, with what is wrong and the fix
+under the table; a waiting job's reason says the same. With only Docker or Xcode down, it still
+takes the jobs that need neither (`no docker`). A job that could not start because of it goes
+back in line once, for another node or for this one when it is well. After a fix,
+`mulebox machine check <name>` lets it take jobs at once rather than at its next minute.
+
+Free space: from under 10% free on its disk (or 10 GB on a small disk) agents are told to tell you,
+and the node cleans up by its own rules; under `min_free` (5 GB unless set,
+`mulebox machine config <name> --min-free 8GB`) it rests until there is room again.
+
 ### Draining, removing and moving machines
 
 ```sh
-mulebox machine list               # every machine: online, offline or draining, slots, priority
+mulebox machine list               # every machine: online, offline, draining or resting, slots, priority
+mulebox machine check build-2      # run its health checks now, and show what fails with the fix
 mulebox machine drain build-2      # finish its jobs, take no new ones; --wait until they end
 mulebox machine resume build-2     # take jobs again
 mulebox machine remove build-2     # forget a stopped machine and take its key off
@@ -632,7 +648,7 @@ no job: the machine takes no new one until it is under the new count. `keep_core
 `keep_memory` (0 by default) are kept for whoever uses the machine: jobs that declare a `size:`
 share only what is left (docs/design.md, Job sizes); jobs that declare none count as one slot
 each. Only `slots`, `priority`, `dev`, `keep_cores`, `keep_memory` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`,
-`docker_clean`, `max_size`, `slim_hours`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+`docker_clean`, `max_size`, `slim_hours`, `min_free`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.
 

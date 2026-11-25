@@ -23,6 +23,7 @@ from typing import Any
 from mulebox.common import job_size, systems
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
+from mulebox.coordinator import health as node_health
 from mulebox.coordinator import holds, line, node_choice, project_pause, sizes, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
@@ -42,7 +43,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
           toolchains: dict[str, list[str]] | None = None, version: str | None = None,
           disk_free: int | None = None,
           load: dict[str, Any] | None = None,
-          priority: str | None = None, dev: bool = False) -> dict[str, Any] | None:
+          priority: str | None = None, dev: bool = False, slots: int | None = None,
+          health: dict[str, Any] | None = None) -> dict[str, Any] | None:
     """Give `worker` the first queued job in line (line.py) whose needs it meets, or None.
 
     None when the worker has no free slot, when the cluster's slots (workers.cluster_limit, at
@@ -50,16 +52,20 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
     `starting|running|cleaning`, or when no queued job fits. The claimed job moves to
     `starting` with a fresh attempt id and worker lease. A node in dev mode (`dev`, or asked to
     be and not there yet) takes only a job sent to it by name, `--on` (common/node_settings.py);
-    its runners' slots and upgrades are claimed elsewhere, pinned to it already.
+    its runners' slots and upgrades are claimed elsewhere, pinned to it already. A resting
+    node claims with no free slot and its real `slots`; `health`, the claim's body, carries its
+    report, whose withheld capabilities still count as offered at submit (coordinator/health.py).
     """
     now = time.time() if now is None else now
     capabilities = systems.inferred(capabilities)  # a worker older than 1.23 names none
     have = set(capabilities)
+    withheld = node_health.withheld(health)
     with store.write() as conn:
         held = active_on(conn, worker, JOB_KIND)
-        workers.upsert(conn, worker, list(capabilities), free_slots, now,
-                       slots=free_slots + held, toolchains=toolchains, version=version,
-                       disk_free=disk_free, load=load)
+        workers.upsert(conn, worker, list(dict.fromkeys((*capabilities, *withheld))), free_slots,
+                       now, slots=slots if slots else free_slots + held, toolchains=toolchains,
+                       version=version, disk_free=disk_free, load=load)
+        node_health.save(conn, worker, health or {})
         free = free_slots - active_on(conn, worker, RUNNER_KIND)
         if (free < 1 or workers.is_draining(conn, worker)
                 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
@@ -83,6 +89,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
             if (set(job["needs"]) <= have and (job["project"], job["branch"]) not in busy
                     and job["project"] not in on_hold and not job["paused"]
                     and job["pinned_worker"] in ((worker,) if dev else (None, worker))  # `--on`
+                    and node_health.may_take(job, version)  # back in line: a newer worker
                     and node_choice.leave_to(conn, choice, job, now) is None):
                 size = job["size"] or None
                 if budget is not None and not job_size.fits(budget, on_it, size):
@@ -159,4 +166,5 @@ def claim_body(job: dict[str, Any]) -> dict[str, Any]:
     names = ("job_id", "attempt_id", "project", "job", "branch", "argv", "fingerprint",
              "base_commit",
              "timeout_min", "setup", "install", "toolchain", "needs", "env", "env_order", "take")
-    return {**{name: job[name] for name in names}, "limits": LIMITS_BY_COORDINATOR}
+    return {**{name: job[name] for name in names}, "limits": LIMITS_BY_COORDINATOR,
+            **node_health.claim_fields(job)}

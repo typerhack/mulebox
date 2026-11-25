@@ -897,7 +897,8 @@ never only a refusal: it says what is wrong and what the agent can do about it.
 - **The node checks itself and takes no job while a check fails.** Checks, each with a short
   time limit (`worker/health.py`): the disk of its roots has at least `min_free` (5 GB, a node
   setting, set from afar); the roots can be written; `git` runs; the
-  executor answers (`systemd-run --user` with linger on Linux, process groups on macOS); Docker
+  executor answers (systemd's user manager, where jobs run as its units; process groups, as on
+  macOS, need nothing outside the worker); Docker
   answers (`docker info`), only on a node that offers `docker`; Xcode answers
   (`xcodebuild -version`), only on a node that offers `xcode`. Toolchains are not run: they
   install themselves per job (M17.3), and a broken one fails only the jobs that pin it.
@@ -912,7 +913,8 @@ never only a refusal: it says what is wrong and what the agent can do about it.
 - **One part down is not the whole node.** A failing Docker or Xcode check withholds only that
   capability: the node still takes jobs that do not need it. Disk, roots, git and executor
   stop all claims. This is the rest.
-- **The worker decides, the coordinator shows.** A resting worker does not claim. It leaves a
+- **The worker decides, the coordinator shows.** A resting worker claims with no free slot (and
+  its real `slots`), so it stays seen and gets its settings and orders, and takes nothing. It leaves a
   withheld capability out of what it claims with, so no coordinator, old or new, gives it such a
   job. It reports `health` (each failing check, its message and since when) with every claim and
   heartbeat; the coordinator keeps it in `workers.health` (schema 33). A withheld capability
@@ -921,12 +923,15 @@ never only a refusal: it says what is wrong and what the agent can do about it.
   than this reports nothing and reads as healthy.
 - **A failed start goes back in line once.** When a job could not start and the check right after
   it fails, the fault is the node's, not the job's: the job is queued again (a new attempt, a
-  line in its log) for any node to take, at most once, then exit 5 as today. When the check
+  line in its log) for any node to take, at most once, then exit 5 as today. Its log goes on
+  where the first try's ended (`log_offset` in the claim), so it goes only to a worker of 1.41 or
+  later. Not a state a worker may ask for: only the coordinator puts a job back, for this reason. When the check
   passes, the failure is the job's own (a refused compose file, a version that does not exist, an
   image not found), and exit 5 stands.
 - **A streak with no failed check.** Some faults no check sees. Three jobs of two or more projects
   in a row that could not start on a node, within 15 minutes, rest it for 10 minutes; then it
-  takes one job, and a pass ends the streak. One project failing three times is that project's.
+  takes one job at a time, and a job that starts its command ends the streak (one that fails
+  again rests it again). One project failing three times is that project's.
 - **Help for the agent.** Every failing check carries a fix in plain words and, where there is
   one, the command: "start Docker Desktop on build-1, or ask your user to", "free space on
   build-1: `mulebox storage clean`", "turn linger on: `loginctl enable-linger alice`". The agent
@@ -935,6 +940,9 @@ never only a refusal: it says what is wrong and what the agent can do about it.
   the job elsewhere with `--on <node>` when another node offers its needs, or run `mulebox
   machine check <node>`, which runs the node's checks now and reports them, so after a fix the
   node takes jobs at once rather than at its next minute.
+- **GitHub runners go on.** A resting node's runners still get their slots: GitHub has already
+  given the run to that runner, so a refused slot would leave the CI run hanging, as with drain.
+  With the `container` floor every job runs in Docker, so there Docker down rests the whole node.
 - **Where it shows.** `mulebox machine list` (state `resting` and the reason), `mulebox doctor`,
   a waiting job's reason in `status`, `queue` and `events`, and the Machines box (a state like
   `draining`; its look from mockups). The coordinator's own node may rest: it still coordinates,

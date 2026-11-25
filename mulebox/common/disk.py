@@ -14,6 +14,7 @@ from typing import Any
 
 from mulebox.common import units
 LOW_FREE_BYTES = 10_000_000_000  # a compose job's images and an install can take that
+LOW_SHARE = 0.10  # or a tenth of the disk, whichever is more (the user's call, 2026-11-25)
 
 
 def free_bytes(folders: Iterable[str]) -> int | None:
@@ -56,11 +57,18 @@ def fullest(roots: dict[str, str], usage: DiskUsage = shutil.disk_usage
     return min(found, key=lambda entry: entry["free"]) if found else None
 
 
-def is_low(free: int | None) -> bool:
-    return free is not None and free < LOW_FREE_BYTES
+def low_line(total: int | None) -> int:
+    """Free bytes under which a disk of `total` bytes counts as low."""
+    return max(LOW_FREE_BYTES, int(total * LOW_SHARE)) if total else LOW_FREE_BYTES
 
 
-def warning(worker: str, free: int) -> str:
-    return (f"{worker} has {units.size(free)} free, and jobs can fail for lack of space. "
-            "`mulebox project clean` lists what can go and `--yes` removes it; "
-            "`docker system df` on the machine shows what Docker holds")
+def is_low(free: int | None, total: int | None = None) -> bool:
+    return free is not None and free < low_line(total)
+
+
+def warning(worker: str, free: int, total: int | None = None) -> str:
+    share = f" ({free / total:.0%} of its disk)" if total else ""
+    return (f"{worker} has {units.size(free)} free{share}, and jobs can fail for lack of space; "
+            "it takes no job under its `min_free` (5 GB unless set). `mulebox storage clean` "
+            "removes what its rules allow, `mulebox project clean` lists more and `--yes` removes "
+            "it; `docker system df` on the machine shows what Docker holds")

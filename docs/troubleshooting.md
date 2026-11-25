@@ -65,10 +65,21 @@ code means: [agents.md, section 1](agents.md#1-everyday-use-project-already-set-
 `mulebox feedback draft <job-id> --summary "what happened"` writes a report with personal details
 removed and sends nothing. Read it before you share it: [agents.md, section 4](agents.md#4-reporting-what-mulebox-could-not-handle).
 
+## A machine that rests
+
+`mulebox machine list` shows a node `resting` (it takes no job) or `no docker` (it takes only
+jobs without Docker) when one of its own checks fails, with what is wrong and the fix under the
+table. The checks: free space under `min_free`, a folder it cannot write, `git` missing, systemd's
+user manager not answering (linger off), Docker or Xcode not answering, or three jobs of different
+projects in a row that could not start (a rest of 10 minutes). Fix it, then
+`mulebox machine check <name>`: the node checks again at once and takes jobs if all pass.
+
 ## A warning that a machine is low on disk
 
-Each worker reports the free space of the fullest disk holding its folders. Under 10 GB,
-`mulebox doctor` and every command from a project warn. Nothing is removed for you:
+Each worker reports the free space of the fullest disk holding its folders. Under 10% of the disk,
+or 10 GB on a small disk, `mulebox doctor` and every command from a project warn, and the node
+cleans up by its own rules (install.md, Disk use and cleanup on its own). Under its `min_free`
+(5 GB unless set) it takes no job until there is room again (the next section). Beyond its rules:
 `mulebox project clean` lists the branch folders no job has used for 14 days, and `--yes` removes
 them; `mulebox project reset <project> --caches` also clears a project's package caches. Docker's
 images are not mulebox's to remove, so `docker system df` on the machine shows what it holds.

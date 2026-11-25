@@ -75,9 +75,9 @@ class Ending:
     def _deliver(self, job: ActiveJob, now: float) -> None:
         if not job.cleaned:
             self._cleanup(job)
-            if not job.cleaned:
-                self._keep_lease(job, now)
-                return
+        if not job.cleaned or job.judging:  # judging: whose fault it was (agent_health.py)
+            self._keep_lease(job, now)
+            return
         if not self._online(now):
             return
         try:
@@ -87,7 +87,8 @@ class Ending:
             self._call(request(
                 MessageType.RESULT, job_id=job.job_id, outcome=job.outcome.value,
                 exit_code=job.exit_code, duration_s=round(job.duration_s, 3),
-                attempt_id=job.attempt_id, usage=job.meter.peaks.as_dict()), now)
+                attempt_id=job.attempt_id, usage=job.meter.peaks.as_dict(),
+                **self._node_fault(job)), now)
         except LinkError:
             return
         job.result_sent = True

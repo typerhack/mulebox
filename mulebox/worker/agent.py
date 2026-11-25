@@ -23,18 +23,19 @@ from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.common.safepath import RemovalDenied, remove_tree
+from mulebox.common.safepath import remove_tree
 from mulebox.common.status import ENVIRONMENT, PREPARE, TOOLCHAIN
 from mulebox.worker import activity, advert, background, job_meter, live_config, runspec
-from mulebox.worker import project_home, reclaim, simulator, toolchains, workspace, xcode
+from mulebox.worker import simulator, toolchains, workspace, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
+from mulebox.worker.agent_health import Checking
 from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.orders import Ordering
 from mulebox.worker.storage_sweep import Storing
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor, RunSpec
-from mulebox.worker.job import ActiveJob, floored, outcome_for, uses_docker
+from mulebox.worker.job import ActiveJob, floored, job_offset, outcome_for, uses_docker
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.common.redact import StreamRedactor, secret_values
 from mulebox.worker.logtail import LogTailer
@@ -48,7 +49,7 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
-class Agent(Ending, Skipping, Ordering, Storing):
+class Agent(Ending, Skipping, Ordering, Storing, Checking):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
                  supervisor: Any = None, docker: Docker | None = None,
@@ -102,6 +103,7 @@ class Agent(Ending, Skipping, Ordering, Storing):
     def step(self, now: float | None = None) -> None:
         now = self.clock() if now is None else now
         self._settings()
+        self._health_tick(now)  # the node's checks (agent_health.py)
         for job in list(self.active.values()):
             self._tend(job, now)
         for job in list(self.finishing):
@@ -117,6 +119,7 @@ class Agent(Ending, Skipping, Ordering, Storing):
     def _settings(self, reply: dict[str, Any] | None = None) -> dict[str, Any]:
         """Take a hand edit of node.toml, or a change in a coordinator's `reply`; what to report."""
         self._take_replies(reply)  # project orders and keep marks come the same way
+        self._health_asked(reply)
         if self.live is not None:
             self.node = self.live.follow(self.node, reply) if reply else self.live.check(self.node)
             if hasattr(self.link, "cluster_slots"):
@@ -132,8 +135,9 @@ class Agent(Ending, Skipping, Ordering, Storing):
         return FINISHING_POLL_S if self.finishing else POLL_S
 
     def _claim(self, now: float) -> None:
-        msg = request(MessageType.CLAIM, **advert.fields(self.node, self.paths, self.host),
-                      free_slots=self._free_slots(), restarted=self.fresh,
+        msg = request(MessageType.CLAIM, **self._claim_body(
+                          advert.fields(self.node, self.paths, self.host), self._free_slots(), now),
+                      restarted=self.fresh,
                       settings=self._settings(), **self._storage_fields())
         try:
             reply = self._call(msg, now)
@@ -152,7 +156,8 @@ class Agent(Ending, Skipping, Ordering, Storing):
         safe = self.paths.is_safe_job(project, job_id)
         log_path = self.paths.job_dir(project, job_id) / "out.log" if safe else None
         tailer = LogTailer(log_path, job_id, attempt_id, request,
-                           StreamRedactor(secret_values(self.node.job_env)), clock=self.clock)
+                           StreamRedactor(secret_values(self.node.job_env)), clock=self.clock,
+                           offset=job_offset(claim))
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=uses_docker(claim),
                         take=[p for p in claim.get("take") or [] if isinstance(p, str)],
@@ -186,6 +191,7 @@ class Agent(Ending, Skipping, Ordering, Storing):
                 self._end(job, Outcome.CANCELLED, None, now)
                 return
             job.handle = self.executor.start(spec)
+            self._command_started()  # a streak of failed starts ends (health.py)
         except LinkError:
             self._end(job, Outcome.INTERRUPTED, None, now)
         except (MuleboxError, OSError) as exc:
@@ -194,6 +200,7 @@ class Agent(Ending, Skipping, Ordering, Storing):
     def _not_started(self, job: ActiveJob, exc: Exception, now: float) -> None:
         LOG.error("job %s could not start: %s", job.job_id, exc)
         job.tailer.note(f"{status.NOT_STARTED_NOTE} {exc}\n")
+        self._start_failed(job, now)  # its result waits for the node's check
         self._end(job, Outcome.FAILED, None, now)
 
     def _after_install(self, job: ActiveJob, now: float) -> None:
@@ -224,18 +231,6 @@ class Agent(Ending, Skipping, Ordering, Storing):
             job.tailer.note(f"mulebox: {note}\n")
         return spec
 
-    def _into_home(self, job: ActiveJob, snapshot: Path) -> project_home.Synced:
-        """The job's files into the project's worktree; a crash can leave root's files there."""
-        branch = job.branch
-        try:
-            return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
-        except (RemovalDenied, PermissionError):
-            if self.docker is None:
-                raise
-        tree = project_home.tree_for(self.paths, job.project, branch)
-        reclaim.reclaim_tree(self.docker, self.paths, tree, job.job_id, self.node.name)
-        return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
-
     def _tend(self, job: ActiveJob, now: float) -> None:
         self.meter.update(now)
         job.meter.update(now, job.steps.stage)
@@ -265,7 +260,7 @@ class Agent(Ending, Skipping, Ordering, Storing):
         job.last_heartbeat = now
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
                       attempt_id=job.attempt_id, load=self.host.sample(), settings=self._settings(),
-                      **self._storage_fields(),
+                      **self._storage_fields(), **self._heartbeat_health(now),
                       activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
                           job.steps.stage, job.steps.last_line, now, job.tailer.download))

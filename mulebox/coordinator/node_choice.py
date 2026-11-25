@@ -25,7 +25,7 @@ from typing import Any
 
 from mulebox.common import node_settings as ns
 from mulebox.coordinator import store as st
-from mulebox.coordinator import workers
+from mulebox.coordinator import health, workers
 from mulebox.coordinator.store import ACTIVE_STATES
 
 GRACE_S = 30.0  # left to a better-ranked node at most this long
@@ -61,7 +61,7 @@ def read(conn: sqlite3.Connection, worker: str, now: float, priority: str | None
     choice = Choice(worker, free)
     for row in rows:
         if (row["worker"] == worker or not workers.is_online(row, now) or row.get("draining")
-                or workers.is_dev(row)):
+                or workers.is_dev(row) or health.resting(row)):
             continue
         held, boosted = conn.execute(
             f"SELECT COUNT(*), MAX(boost) FROM jobs WHERE {_ACTIVE} AND worker = ?",
@@ -70,7 +70,7 @@ def read(conn: sqlite3.Connection, worker: str, now: float, priority: str | None
         if boosted or room < 1:
             continue
         rank = ns.rank((row.get("settings") or {}).get("priority"))
-        peer = Peer(row["worker"], frozenset(row["capabilities"]), room)
+        peer = Peer(row["worker"], frozenset(health.offers(row)), room)  # less what it withholds
         if rank > mine:
             choice.better.append(peer)
         elif rank == mine:

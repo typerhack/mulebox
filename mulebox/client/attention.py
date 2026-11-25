@@ -176,11 +176,16 @@ def tell(body: dict[str, Any], err: TextIO) -> None:
     for job in _dicts(body.get("finished_away")):
         report.status(err, away_line(job))
     for low in _dicts(body.get("low_disks")):
-        report.status(err, WARNING + disk.warning(str(low.get("worker")), int(low.get("free") or 0)))
+        report.status(err, WARNING + disk.warning(str(low.get("worker")), int(low.get("free") or 0),
+                                                   _total(low.get("total"))))
     for heavy in _dicts(body.get("heavy_nodes")):
         report.status(err, heavy_line(heavy))
     for answer in _dicts(body.get("space_answers")):
         report.status(err, answer_line(answer))
+
+
+def _total(value: Any) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else None
 
 
 def heavy_line(heavy: dict[str, Any]) -> str:

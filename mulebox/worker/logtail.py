@@ -58,7 +58,7 @@ class LogTailer:
     def __init__(self, path: Path | None, job_id: str, attempt_id: str, make_request: MakeRequest,
                  redactor: StreamRedactor | None = None,
                  steps: StepTracker | None = None, watch_downloads: bool = True,
-                 clock: Callable[[], float] = time.time) -> None:
+                 clock: Callable[[], float] = time.time, offset: int = 0) -> None:
         self.path = path
         self.job_id = job_id
         self.attempt_id = attempt_id
@@ -71,7 +71,8 @@ class LogTailer:
         self._partial = ""  # redacted text of a line not finished yet
         self._decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
         self._read_pos = 0
-        self._offset = 0  # redacted bytes queued so far
+        # redacted bytes queued so far; a job back in line goes on after its first attempt's log
+        self._offset = offset
         self._queue: deque[tuple[int, bytes]] = deque()
         self.dropped = False
 

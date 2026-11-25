@@ -25,6 +25,8 @@ from `max_size` under that name, for coordinators older than 1.30.
   slims the oldest folders that may be slimmed, then removes the oldest that may go, never a
   running, kept or latest one. From `WARN_SHARE` of it every command from a project tells the
   agent to ask its user. `"off"` for no limit and no warning.
+- `min_free`: free space below which the node takes no job and rests (`"5GB"`, the default;
+  worker/health.py, design.md, A node that rests). The sweep runs first, from `keep_free`.
 """
 
 from __future__ import annotations
@@ -34,11 +36,11 @@ from dataclasses import dataclass
 from typing import Any
 
 FIELDS = ("keep_free", "unused_days", "keep_latest", "idle_days", "auto_clean", "docker_clean",
-          "max_size", "slim_hours")
+          "max_size", "slim_hours", "min_free")
 FLAGS = ("keep_latest", "auto_clean", "docker_clean")
 DEFAULTS: dict[str, Any] = {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                             "idle_days": 14, "auto_clean": True, "docker_clean": True,
-                            "max_size": "20GB", "slim_hours": 12}
+                            "max_size": "20GB", "slim_hours": 12, "min_free": "5GB"}
 GONE = ("warn_size",)  # settings of older versions, read from node.toml and left aside
 WARN_SHARE = 0.8  # agents are told from this share of `max_size`
 MAX_DAYS = 365
@@ -58,11 +60,17 @@ class StoragePolicy:
     docker_clean: bool = DEFAULTS["docker_clean"]
     max_size: str = DEFAULTS["max_size"]
     slim_hours: int = DEFAULTS["slim_hours"]
+    min_free: str = DEFAULTS["min_free"]
 
     def reserve(self, total: int) -> int:
         """The bytes to keep free on a disk of `total` bytes."""
         amount, unit = _parsed(self.keep_free)
         return int(total * amount / 100) if unit == "%" else int(amount * UNITS[unit])
+
+    def min_free_bytes(self) -> int:
+        """Free space below which the node takes no job (worker/health.py)."""
+        amount, unit = _parsed(self.min_free)
+        return int(amount * UNITS[unit])
 
     def max_bytes(self) -> int | None:
         """The most mulebox may hold, or None for no limit."""
@@ -156,6 +164,10 @@ def check(name: str, value: Any) -> Any:
         return check_keep_free(value)
     if name in ("warn_size", "max_size"):
         return check_size(name, value)
+    if name == "min_free":
+        if not (isinstance(value, str) and storage_size(value)):
+            raise ValueError(f"min_free must be a size such as \"5GB\", got {value!r}")
+        return value.strip().replace(" ", "").upper()
     if name in FLAGS:
         return check_flag(name, value)
     if name == "slim_hours":

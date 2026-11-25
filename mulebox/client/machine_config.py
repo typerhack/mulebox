@@ -55,6 +55,8 @@ def register(actions: argparse._SubParsersAction) -> None:
     config.add_argument("--max-size", help='space for mulebox: the most it may hold; past it the '
                         'oldest folders are slimmed, then removed; agents are told from 80%% of it '
                         '("20GB", or off)')
+    config.add_argument("--min-free", help='free space under which the node takes no job and '
+                        'rests, after its cleanup ("5GB")')
     config.add_argument("--cancel", action="store_true", help="drop a change still waiting")
     config.add_argument("--wait", action="store_true",
                         help=f"return once the machine applied it (up to {WAIT_S:.0f} s)")
@@ -100,6 +102,8 @@ def lines(view: dict[str, Any]) -> list[str]:
             hours = current["slim_hours"]
             out.append("slimming:  " + (f"a branch folder unused {hours} hours loses what git "
                                         "ignores in it" if hours else "off"))
+        if "min_free" in current:
+            out.append(f"rests:     with under {current['min_free']} free (`mulebox machine check`)")
     if tip:
         out.append(f"suggested: {tip['slots']} slot(s), from {tip['reason']}")
     if pending:
@@ -136,7 +140,7 @@ def _config(args: argparse.Namespace) -> int:
                              ("auto_clean", _flag(args.auto_clean)),
                              ("docker_clean", _flag(args.docker_clean)),
                              ("max_size", args.max_size),
-                             ("slim_hours", args.slim_hours))
+                             ("slim_hours", args.slim_hours), ("min_free", args.min_free))
                             if value is not None}
     if args.cancel:
         body["cancel"] = True

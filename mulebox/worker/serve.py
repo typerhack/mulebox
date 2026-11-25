@@ -44,6 +44,7 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
                                             places=PlaceGroups(paths.runners, docker)),
                                         controls=steer), live=live)
     agent.recover()
+    agent.check_now(agent.clock())  # its own health, before it claims (agent_health.py)
     places = PlaceKeeper(node.name, link, paths)  # isolated runners: a container per CI job
     LOG.info("worker %s ready (%d slot(s))", node.name, node.slots)
     while not stop.is_set():

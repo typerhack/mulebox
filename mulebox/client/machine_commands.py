@@ -4,6 +4,7 @@
     mulebox machine drain <name> [--wait]    (also `machine pause`)
     mulebox machine resume <name>
     mulebox machine remove <name>
+    mulebox machine check <name>     the node's health checks, run now (machine_health.py)
     mulebox machine config <name> [--slots N] [--priority P] [--cancel] [--wait]  (machine_config.py)
 
 `drain` lets a machine finish its jobs and take no new ones; `--wait` returns once they ended.
@@ -17,7 +18,7 @@ import argparse
 import sys
 import time
 
-from mulebox.client import machine_config
+from mulebox.client import machine_config, machine_health
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import Remote, request
 from mulebox.client.setup_worker import marker_name
@@ -46,6 +47,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     remove.add_argument("name")
     remove.set_defaults(func=guarded(_remove))
     machine_config.register(actions)
+    machine_health.register(actions)
 
 
 def _say(line: str) -> None:
@@ -62,7 +64,9 @@ def state(row: dict) -> str:
         return "dev" if row.get("online") else "dev, offline"
     if row.get("draining"):
         return "draining" if row.get("online") else "drained, offline"
-    return "online" if row.get("online") else "offline"
+    if not row.get("online"):
+        return "offline"
+    return machine_health.state(row.get("health")) or "online"
 
 
 def percent(value: float | None) -> str:
@@ -89,6 +93,10 @@ def _list(args: argparse.Namespace) -> int:
               f"{per_second(load.get('net_in_kib_s')):>13} "
               f"{per_second(load.get('net_out_kib_s')):>13}  "
               f"{row.get('version') or '-':<9} {', '.join(row.get('capabilities') or []) or '-'}")
+    for row in rows:  # what is wrong, and its fix, under the table
+        if row.get("online"):
+            for line in machine_health.problem_lines(row["worker"], row.get("health")):
+                print(line)
     return 0
 
 

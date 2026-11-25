@@ -11,6 +11,7 @@ import sqlite3
 from typing import Any
 
 from mulebox.common import disk, systems
+from mulebox.coordinator import health
 
 OFFLINE_AFTER_S = 15.0  # workers poll every 1 s, or heartbeat every 3 s while busy
 
@@ -89,13 +90,21 @@ def report(worker: dict[str, Any], now: float) -> dict[str, Any]:
             "disk_free": worker.get("disk_free"), "draining": bool(worker.get("draining")),
             "priority": (worker.get("settings") or {}).get("priority"),
             "dev": is_dev(worker), "pending": worker.get("wanted") or None,
-            "load": worker.get("load") if is_online(worker, now) else None}
+            "load": worker.get("load") if is_online(worker, now) else None,
+            "health": health.of(worker)}
 
 
 def low_disks(conn: sqlite3.Connection, now: float) -> list[dict[str, Any]]:
     """Online workers short of space, for whoever is about to give them work."""
-    return [{"worker": row["worker"], "free": row.get("disk_free")} for row in listing(conn)
-            if is_online(row, now) and disk.is_low(row.get("disk_free"))]
+    return [{"worker": row["worker"], "free": row.get("disk_free"), "total": disk_total(row)}
+            for row in listing(conn)
+            if is_online(row, now) and disk.is_low(row.get("disk_free"), disk_total(row))]
+
+
+def disk_total(worker: dict[str, Any]) -> int | None:
+    """The size of the disk `disk_free` is on, from the worker's last reading."""
+    total = ((worker.get("load") or {}).get("disk") or {}).get("total")
+    return total if isinstance(total, int) and not isinstance(total, bool) else None
 
 
 _HOST = "coordinator_host"

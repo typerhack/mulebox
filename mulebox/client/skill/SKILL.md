@@ -190,7 +190,10 @@ different versions, tell the user.
   the error lists the versions the machine has. Use one only if it matches the project; otherwise
   tell the user why it failed.
 - A job waits in the queue: that is normal too. Other projects and CI share it. If `check`
-  suggests detaching, cancel nothing: the suggestion is for the next run.
+  suggests detaching, cancel nothing: the suggestion is for the next run. If the reason says a
+  node is resting, it names the fault and the fix: use `--on` another node if one offers what the
+  job needs, tell the user what only they can do, and after a fix run `mulebox machine check
+  <node>`. A job its node could not set up goes back in line once by itself; not your code.
 - mulebox itself did something wrong (a wrong result, a job that could not start with no clear
   reason, a confusing message): tell the user what happened, with the command, the exit code
   and every job id involved. Copy what mulebox printed now: some notices are in no log. If they

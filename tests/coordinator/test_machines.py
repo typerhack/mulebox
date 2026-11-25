@@ -29,7 +29,8 @@ def test_a_claim_records_toolchains_and_version(store, staging):
                                 "capabilities": ["docker", "linux"],  # as an old worker counts
                                 "toolchains": {"node": ["22.22.3"]}, "version": "1.2.3",
                                 "slots": 1, "disk_free": None, "draining": False, "load": None,
-                                "priority": None, "dev": False, "pending": None}]
+                                "priority": None, "dev": False, "pending": None,
+                                "health": None}]  # an older worker reports none
 
 
 def test_an_older_worker_reports_nothing_and_keeps_what_it_said(store, staging):
@@ -73,7 +74,8 @@ def test_a_low_disk_reaches_a_project_s_next_command(store, staging):
     queue.claim(store, "build-1", [], 1, now=100.0, disk_free=2_000_000_000)
     queue.claim(store, "build-2", [], 1, now=100.0, disk_free=90_000_000_000)
     with store.read() as conn:
-        assert workers.low_disks(conn, 101.0) == [{"worker": "build-1", "free": 2_000_000_000}]
+        assert workers.low_disks(conn, 101.0) == [{"worker": "build-1", "free": 2_000_000_000,
+                                                      "total": None}]
         assert workers.low_disks(conn, 1000.0) == []  # offline: no job goes there
 
 

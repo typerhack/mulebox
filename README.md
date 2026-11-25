@@ -562,7 +562,7 @@ command prints. The ones you and your agents use:
 | Command | What it does |
 | --- | --- |
 | `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker, `--dev` in dev mode |
-| `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
+| `mulebox machine list`, `drain`, `resume`, `remove`, `check` | every node, online or not, resting with the fix; stop one taking jobs, bring it back, forget it; run its health checks now |
 | `mulebox machine config <node>` | a node's slots, priority, dev mode, room kept for its owner and disk settings, applied from its next job |
 | `mulebox service status`, `restart`, `logs` | on a node: mulebox's own services, systemd or launchd |
 | `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |

@@ -91,7 +91,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 2 | config or usage error (`.mulebox.yml`, not in a git worktree, no commit yet) | fix the config |
 | 3 | node unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the node refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
-| 5 | the job could not start (toolchain would not install, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes |
+| 5 | the job could not start (toolchain would not install, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes. A fault of the node's own already sent it back in line once; `mulebox machine list` shows what is wrong there and the fix |
 | 8 | the command passed, but did not prove its tests ran: a runner ran none, or fewer than the last pass on the branch, else the default branch (section 1c) | a real failure: fix the tests; if they were removed on purpose, `mulebox check --fewer-tests "<why>"` |
 | 75 | the job was interrupted on the node (restart, crash) | run it again once |
 | 76 | `stopped: stuck`: it did nothing and nobody answered its question (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
@@ -129,7 +129,14 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 
   `branch_busy` names the job holding this job's branch: a branch runs one job at a time, and
   other branches run beside it, so use a branch per task to work in parallel.
-  `waiting_for` is set only when nothing can run the job; a job simply in line has `running_ahead`, the jobs on the machines now. `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
+  `waiting_for` is set only when nothing can run the job; a job simply in line has `running_ahead`,
+  the jobs on the machines now. When every node for it rests (design.md, A node that rests),
+  `waiting_for` says what is wrong on each and the fix, such as "build-1 is resting: 1.2 GB free
+  ...; free space on build-1: `mulebox storage clean` ...": do what you can yourself (`--on` another
+  node that offers what the job needs), tell the user the rest, and after a fix run
+  `mulebox machine check <node>`, so the node takes the job at once. A job its node could not set
+  up goes back in line once by itself, with a line in its log; that is not your code.
+  `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
   is where a job that ended badly failed, null when that is not known. `exit_code` is the code
   the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,
   75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. Questions are in

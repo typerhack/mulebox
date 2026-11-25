@@ -86,6 +86,9 @@ def test_passed_job(agent, fake_link, paths):
     assert kinds[-1] is MessageType.RESULT
     assert not (paths.jobs / "example-app" / job_id).exists()
     claim = fake_link.of_type(MessageType.CLAIM)[0].body
+    assert claim.pop("health") == {"resting": False, "until": None, "problems": [],
+                                   "withheld": [], "round": 0, "answers": 0}  # no check has finished yet
+    assert claim.pop("slots") == 1
     free = claim.pop("disk_free")
     load = claim.pop("load")
     assert set(load) == {"cpu_pct", "cores", "mem_pct", "net_in_kib_s", "net_out_kib_s", "cpu",

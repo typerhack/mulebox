@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.41.0 - 2026-11-25 - minor
+- A node that rests (M23.5, part 1; docs/design.md, A node that rests): each worker checks itself at its start, every 5 minutes, every minute while a check fails, and at once after a job could not start (worker/health.py, agent_health.py): free space under `min_free`, writable roots, `git`, systemd's user manager where jobs run as its units, Docker where offered, Xcode where offered. While a whole-node check fails it claims with no free slot and takes nothing, whatever coordinator it has; a failing Docker or Xcode check only withholds those capabilities. Three jobs of two or more projects in a row that could not start within 15 minutes rest it for 10, then it takes one job at a time until one starts its command.
+- A job that could not start, judged by the check that follows: when that check fails, its result says `node_fault`, and the coordinator puts it back in line once (`jobs.retries`), with a line in its log, its log going on at `log_offset`, for a worker of 1.41 or later only (coordinator/health.py). A worker cannot ask for that move: the coordinator makes it, for this reason only.
+- The coordinator keeps each worker's `health` (schema 33), still counts a withheld capability at submit, leaves a resting node out of node choice, and a waiting job's reason names each node's fault and its fix. `mulebox machine list` shows `resting` or `no docker`, with the fix under the table; `mulebox machine check <name>` has the node check now and shows the answer.
+- Disk: agents are warned from under 10% free, or 10 GB on a small disk (common/disk.py); the sweep runs at once just before a rest for disk. `min_free` (5 GB) is a node setting, also from afar (`mulebox machine config --min-free`).
+- Moved: a job's project folder preparation from worker/agent.py to agent_skip.py, to keep agent.py under 300 lines. Docs: design.md, install.md, agents.md, troubleshooting.md, interfaces-m1.md, README, the skill.
+
 ## 1.40.3 - 2026-11-25 - patch
 - docs/design.md: design note for M23.5, A node that rests, with the user's decisions (a job back in line once, Docker or Xcode withheld alone, a 5 GB floor and a warning at 10% free, a streak backstop, a fix for the agent on every rest). docs/phases.md: M23.5 started.
 
