@@ -51,7 +51,7 @@ gone for 60 s the worker releases it.
 
 | Request | Body | Reply |
 | --- | --- | --- |
-| `reserve` | `worker`, `repository`, `job`, `run_id`, `run_attempt`, `runner`, + `branch`, `run_url`, `idempotency_key`, `workflow` (GITHUB_WORKFLOW, for the order rules' `workflows`; stored as `jobs.workflow`, schema 22) | `submit_ok` (job_id, state) |
+| `reserve` | `worker`, `repository`, `job`, `run_id`, `run_attempt`, `runner`, + `branch`, `run_url`, `idempotency_key`, `workflow` (GITHUB_WORKFLOW, for the order rules' `workflows`; stored as `jobs.workflow`, schema 22), `size` (the runner's, runners/runner_size.py; 1.38) | `submit_ok` (job_id, state) |
 | `acquire` | `job_id` | `status_ok` (state `running` when granted, else `queued` + `position`) |
 | `release` | `job_id`, `outcome` (`passed`/`failed`/`cancelled`/`interrupted`), + `ci_result` | `status_ok` |
 | `runner_jobs` | `worker` | `queue_ok` (active reservations pinned to that worker) |

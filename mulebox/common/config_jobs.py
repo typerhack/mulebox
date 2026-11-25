@@ -27,7 +27,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from mulebox.common import env_rules
+from mulebox.common import env_rules, job_size
 from mulebox.common.config_reader import Reader
 
 PORT_PREFIX = "MULEBOX_PORT_"
@@ -49,6 +49,7 @@ class JobOptions:
     ports: tuple[str, ...] = ()
     stuck_after_min: int | None = None  # None: the top-level one
     tests: str | None = None  # None: the top-level one (tests_mode)
+    size: dict[str, float] | None = None  # None: the top-level one (job_size.py)
 
 
 MAX_STUCK_AFTER_MIN = 24 * 60
@@ -60,6 +61,17 @@ def stuck_after(reader: Reader) -> int | None:
     if "stuck_after_min" not in reader.data:
         return None
     return reader.integer("stuck_after_min", 0, 1, MAX_STUCK_AFTER_MIN)
+
+
+def size_of(reader: Reader) -> dict[str, float] | None:
+    """`size:`, the cores and memory a job needs (common/job_size.py); None if unset."""
+    if "size" not in reader.data:
+        return None
+    reader.seen.add("size")
+    try:
+        return job_size.checked(reader.data["size"])
+    except ValueError as exc:
+        reader.fail("size", str(exc).removeprefix("size ").removeprefix("size."))
 
 
 TESTS_MODES = {True: "auto", False: "off", "auto": "auto", "required": "required"}
@@ -131,7 +143,8 @@ def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
         commands[name] = entry.text("run")
         options[name] = JobOptions(setup=_line(entry, "setup"), install=_line(entry, "install"),
                                    compose=entry.boolean("compose", True), ports=_ports(entry),
-                                   stuck_after_min=stuck_after(entry), tests=tests_mode(entry))
+                                   stuck_after_min=stuck_after(entry), tests=tests_mode(entry),
+                                   size=size_of(entry))
         entry.finish()
     if "check" not in commands:
         reader.fail("jobs", "must define a 'check' job")
@@ -166,5 +179,7 @@ def for_job(project: Any, name: str | None,
     env, dropped = env_rules.without(project.env, gone)
     stuck = project.stuck_after_min if options.stuck_after_min is None else options.stuck_after_min
     tests = project.tests if options.tests is None else options.tests
+    size = project.size if options.size is None else options.size
     return dataclasses.replace(project, setup=setup, install=install, compose=files, env=env,
-                               host_ports=options.ports, stuck_after_min=stuck, tests=tests), dropped
+                               host_ports=options.ports, stuck_after_min=stuck, tests=tests,
+                               size=size), dropped

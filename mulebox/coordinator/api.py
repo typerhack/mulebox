@@ -16,8 +16,8 @@ from mulebox.common.protocol import JobState, Message, MessageType, ProtocolErro
 from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
                                  leases, line, line_rules, machine_api, needs, node_settings,
                                  project_orders, project_pause, projects, queue, reuse, runner_api,
-                                 setting_asks, stats_api, steps, storage, taken, test_proof, upgrades,
-                                 usage_api, usual, worker_api, workers)
+                                 setting_asks, sizes, stats_api, steps, storage, taken, test_proof,
+                                 upgrades, usage_api, usual, worker_api, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request, error_message
@@ -86,6 +86,7 @@ def submit(req: Request) -> Message:
         "timeout_min": v.integer(body, "timeout_min", DEFAULT_TIMEOUT_MIN, 1, MAX_TIMEOUT_MIN),
         "stuck_after_min": v.integer(body, "stuck_after_min", None, 1, MAX_STUCK_AFTER_MIN),
         "tests": test_proof.settings(body),
+        "size": sizes.asked(body),
         "detached": v.flag(body, "detached"),
         "take": _take(body),
         "pinned_worker": v.text(body, "on", None),  # `--on <node>`: that node only
@@ -104,6 +105,7 @@ def submit(req: Request) -> Message:
             fleet, on = workers.listing(conn), fields["pinned_worker"]
             refused = (needs.on_refusal(fleet, on, fields["needs"]) if on
                        else needs.refusal(fleet, fields["needs"]))
+            refused = refused or sizes.refusal(fleet, fields["needs"], fields["size"], on)
             if refused:
                 raise NoWorker(refused)
             job = st.insert_job(conn, {

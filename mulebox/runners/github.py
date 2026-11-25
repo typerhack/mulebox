@@ -13,13 +13,14 @@ from __future__ import annotations
 import subprocess
 import sys
 from collections.abc import Callable, Iterator, Sequence
-from typing import TextIO
+from typing import Any, TextIO
 
 from mulebox.client.remote import remote_program
 from mulebox.common import ssh
 from mulebox.common.config import ClientConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.redact import Redactor
+from mulebox.runners import runner_size
 from mulebox.runners.names import check_name, check_repo, parse_actors, parse_labels
 
 GH_TIMEOUT_S = 60
@@ -86,7 +87,8 @@ def signed_in(run: GhRun = run_gh) -> str:
 
 def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
                 labels: str | None = None, actors: str | None = None,
-                isolated: bool = False, count: int = 1) -> list[str]:
+                isolated: bool = False, count: int = 1,
+                size: dict[str, Any] | None = None) -> list[str]:
     argv = [remote_program(config.remote_bin), "runner", action, "--repo", check_repo(repo)]
     if isolated:
         argv.append("--isolated")
@@ -98,7 +100,7 @@ def remote_argv(config: ClientConfig, action: str, repo: str, name: str | None,
         argv += ["--labels", ",".join(parse_labels(labels))]
     if actors is not None:
         argv += ["--actors", ",".join(parse_actors(actors))]
-    return argv
+    return argv + runner_size.argv(size)
 
 
 def _run_remote(config: ClientConfig, argv: list[str], token: str, out: TextIO,
@@ -117,7 +119,7 @@ def _run_remote(config: ClientConfig, argv: list[str], token: str, out: TextIO,
 
 def register(config: ClientConfig, repo: str, *, name: str | None = None,
              labels: str | None = None, actors: str | None = None, isolated: bool = False,
-             count: int = 1, run: GhRun = run_gh, stream: Stream = ssh.stream_remote,
+             count: int = 1, size: dict[str, Any] | None = None, run: GhRun = run_gh, stream: Stream = ssh.stream_remote,
              out: TextIO = sys.stdout) -> None:
     """Add a runner for repo on the coordinator. It takes runs of `actors` only, by default of
     the account `gh` is signed in as (guard.py). An isolated one needs no token from here: the
@@ -131,7 +133,7 @@ def register(config: ClientConfig, repo: str, *, name: str | None = None,
 
         raise RunnerUsageError("--count is for an isolated runner")
     argv = remote_argv(config, "add", repo, name, labels, actors or signed_in(run), isolated,
-                       count)
+                       count, size)
     _run_remote(config, argv, "" if isolated else gh_token(repo, "registration", run), out,
                 stream)
 

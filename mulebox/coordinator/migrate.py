@@ -55,6 +55,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
 - 30 -> 31: the usage of agent jobs measured by 1.36.0 and 1.37.0 is dropped: their meter added
   a compose container's whole past CPU into the reading it was first seen in (a job read 10.9
   cores on an 8-core node). GitHub runs' meter never did, so theirs stay.
+- 31 -> 32: `jobs.size` (JSON, default '{}'), the cores and memory a job declared (sizes.py);
+  empty: one slot's share of its node.
 """
 
 import sqlite3
@@ -196,6 +198,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
     29: ("ALTER TABLE jobs ADD COLUMN usage TEXT NOT NULL DEFAULT '{}'",),
     30: ("UPDATE jobs SET usage = '{}' WHERE kind = 'job' "
          "AND worker_version IN ('1.36.0', '1.37.0')",),
+    31: ("ALTER TABLE jobs ADD COLUMN size TEXT NOT NULL DEFAULT '{}'",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

@@ -1,4 +1,5 @@
-"""A node's settings that can be changed from afar: `slots`, `priority`, `dev` and the storage
+"""A node's settings that can be changed from afar: `slots`, `priority`, `dev`, the owner's
+reserve and the storage
 settings of common/storage_policy.py (design.md, Node settings). The rules live here once, for node.toml's reader, the coordinator and the worker.
 
 - `slots`: 1 to 64 jobs at once.
@@ -7,6 +8,8 @@ settings of common/storage_policy.py (design.md, Node settings). The rules live 
 - `dev`: a node in dev mode, being set up or tried out, takes only the jobs sent to it by name:
   `--on <node>`, its own GitHub runners' slots and its own upgrade (coordinator/queue.py). No
   other node waits for it. Off by default; `mulebox setup --dev` starts a node with it on.
+- `keep_cores`, `keep_memory`: cores and memory the node keeps for its owner, left out of the
+  budget sized jobs share (common/job_size.py); 0 by default.
 - `suggest_slots`: about 4 cores and 6 GB of memory a job, at least 1. Shown beside the value,
   never applied by itself.
 """
@@ -15,13 +18,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from mulebox.common import storage_policy, units
+from mulebox.common import job_size, storage_policy, units
 MIN_SLOTS, MAX_SLOTS = 1, 64
 PRIORITIES = ("preferred", "normal", "fallback")  # best first
 DEFAULT_PRIORITY = "normal"
-EDITABLE = ("slots", "priority", "dev", *storage_policy.FIELDS)
+RESERVE = ("keep_cores", "keep_memory")  # room kept for the node's owner (common/job_size.py)
+EDITABLE = ("slots", "priority", "dev", *RESERVE, *storage_policy.FIELDS)
 # For a report from before a setting.
-DEFAULTS = {"priority": DEFAULT_PRIORITY, "dev": False, **storage_policy.DEFAULTS}
+DEFAULTS = {"priority": DEFAULT_PRIORITY, "dev": False, "keep_cores": 0, "keep_memory": "0GB",
+            **storage_policy.DEFAULTS}
 CORES_PER_JOB = 4
 GB_PER_JOB = 6
 GB = 1_000_000_000  # decimal, as every size shown (common/units.py)
@@ -68,6 +73,10 @@ def checked(changes: Any) -> dict[str, Any]:
         out["priority"] = check_priority(changes["priority"])
     if "dev" in changes:
         out["dev"] = check_dev(changes["dev"])
+    if "keep_cores" in changes:
+        out["keep_cores"] = job_size.check_keep_cores(changes["keep_cores"])
+    if "keep_memory" in changes:
+        out["keep_memory"] = job_size.check_keep_memory(changes["keep_memory"])
     for name in storage_policy.FIELDS:
         if name in changes:
             out[name] = storage_policy.check(name, changes[name])

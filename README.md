@@ -140,7 +140,10 @@ Two kinds of machine:
   folder and installed dependencies, then the node with more free slots; none waits longer than
   30 s for a better one. `--on <node>` sends a job to one node alone. A job runs only on a node
   of its project's system, Linux or macOS (`os:` in `.mulebox.yml`). A node in dev mode, being
-  set up or tried out, takes only jobs sent to it with `--on`. A worker reaches the coordinator
+  set up or tried out, takes only jobs sent to it with `--on`. A job may declare its size
+  (`size: {cores: 4, memory: 6GB}`); a node then fits as many jobs as its cores and memory hold,
+  less what it keeps for its owner, and keeps room for a big job so small ones cannot starve it.
+  A job with no size counts as one slot. A worker reaches the coordinator
   with a key that can do nothing but worker requests.
 - The dashboard runs only on the coordinator. Workers send their CPU, memory and network readings
   with every heartbeat, so one page shows every node.
@@ -389,6 +392,7 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   message. A run's CPU counts its containers.
 - **Steered like any job**: freeze, boost, move in line, open on GitHub, cancel on GitHub.
 - **Shared caches**: a runner can download through the project's package caches (`runner caches`).
+- **Sized runs**: a runner's run can count as the cores and memory it uses (`runner size`).
 - **On the node you pick**: give a node's runner a label of its own and name it in `runs-on:`, so a
   workflow goes to that node, such as a Mac for an iOS build ([GitHub runners](docs/install.md#github-runners)).
 - **Public repositories only in a container** (`runner register --isolated`). See below for why.
@@ -541,7 +545,7 @@ command prints. The ones you and your agents use:
 | --- | --- |
 | `mulebox setup <node>` | install or upgrade mulebox on a node from the dev machine; `--queued` waits its turn in line, `--worker-of <coordinator>` adds a worker, `--dev` in dev mode |
 | `mulebox machine list`, `drain`, `resume`, `remove` | every node, online or not; stop one taking jobs, bring it back, forget it |
-| `mulebox machine config <node>` | a node's slots, priority, dev mode and disk settings, applied from its next job |
+| `mulebox machine config <node>` | a node's slots, priority, dev mode, room kept for its owner and disk settings, applied from its next job |
 | `mulebox service status`, `restart`, `logs` | on a node: mulebox's own services, systemd or launchd |
 | `mulebox dashboard open` | the dashboard in your browser, through an ssh tunnel |
 | `mulebox dashboard password`, `firewall`, `cert` | on the node: sign-in, firewall and HTTPS for `lan` mode |

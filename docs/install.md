@@ -408,6 +408,16 @@ in CI. On the node, point a runner at the project's caches (the name in `.mulebo
 ~/.mulebox/bin/mulebox runner caches build-1-example-app --off
 ```
 
+**A runner's size.** A GitHub run counts as one of its node's slots. When the projects there
+declare sizes, give a runner the size of its usual run (`mulebox usage --kind ci` shows it), so a
+run starts only where it fits and sized jobs leave it room; it counts from the next run:
+
+```sh
+~/.mulebox/bin/mulebox runner size build-1-example-app --cores 6 --memory 8GB
+~/.mulebox/bin/mulebox runner size build-1-example-app --off
+mulebox runner register --repo alice/example-app --cores 6 --memory 8GB   # at registration
+```
+
 It sets `npm_config_cache`, `pnpm_config_store_dir`, `COMPOSER_CACHE_DIR`, `PIP_CACHE_DIR` and
 `MULEBOX_CACHE_<TOOL>` (for a workflow's compose file) in the runner's `.env` and restarts its
 service; a runner with a job running is refused. CI then writes into the cache the gate reads,
@@ -607,6 +617,7 @@ stays yours.
 mulebox machine config build-2                    # slots, priority, the suggestion, what waits
 mulebox machine config build-2 --slots 3          # --priority preferred|normal|fallback; --wait
 mulebox machine config build-2 --dev on           # only jobs sent with --on; off ends it
+mulebox machine config build-2 --keep-cores 2 --keep-memory 4GB   # room kept for its owner
 mulebox machine config build-2 --cancel           # drop a change that has not applied yet
 ```
 
@@ -614,8 +625,10 @@ The dashboard has the same settings in each machine's settings window
 (`/api/machines/<name>/settings`, with its controls on). The change waits on the coordinator
 until the machine writes it into its own `node.toml`, within seconds while it is online, or when it
 is back; there is no restart, and it counts from the next job. Fewer slots than jobs running stops
-no job: the machine takes no new one until it is under the new count. Only `slots`, `priority`,
-`dev` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`,
+no job: the machine takes no new one until it is under the new count. `keep_cores` and
+`keep_memory` (0 by default) are kept for whoever uses the machine: jobs that declare a `size:`
+share only what is left (docs/design.md, Job sizes); jobs that declare none count as one slot
+each. Only `slots`, `priority`, `dev`, `keep_cores`, `keep_memory` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`,
 `docker_clean`, `max_size`, `slim_hours`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.

@@ -98,6 +98,10 @@ stage took and what passed runs usually take. `usual` is a length from the past,
 so never turn it into a percentage. Image pull progress is summarised, so a quiet log during a
 pull is normal. Logs expire after 30 days by default; the job and its stages remain.
 
+A queued job that says "waiting for room" is held back by its `size:` in `.mulebox.yml` (the
+cores and memory it asked for): it starts once the jobs ahead on the node leave enough. Do not
+add or change `size:` unless the user asks; when they do, take it from `mulebox usage`.
+
 ## Time limits
 
 No job has a hard time limit while someone watches it. You decide what is stuck.

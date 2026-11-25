@@ -96,7 +96,7 @@ def test_passed_job(agent, fake_link, paths):
                                                            *systems.offered()], "free_slots": 1,
                      "toolchains": {}, "version": get_version(),
                      "restarted": True,  # the first claim after a start
-                     "settings": {"slots": 1, "priority": "normal", "dev": False,
+                     "settings": {"slots": 1, "priority": "normal", "dev": False, "keep_cores": 0, "keep_memory": "0GB",
                                   **storage_policy.DEFAULTS}}
 
 

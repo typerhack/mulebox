@@ -7,7 +7,7 @@ this module validates request bodies and builds the replies.
 from typing import Any
 
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import line, line_rules
+from mulebox.coordinator import line, line_rules, sizes
 from mulebox.coordinator import reservations as rs
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.context import Request
@@ -44,6 +44,7 @@ def reserve(req: Request) -> Message:
         "branch": v.text(body, "branch", None),
         "run_url": v.text(body, "run_url", None),
         "workflow": _workflow(body),
+        "size": sizes.asked(body),  # runner_size.py; {} one slot's share
         "idempotency_key": v.text(
             body, "idempotency_key", rs.default_key(repository, run_id, run_attempt, job, runner)
         ),

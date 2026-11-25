@@ -9,7 +9,7 @@ from __future__ import annotations
 import ipaddress
 from typing import Any
 
-from mulebox.common import node_settings, storage_policy
+from mulebox.common import job_size, node_settings, storage_policy
 from mulebox.common.config_reader import Reader
 
 DASHBOARD_MODES = ("off", "local", "lan")
@@ -26,6 +26,20 @@ def priority(reader: Reader) -> str:
         reader.fail("priority", f"must be one of {', '.join(node_settings.PRIORITIES)}, "
                     f"got {value!r}")
     return value
+
+
+def reserve(reader: Reader) -> dict[str, Any]:
+    """`keep_cores` and `keep_memory`, the room a node keeps for its owner (job_size.py)."""
+    out = {}
+    for name, check in (("keep_cores", job_size.check_keep_cores),
+                        ("keep_memory", job_size.check_keep_memory)):
+        value = reader.get(name, None)
+        if value is not None:
+            try:
+                out[name] = check(value)
+            except ValueError as exc:
+                reader.fail(name, str(exc).removeprefix(name).strip())
+    return out
 
 
 def storage(reader: Reader) -> storage_policy.StoragePolicy:

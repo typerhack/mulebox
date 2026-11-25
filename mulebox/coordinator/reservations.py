@@ -17,7 +17,7 @@ from mulebox.common import systems
 from mulebox.common.config_reader import NAME_RE
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, Outcome
-from mulebox.coordinator import holds, line, project_pause, queue, upgrades, workers
+from mulebox.coordinator import holds, line, project_pause, queue, sizes, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -113,6 +113,8 @@ def try_grant(conn: sqlite3.Connection, job: dict[str, Any], now: float,
         return job
     if queue.active_on(conn, worker) >= worker_slots(conn, worker, cluster_slots):
         return job
+    if not sizes.room_for(conn, worker, job.get("size") or None):
+        return job  # sized jobs hold the node's cores or memory (sizes.py)
     job = st.transition(conn, job, JobState.STARTING, worker=worker, started_at=now,
                         worker_lease_until=now + WORKER_LEASE_S)
     return st.transition(conn, job, JobState.RUNNING)

@@ -132,3 +132,18 @@ def test_stuck_after_min_for_all_and_for_one_job(tmp_path):
 def test_stuck_after_min_must_be_a_positive_number(tmp_path):
     with pytest.raises(ConfigError, match="stuck_after_min"):
         load(tmp_path, "  check: pnpm check\n", head=HEAD + "stuck_after_min: 0\n")
+
+
+def test_size_for_all_and_for_one_job(tmp_path):
+    project = load(tmp_path, "  check: pnpm check\n  e2e:\n    run: pnpm e2e\n"
+                             "    size: {cores: 6, memory: 8GB}\n",
+                   head=HEAD + "size:\n  cores: 2\n")
+    assert project.size == {"cores": 2.0}
+    assert for_job(project, "check")[0].size == {"cores": 2.0}
+    assert for_job(project, "e2e")[0].size == {"cores": 6.0, "memory": 8 * 10**9}
+    assert load(tmp_path, "  check: pnpm check\n").size is None
+
+
+def test_a_size_that_does_not_read_says_where(tmp_path):
+    with pytest.raises(ConfigError, match="size"):
+        load(tmp_path, "  check:\n    run: pnpm check\n    size: {cores: lots}\n")

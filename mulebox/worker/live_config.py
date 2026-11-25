@@ -4,7 +4,7 @@
   `node_settings`; `follow` writes it into node.toml (node_file.py) and gives the new config.
 - A hand edit of node.toml: `check` looks at the file's time every `CHECK_EVERY_S` and reads it
   again when it changed. A file that does not read is logged once and the old values stay.
-- What applies live: `slots`, `priority`, `dev`, `capabilities`, the floor `isolation` and the
+- What applies live: `slots`, `priority`, `dev`, `keep_cores`, `keep_memory`, `capabilities`, the floor `isolation` and the
   storage settings (common/storage_policy.py), each counted
   from the next claim, so a running job keeps its slot and the way it was started. Any other changed field is logged as needing a restart.
 - `report` is what the worker tells the coordinator with every claim and heartbeat: the settings
@@ -27,12 +27,14 @@ from mulebox.worker import node_file
 
 LOG = get_logger("worker.live_config")
 CHECK_EVERY_S = 2.0
-LIVE = ("slots", "priority", "dev", "capabilities", "isolation", "storage")
+LIVE = ("slots", "priority", "dev", "keep_cores", "keep_memory", "capabilities", "isolation",
+        "storage")
 
 
 def report(node: NodeConfig, error: str | None = None) -> dict[str, Any]:
     """The `settings` field of a claim or heartbeat."""
     return {"slots": node.slots, "priority": node.priority, "dev": node.dev,
+            "keep_cores": node.keep_cores, "keep_memory": node.keep_memory,
             **node.storage.report(), **({"error": error} if error else {})}
 
 

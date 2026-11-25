@@ -21,7 +21,7 @@ import time
 from typing import Any
 
 from mulebox.common import node_settings as ns
-from mulebox.common import storage_policy
+from mulebox.common import job_size, storage_policy
 from mulebox.common.protocol import Message, MessageType
 from mulebox.coordinator import setting_changes, workers
 from mulebox.coordinator import validate as v
@@ -31,9 +31,11 @@ from mulebox.coordinator.store import ACTIVE_STATES
 
 MAX_ERROR = 500
 _ALWAYS = ("slots", "priority")  # every node that reports settings has these
-_SINCE = {"dev": "1.23", "auto_clean": "1.26", "docker_clean": "1.26",
+_SINCE = {"dev": "1.23", "keep_cores": "1.38", "keep_memory": "1.38", "auto_clean": "1.26",
+          "docker_clean": "1.26",
           "max_size": "1.26", "slim_hours": "1.29"}  # the rest: 1.24
-_WHAT = {"dev": "dev mode", **{name: "storage settings" for name in storage_policy.FIELDS},
+_WHAT = {"dev": "dev mode", "keep_cores": "room kept for the owner",
+         "keep_memory": "room kept for the owner", **{name: "storage settings" for name in storage_policy.FIELDS},
          "auto_clean": "automatic cleanup switch", "docker_clean": "Docker cleanup",
          "max_size": "space for mulebox", "slim_hours": "folder slimming"}
 MAX_REPORTED = 4096  # slots a report may say, past the 64 a request may ask
@@ -53,6 +55,10 @@ def reported(body: dict[str, Any]) -> dict[str, Any] | None:
         out: dict[str, Any] = {"slots": slots, "priority": ns.check_priority(value.get("priority"))}
         if "dev" in value:  # a worker older than 1.23 has no dev mode
             out["dev"] = ns.check_dev(value["dev"])
+        if "keep_cores" in value:  # nor one older than 1.38 the owner's reserve
+            out["keep_cores"] = job_size.check_keep_cores(value["keep_cores"])
+        if "keep_memory" in value:
+            out["keep_memory"] = job_size.check_keep_memory(value["keep_memory"])
         for name in storage_policy.FIELDS:  # nor one older than 1.24 storage settings
             if name in value:
                 out[name] = storage_policy.check(name, value[name])
@@ -116,6 +122,7 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
         "suggested": ns.suggest_slots(load.get("cores"), (load.get("memory") or {}).get("total")),
         "choices": {"slots": {"min": ns.MIN_SLOTS, "max": ns.MAX_SLOTS},
                     "priority": list(ns.PRIORITIES), "dev": [False, True],
+                    "keep_cores": {"min": 0, "max": load.get("cores")},
                     "keep_free": {"max_share": storage_policy.MAX_SHARE},
                     "unused_days": {"min": 1, "max": storage_policy.MAX_DAYS},
                     "keep_latest": [False, True], "auto_clean": [False, True],

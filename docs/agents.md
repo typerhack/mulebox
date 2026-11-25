@@ -285,7 +285,15 @@ isolation: container            # run each job in a confined container (below); 
 image: ghcr.io/example/ci:1     # an isolated job's own image; default mulebox's
 os: any                         # linux, macos or any; default linux, macos for xcode or simulator
 tests: required                 # true (default), false, or required: a pass must show a summary (1b)
+size: {cores: 4, memory: 6GB}   # optional: what a job needs, for placement only (below)
 ```
+
+   `size:` (for all jobs, or under one job) lets a node fit jobs by cores and memory rather
+   than one per slot. It caps nothing: a job that uses more slows the jobs beside it. Set it only
+   from measurements, `mulebox usage --project <name>` (the "fits every run" column), and only
+   when the user asks; `mulebox doctor` warns when it is far from what the job used. A job with
+   none counts as one slot. A size no node can give is refused at once (exit 4), and a job held
+   back by its size says "waiting for room" in `mulebox status`.
 
    `os:` says which nodes may run the project's jobs. Without it a job runs only on a Linux
    node, or a Mac node when it needs `xcode` or `simulator`, as a project's folder set up on one

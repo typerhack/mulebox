@@ -13,7 +13,7 @@ import os
 import sys
 from pathlib import Path
 
-from mulebox.client import compose_check, doctor, gitinfo, report, skill_install
+from mulebox.client import compose_check, doctor, doctor_sizes, gitinfo, report, skill_install
 from mulebox.client.commands import guarded
 from mulebox.client.contract import SCHEMA
 from mulebox.client.doctor import FAIL, OK, Facts, Finding
@@ -84,6 +84,18 @@ def _about_registries(project: ProjectConfig | None, remote: Remote) -> list[Fin
     return doctor.registries(reply.body["hosts"]) if reply else []
 
 
+def _about_sizes(project: ProjectConfig | None, remote: Remote) -> list[Finding]:
+    if project is None or not (project.size or any(o.size for o in project.job_options.values())):
+        return []
+    try:
+        reply = remote.call(request(MessageType.USAGE, project=project.project, runs=20))
+    except CoordinatorError as exc:
+        if exc.code != TOO_OLD_CODE:
+            raise
+        return []
+    return doctor_sizes.findings(project, reply.body)
+
+
 def _about_skill() -> list[Finding]:
     folders = skill_install.config_folders(os.environ, Path.home())
     return doctor.skills(skill_install.inspect_all(folders, skill_install.packaged_text()), SCHEMA)
@@ -117,7 +129,7 @@ def examine() -> tuple[list[Finding], int]:
     try:
         remote = Remote(load_client_config())
         facts = machine_facts(remote)
-        reached = _about_registries(project, remote)
+        reached = _about_registries(project, remote) + _about_sizes(project, remote)
     except ConfigError as exc:
         return [*findings, Finding(FAIL, "client", str(exc))], report.EXIT_USAGE
     except (SSHUnavailable, RemoteTimeout) as exc:

@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.38.0 - 2026-11-25 - minor
+- Job sizes (M23.2, docs/design.md, Job sizes; placement only and room for the owner are the user's decisions): `size: {cores: 4, memory: 6GB}` in `.mulebox.yml`, for all jobs or per job (common/job_size.py, config_jobs.py). A node shares its cores and memory, less `keep_cores` and `keep_memory` kept for its owner, among the jobs it runs; `slots` stays the most at once. A job with no size, and a part left out, counts as one slot's share, so nothing changes until a project declares one. Kept in `jobs.size` (schema 32).
+- The claim (coordinator/sizes.py, queue.py): a node takes a job only where its size fits; the first job in line it could take but has no room for keeps that room, so small jobs cannot starve it; a job too big for that node ever is passed over for a bigger one. A size no node can give is refused at submit (exit 4) with each node's budget; a job held back by its size says "waiting for room" with what is free.
+- `keep_cores` and `keep_memory` (0 by default) in node.toml, applied live and set from afar: `mulebox machine config <node> --keep-cores 2 --keep-memory 4GB`, `/api/machines/<name>/settings`. The settings window does not show them yet.
+- GitHub runs: a runner's size in its `.mulebox-runner.json`, from `runner register|add --cores --memory` or `mulebox runner size <runner>`, sent by the job-started hook with each reservation (runners/runner_size.py); a reservation is granted only where its size fits.
+- `mulebox doctor` warns, after 3 measured runs, when a job used more than its size asks or asks for over twice what it used (client/doctor_sizes.py). Docs: agents.md, install.md, README, interfaces, the skill.
+
 ## 1.37.3 - 2026-11-25 - patch
 - Fix: an isolated runner place asked GitHub's API for the latest runner release, with no token, on every start; a day of deploys and the retries of failed rounds used up GitHub's 60 requests an hour for the node's address, every round then failed with "rate limit exceeded", and this repository's CI sat queued with both places offline (seen after the 1.37.2 push). The version is now kept per node in `<cache>/actions-runner/latest.json`, asked again once a day, and the last known one is used when GitHub does not answer; with none kept, the newest place image built on the node stands in (runners/runner_version.py, place_image.newest_built), with tests. docs/install.md says so.
 

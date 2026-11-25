@@ -4,7 +4,8 @@ In the order of the line (line.py): the owner's moves, then the order rules, the
 A paused job is skipped and keeps its place; a machine running a boosted job takes no new one
 until it ends. A job sent `--on <node>` goes to that node only. A job another free node should
 take (ranked above, holding its branch, or with more room) is left to it for a while
-(node_choice.py).
+(node_choice.py). A job starts only where its size fits in what is left of the node's budget,
+and the first job a node could take but has no room for yet keeps that room (sizes.py).
 
 A claim runs in one `BEGIN IMMEDIATE` transaction, so two workers (threads or processes)
 claiming at once can never get the same job, and the cluster-wide slot limit holds.
@@ -19,10 +20,10 @@ import sqlite3
 import time
 from typing import Any
 
-from mulebox.common import systems
+from mulebox.common import job_size, systems
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, line, node_choice, project_pause, upgrades, workers
+from mulebox.coordinator import holds, line, node_choice, project_pause, sizes, upgrades, workers
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -72,6 +73,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                 if job["kind"] == JOB_KIND}  # a branch's worktree holds one job at a time
         choice = node_choice.read(conn, worker, now, priority, free)  # who else is free
         dev = dev or workers.dev_asked(conn, worker)
+        budget = sizes.budget_of(workers.get(conn, worker) or {})  # None: count slots only
+        on_it = sizes.running(conn, worker) if budget is not None else []
         for job in (row for row in order.rows if row["kind"] == JOB_KIND):
             if blocker is not None and order.before(blocker, job):
                 return None  # the reservation ahead in line goes first
@@ -81,6 +84,11 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                     and job["project"] not in on_hold and not job["paused"]
                     and job["pinned_worker"] in ((worker,) if dev else (None, worker))  # `--on`
                     and node_choice.leave_to(conn, choice, job, now) is None):
+                size = job["size"] or None
+                if budget is not None and not job_size.fits(budget, on_it, size):
+                    if budget.holds(size):
+                        return None  # its room is kept for it: nothing behind it starts here
+                    continue  # never fits here; another node takes it
                 return st.transition(
                     conn, job, JobState.STARTING, worker=worker, attempt_id=new_id("att"),
                     worker_lease_until=now + WORKER_LEASE_S, started_at=now,

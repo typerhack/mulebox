@@ -980,30 +980,40 @@ from another guess. So every job and every GitHub run keeps what it really used.
   option B; interfaces-m2.md, Usage page).
 - **Nothing acts on it yet.** It is read only; M23.2 decides what sizes do with it.
 
-## Job sizes (M23.2, 2026-11-25: placement only and room for the owner are the user's decisions; the rest proposed)
+## Job sizes (M23.2, built 1.38.0)
 
 Fixed slots treat a lint run and a full browser suite alike. With sizes, a job says what it needs,
-and a node fits as many jobs as its cores and memory hold. Proposals, for the user to decide:
+and a node fits as many jobs as its cores and memory hold. Placement only and room for the owner
+were the user's decisions (2026-11-25); the rest was proposed and built as written, except that a
+runner's size can also be set after it is registered (`mulebox runner size`).
 
-- **A size per job**: `size: {cores: 4, memory: 6GB}` in `.mulebox.yml`, for all jobs or per job.
-  A job with none counts as one of today's slots (the node's cores and memory over its `slots`),
-  so nothing changes for a project until it declares sizes. `mulebox usage` gives the size that
-  fits (Job usage, above); `mulebox doctor` warns when a declared size is far from what was
-  measured, either way.
-- **A budget per node**: its cores and memory, less `keep` for its owner (`keep_cores`,
-  `keep_memory` in node.toml, set from afar like `slots`), for a node that is also someone's PC.
-  `slots` stays as the most jobs at once, so a node of many small jobs still has a cap.
+- **A size per job**: `size: {cores: 4, memory: 6GB}` in `.mulebox.yml`, for all jobs or per job;
+  either part may be left out (common/job_size.py). A job with none counts as one of today's
+  slots (the node's budget over its `slots`), and a part left out as that share, so nothing
+  changes for a project until it declares sizes. `mulebox usage` gives the size that fits (Job
+  usage, above); `mulebox doctor` warns, once 3 runs were measured, when a job used more than it
+  asks or asks for over twice what it used (client/doctor_sizes.py).
+- **A budget per node**: its cores and memory, less what it keeps for its owner (`keep_cores`,
+  `keep_memory` in node.toml, 0 by default, set from afar like `slots` with `mulebox machine
+  config --keep-cores 2 --keep-memory 4GB`), for a node that is also someone's PC. `slots` stays
+  as the most jobs at once, so a node of many small jobs still has a cap.
 - **Placement, not limits**: a size decides where and when a job starts; it does not cap the
   job (no CPU quota, no memory limit). A job that uses more than it said slows its neighbours,
   and `mulebox usage` shows it. Hard limits would turn a wrong size into a failed job.
 - **No starving the big job**: when the first job in line that a node could run does not fit in
-  what is free there, the node keeps that room for it: it starts no job behind it until it fits.
-  So small jobs cannot keep a big one waiting for ever. A job bigger than every node's budget is
-  refused at submit, with the sizes.
-- **GitHub runs**: a runner holds a size of its own (`runner register --cores --memory`), the
-  slot share when not given, as the runner does not know the run's size before it starts.
-- **Older nodes and clients**: a node that does not report a budget keeps counting slots, and a
-  job's size counts there as one slot.
+  what is free there, the node keeps that room for it: it starts no job behind it until it fits
+  (coordinator/sizes.py, queue.py). A job too big for one node ever is passed over there, for a
+  bigger node. A job bigger than every node's budget is refused at submit (exit 4), with each
+  node's budget. A job that a node with a free slot cannot take for its size says so in
+  `waiting_for`: "waiting for room: it needs 6 cores; build-1 has 2 cores and 14.0 GB free".
+- **GitHub runs**: a runner holds a size of its own (`runner register|add --cores --memory`, or
+  `mulebox runner size <runner>` later), kept in its `.mulebox-runner.json` and sent by the
+  job-started hook with each reservation, the slot share when not given, as the runner does not
+  know the run's size before it starts. A reservation is granted only when its size fits; while
+  it waits first in line its node starts no job behind it, so its room is kept the same way.
+- **Older nodes and clients**: a node that does not report its cores and memory keeps counting
+  slots only. A coordinator older than 1.38 ignores a job's `size`; a client older than 1.38
+  sends none, so its jobs count as one slot.
 
 ## GitHub Actions
 

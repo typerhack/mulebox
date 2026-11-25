@@ -172,3 +172,14 @@ def _reservations(store):
     with store.read() as conn:
         return st.select_jobs(conn, "kind = 'runner'")
 
+
+
+def test_a_runners_size_goes_with_its_reservation(gh_env, link, paths, store):
+    from mulebox.runners import runner_size
+
+    (paths.runners / RUNNER).mkdir(parents=True, exist_ok=True)
+    runner_size.store(paths, RUNNER, {"cores": 3.0, "memory": 4 * 10**9})
+    code, _ = started(gh_env, link, paths)
+    assert code == 0
+    assert store.get_job(reservation_file.read(paths, RUNNER))["size"] == {
+        "cores": 3.0, "memory": 4 * 10**9}

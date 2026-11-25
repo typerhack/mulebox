@@ -101,6 +101,7 @@ class ProjectConfig:
     timeout_min: int = DEFAULT_TIMEOUT_MIN
     stuck_after_min: int | None = None  # raises the node's; per job too (config_jobs.py)
     tests: str = "auto"  # auto, off or required; per job too (config_jobs.py `tests_mode`)
+    size: dict[str, float] | None = None  # cores and memory; per job too (common/job_size.py)
     exclude: tuple[str, ...] = ()
     ignore_changes: tuple[str, ...] = ()  # paths whose changes never change a result
     github_status: bool = False  # post check results to the pushed commit (client/github_status.py)
@@ -142,6 +143,8 @@ class NodeConfig:
     slots: int = 1
     priority: str = "normal"  # common/node_settings.py
     dev: bool = False  # takes only jobs sent to it by name (common/node_settings.py)
+    keep_cores: float = 0  # kept for the owner, out of sized jobs' budget (common/job_size.py)
+    keep_memory: str = "0GB"
     capabilities: tuple[str, ...] = ()
     isolation: str = isolation_rules.NONE  # the floor for every job here (common/isolation.py)
     coordinator: str | None = None
@@ -190,6 +193,7 @@ def load_project_config(path: Path) -> ProjectConfig:
         timeout_min=reader.integer("timeout_min", DEFAULT_TIMEOUT_MIN, 1, 240),
         stuck_after_min=config_jobs.stuck_after(reader),
         tests=config_jobs.tests_mode(reader) or "auto",
+        size=config_jobs.size_of(reader),
         exclude=reader.strings("exclude"),
         ignore_changes=reader.strings("ignore_changes"),
         github_status=reader.boolean("github_status", False),
@@ -284,6 +288,7 @@ def node_config_from(path: Path, data: Any) -> NodeConfig:
         slots=config_node.slots(reader),
         priority=config_node.priority(reader),
         dev=reader.boolean("dev", False),
+        **config_node.reserve(reader),
         storage=config_node.storage(reader),
         capabilities=reader.strings("capabilities"),
         isolation=_floor(reader),

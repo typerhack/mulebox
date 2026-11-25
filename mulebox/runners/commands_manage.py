@@ -8,6 +8,7 @@ On the node (the token is read from stdin, or prompted without echo on a TTY):
     mulebox runner list
     mulebox runner remove <name> | --repo <owner/repo> [--name N]
     mulebox runner caches <name> --project <project> [--only cache-npm,...] | --off
+    mulebox runner size <name> --cores N [--memory 8GB] | --off   (runner_size.py)
 
 On the dev machine (the token comes from `gh`, the command runs on the coordinator over ssh):
 
@@ -27,10 +28,12 @@ import sys
 from collections.abc import Callable
 
 from mulebox.client import report
+from mulebox.common import job_size
 from mulebox.common.config import ConfigError, load_client_config, load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.redact import Redactor
 from mulebox.common.ssh import RemoteTimeout, SSHUnavailable
+from mulebox.runners import runner_size
 from mulebox.runners.names import RunnerUsageError, default_name, parse_actors, parse_labels
 
 EXIT_FAILED = 1
@@ -46,6 +49,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     add = actions.add_parser("add", help="add a runner on this node (token on stdin)")
     _options(add, labels=True, config=True)
     _isolated(add)
+    _size(add)
     add.set_defaults(func=_guarded(_add))
 
     listing = actions.add_parser("list", help="list the runners on this node")
@@ -69,9 +73,17 @@ def register(sub: argparse._SubParsersAction) -> None:
     shared.add_argument("--config", help="node config file")
     shared.set_defaults(func=_guarded(_caches))
 
+    sized = actions.add_parser("size", help="the cores and memory a runner's run counts as")
+    sized.add_argument("runner", help="runner name (see `mulebox runner list`)")
+    _size(sized)
+    sized.add_argument("--off", action="store_true", help="count a run as one slot again")
+    sized.add_argument("--config", help="node config file")
+    sized.set_defaults(func=_guarded(_sized))
+
     reg = actions.add_parser("register", help="from the dev machine: add a runner for a repo")
     _options(reg, labels=True, config=False)
     _isolated(reg)
+    _size(reg)
     reg.set_defaults(func=_guarded(_register))
 
     unreg = actions.add_parser("unregister", help="from the dev machine: remove a repo's runner")
@@ -89,6 +101,12 @@ def _options(parser: argparse.ArgumentParser, *, labels: bool, config: bool) -> 
             "refused before anything runs (register: default the account `gh` is signed in as)")
     if config:
         parser.add_argument("--config", help="node config file")
+
+
+def _size(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--cores", type=float, help="cores one run counts as on its node "
+                        "(default one slot's share)")
+    parser.add_argument("--memory", help='memory one run counts as, such as "8GB"')
 
 
 def _isolated(parser: argparse.ArgumentParser) -> None:
@@ -156,14 +174,27 @@ def _add(args: argparse.Namespace) -> int:
         raise RunnerUsageError("name the GitHub accounts whose runs it takes, --actors alice "
                                "(`runner register` fills in the account `gh` is signed in as)")
     actors = parse_actors(args.actors)
+    size = runner_size.asked(args.cores, args.memory)
     if args.isolated:
         from mulebox.runners import place_manage
 
         place_manage.add_isolated(machine, args.repo, name=name, labels=labels, actors=actors,
                                   count=args.count)
-        return 0
-    token = read_token("GitHub runner registration token: ")
-    manage.add(machine, args.repo, token, name=name, labels=labels, actors=actors)
+    else:
+        token = read_token("GitHub runner registration token: ")
+        manage.add(machine, args.repo, token, name=name, labels=labels, actors=actors)
+    if size:
+        runner_size.store(machine.paths, name, size)
+    return 0
+
+
+def _sized(args: argparse.Namespace) -> int:
+    size = runner_size.asked(args.cores, args.memory)
+    if args.off == bool(size):
+        raise RunnerUsageError("give --cores and or --memory, or --off")
+    runner_size.store(_machine(args).paths, args.runner, size)
+    print(f"runner {args.runner}: " + (f"a run counts as {job_size.words(size)} from its next "
+                                       "run" if size else "a run counts as one slot again"))
     return 0
 
 
@@ -224,7 +255,8 @@ def _register(args: argparse.Namespace) -> int:
     from mulebox.runners import github
 
     github.register(load_client_config(), args.repo, name=args.name, labels=args.labels,
-                    actors=args.actors, isolated=args.isolated, count=args.count)
+                    actors=args.actors, isolated=args.isolated, count=args.count,
+                    size=runner_size.asked(args.cores, args.memory))
     return 0
 
 

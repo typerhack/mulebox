@@ -867,10 +867,14 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       node's node.toml while it ran (no restart), a project that said nothing ran isolated (no
       `~/.mulebox`, no Docker socket, "isolated: runs in a container" in its log), and one with
       `isolation: none` was refused at submit with the reason and the fix. node.toml was put back.
-- [ ] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
+- [~] M23.2 Job sizes in place of fixed slots: a job declares `cores` and `memory`, a node shares
       out its budget, keeps room for its owner (for a node that is also someone's PC), and the
       first big job held back by room keeps it, so small jobs cannot starve it. Covers the parking
-      lot's job weights.
+      lot's job weights. Built 2026-11-25 (1.38.0), with tests on the real coordinator code:
+      `size:` in `.mulebox.yml`, `keep_cores` and `keep_memory`, kept room, refusal at submit,
+      runner sizes, `doctor` warnings (design.md, Job sizes). Done when: on the real node, a big
+      sized job waits for room while smaller jobs behind it do not start, then runs; a size no node
+      can give is refused; `keep_cores` set from afar takes effect on the next claim.
 - [x] M23.3 Order rules beside moving by hand: shortest first (from `usual`), jobs that waited long
       go ahead, a branch (such as `main`), a workflow or a project first. Built 2026-11-13 (1.17.0):
       `coordinator/line.py` and `line_rules.py` (design.md, Order of the line), project, branch and
@@ -1222,5 +1226,4 @@ runs a job.
 - Project registry, if real adoption finds something that belongs neither in `.mulebox.yml`
   nor in the job history (reasoning: docs/design.md, Projects)
 - MCP wrapper over the client commands
-- Job weights, once measurements justify them
 - Windows workers (macOS: M21)

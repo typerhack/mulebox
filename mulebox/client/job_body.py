@@ -74,6 +74,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         **({"os": project.system} if project.system else {}),  # the coordinator adds the need
         "timeout_min": project.timeout_min,
         **({"stuck_after_min": project.stuck_after_min} if project.stuck_after_min else {}),
+        **({"size": project.size} if project.size else {}),  # common/job_size.py
         "tests": {"mode": project.tests, "base": snap.default_branch or None,
                   **({"fewer": fewer_tests} if fewer_tests else {})},  # coordinator/test_proof.py
         **({"detached": True} if detach else {}),

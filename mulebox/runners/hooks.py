@@ -27,7 +27,7 @@ from typing import TextIO
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.runners import diary, reservation_file
+from mulebox.runners import diary, reservation_file, runner_size
 from mulebox.runners.diary import JobResult
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.worker.paths import NodePaths
@@ -134,7 +134,9 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
                       job=gh.job, run_id=gh.run_id, run_attempt=gh.run_attempt,
                       runner=gh.runner, branch=gh.branch, run_url=gh.run_url,
                       **({"idempotency_key": gh.key} if gh.key else {}),
-                      **({"workflow": gh.workflow} if gh.workflow else {}))
+                      **({"workflow": gh.workflow} if gh.workflow else {}),
+                      **({"size": size} if (size := runner_size.of(
+                          reservation_file.runner_dir(paths, gh.runner))) else {}))
     # No idempotency_key: the coordinator derives it from the run, so a retried hook
     # finds its reservation (reservations.default_key).
     job_id: str | None = None

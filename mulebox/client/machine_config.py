@@ -3,6 +3,7 @@
     mulebox machine config <name>                      what it has, what waits, the suggestion
     mulebox machine config <name> --slots 3 --priority preferred [--wait]
     mulebox machine config <name> --dev on|off         dev mode: only jobs sent `--on` it
+    mulebox machine config <name> --keep-cores 2 --keep-memory 4GB   room kept for the owner
     mulebox machine config <name> --keep-free 20% --unused-days 7 --keep-latest on --idle-days 14
     mulebox machine config <name> --cancel             drop a change that has not applied yet
 
@@ -37,6 +38,9 @@ def register(actions: argparse._SubParsersAction) -> None:
                         help="preferred nodes take jobs first, fallback ones last")
     config.add_argument("--dev", choices=("on", "off"),
                         help="dev mode: the node takes only jobs sent to it with --on")
+    config.add_argument("--keep-cores", type=float,
+                        help="cores kept for the node's owner, out of what sized jobs share")
+    config.add_argument("--keep-memory", help='memory kept for the owner, such as "4GB"')
     config.add_argument("--keep-free", help='free space to leave: a share ("10%%") or a size ("50GB")')
     config.add_argument("--unused-days", type=int, help="remove a branch folder unused this long")
     config.add_argument("--keep-latest", choices=("on", "off"),
@@ -74,6 +78,12 @@ def lines(view: dict[str, Any]) -> list[str]:
         out.append(f"priority:  {current['priority']}")
         out.append("dev mode:  " + ("on, it takes only jobs sent to it with --on"
                                     if current.get("dev") else "off"))
+        if "keep_cores" in current:
+            kept = f"{current['keep_cores']:g} cores, {current['keep_memory']}"
+            out.append("owner:     " + ("keeps nothing back from jobs"
+                                        if not current["keep_cores"]
+                                        and current["keep_memory"] in ("0GB", "0MB", "0TB")
+                                        else f"keeps {kept} out of what sized jobs share"))
         if "keep_free" in current:
             out.append(f"disk:      keeps {current['keep_free']} free; removes branch folders "
                        f"unused {current['unused_days']} days, "
@@ -101,6 +111,10 @@ def lines(view: dict[str, Any]) -> list[str]:
     return out
 
 
+def _whole(value: float | None) -> float | int | None:
+    return int(value) if value is not None and value == int(value) else value
+
+
 def _flag(value: str | None) -> bool | None:
     return None if value is None else value == "on"
 
@@ -114,6 +128,8 @@ def _config(args: argparse.Namespace) -> int:
     body: dict[str, Any] = {key: value for key, value in
                             (("slots", args.slots), ("priority", args.priority),
                              ("dev", None if args.dev is None else args.dev == "on"),
+                             ("keep_cores", _whole(args.keep_cores)),
+                             ("keep_memory", args.keep_memory),
                              ("keep_free", args.keep_free), ("unused_days", args.unused_days),
                              ("keep_latest", None if args.keep_latest is None
                               else args.keep_latest == "on"), ("idle_days", args.idle_days),
