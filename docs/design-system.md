@@ -134,7 +134,10 @@ them in light, Gauge in dark, and they want the viewer to choose.
   wraps or the fact moves to the job's page.
 - The header's views (six since Usage, 2026-11-25) stay on one line while they fit. Under 760px
   they are a row of their own under the name, and wrap to a second line there when they do not
-  fit: no entry shrinks, loses its word or scrolls sideways, and each keeps its 44px.
+  fit: no entry shrinks, loses its word or scrolls sideways, and each keeps its 44px. On a phone (520px or less)
+  their icons go, the gap between them is `--space-2`, and the Storage count is a dot (its
+  number in its label and title), so the six fit on one line at 390px; wrapping stays the fallback
+  for a narrower screen.
 
 ## Corners
 

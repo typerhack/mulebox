@@ -46,14 +46,16 @@ export function Header({ page }: { page: Route["page"] }) {
         <a href="#/" className="text-lg font-semibold tracking-tight no-underline">mulebox</a>
         <span className="font-mono text-xs text-ink-3">{health.version ?? ""}</span>
         <nav aria-label="Views"
-          className="ml-4 flex gap-x-5 self-stretch touch:gap-x-3 max-md:order-3 max-md:ml-0 max-md:basis-full max-md:flex-wrap max-md:border-t max-md:border-line">
+          className="ml-4 flex gap-x-5 self-stretch touch:gap-x-2 max-md:order-3 max-md:ml-0 max-md:basis-full max-md:flex-wrap max-md:border-t max-md:border-line">
           {VIEWS.map(([id, href, name, Icon]) => (
             <a key={id} href={href} aria-current={id === current ? "page" : undefined}
               className="inline-flex min-h-head items-center gap-2 border-y-2 border-transparent font-medium whitespace-nowrap text-ink-2 no-underline hover:text-ink-1 on:border-b-accent on:font-semibold on:text-ink-1 max-md:min-h-ctl-touch">
               <Icon aria-hidden className="size-icon max-touch:hidden" /><span>{name}</span>
               {id === "storage" && asks > 0 && (
                 <span role="img" aria-label={`${asks} to decide`} title={`${asks} idle ${asks === 1 ? "project" : "projects"} to decide on`}
-                  className="num rounded-full bg-ink-1 px-1 text-xs leading-normal font-semibold text-surface-1">{asks}</span>
+                  className="num rounded-full bg-ink-1 px-1 text-xs leading-normal font-semibold text-surface-1 touch:size-2 touch:px-0">
+                  <span className="touch:hidden">{asks}</span>{/* a dot on a phone, so the views stay on one line */}
+                </span>
               )}
             </a>
           ))}

@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.37.2 - 2026-11-25 - patch
+- The usage of agent jobs measured by 1.36.0 and 1.37.0 is dropped (schema 31), as their meter added a new container's whole past CPU into one reading; a job read 10.9 cores on an 8-core node and its median stayed above the node. GitHub runs' usage is kept: their meter never did this. With a test.
+- The header on a phone: the gap between the views is `--space-2` and the Storage count a dot (its number in its label and title), so the six views stay on one line at 390px with a count; before, Usage wrapped onto a second line and the sticky header grew to about 136px. docs/design-system.md says so.
+
 ## 1.37.1 - 2026-11-25 - patch
 - Fix: a compose container seen for the first time added all the CPU of its life so far into one 10 s reading, so a real job read a peak of 10.9 cores on an 8-core node and its card jumped the same way. Its CPU now counts from its second reading, as a GitHub runner's containers already did; it still counts as activity (worker/job_meter.py, with a test).
 - The Usage page on real data: jobs with no measured run (all runs before 1.36.0, and those of a removed node) are folded into one line per node after the measured ones, and nodes with measured jobs come first; before, 12 unmeasured jobs of a removed node came first and the real node's rows were 8000 px down.

@@ -55,7 +55,7 @@ def old_db(staging):
 
 def test_version_one_store_is_migrated(old_db, staging):
     with Store(old_db).open() as store:
-        assert store.schema_version() == st.SCHEMA_VERSION == 30
+        assert store.schema_version() == st.SCHEMA_VERSION == 31
         with store.read() as conn:
             assert {"kind", "pinned_worker", "runner", "run_url", "detached", "pin_side",
                     "pin_job", "pin_order", "workflow"} <= columns(conn, "jobs")
@@ -191,3 +191,17 @@ def test_recent_finished_jobs_need_no_sort(staging):
             "EXPLAIN QUERY PLAN SELECT * FROM jobs WHERE state = 'finished' "
             "ORDER BY finished_at DESC, seq DESC LIMIT 20"))
     assert "jobs_finished" in plan and "TEMP B-TREE" not in plan
+
+
+@pytest.mark.parametrize("version, kind, kept", [("1.36.0", "job", False), ("1.37.0", "job", False),
+                                                 ("1.37.1", "job", True), ("1.36.0", "runner", True)])
+def test_usage_from_the_meter_that_counted_a_new_containers_past_is_dropped(staging, version, kind, kept):
+    store_at(staging.db_path, 30)
+    conn = sqlite3.connect(staging.db_path)
+    conn.execute("UPDATE jobs SET usage = '{\"peak_cores\": 10.9, \"samples\": 3}', worker_version = ?, kind = ?",
+                 (version, kind))
+    conn.commit()
+    conn.close()
+    with Store(staging.db_path).open() as store:
+        usage = store.get_job("job-01JC3X0000000000000000000")["usage"]
+    assert bool(usage) is kept

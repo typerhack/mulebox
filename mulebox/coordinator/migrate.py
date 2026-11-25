@@ -51,6 +51,10 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   (common/stuck.py); NULL for the node's.
 - 28 -> 29: `jobs.tests` (JSON, default '{}'), the test settings a job was sent with and the tests it ran
   (test_proof.py); empty for older jobs.
+- 29 -> 30: `jobs.usage` (JSON, default '{}'), a run's peak cores and memory (usage_report.py).
+- 30 -> 31: the usage of agent jobs measured by 1.36.0 and 1.37.0 is dropped: their meter added
+  a compose container's whole past CPU into the reading it was first seen in (a job read 10.9
+  cores on an 8-core node). GitHub runs' meter never did, so theirs stay.
 """
 
 import sqlite3
@@ -190,6 +194,8 @@ _STEPS: dict[int, tuple[str, ...]] = {
     27: ("ALTER TABLE jobs ADD COLUMN stuck_after_min INTEGER",),
     28: ("ALTER TABLE jobs ADD COLUMN tests TEXT NOT NULL DEFAULT '{}'",),
     29: ("ALTER TABLE jobs ADD COLUMN usage TEXT NOT NULL DEFAULT '{}'",),
+    30: ("UPDATE jobs SET usage = '{}' WHERE kind = 'job' "
+         "AND worker_version IN ('1.36.0', '1.37.0')",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (
