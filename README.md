@@ -224,6 +224,16 @@ the panels says so on every page, and the owner decides what goes:
 | ![The strip above the panels saying a node is under its free-space reserve](docs/images/low-space-light.png) | ![The review window: what could go next, oldest first, with enough ticked to be back above the reserve](docs/images/storage-review-dark.png) |
 | A node under its reserve | What could go, for the owner to decide |
 
+A node checks itself: free space, its folders, `git`, the job runner, Docker and Xcode. While a
+check fails it rests and takes no job, or holds back only Docker or Xcode jobs; the strip says so
+once, with the node's own fix and Check now, a waiting job says which node holds it, and the
+node's settings window lists every check and sets the least free space:
+
+| | |
+| --- | --- |
+| ![The strip saying build-1 rests for a full disk and build-2 takes no Docker jobs, each with its fix and Check now, a disk under 10% free, and the jobs waiting for build-1](docs/images/resting-dark.png) | ![The Health tab of a node's settings: resting since a time, each check passing or failing with its fix, and the least free space](docs/images/health-tab-light.png) |
+| A node that rests, and one without Docker | Every check, and the least free space |
+
 While a job or a CI run downloads packages or a cache, its card shows how much has come and how
 fast, and warns when no bytes arrive for a while:
 

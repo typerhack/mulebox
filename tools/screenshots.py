@@ -96,6 +96,10 @@ SHOTS = [
     Shot("storage-settings-light", "#/", "light", height=1640, env=CLEAN,
          script="(async () => { document.querySelector('[aria-label=\"Settings of build-1\"]').click();"
                 " await new Promise(r => setTimeout(r, 1200)); document.getElementById('tab-storage').click(); })()"),
+    Shot("resting-dark", "#/", height=1180, env={**CLEAN, "MULEBOX_MOCK_SCENE": "resting", "MULEBOX_MOCK_MACHINES": "3"}),
+    Shot("health-tab-light", "#/", "light", height=1240, env={**CLEAN, "MULEBOX_MOCK_SCENE": "resting"},
+         script="(async () => { document.querySelector('[aria-label=\"Settings of build-1\"]').click();"
+                " await new Promise(r => setTimeout(r, 1200)); document.getElementById('tab-health').click(); })()"),
     Shot("low-space-light", "#/", "light", height=560, env={**CLEAN, "MULEBOX_MOCK_SCENE": "lowspace"}),
     Shot("storage-review-dark", "#/", env={**CLEAN, "MULEBOX_MOCK_SCENE": "lowspace"},
          script="[...document.querySelectorAll('button')].find(b => b.textContent === 'Review what goes').click()"),

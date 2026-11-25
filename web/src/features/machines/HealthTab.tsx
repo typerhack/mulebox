@@ -66,21 +66,23 @@ export function HealthTab({ machine, view, draft, locked, busy, onEdit, onDrop }
       {rows.length > 0 && (
         <ul aria-label={`The checks of ${machine.name}`} className="divide-y divide-line border-y border-line">
           {rows.map((row) => (
-            <li key={row.check} className="grid grid-cols-[auto_1fr] items-start gap-x-3 gap-y-1 py-2">
-              {row.problem ? <OctagonAlert aria-hidden className="status-icon mt-px size-icon text-danger" />
-                : <CircleCheck aria-hidden className="status-icon mt-px size-icon text-passed" />}
-              <p className="min-w-0">
-                <strong className="font-semibold">{row.name}</strong>{" "}
-                <span className={cx("text-sm", row.problem ? "num" : "text-ink-2")}>
-                  {row.problem ? `fails since ${clockTime(row.problem.since)}` : row.passes}
-                </span>
-              </p>
-              {row.problem && (
-                <p className="col-start-2 text-sm">
-                  {sentence(row.problem.message)}{" "}
-                  <span className="text-ink-2"><WithCode text={sentence(row.problem.fix)} /></span>
+            <li key={row.check} className="flex items-start gap-3 py-2">
+              {row.problem ? <OctagonAlert aria-hidden className="status-icon mt-px size-icon flex-none text-danger" />
+                : <CircleCheck aria-hidden className="status-icon mt-px size-icon flex-none text-passed" />}
+              <div className="grid min-w-0 gap-1">
+                <p>
+                  <strong className="font-semibold">{row.name}</strong>{" "}
+                  <span className={cx("text-sm", row.problem ? "num" : "text-ink-2")}>
+                    {row.problem ? `fails since ${clockTime(row.problem.since)}` : row.passes}
+                  </span>
                 </p>
-              )}
+                {row.problem && (
+                  <p className="text-sm">
+                    {sentence(row.problem.message)}{" "}
+                    <span className="text-ink-2"><WithCode text={sentence(row.problem.fix)} /></span>
+                  </p>
+                )}
+              </div>
             </li>
           ))}
         </ul>

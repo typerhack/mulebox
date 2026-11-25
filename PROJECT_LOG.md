@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.42.3 - 2026-11-25 - patch
+- README: a node that rests, with two new pictures from the stand-in (resting-dark: the strip, the box and the waiting jobs; health-tab-light: the Health tab), taken by tools/screenshots.py.
+- The Health tab's check rows use flex, not an arbitrary grid column: CI's class check (`npm run lint`) refused `grid-cols-[auto_1fr]` from 1.42.0.
+
 ## 1.42.2 - 2026-11-25 - patch
 - Tests: the worker loop's tests no longer run the machine's own health checks (tests/worker/conftest.py). On GitHub's macOS machines, which have no Docker, the Docker check could finish before the first claim and withhold `docker`, failing a claim test since 1.41.0.
 
