@@ -17,6 +17,7 @@ runs nothing for it. Its slots, `hold_slots` or all of the node's for 0, count a
 from __future__ import annotations
 
 import sqlite3
+import time
 from typing import Any
 
 from mulebox.common.ids import new_id
@@ -137,6 +138,30 @@ def _view(conn: sqlite3.Connection, job: dict[str, Any], now: float) -> dict[str
             "go": held, "node": job["pinned_worker"], "holds": what(job), **({"until": until(job)} if held else {}),
             **({"ended": job.get("stop_reason") or job.get("outcome")}
                if job["state"] == JobState.FINISHED else {})}
+
+
+def in_the_way(conn: sqlite3.Connection, job: dict[str, Any], now: float,
+               order: line.Line | None = None) -> str | None:
+    """Why a waiting job waits for a hold, if it does: one holds a node it could run on, or
+    waits ahead of it in line (queue.oldest_reservation). None when no hold is in its way."""
+    marks = ", ".join("?" for _ in ACTIVE_STATES)
+    found = st.select_jobs(conn, f"kind = ? AND (state = ? OR state IN ({marks}))",
+                           (HOLD_KIND, JobState.QUEUED.value, *(s.value for s in ACTIVE_STATES)),
+                           queue.QUEUE_ORDER)
+    if job["pinned_worker"]:
+        found = [h for h in found if h["pinned_worker"] == job["pinned_worker"]]
+    if found and order is None:
+        order = line.read(conn, now)
+    for row in found:
+        node = row["pinned_worker"]
+        if row["state"] in ACTIVE_STATES:
+            ends = time.strftime("%H:%M", time.localtime(until(row)))
+            return (f"{node} is held ({what(row)}) by {row['client']} until {ends} at most "
+                    f"({row['job_id']})")
+        if order.before(row, job):
+            return (f"a hold of {node} is ahead of it in line ({row['job_id']}): nothing behind "
+                    "it starts there until it ends")
+    return None
 
 
 def _require(conn: sqlite3.Connection, req: Request) -> dict[str, Any]:

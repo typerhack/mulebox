@@ -71,6 +71,10 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -
     if (upgrade := upgrades.ahead_of(conn, job, now, order)) is not None:
         return (f"an upgrade of {upgrade['pinned_worker']} to {upgrade['branch']} is ahead of it "
                 f"({upgrade['job_id']})")
+    from mulebox.coordinator import node_hold  # node_hold -> views
+
+    if (held := node_hold.in_the_way(conn, job, now, order)) is not None:
+        return held
     reason = needs.waiting_for(needs.fleet_for(workers.listing(conn), job), job["needs"], now,
                                bool(job.get("pinned_worker")))
     if reason is None:

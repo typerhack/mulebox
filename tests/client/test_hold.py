@@ -82,3 +82,13 @@ def test_for_reads_minutes_and_hours(text, s):
 def test_a_bad_for_is_refused(text):
     with pytest.raises(UsageError):
         hold.seconds(text)
+
+
+def test_options_go_anywhere_and_only_what_follows_dashes_is_the_command():
+    from mulebox import cli
+
+    parse = cli.build_parser().parse_args
+    args = parse(["hold", "build-1", "--slots", "1", "--for", "30m"])
+    assert (args.node, args.slots, args.for_, args.argv) == ("build-1", 1, "30m", [])
+    args = parse(["hold", "--next", "build-1", "--", "ssh", "build-1", "-v", "--slots", "2"])
+    assert args.next and args.slots == 0 and args.argv == ["ssh", "build-1", "-v", "--slots", "2"]

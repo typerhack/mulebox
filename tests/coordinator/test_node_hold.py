@@ -64,13 +64,17 @@ def test_it_waits_behind_jobs_already_in_line_and_says_why(store, staging):
     assert not turn(store, staging, made["job_id"], T0 + 5)["go"]  # the job holds a slot
 
 
-def test_next_puts_it_first_and_jobs_behind_it_wait(store, staging):
+def test_next_puts_it_first_and_jobs_behind_it_wait_naming_it(store, staging):
     node(store, staging, free=0)
-    queued(store, staging, T0 + 1)
+    job = queued(store, staging, T0 + 1)
     made = hold(store, staging, T0 + 2, next=True).body
     assert made["position"] == 1
     assert node(store, staging, T0 + 3, free=2).type is MessageType.CLAIM_NONE
+    why = call(store, staging, "status", T0 + 3, job_id=job).body["waiting_for"]
+    assert why.startswith(f"a hold of wrk-a is ahead of it in line ({made['job_id']})")
     assert turn(store, staging, made["job_id"], T0 + 4)["go"]
+    why = call(store, staging, "status", T0 + 5, job_id=job).body["waiting_for"]
+    assert why.startswith("wrk-a is held (the whole node) by hold until")
 
 
 def test_a_quiet_dev_machine_ends_a_waiting_hold(store, staging):

@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.50.1 - 2026-11-26 - patch
+- `mulebox hold <node> --slots 1` took the options after the node as its command: only what follows `--` is the command now, and options go anywhere (client/hold.py). Found in the drill on the node, before any held command ran.
+- A job waiting behind a hold says so, naming it and when it ends, where it said the machines were busy (coordinator/node_hold.py `in_the_way`, views.py).
+
 ## 1.50.0 - 2026-11-26 - minor
 - Holding a node (M23.10; design.md, Holding a node, the user's decisions): `mulebox hold <node> [-- <cmd>]` waits in line like a job, then holds the whole node or `--slots N` for the command, or until Ctrl-C or `mulebox release <id>`; `--next` goes first, `--for` caps it (2 h, at most 24 h), and 2 minutes without the dev machine end it (client/hold.py).
 - On the coordinator a hold is a row of kind `hold` pinned to its node (coordinator/node_hold.py, schema 37 `jobs.hold_slots`); its slots count as taken for jobs, GitHub runs and upgrades (queue.held_slots), a worker restart leaves it, and `mulebox cancel` lets go of it.

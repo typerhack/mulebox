@@ -35,8 +35,8 @@ def register(sub: argparse._SubParsersAction) -> None:
     held.add_argument("--for", dest="for_", default="2h", metavar="TIME",
                       help="the most it is held, such as 30m or 4h (default 2h, at most 24h)")
     held.add_argument("--next", action="store_true", help="go first in line, not behind")
-    held.add_argument("argv", nargs=argparse.REMAINDER,
-                      help="-- a command to run on this machine while the node is held")
+    held.add_argument("argv", nargs="*", metavar="-- CMD",
+                      help="a command to run on this machine while the node is held, after --")
     held.set_defaults(func=guarded(_hold))
     let_go = sub.add_parser("release", help="let go of a hold")
     let_go.add_argument("job_id")
@@ -54,7 +54,7 @@ def seconds(text: str) -> int:
 
 
 def _hold(args: argparse.Namespace) -> int:
-    argv = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
+    argv = args.argv
     if args.slots < 0:
         raise UsageError("--slots must be 1 or more; leave it out for the whole node")
     remote = connect()
