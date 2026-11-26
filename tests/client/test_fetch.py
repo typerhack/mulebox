@@ -69,6 +69,12 @@ def test_a_pack_reaching_out_of_its_folder_is_refused_and_leaves_nothing(tmp_pat
     assert not (tmp_path / ".mulebox" / "escape.txt").exists() and not target.exists()
 
 
+def test_a_folder_that_cannot_be_made_is_named(tmp_path):
+    (tmp_path / "file").write_text("not a folder")
+    with pytest.raises(fetch.FetchError, match="cannot make"):
+        fetch.fetch(Remote(b""), JOB, DONE, tmp_path / "file" / "x" / JOB, io.StringIO())
+
+
 @pytest.mark.parametrize("status, said", [
     ({"state": "finished"}, "named no files"),
     ({**DONE, "state": "running"}, "once it ended"),

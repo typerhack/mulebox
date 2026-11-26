@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.48.1 - 2026-11-26 - patch
+- `mulebox fetch -o` to a folder that cannot be made says so with a fix, where it gave an internal error (client/fetch.py); found in the drill on the node.
+- docs/phases.md: M24.3 run on the real node.
+
 ## 1.48.0 - 2026-11-26 - minor
 - Files back (M24.3; design.md, Files back): `keep:` in `.mulebox.yml`, for the project or one job, and `--keep <path>` on `check` and `run` name files, folders and `*`/`**` patterns to bring back (common/keep_files.py).
 - The worker gathers them once the command ran, on every outcome, without following a link, smallest first up to the node's `keep_files_max` (200MB, a node setting), names what it left out, and sends the pack to the coordinator before the job's result, again after a lost link (worker/files_out.py, agent_files.py).

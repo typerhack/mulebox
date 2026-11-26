@@ -72,7 +72,11 @@ def fetch(remote: Any, job_id: str, status: dict[str, Any], target: Path, err: T
         raise FetchError(f"job {job_id} kept no files", error_code="job.no_files")
     target = target.resolve()
     parent = target.parent
-    parent.mkdir(parents=True, exist_ok=True)
+    try:
+        parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise FetchError(f"cannot make {parent}: {exc.strerror}",
+                         fix="pass -o a folder you can write to") from None
     roots = Roots((parent,))
     with tempfile.TemporaryDirectory(prefix=f".{target.name}.", dir=parent) as scratch:
         pack = Path(scratch) / "files.tar.gz"
