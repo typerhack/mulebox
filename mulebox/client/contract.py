@@ -38,7 +38,8 @@ from mulebox.common.status import STAGES
 # 16: `stuck` and `moving` events and `looks` in status: a running job that looks stuck
 # 17: a pass proves its tests ran: `tests`, exit 8, `mulebox check --fewer-tests`
 # 18: every error has a code and a fix line, also as JSON with --json: `errors`
-SCHEMA = 18
+# 19: a failed compose job is kept for a rerun: `mulebox check --from-stage <stage>`
+SCHEMA = 19
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -52,6 +53,7 @@ COMMANDS = {
     "bring_files_back": "mulebox run --take <path> -- <cmd> <args...>",
     "leave_running": "mulebox check --detach",
     "fewer_tests_on_purpose": 'mulebox check --fewer-tests "<why>"',
+    "rerun_from_a_stage": "mulebox check --from-stage command",  # or install, setup
     "on_one_node": "mulebox check --on <node>",
     "prepare_ahead": "mulebox warm [job]",
     "follow_it": "mulebox events --job <job-id> --json",

@@ -15,6 +15,7 @@ from .test_agent_compose import (  # noqa: F401
     add_resources,
     agent,
     assert_all_gone,
+    assert_kept_then_gone,
     clock,
     daemon,
     finished,
@@ -37,12 +38,15 @@ def test_cancelled(agent, fake_link, daemon, paths, clock):
     assert_all_gone(daemon, paths, job_id)
 
 
-def test_timed_out(agent, fake_link, daemon, paths):
+def test_timed_out(agent, fake_link, daemon, paths, clock):
     job_id = submit(fake_link, LONG, timeout_min=0.02)
     add_resources(daemon, job_id)
     run_until(agent, finished(fake_link))
     assert result_of(fake_link)["outcome"] == "timed_out"
-    assert_all_gone(daemon, paths, job_id)
+    if "running" in fake_link.log_text():  # it timed out in its command: kept for a rerun
+        assert_kept_then_gone(agent, daemon, paths, job_id, clock)
+    else:  # a slow machine: it timed out before, while its containers started
+        assert_all_gone(daemon, paths, job_id)
 
 
 def test_interrupted_by_a_worker_stopping(agent, fake_link, daemon, paths):

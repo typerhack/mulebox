@@ -648,7 +648,7 @@ no job: the machine takes no new one until it is under the new count. `keep_core
 `keep_memory` (0 by default) are kept for whoever uses the machine: jobs that declare a `size:`
 share only what is left (docs/design.md, Job sizes); jobs that declare none count as one slot
 each. Only `slots`, `priority`, `dev`, `keep_cores`, `keep_memory` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`,
-`docker_clean`, `max_size`, `slim_hours`, `min_free`) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+`docker_clean`, `max_size`, `slim_hours`, `min_free`) and `keep_failed_min` (how long a failed compose job's containers stay for `mulebox check --from-stage`, 15 minutes, 0 for none) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.
 

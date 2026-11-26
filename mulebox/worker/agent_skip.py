@@ -1,7 +1,7 @@
 """A job's project folder, and what it may skip there: a `setup` or `install` that nothing it
 depends on has changed.
 
-Split from agent.py: `Agent` provides `paths`, `docker` and `node`.
+Split from agent.py: `Agent` provides `paths`, `docker`, `node`, `link`, `machine` and `clock`.
 """
 
 from pathlib import Path
@@ -9,16 +9,41 @@ from typing import Any
 
 from mulebox.common import compose
 from mulebox.common.errors import MuleboxError
-from mulebox.common.safepath import RemovalDenied
+from mulebox.common.safepath import RemovalDenied, remove_tree
 from mulebox.common.log import get_logger
-from mulebox.common.status import COMMAND, SETUP
-from mulebox.worker import project_home, reclaim
+from mulebox.common.status import COMMAND, ENVIRONMENT, SETUP
+from mulebox.worker import kept as kept_jobs
+from mulebox.worker import project_home, reclaim, runspec, toolchains, workspace
+from mulebox.worker.executor import RunSpec
 from mulebox.worker.job import ActiveJob
 
 LOG = get_logger("worker.agent")
 
 
 class Skipping:
+    def _prepare(self, job: ActiveJob, claim: dict[str, Any], log_path: Path) -> RunSpec:
+        scratch = workspace.job_dir(self.paths, job.project, job.job_id)
+        snapshot = scratch / "snapshot.tar.gz"
+        self.link.fetch_snapshot(job.job_id, snapshot)
+        job.branch = claim.get("branch")
+        synced = self._into_home(job, snapshot)
+        src = job.tree = synced.tree
+        remove_tree(snapshot, self.paths.roots)
+        job.tailer.note(f"mulebox: project folder {src}, {synced.changed} files changed\n")
+        settled = bool(claim.get("install") or claim.get("setup"))
+        claim = self._rerun_claim(job, claim, src)  # a rerun skips what it reuses (agent_kept.py)
+        claim = {**self._with_install(job, self._with_setup(job, claim, synced), synced),
+                 "deps_settled": settled}
+        job.steps.begin(ENVIRONMENT, self.clock())
+        bins = toolchains.path_for(self.paths, claim.get("toolchain") or {})
+        spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins,
+                                    job.steps.marker, scratch, job.kept_env)
+        if job.rerun_key is not None and job.kept_env is None:
+            job.kept_env = kept_jobs.compose_env(spec.env)
+        for note in notes:
+            job.tailer.note(f"mulebox: {note}\n")
+        return spec
+
     def _into_home(self, job: ActiveJob, snapshot: Path) -> project_home.Synced:
         """The job's files into the project's worktree; a crash can leave root's files there."""
         branch = job.branch

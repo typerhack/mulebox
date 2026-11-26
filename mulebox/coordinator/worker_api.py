@@ -10,7 +10,9 @@ from typing import Any
 
 from mulebox.common import usage
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.coordinator import (health, leases, node_settings, project_orders, queue, recovery,
+from mulebox.coordinator import kept as held
+from mulebox.coordinator import (health, leases, node_settings, project_orders, queue,
+                                 recovery,
                                  reservations, steps, storage, test_proof, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
@@ -36,6 +38,7 @@ def claim(req: Request) -> Message:
                       slots=v.integer(req.body, "slots", None, low=0), health=req.body)
     with req.store.write() as conn:  # after the claim, which records a new worker
         storage.keep_report(conn, worker, req.body)
+        held.save(conn, worker, req.body, req.now)
         waiting = {**node_settings.settle(conn, worker, settings, req.now),
                    **health.hand_out(conn, worker, req.now),
                    **project_orders.hand_out(conn, worker, req.now), **storage.reply_fields(conn, req.now)}
@@ -79,6 +82,7 @@ def heartbeat(req: Request) -> Message:
         job = leases.renew_worker_in(conn, job, req.now)
         workers.touch(conn, job["worker"], req.now, v.load(req.body))
         storage.keep_report(conn, job["worker"], req.body)
+        held.save(conn, job["worker"], req.body, req.now)
         health.save(conn, job["worker"], req.body)
         settings = node_settings.reported(req.body)
         # A runner slot's heartbeat comes from the runner supervisor, which reads no orders:
@@ -157,5 +161,7 @@ def result(req: Request) -> Message:
         kept = job["stop_reason"] if outcome is Outcome.CANCELLED else None
         job = st.finish(conn, job, outcome, req.now, exit_code=exit_code, duration_s=duration_s,
                         stop_reason=kept)
+        if outcome is not Outcome.PASSED and job["worker"]:  # kept for a rerun (kept.py)
+            held.add(conn, job["worker"], job["job_id"], req.body.get("kept"), req.now)
     req.staging.remove_upload(job["job_id"])
     return _status(req, job)

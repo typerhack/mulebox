@@ -20,7 +20,7 @@ from typing import Any
 
 from mulebox.common import job_size, units
 from mulebox.common.job_size import Budget, Size
-from mulebox.coordinator import needs, workers
+from mulebox.coordinator import kept, needs, workers
 from mulebox.coordinator.errors import BadRequest
 
 HOW_TO_FIT = ("lower `size:` in .mulebox.yml (`mulebox usage` shows what the job really used), "
@@ -45,6 +45,15 @@ def running(conn: sqlite3.Connection, worker: str) -> list[Size | None]:
     rows = conn.execute("SELECT size FROM jobs WHERE worker = ? AND kind IN ('job', 'runner') "
                         "AND state IN ('starting', 'running', 'cleaning')", (worker,)).fetchall()
     return [json.loads(row["size"] or "{}") or None for row in rows]
+
+
+def with_kept(conn: sqlite3.Connection, worker: str, on_it: list[Size | None],
+              size: Size | None) -> list[Size | None]:
+    """`on_it` and, for a job that declares a size, the memory of the failed jobs kept there
+    for a rerun (kept.py): they hold no slot, so a job with no size, which counts as a slot's
+    share, is not held back by them."""
+    memory = kept.memory(conn, worker) if size else 0
+    return [*on_it, {"cores": 0.0, "memory": float(memory)}] if memory else on_it
 
 
 def room_for(conn: sqlite3.Connection, worker: str, size: Size | None) -> bool:

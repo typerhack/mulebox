@@ -18,23 +18,24 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.proc import HostLoad
-from mulebox.common import compose, start_note
+from mulebox.common import start_note
 from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
-from mulebox.common.safepath import remove_tree
-from mulebox.common.status import ENVIRONMENT, PREPARE, TOOLCHAIN
+from mulebox.common.status import PREPARE, TOOLCHAIN
 from mulebox.worker import activity, advert, background, job_meter, live_config, runspec
-from mulebox.worker import simulator, toolchains, workspace, xcode
+from mulebox.worker import kept as kept_jobs
+from mulebox.worker import simulator, toolchains, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
 from mulebox.worker.agent_health import Checking
+from mulebox.worker.agent_kept import Keeping
 from mulebox.worker.agent_skip import Skipping
 from mulebox.worker.orders import Ordering
 from mulebox.worker.storage_sweep import Storing
 from mulebox.worker.cleaner import Cleaner
 from mulebox.worker.docker import Docker
-from mulebox.worker.executor import Executor, RunSpec
+from mulebox.worker.executor import Executor
 from mulebox.worker.job import ActiveJob, floored, job_offset, outcome_for, uses_docker
 from mulebox.worker.link import CoordinatorLink, LinkError, request
 from mulebox.common.redact import StreamRedactor, secret_values
@@ -49,7 +50,7 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
-class Agent(Ending, Skipping, Ordering, Storing, Checking):
+class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
                  supervisor: Any = None, docker: Docker | None = None,
@@ -67,6 +68,8 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
         self.machine = runspec.Machine(node.name, paths, docker, self.ports, node.job_env)
         self.active: dict[str, ActiveJob] = {}
         self.finishing: list[ActiveJob] = []
+        self.kept = kept_jobs.KeptJobs()  # failed jobs kept for a rerun (agent_kept.py)
+        self.unkeeping: list[Any] = []  # their removals in progress
         self.install_toolchain = lambda paths, name, version: toolchains.install(
             paths, name, version, machine_env=node.job_env)
         self.retry_at = 0.0
@@ -108,6 +111,7 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
             self._tend(job, now)
         for job in list(self.finishing):
             self._deliver(job, now)
+        self._kept_tick(now)
         if self.supervisor is not None and self._online(now):
             try:
                 self.supervisor.tick(now, self._sender(now))
@@ -138,7 +142,8 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
         msg = request(MessageType.CLAIM, **self._claim_body(
                           advert.fields(self.node, self.paths, self.host), self._free_slots(), now),
                       restarted=self.fresh,
-                      settings=self._settings(), **self._storage_fields())
+                      settings=self._settings(), **self._storage_fields(),
+                      **self._kept_fields(now))
         try:
             reply = self._call(msg, now)
         except LinkError:
@@ -167,19 +172,23 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
         job.steps.begin(PREPARE, now)
         LOG.info("claimed %s (%s, attempt %s)", job_id, project, attempt_id)
         job.launch = lambda when: self._launch(job, claim, log_path, when)
+        job.unkept = self._kept_before(job, claim)  # removed first (agent_kept.py)
         try:
             gaps = toolchains.missing(self.paths, claim.get("toolchain") or {})
         except MuleboxError as exc:
             self._not_started(job, exc, now)
             return
-        if not gaps:
+        if not gaps and not job.unkept:
             job.launch(now)
             return
-        job.steps.begin(TOOLCHAIN, now)
-        names = ", ".join(" ".join(gap) for gap in gaps)
-        tailer.note(f"mulebox: installing {names} on this machine, once for every job after it\n")
-        job.install = background.start_thread(
-            lambda: toolchains.install_missing(self.paths, gaps, self.install_toolchain))
+        if gaps:
+            job.steps.begin(TOOLCHAIN, now)
+            names = ", ".join(" ".join(gap) for gap in gaps)
+            tailer.note(f"mulebox: installing {names} on this machine, once for every job "
+                        "after it\n")
+        job.install = background.start_thread(lambda: (
+            self._clean_all_kept(job.unkept),
+            gaps and toolchains.install_missing(self.paths, gaps, self.install_toolchain)))
 
     def _launch(self, job: ActiveJob, claim: dict[str, Any], log_path: Path, now: float) -> None:
         try:
@@ -205,31 +214,12 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
 
     def _after_install(self, job: ActiveJob, now: float) -> None:
         task, job.install = job.install, None
+        self._released(job.unkept)
         if task.error is not None:
             self._not_started(job, task.error, now)
         else:
             job.steps.begin(PREPARE, now)
             job.launch(now)
-
-    def _prepare(self, job: ActiveJob, claim: dict[str, Any], log_path: Path) -> RunSpec:
-        scratch = workspace.job_dir(self.paths, job.project, job.job_id)
-        snapshot = scratch / "snapshot.tar.gz"
-        self.link.fetch_snapshot(job.job_id, snapshot)
-        job.branch = claim.get("branch")
-        synced = self._into_home(job, snapshot)
-        src = job.tree = synced.tree
-        remove_tree(snapshot, self.paths.roots)
-        job.tailer.note(f"mulebox: project folder {src}, {synced.changed} files changed\n")
-        settled = bool(claim.get("install") or claim.get("setup"))
-        claim = {**self._with_install(job, self._with_setup(job, claim, synced), synced),
-                 "deps_settled": settled}
-        job.steps.begin(ENVIRONMENT, self.clock())
-        bins = toolchains.path_for(self.paths, claim.get("toolchain") or {})
-        spec, notes = runspec.build(self.machine, job.job_id, claim, src, log_path, bins,
-                                    job.steps.marker, scratch)
-        for note in notes:
-            job.tailer.note(f"mulebox: {note}\n")
-        return spec
 
     def _tend(self, job: ActiveJob, now: float) -> None:
         self.meter.update(now)
@@ -261,6 +251,7 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
         msg = request(MessageType.HEARTBEAT, job_id=job.job_id, lease="worker",
                       attempt_id=job.attempt_id, load=self.host.sample(), settings=self._settings(),
                       **self._storage_fields(), **self._heartbeat_health(now),
+                      **self._kept_fields(now),
                       activity=activity.report(
                           self.meter, job.meter, job.started_at, job.last_output,
                           job.steps.stage, job.steps.last_line, now, job.tailer.download))

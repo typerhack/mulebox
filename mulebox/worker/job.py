@@ -61,6 +61,12 @@ class ActiveJob:
     controls: JobControls = field(default_factory=JobControls)  # pause and boost (controls.py)
     judging: int = 0  # it could not start: its result waits for check number `judging` (agent_health.py)
     node_fault: str | None = None  # why the node, not the job, is at fault; it goes back in line
+    rerun_key: str | None = None  # a compose job that may be kept if it fails (rerun.py)
+    kept_env: dict[str, str] | None = None  # what a rerun of it needs again (kept.py)
+    keep: bool = False  # it ended so that it is kept, if the node keeps any
+    reused: Any = None  # the kept.Kept a rerun took over
+    home: str | None = None  # the job whose containers, folder and ports a rerun runs with
+    unkept: list[Any] = field(default_factory=list)  # kept jobs removed before it starts
 
     @property
     def steps(self) -> StepTracker:

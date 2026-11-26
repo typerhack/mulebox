@@ -41,7 +41,7 @@ def earlier(conn: sqlite3.Connection, fields: dict[str, Any], now: float
                           (fields["project"], fields["job"], fields["fingerprint"]),
                           order="seq DESC")
     same = [job for job in rows
-            if not job["cancel_requested"] and all(job[key] == fields[key] for key in _SAME)
+            if not job["cancel_requested"] and not job.get("reuses") and all(job[key] == fields[key] for key in _SAME)
             and _where(job, fields.get("pinned_worker"))]
     return (next((job for job in same if job["state"] in _OPEN), None)
             or next((job for job in same if job["state"] == JobState.FINISHED and _ran(job)

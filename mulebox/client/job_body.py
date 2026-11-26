@@ -49,7 +49,8 @@ def client_os() -> str:
 
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
                 detach: bool = False, reuse: bool = False, take: tuple[str, ...] = (),
-                on: str | None = None, fewer_tests: str | None = None) -> dict:
+                on: str | None = None, fewer_tests: str | None = None,
+                from_stage: str | None = None) -> dict:
     me = dev_machine.said()
     return {
         "project": project.project,
@@ -81,4 +82,5 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         **({"reuse": True} if reuse else {}),
         **({"take": list(take)} if take else {}),
         **({"on": on} if on else {}),  # this node only (coordinator/api.py)
+        **({"from_stage": from_stage} if from_stage else {}),  # coordinator/rerun.py
     }

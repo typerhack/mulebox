@@ -26,7 +26,8 @@ from typing import BinaryIO
 
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, attendance, leases, queue, reuse, steps, stuck_notices, usual
+from mulebox.coordinator import (api, attendance, leases, queue, rerun, reuse, steps, stuck_notices,
+                                 usual)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
 from mulebox.coordinator.errors import CoordinatorError, NotFound
@@ -128,7 +129,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
             job = st.require_job(conn, job_id)
             place = queue.position(conn, job, now)
             reason = waiting_for(conn, job, now)
-            failed = steps.failed_stage(conn, job)
+            failed = {**steps.failed_stage(conn, job), **rerun.status_fields(conn, job, now)}
         while with_log:
             body = api.log_chunk_body(staging, job, offset)
             if body["next_offset"] == offset:

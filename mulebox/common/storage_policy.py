@@ -27,6 +27,9 @@ from `max_size` under that name, for coordinators older than 1.30.
   agent to ask its user. `"off"` for no limit and no warning.
 - `min_free`: free space below which the node takes no job and rests (`"5GB"`, the default;
   worker/health.py, design.md, A node that rests). The sweep runs first, from `keep_free`.
+- `keep_failed_min`: a failed job's containers and folder stay this many minutes for a rerun
+  with `mulebox check --from-stage` (15, the default; 0 keeps nothing; worker/kept.py,
+  design.md, Rerun from the failed stage).
 """
 
 from __future__ import annotations
@@ -36,15 +39,17 @@ from dataclasses import dataclass
 from typing import Any
 
 FIELDS = ("keep_free", "unused_days", "keep_latest", "idle_days", "auto_clean", "docker_clean",
-          "max_size", "slim_hours", "min_free")
+          "max_size", "slim_hours", "min_free", "keep_failed_min")
 FLAGS = ("keep_latest", "auto_clean", "docker_clean")
 DEFAULTS: dict[str, Any] = {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                             "idle_days": 14, "auto_clean": True, "docker_clean": True,
-                            "max_size": "20GB", "slim_hours": 12, "min_free": "5GB"}
+                            "max_size": "20GB", "slim_hours": 12, "min_free": "5GB",
+                            "keep_failed_min": 15}
 GONE = ("warn_size",)  # settings of older versions, read from node.toml and left aside
 WARN_SHARE = 0.8  # agents are told from this share of `max_size`
 MAX_DAYS = 365
 MAX_HOURS = 720
+MAX_KEEP_MIN = 240
 MAX_SHARE = 90
 UNITS = {"MB": 10**6, "GB": 10**9, "TB": 10**12}
 _SIZE = re.compile(r"^\s*(\d+(?:\.\d+)?)\s*(%|MB|GB|TB)\s*$", re.IGNORECASE)
@@ -61,6 +66,7 @@ class StoragePolicy:
     max_size: str = DEFAULTS["max_size"]
     slim_hours: int = DEFAULTS["slim_hours"]
     min_free: str = DEFAULTS["min_free"]
+    keep_failed_min: int = DEFAULTS["keep_failed_min"]
 
     def reserve(self, total: int) -> int:
         """The bytes to keep free on a disk of `total` bytes."""
@@ -152,6 +158,15 @@ def check_hours(name: str, value: Any) -> int:
     return value
 
 
+def check_minutes(name: str, value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{name} must be a whole number of minutes, got {value!r}")
+    if not 0 <= value <= MAX_KEEP_MIN:
+        raise ValueError(f"{name} must be from 0 (keep nothing) to {MAX_KEEP_MIN} minutes, "
+                         f"got {value}")
+    return value
+
+
 def check_flag(name: str, value: Any) -> bool:
     if not isinstance(value, bool):
         raise ValueError(f"{name} must be true or false, got {value!r}")
@@ -172,6 +187,8 @@ def check(name: str, value: Any) -> Any:
         return check_flag(name, value)
     if name == "slim_hours":
         return check_hours(name, value)
+    if name == "keep_failed_min":
+        return check_minutes(name, value)
     return check_days(name, value)
 
 

@@ -521,22 +521,27 @@ torn down on every outcome, so a one-line fix to a failed test pays for `images`
 the containers are kept, 15 minutes as a node setting, a rerun only on request, and a full run
 with a note when the skipped stages would not hold any more.
 
-- **What is kept.** A job that ran its command and failed (exit 1 to 4, 6, 7, 8, or a timeout;
-  not a job that could not start, a cancel, an interruption or a stuck stop) keeps its Compose
-  project, its network, its ports, its generated compose file and its job folder. Its branch's
-  folder stays as it always does. On a Mac node its simulator stays too. A job with no
-  `compose:` keeps only its job folder, so for it a rerun only forces the skip of `setup`.
+- **What is kept.** A compose job that failed or timed out in `install`, `setup` or its command
+  (not one that could not start, a cancel, an interruption or a stuck stop, and not one whose
+  containers never came up) keeps its Compose project, its network, its ports, its generated
+  compose file and its job folder (worker/kept.py). Its branch's folder stays as it always does.
+  Built (1.46.0), two cases keep nothing yet: a pass the coordinator turned into exit 8 by its
+  test counts (the worker saw a pass and cleaned up), and an isolated job, whose door and port
+  forward are made for one container. A job with no `compose:` keeps nothing: it has nothing
+  slow to keep, as its branch's folder outlives it anyway.
 - **How long.** `keep_failed_min` in node.toml, 15 by default, set from afar like the node's
   other settings (`mulebox machine config --keep-failed-min N`; 0 keeps nothing). Kept things go
   earlier when the branch's next job starts without `--from-stage`, when `mulebox project reset`
   or `clean` reaches the branch, when the node needs the room for a job in line, and on a worker
   restart: the startup sweep removes them like any leftover, as a rerun is a saving, never a
-  promise. Teardown is the one every job has, by the kept job's labels.
+  promise. Teardown is the one every job has, by the kept job's labels. Kept jobs live in the
+  worker's memory only.
 - **No slot, but room.** The slot is free once the job's result is in, so other jobs run. The
   kept containers' memory, as the job's meter last read it, counts as used on the node until
   they go, so a sized job does not start on top of them (Job sizes). A node keeps at most one
   failed job per slot; a further one removes the oldest kept. The coordinator knows what is kept
-  where from the result (`kept_until`) and from each heartbeat, and the room it holds.
+  where from the result (`kept`) and from each claim and heartbeat, which replace the list in
+  `workers.kept` (schema 35; coordinator/kept.py), and the room it holds.
 - **Only on request.** A plain `mulebox check` always starts clean, since a failed run may have
   left a database in a state its tests did not expect. `mulebox check --from-stage <stage>` (and
   `mulebox run --from-stage`) asks for a rerun; `<stage>` is `install`, `setup` or `command`, the
@@ -550,8 +555,7 @@ with a note when the skipped stages would not hold any more.
 - **What a rerun does.** `toolchain`, `prepare` and `environment` run as always: the new files
   go into the branch's folder (only those that differ), and the job's env is built again with
   the kept ports. `images` and `services` are skipped, the containers are checked to be up (`docker
-  compose ps`), and the job goes on from the asked stage; the stages before it are recorded as
-  `reused`, so `usual` does not count them.
+  ps`), and the job goes on from the asked stage. A rerun does not count towards `usual`.
 - **When it cannot.** The kept containers go and the job runs from the start, with a line in its
   log and in the client's reply saying why, when: nothing is kept (expired, removed, or kept on a
   node that is now offline); the compose files, a Dockerfile they build, a lockfile, the `setup`
@@ -563,9 +567,10 @@ with a note when the skipped stages would not hold any more.
   the summary and the dashboard name what it reused and from which job. Two things wait for a
   clean run: `github_status` posts nothing for a rerun's pass, since a required check should come
   from a fresh start, and a rerun is not given back to a later plain `check` as its result.
-- **Where it shows.** `mulebox status` of the failed job (`kept_until`, the rerun command), the
-  agent contract and the skill, `mulebox machine list` (kept jobs and their memory). The
-  dashboard follows from mockups: a kept failure's row and the room it holds.
+- **Where it shows.** The failure summary (how long, and the rerun command), `mulebox status`
+  of the failed job (`kept_on`, `kept_until`), the agent contract and the skill.
+  `mulebox machine list` and the dashboard follow, from mockups: a kept failure's row and the
+  room it holds.
 - **Older parts.** A client older than this sends no `from_stage`; a coordinator older than this
   refuses the field, and the client then says the node cannot rerun and runs the job clean. A
   worker older than this keeps nothing, so every rerun falls back to a full run with its note.

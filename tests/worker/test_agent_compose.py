@@ -163,7 +163,7 @@ def test_ports_are_in_the_jobs_environment_and_log(agent, fake_link):
 
 
 def test_failed_keeps_the_exit_code_and_shows_container_logs_redacted(
-        agent, fake_link, daemon, paths):
+        agent, fake_link, daemon, paths, clock):
     job_id = submit(fake_link, "exit 7")
     add_resources(daemon, job_id)
     run_until(agent, finished(fake_link))
@@ -172,6 +172,19 @@ def test_failed_keeps_the_exit_code_and_shows_container_logs_redacted(
     text = fake_link.log_text()
     assert "last log lines of its containers" in text and "container said" in text
     assert "hunter2" not in text
+    assert_kept_then_gone(agent, daemon, paths, job_id, clock)
+
+
+def assert_kept_then_gone(agent, daemon, paths, job_id, clock):
+    """A failed compose job's containers and folder stay for a rerun, holding no slot, and go
+    once `keep_failed_min` has passed (agent_kept.py)."""
+    assert f"containers-{job_id}" in daemon.left()
+    assert paths.job_dir("example-app", job_id).is_dir()
+    assert agent._free_slots() == agent.node.slots
+    report = agent._kept_fields(clock.now)["kept"]
+    assert [k["job_id"] for k in report] == [job_id] and report[0]["left_s"] == 15 * 60
+    clock.now += 15 * 60 + 1
+    run_until(agent, lambda: not agent.kept.jobs and not agent.unkeeping)
     assert_all_gone(daemon, paths, job_id)
 
 

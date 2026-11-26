@@ -27,9 +27,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 18. Keep it current, in every session, before
+This skill was written for contract schema 19. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 18, run `mulebox skill update`, then read the
+its first line gives a schema higher than 19, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -125,6 +125,13 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
   check: it says nothing about the code.
 - `mulebox check` does not repeat itself. On the same files and settings it gives the result of
   the last 24 hours, or joins the same job if it is running. `--again` forces a run.
+- A compose job that failed in `install`, `setup` or its command keeps its containers on the node
+  for a while; its failure summary says how long and gives the command. After a fix,
+  `mulebox check --from-stage <stage>` reruns it from there with no new images or services,
+  which saves minutes on a database loaded in `setup`. A change to the compose files, a
+  Dockerfile, a lockfile, `setup` or `install` runs it from the start, and it says so. Code a
+  service copies into its image at build time is the old code in a rerun. A rerun is a quick
+  check: finish with a plain `mulebox check` before telling the user a change passes.
 
 ## Package caches and services
 

@@ -24,7 +24,8 @@ from mulebox.common import job_size, systems
 from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState
 from mulebox.coordinator import health as node_health
-from mulebox.coordinator import holds, line, node_choice, project_pause, sizes, upgrades, workers
+from mulebox.coordinator import (holds, line, node_choice, project_pause, rerun, sizes, upgrades,
+                                 workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator.attendance import LIMITS_BY_COORDINATOR
 from mulebox.coordinator.leases import WORKER_LEASE_S
@@ -92,7 +93,8 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                     and node_health.may_take(job, version)  # back in line: a newer worker
                     and node_choice.leave_to(conn, choice, job, now) is None):
                 size = job["size"] or None
-                if budget is not None and not job_size.fits(budget, on_it, size):
+                if budget is not None and not job_size.fits(
+                        budget, sizes.with_kept(conn, worker, on_it, size), size):
                     if budget.holds(size):
                         return None  # its room is kept for it: nothing behind it starts here
                     continue  # never fits here; another node takes it
@@ -167,4 +169,4 @@ def claim_body(job: dict[str, Any]) -> dict[str, Any]:
              "base_commit",
              "timeout_min", "setup", "install", "toolchain", "needs", "env", "env_order", "take")
     return {**{name: job[name] for name in names}, "limits": LIMITS_BY_COORDINATOR,
-            **node_health.claim_fields(job)}
+            **node_health.claim_fields(job), **rerun.claim_fields(job)}

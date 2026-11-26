@@ -15,7 +15,7 @@ from mulebox.common.config_jobs import MAX_STUCK_AFTER_MIN
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
                                  leases, line, line_rules, machine_api, needs, node_settings,
-                                 project_orders, project_pause, projects, queue, reuse, runner_api,
+                                 project_orders, project_pause, projects, queue, rerun, reuse, runner_api,
                                  setting_asks, sizes, stats_api, steps, storage, taken, test_proof,
                                  upgrades, usage_api, usual, worker_api, workers)
 from mulebox.coordinator import store as st
@@ -91,6 +91,7 @@ def submit(req: Request) -> Message:
         "detached": v.flag(body, "detached"),
         "take": _take(body),
         "pinned_worker": v.text(body, "on", None),  # `--on <node>`: that node only
+        "from_stage": rerun.asked(body),  # `--from-stage`: a rerun of a kept job (rerun.py)
     }
     said, names = clients.fields(body), branch_lists.checked(body)
     with req.store.write() as conn:
@@ -102,6 +103,7 @@ def submit(req: Request) -> Message:
         same = reuse.earlier(conn, fields, req.now) if job is None and v.flag(body, "reuse") else None
         if same is not None:
             return _already(req, conn, same, fields)
+        again = rerun.plan(conn, fields, req.now) if job is None and fields["from_stage"] else None
         if job is None:
             fleet, on = workers.listing(conn), fields["pinned_worker"]
             refused = (needs.on_refusal(fleet, on, fields["needs"]) if on
@@ -123,6 +125,7 @@ def submit(req: Request) -> Message:
                                              "detached": job["detached"], **news,
                                              **({"on": job["pinned_worker"]}
                                                 if job["pinned_worker"] else {}),
+                                             **({"rerun": again} if again else {}),
                                              "dashboard": req.dashboard})
 
 
@@ -170,10 +173,11 @@ def status(req: Request) -> Message:
         failed = steps.failed_stage(conn, job)
         limits = attendance.read_limits(conn)
         ahead = running_ahead(conn, job)
+        kept = rerun.status_fields(conn, job, req.now)
     return req.reply(MessageType.STATUS_OK, {
         **status_body(job, place, reason, steps=rows, usual=typical,
                       **usual.estimate(job, typical), **ahead, **failed, **why),
-        **status_facts(job), **attendance.status_fields(job, rows, req.now, limits),
+        **status_facts(job), **attendance.status_fields(job, rows, req.now, limits), **kept,
         "dashboard": req.dashboard})
 
 

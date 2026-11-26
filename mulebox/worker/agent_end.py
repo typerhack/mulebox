@@ -25,6 +25,7 @@ class Ending:
         exit_code = pull_failure.checked(outcome, exit_code, job.tailer)
         exit_code = install_step.checked(outcome, exit_code, job.tailer)
         job.outcome, job.exit_code = outcome, exit_code
+        job.keep = self._keepable(job)  # before the stage closes (agent_kept.py)
         if outcome is Outcome.PASSED and job.take and job.tree is not None:
             job.taking = take_back.chunks(take_back.read_files(job.tree, job.take, job.tailer.note))
         job.steps.close(exit_code, now, ended_badly(outcome))
@@ -41,12 +42,18 @@ class Ending:
         self._deliver(job, now)
 
     def _clean(self, job: ActiveJob) -> None:
+        if job.home is not None and self.paths.is_safe_job(job.project, job.home):
+            self.cleaner.clean(job.project, job.home, True, job.tree)  # what a rerun took over
         if self.paths.is_safe_job(job.project, job.job_id):
             self.cleaner.clean(job.project, job.job_id, job.uses_docker, job.tree,
                                uses_simulator=job.uses_simulator)
 
     def _cleanup(self, job: ActiveJob) -> None:
         """Start the job's cleanup, or take its outcome; a failed one starts again next step."""
+        if job.cleanup is None and self._keep(job):  # kept for a rerun: nothing removed
+            job.cleaned = True
+            job.steps.finish_cleanup(self.clock())
+            return
         if job.cleanup is None:
             job.cleanup = background.start_thread(lambda: self._clean(job))
         if not job.cleanup.done:
@@ -58,6 +65,8 @@ class Ending:
         job.cleaned = True
         job.steps.finish_cleanup(self.clock())
         self.ports.release(job.job_id)
+        if job.home is not None:
+            self.ports.release(job.home)
 
     def _keep_lease(self, job: ActiveJob, now: float) -> None:
         """The job counts for its slot until the result; a slow cleanup must not lose it."""
@@ -88,7 +97,7 @@ class Ending:
                 MessageType.RESULT, job_id=job.job_id, outcome=job.outcome.value,
                 exit_code=job.exit_code, duration_s=round(job.duration_s, 3),
                 attempt_id=job.attempt_id, usage=job.meter.peaks.as_dict(),
-                **self._node_fault(job)), now)
+                **self._node_fault(job), **self._kept_result(job, now)), now)
         except LinkError:
             return
         job.result_sent = True

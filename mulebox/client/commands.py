@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.client import (attention, contract, github_status, queue_view, report,
-                            skill_install, take_back, tui)
+                            rerun_lines, skill_install, take_back, tui)
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
 from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
@@ -59,6 +59,7 @@ def register(sub: argparse._SubParsersAction) -> None:
                        help="let this run pass with fewer tests than the last pass, because tests "
                             "were removed on purpose; the reason is kept with the job")
     _on(check)
+    _from_stage(check)
     check.set_defaults(func=guarded(_check))
 
     warm = sub.add_parser("warm", help="prepare a job ahead of time: toolchains, images, caches, "
@@ -80,6 +81,7 @@ def register(sub: argparse._SubParsersAction) -> None:
                      help="once the command passed, copy this file back into the project "
                           "(repeat for more), e.g. --take api/composer.lock")
     _on(run)
+    _from_stage(run)
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -104,6 +106,14 @@ def register(sub: argparse._SubParsersAction) -> None:
 def _on(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--on", metavar="NODE",
                         help="run it on this node only, as `mulebox machine list` names it")
+
+
+def _from_stage(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--from-stage", choices=rerun_lines.STAGES, metavar="STAGE",
+                        help="rerun the last failed job of this name and branch from STAGE "
+                             "(install, setup or command) in the containers its node kept, "
+                             "skipping images, services and the stages before; runs from the "
+                             "start when nothing is kept")
 
 
 def guarded(handler: Handler, notices: bool = False, kinds: Kinds = ()) -> Handler:
@@ -183,7 +193,8 @@ def _check(args: argparse.Namespace) -> int:
     return github_status.around(
         project, root, args.job, args.detach, sys.stderr,
         lambda: run_job(project, args.job, root, connect(), detach=args.detach, again=args.again,
-                        on=args.on, fewer_tests=args.fewer_tests))
+                        on=args.on, fewer_tests=args.fewer_tests, from_stage=args.from_stage),
+        rerun=bool(args.from_stage))
 
 
 def _warm(args: argparse.Namespace) -> int:
@@ -211,7 +222,8 @@ def _run(args: argparse.Namespace) -> int:
     except ValueError as exc:
         raise UsageError(str(exc)) from None
     return run_job(project, argv, root, connect(), detach=args.detach,
-                   options=BARE if args.bare else None, take=take, on=args.on)
+                   options=BARE if args.bare else None, take=take, on=args.on,
+                   from_stage=args.from_stage)
 
 
 def _queue(args: argparse.Namespace) -> int:

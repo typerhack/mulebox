@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import attention, delta, report, summary, take_back
+from mulebox.client import attention, delta, report, rerun_lines, summary, take_back
 from mulebox.client.job_body import WARM_ARGV, WARM_JOB_NAME, job_request, submit_body
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
@@ -82,6 +82,7 @@ def run_job(
     take: tuple[str, ...] = (),
     on: str | None = None,
     fewer_tests: str | None = None,
+    from_stage: str | None = None,
 ) -> int:
     """Run a job on the nodes as if it ran here; return its exit code. `on`: that node only.
 
@@ -103,13 +104,15 @@ def run_job(
         for path in snap.skipped_links:
             report.status(io.err, f"skipped symlink pointing outside the project: {path}")
         report.status(io.err, f"snapshot {snap.files} files, {units.size(snap.size)}")
-        body = submit_body(project, job, argv, snap, detach,
-                           reuse=isinstance(target, str) and not (again or warm or fewer_tests),
-                           take=take, on=on, fewer_tests=fewer_tests)
+        body = submit_body(project, job, argv, snap, detach, reuse=isinstance(target, str)
+                           and not (again or warm or fewer_tests or from_stage),
+                           take=take, on=on, fewer_tests=fewer_tests, from_stage=from_stage)
         reply = remote.call(request(MessageType.SUBMIT, **body))
         watcher.job_id = reply.body["job_id"]
         if on and reply.body.get("on") != on:
             _too_old(remote, watcher.job_id, "--on")
+        if said := rerun_lines.submitted(reply.body, from_stage):
+            report.status(io.err, said)
         already = reply.body.get("already")
         if not isinstance(already, dict):
             report.status(io.err, f"job {watcher.job_id} ({project.project} {job}) submitted")

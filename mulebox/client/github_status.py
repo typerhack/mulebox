@@ -91,10 +91,14 @@ def after(root: Path, commit: str, job: str, code: int, out: TextIO, run: Run = 
 
 
 def around(project: ProjectConfig, root: Path, job: str, detach: bool, out: TextIO,
-           go: Callable[[], int], run: Run = _run) -> int:
-    """Run the job through `go`, posting its status when the project asks and it can."""
+           go: Callable[[], int], run: Run = _run, rerun: bool = False) -> int:
+    """Run the job through `go`, posting its status when the project asks and it can. A rerun
+    from a stage posts none: a required check should come from a fresh start."""
     commit = None
-    if project.github_status and detach:
+    if project.github_status and rerun:
+        out.write("mulebox: no GitHub status with --from-stage, which may reuse an earlier "
+                  "job's containers; a plain `mulebox check` posts one\n")
+    elif project.github_status and detach:
         out.write("mulebox: no GitHub status with --detach: nothing is here to post it at the "
                   "end\n")
     elif project.github_status:

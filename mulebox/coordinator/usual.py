@@ -29,7 +29,7 @@ RUNS = 20  # recent enough to follow a project as it changes
 MIN_RUNS = 3  # fewer say too little to tell someone in the queue
 
 _RECENT = ("SELECT j.job_id FROM jobs j WHERE j.project = ? AND j.job = ? AND j.kind = 'job' "
-           "AND j.outcome = 'passed' AND (? IS NULL OR j.argv = ?) AND (? IS NULL OR j.seq < ?) "
+           "AND j.outcome = 'passed' AND j.reuses IS NULL AND (? IS NULL OR j.argv = ?) AND (? IS NULL OR j.seq < ?) "
            "AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id) "
            "AND NOT EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = j.job_id "
            "AND s.network_lost = 1) "
@@ -86,7 +86,7 @@ _JOB_RUNS = (_LOOKUPS + "SELECT w.n, (SELECT MAX(s.finished_at) - MIN(s.started_
              "FROM job_steps s WHERE s.job_id = j.job_id AND s.finished_at IS NOT NULL) AS length "
              "FROM want w JOIN jobs j ON j.job_id IN (SELECT r.job_id FROM jobs r "
              "WHERE r.project = w.project AND r.job = w.job AND r.seq < w.seq AND r.kind = 'job' "
-             "AND r.outcome = 'passed' AND r.argv = w.argv "
+             "AND r.outcome = 'passed' AND r.reuses IS NULL AND r.argv = w.argv "
              "AND EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = r.job_id) "
              "AND NOT EXISTS (SELECT 1 FROM job_steps s WHERE s.job_id = r.job_id "
              "AND s.network_lost = 1) ORDER BY r.seq DESC LIMIT ?)")

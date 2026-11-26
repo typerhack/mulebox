@@ -8,6 +8,13 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.46.0 - 2026-11-26 - minor
+- Rerun from the failed stage (M24.2; design.md, Rerun from the failed stage). A compose job that failed or timed out in `install`, `setup` or its command keeps its containers, network, ports and job folder for `keep_failed_min` minutes (15, a node setting, 0 for none), holding no slot (worker/kept.py, agent_kept.py). A node keeps at most one per slot, and removes a kept job when its time is up, when another job of the branch starts, and on a restart (the startup sweep).
+- `mulebox check --from-stage install|setup|command` (and `mulebox run --from-stage`) takes over the last kept job of the project, job and branch, on its node: images and services are skipped, and the stages before the one asked (worker/rerun.py). When nothing is kept, the node is offline, or the compose files, a Dockerfile, a lockfile, `setup`, `install`, the toolchain or env changed, or a kept container stopped, it runs from the start and says why.
+- The coordinator learns what is kept from each result, claim and heartbeat (`kept`, `workers.kept`), and a rerun's `from_stage` and `reuses` are kept on the job (schema 35; coordinator/kept.py, rerun.py). Kept memory counts as used room for a sized job only, so a job with no size is never held back by it. A rerun does not count towards `usual`, is not given back to a later plain `check`, and posts no GitHub status.
+- A kept failure's summary says how long it is kept and gives the rerun command; `status` has `kept_on` and `kept_until`. Contract schema 19 and the skill teach it. Docs: README.md, design.md, agents.md (section 1c), interfaces-m1.md, install.md, phases.md.
+- agent.py's `_prepare` moved to agent_skip.py, beside the project folder's other steps, to keep agent.py under 300 lines. docs/agents.md: the exit 8 row points to section 1b.
+
 ## 1.45.3 - 2026-11-26 - patch
 - docs/design.md: Rerun from the failed stage (M24.2), with the user's decisions: a failed compose job's containers kept `keep_failed_min` (15) minutes with no slot but their memory counted as room, `mulebox check --from-stage <stage>` only on request, and a full run with a note when the skipped stages would not hold. docs/phases.md names its done-when.
 

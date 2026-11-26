@@ -107,10 +107,11 @@ def _simulator(job_id: str, claim: dict[str, Any]) -> tuple[str, ...]:
 
 
 def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_path: Path,
-          bins: Sequence[Path], marker: str = "", scratch: Path | None = None
-          ) -> tuple[RunSpec, tuple[str, ...]]:
+          bins: Sequence[Path], marker: str = "", scratch: Path | None = None,
+          kept_env: Mapping[str, str] | None = None) -> tuple[RunSpec, tuple[str, ...]]:
     """(the run spec, notes for the job's log). `marker`: of the job's StepTracker; `scratch`:
-    the job's own folder, for what must not land in the project's."""
+    the job's own folder, for what must not land in the project's; `kept_env`: a rerun's, whose
+    containers are up already (rerun.py), so its script starts none."""
     values = jobspec.in_file_order(claim.get("env") or {}, claim.get("env_order") or ())
     files = values.pop(compose.COMPOSE_FILES_KEY, None)
     names = values.pop(config_jobs.HOST_PORTS_KEY, None)
@@ -131,7 +132,9 @@ def build(machine: Machine, job_id: str, claim: dict[str, Any], src: Path, log_p
     extra: dict[str, str] = {}
     notes: tuple[str, ...] = ()
     ready = None
-    if files is not None:
+    if files is not None and kept_env is not None:
+        extra = dict(kept_env)
+    elif files is not None:
         if machine.docker is None:
             raise ExecutorError("this worker has no Docker to run a compose: project")
         ready = compose_job.prepare(machine.docker, machine.ports, job_id, machine.name, files,

@@ -209,6 +209,9 @@ _STEPS: dict[int, tuple[str, ...]] = {
          "ALTER TABLE workers ADD COLUMN check_asked REAL",
          "ALTER TABLE jobs ADD COLUMN retries INTEGER NOT NULL DEFAULT 0"),
     33: ("ALTER TABLE clients ADD COLUMN install TEXT",),
+    34: ("ALTER TABLE jobs ADD COLUMN from_stage TEXT",
+         "ALTER TABLE jobs ADD COLUMN reuses TEXT",
+         "ALTER TABLE workers ADD COLUMN kept TEXT"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

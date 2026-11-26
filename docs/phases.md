@@ -1067,6 +1067,12 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       job that fails, rerun with `--from-stage command` after a code fix, skips `images`,
       `services` and `setup` and passes; a rerun after a compose file change runs in full and
       says why; nothing is left after `keep_failed_min`.
+      Built 2026-11-26 (1.46.0), with tests on the real worker loop (job scripts run under a
+      stand-in `docker`) and the real coordinator code: worker/kept.py, rerun.py, agent_kept.py;
+      coordinator/kept.py, rerun.py, schema 35; `--from-stage` on `check` and `run`, the rerun line
+      in the failure summary, `keep_failed_min` (`mulebox machine config --keep-failed-min`),
+      contract schema 19 and the skill. Not kept yet: an isolated job, and a pass turned into exit
+      8. Open: the drill above, then `mulebox machine list` and the dashboard from mockups.
 - [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.

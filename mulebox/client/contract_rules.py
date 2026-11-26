@@ -46,6 +46,12 @@ RULES = (
     "result of the last 24 hours, or joins the same job if it is running; a result from while "
     "you were away counts, so do not retest; --again forces a run. A failure from before a "
     "mulebox upgrade does not count and runs again",
+    "a compose job that failed in install, setup or its command keeps its containers on the "
+    "node for a while (its summary says how long and gives the command): after a fix, mulebox "
+    "check --from-stage <stage> reruns it from that stage with no new images or services. A "
+    "change to the compose files, a Dockerfile, a lockfile, setup or install runs it from the "
+    "start, and it says why. Code a service copies in at build time is the old code in a rerun: "
+    "use a plain mulebox check for it. The last word on a change is a plain mulebox check",
     "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
     "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
     "1 if a job would not run, and warnings alone exit 0",

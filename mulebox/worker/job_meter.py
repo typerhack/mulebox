@@ -90,6 +90,7 @@ class JobMeter:
     def __init__(self, read: Reader = lambda: None) -> None:
         self._read = read
         self._last: Reading | None = None
+        self._held = 0
         self._at: float | None = None
         self._tried: float | None = None
         self.busy_at: float | None = None  # agent clock; None while it cannot tell
@@ -97,6 +98,12 @@ class JobMeter:
         self.cpu_pct: float | None = None
         self.io_kib_s: float | None = None  # the job's own processes; None where not read
         self.peaks = Peaks()
+
+    @property
+    def memory(self) -> int:
+        """Bytes the job and its containers held at the last reading that had them, 0 when
+        none did: a reading after the job's unit ended has none."""
+        return self._held
 
     def update(self, now: float, stage: str | None = None) -> None:
         """Take a sample once SAMPLE_S has passed. A failed read forgets everything but the
@@ -114,6 +121,8 @@ class JobMeter:
             cores = self._judge(reading, self._last, now - self._at, now, self._at)
         span = now - self._at if cores is not None and self._at is not None else 0.0
         memory = reading.get(_MEMORY)
+        if memory is not None:
+            self._held = int(memory)
         self.peaks.add(cores, None if memory is None else int(memory), stage, (cores or 0) * span)
         self._last, self._at = reading, now
 

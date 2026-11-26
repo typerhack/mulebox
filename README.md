@@ -327,6 +327,10 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   recent result, failures included. `--again` forces a run.
 - **Failures read fast.** A failed job ends with a short summary of the error and the stage it failed
   in (`logs <id> --summary`), with a hint when the failure reads like a lost network.
+- **Rerun from where it failed.** A compose job that failed keeps its containers on the node for 15
+  minutes; after a fix, `mulebox check --from-stage command` (or `setup`, `install`) runs again
+  there with no new images, services or database load. A change to what those depend on runs it from
+  the start, and says why.
 - **A pass proves its tests ran.** mulebox reads the summary of pytest, vitest, jest, Pest, PHPUnit,
   cargo, mocha, Playwright, XCTest, Swift Testing and `go test -v`. A pass where a runner ran no test,
   or fewer than the last pass on the branch (else the default branch), fails with exit 8 and says
@@ -528,7 +532,7 @@ command prints. The ones you and your agents use:
 | Command | What it does |
 | --- | --- |
 | `mulebox init` | write `.mulebox.yml` from the project's own files |
-| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone, `--fewer-tests "<why>"` lets a pass with fewer tests count |
+| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone, `--fewer-tests "<why>"` lets a pass with fewer tests count, `--from-stage <stage>` reruns a failed compose job in its kept containers |
 | `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service, `--bare` without setup and containers, `--take <path>` brings a file it made back |
 | `mulebox warm` | get toolchains, images, caches and installs ready ahead of a job |
 | `mulebox doctor` | check the project and the node before sending anything; changes nothing |

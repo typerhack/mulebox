@@ -53,6 +53,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | the project's full gate | `mulebox check` |
 | another job from `.mulebox.yml` | `mulebox check <job>` (e.g. `mulebox check test`) |
 | leave a long job running and go on working | `mulebox check [job] --detach`, also `mulebox run --detach -- <cmd...>` |
+| after a fix, rerun a failed compose job from the stage that failed, in the containers its node kept | `mulebox check [job] --from-stage install\|setup\|command`, also `run` (section 1c) |
 | run it on one node only, such as to see it pass there | `mulebox check [job] --on <node>`, also `run` and `warm`; names from `mulebox machine list` |
 | follow a job without its log | `mulebox events --job <job-id> --json` |
 | see one job's state once | `mulebox status <job-id>` (add `--json`) |
@@ -92,7 +93,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 3 | node unreachable, or the live view lost the connection | tell the user; if a job id was printed, `mulebox wait <id>` later |
 | 4 | the node refused the request, for example no machine offers what `needs` asks for | read the message; tell the user |
 | 5 | the job could not start (toolchain would not install, compose file refused, images out of reach on the network), so no project code ran | not a failed check: read the reason in the log; `mulebox doctor` checks most causes. A fault of the node's own already sent it back in line once; `mulebox machine list` shows what is wrong there and the fix |
-| 8 | the command passed, but did not prove its tests ran: a runner ran none, or fewer than the last pass on the branch, else the default branch (section 1c) | a real failure: fix the tests; if they were removed on purpose, `mulebox check --fewer-tests "<why>"` |
+| 8 | the command passed, but did not prove its tests ran: a runner ran none, or fewer than the last pass on the branch, else the default branch (section 1b) | a real failure: fix the tests; if they were removed on purpose, `mulebox check --fewer-tests "<why>"` |
 | 75 | the job was interrupted on the node (restart, crash) | run it again once |
 | 76 | `stopped: stuck`: it did nothing and nobody answered its question (section 1a) | not a failed check, it says nothing about the code: run it again and watch it |
 | 124 | the job hit a hard `timeout_min`, which only a node older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
@@ -318,6 +319,32 @@ lines of pytest, vitest, jest, Pest, PHPUnit, cargo, mocha, Playwright, XCTest, 
 The end line of a job says how many ran (`38 tests ran (pytest 38)`), and on exit 8 what it was
 compared with and what to do; `mulebox status --json` and `events` give them as `tests`. The
 command's own exit code stays there as `tests.command_exit`.
+
+## 1c. Rerun from the failed stage
+
+A compose job that failed in `install`, `setup` or its command keeps its containers, network,
+ports and job folder on its node for `keep_failed_min` minutes (15 by default, a node setting),
+holding no slot; their memory counts as used. Its failure summary says so and gives the command:
+
+    its containers are kept on build-1 for 15 min: after a fix, `mulebox check --from-stage command` reruns it from command, with no new images, services or stages before it
+
+- **`mulebox check --from-stage <stage>`** (also `mulebox run --from-stage`) takes over the last
+  kept job of the same project, job name and branch, on the node that keeps it. `<stage>` is
+  `install`, `setup` or `command`: `setup` skips `install`, `command` skips both. The new files go
+  into the branch's folder as for any job. It always runs: it never gives back an earlier result.
+- **From the start, with a note**, when nothing is kept (its time is up, another job of the
+  branch started, the node restarted), when the compose files, a Dockerfile they build, a
+  lockfile, `setup`, `install`, the toolchain or `env:` changed, or when a kept container
+  stopped. The client and the log say why; the job still gives a result.
+- **What a rerun sees.** Containers that run the project's code from a mount see the new code.
+  A service that copies the code into its image at build time still runs the old code: use a
+  plain `mulebox check` for it.
+- **A quick check, not the last word.** A rerun's pass counts as a result of its files, but
+  `github_status` posts nothing for it, `check` does not give it back later, and `usual` does
+  not count it. Finish with a plain `mulebox check` before telling the user a change passes.
+- Not kept: a job that passed, could not start (exit 5), was cancelled, interrupted or stopped
+  stuck, failed before its containers were up, was passed but turned into exit 8 by its test
+  counts, or runs with `isolation: container`.
 
 ## 2. Setting up a project (`.mulebox.yml`)
 
