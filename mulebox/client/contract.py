@@ -41,7 +41,7 @@ from mulebox.common.status import STAGES
 # 19: a failed compose job is kept for a rerun: `mulebox check --from-stage <stage>`
 # 20: files back: `keep:` in .mulebox.yml or `--keep`, and `mulebox fetch <job-id>`
 # 21: `mulebox hold <node> -- <cmd>` holds a node for a person; agents only when asked
-SCHEMA = 21
+SCHEMA = 22
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -63,13 +63,21 @@ COMMANDS = {
     "follow_it": "mulebox events --job <job-id> --json",
     "its_state": "mulebox status <job-id>",
     "its_result": "mulebox wait <job-id>",
-    "queue": "mulebox queue",
+    "answer_a_check_in": "mulebox ok <job-id>",
+    "queue": "mulebox queue --json",
+    "nodes": "mulebox machine list",
+    "after_a_node_fix": "mulebox machine check <node>",
+    "what_jobs_used": "mulebox usage",
+    "ask_for_space_once_the_user_agrees": "mulebox storage ask --size <size> --reason <why>",
+    "let_go_of_a_hold": "mulebox release <job-id>",
+    "set_up_a_project_when_asked": "mulebox init",
     "all_projects": "mulebox projects",
     "read_log": "mulebox logs <job-id>",
     "why_it_failed": "mulebox logs <job-id> --summary",
     "cancel": "mulebox cancel <job-id>",
     "report_a_problem": "mulebox feedback guide",
     "skill_status": "mulebox skill status",
+    "update_the_skill": "mulebox skill update",
 }
 THROUGH_MULEBOX = ("builds", "type checks", "lint", "tests")
 KEEP_LOCAL = ("git", "search", "reading files", "diffs")
@@ -158,7 +166,8 @@ def _settings(config: ProjectConfig) -> dict[str, dict[str, Any]]:
         job, _ = for_job(config, name)
         out[name] = {"setup": job.setup, "install": job.install,
                      "compose": bool(job.compose),
-                     "ports": [port_variable(port) for port in job.host_ports]}
+                     "ports": [port_variable(port) for port in job.host_ports],
+                     "tests": job.tests, "size": job.size, "keep": list(job.keep)}
     return out
 
 
@@ -168,7 +177,9 @@ def _project(config: ProjectConfig) -> dict[str, Any]:
             "setup": config.setup, "install": config.install,
             "toolchain": dict(config.toolchain),
             "needs": systems.with_system(config.all_needs, config.system), "compose": list(config.compose),
-            "timeout_min": config.timeout_min}
+            "timeout_min": config.timeout_min,
+            "os": config.system, "isolation": config.isolation,
+            "github_status": config.github_status}
 
 
 def build(config: ProjectConfig | None, version: str) -> Contract:
@@ -179,7 +190,7 @@ def build(config: ProjectConfig | None, version: str) -> Contract:
         "project": _project(config) if config else None,
         "commands": dict(COMMANDS),
         "through_mulebox": list(THROUGH_MULEBOX), "keep_local": list(KEEP_LOCAL),
-        "events": list(EVENTS),
+        "events": list(EVENTS), "ways_to_wait": list(WAYS_TO_WAIT),
         "git": list(GIT), "never_uploaded": [*BUILTIN_EXCLUDES, *exclude],
         "compose": list(COMPOSE) if config and config.compose else [],
         "caches": list(CACHES), "stages": list(JOB_STAGES), "time_limits": list(TIME_LIMITS),
@@ -203,7 +214,12 @@ def _setting_text(project: dict[str, Any], name: str) -> str:
     setup = settings["setup"] or "none"
     containers = "" if settings["compose"] or not project["compose"] else ", no containers"
     ports = "".join(f", port ${variable}" for variable in settings["ports"])
-    return f" (setup: {setup}{containers}{ports})"
+    tests = "" if settings["tests"] == "auto" else f", tests: {settings['tests']}"
+    asked = settings["size"] or {}
+    size = (f", {asked['cores']:g} cores" if "cores" in asked else "") + (
+        f", {asked['memory'] / 1e9:g} GB" if "memory" in asked else "")
+    keep = f", keeps {', '.join(settings['keep'])}" if settings["keep"] else ""
+    return f" (setup: {setup}{containers}{ports}{tests}{size}{keep})"
 
 
 def _project_text(project: dict[str, Any] | None) -> list[str]:
@@ -224,6 +240,10 @@ def _project_text(project: dict[str, Any] | None) -> list[str]:
         lines += ["", f"Needs a node with: {', '.join(project['needs'])}"]
     if project["compose"]:
         lines += ["", f"Compose files: {', '.join(project['compose'])}"]
+    if project["isolation"]:
+        lines.append(f"Isolation: {project['isolation']}")
+    if project["github_status"]:
+        lines.append("github_status: a check on a pushed commit posts its result to GitHub")
     return lines
 
 
@@ -232,7 +252,8 @@ def render(contract: Contract) -> str:
     lines = [f"mulebox {contract['mulebox_version']} contract, schema {contract['schema']}", "",
              *_project_text(contract["project"]), "", "Commands:"]
     lines += [f"- {name.replace('_', ' ')}: {text}" for name, text in contract["commands"].items()]
-    lines += ["", "Events:", *_bullets(contract["events"]),
+    lines += ["", "Ways to wait:", *_bullets(contract["ways_to_wait"]),
+              "", "Events:", *_bullets(contract["events"]),
               "", f"Through mulebox: {', '.join(contract['through_mulebox'])}",
               f"Keep local: {', '.join(contract['keep_local'])}", "", "Git:",
               *_bullets(contract["git"]),

@@ -65,8 +65,10 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | bring back files a job made (a report, screenshots, a build) | `keep:` in `.mulebox.yml` or `--keep <path>`, then `mulebox fetch <job-id>` (section 1d) |
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
-| see the queue | `mulebox queue` |
-| hold a node for your user, only when they ask (a benchmark, a look by hand) | `mulebox hold <node> -- <cmd>`; no job starts there until it ends |
+| see the queue | `mulebox queue`; `--json` gives every job with its place and why it waits |
+| hold a node for your user, only when they ask (a benchmark, a look by hand) | `mulebox hold <node> -- <cmd>`; no job starts there until it ends. With no command, until Ctrl-C or `mulebox release <job-id>`, at most `--for` (2h) |
+| ask for more disk space for mulebox, only with your user's yes | `mulebox storage ask --size <size> --reason "<why>"`; the owner answers on the dashboard, and your next command tells you |
+| a node in dev mode, being set up | it takes only jobs sent with `--on <node>`; use that only when your user asks |
 | list every project that has run on this node | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C). `check`, `queue`, `status` and `doctor` print its address when the machine has one on the LAN: pass it to the user | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>`; old logs expire on the node, and it says so when one has (`mulebox status <job-id>` still has the result) |
@@ -206,8 +208,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `waiting_for` is set only when nothing can run the job; a job simply in line has `running_ahead`,
   the jobs on the machines now. When every node for it rests (design.md, A node that rests),
   `waiting_for` says what is wrong on each and the fix, such as "build-1 is resting: 1.2 GB free
-  ...; free space on build-1: `mulebox storage clean` ...": do what you can yourself (`--on` another
-  node that offers what the job needs), tell the user the rest, and after a fix run
+  ...; free space on build-1: `mulebox storage clean` ...": send the job `--on` another node that
+  offers what it needs if there is one, tell the user the rest (the fix is theirs), and after a fix run
   `mulebox machine check <node>`, so the node takes the job at once. A job its node could not set
   up goes back in line once by itself, with a line in its log; that is not your code.
   `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
@@ -928,3 +930,6 @@ to a client: then tell the user about the problem instead.
 - Do not put real secrets, real hosts or personal paths into `.mulebox.yml` or workflows.
 - Do not use or modify databases that already exist on the node.
 - Do not cancel other people's jobs.
+- Do not steer the line or the nodes (`pause`, `resume`, `first`, `up`, `down`, `last`, `boost`,
+  `normal`, `machine drain|resume|config`, `project pause|resume`, `storage clean`) unless your
+  user asks; when a waiting reason or a fix names one, tell the user.

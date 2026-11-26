@@ -16,7 +16,8 @@ Run this first, in the project:
 
 It prints this project's jobs and commands, what stays local, how git fits in, what is never
 uploaded, the exit codes and the rules. It is generated from the project's `.mulebox.yml` and
-needs no network. Follow it. It is the source of truth; this skill does not repeat it.
+needs no network. Follow it. It is the source of truth for the project's jobs, commands, exit
+codes, error codes and rules; this skill adds how to work with them.
 
 Use `mulebox contract --json` if you want to read it with a tool.
 
@@ -27,9 +28,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 21. Keep it current, in every session, before
+This skill was written for contract schema 22. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 21, run `mulebox skill update`, then read the
+its first line gives a schema higher than 22, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -64,7 +65,10 @@ with.
 
 - `mulebox run -- <cmd>` runs one command, such as a single test file. `--in <service>` runs it
   in a compose service, `--bare` without the project's setup and containers, and `--take <path>`
-  brings a file or folder it made back here.
+  copies a file it made back here once the command passed, over the local one (such as a
+  lockfile it updated).
+- `mulebox queue --json` lists every running and waiting job with its place and why it waits;
+  `mulebox status <job-id> --json` is one job.
 - `mulebox check --on <node>` sends a job to that node alone, such as a node the user is setting
   up (a node in dev mode takes only these). Use it only when the user asks for that node.
 - A project runs on the system it was set up for (`os:` in `.mulebox.yml`, `any` for none), so a
@@ -137,8 +141,22 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
   end names the command, `mulebox fetch <job-id>`, which puts them in `.mulebox/files/<job-id>/`
   (git-ignored). They are kept 7 days, up to 200 MB a job; past that the smallest go first and
   the rest are named. Read a failed browser test's screenshots there, not in the log.
-- `mulebox hold <node> -- <cmd>` holds a node for a person, so no job starts there. Use it only
-  when your user asks for it; `mulebox check` and `mulebox run` need no hold.
+- `mulebox hold <node> -- <cmd>` holds a node for a person, so no job starts there, until the
+  command ends; with no command, until Ctrl-C or `mulebox release <job-id>`, at most `--for`
+  (2 hours by default). Use it only when your user asks for it; `mulebox check` and `mulebox run`
+  need no hold.
+- A project with `isolation: container` runs its jobs in a confined container: no ssh keys, no
+  node config, a read-only root. With `github_status: true`, a `check` on a pushed commit posts
+  its result to that commit on GitHub, which others see. Change either only with the user.
+
+## The owner's controls
+
+The queue and the nodes belong to the user. `mulebox pause`, `resume`, `first`, `up`, `down`,
+`last`, `boost` and `normal`, `mulebox machine drain|resume|config` and `mulebox project
+pause|resume` are theirs: use them only when asked. A waiting reason or a fix line may name one
+(a paused job, a drained node, a node in dev mode, `mulebox storage clean`): tell the user what
+it says, do not run it. Exit 1 with `[mulebox.internal]` on stderr is a fault in mulebox, not
+in the project.
 
 ## Package caches and services
 

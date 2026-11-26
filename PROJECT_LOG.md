@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.51.0 - 2026-11-26 - minor
+From a review of how well agents can find and use each feature:
+- `mulebox queue --json`: every running and waiting job with its place and why it waits.
+- Contract schema 22: the commands the skill names (`ok`, `machine list`, `machine check`, `usage`, `storage ask`, `release`, `init`, `skill update`) and `queue --json`; ways to wait (written, never shown before); per job its `tests`, `size` and `keep`, and the project's `os`, `isolation` and `github_status`; rules that the owner's controls and fixes that undo the owner's choices are for the user, and that `[mulebox.internal]` is mulebox's fault.
+- The skill: what `--take` really does, how a hold ends and `mulebox release`, isolation and `github_status`, the owner's controls; docs/agents.md the same, with `storage ask` and dev mode in its table.
+
 ## 1.50.3 - 2026-11-26 - patch
 - README: errors with a code and a fix, power cuts, upgrades on trial, `--keep`; every picture retaken on 1.50 (tools/screenshots.py).
 

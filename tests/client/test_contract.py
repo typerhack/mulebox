@@ -19,7 +19,7 @@ CONFIG = ProjectConfig(project="example-app", jobs={"check": "pnpm check", "test
                        toolchain={"node": "22.22.3"}, setup="pnpm install", timeout_min=30,
                        exclude=("reports/",), env={"API_KEY": "must-not-appear"})
 FILLED = {"<service>": "api", "<job-id>": "x", "<text>": "x", "<path>": "x.lock",
-          "<node>": "build-1"}
+          "<node>": "build-1", "<size>": "30GB", "<why>": "x"}
 YML = "project: example-app\ntimeout_min: 30\njobs:\n  check: pnpm check\n  test: pnpm test\n"
 
 
@@ -146,6 +146,17 @@ def test_job_settings_are_in_the_contract(tmp_path):
                       jobs={**CONFIG.jobs, "lint": "pnpm lint"})
     terms = contract.build(project, "1")
     assert terms["project"]["job_settings"] == {
-        "lint": {"setup": None, "install": None, "compose": False, "ports": ["MULEBOX_PORT_VITE"]}}
+        "lint": {"setup": None, "install": None, "compose": False, "ports": ["MULEBOX_PORT_VITE"],
+                 "tests": "auto", "size": None, "keep": []}}
     assert ("mulebox check lint: pnpm lint (setup: none, no containers, port $MULEBOX_PORT_VITE)"
             in contract.render(terms))
+
+
+def test_a_jobs_tests_size_and_kept_files_are_in_its_line():
+    project = replace(CONFIG, job_options={"e2e": JobOptions(
+        tests="required", size={"cores": 4.0, "memory": 6e9}, keep=("report/",))},
+        jobs={**CONFIG.jobs, "e2e": "pnpm e2e"}, isolation="container")
+    text = contract.render(contract.build(project, "1"))
+    assert "mulebox check e2e: pnpm e2e (setup: " in text
+    assert ", tests: required, 4 cores, 6 GB, keeps report/)" in text
+    assert "Isolation: container" in text and "Ways to wait:" in text

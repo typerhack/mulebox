@@ -77,6 +77,12 @@ RULES = (
     "waiting in the queue is normal; do not cancel and resubmit to speed it up; if the wait "
     "may be long, run the job detached",
     "do not cancel other people's jobs",
+    "pause, resume, first, up, down, last, boost and normal steer the line for the owner: use "
+    "them only when your user asks",
+    "a waiting reason or fix that resumes a job, project or node, takes a node out of dev mode "
+    "or cleans storage undoes a choice of the node's owner: tell the user, do not run it",
+    "exit 1 with [mulebox.internal] on stderr is a fault in mulebox, not in the project: tell "
+    "the user, and report it if they want (mulebox feedback guide)",
     "a pinned toolchain version installs itself the first time a job needs it, which can take "
     "minutes; if that fails the job exits 5 and lists the versions the machine has: switch to one "
     "only if it matches the project, otherwise tell the user why the install failed",

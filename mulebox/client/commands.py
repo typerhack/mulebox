@@ -89,6 +89,8 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     queue = sub.add_parser("queue", help="list running, waiting and recent jobs")
     queue.add_argument("--watch", action="store_true", help="full-screen live view")
+    queue.add_argument("--json", action="store_true",
+                       help="the coordinator's reply as JSON: every job with its place and reason")
     queue.set_defaults(func=guarded(_queue))
 
     known = sub.add_parser("projects", help="list every project that has run here")
@@ -247,6 +249,10 @@ def _queue(args: argparse.Namespace) -> int:
             raise CoordinatorError("the queue reply has no job list")
         return [j for j in jobs if isinstance(j, dict)]
 
+    if args.json:
+        fetch()
+        print(json.dumps(latest, sort_keys=True))
+        return 0
     if args.watch:
         return tui.watch(fetch, remote.target)
     tui.show_once(fetch, sys.stdout)
