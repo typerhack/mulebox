@@ -616,6 +616,43 @@ with a note when the skipped stages would not hold any more.
   refuses the field, and the client then says the node cannot rerun and runs the job clean. A
   worker older than this keeps nothing, so every rerun falls back to a full run with its note.
 
+### Files back (M24.3, the user's decisions, 2026-11-26)
+
+A job can name files to keep, such as a coverage report, Playwright's report, screenshots and
+traces, or a build, and an agent brings them to the dev machine when it wants them.
+
+- **What.** `keep:` in `.mulebox.yml`, a list of paths relative to the file's folder, at the top
+  level for every job or in a job's mapping, which then replaces it; `--keep <path>` on `check`
+  and `run` adds to it. An entry is a file, a folder (all of it), or a pattern with `*` and `**`,
+  such as `test-results/**/*.png`. At most 20 entries, each checked as `--take` paths are: relative,
+  inside the project.
+- **When.** On every outcome (passed, failed, cancelled, timed out), once the job's command has
+  started; a job that never reached its command keeps nothing. They are read from the branch's
+  folder after the cleanup, so files a container wrote are the worker's own by then, and before
+  the result, so the next job of the branch has not yet changed them.
+- **What is read.** Plain files inside the folder, reached with no symlink. Symlinks, files that
+  cannot be read and paths that match nothing are named in the job's log and in the result, not
+  followed.
+- **How much.** `keep_files_max` (200 MB, a node setting, changed from afar like the others), on the
+  files' own size. Past it, files go in smallest first until it is full, and the rest are named as
+  left out, so a report keeps its many small files over one big trace.
+- **How they travel.** The worker packs them into one tar.gz in `<staging>/files-out/`, sends it
+  once to the coordinator, checked by its sha256 (`rpc-upload-files`, which a worker key may run,
+  streamed like a snapshot), and removes its copy; a lost link sends it again before the result.
+  A leftover pack is removed at the worker's next start.
+- **Where they stay.** On the coordinator, `<staging>/files/<job_id>.tar.gz`, for `files_days`
+  (7, in `[retention]` beside `log_days`, at most `log_days`), then removed by the same sweep as
+  logs, through safepath. The job row has what was kept (`files`: count, bytes, left out), schema 36.
+- **Fetching.** `mulebox fetch <job>` downloads the pack (`rpc-download-files`), checks it, and
+  unpacks it into `.mulebox/files/<job>/` in the project, through the same safe unpacking as a
+  snapshot (no absolute paths, no `..`, no links out). mulebox makes `.mulebox/` with its own
+  `.gitignore` (`*`), so git ignores it, and snapshots never send `.mulebox/`. `-o <dir>` puts them
+  elsewhere; fetching again replaces that job's folder. Not fetched by itself: the end of a job
+  that kept files says how many and the command, in `check`, `wait`, `status` and the failure
+  summary.
+- **Not now.** The dashboard (a download link on a job's page, from mockups), and files of a
+  GitHub run (GitHub's own artifacts do that).
+
 ## Project folders
 
 Everything lives at `<projects>/<project>/`: `repo.git`, `trees/<branch>-<hash>/` and

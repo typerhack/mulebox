@@ -1090,6 +1090,12 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
 - [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.
+      Design note 2026-11-26 (1.47.1): design.md, Files back, with the user's decisions: kept on
+      every outcome, `keep_files_max` 200 MB a node setting (smallest first past it), `files_days`
+      7, fetched into `.mulebox/files/<job>/`, which git and snapshots leave out. Done when: on the
+      real node, a failed job's screenshots folder and a passed job's report come back with
+      `mulebox fetch`, a job past the cap names what it left out, and the files are gone after
+      `files_days`.
 - [x] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
       project's single job; the line takes the projects in turn, below moving by hand (M14.3) and the
       order rules (M23.3). Built 2026-11-13 (1.17.0): `fair_turns`, off by default, counting what each

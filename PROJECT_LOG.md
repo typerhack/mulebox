@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.47.1 - 2026-11-26 - patch
+- docs/design.md: design note for files back (M24.3), with the user's decisions; its done-when in docs/phases.md.
+
 ## 1.47.0 - 2026-11-26 - minor
 - Sudden power loss (M23.12; design.md, Sudden power loss): what a node does when the power comes back.
 - The coordinator's store commits with `synchronous = FULL`, so a cut never takes back a job or a result it answered, about 6 ms a commit on the node; the test suite runs with NORMAL (coordinator/store.py, tests/conftest.py).
