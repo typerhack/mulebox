@@ -104,7 +104,7 @@ def job_id(body: dict[str, Any], name: str = "job_id") -> str:
 def check_job_id(value: Any) -> str:
     """A well-formed `job-<ULID>` id; it ends up in file names, so this is strict."""
     if not isinstance(value, str) or not is_valid_id(value, "job"):
-        raise BadRequest(f"not a valid job id: {value!r}")
+        raise BadRequest(f"not a valid job id: {value!r}", error_code="job.not_found")
     return value
 
 

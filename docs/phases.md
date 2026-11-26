@@ -1085,7 +1085,7 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       (3m 54s) and the PR showed `mulebox/check` passed; a job `false` beside it showed
       `mulebox/broken` failed (exit 1) on the same commit. The PR was closed, its branch, CI run,
       worktree and the node's project tree removed.
-- [~] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
+- [x] M24.7 A fix on every error: every error mulebox gives has a stable code and a `Fix:` line with
       the command that fixes it, in the plain and `--json` output; docs/agents.md lists the codes.
       The user's decisions 2026-11-26 (design.md, Errors with a code and a fix): dotted codes,
       JSON on stdout with `--json`, the dev machine's commands and the node's replies first.
@@ -1094,6 +1094,13 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       (schema 18) and the skill, with tests. Done when: through the real CLI on the real node, a
       missing `.mulebox.yml`, an unknown job id, `--on` an unknown node and a node out of reach
       each print their code and a fix that works, and `--json` gives the same on stdout.
+      Done 2026-11-26 (1.44.1) through the real CLI on the real node: a folder with no
+      `.mulebox.yml` gave `config.missing` and `mulebox init`, exit 2; an unknown job id
+      `job.not_found` and `mulebox queue`, exit 4; `--on` a node that does not exist
+      `node.unknown` and `mulebox machine list`, exit 4; a node out of reach `node.unreachable`
+      and `mulebox doctor`, exit 3; `status --json` and `projects --json` the same on stdout.
+      Found there and fixed 1.44.1: a job id of the wrong shape read `request.invalid` with a
+      `--help` fix; it is `job.not_found` now.
 - [x] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
       next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
       `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and

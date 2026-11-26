@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.44.1 - 2026-11-26 - patch
+- A job id of the wrong shape is `job.not_found`, with `mulebox queue` as its fix: in the drill it read `request.invalid`, whose `--help` fix does not help.
+- docs/phases.md: M24.7 done, through the real CLI on the real node (a missing `.mulebox.yml`, an unknown job id, `--on` an unknown node, a node out of reach, and `--json`).
+
 ## 1.44.0 - 2026-11-26 - minor
 - Every error says its code and a fix (M24.7; design.md, Errors with a code and a fix, the user's decisions): `mulebox: error [node.unreachable]: ...` then `mulebox: fix: ...` on stderr, and with `--json` also `{"error": {"code", "message", "fix", "exit"}}` on stdout. Exit codes are unchanged.
 - One table, common/error_codes.py: 26 dotted codes, each with its exit code, meaning and default fix. `MuleboxError` takes `error_code=` and `fix=`, each error class names its code, and closer ones are given where they are raised (not a git worktree, no commit yet, worktree too large, unknown job, unknown node, a size no node can give, a node too old).

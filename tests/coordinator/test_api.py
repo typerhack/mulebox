@@ -148,3 +148,8 @@ def test_replies_carry_where_the_dashboard_is(store, staging):
     msg = request(MessageType.QUEUE)
     assert api.handle(store, staging, msg, T0, dashboard=where).body["dashboard"] == where
     assert api.handle(store, staging, msg, T0).body["dashboard"] is None
+
+
+def test_a_job_id_of_the_wrong_shape_reads_as_no_such_job(store, staging):
+    reply = call(store, staging, "status", job_id="job-short")
+    assert reply.body["code"] == "bad_request" and reply.body["error_code"] == "job.not_found"
