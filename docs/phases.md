@@ -1087,7 +1087,7 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       kept job's container and folder were gone a minute later. The setting was put back to 15 and
       the project reset. Found there and fixed 1.46.1: a waiting rerun said "sent with --on", and
       the rerun line named an `install` the project did not have.
-- [~] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
+- [x] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.
       Design note 2026-11-26 (1.47.1): design.md, Files back, with the user's decisions: kept on
@@ -1107,8 +1107,10 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       to 0.25MB from the dev machine, a job of 400 KB kept its two smaller files and named the
       300 KB one as past the cap, also on fetch. A fetch with the pack gone gave `job.no_files`,
       exit 4, with the fix. Found there and fixed 1.48.1: `-o` to a folder that cannot be made
-      gave an internal error. The setting was put back and the project reset. Open: the real
-      sweep removing a pack after `files_days`, seen in tests only.
+      gave an internal error. The setting was put back and the project reset.
+      Done 2026-11-26 (1.48.2): the node's real retention code, on a copy of its store with a real
+      job's pack and its own `files_days`, kept the pack 6 days after the job and removed it at 8;
+      the real store and pack were untouched, and the copy was removed.
 - [x] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
       project's single job; the line takes the projects in turn, below moving by hand (M14.3) and the
       order rules (M23.3). Built 2026-11-13 (1.17.0): `fair_turns`, off by default, counting what each

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.48.2 - 2026-11-26 - patch
+- docs/phases.md: M24.3 done: the node's retention code removed a real pack after `files_days`, on a copy of its store.
+
 ## 1.48.1 - 2026-11-26 - patch
 - `mulebox fetch -o` to a folder that cannot be made says so with a fix, where it gave an internal error (client/fetch.py); found in the drill on the node.
 - docs/phases.md: M24.3 run on the real node.
