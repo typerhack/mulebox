@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.50.3 - 2026-11-26 - patch
+- README: errors with a code and a fix, power cuts, upgrades on trial, `--keep`; every picture retaken on 1.50 (tools/screenshots.py).
+
 ## 1.50.2 - 2026-11-26 - patch
 - A waiting hold of some slots says "once its slots are free" (coordinator/views.py).
 - docs/phases.md: M23.10 done on the real node.

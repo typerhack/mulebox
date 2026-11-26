@@ -327,6 +327,9 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   recent result, failures included. `--again` forces a run.
 - **Failures read fast.** A failed job ends with a short summary of the error and the stage it failed
   in (`logs <id> --summary`), with a hint when the failure reads like a lost network.
+- **Every error says how to fix it.** Each error mulebox gives, on the dev machine or the node, has a
+  stable code and a `fix:` line with the command that fixes it, also as JSON with `--json`; a job that
+  could not start ends its log the same way. The codes are listed in docs/agents.md.
 - **Rerun from where it failed.** A compose job that failed keeps its containers on the node for 15
   minutes; after a fix, `mulebox check --from-stage command` (or `setup`, `install`) runs again
   there with no new images, services or database load. A change to what those depend on runs it from
@@ -517,6 +520,12 @@ From the CLI or the dashboard, with no sign-in needed through the tunnel:
   its own, found and stopped after a worker restart, and its GitHub runners are launchd agents.
 - **Survives restarts**: services come back by themselves after a reboot; a running job ends as
   `interrupted` (exit 75) and is not run again by itself, and waiting jobs run.
+- **Survives power cuts**: the store writes each answer to disk before giving it, a worker tells a
+  cut from a kill and redoes setups that may not have reached the disk, and a branch folder git
+  cannot use any more is made again. Set the node's BIOS to "restore on AC power loss".
+- **Upgrades that go back by themselves**: each upgrade gets a venv of its own and is on trial for
+  a minute; if a service stops or the worker cannot reach its coordinator, the version before comes
+  back with its services, and the upgrade says why.
 - **On your own machines**: jobs travel over ssh to machines you own; no cloud service, no port open
   to the internet.
 - **Private by default**: files that look like secrets are never uploaded, and logs are scrubbed of
@@ -537,7 +546,7 @@ command prints. The ones you and your agents use:
 | Command | What it does |
 | --- | --- |
 | `mulebox init` | write `.mulebox.yml` from the project's own files |
-| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone, `--fewer-tests "<why>"` lets a pass with fewer tests count, `--from-stage <stage>` reruns a failed compose job in its kept containers |
+| `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone, `--fewer-tests "<why>"` lets a pass with fewer tests count, `--from-stage <stage>` reruns a failed compose job in its kept containers, `--keep <path>` brings files it made back for `mulebox fetch` |
 | `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service, `--bare` without setup and containers, `--take <path>` brings a file it made back |
 | `mulebox hold <node> [-- <cmd>]` | hold a node for yourself: it waits in line, then no job starts there until your command ends or Ctrl-C; `--slots N` for part of it, `--for 30m`, `mulebox release <id>` |
 | `mulebox fetch <id>` | bring the files a job kept (`keep:`, `--keep <path>`) into `.mulebox/files/<id>/` |
