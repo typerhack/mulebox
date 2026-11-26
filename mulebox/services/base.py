@@ -83,6 +83,10 @@ class Manager(Protocol):
     def state(self, name: str) -> str:
         """RUNNING, STOPPED or MISSING."""
 
+    def instance(self, name: str) -> str | None:
+        """What tells this run of the service from the next: systemd's invocation id, launchd's
+        pid. None when it does not run. A restart, a crash the manager restarts, changes it."""
+
     def logs_argv(self, names: Sequence[str], follow: bool) -> list[str]:
         """The command that shows these services' recent logs, and new lines as they come."""
 

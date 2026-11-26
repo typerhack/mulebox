@@ -707,6 +707,13 @@ job `setup` runs otherwise. If its waiter goes away (a reboot), the row goes aft
 machine runs jobs again.
 Upgrade the coordinator and every worker together: a worker's stage rows and toolchain
 reports, and detached jobs, need both to be new. `mulebox doctor` shows the versions.
+An upgrade is on trial for its first minute (docs/design.md, Upgrades on trial): every service
+must keep running and the worker must reach its coordinator. If not, or if any step fails once
+the new venv is in use, the installer puts the version before back, restarts its services, and
+exits 1 with the reason: `mulebox: the upgrade did not hold: the worker service restarted
+(it crashed, or was restarted) 7 s after the upgrade`, then that the upgrade was undone and
+the version before runs again. The services' logs (`mulebox service logs`) show what the new version did.
+`MULEBOX_TRIAL_S` sets the length in seconds, for the installer's environment.
 When the Python minor version changed, the new venv is built afresh rather than copied. Venvs
 past the one in use and the one before it are removed from `~/.mulebox/venvs/`; older
 `~/.mulebox/tmp/venv-old-*` folders from before 1.47 are safe to delete.

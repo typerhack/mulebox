@@ -145,6 +145,31 @@ what it does then rests on the restart rules above, with these on top:
 Not covered: a disk that itself breaks, and a store damaged beyond SQLite's journal; those need the
 backup a person keeps.
 
+### Upgrades on trial (M23.7, 2026-11-26)
+
+An upgrade that breaks the node goes back by itself, so a node far away is never left without a
+working mulebox. It builds on the venv swap above: the venv before the upgrade stays on disk.
+
+- **The trial.** Once the installer has restarted the services, the new `mulebox service trial`
+  watches them for 60 s (`MULEBOX_TRIAL_S`). Every service the node's roles run must keep running
+  as the same run: systemd's invocation id, launchd's pid, so a crash its manager restarts counts
+  as a stop. A worker must also reach its coordinator once, with the new version, after the
+  restart (the worker writes `<staging>/worker-state/contact` after its first reply that is no
+  error): a worker that runs but cannot talk does not pass.
+- **Going back.** From the venv swap on, any failure, a failed trial, or a new version too broken
+  to run its trial at all, swaps the link back to the venv before with one rename and runs that
+  version's own `mulebox service install`, so its services and unit files come back too. The
+  installer then exits 1, saying why and that the version before runs again; `mulebox setup`
+  fails with that output, and a queued upgrade is reported failed with it in its log.
+- **Only upgrades.** A first install has nothing to go back to, and a new worker's coordinator may
+  not know it yet, so it has no trial.
+- **Jobs.** A queued upgrade holds the line through its trial, so no job starts under a version
+  that may go back. A plain `mulebox setup` (no running job) holds nothing: a job claimed during
+  the trial is interrupted by a roll-back's restart (exit 75, as for any restart).
+- **Not covered.** A coordinator that is down for its own reasons makes a worker-only node's
+  upgrade go back (its worker cannot reach it); the message says so, and the next upgrade tries
+  again. A fault that shows after the first minute is not caught.
+
 ## Order of the line (M23.3, M24.4, 2026-11-13)
 
 The user asked for settings that order the line beside moving jobs by hand. One line stays: agent

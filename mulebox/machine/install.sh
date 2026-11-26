@@ -20,6 +20,7 @@ set -euo pipefail
 
 MB_HOME="$HOME/.mulebox"
 MB_TMP="$MB_HOME/tmp"
+TRIAL_S="${MULEBOX_TRIAL_S:-60}"  # how long an upgrade is on trial (services/trial.py)
 BIN="$MB_HOME/bin/mulebox"
 CONFIG_DIR="$HOME/.config/mulebox"
 NODE_TOML="$CONFIG_DIR/node.toml"
@@ -213,6 +214,24 @@ install_services() {  # systemd units or launchd agents, by mulebox itself (mule
     "$BIN" service install --config "$NODE_TOML" || die "the services did not start (see above)"
 }
 
+# An upgrade on trial (services/trial.py): the services must hold for TRIAL_S seconds and a worker
+# reach its coordinator, or the version before comes back. A first install has none to go back to.
+trial_services() {  # since: when the services were restarted
+    [ -n "$PREVIOUS_VENV" ] || return 0
+    "$BIN" service trial --config "$NODE_TOML" --since "$1" --seconds "$TRIAL_S" \
+        || die "the new version did not hold (see above)"
+}
+
+undo_on_failure() {  # the EXIT trap: a failure while the new venv is in use undoes the upgrade
+    local code=$?
+    if [ "$code" -ne 0 ] && [ -n "$SWAPPED" ]; then
+        if roll_back; then
+            say "mulebox install: the upgrade was undone; the version before runs again" >&2
+        fi
+    fi
+    exit "$code"
+}
+
 summary() {
     say ""
     say "mulebox installed: $("$BIN" --version)"
@@ -229,6 +248,7 @@ main() {
     wheel="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
     check_platform
     check_python
+    trap undo_on_failure EXIT
     [ -d "$MB_HOME" ] || mkdir -m 750 "$MB_HOME"
     mkdir -p "$MB_TMP"
     new_venv
@@ -239,7 +259,11 @@ main() {
     read_node_config
     make_roots
     summary
+    local since
+    since="$(date +%s)"
     install_services
+    trial_services "$since"
+    SWAPPED=""
 }
 
 # Run main unless sourced (the tests source this file to call single functions).

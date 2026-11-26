@@ -28,7 +28,7 @@ from typing import Any
 from mulebox.common import command, disclaim
 from mulebox.services.base import MISSING, PREFIX, RUNNING, SERVICES, STOPPED, ServiceError, \
     Say, check_name, wanted
-from mulebox.services.launchd_runners import LaunchdRunners
+from mulebox.services.launchd_runners import _PID, LaunchdRunners
 
 THROTTLE_S = 5  # as RestartSec=5 in the systemd units
 GONE_WAIT_S = 10.0
@@ -211,6 +211,10 @@ class LaunchdServices(LaunchdRunners):
 
     def state(self, name: str) -> str:
         return self._state(label(name))
+
+    def instance(self, name: str) -> str | None:
+        match = _PID.search(self._loaded(label(name)) or "")
+        return match.group(1) if match else None
 
     def logs_argv(self, names: Sequence[str], follow: bool) -> list[str]:
         files = [str(logs_dir(self.home) / f"{check_name(n)}.log") for n in names]

@@ -969,8 +969,13 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       (1.13.8): a worker restart during this repository's CI, two jobs running in isolated runners,
       took under a second; both containers were taken over, both jobs passed with their slots
       released as passed, fresh places took the next job, and the run passed.
-- [ ] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
-      version back by itself.
+- [~] M23.7 Upgrades on trial: a service that stops within a minute of an upgrade gets the earlier
+      version back by itself. Built 2026-11-26 (1.49.0), with tests (design.md, Upgrades on
+      trial): `mulebox service trial` (services/trial.py) after every upgrade, the worker's
+      contact (worker/contact.py), and the installer's `roll_back` from the swap on, with real
+      venvs in the tests. Done when: on the real node, an upgrade whose worker crashes at start
+      goes back to the version before within a minute, its services up, and a good upgrade
+      passes its trial.
 - [x] M23.8 Usage against size: `mulebox usage` shows each job's peak cores and memory, so M23.2's
       sizes come from measurements. Built 2026-11-25 (1.36.0), with tests: agent jobs and GitHub
       runs (the user's choice), kept in `jobs.usage` (schema 30), `mulebox usage`, `status` and

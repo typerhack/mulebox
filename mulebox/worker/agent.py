@@ -26,7 +26,7 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.status import PREPARE, TOOLCHAIN
 from mulebox.worker import activity, advert, background, job_meter, live_config, runspec
 from mulebox.worker import kept as kept_jobs
-from mulebox.worker import files_out, simulator, toolchains, xcode
+from mulebox.worker import contact, files_out, simulator, toolchains, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
 from mulebox.worker.agent_files import KeepingFiles
 from mulebox.worker.agent_health import Checking
@@ -75,6 +75,7 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping, KeepingFiles
             paths, name, version, machine_env=node.job_env)
         self.retry_at = 0.0
         self.fresh = True  # tell the coordinator on the first claim that we (re)started
+        self.contacted = False  # an upgrade's trial waits for this (worker/contact.py)
         self.last_reply = 0.0  # agent clock of the last answer from the coordinator
 
     # -- coordinator calls -------------------------------------------------------------
@@ -91,7 +92,16 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping, KeepingFiles
         self.last_reply = max(self.last_reply, now)
         if reply.type is MessageType.ERROR:
             LOG.warning("coordinator refused %s: %s", msg.type, reply.body.get("message"))
+        elif not self.contacted:
+            self._contacted()
         return reply
+
+    def _contacted(self) -> None:
+        try:
+            contact.record(self.paths)
+            self.contacted = True
+        except (OSError, MuleboxError) as exc:
+            LOG.warning("could not record the coordinator's reply: %s", exc)
 
     def _sender(self, now: float) -> Callable[[Message], Message]:
         return lambda msg: self._call(msg, now)

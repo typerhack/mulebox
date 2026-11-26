@@ -10,6 +10,7 @@ VENV="$MB_HOME/venv"  # a link to the venv in use, in VENVS
 VENVS="$MB_HOME/venvs"
 NEW_VENV=""  # the venv this install builds
 PREVIOUS_VENV=""  # the one in use before it, kept
+SWAPPED=""  # set while the new venv is in use but not yet through its trial (roll_back)
 
 venv_minor() {  # major.minor the venv was built with, from pyvenv.cfg ("" if none)
     local cfg="$1/pyvenv.cfg"
@@ -72,9 +73,30 @@ swap_venv() {
     ln -s "venvs/$(basename "$NEW_VENV")" "$link"
     "$NEW_VENV/bin/python" -c 'import os, sys; os.replace(sys.argv[1], sys.argv[2])' "$link" "$VENV"
     sync
+    SWAPPED=1
     mkdir -p "$MB_HOME/bin"
     ln -sfn "$VENV/bin/mulebox" "$BIN"
     link_on_path
+}
+
+# Put the venv in use before this install back, the same way, and restart its own services:
+# an upgrade that failed once its venv was in use, or did not hold through its trial (M23.7).
+roll_back() {
+    local link="$MB_HOME/venv.back.$$" back="$VENVS/$PREVIOUS_VENV"
+    # shellcheck disable=SC2034  # read by install.sh's undo_on_failure
+    SWAPPED=""
+    if [ -z "$PREVIOUS_VENV" ] || [ ! -x "$back/bin/python" ]; then
+        say "mulebox install: there is no earlier version to go back to" >&2
+        return 1
+    fi
+    ln -s "venvs/$PREVIOUS_VENV" "$link"
+    "$back/bin/python" -c 'import os, sys; os.replace(sys.argv[1], sys.argv[2])' "$link" "$VENV"
+    sync
+    say "mulebox install: went back to $("$BIN" --version 2>/dev/null || echo "$PREVIOUS_VENV")" >&2
+    if ! "$BIN" service install --config "$NODE_TOML" >&2; then
+        say "mulebox install: the earlier version's services did not start either (see above)" >&2
+        return 1
+    fi
 }
 
 # Remove this installer's own old venvs, keeping the one in use and the one before it (an

@@ -89,6 +89,12 @@ class SystemdServices:
         done = self._systemctl("is-active", "--quiet", unit(name), check=False)
         return RUNNING if done.returncode == 0 else STOPPED
 
+    def instance(self, name: str) -> str | None:
+        if self.state(name) != RUNNING:
+            return None
+        shown = self._systemctl("show", "-p", "InvocationID", "--value", unit(name), check=False)
+        return (shown.stdout or "").strip() or None
+
     def logs_argv(self, names: Sequence[str], follow: bool) -> list[str]:
         units = [arg for n in names for arg in ("-u", f"{PREFIX}{check_name(n)}")]
         return ["journalctl", "--user", *units, "-n", "200", *(["-f"] if follow else [])]
