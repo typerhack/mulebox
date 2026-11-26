@@ -21,7 +21,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from mulebox.client import report, rerun_lines, test_lines
+from mulebox.client import fetch, report, rerun_lines, test_lines
 from mulebox.common.network_errors import LOST
 from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, FIX_NOTE, NOT_STARTED_NOTE
 
@@ -172,6 +172,7 @@ def render(job_id: str, result: dict[str, Any], lines: list[str]) -> list[str]:
         out.append(f"failed stage: {stage}")
     out.append(f"outcome: {result.get('outcome')}, exit code {report.exit_code_for(result)}")
     out += rerun_lines.kept_lines(result.get("job"), result)
+    out += fetch.kept_lines(job_id, result)
     out += _network_hint(lines)
     if lines:
         out.append(f"last lines of the log, without progress and container logs "

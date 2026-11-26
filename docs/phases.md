@@ -1096,6 +1096,10 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       real node, a failed job's screenshots folder and a passed job's report come back with
       `mulebox fetch`, a job past the cap names what it left out, and the files are gone after
       `files_days`.
+      Built 2026-11-26 (1.48.0), with tests on the real worker loop (real job processes) and the
+      real coordinator code: common/keep_files.py, worker/files_out.py and agent_files.py,
+      coordinator/files.py (schema 36), client/fetch.py, contract schema 20 and the skill. Not
+      built: the files on the dashboard (from mockups).
 - [x] M24.4 Fair turns between projects: one project's burst of jobs does not hold back another
       project's single job; the line takes the projects in turn, below moving by hand (M14.3) and the
       order rules (M23.3). Built 2026-11-13 (1.17.0): `fair_turns`, off by default, counting what each

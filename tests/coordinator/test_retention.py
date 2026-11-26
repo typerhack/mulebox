@@ -154,12 +154,13 @@ def node_toml(tmp_path, extra=""):
 
 
 def test_defaults(tmp_path):
-    assert load_node_config(node_toml(tmp_path)).retention == {"log_days": 30, "step_days": 365}
+    assert load_node_config(node_toml(tmp_path)).retention == {"log_days": 30, "step_days": 365,
+                                                               "files_days": 7}
 
 
 def test_days_can_be_set(tmp_path):
     node = load_node_config(node_toml(tmp_path, "[retention]\nlog_days = 7\nstep_days = 14\n"))
-    assert node.retention == {"log_days": 7, "step_days": 14}
+    assert node.retention == {"log_days": 7, "step_days": 14, "files_days": 7}
 
 
 @pytest.mark.parametrize("text", ["log_days = 0", "step_days = 10\nlog_days = 20",

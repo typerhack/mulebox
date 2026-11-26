@@ -35,6 +35,7 @@ class LinkError(MuleboxError):
 class CoordinatorLink(Protocol):
     def call(self, msg: Message) -> Message: ...
     def fetch_snapshot(self, job_id: str, dest: Path) -> None: ...
+    def upload_files(self, job_id: str, source: Path, sha256: str) -> Message: ...
 
 
 def request(kind: MessageType, **body: Any) -> Message:
@@ -71,6 +72,21 @@ class LocalLink:
         except Exception as exc:
             raise LinkError(f"cannot read the snapshot of {job_id}: {exc}") from exc
 
+    def upload_files(self, job_id: str, source: Path, sha256: str) -> Message:
+        """A job's kept files to the coordinator (coordinator/files.py); its reply."""
+        from mulebox.coordinator import files  # lazy: see the module docstring
+        from mulebox.coordinator.context import error_reply
+        from mulebox.coordinator.errors import CoordinatorError
+
+        try:
+            with open(source, "rb") as stream:
+                body = files.receive(self.store, self.staging, job_id, sha256, stream)
+        except CoordinatorError as exc:
+            return error_reply(new_id("req"), exc)
+        except Exception as exc:
+            raise LinkError(f"cannot hand over the files of {job_id}: {exc!r}") from exc
+        return Message(MessageType.STATUS_OK, new_id("req"), body)
+
 
 class SSHLink:
     def __init__(self, target: str, remote_bin: str, connect_timeout_s: int = 10,
@@ -100,6 +116,19 @@ class SSHLink:
             return protocol.decode(line)
         except protocol.ProtocolError as exc:
             raise LinkError(f"bad reply from the coordinator: {exc}") from exc
+
+    def upload_files(self, job_id: str, source: Path, sha256: str) -> Message:
+        """A job's kept files, streamed over ssh (`rpc-upload-files`); its reply."""
+        try:
+            result = run_remote(self.target, [self.remote_bin, "rpc-upload-files", job_id, sha256],
+                                stdin_file=source, timeout_s=DOWNLOAD_TIMEOUT_S, check=False,
+                                connect_timeout_s=self.connect_timeout_s, options=self.options)
+        except SSHError as exc:
+            raise LinkError(str(exc)) from exc
+        try:
+            return protocol.decode(result.stdout.split(b"\n", 1)[0])
+        except protocol.ProtocolError as exc:
+            raise LinkError(f"bad reply to the files of {job_id}: {exc}") from exc
 
     def fetch_snapshot(self, job_id: str, dest: Path) -> None:
         data = self._run(["rpc-download", job_id], None, DOWNLOAD_TIMEOUT_S)

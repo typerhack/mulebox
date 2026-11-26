@@ -3,7 +3,7 @@
 from typing import Any
 
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import holds, needs, workers
+from mulebox.coordinator import files, holds, needs, workers
 from mulebox.coordinator.store import ACTIVE_STATES
 
 JOB_FIELDS = (
@@ -143,6 +143,7 @@ def status_body(job: dict[str, Any], position: int | None = None,
     if waiting:
         body["waiting_for"] = waiting
     body.update(controls(job))  # a worker pauses or boosts a running job from this
+    body.update(files.status_fields(job))  # what it keeps for `mulebox fetch`
     body.update(extra)
     return body
 
@@ -155,7 +156,8 @@ def status_facts(job: dict[str, Any]) -> dict[str, Any]:
 def result_body(job: dict[str, Any], **extra: Any) -> dict[str, Any]:
     """The final `result` line of a watch stream: the job dict plus duration_s, the
     fingerprint, so `mulebox wait` can tell whether the result is stale, and `extra`."""
-    return {**job_dict(job), "duration_s": job["duration_s"], "fingerprint": job["fingerprint"],
+    return {**job_dict(job), **files.status_fields(job), "duration_s": job["duration_s"],
+            "fingerprint": job["fingerprint"],
             "base_commit": job["base_commit"], **extra}
 
 

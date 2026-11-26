@@ -23,6 +23,7 @@ from mulebox.client import (
     setup_commands,
     skill_commands,
     stats_commands,
+    fetch_commands,
     storage_commands,
     asks_commands,
     usage_commands,
@@ -43,7 +44,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"mulebox {get_version()}")
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.add_parser("version", help="print the mulebox version")
-    for package in (client_commands, log_commands, init_commands, job_commands, job_controls, machine_commands,
+    for package in (client_commands, log_commands, fetch_commands, init_commands, job_commands, job_controls, machine_commands,
                     order_commands, project_commands, stats_commands, usage_commands, storage_commands, asks_commands,
                     setup_commands, doctor_commands, skill_commands, feedback_commands, coordinator_commands, worker_commands, runner_commands, service_commands,
                     dashboard_commands):

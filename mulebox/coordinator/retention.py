@@ -1,4 +1,4 @@
-"""Removing old job logs, files runs brought back (a day after), and, much later, old stage
+"""Removing old job logs, files jobs kept (after `files_days`), files runs brought back (a day after), and, much later, old stage
 rows. Nothing else.
 
 Nothing removed logs before this, and one job can write a lot. A log goes `log_days` after its
@@ -14,7 +14,8 @@ from __future__ import annotations
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState
-from mulebox.coordinator import taken
+from mulebox.common.config_project import FILES_DAYS
+from mulebox.coordinator import files, taken
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 
@@ -36,7 +37,7 @@ def _old_logs(store: Store, staging: Staging, before: float) -> list[str]:
 
 
 def sweep(store: Store, staging: Staging, now: float, log_days: int,
-          step_days: int) -> tuple[int, int]:
+          step_days: int, files_days: int = FILES_DAYS) -> tuple[int, int]:
     """(logs removed, stage rows removed). A log that cannot go is tried again next time."""
     removed = 0
     for job_id in _old_logs(store, staging, now - log_days * DAY_S):
@@ -50,6 +51,11 @@ def sweep(store: Store, staging: Staging, now: float, log_days: int,
             taken.remove(staging, job_id)
         except MuleboxError as exc:
             _log.warning("could not remove the files %s brought back: %s", job_id, exc)
+    for job_id in _old(store, files.job_ids(staging), now - files_days * DAY_S):
+        try:
+            files.remove(staging, job_id)
+        except MuleboxError as exc:
+            _log.warning("could not remove the files %s kept: %s", job_id, exc)
     with store.write() as conn:
         cursor = conn.execute(f"DELETE FROM job_steps WHERE job_id IN ({_FINISHED_BEFORE})",
                               (JobState.FINISHED.value, now - step_days * DAY_S))

@@ -60,6 +60,7 @@ def register(sub: argparse._SubParsersAction) -> None:
                             "were removed on purpose; the reason is kept with the job")
     _on(check)
     _from_stage(check)
+    _keep(check)
     check.set_defaults(func=guarded(_check))
 
     warm = sub.add_parser("warm", help="prepare a job ahead of time: toolchains, images, caches, "
@@ -82,6 +83,7 @@ def register(sub: argparse._SubParsersAction) -> None:
                           "(repeat for more), e.g. --take api/composer.lock")
     _on(run)
     _from_stage(run)
+    _keep(run)
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -106,6 +108,12 @@ def register(sub: argparse._SubParsersAction) -> None:
 def _on(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--on", metavar="NODE",
                         help="run it on this node only, as `mulebox machine list` names it")
+
+
+def _keep(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--keep", action="append", default=[], metavar="PATH",
+                        help="keep this file, folder or pattern for `mulebox fetch`, on any "
+                             "outcome, beside the job's own `keep:` (repeat for more)")
 
 
 def _from_stage(parser: argparse.ArgumentParser) -> None:
@@ -193,7 +201,8 @@ def _check(args: argparse.Namespace) -> int:
     return github_status.around(
         project, root, args.job, args.detach, sys.stderr,
         lambda: run_job(project, args.job, root, connect(), detach=args.detach, again=args.again,
-                        on=args.on, fewer_tests=args.fewer_tests, from_stage=args.from_stage),
+                        on=args.on, fewer_tests=args.fewer_tests, from_stage=args.from_stage,
+                        keep=tuple(args.keep)),
         rerun=bool(args.from_stage))
 
 
@@ -223,7 +232,7 @@ def _run(args: argparse.Namespace) -> int:
         raise UsageError(str(exc)) from None
     return run_job(project, argv, root, connect(), detach=args.detach,
                    options=BARE if args.bare else None, take=take, on=args.on,
-                   from_stage=args.from_stage)
+                   from_stage=args.from_stage, keep=tuple(args.keep))
 
 
 def _queue(args: argparse.Namespace) -> int:

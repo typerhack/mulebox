@@ -50,13 +50,17 @@ def job_env(reader: Reader) -> dict[str, str]:
     return _names(reader, "job_env", reader.string_map("job_env"), True)
 
 
+FILES_DAYS = 7  # files a job kept for `mulebox fetch` (coordinator/files.py)
+
+
 def retention(reader: Reader, log_default: int, step_default: int) -> dict[str, int]:
     """`[retention]` of node.toml."""
     sub = reader.table("retention")
     log_days = sub.integer("log_days", log_default, 1)
     step_days = sub.integer("step_days", max(step_default, log_days), log_days)
+    files_days = sub.integer("files_days", min(FILES_DAYS, log_days), 1, log_days)
     sub.finish()
-    return {"log_days": log_days, "step_days": step_days}
+    return {"log_days": log_days, "step_days": step_days, "files_days": files_days}
 
 
 def limits(reader: Reader, idle_default: int, hours_default: int) -> dict[str, int]:

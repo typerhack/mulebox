@@ -56,6 +56,16 @@ class FakeLink:
             raise LinkError("coordinator unreachable (fake)")
         dest.write_bytes(self.snapshot.read_bytes())
 
+    def upload_files(self, job_id: str, source: Path, sha256: str) -> Message:
+        """Kept files (agent_files.py): kept as bytes in `packs`, or refused or down."""
+        if self.down:
+            raise LinkError("coordinator unreachable (fake)")
+        if MessageType.STATUS_OK in self.refuse:  # a refusal of the pack itself
+            return Message(MessageType.ERROR, "req", {"code": "conflict", "message": "no (fake)"})
+        self.packs = {**getattr(self, "packs", {}), job_id: (source.read_bytes(), sha256)}
+        return Message(MessageType.STATUS_OK, "req", {"job_id": job_id, "state": "cleaning",
+                                                      "bytes": 1})
+
     def of_type(self, kind: MessageType) -> list[Message]:
         return [m for m in self.sent if m.type is kind]
 

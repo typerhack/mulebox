@@ -6,6 +6,8 @@
 - `rpc-upload-plan <job_id>`: a file list on stdin, one reply line saying what to send.
 - `rpc-upload-delta <job_id> <sha256> <digest>`: tar.gz of those files on stdin, one reply line.
 - `rpc-download <job_id>`: tar.gz bytes on stdout; errors only on stderr.
+- `rpc-upload-files <job_id> <sha256>`: a job's kept files (tar.gz) from its worker, one reply line.
+- `rpc-download-files <job_id>`: those files on stdout, for `mulebox fetch`; errors only on stderr.
 
 Nothing here ever prints a traceback on stdout: every failure becomes an `error` reply.
 Exit codes: 0 when the reply is not an error; 4 (protocol/remote error) when it is, and
@@ -19,7 +21,7 @@ from typing import Any, BinaryIO, TextIO
 from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import Message, MessageType, ProtocolError, decode
-from mulebox.coordinator import api, delta, uploads
+from mulebox.coordinator import api, delta, files, uploads
 from mulebox.coordinator.context import error_message, error_reply
 from mulebox.coordinator.errors import BadRequest, CoordinatorError
 from mulebox.coordinator.lineio import note_error, read_line, write_message
@@ -104,11 +106,22 @@ def _answer(work: Callable[[], dict[str, Any]], name: str, stdout: BinaryIO,
     return _send_reply(stdout, stderr, reply)
 
 
+def run_upload_files(store: Store, staging: Staging, job_id: str, sha256: str, stdin: BinaryIO,
+                     stdout: BinaryIO, stderr: TextIO | None = None) -> int:
+    """Receive the files `job_id` kept (files.py); reply with their size."""
+    return _answer(lambda: files.receive(store, staging, job_id, sha256, stdin),
+                   "rpc-upload-files", stdout, stderr)
+
+
 def run_download(store: Store, staging: Staging, job_id: str, stdout: BinaryIO,
-                 stderr: TextIO | None = None) -> int:
-    """Write the snapshot of `job_id` to `stdout`; on failure only stderr and exit 4."""
+                 stderr: TextIO | None = None, *, kept: bool = False) -> int:
+    """Write the snapshot of `job_id` to `stdout`, or with `kept` the files it kept; on failure
+    only stderr and exit 4."""
     try:
-        uploads.send_snapshot(store, staging, job_id, stdout)
+        if kept:
+            files.send(store, staging, job_id, stdout)
+        else:
+            uploads.send_snapshot(store, staging, job_id, stdout)
         stdout.flush()
         return EXIT_OK
     except CoordinatorError as exc:

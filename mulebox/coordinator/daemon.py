@@ -11,6 +11,7 @@ import time
 from collections.abc import Callable
 
 from mulebox.common.config import DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS, NodeConfig
+from mulebox.common.config_project import FILES_DAYS
 from mulebox.common.log import get_logger
 from mulebox.common.stuck import STUCK_AFTER_MIN
 from mulebox.coordinator import attendance, leases, recovery, retention, workers
@@ -26,7 +27,8 @@ LOG_DAYS, STEP_DAYS = DEFAULT_LOG_DAYS, DEFAULT_STEP_DAYS
 
 def run(store: Store, staging: Staging, stop: threading.Event, *,
         clock: Callable[[], float] = time.time, interval: float = SWEEP_S,
-        log_days: int = LOG_DAYS, step_days: int = STEP_DAYS) -> int:
+        log_days: int = LOG_DAYS, step_days: int = STEP_DAYS,
+        files_days: int = FILES_DAYS) -> int:
     """Recovery, then sweep until `stop` is set; return the number of sweeps done."""
     interrupted = recovery.recover(store, clock(), staging)
     _log.info("recovery done: %d job(s) interrupted", len(interrupted))
@@ -36,7 +38,7 @@ def run(store: Store, staging: Staging, stop: threading.Event, *,
         now = clock()
         if now >= next_retention:
             next_retention = now + RETENTION_S
-            _keep_tidy(store, staging, now, log_days, step_days)
+            _keep_tidy(store, staging, now, log_days, step_days, files_days)
         try:
             finished = leases.expire(store, now, staging)
             if finished:
@@ -48,9 +50,10 @@ def run(store: Store, staging: Staging, stop: threading.Event, *,
     return sweeps
 
 
-def _keep_tidy(store: Store, staging: Staging, now: float, log_days: int, step_days: int) -> None:
+def _keep_tidy(store: Store, staging: Staging, now: float, log_days: int, step_days: int,
+               files_days: int = FILES_DAYS) -> None:
     try:
-        logs, rows = retention.sweep(store, staging, now, log_days, step_days)
+        logs, rows = retention.sweep(store, staging, now, log_days, step_days, files_days)
         if logs or rows:
             _log.info("retention removed %d log(s) and %d stage row(s)", logs, rows)
     except Exception:  # noqa: BLE001 - tidying up must never stop the service

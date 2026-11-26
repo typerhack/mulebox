@@ -9,7 +9,7 @@
   `<cache>/actions-runner/<asset>` and verified on every use; a cached file that no
   longer matches is removed and downloaded again. Downloads go to a temporary name and
   are renamed into place only after the checksum matched.
-- `extract(paths, tarball, dest)`: safe extraction through `worker/archive.py`.
+- `extract(paths, tarball, dest)`: safe extraction through `common/archive.py`.
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ from mulebox.common import download
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_ulid
 from mulebox.common.safepath import ensure_dir, remove_tree
-from mulebox.worker.archive import extract_tar
+from mulebox.common.archive import extract_tar
 from mulebox.worker.paths import NodePaths
 
 LATEST_URL = "https://api.github.com/repos/actions/runner/releases/latest"

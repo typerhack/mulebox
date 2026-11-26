@@ -181,6 +181,8 @@ a foreign file is never a candidate. A log goes when its job is `finished` and `
 is older than `log_days`, through `Staging.remove_log` and so safepath. A log of an unknown or
 active job stays. `job_steps` rows go after `step_days`. Rows in `jobs` are never removed.
 `mulebox logs` of a job whose log has gone prints nothing; the job still shows in history.
+Kept files (`<staging>/files/<job_id>.tar.gz`, coordinator/files.py) go after `files_days` (7)
+the same way, by `files.job_ids` and `files.remove`; `sweep(..., files_days=7)`.
 
 ## Browser tests
 

@@ -1,6 +1,6 @@
-"""Safe tar extraction into a folder inside the worker roots.
+"""Safe tar extraction into a folder inside the given roots (a node's, or a project's for `mulebox fetch`).
 
-Used for job snapshots (tar.gz from the client) and toolchain tarballs (tar.xz). Every
+Used for job snapshots (tar.gz from the client), toolchain tarballs (tar.xz) and kept files. Every
 member is checked before anything is written: no absolute names, no `..`, no device or
 fifo entries, links must stay inside the destination. Extraction itself runs with
 tarfile's `filter="data"`, which repeats those checks against the real file system (it

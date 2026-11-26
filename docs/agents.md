@@ -62,6 +62,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | the same inside a compose service | `mulebox run --in <service> -- <cmd> <args...>` |
 | the same with no containers, install or setup | `mulebox run --bare -- <cmd> <args...>` |
 | change a file on the machine and get it back, such as a lockfile | `mulebox run --take <path> -- <cmd> <args...>`, e.g. `mulebox run --in api --take api/composer.lock -- composer update --no-install vendor/pkg` |
+| bring back files a job made (a report, screenshots, a build) | `keep:` in `.mulebox.yml` or `--keep <path>`, then `mulebox fetch <job-id>` (section 1d) |
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
@@ -131,6 +132,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | `request.conflict` | 4 | the request does not fit the state it found | `mulebox queue` shows the state now; try again once it changed |
 | `request.too_large` | 4 | the request is over the node's size limit | send less: fewer or smaller files |
 | `job.not_found` | 4 | the node has no job with that id | `mulebox queue` lists the jobs; an id is printed by `check --detach` |
+| `job.no_files` | 4 | the job has no kept files to fetch | name them with `keep:` in .mulebox.yml or `--keep <path>`, then run the job again; kept files stay 7 days (`files_days`) |
 | `job.no_node` | 4 | no node offers what the job needs, so it would wait forever | `mulebox doctor` shows what each node offers; change `needs:`, or ask your user to set a node up for it |
 | `job.too_big` | 4 | no node has room for the job's `size:` | lower `size:` in .mulebox.yml; `mulebox machine list` shows each node's cores |
 | `node.unknown` | 4 | no node has that name | `mulebox machine list` names the nodes |
@@ -345,6 +347,36 @@ holding no slot; their memory counts as used. Its failure summary says so and gi
 - Not kept: a job that passed, could not start (exit 5), was cancelled, interrupted or stopped
   stuck, failed before its containers were up, was passed but turned into exit 8 by its test
   counts, or runs with `isolation: container`.
+
+## 1d. Files back
+
+Files a job makes on the node, such as a coverage report, Playwright's report and screenshots,
+or a build, come back when you name them:
+
+    keep: [coverage/, playwright-report/, test-results/**/*.png]   # every job
+    jobs:
+      e2e:
+        run: npx playwright test
+        keep: [playwright-report/, test-results/]                  # this job's own list
+
+- An entry is a file, a folder (with or without `/`) or a pattern, relative to the folder with
+  `.mulebox.yml`: `*` stays inside one folder, `**` reaches any depth. At most 20; nothing
+  outside the project, nothing under `.mulebox/`. `--keep <path>` on `check` or `run` adds one
+  for that run (repeat it for more).
+- They are kept on every outcome, passed or failed, once the job's command ran. Links are named
+  and never followed. Up to the node's `keep_files_max` (200 MB a job): past it the smallest go
+  in first and the rest are named. What matched nothing is named too.
+- The job's end says what was kept and gives the command:
+
+      3 files kept (2.1 MB), 1 left out: mulebox fetch job-01J...
+
+- **`mulebox fetch <job-id>`** puts them in `.mulebox/files/<job-id>/` in the project, by their
+  project paths; fetching again replaces that folder, never more. mulebox makes `.mulebox/`
+  with a `.gitignore` of `*`, and snapshots never send it. `-o <dir>` puts them in
+  `<dir>/<job-id>/`. The node keeps them `files_days` (7) days; then `fetch` exits 4 with
+  `job.no_files`.
+- `--take` is the other way back, for a file you keep in the project such as a lockfile: it
+  writes it in place, and only after a pass.
 
 ## 2. Setting up a project (`.mulebox.yml`)
 

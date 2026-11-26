@@ -13,6 +13,7 @@ raises ProtocolError; connection failures raise `common.ssh.SSHUnavailable`.
 
 from __future__ import annotations
 
+import subprocess
 import threading
 from dataclasses import replace
 from collections.abc import Iterator
@@ -35,6 +36,7 @@ from mulebox.common.protocol import (
 
 HEARTBEAT_S = 20.0
 CALL_TIMEOUT_S = 120.0
+DOWNLOAD_TIMEOUT_S = 1800.0  # `mulebox fetch` of a 200 MB pack over a slow link
 PROJECT_TIMEOUT_S = 600.0
 _READ_LIMIT = MAX_LINE_BYTES + 3  # one byte over the cap (plus CRLF) is enough to tell
 
@@ -121,6 +123,27 @@ class Remote:
                                 connect_timeout_s=self.connect_timeout_s, check=False)
         sshio.check_exit(self.target, argv, result.exit_code, result.stderr)
         return result
+
+    def download_files(self, job_id: str, dest: Path) -> None:
+        """The files `job_id` kept, written to `dest` as they arrive (`mulebox fetch`)."""
+        argv = [self.program, "rpc-download-files", job_id]
+        command = ssh.ssh_command(self.target, argv, self.connect_timeout_s)
+        with open(dest, "xb") as out:
+            try:
+                proc = subprocess.run(command, stdout=out, stderr=subprocess.PIPE,
+                                      stdin=subprocess.DEVNULL, timeout=DOWNLOAD_TIMEOUT_S)
+            except subprocess.TimeoutExpired as exc:
+                raise CoordinatorError(f"fetching the files of {job_id} took over "
+                                       f"{DOWNLOAD_TIMEOUT_S:.0f} s") from exc
+            except OSError as exc:
+                raise ssh.cannot_start(exc) from exc
+        if proc.returncode == 255:
+            sshio.check_exit(self.target, argv, 255, proc.stderr)
+        if proc.returncode != 0:
+            said = proc.stderr.decode("utf-8", errors="replace").strip().splitlines()
+            raise CoordinatorError((said[-1] if said else f"exit {proc.returncode}")
+                                   .removeprefix("mulebox: error ").split(": ", 1)[-1],
+                                   "not_found", error_code="job.no_files")
 
     def _send_file(self, argv: list[str], path: Path) -> Message:
         result = sshio.run_with_file(

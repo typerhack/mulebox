@@ -59,6 +59,8 @@ def register(actions: argparse._SubParsersAction) -> None:
                         'rests, after its cleanup ("5GB")')
     config.add_argument("--keep-failed-min", type=int, help="keep a failed job's containers this "
                         "many minutes for `mulebox check --from-stage` (0: keep nothing)")
+    config.add_argument("--keep-files-max", help="the most one job keeps for `mulebox fetch` "
+                        '("200MB")')
     config.add_argument("--cancel", action="store_true", help="drop a change still waiting")
     config.add_argument("--wait", action="store_true",
                         help=f"return once the machine applied it (up to {WAIT_S:.0f} s)")
@@ -106,6 +108,8 @@ def lines(view: dict[str, Any]) -> list[str]:
                                         "ignores in it" if hours else "off"))
         if "min_free" in current:
             out.append(f"rests:     with under {current['min_free']} free (`mulebox machine check`)")
+        if "keep_files_max" in current:
+            out.append(f"files:     a job keeps up to {current['keep_files_max']} for `mulebox fetch`")
         if "keep_failed_min" in current:
             minutes = current["keep_failed_min"]
             out.append("reruns:    " + (f"a failed job's containers kept {minutes} min for "
@@ -147,7 +151,8 @@ def _config(args: argparse.Namespace) -> int:
                              ("docker_clean", _flag(args.docker_clean)),
                              ("max_size", args.max_size),
                              ("slim_hours", args.slim_hours), ("min_free", args.min_free),
-                             ("keep_failed_min", args.keep_failed_min))
+                             ("keep_failed_min", args.keep_failed_min),
+                             ("keep_files_max", args.keep_files_max))
                             if value is not None}
     if args.cancel:
         body["cancel"] = True

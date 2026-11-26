@@ -38,7 +38,7 @@ from mulebox.common.config_jobs import HOST_PORTS_KEY
 from mulebox.common.log import get_logger
 from mulebox.common.safepath import ensure_dir, remove_tree
 from mulebox.worker import workspace
-from mulebox.worker.archive import extract_tar
+from mulebox.common.archive import extract_tar
 from mulebox.worker.paths import NodePaths
 
 LOG = get_logger("worker.home")

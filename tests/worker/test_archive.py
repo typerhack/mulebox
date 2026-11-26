@@ -6,7 +6,7 @@ import tarfile
 import pytest
 
 from mulebox.common.safepath import PathOutsideRoots
-from mulebox.worker.archive import ArchiveError, extract_tar
+from mulebox.common.archive import ArchiveError, extract_tar
 
 from .fakes import make_tar
 

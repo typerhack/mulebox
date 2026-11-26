@@ -23,6 +23,7 @@ import subprocess
 import threading
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import IO
 
 from mulebox.common import disclaim
@@ -130,8 +131,10 @@ def run_remote(
     connect_timeout_s: int = 10,
     check: bool = True,
     options: Sequence[str] = (),
+    stdin_file: Path | None = None,
 ) -> RemoteResult:
-    """Run argv on target and collect its output.
+    """Run argv on target and collect its output; `stdin_file` is streamed to its stdin,
+    never read into memory.
 
     Raises SSHUnavailable on a connection failure, RemoteTimeout when timeout_s expires,
     and RemoteError on another non-zero exit unless check is False (then the result is
@@ -140,7 +143,12 @@ def run_remote(
     command = ssh_command(target, argv, connect_timeout_s, options)
     io_kwargs: dict = {"input": stdin} if stdin is not None else {"stdin": subprocess.DEVNULL}
     try:
-        proc = subprocess.run(command, capture_output=True, timeout=timeout_s, **io_kwargs)
+        if stdin_file is not None:
+            with open(stdin_file, "rb") as source:
+                proc = subprocess.run(command, capture_output=True, timeout=timeout_s,
+                                      stdin=source)
+        else:
+            proc = subprocess.run(command, capture_output=True, timeout=timeout_s, **io_kwargs)
     except subprocess.TimeoutExpired as exc:
         raise RemoteTimeout(
             f"`{argv[0]}` on {target} did not finish within {timeout_s} s; "

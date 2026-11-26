@@ -65,6 +65,9 @@ _ALL = (
          "send less: fewer or smaller files"),
     Code("job.not_found", REFUSED, "the node has no job with that id",
          "`mulebox queue` lists the jobs; an id is printed by `check --detach`"),
+    Code("job.no_files", REFUSED, "the job has no kept files to fetch",
+         "name them with `keep:` in .mulebox.yml or `--keep <path>`, then run the job again; "
+         "kept files stay 7 days (`files_days`)"),
     Code("job.no_node", REFUSED, "no node offers what the job needs, so it would wait forever",
          "`mulebox doctor` shows what each node offers; change `needs:`, or ask your user "
          "to set a node up for it"),

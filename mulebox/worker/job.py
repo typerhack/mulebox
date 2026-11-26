@@ -67,6 +67,13 @@ class ActiveJob:
     reused: Any = None  # the kept.Kept a rerun took over
     home: str | None = None  # the job whose containers, folder and ports a rerun runs with
     unkept: list[Any] = field(default_factory=list)  # kept jobs removed before it starts
+    keep_files: list[str] = field(default_factory=list)  # `keep:` for `mulebox fetch` (agent_files.py)
+    files_stage: str | None = None  # packing, packed or sending
+    files_task: Any = None  # the background.Task packing or sending them
+    files_gathered: Any = None  # the files_out.Gathered
+    files_pack: Any = None  # (path, sha256) of the pack, or (None, "") with nothing found
+    files_refused: str | None = None  # why the coordinator would not take them
+    files_report: dict[str, Any] | None = None  # what was kept, for the result
 
     @property
     def steps(self) -> StepTracker:

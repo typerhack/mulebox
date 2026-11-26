@@ -44,7 +44,7 @@ import time, no global state except loggers. Base exception in `mulebox/common/e
   `dashboard: dict` (`mode`: `off|local|lan`, `port`: 8090, `lan_range`: private CIDR or
   None, `lan_address`: IPv4 inside `lan_range` or None, `lan_port`: same as `port`, `lan_tls`: false),
   `job_env: dict[str, str]` (environment for every job on this machine; `env:` of a project
-  overrides it), `retention: dict` (`log_days`: 30, `step_days`: 365), `limits: dict`
+  overrides it), `retention: dict` (`log_days`: 30, `step_days`: 365, `files_days`: 7), `limits: dict`
   (`unattended_idle_min`: 15, `unattended_max_hours`: 24).
 - `load_client_config(path: Path | None = None) -> ClientConfig`,
   `load_node_config(path: Path | None = None) -> NodeConfig`, `node_config_from(path, data)`

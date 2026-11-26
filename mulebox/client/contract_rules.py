@@ -52,6 +52,11 @@ RULES = (
     "change to the compose files, a Dockerfile, a lockfile, setup or install runs it from the "
     "start, and it says why. Code a service copies in at build time is the old code in a rerun: "
     "use a plain mulebox check for it. The last word on a change is a plain mulebox check",
+    "files a job makes (a coverage report, Playwright's report and screenshots, a build) come "
+    "back when named in keep: in .mulebox.yml or with --keep <path>, on every outcome, up to the "
+    "node's keep_files_max (200 MB; past it the smallest go first and the rest are named); the "
+    "job's end gives the command, mulebox fetch <job-id>, which puts them in "
+    ".mulebox/files/<job-id>/ (git-ignored) for 7 days. Do not cat them out of the log",
     "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
     "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
     "1 if a job would not run, and warnings alone exit 0",

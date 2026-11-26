@@ -26,8 +26,9 @@ from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.common.status import PREPARE, TOOLCHAIN
 from mulebox.worker import activity, advert, background, job_meter, live_config, runspec
 from mulebox.worker import kept as kept_jobs
-from mulebox.worker import simulator, toolchains, xcode
+from mulebox.worker import files_out, simulator, toolchains, xcode
 from mulebox.worker.agent_end import HEARTBEAT_S, Ending
+from mulebox.worker.agent_files import KeepingFiles
 from mulebox.worker.agent_health import Checking
 from mulebox.worker.agent_kept import Keeping
 from mulebox.worker.agent_skip import Skipping
@@ -50,7 +51,7 @@ RETRY_S = 5.0  # pause between calls after the coordinator failed to answer
 SHUTDOWN_WAIT_S = 60.0  # for cleanups in progress; systemd allows the stop 90 s
 
 
-class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping):
+class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping, KeepingFiles):
     def __init__(self, node: NodeConfig, link: CoordinatorLink, executor: Executor,
                  paths: NodePaths, clock: Callable[[], float] = time.time,
                  supervisor: Any = None, docker: Docker | None = None,
@@ -102,6 +103,8 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping):
             self.executor.kill(name)
         for what in self.cleaner.recover():
             LOG.warning("cleaned up leftover job %s", what)
+        if files_out.leftovers(self.paths.staging, self.paths.roots):
+            LOG.warning("removed kept-files packs an earlier worker left")
 
     def step(self, now: float | None = None) -> None:
         now = self.clock() if now is None else now
@@ -166,6 +169,7 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking, Keeping):
         job = ActiveJob(job_id, attempt_id, project, tailer, started_at=now, last_heartbeat=now,
                         uses_docker=uses_docker(claim),
                         take=[p for p in claim.get("take") or [] if isinstance(p, str)],
+                        keep_files=[p for p in claim.get("keep_files") or [] if isinstance(p, str)],
                         uses_simulator=simulator.wanted(claim))
         job.meter = job_meter.for_job(job_id, job.uses_docker, self.docker, self.executor)
         self.active[job_id] = job

@@ -84,8 +84,8 @@ class Ending:
     def _deliver(self, job: ActiveJob, now: float) -> None:
         if not job.cleaned:
             self._cleanup(job)
-        if not job.cleaned or job.judging:  # judging: whose fault it was (agent_health.py)
-            self._keep_lease(job, now)
+        if not job.cleaned or job.judging or not self._files_done(job, now):  # judging: whose
+            self._keep_lease(job, now)  # fault it was (agent_health.py); files: agent_files.py
             return
         if not self._online(now):
             return
@@ -97,7 +97,8 @@ class Ending:
                 MessageType.RESULT, job_id=job.job_id, outcome=job.outcome.value,
                 exit_code=job.exit_code, duration_s=round(job.duration_s, 3),
                 attempt_id=job.attempt_id, usage=job.meter.peaks.as_dict(),
-                **self._node_fault(job), **self._kept_result(job, now)), now)
+                **self._node_fault(job), **self._kept_result(job, now),
+                **self._files_result(job)), now)
         except LinkError:
             return
         job.result_sent = True

@@ -11,7 +11,7 @@ from typing import Any
 from mulebox.common import usage
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
 from mulebox.coordinator import kept as held
-from mulebox.coordinator import (health, leases, node_settings, project_orders, queue,
+from mulebox.coordinator import (files, health, leases, node_settings, project_orders, queue,
                                  recovery,
                                  reservations, steps, storage, test_proof, workers)
 from mulebox.coordinator import store as st
@@ -161,6 +161,8 @@ def result(req: Request) -> Message:
         kept = job["stop_reason"] if outcome is Outcome.CANCELLED else None
         job = st.finish(conn, job, outcome, req.now, exit_code=exit_code, duration_s=duration_s,
                         stop_reason=kept)
+        files.record(conn, job, req.body)  # what it kept for `mulebox fetch` (files.py)
+        job = st.require_job(conn, job["job_id"])
         if outcome is not Outcome.PASSED and job["worker"]:  # kept for a rerun (kept.py)
             held.add(conn, job["worker"], job["job_id"], req.body.get("kept"), req.now)
     req.staging.remove_upload(job["job_id"])

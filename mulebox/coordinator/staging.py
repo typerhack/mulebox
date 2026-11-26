@@ -68,11 +68,17 @@ class Staging:
         `max_bytes`, verified against `sha256`, then renamed into place atomically. On any
         failure the temp file is removed and nothing is left at the final name.
         """
-        final = self.upload_path(job_id)
+        return self.write_verified(self.uploads_dir, self.upload_path(job_id).name, stream,
+                                   sha256, max_bytes)
+
+    def write_verified(self, folder: Path, name: str, stream: BinaryIO, sha256: str,
+                       max_bytes: int) -> int:
+        """`stream` into `folder`/`name` as write_upload does it; the size (files.py too)."""
+        final = folder / name
         if not isinstance(sha256, str) or not _SHA256_RE.fullmatch(sha256):
             raise BadRequest("sha256 must be 64 lowercase hex characters")
-        temp_name = f".{job_id}.{secrets.token_hex(8)}{_PART_SUFFIX}"
-        with self._folder(self.uploads_dir) as dir_fd:
+        temp_name = f".{name.split('.', 1)[0]}.{secrets.token_hex(8)}{_PART_SUFFIX}"
+        with self._folder(folder) as dir_fd:
             fd = os.open(temp_name, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
                          | os.O_CLOEXEC, _FILE_MODE, dir_fd=dir_fd)
             try:
@@ -86,18 +92,24 @@ class Staging:
             except BaseException:
                 if fd >= 0:
                     os.close(fd)
-                remove_tree(self.uploads_dir / temp_name, self.roots)
+                remove_tree(folder / temp_name, self.roots)
                 raise
         return size
 
     @contextmanager
     def open_upload(self, job_id: str) -> Iterator[BinaryIO]:
-        name = self.upload_path(job_id).name
-        with self._folder(self.uploads_dir) as dir_fd:
+        with self.open_in(self.uploads_dir, self.upload_path(job_id).name,
+                          f"no snapshot for job {job_id}") as handle:
+            yield handle
+
+    @contextmanager
+    def open_in(self, folder: Path, name: str, missing: str) -> Iterator[BinaryIO]:
+        """`folder`/`name` to read, with no symlink followed; NotFound(`missing`) if absent."""
+        with self._folder(folder) as dir_fd:
             try:
                 fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=dir_fd)
             except FileNotFoundError:
-                raise NotFound(f"no snapshot for job {job_id}") from None
+                raise NotFound(missing) from None
         with os.fdopen(fd, "rb") as handle:
             yield handle
 

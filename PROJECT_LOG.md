@@ -8,6 +8,14 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.48.0 - 2026-11-26 - minor
+- Files back (M24.3; design.md, Files back): `keep:` in `.mulebox.yml`, for the project or one job, and `--keep <path>` on `check` and `run` name files, folders and `*`/`**` patterns to bring back (common/keep_files.py).
+- The worker gathers them once the command ran, on every outcome, without following a link, smallest first up to the node's `keep_files_max` (200MB, a node setting), names what it left out, and sends the pack to the coordinator before the job's result, again after a lost link (worker/files_out.py, agent_files.py).
+- The coordinator keeps a pack at `<staging>/files/<job>.tar.gz` for `files_days` (7, in `[retention]`) and hands it out once the job ended (coordinator/files.py, schema 36); a worker key may run `rpc-upload-files` and nothing more.
+- `mulebox fetch <job-id>` unpacks them safely into `.mulebox/files/<job-id>/` in the project, made with a `.gitignore` of `*`, or `<dir>/<job-id>/` with `-o`, replacing an earlier fetch of that job only (client/fetch.py). A job's end and its failure summary say what was kept and give the command; `job.no_files` when there is nothing.
+- The snapshot unpacker moved to common/archive.py, as the dev machine unpacks with it too.
+- Contract schema 20 and the skill; docs/agents.md 1d, README, install.md, interfaces.
+
 ## 1.47.1 - 2026-11-26 - patch
 - docs/design.md: design note for files back (M24.3), with the user's decisions; its done-when in docs/phases.md.
 

@@ -30,7 +30,7 @@ from mulebox.common.network_errors import REGISTRY
 from mulebox.common.safepath import ensure_dir, remove_tree
 from mulebox.common.config import FOUND_ON_NODE
 from mulebox.worker import xcode
-from mulebox.worker.archive import extract_tar
+from mulebox.common.archive import extract_tar
 from mulebox.worker.paths import NodePaths
 
 NODE_DIST = "https://nodejs.org/dist"

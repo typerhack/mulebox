@@ -15,7 +15,8 @@ from mulebox.common.config_jobs import MAX_STUCK_AFTER_MIN
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
                                  leases, line, line_rules, machine_api, needs, node_settings,
-                                 project_orders, project_pause, projects, queue, rerun, reuse, runner_api,
+                                 files, project_orders, project_pause, projects, queue, rerun, reuse,
+                                 runner_api,
                                  setting_asks, sizes, stats_api, steps, storage, taken, test_proof,
                                  upgrades, usage_api, usual, worker_api, workers)
 from mulebox.coordinator import store as st
@@ -90,6 +91,7 @@ def submit(req: Request) -> Message:
         "size": sizes.asked(body),
         "detached": v.flag(body, "detached"),
         "take": _take(body),
+        "keep_files": files.asked(body),  # `keep:` and `--keep` (files.py)
         "pinned_worker": v.text(body, "on", None),  # `--on <node>`: that node only
         "from_stage": rerun.asked(body),  # `--from-stage`: a rerun of a kept job (rerun.py)
     }

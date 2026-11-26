@@ -147,7 +147,7 @@ def test_node_minimal_defaults(tmp_path):
         dashboard={"mode": "local", "port": 8090, "lan_range": None, "lan_address": None,
                    "lan_port": 8090, "lan_tls": False, "lan_password": True,
                    "controls": True},
-        retention={"log_days": 30, "step_days": 365},
+        retention={"log_days": 30, "step_days": 365, "files_days": 7},
         limits={"unattended_idle_min": 15, "unattended_max_hours": 24, "stuck_after_min": 2},
     )
     assert config.slots == 1 and config.capabilities == () and config.coordinator is None

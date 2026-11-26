@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import attention, delta, report, rerun_lines, summary, take_back
+from mulebox.client import attention, delta, fetch, report, rerun_lines, summary, take_back
 from mulebox.client.job_body import WARM_ARGV, WARM_JOB_NAME, job_request, submit_body
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
@@ -83,6 +83,7 @@ def run_job(
     on: str | None = None,
     fewer_tests: str | None = None,
     from_stage: str | None = None,
+    keep: tuple[str, ...] = (),
 ) -> int:
     """Run a job on the nodes as if it ran here; return its exit code. `on`: that node only.
 
@@ -91,6 +92,7 @@ def run_job(
     io = streams or Streams()
     job, argv = (WARM_JOB_NAME, WARM_ARGV) if warm else job_request(project, target)
     project, dropped = for_job(project, target if isinstance(target, str) else None, options)
+    project = fetch.with_keep(project, keep)  # `--keep` beside the job's own `keep:`
     if dropped and (project.compose or project.host_ports):  # else nothing could use them
         report.status(io.err, left_out(dropped))
     try:
@@ -278,6 +280,9 @@ class Watcher:
         """The last lines of all, after the log and its container logs: the outcome, then what
         went wrong. Everything else a command has to say comes first, so the error stays last."""
         report.status(self.io.err, report.outcome_line(self.job_id, result))
+        if not summary.wanted(result):  # a summary says it itself, before its log lines
+            for line in fetch.kept_lines(self.job_id, result):
+                report.status(self.io.err, line)
         if summary.wanted(result):
             lines = summary.relevant_lines(self.tail)
             for line in summary.render(self.job_id, result, lines):

@@ -647,7 +647,7 @@ traces, or a build, and an agent brings them to the dev machine when it wants th
   unpacks it into `.mulebox/files/<job>/` in the project, through the same safe unpacking as a
   snapshot (no absolute paths, no `..`, no links out). mulebox makes `.mulebox/` with its own
   `.gitignore` (`*`), so git ignores it, and snapshots never send `.mulebox/`. `-o <dir>` puts them
-  elsewhere; fetching again replaces that job's folder. Not fetched by itself: the end of a job
+  in `<dir>/<job>/`; fetching again replaces that job's folder, never more. Not fetched by itself: the end of a job
   that kept files says how many and the command, in `check`, `wait`, `status` and the failure
   summary.
 - **Not now.** The dashboard (a download link on a job's page, from mockups), and files of a

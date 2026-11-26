@@ -27,7 +27,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from mulebox.common import env_rules, job_size
+from mulebox.common import env_rules, job_size, keep_files
 from mulebox.common.config_reader import Reader
 
 PORT_PREFIX = "MULEBOX_PORT_"
@@ -50,6 +50,7 @@ class JobOptions:
     stuck_after_min: int | None = None  # None: the top-level one
     tests: str | None = None  # None: the top-level one (tests_mode)
     size: dict[str, float] | None = None  # None: the top-level one (job_size.py)
+    keep: tuple[str, ...] | None = None  # None: the top-level one (keep_files.py)
 
 
 MAX_STUCK_AFTER_MIN = 24 * 60
@@ -144,7 +145,7 @@ def read_jobs(reader: Reader) -> tuple[dict[str, str], dict[str, JobOptions]]:
         options[name] = JobOptions(setup=_line(entry, "setup"), install=_line(entry, "install"),
                                    compose=entry.boolean("compose", True), ports=_ports(entry),
                                    stuck_after_min=stuck_after(entry), tests=tests_mode(entry),
-                                   size=size_of(entry))
+                                   size=size_of(entry), keep=keep_files.from_config(entry))
         entry.finish()
     if "check" not in commands:
         reader.fail("jobs", "must define a 'check' job")
@@ -180,6 +181,7 @@ def for_job(project: Any, name: str | None,
     stuck = project.stuck_after_min if options.stuck_after_min is None else options.stuck_after_min
     tests = project.tests if options.tests is None else options.tests
     size = project.size if options.size is None else options.size
+    keep = project.keep if options.keep is None else options.keep
     return dataclasses.replace(project, setup=setup, install=install, compose=files, env=env,
                                host_ports=options.ports, stuck_after_min=stuck, tests=tests,
-                               size=size), dropped
+                               size=size, keep=keep), dropped

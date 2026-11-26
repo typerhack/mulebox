@@ -81,6 +81,7 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         **({"detached": True} if detach else {}),
         **({"reuse": True} if reuse else {}),
         **({"take": list(take)} if take else {}),
+        **({"keep": list(project.keep)} if project.keep else {}),  # common/keep_files.py
         **({"on": on} if on else {}),  # this node only (coordinator/api.py)
         **({"from_stage": from_stage} if from_stage else {}),  # coordinator/rerun.py
     }

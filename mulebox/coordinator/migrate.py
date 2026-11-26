@@ -63,6 +63,10 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   how often a job went back in line because its node could not set it up.
 - 33 -> 34: `clients.install`, how a dev machine installed mulebox (common/upgrade.py KINDS), so
   the dashboard names its upgrade; NULL until it says.
+- 34 -> 35: `jobs.from_stage` and `jobs.reuses`, a rerun's stage and the kept job it takes over,
+  and `workers.kept`, the failed jobs a worker keeps for a rerun (coordinator/kept.py, rerun.py).
+- 35 -> 36: `jobs.keep_files` (JSON list, default '[]'), what a job keeps for `mulebox fetch`, and
+  `jobs.files` (JSON), what it kept: count, bytes and what was left out (coordinator/files.py).
 """
 
 import sqlite3
@@ -212,6 +216,8 @@ _STEPS: dict[int, tuple[str, ...]] = {
     34: ("ALTER TABLE jobs ADD COLUMN from_stage TEXT",
          "ALTER TABLE jobs ADD COLUMN reuses TEXT",
          "ALTER TABLE workers ADD COLUMN kept TEXT"),
+    35: ("ALTER TABLE jobs ADD COLUMN keep_files TEXT NOT NULL DEFAULT '[]'",
+         "ALTER TABLE jobs ADD COLUMN files TEXT NOT NULL DEFAULT 'null'"),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

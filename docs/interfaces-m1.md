@@ -25,6 +25,8 @@ Design: [design.md](design.md). Changes to this file go through the integrator.
 | `<staging>/uploads/<job_id>.tar.gz` | coordinator | snapshot; removed when the job finishes |
 | `<staging>/bases/<project hash>.tar.gz` | coordinator | a project's last snapshot, what the next upload is compared with |
 | `<staging>/logs/<job_id>.log` | coordinator | redacted job log, removed after `log_days` (interfaces-m4.md) |
+| `<staging>/files/<job_id>.tar.gz` | coordinator | the files a job kept (`keep:`), for `mulebox fetch`; removed after `files_days` |
+| `<staging>/files-out/<job_id>.tar.gz` | worker | a pack on its way to the coordinator; removed once sent, and on the worker's start |
 | `<projects>/<project>/repo.git` | worker | the project's repository on this machine |
 | `<projects>/<project>/trees/<branch>-<hash>/` | worker | one worktree per branch, kept between jobs: where jobs run |
 | `<projects>/<project>/state/<branch>-<hash>.setup` | worker | what the last finished `setup` depended on |
@@ -58,6 +60,8 @@ Every subcommand sets `func=handler`, where `handler(args) -> int` returns the e
 | `mulebox rpc` | coordinator | one request line on stdin; replies on stdout |
 | `mulebox rpc-upload <job_id> <sha256>` | coordinator | tar.gz bytes on stdin |
 | `mulebox rpc-download <job_id>` | coordinator | tar.gz bytes on stdout (ssh link) |
+| `mulebox rpc-upload-files <job_id> <sha256>` | coordinator | a job's kept files as tar.gz on stdin, from its worker before its result; a worker key may run it |
+| `mulebox rpc-download-files <job_id>` | coordinator | a finished job's kept files as tar.gz on stdout (`mulebox fetch`) |
 | `mulebox coordinator serve` | coordinator | sweep loop; recovery first |
 | `mulebox worker serve` | worker | claim loop; recovery first |
 | `mulebox toolchain install <name> <version>` | worker | node, pnpm |

@@ -123,7 +123,7 @@ On the node (CLI `mulebox runner ...`):
   linux-x64/arm64, or osx-x64/arm64 on a Mac (GitHub API `releases/latest`), verifies the
   tarball against the SHA-256
   published in the release body (`<!-- BEGIN SHA linux-x64 -->...<!-- END SHA linux-x64 -->`),
-  extracts into `<runners>/<name>/` (safe extraction, shared `worker/archive.py`), runs
+  extracts into `<runners>/<name>/` (safe extraction, shared `common/archive.py`), runs
   `./config.sh --unattended --url https://github.com/<owner/repo> --token <t> --name <name>
   --labels <labels> --work _work --replace`, writes the hook variables into the runner's
   `.env` (`ACTIONS_RUNNER_HOOK_JOB_STARTED=...`, `ACTIONS_RUNNER_HOOK_JOB_COMPLETED=...`),

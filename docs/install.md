@@ -225,9 +225,10 @@ passes `CODE_SIGNING_ALLOWED=NO`; signing for a device or the App Store stays wi
   safety net, a value whose name says it is a secret (`NPM_TOKEN`, `DB_PASSWORD`) is redacted
   from job logs wherever it appears.
 - `[retention]`: `log_days` (default 30) is how long a job's log is kept after the job ended,
-  and `step_days` (default 365, at least `log_days`) how long its stage rows are. The coordinator
-  service removes what is older, once an hour and when it starts, from
-  `<staging>/logs/` and nowhere else. A finished job's row stays for good.
+  and `step_days` (default 365, at least `log_days`) how long its stage rows are; `files_days`
+  (default 7, at most `log_days`) how long the files a job kept for `mulebox fetch` are. The
+  coordinator service removes what is older, once an hour and when it starts, from
+  `<staging>/logs/` and `<staging>/files/` and nowhere else. A finished job's row stays for good.
 - `[limits]`: when a stuck job stops, on the coordinator's machine, read when the coordinator
   service starts. `unattended_idle_min` (default 15) is the longest a job must show no output, CPU
   or network, with its question unanswered for a `timeout_min`, to count as stuck;
@@ -648,7 +649,7 @@ no job: the machine takes no new one until it is under the new count. `keep_core
 `keep_memory` (0 by default) are kept for whoever uses the machine: jobs that declare a `size:`
 share only what is left (docs/design.md, Job sizes); jobs that declare none count as one slot
 each. Only `slots`, `priority`, `dev`, `keep_cores`, `keep_memory` and the disk settings (`keep_free`, `unused_days`, `keep_latest`, `idle_days`, `auto_clean`,
-`docker_clean`, `max_size`, `slim_hours`, `min_free`) and `keep_failed_min` (how long a failed compose job's containers stay for `mulebox check --from-stage`, 15 minutes, 0 for none) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
+`docker_clean`, `max_size`, `slim_hours`, `min_free`), `keep_failed_min` (how long a failed compose job's containers stay for `mulebox check --from-stage`, 15 minutes, 0 for none) and `keep_files_max` (the most a job may keep for `mulebox fetch`, 200MB) can be changed this way: `capabilities` say what the machine really has, and `[job_env]` reaches
 every job's processes, so they stay hand edits on the machine. A machine on a mulebox older than
 this cannot take a change: upgrade it first.
 

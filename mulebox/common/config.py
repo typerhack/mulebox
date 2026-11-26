@@ -39,8 +39,8 @@ Choices where docs/interfaces.md is silent:
   settings (common/storage_policy.py) can be changed from afar (worker/node_file.py).
 - ``os`` (project) is ``linux``, ``macos`` or ``any`` (common/systems.py); ``[dashboard]`` is
   read in config_node.py.
-- ``retention`` has ``log_days`` (default 30, at least 1) and ``step_days`` (default 365, at
-  least ``log_days``).
+- ``retention`` has ``log_days`` (default 30, at least 1), ``step_days`` (default 365, at
+  least ``log_days``) and ``files_days`` (default 7, at most ``log_days``): kept files, files.py.
 - ``limits`` has ``unattended_idle_min`` (default 15, at least 1) and ``unattended_max_hours``
   (default 24, at least 1), which must not be shorter than the idle limit.
 - An explicit ``path`` argument wins over ``$MULEBOX_CONFIG``; an empty one is ignored.
@@ -53,7 +53,7 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any
 
-from mulebox.common import compose, config_jobs, config_node, config_project
+from mulebox.common import compose, config_jobs, config_node, config_project, keep_files
 from mulebox.common import isolation as isolation_rules
 from mulebox.common.config_node import DASHBOARD_MODES, DEFAULT_DASHBOARD_PORT  # noqa: F401
 from mulebox.common.config_reader import ConfigError, Reader, load_toml, load_yaml
@@ -102,6 +102,7 @@ class ProjectConfig:
     stuck_after_min: int | None = None  # raises the node's; per job too (config_jobs.py)
     tests: str = "auto"  # auto, off or required; per job too (config_jobs.py `tests_mode`)
     size: dict[str, float] | None = None  # cores and memory; per job too (common/job_size.py)
+    keep: tuple[str, ...] = ()  # files kept for `mulebox fetch`; per job too (common/keep_files.py)
     exclude: tuple[str, ...] = ()
     ignore_changes: tuple[str, ...] = ()  # paths whose changes never change a result
     github_status: bool = False  # post check results to the pushed commit (client/github_status.py)
@@ -196,6 +197,7 @@ def load_project_config(path: Path) -> ProjectConfig:
         stuck_after_min=config_jobs.stuck_after(reader),
         tests=config_jobs.tests_mode(reader) or "auto",
         size=config_jobs.size_of(reader),
+        keep=keep_files.from_config(reader) or (),
         exclude=reader.strings("exclude"),
         ignore_changes=reader.strings("ignore_changes"),
         github_status=reader.boolean("github_status", False),

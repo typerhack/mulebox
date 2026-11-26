@@ -331,6 +331,8 @@ All of it, step by step: [Dashboard on the LAN](docs/install.md#dashboard-on-the
   minutes; after a fix, `mulebox check --from-stage command` (or `setup`, `install`) runs again
   there with no new images, services or database load. A change to what those depend on runs it from
   the start, and says why.
+- **Files back.** Name a coverage report, Playwright's report and screenshots or a build in `keep:`,
+  and `mulebox fetch <id>` brings them into `.mulebox/files/<id>/` after the job, passed or failed.
 - **A pass proves its tests ran.** mulebox reads the summary of pytest, vitest, jest, Pest, PHPUnit,
   cargo, mocha, Playwright, XCTest, Swift Testing and `go test -v`. A pass where a runner ran no test,
   or fewer than the last pass on the branch (else the default branch), fails with exit 8 and says
@@ -534,6 +536,7 @@ command prints. The ones you and your agents use:
 | `mulebox init` | write `.mulebox.yml` from the project's own files |
 | `mulebox check [job]` | run a job from `.mulebox.yml` (default `check`) on a node; exits with its exit code. `--detach` returns at once with the id, `--again` runs even on files already tested, `--on <node>` on that node alone, `--fewer-tests "<why>"` lets a pass with fewer tests count, `--from-stage <stage>` reruns a failed compose job in its kept containers |
 | `mulebox run -- <cmd>` | run any command there, once; `--in <service>` runs it in a compose service, `--bare` without setup and containers, `--take <path>` brings a file it made back |
+| `mulebox fetch <id>` | bring the files a job kept (`keep:`, `--keep <path>`) into `.mulebox/files/<id>/` |
 | `mulebox warm` | get toolchains, images, caches and installs ready ahead of a job |
 | `mulebox doctor` | check the project and the node before sending anything; changes nothing |
 | `mulebox contract` | how this project works through mulebox, written for agents |

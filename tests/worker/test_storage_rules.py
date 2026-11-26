@@ -96,6 +96,6 @@ def test_settings_read_with_defaults_and_spelling_kept_plain():
     assert read({}).report() == {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                                  "idle_days": 14, "auto_clean": True, "docker_clean": True,
                                  "max_size": "20GB", "slim_hours": 12, "min_free": "5GB",
-                                 "keep_failed_min": 15}
+                                 "keep_failed_min": 15, "keep_files_max": "200MB"}
     assert read({}).shown()["warn_size"] == "16GB"  # for coordinators before 1.30
     assert read({"max_size": "off"}).shown()["warn_size"] == "OFF"

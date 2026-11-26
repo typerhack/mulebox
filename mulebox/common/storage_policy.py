@@ -30,6 +30,8 @@ from `max_size` under that name, for coordinators older than 1.30.
 - `keep_failed_min`: a failed job's containers and folder stay this many minutes for a rerun
   with `mulebox check --from-stage` (15, the default; 0 keeps nothing; worker/kept.py,
   design.md, Rerun from the failed stage).
+- `keep_files_max`: the most one job keeps for `mulebox fetch` (`"200MB"`, the default; past it
+  the smallest files go in first, worker/files_out.py, design.md, Files back).
 """
 
 from __future__ import annotations
@@ -39,12 +41,12 @@ from dataclasses import dataclass
 from typing import Any
 
 FIELDS = ("keep_free", "unused_days", "keep_latest", "idle_days", "auto_clean", "docker_clean",
-          "max_size", "slim_hours", "min_free", "keep_failed_min")
+          "max_size", "slim_hours", "min_free", "keep_failed_min", "keep_files_max")
 FLAGS = ("keep_latest", "auto_clean", "docker_clean")
 DEFAULTS: dict[str, Any] = {"keep_free": "10%", "unused_days": 7, "keep_latest": True,
                             "idle_days": 14, "auto_clean": True, "docker_clean": True,
                             "max_size": "20GB", "slim_hours": 12, "min_free": "5GB",
-                            "keep_failed_min": 15}
+                            "keep_failed_min": 15, "keep_files_max": "200MB"}
 GONE = ("warn_size",)  # settings of older versions, read from node.toml and left aside
 WARN_SHARE = 0.8  # agents are told from this share of `max_size`
 MAX_DAYS = 365
@@ -67,6 +69,7 @@ class StoragePolicy:
     slim_hours: int = DEFAULTS["slim_hours"]
     min_free: str = DEFAULTS["min_free"]
     keep_failed_min: int = DEFAULTS["keep_failed_min"]
+    keep_files_max: str = DEFAULTS["keep_files_max"]
 
     def reserve(self, total: int) -> int:
         """The bytes to keep free on a disk of `total` bytes."""
@@ -76,6 +79,11 @@ class StoragePolicy:
     def min_free_bytes(self) -> int:
         """Free space below which the node takes no job (worker/health.py)."""
         amount, unit = _parsed(self.min_free)
+        return int(amount * UNITS[unit])
+
+    def keep_files_bytes(self) -> int:
+        """The most one job keeps for `mulebox fetch`."""
+        amount, unit = _parsed(self.keep_files_max)
         return int(amount * UNITS[unit])
 
     def max_bytes(self) -> int | None:
@@ -179,9 +187,10 @@ def check(name: str, value: Any) -> Any:
         return check_keep_free(value)
     if name in ("warn_size", "max_size"):
         return check_size(name, value)
-    if name == "min_free":
+    if name in ("min_free", "keep_files_max"):
         if not (isinstance(value, str) and storage_size(value)):
-            raise ValueError(f"min_free must be a size such as \"5GB\", got {value!r}")
+            example = "5GB" if name == "min_free" else "200MB"
+            raise ValueError(f"{name} must be a size such as \"{example}\", got {value!r}")
         return value.strip().replace(" ", "").upper()
     if name in FLAGS:
         return check_flag(name, value)

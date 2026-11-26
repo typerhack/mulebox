@@ -50,6 +50,17 @@ def register(sub: argparse._SubParsersAction) -> None:
     _node_option(p)
     p.set_defaults(func=_download)
 
+    p = sub.add_parser("rpc-upload-files", help="receive the files a job kept (tar.gz) on stdin")
+    p.add_argument("job_id")
+    p.add_argument("sha256")
+    _node_option(p)
+    p.set_defaults(func=_upload_files)
+
+    p = sub.add_parser("rpc-download-files", help="write the files a job kept (tar.gz) to stdout")
+    p.add_argument("job_id")
+    _node_option(p)
+    p.set_defaults(func=_download_files)
+
     p = sub.add_parser("ssh-gate", help=argparse.SUPPRESS)  # forced by a worker key
     _node_option(p)
     p.set_defaults(func=_gate)
@@ -116,6 +127,17 @@ def _download(args: argparse.Namespace) -> int:
         store, staging, args.job_id, sys.stdout.buffer, sys.stderr))
 
 
+def _upload_files(args: argparse.Namespace) -> int:
+    return _with_store(args, lambda store, staging: rpc.run_upload_files(
+        store, staging, args.job_id, args.sha256, sys.stdin.buffer, sys.stdout.buffer,
+        sys.stderr))
+
+
+def _download_files(args: argparse.Namespace) -> int:
+    return _with_store(args, lambda store, staging: rpc.run_download(
+        store, staging, args.job_id, sys.stdout.buffer, sys.stderr, kept=True))
+
+
 def _gate(args: argparse.Namespace) -> int:
     try:
         command, job_id = worker_keys.gate_command(os.environ.get("SSH_ORIGINAL_COMMAND"))
@@ -124,6 +146,9 @@ def _gate(args: argparse.Namespace) -> int:
     if command == "rpc-download":
         args.job_id = job_id
         return _download(args)
+    if command == "rpc-upload-files":
+        args.job_id, args.sha256 = job_id.split(" ")
+        return _upload_files(args)
     return _with_store(args, lambda store, staging: rpc.run_rpc(
         store, staging, sys.stdin.buffer, sys.stdout.buffer, sys.stderr,
         cluster_slots=args.cluster_slots, dashboard=args.dashboard,

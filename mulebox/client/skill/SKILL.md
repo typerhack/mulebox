@@ -27,9 +27,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 19. Keep it current, in every session, before
+This skill was written for contract schema 20. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 19, run `mulebox skill update`, then read the
+its first line gives a schema higher than 20, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -132,6 +132,11 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
   Dockerfile, a lockfile, `setup` or `install` runs it from the start, and it says so. Code a
   service copies into its image at build time is the old code in a rerun. A rerun is a quick
   check: finish with a plain `mulebox check` before telling the user a change passes.
+- Files a job makes, such as a coverage report or Playwright's report and screenshots, come back
+  when named in `keep:` in `.mulebox.yml` or with `--keep <path>`, on every outcome. The job's
+  end names the command, `mulebox fetch <job-id>`, which puts them in `.mulebox/files/<job-id>/`
+  (git-ignored). They are kept 7 days, up to 200 MB a job; past that the smallest go first and
+  the rest are named. Read a failed browser test's screenshots there, not in the log.
 
 ## Package caches and services
 

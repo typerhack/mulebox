@@ -7,7 +7,8 @@ half to `mulebox authorize-worker <name>` here. That writes one line into ~/.ssh
 
 `restrict` turns off forwarding, a terminal and the like; `command=` means the key never gets a
 shell: whatever it asks for, ssh runs `mulebox ssh-gate`, which reads the request from
-SSH_ORIGINAL_COMMAND and allows only `mulebox rpc` and `mulebox rpc-download <job-id>`, and over
+SSH_ORIGINAL_COMMAND and allows only `mulebox rpc`, `mulebox rpc-download <job-id>` and
+`mulebox rpc-upload-files <job-id> <sha256>` (a job's kept files, files.py), and over
 `rpc` only the requests a worker sends (WORKER_MESSAGES). Clients keep their own keys.
 
 This is setup, not a job: it is the one file mulebox writes outside its roots, and it only ever
@@ -37,6 +38,7 @@ _NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,62}")
 _KEY_TYPES = ("ssh-ed25519", "ecdsa-sha2-nistp256", "ecdsa-sha2-nistp384",
               "ecdsa-sha2-nistp521", "ssh-rsa")
 _BASE64 = re.compile(r"[A-Za-z0-9+/]+={0,2}")
+_SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 class GateRefused(MuleboxError):
@@ -46,7 +48,8 @@ class GateRefused(MuleboxError):
 
 
 def gate_command(original: str | None) -> tuple[str, str | None]:
-    """SSH_ORIGINAL_COMMAND -> ("rpc", None) or ("rpc-download", job_id); else GateRefused."""
+    """SSH_ORIGINAL_COMMAND -> ("rpc", None), ("rpc-download", job_id) or ("rpc-upload-files",
+    "job_id sha256"); else GateRefused."""
     try:
         words = shlex.split(original or "")
     except ValueError as exc:
@@ -57,7 +60,11 @@ def gate_command(original: str | None) -> tuple[str, str | None]:
         return "rpc", None
     if len(words) == 3 and words[1] == "rpc-download" and is_valid_id(words[2], "job"):
         return "rpc-download", words[2]
-    raise GateRefused("a worker key runs only `mulebox rpc` and `mulebox rpc-download <job>`")
+    if len(words) == 4 and words[1] == "rpc-upload-files" and is_valid_id(words[2], "job") \
+            and _SHA256.fullmatch(words[3]):  # a job's kept files (files.py)
+        return "rpc-upload-files", f"{words[2]} {words[3]}"
+    raise GateRefused("a worker key runs only `mulebox rpc`, `mulebox rpc-download <job>` and "
+                      "`mulebox rpc-upload-files <job> <sha256>`")
 
 
 def key_line(name: str, public_key: str, gate: str) -> str:

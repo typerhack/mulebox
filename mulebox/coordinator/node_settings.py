@@ -34,12 +34,13 @@ _ALWAYS = ("slots", "priority")  # every node that reports settings has these
 _SINCE = {"dev": "1.23", "keep_cores": "1.38", "keep_memory": "1.38", "auto_clean": "1.26",
           "docker_clean": "1.26",
           "max_size": "1.26", "slim_hours": "1.29", "min_free": "1.41",
-          "keep_failed_min": "1.46"}  # the rest: 1.24
+          "keep_failed_min": "1.46", "keep_files_max": "1.48"}  # the rest: 1.24
 _WHAT = {"dev": "dev mode", "keep_cores": "room kept for the owner",
          "keep_memory": "room kept for the owner", **{name: "storage settings" for name in storage_policy.FIELDS},
          "auto_clean": "automatic cleanup switch", "docker_clean": "Docker cleanup",
          "max_size": "space for mulebox", "slim_hours": "folder slimming",
-         "min_free": "free space before a rest", "keep_failed_min": "kept failed jobs"}
+         "min_free": "free space before a rest", "keep_failed_min": "kept failed jobs",
+         "keep_files_max": "files kept for fetch"}
 MAX_REPORTED = 4096  # slots a report may say, past the 64 a request may ask
 _ACTIVE = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_STATES))
 
@@ -135,7 +136,8 @@ def view(conn: sqlite3.Connection, worker: dict[str, Any], now: float) -> dict[s
                     "slim_hours": {"min": 0, "max": storage_policy.MAX_HOURS},
                     # the least free space before a rest, in whole GB up to the node's disk
                     "min_free": {"min_gb": 1, "max_gb": _disk_gb(worker)},
-                    "keep_failed_min": {"min": 0, "max": storage_policy.MAX_KEEP_MIN}},
+                    "keep_failed_min": {"min": 0, "max": storage_policy.MAX_KEEP_MIN},
+                    "keep_files_max": {"example": "200MB"}},
         "defaults": dict(storage_policy.DEFAULTS),  # what mulebox suggests for storage
     }
 
