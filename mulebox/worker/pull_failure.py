@@ -14,7 +14,8 @@ from __future__ import annotations
 
 from mulebox.common.network_errors import REGISTRY
 from mulebox.common.protocol import Outcome
-from mulebox.common.status import IMAGES, NOT_STARTED_NOTE
+from mulebox.common import start_note
+from mulebox.common.status import IMAGES
 from mulebox.worker.logtail import LogTailer
 
 REASON = "no image could be fetched: the machine's network or the registry failed"
@@ -33,6 +34,6 @@ def checked(outcome: Outcome, exit_code: int | None, tailer: LogTailer) -> int |
     steps = tailer.steps
     if outcome is not Outcome.FAILED or not network_failed(steps.stage, steps.last_line):
         return exit_code
-    tailer.note(f"{NOT_STARTED_NOTE} {REASON}\n")
+    tailer.note(start_note.lines(REASON, "images.unreachable"))
     tailer.finish()
     return None

@@ -35,6 +35,8 @@ _KEY_LINE = re.compile(
 class NodeFileError(MuleboxError):
     """node.toml could not take the change; the message says why."""
 
+    error_code = "node.config"  # common/error_codes.py
+
 
 def _key_name(spelled: str) -> str | None:
     """The key a bare or quoted spelling stands for, as TOML reads it."""

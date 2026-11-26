@@ -48,6 +48,8 @@ Run = Callable[..., subprocess.CompletedProcess]  # command.run
 class XcodeMissing(MuleboxError):
     """The Xcode a job pins is not on this node."""
 
+    error_code = "xcode.missing"  # common/error_codes.py
+
 
 @dataclass(frozen=True)
 class Xcode:

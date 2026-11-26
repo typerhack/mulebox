@@ -15,7 +15,7 @@ def test_codes_are_dotted_words_with_a_fix():
     for code in error_codes.CODES.values():
         assert re.fullmatch(r"[a-z]+\.[a-z_]+", code.name), code.name
         assert code.fix.strip() and code.meaning.strip()
-        assert code.exit in (1, 2, 3, 4)
+        assert code.exit in (1, 2, 3, 4, 5)
 
 
 def test_every_code_in_the_code_is_in_the_table():

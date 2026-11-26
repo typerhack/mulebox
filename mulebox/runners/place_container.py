@@ -40,6 +40,8 @@ ENTRY = 'read -r cfg; exec ./run.sh --jitconfig "$cfg"'
 class PlaceError(MuleboxError):
     """An isolated runner cannot run its next job."""
 
+    error_code = "runner.place"  # common/error_codes.py
+
 
 def tool_volume(place: str) -> str:
     return f"mulebox-tools-{place}"

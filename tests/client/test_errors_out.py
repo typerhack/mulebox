@@ -1,5 +1,5 @@
 """Every error a command prints: its code, message and fix, and JSON with --json
-(client/errors_out.py; design.md, Errors with a code and a fix)."""
+(common/error_report.py; design.md, Errors with a code and a fix)."""
 
 import json
 

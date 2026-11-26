@@ -32,6 +32,8 @@ _ARCH = {"x86_64": "x64", "amd64": "x64", "aarch64": "arm64", "arm64": "arm64"}
 class DownloadError(MuleboxError):
     """A download failed, or its content is not what was expected."""
 
+    error_code = "download.failed"  # common/error_codes.py
+
 
 class NetworkLost(DownloadError):
     """The network or the server failed: the same download can work later. A server's refusal,

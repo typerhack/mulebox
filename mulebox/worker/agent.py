@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.common.proc import HostLoad
-from mulebox.common import compose, status
+from mulebox.common import compose, start_note
 from mulebox.common.config import NodeConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
@@ -199,7 +199,7 @@ class Agent(Ending, Skipping, Ordering, Storing, Checking):
 
     def _not_started(self, job: ActiveJob, exc: Exception, now: float) -> None:
         LOG.error("job %s could not start: %s", job.job_id, exc)
-        job.tailer.note(f"{status.NOT_STARTED_NOTE} {exc}\n")
+        job.tailer.note(start_note.lines(exc))
         self._start_failed(job, now)  # its result waits for the node's check
         self._end(job, Outcome.FAILED, None, now)
 

@@ -750,10 +750,21 @@ mulebox: fix: mulebox doctor (or ask your user to check that the node is on)
 - **With `--json`, on stdout too** (the user's pick): a command given `--json` that fails prints
   `{"error": {"code", "message", "fix", "exit"}}` on stdout, where its tool already reads, and
   the plain lines on stderr as always.
-- **First the dev machine and the node's replies** (the user's pick): every client command, and
-  every refusal the coordinator sends back. The node's own service commands, runner hooks and
-  the worker's logs are read by the owner, not an agent, and come later.
-- **Not errors:** a job's own result (a failed check, exit 5, 8, 75, 76) keeps its summary and
+- **First the dev machine and the node's replies** (the user's pick, built 1.44.0): every client
+  command, and every refusal the coordinator sends back. **Then the node** (1.45.0, the user's
+  ask): its own commands (`rpc`, `coordinator serve`, `worker`, `toolchain`, `service`,
+  `runner`, `dashboard`), all through common/error_report.py; the runner hooks and the guard, in
+  the job's log on GitHub; and a job that could not start (exit 5), whose last word in its log
+  names the code and the fix (common/start_note.py), so the summary an agent reads has both:
+
+  ```text
+  mulebox: the job could not start: [toolchain.failed] node 99.0.0 does not exist ...
+  mulebox: fix: pin a version the node has (the log lists them), or check that the version exists
+  ```
+
+  The worker's own service log (journal, launchd) keeps plain lines: its warnings already say
+  what to do, and a node's health checks (A node that rests) carry their fixes.
+- **Not errors:** a job's own result (a failed check, exit 8, 75, 76) keeps its summary and
   the what-to-do of the contract's exit codes. Messages are redacted as before.
 
 ## Dashboard

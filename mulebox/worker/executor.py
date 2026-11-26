@@ -32,6 +32,8 @@ STOP_GRACE_S = 10.0
 class ExecutorError(MuleboxError):
     """A job process could not be started or controlled."""
 
+    error_code = "job.executor"  # common/error_codes.py
+
 
 @dataclass(frozen=True)
 class RunSpec:

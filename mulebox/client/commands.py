@@ -11,14 +11,12 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
-import traceback
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import (attention, contract, errors_out, github_status, queue_view, report,
+from mulebox.client import (attention, contract, github_status, queue_view, report,
                             skill_install, take_back, tui)
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
@@ -32,6 +30,8 @@ from mulebox.common.config import (
     load_project_config,
 )
 from mulebox.common.config_jobs import BARE
+from mulebox.common.error_report import Kinds
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import MessageType, ProtocolError
 from mulebox.common.ssh import RemoteTimeout, SSHError, SSHUnavailable
@@ -106,12 +106,9 @@ def _on(parser: argparse.ArgumentParser) -> None:
                         help="run it on this node only, as `mulebox machine list` names it")
 
 
-Kinds = tuple[tuple[tuple[type[BaseException], ...], int, str], ...]
-
-
 def guarded(handler: Handler, notices: bool = False, kinds: Kinds = ()) -> Handler:
     """Turn expected errors into their code, message and fix on stderr (and on stdout as JSON
-    for a command given --json) with the contract's exit code (client/errors_out.py).
+    for a command given --json) with the contract's exit code (common/error_report.py).
     `notices`: a command that reached the machine also tells this project's questions and
     results. `kinds`: a command's own errors, as in _KINDS, looked at first."""
 
@@ -145,21 +142,10 @@ _KINDS: Kinds = (
 def fail(exc: BaseException, args: argparse.Namespace | None = None,
          exit_code: int | None = None, default_code: str | None = None,
          kinds: Kinds = ()) -> int:
-    """Tell `exc` the one way every command does. An error of no known kind is
-    `mulebox.internal`, exit 1, with its trace when MULEBOX_DEBUG is set."""
-    for types, kind_exit, kind_code in (*kinds, *_KINDS):
-        if isinstance(exc, types):
-            exit_code, default_code = exit_code or kind_exit, default_code or kind_code
-            break
-    else:
-        if not isinstance(exc, MuleboxError):
-            if os.environ.get("MULEBOX_DEBUG"):
-                traceback.print_exception(exc, file=sys.stderr)
-            exc = MuleboxError(f"{type(exc).__name__}: {exc}", error_code="mulebox.internal")
-        exit_code, default_code = exit_code or 1, default_code or "mulebox.internal"
-    found = errors_out.failure(exc, exit_code, default_code)
-    as_json = bool(getattr(args, "json", False))
-    return errors_out.tell(found, sys.stderr, sys.stdout if as_json else None)
+    """Tell `exc` the one way every command does (common/error_report.py)."""
+    return error_report.report(exc, (*kinds, *_KINDS), exit_code=exit_code,
+                               default_code=default_code,
+                               as_json=bool(getattr(args, "json", False)))
 
 
 def project_here() -> tuple[ProjectConfig, Path]:

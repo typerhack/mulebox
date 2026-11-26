@@ -19,12 +19,14 @@ from pathlib import Path
 from mulebox.client import tunnel
 from mulebox.client.commands import guarded
 from mulebox.common.config import DEFAULT_DASHBOARD_PORT, load_client_config, load_node_config
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger, setup_logging
 from mulebox.dashboard import lan_commands
 
 BIND_HOST = "127.0.0.1"
 EXIT_CONFIG = 2
+KINDS = (((MuleboxError,), EXIT_CONFIG, "node.config"),)  # common/error_report.py
 _log = get_logger(__name__)
 
 
@@ -60,8 +62,7 @@ def _serve(args: argparse.Namespace) -> int:
     try:
         node = load_node_config(args.node_config)
     except MuleboxError as exc:
-        print(f"mulebox: {exc}", file=sys.stderr)
-        return EXIT_CONFIG
+        return error_report.report(exc, KINDS)
     mode = node.dashboard.get("mode", "local")
     if mode == "off":
         print("mulebox: the dashboard is off in node.toml ([dashboard] mode)", file=sys.stderr)
@@ -71,8 +72,7 @@ def _serve(args: argparse.Namespace) -> int:
         try:
             lan = lan_commands.prepare(node.dashboard, args.node_config)
         except MuleboxError as exc:
-            print(f"mulebox: {exc}", file=sys.stderr)
-            return EXIT_CONFIG
+            return error_report.report(exc, KINDS)
     port = args.port if args.port is not None else node.dashboard.get("port",
                                                                     DEFAULT_DASHBOARD_PORT)
     return run(node, port, lan, args.node_config)
@@ -100,9 +100,11 @@ def run(node, port: int, lan=None, config_path: Path | None = None) -> int:
     try:
         store, staging = open_local(node, readonly=True)
     except (MuleboxError, sqlite3.Error) as exc:
-        print(f"mulebox: cannot open the coordinator's store read-only: {exc} "
-              "(is the coordinator installed and started?)", file=sys.stderr)
-        return EXIT_CONFIG
+        return error_report.report(
+            MuleboxError(f"cannot open the coordinator's store read-only: {exc}",
+                         error_code="node.store",
+                         fix="`mulebox service status`: the coordinator must be installed and "
+                             "started first (`mulebox setup <host>` from a dev machine)"), KINDS)
     try:
         data = DashboardData(store, staging, local_name=node.name)
         access, tls = lan if lan else (None, None)
@@ -118,8 +120,7 @@ def run(node, port: int, lan=None, config_path: Path | None = None) -> int:
                 _log.warning("no password on the LAN address: lan_password = false")
         serve(app, listeners)
     except OSError as exc:  # Wi-Fi not up yet, port busy: the unit retries
-        _log.error("cannot listen: %s", exc)
-        return 1
+        return error_report.report(exc, exit_code=1, default_code="dashboard.listen")
     finally:
         store.close()
     return 0

@@ -22,6 +22,8 @@ from mulebox.common.safepath import Roots, ensure_dir
 class ArchiveError(MuleboxError):
     """An archive is unreadable or contains an entry that would escape its folder."""
 
+    error_code = "job.workspace"  # common/error_codes.py
+
 
 def _clean_name(name: str, where: Path) -> str:
     if name.startswith("/") or "\\" in name or "\0" in name:

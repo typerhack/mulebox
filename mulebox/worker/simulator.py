@@ -46,6 +46,8 @@ Run = Callable[..., object]  # command.run
 class SimulatorMissing(MuleboxError):
     """The runtime a job pins, or any runtime, is not on this node."""
 
+    error_code = "simulator.missing"  # common/error_codes.py
+
 
 @dataclass(frozen=True)
 class Runtime:

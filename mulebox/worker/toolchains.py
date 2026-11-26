@@ -47,6 +47,8 @@ Run = Callable[[list[str], Mapping[str, str]], subprocess.CompletedProcess]
 class ToolchainError(MuleboxError):
     """A toolchain is missing, unknown, or could not be installed."""
 
+    error_code = "toolchain.failed"  # common/error_codes.py
+
 
 class ToolchainNetwork(ToolchainError):
     """The install lost its network; the same install can work later."""

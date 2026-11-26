@@ -22,7 +22,7 @@ import secrets
 from typing import Any
 
 from mulebox.common.network_errors import LOST
-from mulebox.common.status import CLEANUP, FETCHING, MAX_FAILING_LINE, STAGES
+from mulebox.common.status import CLEANUP, FETCHING, FIX_NOTE, MAX_FAILING_LINE, STAGES
 
 END = "end"
 SHELL_NAME = "mulebox_step"
@@ -90,6 +90,8 @@ class StepTracker:
 
     def _remember(self, text: str) -> None:
         stripped = text.strip()
+        if stripped.startswith(FIX_NOTE):  # what to do, not what failed (common/start_note.py)
+            return
         if stripped and self._ended_at is None:
             self._last_line = stripped[:MAX_FAILING_LINE]
             row = self._open

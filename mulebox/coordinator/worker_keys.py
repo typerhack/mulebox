@@ -42,6 +42,8 @@ _BASE64 = re.compile(r"[A-Za-z0-9+/]+={0,2}")
 class GateRefused(MuleboxError):
     """A worker key asked for something it may not do."""
 
+    error_code = "worker.key_refused"
+
 
 def gate_command(original: str | None) -> tuple[str, str | None]:
     """SSH_ORIGINAL_COMMAND -> ("rpc", None) or ("rpc-download", job_id); else GateRefused."""
@@ -60,11 +62,13 @@ def gate_command(original: str | None) -> tuple[str, str | None]:
 
 def key_line(name: str, public_key: str, gate: str) -> str:
     if not _NAME.fullmatch(name):
-        raise GateRefused(f"bad worker name {name!r}")
+        raise GateRefused(f"bad worker name {name!r}", error_code="worker.key_invalid",
+                          fix="name it with letters, digits, dots, dashes and underscores")
     parts = public_key.strip().split()
     if len(parts) < 2 or parts[0] not in _KEY_TYPES or not _BASE64.fullmatch(parts[1]) \
             or "\n" in public_key.strip():
-        raise GateRefused("not one ssh public key line (ssh-ed25519 AAAA...)")
+        raise GateRefused("not one ssh public key line (ssh-ed25519 AAAA...)",
+                          error_code="worker.key_invalid")
     return f'command="{gate} ssh-gate",restrict {parts[0]} {parts[1]} {MARKER}{name}'
 
 

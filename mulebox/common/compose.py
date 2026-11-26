@@ -39,6 +39,8 @@ _NOT_IN_A_TAG = re.compile(r"[^a-z0-9]+")
 class ComposeError(MuleboxError):
     """A compose project cannot be used as it is."""
 
+    error_code = "compose.refused"  # common/error_codes.py
+
 
 def worker_capabilities(configured: tuple[str, ...], platform: str = sys.platform,
                         floor: str = isolation.NONE) -> list[str]:

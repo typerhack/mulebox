@@ -13,10 +13,10 @@ from __future__ import annotations
 
 import argparse
 import os
-import sys
 from pathlib import Path
 
 from mulebox.common.config import load_node_config
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 from mulebox.services.base import SERVICES, check_name, settled_state, wanted
 from mulebox.services.manager import for_platform
@@ -43,9 +43,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     logs.set_defaults(func=_logs)
 
 
+KINDS = (((MuleboxError, OSError), 1, "service.failed"),)  # common/error_report.py
+
+
 def _fail(exc: Exception) -> int:
-    print(f"mulebox service: error: {exc}", file=sys.stderr)
-    return 1
+    return error_report.report(exc, KINDS)
 
 
 def _install(args: argparse.Namespace) -> int:

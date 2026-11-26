@@ -10,7 +10,7 @@ import os
 import sys
 from pathlib import Path
 
-from mulebox.common import dashboard_address
+from mulebox.common import dashboard_address, error_report
 from mulebox.common.config import load_node_config
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
@@ -18,6 +18,7 @@ from mulebox.coordinator import daemon, rpc, worker_keys
 from mulebox.coordinator.node import open_local
 
 EXIT_CONFIG = 2
+KINDS = (((MuleboxError,), EXIT_CONFIG, "node.config"),)  # common/error_report.py
 
 
 def register(sub: argparse._SubParsersAction) -> None:
@@ -80,8 +81,7 @@ def _with_store(args: argparse.Namespace, action) -> int:
         args.dashboard = dashboard_address.where(node.dashboard)
         store, staging = open_local(node)
     except MuleboxError as exc:
-        print(f"mulebox: {exc}", file=sys.stderr)
-        return EXIT_CONFIG
+        return error_report.report(exc, KINDS)
     try:
         return action(store, staging)
     finally:
@@ -120,8 +120,7 @@ def _gate(args: argparse.Namespace) -> int:
     try:
         command, job_id = worker_keys.gate_command(os.environ.get("SSH_ORIGINAL_COMMAND"))
     except worker_keys.GateRefused as exc:
-        print(f"mulebox: {exc}", file=sys.stderr)
-        return EXIT_CONFIG
+        return error_report.report(exc, KINDS)
     if command == "rpc-download":
         args.job_id = job_id
         return _download(args)
@@ -140,8 +139,8 @@ def _authorize(args: argparse.Namespace) -> int:
     try:
         path = worker_keys.authorize(args.name, sys.stdin.read(), Path.home())
     except (worker_keys.GateRefused, OSError) as exc:
-        print(f"mulebox: {exc}", file=sys.stderr)
-        return EXIT_CONFIG
+        return error_report.report(exc, KINDS, exit_code=EXIT_CONFIG,
+                                   default_code="worker.key_invalid")
     print(f"mulebox: {args.name} may now reach this coordinator, for rpc only ({path})",
           file=sys.stderr)
     return 0
@@ -153,5 +152,4 @@ def _serve(args: argparse.Namespace) -> int:
         node = load_node_config(args.node_config)
         return daemon.serve(node)
     except MuleboxError as exc:
-        print(f"mulebox: {exc}", file=sys.stderr)
-        return EXIT_CONFIG
+        return error_report.report(exc, KINDS)

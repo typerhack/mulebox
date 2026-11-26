@@ -34,6 +34,8 @@ from mulebox.worker import install_step, steps
 class JobSpecError(MuleboxError):
     """The claimed job's command or settings are unusable."""
 
+    error_code = "job.spec"  # common/error_codes.py
+
 
 def build_script(setup: str | None, argv: Sequence[str], first: Sequence[str] = (),
                  marker: str | None = None, install: str | None = None) -> str:

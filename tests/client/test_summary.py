@@ -205,3 +205,10 @@ def test_logs_summary_of_a_passed_job_has_no_failure(fake, capsys):
     assert cli.main(["logs", JOB, "--summary"]) == 0
     out = capsys.readouterr().out
     assert "passed" in out and "failure summary" not in out
+
+
+def test_the_start_notes_code_and_fix_stay_after_container_logs():
+    text = (f"Error: dial tcp\n{CONTAINER_LOGS_NOTE}\ndb | noise\n"
+            f"{NOT_STARTED_NOTE} [images.unreachable] no image\nmulebox: fix: check the network\n")
+    assert lines_of(text) == ["Error: dial tcp", f"{NOT_STARTED_NOTE} [images.unreachable] no image",
+                              "mulebox: fix: check the network"]

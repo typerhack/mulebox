@@ -73,7 +73,8 @@ def test_an_error_is_one_line_and_exit_1(fake, capsys, monkeypatch):
         raise ServiceError("launchctl said no")
     monkeypatch.setattr(fake, "restart", broken)
     assert cli.main(["service", "restart", "worker"]) == 1
-    assert "mulebox service: error: launchctl said no" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "mulebox: error [service.failed]: launchctl said no" in err and "mulebox: fix: " in err
 
 
 def test_the_platform_picks_the_manager():

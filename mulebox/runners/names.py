@@ -26,6 +26,8 @@ _ACTOR_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:\[bot\])?")
 class RunnerUsageError(MuleboxError):
     """A repository, runner name or label is not acceptable."""
 
+    error_code = "runner.usage"  # common/error_codes.py
+
 
 def check_repo(repo: str) -> str:
     """Return repo if it is `owner/name`; RunnerUsageError otherwise."""

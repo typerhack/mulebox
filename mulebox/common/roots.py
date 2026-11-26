@@ -27,9 +27,13 @@ _PSEUDO_FS = ("/dev", "/proc", "/sys")
 class PathOutsideRoots(MuleboxError):
     """The path is not inside any configured root."""
 
+    error_code = "node.unsafe_path"  # common/error_codes.py
+
 
 class UnsafePath(MuleboxError):
     """The path or operation is refused for safety (root itself, symlink, mount, ...)."""
+
+    error_code = "node.unsafe_path"  # common/error_codes.py
 
 
 class RemovalDenied(UnsafePath):

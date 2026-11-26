@@ -62,6 +62,7 @@ def test_started_gives_up_after_timeout(gh_env, link, paths, store, local):
     clock = Clock()
     code, out = started(gh_env, link, paths, clock, MULEBOX_HOOK_TIMEOUT_MIN="1")
     assert code == 1 and "gave up waiting for a build slot after 1 minutes" in out
+    assert "mulebox: error [hook.timeout]: " in out and "\nmulebox: fix: `mulebox queue`" in out
     assert clock.now - 500.0 == pytest.approx(60.0, abs=2.0)
     assert reservation_file.read(paths, RUNNER) is None
     (job,) = _reservations(store)
@@ -102,7 +103,7 @@ def test_started_fails_when_the_reservation_was_cancelled(gh_env, link, paths, s
         assert reply.body["state"] == "finished"
 
     code, out = started(gh_env, link, paths, Clock(on_sleep=cancel_it))
-    assert code == 1 and "ended (cancelled)" in out
+    assert code == 1 and "ended (cancelled)" in out and "[hook.ended]" in out
 
 
 @pytest.mark.parametrize("status,outcome", [

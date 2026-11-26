@@ -50,7 +50,7 @@ def finished(tmp_path, *lines):
 def test_a_failed_pull_has_no_exit_code_and_says_why(tmp_path):
     tailer = finished(tmp_path, " Image x Pulling", REFUSED)
     assert pull_failure.checked(Outcome.FAILED, 1, tailer) is None
-    assert f"{NOT_STARTED_NOTE} {pull_failure.REASON}" in b"".join(piece for _, piece in tailer._queue).decode()
+    assert f"{NOT_STARTED_NOTE} [images.unreachable] {pull_failure.REASON}" in b"".join(piece for _, piece in tailer._queue).decode()
 
 
 def test_a_project_failure_keeps_its_code(tmp_path):

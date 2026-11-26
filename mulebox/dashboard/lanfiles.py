@@ -19,6 +19,8 @@ from mulebox.common.errors import MuleboxError
 class LanNotReady(MuleboxError):
     """`lan` mode cannot start: the message says which setup step is missing."""
 
+    error_code = "dashboard.lan"  # common/error_codes.py
+
 
 def lan_dir(config_path: Path | None = None) -> Path:
     """The private folder for this node's config file."""

@@ -223,6 +223,8 @@ _INDEXES = (
 class SchemaTooNew(MuleboxError):
     """The store was written by a newer mulebox."""
 
+    error_code = "node.store"
+
 
 def current_version(conn: sqlite3.Connection) -> int:
     row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()

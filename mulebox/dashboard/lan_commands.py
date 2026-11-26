@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 
 from mulebox.common.config import load_node_config
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 from mulebox.dashboard import cert, firewall, password
 from mulebox.dashboard.lanfiles import LanNotReady, lan_dir
@@ -39,8 +40,7 @@ def _guarded(func):
         try:
             return func(args)
         except MuleboxError as exc:
-            print(f"mulebox: {exc}", file=sys.stderr)
-            return EXIT_CONFIG
+            return error_report.report(exc, exit_code=EXIT_CONFIG, default_code="node.config")
     return run
 
 

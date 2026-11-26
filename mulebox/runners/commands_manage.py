@@ -30,8 +30,8 @@ from collections.abc import Callable
 from mulebox.client import report
 from mulebox.common import job_size
 from mulebox.common.config import ConfigError, load_client_config, load_node_config
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
-from mulebox.common.redact import Redactor
 from mulebox.common.ssh import RemoteTimeout, SSHUnavailable
 from mulebox.runners import runner_size
 from mulebox.runners.names import RunnerUsageError, default_name, parse_actors, parse_labels
@@ -139,8 +139,8 @@ def _guarded(handler: Handler) -> Handler:
 
 
 def _fail(exc: Exception, code: int) -> int:
-    print(f"mulebox: {Redactor(_TOKENS).redact(str(exc))}", file=sys.stderr)
-    return code
+    return error_report.report(exc, exit_code=code, default_code="runner.failed",
+                               secrets=_TOKENS)
 
 
 def read_token(prompt: str) -> str:

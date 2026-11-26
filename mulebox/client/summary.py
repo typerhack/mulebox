@@ -23,7 +23,7 @@ from typing import Any
 
 from mulebox.client import report, test_lines
 from mulebox.common.network_errors import LOST
-from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, NOT_STARTED_NOTE
+from mulebox.common.status import CONTAINER_LOGS_NOTE, ENDED_BADLY, FIX_NOTE, NOT_STARTED_NOTE
 
 TAIL_BYTES = 256 * 1024  # room for the container logs (50 lines per service) and what precedes
 MAX_LINES = 20
@@ -93,8 +93,9 @@ def _before_containers(text: str) -> str:
     at = text.find(CONTAINER_LOGS_NOTE)
     if at < 0:
         return text
-    last = text.rstrip().rsplit("\n", 1)[-1]
-    return f"{text[:at]}{last}" if last.startswith(NOT_STARTED_NOTE) else text[:at]
+    tail = text.rstrip().split("\n")[-2:]
+    kept = [ln for ln in tail if ln.startswith((NOT_STARTED_NOTE, FIX_NOTE))]
+    return text[:at] + "\n".join(kept)
 
 
 def _collapse(lines: list[str]) -> list[str]:

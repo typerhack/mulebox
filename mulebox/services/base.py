@@ -31,6 +31,8 @@ Say = Callable[[str], None]
 class ServiceError(MuleboxError):
     """A service could not be installed, started or stopped; the message says what to do."""
 
+    error_code = "service.failed"  # common/error_codes.py
+
 
 def check_name(name: str) -> str:
     if name not in SERVICES:

@@ -48,6 +48,8 @@ def valid_version(text: str) -> bool:
 class ReleaseError(MuleboxError):
     """The runner release could not be found, downloaded or verified."""
 
+    error_code = "runner.download"  # common/error_codes.py
+
 
 @dataclass(frozen=True)
 class Release:

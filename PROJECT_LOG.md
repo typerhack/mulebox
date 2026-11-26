@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.45.0 - 2026-11-26 - minor
+- The node's errors say their code and a fix too (M24.9, the user's ask: what M24.7 left for later). The printer moved to common/error_report.py, and every node command uses it: `rpc` and `coordinator serve`, `worker serve`, `toolchain`, `service`, `runner`, `dashboard serve` and its LAN commands. Node-side error classes name their codes (Docker, toolchains, Xcode, simulators, workspace, executor, downloads, services, runners, GitHub, hooks, safe paths).
+- A job that could not start (exit 5) ends its log with `mulebox: the job could not start: [<code>] ...` and `mulebox: fix: ...` (common/start_note.py); the failure summary keeps both lines, and the stage's failing line stays the failure, not the fix.
+- The runner hooks and the guard write their failures into the job's log on GitHub the same way (`hook.timeout`, `hook.refused` with the coordinator's own code, `hook.ended`, `runner.refused_run`).
+- A node config and a client config mark their errors `node.config` and `config.client` whatever the file is called. 57 codes in all; docs/agents.md's table follows. Docs: design.md, agents.md, phases.md.
+
 ## 1.44.1 - 2026-11-26 - patch
 - A job id of the wrong shape is `job.not_found`, with `mulebox queue` as its fix: in the drill it read `request.invalid`, whose `--help` fix does not help.
 - docs/phases.md: M24.7 done, through the real CLI on the real node (a missing `.mulebox.yml`, an unknown job id, `--on` an unknown node, a node out of reach, and `--json`).

@@ -223,6 +223,14 @@ def node_config_path() -> Path:
 def load_client_config(path: Path | None = None) -> ClientConfig:
     """Load the client config of the dev machine."""
     path = Path(path) if path is not None else client_config_path()
+    try:
+        return _client_config(path)
+    except ConfigError as exc:  # whatever the file is called (common/error_codes.py)
+        exc.error_code = "config.client"
+        raise
+
+
+def _client_config(path: Path) -> ClientConfig:
     reader = Reader(path, load_toml(path))
     config = ClientConfig(
         coordinator=reader.ssh_target("coordinator"),
@@ -265,7 +273,11 @@ def _roots(reader: Reader) -> dict[str, str]:
 def load_node_config(path: Path | None = None) -> NodeConfig:
     """Load a node's config."""
     path = Path(path) if path is not None else node_config_path()
-    return node_config_from(path, load_toml(path))
+    try:
+        return node_config_from(path, load_toml(path))
+    except ConfigError as exc:  # whatever the file is called (common/error_codes.py)
+        exc.error_code = "node.config"
+        raise
 
 
 def _floor(reader: Reader) -> str:

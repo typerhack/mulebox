@@ -39,6 +39,9 @@ from collections.abc import Callable, Collection, Mapping
 from pathlib import Path
 from typing import Any, TextIO
 
+REFUSED_FIX = ("nothing on this runner: a run from a fork or another account runs on GitHub's "
+               "machines; `mulebox runner register` names the accounts it serves")
+
 from mulebox.runners import layout
 from mulebox.runners.supervise import PROC_ROOT, WORKER_NAMES, worker_pids
 
@@ -227,9 +230,10 @@ def admit(env: Mapping[str, str], out: TextIO, *, cwd: str | None = None,
               "every job: the hook cannot tell which runner it serves")
     if not reason:
         return True
-    message = (f"mulebox: this runner refuses {reason}: it runs only its own repository's "
-               "jobs, started by the accounts it was registered for")
-    print(message, file=out, flush=True)
+    message = (f"mulebox: error [runner.refused_run]: this runner refuses {reason}: it runs "
+               "only its own repository's jobs, started by the accounts it was registered for")
+    # The format of common/error_report.py, written here: the guard imports nothing that can fail.
+    print(f"{message}\nmulebox: fix: {REFUSED_FIX}", file=out, flush=True)
     if (stop or kill_workers)(folder, message):
         print("mulebox: stopped the job's runner process, so none of its steps runs",
               file=out, flush=True)

@@ -45,6 +45,8 @@ Say = Callable[[str], None]
 class RunnerError(MuleboxError):
     """A runner could not be added, listed or removed."""
 
+    error_code = "runner.failed"  # common/error_codes.py
+
 
 def run_config(argv: Sequence[str], cwd: Path, env: Mapping[str, str]
                ) -> subprocess.CompletedProcess:

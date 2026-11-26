@@ -41,6 +41,8 @@ Runner = Callable[[Sequence[str], Mapping[str, str] | None, Path | None, float],
 class DockerError(MuleboxError):
     """A docker command failed."""
 
+    error_code = "docker.failed"  # common/error_codes.py
+
 
 class DockerMissing(DockerError):
     """There is no docker command on this machine."""

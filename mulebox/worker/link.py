@@ -29,6 +29,8 @@ DOWNLOAD_TIMEOUT_S = 1800.0
 class LinkError(MuleboxError):
     """The coordinator could not be reached or gave no usable reply."""
 
+    error_code = "worker.link"  # common/error_codes.py
+
 
 class CoordinatorLink(Protocol):
     def call(self, msg: Message) -> Message: ...

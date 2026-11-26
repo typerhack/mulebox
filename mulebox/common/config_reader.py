@@ -19,6 +19,9 @@ REQUIRED: Any = object()
 NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 
 
+_CODES = {"client.toml": "config.client", "node.toml": "node.config"}  # common/error_codes.py
+
+
 class ConfigError(MuleboxError):
     """A configuration file is missing, unreadable or invalid."""
 
@@ -29,8 +32,7 @@ class ConfigError(MuleboxError):
         where = f"{path}: {field}" if field else f"{path}"
         super().__init__(f"{where}: {problem}")
         if type(self).error_code is None:  # a subclass names its own (ProjectNotFound)
-            self.error_code = ("config.client" if self.path.name == "client.toml"
-                               else "config.invalid")
+            self.error_code = _CODES.get(self.path.name, "config.invalid")
 
 
 class Reader:

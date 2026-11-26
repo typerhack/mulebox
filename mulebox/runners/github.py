@@ -33,6 +33,8 @@ Stream = Callable[..., Iterator[bytes]]
 class GitHubError(MuleboxError):
     """`gh` could not produce a token, or the node refused the runner command."""
 
+    error_code = "github.failed"  # common/error_codes.py
+
 
 def run_gh(argv: Sequence[str]) -> subprocess.CompletedProcess:
     try:

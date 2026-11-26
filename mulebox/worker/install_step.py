@@ -13,7 +13,8 @@ import shlex
 
 from mulebox.common.network_errors import REGISTRY
 from mulebox.common.protocol import Outcome
-from mulebox.common.status import INSTALL, NOT_STARTED_NOTE
+from mulebox.common import start_note
+from mulebox.common.status import INSTALL
 from mulebox.worker.logtail import LogTailer
 
 TRIES = 3
@@ -47,6 +48,6 @@ def checked(outcome: Outcome, exit_code: int | None, tailer: LogTailer) -> int |
     """The code to report, after `tailer.finish()`. None: the job never ran."""
     if outcome is not Outcome.FAILED or tailer.steps.stage != INSTALL:
         return exit_code
-    tailer.note(f"{NOT_STARTED_NOTE} {REASON}\n")
+    tailer.note(start_note.lines(REASON, "install.failed"))
     tailer.finish()
     return None

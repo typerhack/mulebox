@@ -104,7 +104,9 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   off, a node to set up), before running the command again. A command given `--json` prints
   the same on stdout too: `{"error": {"code", "message", "fix", "exit"}}`. A fix names the
   command where one exists; the message may give a closer fix than the table's default. Codes
-  are never renamed; `mulebox contract` lists them as `errors` (common/error_codes.py).
+  are never renamed; `mulebox contract` lists them as `errors` (common/error_codes.py). A job
+  that could not start (exit 5) ends its log the same way, `mulebox: the job could not start:
+  [<code>] ...` and a `mulebox: fix:` line, and the failure summary keeps both.
 
 | Error code | Exit | Meaning | Default fix |
 | --- | --- | --- | --- |
@@ -133,6 +135,37 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | `node.unknown` | 4 | no node has that name | `mulebox machine list` names the nodes |
 | `setup.failed` | 1 | setting up or upgrading the node did not finish | fix what the message names and run the same `mulebox setup` again |
 | `feedback.failed` | 2 | the feedback draft or post could not be made | read the message; `mulebox feedback guide` has the steps |
+| `start.failed` | 5 | the node could not start the job; no project code ran | run it again; if it fails the same way, `mulebox machine check <node>` |
+| `toolchain.failed` | 5 | a pinned toolchain is missing or would not install | pin a version the node has (the log lists them), or check that the version exists |
+| `compose.refused` | 5 | the node refuses something in the compose files | `mulebox doctor` shows what the node refuses; change the compose files |
+| `docker.failed` | 5 | a Docker command failed on the node | `mulebox machine check <node>`; if Docker is down, ask your user to start it there |
+| `images.unreachable` | 5 | the node could not fetch an image over the network | ask your user to check the node's network; `mulebox doctor` checks the registries |
+| `install.failed` | 5 | the project's `install:` failed, so its code did not run | read the install output above it; fix the lockfile or the `install:` line |
+| `xcode.missing` | 5 | the Xcode a job pins is not on the Mac node | `mulebox doctor` lists each Mac's Xcodes; pin one of them with `xcode:` |
+| `simulator.missing` | 5 | no simulator runtime the job asks for is on the node | `mulebox doctor` lists the runtimes; pin one of them |
+| `download.failed` | 5 | a download the job needs failed | run it again; if it repeats, ask your user to check the node's network |
+| `job.spec` | 5 | the node could not use the job's settings | `mulebox doctor` checks .mulebox.yml against the node |
+| `job.workspace` | 5 | the node could not set up the job's folder | run it again; if it repeats, `mulebox machine check <node>` |
+| `job.executor` | 5 | the node could not start the job's process | `mulebox machine check <node>`; ask your user for `mulebox service logs worker` there |
+| `node.config` | 2 | this node's node.toml is missing or not valid | correct the key the message names in node.toml; `mulebox setup <host>` from a dev machine writes it |
+| `node.store` | 2 | the coordinator's store could not be opened | `mulebox service status` on the node; `mulebox setup <host>` from a dev machine on the newest mulebox installs or upgrades it |
+| `node.unsafe_path` | 1 | mulebox refused a path outside its roots or unsafe to touch | nothing to force: mulebox only writes inside its roots; `mulebox feedback guide` if a path of its own was refused |
+| `service.failed` | 1 | a mulebox service could not be installed or controlled | `mulebox service status` and `mulebox service logs <name>` show why |
+| `worker.link` | 1 | the worker could not reach its coordinator | check `coordinator` in node.toml and that `ssh <coordinator>` works from this node |
+| `worker.key_refused` | 2 | a worker key asked for something it may not do | a worker key runs only `mulebox rpc`; set the worker up again with `mulebox setup <worker> --worker-of <coordinator>` |
+| `worker.key_invalid` | 2 | the worker's name or public key is not valid | give its name and one ssh public key line (`ssh-ed25519 AAAA...`) on stdin |
+| `dashboard.lan` | 2 | the dashboard's LAN mode is not ready | set `lan_range` and `lan_address` under [dashboard] in node.toml |
+| `dashboard.listen` | 1 | the dashboard could not listen on its address | the service tries again by itself; if it keeps failing, another program holds the port: `mulebox service logs dashboard` |
+| `runner.usage` | 2 | the runner command was not used as it can be | `mulebox runner <command> --help` shows how |
+| `runner.failed` | 1 | a runner operation failed on the node | `mulebox runner list`; `mulebox service logs worker` on the node shows why |
+| `runner.download` | 1 | the GitHub runner could not be downloaded or checked | run it again; if it repeats, ask your user to check the node's network |
+| `runner.place` | 1 | an isolated runner's container could not be made or run | `mulebox machine check <node>`; Docker must answer on the node |
+| `runner.refused_run` | 1 | the runner refused a run not from its own accounts | nothing on this runner: such a run belongs on GitHub's machines |
+| `github.failed` | 4 | `gh` or GitHub refused or could not answer | `gh auth status` shows the login; the account must be an admin of the repository |
+| `hook.failed` | 1 | a runner hook could not hold a build slot | re-run the job on GitHub; `mulebox service logs worker` on the node shows why |
+| `hook.refused` | 1 | the coordinator refused the runner's slot | `mulebox queue` and `mulebox machine list` show what the node holds; re-run the job |
+| `hook.ended` | 1 | the runner's reservation ended before it got a slot | re-run the job on GitHub; `mulebox queue` shows what ended it |
+| `hook.timeout` | 1 | the runner waited too long for a build slot | `mulebox queue` shows what holds the slots; raise MULEBOX_HOOK_TIMEOUT_MIN if it should wait longer |
 | `mulebox.internal` | 1 | mulebox failed in a way it did not expect | run it again with MULEBOX_DEBUG=1 for the trace, then `mulebox feedback guide` |
 
 - **Where a job runs.** Nodes take jobs from the line by themselves: one that offers what the

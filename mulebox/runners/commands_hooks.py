@@ -8,6 +8,7 @@ import argparse
 import os
 import sys
 
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 
 
@@ -40,7 +41,8 @@ def _run(args: argparse.Namespace) -> int:
         paths = NodePaths.from_config(node.roots)
         link = open_link(node, paths)
     except (MuleboxError, ImportError, OSError) as exc:
-        print(f"mulebox: runner hook cannot start: {exc}", file=sys.stderr)
+        error_report.report(MuleboxError(f"the runner hook cannot start: {exc}",
+                                         error_code="hook.failed"))
         return failed
     if args.event == "started":
         return hooks.started(os.environ, node.name, link, paths)

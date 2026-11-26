@@ -38,6 +38,7 @@ EVENT_VERSION = 1  # of `job_event` lines; raised only when a key changes meanin
 # Lines the worker writes into a job's log; the client's failure summary looks for them.
 CONTAINER_LOGS_NOTE = "mulebox: the job failed; the state and last log lines of its containers:"
 NOT_STARTED_NOTE = "mulebox: the job could not start:"
+FIX_NOTE = "mulebox: fix:"  # follows NOT_STARTED_NOTE: what to do (common/error_codes.py)
 TOOLCHAIN, PREPARE, ENVIRONMENT = "toolchain", "prepare", "environment"
 IMAGES, SERVICES = "images", "services"
 INSTALL, SETUP, COMMAND, CLEANUP = "install", "setup", "command", "cleanup"

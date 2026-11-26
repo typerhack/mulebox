@@ -20,6 +20,7 @@ from typing import Any
 
 from mulebox.common.config import (DEFAULT_REMOTE_BIN, NodeConfig, load_node_config,
                                    node_config_path)
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import setup_logging
 from mulebox.worker import offers, project_commands, upgrade_wait
@@ -65,9 +66,11 @@ def _load(args: argparse.Namespace) -> tuple[NodeConfig, NodePaths]:
     return node, NodePaths.from_config(node.roots)
 
 
+KINDS = (((MuleboxError, ImportError), 2, "node.config"),)  # common/error_report.py
+
+
 def _fail(exc: Exception) -> int:
-    print(f"mulebox: {exc}", file=sys.stderr)
-    return 2
+    return error_report.report(exc, KINDS)
 
 
 def _install(args: argparse.Namespace) -> int:
@@ -156,7 +159,10 @@ def _serve(args: argparse.Namespace) -> int:
     try:
         node, paths = _load(args)
         if "worker" not in node.roles:
-            raise MuleboxError(f"node {node.name} does not have the 'worker' role")
+            raise MuleboxError(f"node {node.name} does not have the 'worker' role",
+                               error_code="node.config",
+                               fix="add \"worker\" to `roles` in node.toml, or run "
+                                   "`mulebox setup <host>` from a dev machine")
         link = open_link(node, paths)
     except (MuleboxError, ImportError) as exc:
         return _fail(exc)

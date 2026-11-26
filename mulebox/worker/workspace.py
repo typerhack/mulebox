@@ -29,6 +29,8 @@ GIT_CONFIG = (
 class WorkspaceError(MuleboxError):
     """The workspace could not be prepared."""
 
+    error_code = "job.workspace"  # common/error_codes.py
+
 
 def git(cwd: Path, *args: str) -> bytes:
     """Run git here with the fixed settings; its stdout."""

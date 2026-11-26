@@ -24,6 +24,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import TextIO
 
+from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import JobState, Message, MessageType, Outcome
@@ -42,6 +43,8 @@ _STATUS_OUTCOMES = {"success": Outcome.PASSED, "cancelled": Outcome.CANCELLED}
 
 class HookError(MuleboxError):
     """The hook cannot do its job (missing environment, refused request)."""
+
+    error_code = "hook.failed"  # common/error_codes.py
 
 
 # Set by the node for an isolated runner's job only, never read from a job: the jobs of one
@@ -117,6 +120,21 @@ def _refused(reply: Message) -> bool:
     return reply.type is MessageType.ERROR
 
 
+def _failed(out: TextIO, problem: BaseException | str, code: str = "hook.failed",
+            fix: str | None = None) -> int:
+    """Tell a hook's failure in the job's log on GitHub, with its code and fix, and give 1."""
+    found = error_report.failure(MuleboxError(str(problem), error_code=getattr(
+        problem, "error_code", None) or code, fix=fix or getattr(problem, "fix", None)), 1, code)
+    return error_report.tell(found, out)
+
+
+def _refusal(out: TextIO, what: str, reply: Message) -> int:
+    """The coordinator refused: its own code and fix from 1.44, else the hook's."""
+    said = reply.body.get("error_code")
+    return _failed(out, f"the coordinator refused the {what}: {reply.body.get('message')}",
+                   said if isinstance(said, str) else "hook.refused", reply.body.get("fix"))
+
+
 def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: NodePaths, *,
             clock: Callable[[], float] = time.monotonic,
             sleep: Callable[[float], None] = time.sleep, out: TextIO | None = None) -> int:
@@ -128,8 +146,7 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
         deadline = clock() + minutes * 60
         reservation_file.runner_dir(paths, gh.runner)
     except MuleboxError as exc:
-        _say(out, f"cannot reserve a build slot: {exc}")
-        return 1
+        return _failed(out, f"cannot reserve a build slot: {exc}")
     reserve = request(MessageType.RESERVE, worker=worker, repository=gh.repository,
                       job=gh.job, run_id=gh.run_id, run_attempt=gh.run_attempt,
                       runner=gh.runner, branch=gh.branch, run_url=gh.run_url,
@@ -146,9 +163,7 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
             if job_id is None:
                 reply = link.call(reserve)
                 if _refused(reply):
-                    _say(out, f"the coordinator refused the reservation: "
-                              f"{reply.body.get('message')}")
-                    return 1
+                    return _refusal(out, "reservation", reply)
                 job_id = reply.body["job_id"]
                 reservation_file.write(paths, gh.runner, job_id)
             reply = link.call(request(MessageType.ACQUIRE, job_id=job_id))
@@ -156,20 +171,17 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
             LOG.warning("coordinator unreachable, retrying: %s", exc)
             reply = None
         except (MuleboxError, OSError) as exc:
-            _say(out, f"cannot reserve a build slot: {exc}")
-            return 1
+            return _failed(out, f"cannot reserve a build slot: {exc}")
         if reply is not None:
             if _refused(reply):
-                _say(out, f"the coordinator refused the slot: {reply.body.get('message')}")
-                return 1
+                return _refusal(out, "slot", reply)
             state = reply.body.get("state")
             if state == JobState.RUNNING:
                 _say(out, f"build slot granted ({job_id})")
                 return 0
             if state == JobState.FINISHED:
-                _say(out, f"reservation {job_id} ended ({reply.body.get('outcome')}) before "
-                          "it got a slot")
-                return 1
+                return _failed(out, f"reservation {job_id} ended ({reply.body.get('outcome')}) "
+                                    "before it got a slot", "hook.ended")
             now = clock()
             if noticed_at is None or now - noticed_at >= NOTICE_S:
                 _say(out, f"waiting for a build slot (position {reply.body.get('position')})")
@@ -182,8 +194,8 @@ def started(env: Mapping[str, str], worker: str, link: CoordinatorLink, paths: N
 
 def _give_up(link: CoordinatorLink, paths: NodePaths, runner: str, job_id: str | None,
              minutes: float, out: TextIO) -> None:
-    _say(out, f"gave up waiting for a build slot after {minutes:g} minutes "
-              f"({TIMEOUT_ENV}); check `mulebox queue` for what holds the slots")
+    _failed(out, f"gave up waiting for a build slot after {minutes:g} minutes ({TIMEOUT_ENV})",
+            "hook.timeout")
     if job_id is None:
         return
     try:
