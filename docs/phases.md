@@ -1353,7 +1353,7 @@ runs a job.
 ## M26: Agents read everything (the user's ask, 2026-11-26)
 From a review of how well an agent can find and use each feature from the command line, after
 contract schema 22 (1.51.0) closed the contract's and skill's gaps.
-- [~] M26.1 What an agent can parse, built 2026-11-26 (1.52.0), with tests: `mulebox history`
+- [x] M26.1 What an agent can parse, built 2026-11-26 (1.52.0), with tests: `mulebox history`
       (the dashboard's History filters, coordinator/history_api.py), `--json` with one end object
       on `check`, `run`, `wait`, `cancel`, `ok`, `fetch`, `hold` and `logs` (client/json_end.py),
       notices in it with their kind, `tests`, `keep` and `files` in the `finished` event, "for
@@ -1363,6 +1363,11 @@ contract schema 22 (1.51.0) closed the contract's and skill's gaps.
       gives the result with its tests and summary on stdout and the log on stderr, `history
       --result failed --json` lists that failure, and an agent's next command after a detached
       job gives its result as a notice in `--json`.
+      Done 2026-11-26 (1.52.2) on the real node with a throwaway project: `check --json` of a
+      passing job gave outcome, exit 0 and its 3 tests on stdout, its log on stderr; of a failing
+      one exit 3 with its summary lines and kept files; `history --result failed --json` listed
+      that failure; a detached job's result came back as a `finished_away` notice in the next
+      `check --json`. Found there and fixed 1.52.1: a notice's kind was overwritten by the job's.
 
 ## Parking lot
 - Remote access while away, and waking a node (the user's ask, 2026-11-16; researched, nothing
