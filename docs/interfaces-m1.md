@@ -85,7 +85,10 @@ coordinators leave it out, and the client then prints nothing.
 `status_ok` is the generic reply carrying `job_id, state` (+ `outcome`, `exit_code`,
 `position` when queued, `worker` when active, `estimate_s` and `estimate_runs` when queued
 with enough history (coordinator/usual.py), `stage` when a job ended badly in a known stage, `cancel: bool` for worker heartbeats). Errors reply `error` with
-codes `not_found`, `bad_request`, `conflict`, `too_large`, `internal`.
+codes `not_found`, `bad_request`, `conflict`, `no_worker`, `too_large`, `internal` (`code`) and
+`message`; from 1.44 also `error_code` and `fix`, the code and fix the client prints
+(common/error_codes.py; design.md, Errors with a code and a fix). A client reads a reply without
+them as the code its wire code stands for.
 
 | Request | Body (required + used extras) | Reply |
 | --- | --- | --- |

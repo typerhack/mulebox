@@ -231,7 +231,7 @@ def fetch_job(conn: sqlite3.Connection, job_id: str) -> dict[str, Any] | None:
 def require_job(conn: sqlite3.Connection, job_id: str) -> dict[str, Any]:
     job = fetch_job(conn, job_id)
     if job is None:
-        raise NotFound(f"no job {job_id}")
+        raise NotFound(f"no job {job_id}", error_code="job.not_found")
     return job
 
 

@@ -15,7 +15,7 @@ from typing import Any
 from mulebox.client import report
 from mulebox.client.contract_rules import RULES, TESTS, TIME_LIMITS, WAYS_TO_WAIT
 from mulebox.client.excludes import BUILTIN_EXCLUDES
-from mulebox.common import systems
+from mulebox.common import error_codes, systems
 from mulebox.common.config import DEFAULT_LOG_DAYS, ProjectConfig
 from mulebox.common.config_jobs import for_job, port_variable
 from mulebox.common.status import STAGES
@@ -37,7 +37,8 @@ from mulebox.common.status import STAGES
 # 15: a `toolchain` stage, only when a job installs a pinned one
 # 16: `stuck` and `moving` events and `looks` in status: a running job that looks stuck
 # 17: a pass proves its tests ran: `tests`, exit 8, `mulebox check --fewer-tests`
-SCHEMA = 17
+# 18: every error has a code and a fix line, also as JSON with --json: `errors`
+SCHEMA = 18
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -179,6 +180,8 @@ def build(config: ProjectConfig | None, version: str) -> Contract:
         "tests": list(TESTS),
         "exit_codes": [{"code": code, "meaning": meaning, "action": action}
                        for code, meaning, action in EXIT_CODES],
+        "errors": [{"code": c.name, "exit": c.exit, "meaning": c.meaning, "fix": c.fix}
+                   for c in error_codes.CODES.values()],
         "rules": list(RULES),
     }
 
@@ -236,5 +239,7 @@ def render(contract: Contract) -> str:
               ", ".join(contract["never_uploaded"]), "",
               "Exit codes (otherwise the job's own code):"]
     lines += [f"- {e['code']}: {e['meaning']}. {e['action']}." for e in contract["exit_codes"]]
+    lines += ["", "Errors (`mulebox: error [code]: ...`, then `mulebox: fix: ...`; do the fix):"]
+    lines += [f"- {e['code']} (exit {e['exit']}): {e['meaning']}." for e in contract["errors"]]
     lines += ["", "Rules:", *_bullets(contract["rules"])]
     return "\n".join(lines) + "\n"

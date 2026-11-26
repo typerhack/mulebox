@@ -8,6 +8,12 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.44.0 - 2026-11-26 - minor
+- Every error says its code and a fix (M24.7; design.md, Errors with a code and a fix, the user's decisions): `mulebox: error [node.unreachable]: ...` then `mulebox: fix: ...` on stderr, and with `--json` also `{"error": {"code", "message", "fix", "exit"}}` on stdout. Exit codes are unchanged.
+- One table, common/error_codes.py: 26 dotted codes, each with its exit code, meaning and default fix. `MuleboxError` takes `error_code=` and `fix=`, each error class names its code, and closer ones are given where they are raised (not a git worktree, no commit yet, worktree too large, unknown job, unknown node, a size no node can give, a node too old).
+- The node's `error` replies keep their wire `code` and add `error_code` and `fix`; a client reads a reply from an older node by its wire code. `client/errors_out.py` prints every command's errors, through `guarded`; an error mulebox did not expect is `mulebox.internal` with a way to report it (its trace with MULEBOX_DEBUG=1), where it printed a trace before.
+- `mulebox contract` lists the codes (`errors`, schema 18) and a rule to do the fix first; the skill teaches it; docs/agents.md has the table, tied to the code by a test. Docs: design.md, agents.md, interfaces-m1.md, phases.md.
+
 ## 1.43.0 - 2026-11-26 - minor
 - The out-of-step strip no longer reads a dev machine as behind after an upgrade with no job sent since: every request a dev machine sends now says its mulebox, skill state and install (`dev_machine`, client/dev_machine.py), not only `submit`. Seen on the real dashboard: the dev machine read as 1.42.2 for a day while it ran 1.42.4, as 1.42.3 and 1.42.4 were docs only and sent no job. The coordinator takes the field off the body before handling, writes it only when it changed or every 10 minutes, and ignores a bad one rather than refusing the request; an older coordinator ignores it.
 - The strip's fix names the upgrade for how the dev machine installed mulebox: `git pull` for a checkout, pipx or uv, else both (`clients.install`, schema 34; common/upgrade.py `kind` and `for_kind`). Before, it always said pipx, wrong for a checkout.

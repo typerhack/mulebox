@@ -20,7 +20,7 @@ from mulebox.common.ids import new_id
 from mulebox.common.log import get_logger
 from mulebox.common.protocol import Message, MessageType, ProtocolError, decode
 from mulebox.coordinator import api, delta, uploads
-from mulebox.coordinator.context import error_message
+from mulebox.coordinator.context import error_message, error_reply
 from mulebox.coordinator.errors import BadRequest, CoordinatorError
 from mulebox.coordinator.lineio import note_error, read_line, write_message
 from mulebox.coordinator.staging import Staging
@@ -55,7 +55,7 @@ def run_rpc(store: Store, staging: Staging, stdin: BinaryIO, stdout: BinaryIO,
         reply = api.handle(store, staging, msg, clock(), cluster_slots=cluster_slots,
                            dashboard=dashboard)
     except CoordinatorError as exc:
-        reply = error_message(request_id, exc.code, str(exc))
+        reply = error_reply(request_id, exc)
     except ProtocolError as exc:
         reply = error_message(request_id, "bad_request", str(exc))
     except (BrokenPipeError, ConnectionResetError):
@@ -97,7 +97,7 @@ def _answer(work: Callable[[], dict[str, Any]], name: str, stdout: BinaryIO,
     try:
         reply = Message(kind, request_id, work())
     except CoordinatorError as exc:
-        reply = error_message(request_id, exc.code, str(exc))
+        reply = error_reply(request_id, exc)
     except Exception as exc:  # noqa: BLE001
         _log.exception("internal error in %s", name)
         reply = error_message(request_id, "internal", f"internal error: {type(exc).__name__}")
@@ -112,7 +112,7 @@ def run_download(store: Store, staging: Staging, job_id: str, stdout: BinaryIO,
         stdout.flush()
         return EXIT_OK
     except CoordinatorError as exc:
-        reply = error_message("download", exc.code, str(exc))
+        reply = error_reply("download", exc)
     except (BrokenPipeError, ConnectionResetError):
         return EXIT_PROTOCOL
     except Exception as exc:  # noqa: BLE001

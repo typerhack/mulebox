@@ -37,6 +37,8 @@ _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z`(\[])")
 class FeedbackError(MuleboxError):
     """A draft that cannot be made or sent."""
 
+    error_code = "feedback.failed"
+
 
 def _safe_call(call: Callable[[], str]) -> str:
     try:

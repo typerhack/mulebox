@@ -11,12 +11,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+import traceback
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import (attention, contract, github_status, queue_view, report,
+from mulebox.client import (attention, contract, errors_out, github_status, queue_view, report,
                             skill_install, take_back, tui)
 from mulebox.client.remote import CoordinatorError, Remote, request
 from mulebox.client.snapshot import SnapshotError
@@ -32,7 +34,6 @@ from mulebox.common.config import (
 from mulebox.common.config_jobs import BARE
 from mulebox.common.errors import MuleboxError
 from mulebox.common.protocol import MessageType, ProtocolError
-from mulebox.common.redact import Redactor
 from mulebox.common.ssh import RemoteTimeout, SSHError, SSHUnavailable
 from mulebox.version import get_version
 
@@ -42,6 +43,8 @@ Handler = Callable[[argparse.Namespace], int]
 
 class UsageError(MuleboxError):
     """The command line asks for something that does not exist."""
+
+    error_code = "usage.invalid"
 
 
 def register(sub: argparse._SubParsersAction) -> None:
@@ -103,9 +106,14 @@ def _on(parser: argparse.ArgumentParser) -> None:
                         help="run it on this node only, as `mulebox machine list` names it")
 
 
-def guarded(handler: Handler, notices: bool = False) -> Handler:
-    """Turn expected errors into one clear stderr line and the contract's exit code. `notices`:
-    a command that reached the machine also tells this project's questions and results."""
+Kinds = tuple[tuple[tuple[type[BaseException], ...], int, str], ...]
+
+
+def guarded(handler: Handler, notices: bool = False, kinds: Kinds = ()) -> Handler:
+    """Turn expected errors into their code, message and fix on stderr (and on stdout as JSON
+    for a command given --json) with the contract's exit code (client/errors_out.py).
+    `notices`: a command that reached the machine also tells this project's questions and
+    results. `kinds`: a command's own errors, as in _KINDS, looked at first."""
 
     def run(args: argparse.Namespace) -> int:
         try:
@@ -115,25 +123,43 @@ def guarded(handler: Handler, notices: bool = False) -> Handler:
             return code
         except KeyboardInterrupt:
             return report.EXIT_CANCELLED
-        except (ConfigError, SnapshotError, UsageError) as exc:
-            return _fail(str(exc), report.EXIT_USAGE)
-        except WatchLost as exc:
-            return _fail(str(exc), report.EXIT_UNREACHABLE)
-        except (SSHUnavailable, RemoteTimeout) as exc:
-            return _fail(
-                f"node unreachable: {exc} The job was not run; "
-                "fix the connection to the node and retry.",
-                report.EXIT_UNREACHABLE,
-            )
-        except (CoordinatorError, ProtocolError, SSHError) as exc:
-            return _fail(str(exc), report.EXIT_REMOTE)
+        except Exception as exc:  # noqa: BLE001 - every error gets its code and fix
+            return fail(exc, args, kinds=kinds)
 
     return run
 
 
-def _fail(message: str, code: int) -> int:
-    report.status(sys.stderr, f"error: {Redactor().redact(message)}")
-    return code
+# The exit code and default code of each kind of error, first match wins.
+_KINDS: Kinds = (
+    ((ProjectNotFound,), report.EXIT_USAGE, "config.missing"),
+    ((ConfigError,), report.EXIT_USAGE, "config.invalid"),
+    ((SnapshotError,), report.EXIT_USAGE, "project.snapshot"),
+    ((UsageError,), report.EXIT_USAGE, "usage.invalid"),
+    ((WatchLost,), report.EXIT_UNREACHABLE, "node.connection_lost"),
+    ((SSHUnavailable,), report.EXIT_UNREACHABLE, "node.unreachable"),
+    ((RemoteTimeout,), report.EXIT_UNREACHABLE, "node.timeout"),
+    ((CoordinatorError, ProtocolError, SSHError), report.EXIT_REMOTE, "node.protocol"),
+)
+
+
+def fail(exc: BaseException, args: argparse.Namespace | None = None,
+         exit_code: int | None = None, default_code: str | None = None,
+         kinds: Kinds = ()) -> int:
+    """Tell `exc` the one way every command does. An error of no known kind is
+    `mulebox.internal`, exit 1, with its trace when MULEBOX_DEBUG is set."""
+    for types, kind_exit, kind_code in (*kinds, *_KINDS):
+        if isinstance(exc, types):
+            exit_code, default_code = exit_code or kind_exit, default_code or kind_code
+            break
+    else:
+        if not isinstance(exc, MuleboxError):
+            if os.environ.get("MULEBOX_DEBUG"):
+                traceback.print_exception(exc, file=sys.stderr)
+            exc = MuleboxError(f"{type(exc).__name__}: {exc}", error_code="mulebox.internal")
+        exit_code, default_code = exit_code or 1, default_code or "mulebox.internal"
+    found = errors_out.failure(exc, exit_code, default_code)
+    as_json = bool(getattr(args, "json", False))
+    return errors_out.tell(found, sys.stderr, sys.stdout if as_json else None)
 
 
 def project_here() -> tuple[ProjectConfig, Path]:

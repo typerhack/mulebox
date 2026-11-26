@@ -49,6 +49,8 @@ DETACH_HINT = ("this may take a while; next time add --detach and follow the job
 class WatchLost(MuleboxError):
     """The job was submitted, but the live view could not reconnect to the node."""
 
+    error_code = "node.connection_lost"
+
 
 class RemoteLike(Protocol):
     def call(self, msg: Message) -> Message: ...
@@ -156,7 +158,9 @@ def _too_old(remote: RemoteLike, job_id: str, flag: str) -> None:
     """A coordinator that did not echo `flag` ignored it: the job must not run without it."""
     remote.call(request(MessageType.CANCEL, job_id=job_id))
     raise CoordinatorError(f"the node's mulebox is too old for {flag}, so the job "
-                           f"was cancelled. Upgrade it (docs/install.md), or run without {flag}.")
+                           f"was cancelled. Upgrade it (docs/install.md), or run without {flag}.",
+                           error_code="node.too_old",
+                           fix=f"`mulebox setup <host>` upgrades the node; or run without {flag}")
 
 
 def _left_running(job_id: str, io: Streams) -> None:

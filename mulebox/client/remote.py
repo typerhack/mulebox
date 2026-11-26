@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from mulebox.client import dev_machine, sshio
-from mulebox.common import ssh, units
+from mulebox.common import error_codes, ssh, units
 from mulebox.common.config import ClientConfig
 from mulebox.common.errors import MuleboxError
 from mulebox.common.ids import new_id
@@ -40,11 +40,26 @@ _READ_LIMIT = MAX_LINE_BYTES + 3  # one byte over the cap (plus CRLF) is enough 
 
 
 class CoordinatorError(MuleboxError):
-    """The coordinator answered with an `error` reply or broke the protocol."""
+    """The coordinator answered with an `error` reply or broke the protocol. `code` is the
+    wire code; `error_code` and `fix` the ones a person or agent acts on (error_codes.py)."""
 
-    def __init__(self, message: str, code: str = "protocol") -> None:
-        super().__init__(message)
+    error_code = "node.protocol"
+
+    def __init__(self, message: str, code: str = "protocol", **said: str | None) -> None:
+        super().__init__(message, **said)
         self.code = code
+
+
+def refusal(body: dict[str, Any]) -> CoordinatorError:
+    """The error an `error` reply stands for. A coordinator older than 1.44 sends only the
+    wire code, read as the code it stands for, with that code's fix."""
+    code = str(body.get("code", "internal"))
+    said, fix = body.get("error_code"), body.get("fix")
+    error_code = (said if isinstance(said, str) and said in error_codes.CODES
+                  else error_codes.FROM_WIRE.get(code, "node.refused"))
+    return CoordinatorError(f"coordinator: {body.get('message', '')} ({code})", code,
+                            error_code=error_code,
+                            fix=fix if isinstance(fix, str) and fix.strip() else None)
 
 
 class StreamEnded(CoordinatorError):
@@ -180,6 +195,5 @@ def _decode_line(line: bytes) -> Message:
     except ProtocolError as exc:
         raise CoordinatorError(f"bad reply from the coordinator: {exc}") from exc
     if reply.type is MessageType.ERROR:
-        code = str(reply.body.get("code", "internal"))
-        raise CoordinatorError(f"coordinator: {reply.body.get('message', '')} ({code})", code)
+        raise refusal(reply.body)
     return reply

@@ -28,6 +28,9 @@ class ConfigError(MuleboxError):
         self.problem = problem
         where = f"{path}: {field}" if field else f"{path}"
         super().__init__(f"{where}: {problem}")
+        if type(self).error_code is None:  # a subclass names its own (ProjectNotFound)
+            self.error_code = ("config.client" if self.path.name == "client.toml"
+                               else "config.invalid")
 
 
 class Reader:

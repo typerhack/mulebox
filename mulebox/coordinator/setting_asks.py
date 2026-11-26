@@ -60,7 +60,7 @@ def node_for(conn: sqlite3.Connection, asked: str | None) -> str:
     names = [row["worker"] for row in workers.listing(conn)]
     if asked:
         if asked not in names:
-            raise NotFound(f"no machine {asked!r}; `mulebox machine list` shows them")
+            raise NotFound(f"no machine {asked!r}", error_code="node.unknown")
         return asked
     from mulebox.coordinator import storage
     heavy = [row["worker"] for row in storage.heavy(conn, 0.0, online=False)]

@@ -39,14 +39,17 @@ def ensure_worktree(root: Path) -> None:
     if proc.returncode != 0 or proc.stdout.strip() != b"true":
         raise GitError(
             f"{root} is not inside a git worktree; mulebox sends the files git knows about, "
-            "so run it from a git checkout (the folder holding .mulebox.yml)"
-        )
+            "so run it from a git checkout (the folder holding .mulebox.yml)",
+            error_code="project.not_git",
+            fix="run it in the project's git checkout, or `git init` there and commit once")
 
 
 def ensure_commit(root: Path) -> None:
     """Raise GitError in a repository without commits: a job records the commit it came from."""
     if not base_commit(root):
-        raise GitError(f"{root} has no commits yet; commit once, then run this again")
+        raise GitError(f"{root} has no commits yet; commit once, then run this again",
+                       error_code="project.no_commit",
+                       fix="`git add -A && git commit -m \"first commit\"`, then run it again")
 
 
 def list_files(root: Path) -> list[str]:

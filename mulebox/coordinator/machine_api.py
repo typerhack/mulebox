@@ -38,7 +38,7 @@ def machine(req: Request) -> Message:
     with req.store.write() as conn:
         found = workers.get(conn, name)
         if found is None:
-            raise NotFound(f"no machine {name!r}; `mulebox machine list` shows them")
+            raise NotFound(f"no machine {name!r}", error_code="node.unknown")
         running = running_on(conn, name)
         if action == "remove":
             if workers.is_online(found, req.now):

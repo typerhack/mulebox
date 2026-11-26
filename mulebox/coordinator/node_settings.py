@@ -214,5 +214,5 @@ def change(conn: sqlite3.Connection, name: str, changes: dict[str, Any], now: fl
 def _require(conn: sqlite3.Connection, name: str) -> dict[str, Any]:
     found = workers.get(conn, name)
     if found is None:
-        raise NotFound(f"no machine {name!r}; `mulebox machine list` shows them")
+        raise NotFound(f"no machine {name!r}", error_code="node.unknown")
     return found

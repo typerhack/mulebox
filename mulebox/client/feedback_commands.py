@@ -52,13 +52,12 @@ def register(sub: argparse._SubParsersAction) -> None:
     sent.set_defaults(func=_guarded(_post))
 
 
+FEEDBACK_KINDS = (((feedback.FeedbackError, GitHubError), report.EXIT_USAGE, "feedback.failed"),)
+
+
 def _guarded(handler: Handler) -> Handler:
     def run(args: argparse.Namespace) -> int:
-        try:
-            return guarded(handler)(args)
-        except (feedback.FeedbackError, GitHubError) as exc:
-            report.status(sys.stderr, f"error: {exc}")
-            return report.EXIT_USAGE
+        return guarded(handler, kinds=FEEDBACK_KINDS)(args)
     return run
 
 

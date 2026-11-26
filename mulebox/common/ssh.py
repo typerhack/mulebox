@@ -41,9 +41,13 @@ THREAD_JOIN_S = 2.0  # pipe threads are daemons; never wait on them forever
 class SSHError(MuleboxError):
     """Base for SSH transport errors; raised directly for invalid targets or commands."""
 
+    error_code = "node.protocol"
+
 
 class SSHUnavailable(SSHError):
     """The ssh connection failed (ssh exit 255) or ssh could not be started."""
+
+    error_code = "node.unreachable"
 
 
 class RemoteError(SSHError):
@@ -57,6 +61,8 @@ class RemoteError(SSHError):
 
 class RemoteTimeout(SSHError):
     """The local timeout expired; the ssh process was killed."""
+
+    error_code = "node.timeout"
 
 
 @dataclass(frozen=True)

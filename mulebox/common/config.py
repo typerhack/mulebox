@@ -159,6 +159,8 @@ class NodeConfig:
 class ProjectNotFound(ConfigError):
     """No `.mulebox.yml` at or above the folder. A broken one is a plain ConfigError."""
 
+    error_code = "config.missing"
+
 
 def find_project_config(start: Path) -> Path:
     """Return the nearest ``.mulebox.yml`` at or above ``start``."""

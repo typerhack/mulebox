@@ -6,7 +6,7 @@ import argparse
 import sys
 
 from mulebox.client import setup, setup_queued, setup_worker, skill_install
-from mulebox.client.commands import guarded
+from mulebox.client.commands import fail, guarded
 
 
 def register(sub: argparse._SubParsersAction) -> None:
@@ -52,8 +52,7 @@ def _setup(args: argparse.Namespace) -> int:
         else:
             setup.run(args.host, _say, now=args.now, when_idle=args.when_idle)
     except setup.SetupError as exc:
-        _say(f"error: {exc}")
-        return 1
+        return fail(exc, args, exit_code=1)
     for line in skill_install.refresh_here(install=not args.no_skill):
         _say(line)
     return 0

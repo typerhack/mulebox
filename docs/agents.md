@@ -98,6 +98,43 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | 124 | the job hit a hard `timeout_min`, which only a node older than 0.37 applies | look for a hang; a current machine sends check-ins instead |
 | 130 | cancelled | - |
 
+- **Errors say their code and a fix.** When mulebox itself cannot do what was asked, it prints
+  two lines on stderr, `mulebox: error [<code>]: <message>` and `mulebox: fix: <what to do>`,
+  and exits with the code above. Do the fix, or tell the user when it is theirs (the node is
+  off, a node to set up), before running the command again. A command given `--json` prints
+  the same on stdout too: `{"error": {"code", "message", "fix", "exit"}}`. A fix names the
+  command where one exists; the message may give a closer fix than the table's default. Codes
+  are never renamed; `mulebox contract` lists them as `errors` (common/error_codes.py).
+
+| Error code | Exit | Meaning | Default fix |
+| --- | --- | --- | --- |
+| `config.missing` | 2 | no .mulebox.yml here or in a folder above | `mulebox init` writes one for this project |
+| `config.invalid` | 2 | .mulebox.yml is not valid | correct the key the message names; `mulebox doctor` checks the whole file |
+| `config.client` | 2 | this dev machine's client.toml is missing or not valid | `mulebox setup <host>` writes it; or correct the key the message names |
+| `usage.invalid` | 2 | the command was not used as it can be | `mulebox <command> --help` shows how |
+| `project.snapshot` | 2 | the worktree could not be packed for the node | run it in the project's git worktree, after its first commit |
+| `project.not_git` | 2 | the folder is not in a git worktree | run it in the project's git checkout |
+| `project.no_commit` | 2 | the repository has no commit yet | commit once, then run it again |
+| `project.too_large` | 2 | the worktree is over the node's upload limit | leave build output and data out of git (.gitignore), or name them in `exclude:` |
+| `node.unreachable` | 3 | the node did not answer; the job was not run | `mulebox doctor`, then ask your user to check that the node is on and reachable |
+| `node.timeout` | 3 | the node took too long to answer | run it again; if it keeps happening, `mulebox doctor` |
+| `node.connection_lost` | 3 | the live view lost the node; the job goes on there | `mulebox wait <job-id>` gets its result |
+| `node.protocol` | 4 | the node's answer could not be read | `mulebox doctor` compares the versions; `mulebox setup <host>` brings the node up |
+| `node.refused` | 4 | the node refused the request | read the message; if it is not clear, tell your user |
+| `node.too_old` | 4 | the node's mulebox is too old for what was asked | `mulebox setup <host>` upgrades it to this dev machine's mulebox |
+| `node.internal` | 4 | the node failed on the request | run it again once; if it fails again, `mulebox feedback guide` |
+| `request.invalid` | 4 | the node found the request not valid | `mulebox <command> --help`; if the command is right, `mulebox feedback guide` |
+| `request.not_found` | 4 | what the request names does not exist on the node | check the name: `mulebox queue` lists jobs, `mulebox machine list` nodes, `mulebox projects` projects |
+| `request.conflict` | 4 | the request does not fit the state it found | `mulebox queue` shows the state now; try again once it changed |
+| `request.too_large` | 4 | the request is over the node's size limit | send less: fewer or smaller files |
+| `job.not_found` | 4 | the node has no job with that id | `mulebox queue` lists the jobs; an id is printed by `check --detach` |
+| `job.no_node` | 4 | no node offers what the job needs, so it would wait forever | `mulebox doctor` shows what each node offers; change `needs:`, or ask your user to set a node up for it |
+| `job.too_big` | 4 | no node has room for the job's `size:` | lower `size:` in .mulebox.yml; `mulebox machine list` shows each node's cores |
+| `node.unknown` | 4 | no node has that name | `mulebox machine list` names the nodes |
+| `setup.failed` | 1 | setting up or upgrading the node did not finish | fix what the message names and run the same `mulebox setup` again |
+| `feedback.failed` | 2 | the feedback draft or post could not be made | read the message; `mulebox feedback guide` has the steps |
+| `mulebox.internal` | 1 | mulebox failed in a way it did not expect | run it again with MULEBOX_DEBUG=1 for the trace, then `mulebox feedback guide` |
+
 - **Where a job runs.** Nodes take jobs from the line by themselves: one that offers what the
   job needs and has a free slot, the better-ranked first (`priority` in node.toml), then the node
   that ran the branch's last job, as it has the project's folder and dependencies set up, then

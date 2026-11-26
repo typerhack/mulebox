@@ -45,12 +45,12 @@ def send_snapshot(store: Store, staging: Staging, job_id: str, out: BinaryIO) ->
     """Write the job's snapshot to `out`; return the byte count."""
     check_job_id(job_id)
     if store.get_job(job_id) is None:
-        raise NotFound(f"no job {job_id}")
+        raise NotFound(f"no job {job_id}", error_code="job.not_found")
     return staging.copy_upload(job_id, out)
 
 
 def require_uploading(job: dict[str, Any] | None, job_id: str) -> None:
     if job is None:
-        raise NotFound(f"no job {job_id}")
+        raise NotFound(f"no job {job_id}", error_code="job.not_found")
     if job["state"] != JobState.UPLOADING:
         raise Conflict(f"job {job_id} is {job['state']}; uploads are accepted only while uploading")

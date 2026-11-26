@@ -3,6 +3,8 @@ from unittest import mock
 
 import pytest
 
+from mulebox.common import error_codes
+from mulebox.common.ids import new_id
 from mulebox.common.protocol import JobState, MessageType, Outcome
 from mulebox.coordinator import api, leases
 
@@ -123,7 +125,15 @@ def test_internal_errors_become_error_replies(store, staging):
     job_id = queued(store, staging)
     with mock.patch.object(api.line, "read", side_effect=RuntimeError("boom")):
         reply = call(store, staging, "status", job_id=job_id)
-    assert reply.body == {"code": "internal", "message": "internal error: RuntimeError"}
+    assert reply.body == {"code": "internal", "message": "internal error: RuntimeError",
+                          "error_code": "node.internal",
+                          "fix": error_codes.fix_for("node.internal")}
+
+
+def test_a_refusal_says_its_code_and_fix(store, staging):
+    reply = call(store, staging, "status", job_id=new_id("job"))
+    assert reply.body["code"] == "not_found" and reply.body["error_code"] == "job.not_found"
+    assert reply.body["fix"] == error_codes.fix_for("job.not_found")
 
 
 def test_outcome_values_on_finished_status(store, staging):

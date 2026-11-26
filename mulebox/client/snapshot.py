@@ -44,6 +44,8 @@ _COMPRESS_LEVEL = 6
 class SnapshotError(MuleboxError):
     """The worktree cannot be packed (not a git worktree, too large, changed while read)."""
 
+    error_code = "project.snapshot"
+
 
 @dataclass(frozen=True)
 class Snapshot:
@@ -91,7 +93,7 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = (),
         commit, branch = gitinfo.base_commit(root), gitinfo.branch(root)
         known, default = gitinfo.branches(root), gitinfo.default_branch(root)
     except gitinfo.GitError as exc:
-        raise SnapshotError(str(exc)) from exc
+        raise SnapshotError(str(exc), error_code=exc.error_code, fix=exc.fix) from exc
     fd, name = tempfile.mkstemp(prefix="mulebox-snapshot-", suffix=".tar.gz")
     path = Path(name)
     try:
@@ -103,8 +105,8 @@ def make_snapshot(root: Path, extra_excludes: Iterable[str] = (),
             raise SnapshotError(
                 f"snapshot is {units.size(size)}, over the {units.size(MAX_SNAPSHOT_BYTES)} upload limit; "
                 "add large "
-                "generated folders to `exclude` in .mulebox.yml or to .gitignore"
-            )
+                "generated folders to `exclude` in .mulebox.yml or to .gitignore",
+                error_code="project.too_large")
         digest = sha256_file(path)
     except BaseException:
         path.unlink(missing_ok=True)
@@ -134,7 +136,8 @@ def _write_archive(root: Path, paths: list[str], raw: BinaryIO,
                     tar.addfile(info, reader)
                 except OSError as exc:  # tarfile: "unexpected end of data"
                     raise SnapshotError(
-                        f"{entry.path} changed while the snapshot was taken ({exc}); retry"
+                        f"{entry.path} changed while the snapshot was taken ({exc}); retry",
+                        fix="run the same command again once nothing writes into the project"
                     ) from exc
                 fingerprint.add(entry.path, entry.st.st_mode, reader.hash.hexdigest())
             files += 1

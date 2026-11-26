@@ -22,7 +22,7 @@ def claim(store, staging, worker, now, *, max_size="20GB", held=17 * GB):
 
 def asks(store, staging, now=10.0, **body):
     reply = api.handle(store, staging, request("asks", **body), now)
-    assert reply.type is MessageType.ASKS_OK
+    assert reply.type is MessageType.ASKS_OK, reply.body.get("message")
     return reply.body
 
 

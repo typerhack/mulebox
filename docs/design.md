@@ -722,6 +722,40 @@ suggests `--detach`. While running, the live log. Ctrl-C cancels.
 Recommended agent rule for each project: run builds, type checks, lint and tests with
 `mulebox check` / `mulebox run`; keep only git, search, reading and diffs local.
 
+### Errors with a code and a fix (M24.7, the user's decisions, 2026-11-26)
+
+An agent that meets an error should not have to guess what to do next. Every error mulebox
+prints carries a stable code and a fix:
+
+```text
+mulebox: error [node.unreachable]: pc did not answer in 10 s; the job was not run
+mulebox: fix: mulebox doctor (or ask your user to check that the node is on)
+```
+
+- **Codes are dotted words**, `area.what` (`config.invalid`, `node.unreachable`, `job.not_found`),
+  readable without a lookup (the user's pick over numbers). One table, `common/error_codes.py`,
+  holds each code with its exit code, its meaning and its default fix; docs/agents.md and
+  `mulebox contract` (`errors`) are made from it, and a test ties every code raised in the code
+  to the table. A released code is never renamed or reused; a new case gets a new code.
+- **Every error has a fix.** A `MuleboxError` names its code and, where the place that raises it
+  knows better, its own fix (`fix=`); otherwise its class's code and that code's default fix
+  apply. A fix is a command where one exists, else what to do in words, and never empty: an
+  error mulebox did not expect is `mulebox.internal`, fixed by `mulebox feedback guide`.
+- **Exit codes stay as they are.** A code refines an exit code (2, 3, 4, 5), never replaces it, so
+  scripts that read exit codes keep working.
+- **Refusals from the node carry theirs.** An `error` reply keeps its wire `code` (`not_found`,
+  `bad_request`, `conflict`, `no_worker`, `too_large`, `internal`) for older clients and adds
+  `error_code` and `fix`. A reply from an older coordinator has neither: the client maps the
+  wire code to a code of its own (`node.refused` and others) with its default fix.
+- **With `--json`, on stdout too** (the user's pick): a command given `--json` that fails prints
+  `{"error": {"code", "message", "fix", "exit"}}` on stdout, where its tool already reads, and
+  the plain lines on stderr as always.
+- **First the dev machine and the node's replies** (the user's pick): every client command, and
+  every refusal the coordinator sends back. The node's own service commands, runner hooks and
+  the worker's logs are read by the owner, not an agent, and come later.
+- **Not errors:** a job's own result (a failed check, exit 5, 8, 75, 76) keeps its summary and
+  the what-to-do of the contract's exit codes. Messages are redacted as before.
+
 ## Dashboard
 
 - A separate read-only process beside the coordinator (its controls are the one exception, and

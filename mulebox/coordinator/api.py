@@ -20,7 +20,7 @@ from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, ho
                                  upgrades, usage_api, usual, worker_api, workers)
 from mulebox.coordinator import store as st
 from mulebox.coordinator import validate as v
-from mulebox.coordinator.context import Request, error_message
+from mulebox.coordinator.context import Request, error_message, error_reply
 from mulebox.coordinator.errors import BadRequest, Conflict, CoordinatorError, NoWorker
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
@@ -50,7 +50,7 @@ def handle(store: Store, staging: Staging, msg: Message, now: float, *,
         clients.heard(store, msg.body, now)  # every request from a dev machine says its mulebox
         return handler(Request(store, staging, msg, now, cluster_slots, dashboard))
     except CoordinatorError as exc:
-        return error_message(msg.request_id, exc.code, str(exc))
+        return error_reply(msg.request_id, exc)
     except (ProtocolError, ValueError) as exc:
         return error_message(msg.request_id, "bad_request", str(exc))
     except Exception as exc:  # noqa: BLE001 - a request must never crash the caller
@@ -106,9 +106,12 @@ def submit(req: Request) -> Message:
             fleet, on = workers.listing(conn), fields["pinned_worker"]
             refused = (needs.on_refusal(fleet, on, fields["needs"]) if on
                        else needs.refusal(fleet, fields["needs"]))
-            refused = refused or sizes.refusal(fleet, fields["needs"], fields["size"], on)
+            if on and refused and not any(w["worker"] == on for w in fleet):
+                raise NoWorker(refused, error_code="node.unknown")
             if refused:
                 raise NoWorker(refused)
+            if refused := sizes.refusal(fleet, fields["needs"], fields["size"], on):
+                raise NoWorker(refused, error_code="job.too_big")
             job = st.insert_job(conn, {
                 **fields, "job_id": new_id("job"), "state": JobState.UPLOADING,
                 "created_at": req.now, "client_lease_until": req.now + leases.CLIENT_LEASE_S,

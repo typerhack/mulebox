@@ -27,9 +27,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 17. Keep it current, in every session, before
+This skill was written for contract schema 18. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 17, run `mulebox skill update`, then read the
+its first line gives a schema higher than 18, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -194,6 +194,11 @@ different versions, tell the user.
   node is resting, it names the fault and the fix: use `--on` another node if one offers what the
   job needs, tell the user what only they can do, and after a fix run `mulebox machine check
   <node>`. A job its node could not set up goes back in line once by itself; not your code.
+- mulebox printed an error: it reads `mulebox: error [<code>]: ...` and then `mulebox: fix:
+  ...`. Do the fix before anything else, then run the command again; if the fix is for the
+  user (the node is off, a node to set up), tell them, with the code. With `--json`, the same
+  is on stdout as `{"error": {"code", "message", "fix", "exit"}}`. The contract lists every
+  code (`errors`).
 - mulebox itself did something wrong (a wrong result, a job that could not start with no clear
   reason, a confusing message): tell the user what happened, with the command, the exit code
   and every job id involved. Copy what mulebox printed now: some notices are in no log. If they

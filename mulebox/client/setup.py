@@ -40,6 +40,8 @@ Say = Callable[[str], None]
 class SetupError(MuleboxError):
     """A step failed; the message says what to do."""
 
+    error_code = "setup.failed"
+
 
 # ssh's own words for a machine that cannot be reached at all: no key would help, so the
 # advice is about the name or the network, not about logging in.

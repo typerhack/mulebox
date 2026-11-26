@@ -106,7 +106,7 @@ def watch(store: Store, staging: Staging, msg: Message, stdin: BinaryIO, stdout:
     with_log = v.flag(msg.body, "log", True)
     found = store.get_job(job_id)
     if found is None:
-        raise NotFound(f"no job {job_id}")
+        raise NotFound(f"no job {job_id}", error_code="job.not_found")
     renew = renew or found["detached"]
     started = clock()
     if renew:

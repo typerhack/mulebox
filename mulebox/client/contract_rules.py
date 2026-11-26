@@ -33,6 +33,8 @@ WAYS_TO_WAIT = (
 )
 RULES = (
     "if mulebox is unreachable, stop and tell the user; never run heavy commands locally",
+    "an error says its code and a fix line: do the fix, or tell the user when it is theirs, "
+    "before running the command again",
     "if mulebox contract says the mulebox skill is out of date, or this contract's schema is "
     "higher than the one your skill says it was written for, run mulebox skill update and read "
     "the skill again",

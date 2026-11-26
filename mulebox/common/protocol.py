@@ -27,6 +27,8 @@ MAX_LINE_BYTES = 1 << 20  # 1 MiB per message line, newline included; readers en
 class ProtocolError(MuleboxError):
     """A message or state change that breaks the protocol."""
 
+    error_code = "node.protocol"
+
 
 class JobState(StrEnum):
     UPLOADING = "uploading"
