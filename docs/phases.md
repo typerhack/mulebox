@@ -1108,6 +1108,8 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       by the summary; 57 codes in all, with tests. Done when: on the real node, a job pinning a
       toolchain that does not exist exits 5 with `[toolchain.failed]` and its fix in the summary,
       and a node command with a broken node.toml prints `node.config` and its fix.
+      Not deployed yet: the node lost power on 2026-11-26 before the upgrade, so it still runs
+      1.44.1. When it is back: `mulebox setup <node> --queued`, then the drill above.
 - [x] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
       next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
       `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and

@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.45.1 - 2026-11-26 - patch
+- docs/phases.md: M24.9 waits for the node, which lost power before its upgrade to 1.45; it runs 1.44.1 until then.
+
 ## 1.45.0 - 2026-11-26 - minor
 - The node's errors say their code and a fix too (M24.9, the user's ask: what M24.7 left for later). The printer moved to common/error_report.py, and every node command uses it: `rpc` and `coordinator serve`, `worker serve`, `toolchain`, `service`, `runner`, `dashboard serve` and its LAN commands. Node-side error classes name their codes (Docker, toolchains, Xcode, simulators, workspace, executor, downloads, services, runners, GitHub, hooks, safe paths).
 - A job that could not start (exit 5) ends its log with `mulebox: the job could not start: [<code>] ...` and `mulebox: fix: ...` (common/start_note.py); the failure summary keeps both lines, and the stage's failing line stays the failure, not the fix.
