@@ -1057,7 +1057,7 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       command's exit. On the deployed dashboard in the browser, that exit 8 showed its strip
       with the command and its Tests panel beside the last pass, and this repository's gate its
       count with its summary line underlined. The drill's project was reset on the node.
-- [ ] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
+- [x] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
       (a limit, then the usual cleanup), and `mulebox check --from-stage <stage>` sends the changes and
       runs again from there, with no new setup and no new `compose up`.
       Design note 2026-11-26 (1.45.3): design.md, Rerun from the failed stage, with the user's
@@ -1072,7 +1072,16 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       coordinator/kept.py, rerun.py, schema 35; `--from-stage` on `check` and `run`, the rerun line
       in the failure summary, `keep_failed_min` (`mulebox machine config --keep-failed-min`),
       contract schema 19 and the skill. Not kept yet: an isolated job, and a pass turned into exit
-      8. Open: the drill above, then `mulebox machine list` and the dashboard from mockups.
+      8. Not built: kept jobs in `mulebox machine list` and on the dashboard (from mockups).
+      Done 2026-11-26 (1.46.1) on the real node with a throwaway project (Redis, a `setup` that
+      seeds it after an 8 s sleep): a failed job's summary said its containers were kept 15 min
+      and gave the command; after the fix, `--from-stage command` ran only prepare, environment and
+      command, read the value the first job's `setup` had seeded, and passed in 1 s (4 s from the
+      dev machine, against 11 s for the job). With the compose file changed, the rerun said why
+      and ran from the start, and passed. With `keep_failed_min` set to 1 from the dev machine, a
+      kept job's container and folder were gone a minute later. The setting was put back to 15 and
+      the project reset. Found there and fixed 1.46.1: a waiting rerun said "sent with --on", and
+      the rerun line named an `install` the project did not have.
 - [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.

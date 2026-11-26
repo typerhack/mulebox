@@ -53,10 +53,15 @@ def as_run(claim: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def note(kept: Kept, stage: str) -> str:
-    return (f"mulebox: rerun from {stage} with the containers of {kept.home} (images, services"
-            f"{', install' if stage != INSTALL else ''}{', setup' if stage == COMMAND else ''} "
-            "skipped)\n")
+def note(kept: Kept, claim: dict[str, Any]) -> str:
+    """The log line of a rerun; it names only the stages the job has and skips."""
+    stage, skipped = claim["from_stage"], ["images", "services"]
+    if stage != INSTALL and claim.get("install"):
+        skipped.append("install")
+    if stage == COMMAND and claim.get("setup"):
+        skipped.append("setup")
+    return (f"mulebox: rerun from {stage} with the containers of {kept.home} "
+            f"({', '.join(skipped)} skipped)\n")
 
 
 def fallback_note(why: str) -> str:

@@ -85,7 +85,7 @@ class Keeping:
         why = rerun.problem(job.reused, claim, tree, self.docker)
         if why is None:
             job.home, job.kept_env = job.reused.home, job.reused.env
-            job.tailer.note(rerun.note(job.reused, claim["from_stage"]))
+            job.tailer.note(rerun.note(job.reused, claim))
             return rerun.as_run(claim)
         job.tailer.note(rerun.fallback_note(why))
         if job.reused is not None:

@@ -75,6 +75,9 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -
 
         reason = sizes.waiting(conn, job, needs.fleet_for(workers.listing(conn), job), now,
                                order or line.read(conn, now))
+    if reason is None and job.get("reuses"):
+        return (f"a rerun: it waits for {job['pinned_worker']}, which keeps the containers of "
+                f"{job['reuses']}")
     if reason is None and job["pinned_worker"]:
         return f"sent with --on {job['pinned_worker']}: it waits for that node alone"
     return reason

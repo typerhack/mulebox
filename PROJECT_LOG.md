@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.46.1 - 2026-11-26 - patch
+- A waiting rerun says it waits for the node that keeps its containers, where it said "sent with --on", which the agent never typed (coordinator/views.py).
+- The rerun's log line names only the stages the job has and skips: it named `install` for a project with none (worker/rerun.py).
+- docs/phases.md: M24.2 done on the real node: a rerun from `command` in the kept containers, the fallback after a compose change, and the expiry.
+
 ## 1.46.0 - 2026-11-26 - minor
 - Rerun from the failed stage (M24.2; design.md, Rerun from the failed stage). A compose job that failed or timed out in `install`, `setup` or its command keeps its containers, network, ports and job folder for `keep_failed_min` minutes (15, a node setting, 0 for none), holding no slot (worker/kept.py, agent_kept.py). A node keeps at most one per slot, and removes a kept job when its time is up, when another job of the branch starts, and on a restart (the startup sweep).
 - `mulebox check --from-stage install|setup|command` (and `mulebox run --from-stage`) takes over the last kept job of the project, job and branch, on its node: images and services are skipped, and the stages before the one asked (worker/rerun.py). When nothing is kept, the node is offline, or the compose files, a Dockerfile, a lockfile, `setup`, `install`, the toolchain or env changed, or a kept container stopped, it runs from the start and says why.

@@ -62,7 +62,7 @@ def test_a_rerun_from_command_runs_in_the_kept_containers(agent, fake_link, daem
     assert calls[0][1] == compose.project_name(first)  # the kept job's compose project
     assert calls[0][2] == str(paths.job_dir("example-app", first) / "compose.mulebox.yml")
     text = fake_link.log_text()
-    assert f"rerun from command with the containers of {first}" in text
+    assert f"rerun from command with the containers of {first} (images, services, setup skipped)" in text
     assert text.count("setup ran") == 1  # the first job's only
     # passed, so nothing is kept: the first job's containers and both folders are gone
     assert sorted(daemon.left()) == sorted(FOREIGN)

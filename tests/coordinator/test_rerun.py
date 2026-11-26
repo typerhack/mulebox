@@ -55,6 +55,15 @@ def test_its_claim_names_the_kept_job(store, staging):
     assert (reply.body["reuses"], reply.body["from_stage"]) == (first, "command")
 
 
+def test_a_waiting_rerun_says_which_node_keeps_its_containers(store, staging):
+    first = failed_and_kept(store, staging)
+    later = rerun(store, staging).body["job_id"]
+    blob, digest = snapshot()
+    uploads.accept_upload(store, staging, later, digest, io.BytesIO(blob), T0 + 61)
+    body = call(store, staging, "status", T0 + 62, job_id=later).body
+    assert body["waiting_for"] == f"a rerun: it waits for wrk-a, which keeps the containers of {first}"
+
+
 def test_nothing_kept_runs_from_the_start_and_says_why(store, staging):
     reply = rerun(store, staging)
     assert reply.body["rerun"]["note"].startswith("no failed job of this name and branch is kept")
