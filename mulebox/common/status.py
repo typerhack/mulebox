@@ -107,6 +107,11 @@ def queue_position(job: dict[str, Any]) -> Any:
     return job.get("position") if job.get("state") in WAITING else None
 
 
+# What a `finished` event adds when the job has it: the tests it ran (coordinator/test_proof.py)
+# and the files it kept for `mulebox fetch` (coordinator/files.py).
+FINISHED_EXTRAS = ("tests", "keep", "files")
+
+
 def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
     """A status or result body as one event, None for a state with nothing to say.
 
@@ -121,7 +126,8 @@ def job_event(job: dict[str, Any]) -> dict[str, Any] | None:
     if state == FINISHED:
         return {**event, "event": "finished", "outcome": outcome_of(job),
                 "exit_code": job.get("exit_code"), "duration_s": job.get("duration_s"),
-                "stage": job.get("stage"), "stop_reason": job.get("stop_reason")}
+                "stage": job.get("stage"), "stop_reason": job.get("stop_reason"),
+                **{name: job[name] for name in FINISHED_EXTRAS if job.get(name)}}
     if state in ACTIVE:
         return {**event, "state": "running", "event": "started", "machine": job.get("worker")}
     if state in WAITING:

@@ -11,7 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, TextIO
 
-from mulebox.client import report, stuck_lines
+from mulebox.client import json_end, report, stuck_lines
 from mulebox.client.remote import Remote, request
 from mulebox.client.report import format_duration
 from mulebox.common import units
@@ -171,17 +171,23 @@ def status_lines(body: dict[str, Any]) -> list[str]:
 
 def tell(body: dict[str, Any], err: TextIO) -> None:
     """Questions waiting for an answer and results from while away, from a reply's body."""
-    for job in _dicts(body.get("questions")):
-        report.status(err, question_line(str(job.get("job_id")), job.get("question") or {}, job))
-    for job in _dicts(body.get("finished_away")):
-        report.status(err, away_line(job))
-    for low in _dicts(body.get("low_disks")):
-        report.status(err, WARNING + disk.warning(str(low.get("worker")), int(low.get("free") or 0),
-                                                   _total(low.get("total"))))
-    for heavy in _dicts(body.get("heavy_nodes")):
-        report.status(err, heavy_line(heavy))
-    for answer in _dicts(body.get("space_answers")):
-        report.status(err, answer_line(answer))
+    for kind, item, text in notices(body):
+        json_end.noticed({"kind": kind, "text": text, **item})
+        report.status(err, text)
+
+
+def notices(body: dict[str, Any]) -> list[tuple[str, dict[str, Any], str]]:
+    """Each notice in a reply's body: its kind, its data as the coordinator gave it, its line."""
+    found = [("question", job, question_line(str(job.get("job_id")), job.get("question") or {}, job))
+             for job in _dicts(body.get("questions"))]
+    found += [("finished_away", job, away_line(job)) for job in _dicts(body.get("finished_away"))]
+    found += [("low_disk", low, WARNING + disk.warning(
+        str(low.get("worker")), int(low.get("free") or 0), _total(low.get("total"))))
+        for low in _dicts(body.get("low_disks"))]
+    found += [("heavy_node", heavy, heavy_line(heavy)) for heavy in _dicts(body.get("heavy_nodes"))]
+    found += [("space_answer", answer, answer_line(answer))
+              for answer in _dicts(body.get("space_answers"))]
+    return found
 
 
 def _total(value: Any) -> int | None:

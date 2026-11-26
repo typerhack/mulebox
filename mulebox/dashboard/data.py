@@ -23,13 +23,14 @@ from mulebox.coordinator import store as st
 from mulebox.coordinator.staging import Staging
 from mulebox.coordinator.store import Store
 from mulebox.coordinator.validate import check_job_id
+from mulebox.coordinator import history_api
 from mulebox.coordinator.views import placement, reservation_dict, running_ahead, waiting_for
-from mulebox.dashboard import history_query, machines, notices
+from mulebox.dashboard import machines, notices
 from mulebox.version import get_version
 
 QUEUE_FINISHED = 20
-HISTORY_DEFAULT = 50
-HISTORY_MAX = 200
+HISTORY_DEFAULT = history_api.DEFAULT
+HISTORY_MAX = history_api.MAX
 DETAIL_FIELDS = ("base_commit", "timeout_min", "needs", "toolchain", "duration_s", "setup",
                  "cancel_requested")
 
@@ -145,16 +146,8 @@ class DashboardData:
         """Finished jobs matching `chosen` (history_query.filters), newest first; page with
         `before` = the last `finished_at` seen. The first page also lists every value each
         filter can take, the Statistics page's list (coordinator/stats.py `choices`)."""
-        where, params = history_query.where(chosen or {}, before)
-        limit = max(1, min(HISTORY_MAX, limit))
         with self.store.read() as conn:
-            jobs = st.select_jobs(conn, where, params, "finished_at DESC, seq DESC", limit=limit)
-            options = stats.choices(conn) if before is None else None
-        rows = [{**reservation_dict(job), "duration_s": job["duration_s"]} for job in jobs]
-        rows = [{**row, "shown_state": shown_state(row)} for row in rows]
-        more = len(rows) == limit
-        return {"jobs": rows, "next_before": rows[-1]["finished_at"] if more else None,
-                **({"choices": options} if options is not None else {})}
+            return history_api.page(conn, chosen or {}, before, limit)
 
     def stats(self, body: dict[str, Any], now: float) -> dict[str, Any]:
         """Job minutes, as `mulebox stats` gets them (coordinator/stats_api.py)."""

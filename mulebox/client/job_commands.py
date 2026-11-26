@@ -13,7 +13,7 @@ import sys
 import time
 from typing import Any
 
-from mulebox.client import attention, events, report, usage_commands
+from mulebox.client import attention, events, json_end, report, usage_commands
 from mulebox.client.commands import connect, guarded, project_here
 from mulebox.client.log_commands import note_expired_log
 from mulebox.client.remote import request
@@ -27,6 +27,7 @@ from mulebox.common.usage import average_cores
 def register(sub: argparse._SubParsersAction) -> None:
     wait = sub.add_parser("wait", help="wait for a job and return what an attached check would")
     wait.add_argument("job_id")
+    json_end.add(wait)
     wait.set_defaults(func=guarded(_wait, notices=True))
 
     follow = sub.add_parser("events", help="follow a job's state changes as lines, without its log")
@@ -36,6 +37,7 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     fine = sub.add_parser("ok", help="answer a job's question: it is fine, let it go on")
     fine.add_argument("job_id")
+    json_end.add(fine)
     fine.set_defaults(func=guarded(_ok))
 
     state = sub.add_parser("status", help="show one job's current state")
@@ -46,6 +48,7 @@ def register(sub: argparse._SubParsersAction) -> None:
 
 def _ok(args: argparse.Namespace) -> int:
     connect().call(request(MessageType.JOB_OK, job_id=args.job_id))
+    json_end.record(job_id=args.job_id)
     print(f"job {args.job_id} goes on; asked again after the next timeout_min")
     return 0
 

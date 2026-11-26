@@ -126,6 +126,8 @@ class MessageType(StrEnum):
     QUEUE_RULES = "queue_rules"
     QUEUE_RULES_OK = "queue_rules_ok"
     STATS = "stats"
+    HISTORY = "history"
+    HISTORY_OK = "history_ok"
     STATS_OK = "stats_ok"
     USAGE = "usage"
     USAGE_OK = "usage_ok"
@@ -231,6 +233,9 @@ REQUIRED_FIELDS: dict[MessageType, frozenset[str]] = {
     # client -> coordinator: job minutes in a range (coordinator/stats.py).
     MessageType.STATS: frozenset(),
     MessageType.STATS_OK: frozenset({"total", "by", "days"}),
+    # client -> coordinator: finished jobs, filtered, newest first (coordinator/history_api.py).
+    MessageType.HISTORY: frozenset(),
+    MessageType.HISTORY_OK: frozenset({"jobs"}),
     # client -> coordinator: what jobs really used, or one run (coordinator/usage_report.py).
     MessageType.USAGE: frozenset(),
     MessageType.USAGE_OK: frozenset({"machines"}),

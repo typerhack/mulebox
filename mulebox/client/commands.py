@@ -12,17 +12,24 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import (attention, contract, github_status, queue_view, report,
-                            rerun_lines, skill_install, take_back, tui)
+from mulebox.client import (
+    contract,
+    github_status,
+    json_end,
+    queue_view,
+    report,
+    rerun_lines,
+    skill_install,
+    take_back,
+    tui,
+)
+from mulebox.client.guard import Handler, UsageError, fail, guarded  # noqa: F401 - shared
 from mulebox.client.remote import CoordinatorError, Remote, request
-from mulebox.client.snapshot import SnapshotError
-from mulebox.client.submit import Streams, Watcher, WatchLost, run_job
+from mulebox.client.submit import run_job
 from mulebox.common.config import (
-    ConfigError,
     ProjectConfig,
     ProjectNotFound,
     find_project_config,
@@ -30,23 +37,11 @@ from mulebox.common.config import (
     load_project_config,
 )
 from mulebox.common.config_jobs import BARE
-from mulebox.common.error_report import Kinds
-from mulebox.common import error_report
 from mulebox.common.errors import MuleboxError
-from mulebox.common.protocol import MessageType, ProtocolError
-from mulebox.common.ssh import RemoteTimeout, SSHError, SSHUnavailable
+from mulebox.common.protocol import MessageType
 from mulebox.version import get_version
 
 QUEUE_LIMIT = 20
-Handler = Callable[[argparse.Namespace], int]
-
-
-class UsageError(MuleboxError):
-    """The command line asks for something that does not exist."""
-
-    error_code = "usage.invalid"
-
-
 def register(sub: argparse._SubParsersAction) -> None:
     """Add this package's subcommands. Each sets func=handler(args) -> int."""
     check = sub.add_parser("check", help="run a job from .mulebox.yml on a node")
@@ -61,6 +56,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     _on(check)
     _from_stage(check)
     _keep(check)
+    json_end.add(check)
     check.set_defaults(func=guarded(_check))
 
     warm = sub.add_parser("warm", help="prepare a job ahead of time: toolchains, images, caches, "
@@ -84,6 +80,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     _on(run)
     _from_stage(run)
     _keep(run)
+    json_end.add(run)
     run.add_argument("argv", nargs=argparse.REMAINDER, help="-- command and arguments")
     run.set_defaults(func=guarded(_run))
 
@@ -99,6 +96,7 @@ def register(sub: argparse._SubParsersAction) -> None:
 
     cancel = sub.add_parser("cancel", help="cancel a job")
     cancel.add_argument("job_id")
+    json_end.add(cancel)
     cancel.set_defaults(func=guarded(_cancel, notices=True))
 
     terms = sub.add_parser("contract", help="print how to work in this project through "
@@ -124,48 +122,6 @@ def _from_stage(parser: argparse.ArgumentParser) -> None:
                              "(install, setup or command) in the containers its node kept, "
                              "skipping images, services and the stages before; runs from the "
                              "start when nothing is kept")
-
-
-def guarded(handler: Handler, notices: bool = False, kinds: Kinds = ()) -> Handler:
-    """Turn expected errors into their code, message and fix on stderr (and on stdout as JSON
-    for a command given --json) with the contract's exit code (common/error_report.py).
-    `notices`: a command that reached the machine also tells this project's questions and
-    results. `kinds`: a command's own errors, as in _KINDS, looked at first."""
-
-    def run(args: argparse.Namespace) -> int:
-        try:
-            code = handler(args)
-            if notices:
-                attention.tell_here(sys.stderr)
-            return code
-        except KeyboardInterrupt:
-            return report.EXIT_CANCELLED
-        except Exception as exc:  # noqa: BLE001 - every error gets its code and fix
-            return fail(exc, args, kinds=kinds)
-
-    return run
-
-
-# The exit code and default code of each kind of error, first match wins.
-_KINDS: Kinds = (
-    ((ProjectNotFound,), report.EXIT_USAGE, "config.missing"),
-    ((ConfigError,), report.EXIT_USAGE, "config.invalid"),
-    ((SnapshotError,), report.EXIT_USAGE, "project.snapshot"),
-    ((UsageError,), report.EXIT_USAGE, "usage.invalid"),
-    ((WatchLost,), report.EXIT_UNREACHABLE, "node.connection_lost"),
-    ((SSHUnavailable,), report.EXIT_UNREACHABLE, "node.unreachable"),
-    ((RemoteTimeout,), report.EXIT_UNREACHABLE, "node.timeout"),
-    ((CoordinatorError, ProtocolError, SSHError), report.EXIT_REMOTE, "node.protocol"),
-)
-
-
-def fail(exc: BaseException, args: argparse.Namespace | None = None,
-         exit_code: int | None = None, default_code: str | None = None,
-         kinds: Kinds = ()) -> int:
-    """Tell `exc` the one way every command does (common/error_report.py)."""
-    return error_report.report(exc, (*kinds, *_KINDS), exit_code=exit_code,
-                               default_code=default_code,
-                               as_json=bool(getattr(args, "json", False)))
 
 
 def project_here() -> tuple[ProjectConfig, Path]:
@@ -287,5 +243,6 @@ def _projects(args: argparse.Namespace) -> int:
 def _cancel(args: argparse.Namespace) -> int:
     reply = connect().call(request(MessageType.CANCEL, job_id=args.job_id))
     state = reply.body.get("state", "unknown")
+    json_end.record(job_id=args.job_id, state=state)
     report.status(sys.stderr, f"cancel requested for job {args.job_id} (state {state})")
     return 0

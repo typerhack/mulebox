@@ -141,11 +141,11 @@ def waiting_for(workers: list[Worker], needs: list[str], now: float,
     dev = ", ".join(w["worker"] for w in online if not w.get("draining") and is_dev(w))
     if dev and not draining:
         return (f"every node for this job is in dev mode ({dev}), which takes only jobs sent "
-                f"with `--on`; `mulebox machine config <name> --dev off` ends it")
+                f"with `--on`; for the owner: `mulebox machine config <name> --dev off` ends it")
     if online:
         names = ", ".join(w["worker"] for w in online)
         return (f"every node for this job is draining ({names}); "
-                f"`mulebox machine resume <name>` lets one take it")
+                f"for the owner: `mulebox machine resume <name>` lets one take it")
     names = ", ".join(w["worker"] for w in fitting)
     return f"no node for this job is online (offline: {names})"
 

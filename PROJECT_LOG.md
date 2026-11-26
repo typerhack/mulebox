@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.52.0 - 2026-11-26 - minor
+M26.1, the rest of the agent review:
+- `mulebox history`: finished jobs, newest first, this project's unless `--all`, with the dashboard History page's filters and `--json` (coordinator/history_api.py, history_query.py moved there; the `history` request).
+- `--json` on `check`, `run`, `wait`, `cancel`, `ok`, `fetch`, `hold` and `logs`: output on stderr, one end object on stdout with `exit`, `notices` (kind and text) and the job's result, `summary` included (client/json_end.py).
+- The `finished` event has `tests`, `keep` and `files` when the job has them.
+- Every fix that undoes an owner's choice starts "for the owner:" (a paused job or project, a drained node, dev mode, cleaning storage).
+- `mulebox machine list --json`; `doctor` names a node that drains, is in dev mode or rests.
+- Contract schema 23, the skill and docs/agents.md.
+
 ## 1.51.0 - 2026-11-26 - minor
 From a review of how well agents can find and use each feature:
 - `mulebox queue --json`: every running and waiting job with its place and why it waits.

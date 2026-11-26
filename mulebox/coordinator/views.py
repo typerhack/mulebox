@@ -12,7 +12,7 @@ JOB_FIELDS = (
 )
 
 
-PAUSED_REASON = "paused by its owner; `mulebox resume <job>` lets it start"
+PAUSED_REASON = "paused; for the owner: `mulebox resume <job>` lets it start"
 
 STATUS_FIELDS = ("project", "job", "branch", "kind", "detached", "created_at", "started_at",
                  "finished_at", "log_size", "worker_version", "usage")

@@ -69,6 +69,6 @@ def is_low(free: int | None, total: int | None = None) -> bool:
 def warning(worker: str, free: int, total: int | None = None) -> str:
     share = f" ({free / total:.0%} of its disk)" if total else ""
     return (f"{worker} has {units.size(free)} free{share}, and jobs can fail for lack of space; "
-            "it takes no job under its `min_free` (5 GB unless set). `mulebox storage clean` "
+            "it takes no job under its `min_free` (5 GB unless set). For the owner: `mulebox storage clean` "
             "removes what its rules allow, `mulebox project clean` lists more and `--yes` removes "
             "it; `docker system df` on the machine shows what Docker holds")

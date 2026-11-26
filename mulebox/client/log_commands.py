@@ -6,7 +6,7 @@ import argparse
 import sys
 from collections.abc import Callable
 
-from mulebox.client import report, summary
+from mulebox.client import json_end, report, summary
 from mulebox.client.commands import connect, guarded
 from mulebox.client.remote import Remote, request
 from mulebox.client.submit import Streams, Watcher
@@ -20,6 +20,7 @@ def register(sub: argparse._SubParsersAction) -> None:
     logs.add_argument("-f", "--follow", action="store_true", help="follow until it finishes")
     logs.add_argument("--summary", action="store_true",
                       help="only why it failed: stage, exit code, last relevant lines")
+    json_end.add(logs)
     logs.set_defaults(func=guarded(_logs, notices=True))
 
 
@@ -27,6 +28,7 @@ def _logs(args: argparse.Namespace) -> int:
     remote = connect()
     watcher = Watcher(remote, Streams())
     watcher.job_id = args.job_id
+    json_end.record(job_id=args.job_id)
     if args.summary:
         return _log_summary(remote, args.job_id)
     if args.follow:
@@ -65,6 +67,7 @@ def _read_log(remote: Remote, job_id: str, offset: int, sink: Callable[[dict], N
 def _log_summary(remote: Remote, job_id: str) -> int:
     body = remote.call(request(MessageType.STATUS, job_id=job_id)).body
     state = body.get("state")
+    json_end.record(state=state, outcome=body.get("outcome"), exit_code=body.get("exit_code"))
     if state != "finished":
         print(f"job {job_id} is {state}; a summary needs it to end")
     elif not summary.wanted(body):
@@ -77,5 +80,7 @@ def _log_summary(remote: Remote, job_id: str) -> int:
         _read_log(remote, job_id, start, lambda chunk: tail.feed(chunk.get("data") or ""))
         if not tail.text and report.log_expired(body):
             report.status(sys.stderr, report.expired_line(job_id))
-        print("\n".join(summary.render(job_id, body, summary.relevant_lines(tail))))
+        lines = summary.render(job_id, body, summary.relevant_lines(tail))
+        json_end.record(summary=lines)
+        print("\n".join(lines))
     return 0

@@ -4,7 +4,7 @@ import pytest
 
 from mulebox.coordinator import store as st
 from mulebox.coordinator.errors import BadRequest
-from mulebox.dashboard.history_query import MAX_TEXT, filters
+from mulebox.coordinator.history_query import MAX_TEXT, filters
 
 from .conftest import NOW
 

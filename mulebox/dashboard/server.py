@@ -23,7 +23,8 @@ from aiohttp import web
 
 from mulebox.coordinator.errors import BadRequest
 from mulebox.coordinator.stats import GROUPS as STAT_FILTERS
-from mulebox.dashboard import (asks_api, cancel, controls, history_query, keys, login,
+from mulebox.coordinator import history_query
+from mulebox.dashboard import (asks_api, cancel, controls, keys, login,
                                metrics_api, node_settings, order_api, pages, storage_api, streams,
                                usage_api)
 from mulebox.dashboard.canceller import Canceller

@@ -10,6 +10,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 from typing import Any
 
+from mulebox.client import machine_health
 from mulebox.client.skill_install import AHEAD, BEHIND, DIFFERS, MISSING, Copy
 from mulebox.common import disk, systems, upgrade
 from mulebox.common.config import FOUND_ON_NODE, SIMULATOR, XCODE, ProjectConfig
@@ -169,6 +170,24 @@ def machines(project: ProjectConfig, workers: list[Worker]) -> list[Finding]:
                              "once, which can take minutes"))
     if set(FOUND_ON_NODE) & set(_needed(project)):
         found += _xcodes(w for w in usable if not node_gaps[str(w.get("worker"))])
+    return found + _not_taking(usable)
+
+
+def _not_taking(workers: Iterable[Worker]) -> list[Finding]:
+    """A node that can run the project but takes no job now, or only some: draining, dev mode,
+    resting or withholding a capability; what it says for itself, and the owner's fix."""
+    found = []
+    for w in workers:
+        name, health = str(w.get("worker")), w.get("health")
+        if w.get("draining"):
+            found.append(Finding(WARN, "machine", f"{name} is draining and takes no new job; "
+                                 f"for the owner: `mulebox machine resume {name}`"))
+        elif w.get("dev"):
+            found.append(Finding(WARN, "machine", f"{name} is in dev mode and takes only jobs "
+                                 f"sent with `--on {name}`"))
+        if said := machine_health.state(health):
+            lines = " ".join(line.strip() for line in machine_health.problem_lines(name, health))
+            found.append(Finding(WARN, "machine", f"{name} is {said}: {lines}".rstrip(": ")))
     return found
 
 

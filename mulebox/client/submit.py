@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, TextIO
 
-from mulebox.client import attention, delta, fetch, report, rerun_lines, summary, take_back
+from mulebox.client import attention, delta, fetch, json_end, report, rerun_lines, summary, take_back
 from mulebox.client.job_body import WARM_ARGV, WARM_JOB_NAME, job_request, submit_body
 from mulebox.client.remote import CoordinatorError, StreamEnded, request
 from mulebox.client.snapshot import current_fingerprint, make_snapshot
@@ -123,6 +123,7 @@ def run_job(
         attention.tell(reply.body, io.err)
         if isinstance(already, dict):
             report.status(io.err, attention.already_line(already))
+            json_end.record(**{**already, "job_id": watcher.job_id, "already": True})
             if already.get("state") == "finished":
                 if detach:  # an id on stdout, as ever; `mulebox wait` gives the result
                     io.out.write(f"{watcher.job_id}\n")
@@ -136,6 +137,7 @@ def run_job(
                 remote.upload(watcher.job_id, snap.path, snap.sha256)
         snap.discard()
         if detach:
+            json_end.record(job_id=watcher.job_id, detached=True)
             _left_running(watcher.job_id, io)
             return 0
         result = watcher.follow()
@@ -184,6 +186,7 @@ def stale_check(root: Path, project: ProjectConfig, fingerprint: str, io: Stream
     except Exception:  # the result stands; only the staleness is unknown
         changed = False
     if changed:
+        json_end.record(stale=True)
         report.status(
             io.err,
             "warning: files changed since the snapshot was taken; this result is stale "
@@ -280,12 +283,14 @@ class Watcher:
         """The last lines of all, after the log and its container logs: the outcome, then what
         went wrong. Everything else a command has to say comes first, so the error stays last."""
         report.status(self.io.err, report.outcome_line(self.job_id, result))
+        json_end.record(**{**result, "job_id": self.job_id})
         if not summary.wanted(result):  # a summary says it itself, before its log lines
             for line in fetch.kept_lines(self.job_id, result):
                 report.status(self.io.err, line)
         if summary.wanted(result):
-            lines = summary.relevant_lines(self.tail)
-            for line in summary.render(self.job_id, result, lines):
+            lines = summary.render(self.job_id, result, summary.relevant_lines(self.tail))
+            json_end.record(summary=lines)
+            for line in lines:
                 report.status(self.io.err, line)
 
     def cancel(self) -> int:

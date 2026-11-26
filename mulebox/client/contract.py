@@ -41,7 +41,7 @@ from mulebox.common.status import STAGES
 # 19: a failed compose job is kept for a rerun: `mulebox check --from-stage <stage>`
 # 20: files back: `keep:` in .mulebox.yml or `--keep`, and `mulebox fetch <job-id>`
 # 21: `mulebox hold <node> -- <cmd>` holds a node for a person; agents only when asked
-SCHEMA = 22
+SCHEMA = 23
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -64,6 +64,7 @@ COMMANDS = {
     "its_state": "mulebox status <job-id>",
     "its_result": "mulebox wait <job-id>",
     "answer_a_check_in": "mulebox ok <job-id>",
+    "past_results": "mulebox history --json",
     "queue": "mulebox queue --json",
     "nodes": "mulebox machine list",
     "after_a_node_fix": "mulebox machine check <node>",
@@ -147,7 +148,7 @@ EVENTS = (
     "its past runs; null when unknown; an estimate, not a promise, and not the time in line); "
     "started has machine; finished has outcome, exit_code and duration_s",
     "finished also has stage, where a job that ended badly failed (null when not known), and "
-    "stop_reason when its outcome is stopped",
+    "stop_reason when its outcome is stopped; tests, keep and files when the job has them",
     "stage comes as a job enters a stage, with stage, number and started_at",
     "check_in comes every timeout_min of a running job, with elapsed_s, stage, output_idle_s, "
     "last_line (the job's last output, redacted), idle_s, job_cpu_pct, cpu_pct and net_kib_s; "

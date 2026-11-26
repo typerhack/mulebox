@@ -79,14 +79,17 @@ RULES = (
     "do not cancel other people's jobs",
     "pause, resume, first, up, down, last, boost and normal steer the line for the owner: use "
     "them only when your user asks",
-    "a waiting reason or fix that resumes a job, project or node, takes a node out of dev mode "
-    "or cleans storage undoes a choice of the node's owner: tell the user, do not run it",
+    "a waiting reason or fix after \"for the owner:\" (resume a job, project or node, end dev "
+    "mode, clean storage) undoes a choice of the node's owner: tell the user, do not run it",
     "exit 1 with [mulebox.internal] on stderr is a fault in mulebox, not in the project: tell "
     "the user, and report it if they want (mulebox feedback guide)",
     "a pinned toolchain version installs itself the first time a job needs it, which can take "
     "minutes; if that fails the job exits 5 and lists the versions the machine has: switch to one "
     "only if it matches the project, otherwise tell the user why the install failed",
     "show the user a feedback draft and get their approval before mulebox feedback post",
+    "--json on check, run, wait, cancel, ok, fetch, hold and logs moves their output to stderr "
+    "and ends with one JSON object on stdout: exit (the command's exit code), notices (each with "
+    "kind and text) and the job's result; an error is {\"error\": {code, message, fix, exit}}",
 )
 
 

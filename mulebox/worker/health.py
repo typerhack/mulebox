@@ -53,7 +53,7 @@ def disk(node: NodeConfig, paths: NodePaths) -> Problem | None:
         if free < floor:
             return ("disk", f"{units.size(free)} free on the disk of its {name} folder, under "
                     f"its min_free of {units.size(floor)}",
-                    f"free space on {node.name}: `mulebox storage clean` removes what its rules "
+                    f"for the owner, to free space on {node.name}: `mulebox storage clean` removes what its rules "
                     "allow, `mulebox project clean` lists more; `docker system df` shows Docker's")
     return None
 

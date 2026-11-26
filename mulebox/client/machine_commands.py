@@ -15,6 +15,7 @@ key off the coordinator (coordinator/machine_api.py, coordinator/worker_keys.py)
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 
@@ -33,8 +34,10 @@ def register(sub: argparse._SubParsersAction) -> None:
     machine = sub.add_parser("machine",
                              help="list, pause (drain), resume, configure or remove nodes")
     actions = machine.add_subparsers(dest="machine_command", metavar="<action>", required=True)
-    actions.add_parser("list", help="every machine, online or not").set_defaults(
-        func=guarded(_list))
+    listed = actions.add_parser("list", help="every machine, online or not")
+    listed.add_argument("--json", action="store_true",
+                        help="every node as the coordinator reports it, with its state")
+    listed.set_defaults(func=guarded(_list))
     drain = actions.add_parser("drain", aliases=["pause"],
                                help="let a machine finish its jobs and take no new ones")
     drain.add_argument("name")
@@ -80,6 +83,9 @@ def per_second(kib_s: float | None) -> str:
 
 def _list(args: argparse.Namespace) -> int:
     rows = connect().call(request(MessageType.MACHINES)).body.get("workers", [])
+    if args.json:
+        print(json.dumps([{**row, "state": state(row)} for row in rows], sort_keys=True))
+        return 0
     if not rows:
         print("no machines yet")
         return 0

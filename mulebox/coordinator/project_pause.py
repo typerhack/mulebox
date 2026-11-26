@@ -31,7 +31,7 @@ def paused(conn: sqlite3.Connection, now: float) -> dict[str, float]:
 
 def reason(project: str, until: float) -> str:
     return (f"project {project} is paused until {time.strftime('%H:%M', time.localtime(until))}; "
-            f"`mulebox project resume {project}` lets it go on")
+            f"for the owner: `mulebox project resume {project}` lets it go on")
 
 
 def control(req: Request) -> Message:

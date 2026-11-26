@@ -16,7 +16,7 @@ import threading
 import time
 from typing import Any, TextIO
 
-from mulebox.client import report
+from mulebox.client import json_end, report
 from mulebox.client.commands import UsageError, connect, guarded
 from mulebox.client.remote import request
 from mulebox.common import units
@@ -37,9 +37,11 @@ def register(sub: argparse._SubParsersAction) -> None:
     held.add_argument("--next", action="store_true", help="go first in line, not behind")
     held.add_argument("argv", nargs="*", metavar="-- CMD",
                       help="a command to run on this machine while the node is held, after --")
+    json_end.add(held)
     held.set_defaults(func=guarded(_hold))
     let_go = sub.add_parser("release", help="let go of a hold")
     let_go.add_argument("job_id")
+    json_end.add(let_go)
     let_go.set_defaults(func=guarded(_release))
 
 
@@ -60,11 +62,13 @@ def _hold(args: argparse.Namespace) -> int:
     remote = connect()
     made = _ask(remote, action="make", node=args.node, slots=args.slots,
                 for_s=seconds(args.for_), next=args.next)
+    json_end.record(job_id=made["job_id"], node=args.node)
     return Holder(remote, made["job_id"], sys.stderr).run(argv, made)
 
 
 def _release(args: argparse.Namespace) -> int:
     said = _ask(connect(), action="release", job_id=args.job_id)
+    json_end.record(job_id=args.job_id, ended=said.get("ended"), state=said.get("state"))
     report.status(sys.stderr, f"hold {args.job_id}: {said.get('ended') or said.get('state')}")
     return 0
 

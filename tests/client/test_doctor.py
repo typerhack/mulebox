@@ -279,3 +279,19 @@ def test_a_low_disk_is_a_warning_that_names_the_cleanup():
                           {"worker": "build-3", "online": True}])
     assert [f.level for f in found] == [doctor.WARN]
     assert "build-1 has 2.0 GB free" in found[0].text and "mulebox project clean" in found[0].text
+
+
+def test_a_node_that_takes_no_job_now_is_said_with_the_owners_fix():
+    from mulebox.client.doctor import _not_taking
+
+    found = _not_taking([
+        {"worker": "build-1", "online": True, "draining": True},
+        {"worker": "build-2", "online": True, "dev": True},
+        {"worker": "build-3", "online": True, "health": {"resting": True, "problems": [
+            {"check": "disk", "message": "1.2 GB free", "since": 0, "fix": "free space"}]}},
+        {"worker": "build-4", "online": True}])
+    text = [f.text for f in found]
+    assert any("build-1 is draining" in t and "for the owner" in t for t in text)
+    assert any("build-2 is in dev mode" in t and "--on build-2" in t for t in text)
+    assert any(t.startswith("build-3 is resting:") and "1.2 GB free" in t for t in text)
+    assert not any("build-4" in t for t in text)

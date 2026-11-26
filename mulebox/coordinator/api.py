@@ -13,7 +13,8 @@ from mulebox.common.log import get_logger
 from mulebox.common import take_paths
 from mulebox.common.config_jobs import MAX_STUCK_AFTER_MIN
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
-from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
+from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, history_api, holds,
+                                 job_control,
                                  leases, line, line_rules, machine_api, needs, node_hold, node_settings,
                                  files, project_orders, project_pause, projects, queue, rerun, reuse,
                                  runner_api,
@@ -290,6 +291,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.PROJECT_PAUSE: project_pause.control,
     MessageType.QUEUE_RULES: line_rules.control,
     MessageType.STATS: stats_api.summary,
+    MessageType.HISTORY: history_api.history,
     MessageType.USAGE: usage_api.usage,
     MessageType.LOGS: logs,
     MessageType.TAKE: taken.take,

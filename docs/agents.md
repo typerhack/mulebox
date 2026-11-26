@@ -66,6 +66,8 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue`; `--json` gives every job with its place and why it waits |
+| past results, such as the last pass on main | `mulebox history` (this project; `--all`, `--result`, `--job`, `--search`, `--json`) |
+| one JSON object at the end instead of text | `--json` on `check`, `run`, `wait`, `cancel`, `ok`, `fetch`, `hold` and `logs`: output on stderr, then `{"exit", "notices", ...the result}` on stdout |
 | hold a node for your user, only when they ask (a benchmark, a look by hand) | `mulebox hold <node> -- <cmd>`; no job starts there until it ends. With no command, until Ctrl-C or `mulebox release <job-id>`, at most `--for` (2h) |
 | ask for more disk space for mulebox, only with your user's yes | `mulebox storage ask --size <size> --reason "<why>"`; the owner answers on the dashboard, and your next command tells you |
 | a node in dev mode, being set up | it takes only jobs sent with `--on <node>`; use that only when your user asks |
@@ -215,7 +217,9 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
   `estimate_s` needs 3 past passed runs. A `stage` event comes as the job enters each stage. Ignore events and keys you do not know. In `finished`, `stage`
   is where a job that ended badly failed, null when that is not known. `exit_code` is the code
   the command exits with (5 could not start, 76 stopped, 124 for a hard timeout, 130 cancelled,
-  75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. Questions are in
+  75 interrupted). `outcome` can be `stopped`, then `stop_reason` says why. `finished` also has
+  `tests` (what ran, test proof) and `keep` and `files` (for `mulebox fetch`) when the job has
+  them. A waiting reason or fix after "for the owner:" is the owner's to do: tell the user. Questions are in
   section 1a. `mulebox status <job-id>` answers once and exits 0 whatever the job did.
 - mulebox uploads a snapshot of your worktree: tracked and untracked files that git does
   not ignore. Secret files are never uploaded (`.env*`, `.envrc`, `.netrc`, `.npmrc`,

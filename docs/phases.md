@@ -1350,6 +1350,20 @@ runs a job.
       back; Undo now waits 1.5 s, and the stepper takes the place of "Another value". The same
       deploy showed an open page reloading itself on the upgrade (1.31.0).
 
+## M26: Agents read everything (the user's ask, 2026-11-26)
+From a review of how well an agent can find and use each feature from the command line, after
+contract schema 22 (1.51.0) closed the contract's and skill's gaps.
+- [~] M26.1 What an agent can parse, built 2026-11-26 (1.52.0), with tests: `mulebox history`
+      (the dashboard's History filters, coordinator/history_api.py), `--json` with one end object
+      on `check`, `run`, `wait`, `cancel`, `ok`, `fetch`, `hold` and `logs` (client/json_end.py),
+      notices in it with their kind, `tests`, `keep` and `files` in the `finished` event, "for
+      the owner:" before every fix that undoes an owner's choice, `machine list --json`, and
+      `doctor` naming a node that drains, is in dev mode or rests. Contract schema 23. Done when:
+      through the real CLI on the real node, `check --json` of a passing and of a failing job
+      gives the result with its tests and summary on stdout and the log on stderr, `history
+      --result failed --json` lists that failure, and an agent's next command after a detached
+      job gives its result as a notice in `--json`.
+
 ## Parking lot
 - Remote access while away, and waking a node (the user's ask, 2026-11-16; researched, nothing
   built). A VPS as a connector only, never a node or the coordinator: a coordinator there could make
