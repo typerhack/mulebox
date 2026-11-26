@@ -1,6 +1,7 @@
 """`--json` on the commands that print as they go (check, run, wait, cancel, ok, fetch, hold,
 logs). Their usual output, the log included, goes to stderr; stdout gets one JSON object at the
-end, `{"exit", "notices", ...}`: the command's exit code, the notices it gave (attention.py), and
+end, `{"exit", "notices", ...}`: the command's exit code, the notices it gave (attention.py: kind, text and the coordinator's
+data), and
 what the command recorded here, such as a job's result. An error gives `{"error": ...}` instead,
 as on every --json command (common/error_report.py).
 """

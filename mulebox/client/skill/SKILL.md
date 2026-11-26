@@ -72,7 +72,8 @@ with.
   project's unless `--all`, with `--result failed`, `--job <name>` or `--search <branch>`.
 - `--json` on `check`, `run`, `wait`, `cancel`, `ok`, `fetch`, `hold` and `logs` sends their
   output, the log too, to stderr, and ends with one JSON object on stdout: `exit`, `notices`
-  (each with `kind` and `text`, such as a result from while you were away) and the job's result
+  (each with `kind`, `text` and the coordinator's `data`, such as a result from while you were
+  away) and the job's result
   (`outcome`, `exit_code`, `tests`, `files`, `summary`). An error is the error object alone.
 - `mulebox check --on <node>` sends a job to that node alone, such as a node the user is setting
   up (a node in dev mode takes only these). Use it only when the user asks for that node.

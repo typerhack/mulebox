@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.52.1 - 2026-11-26 - patch
+- A notice in a `--json` end object keeps its own `kind` (`finished_away`, `question`, ...); the coordinator's data is under `data`, where a job's `kind` had overwritten it. Found in the M26.1 drill.
+
 ## 1.52.0 - 2026-11-26 - minor
 M26.1, the rest of the agent review:
 - `mulebox history`: finished jobs, newest first, this project's unless `--all`, with the dashboard History page's filters and `--json` (coordinator/history_api.py, history_query.py moved there; the `history` request).

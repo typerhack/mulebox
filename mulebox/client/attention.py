@@ -172,7 +172,7 @@ def status_lines(body: dict[str, Any]) -> list[str]:
 def tell(body: dict[str, Any], err: TextIO) -> None:
     """Questions waiting for an answer and results from while away, from a reply's body."""
     for kind, item, text in notices(body):
-        json_end.noticed({"kind": kind, "text": text, **item})
+        json_end.noticed({"kind": kind, "text": text, "data": item})
         report.status(err, text)
 
 

@@ -17,7 +17,7 @@ def test_output_goes_to_stderr_and_one_object_to_stdout(capsys):
     def handler(args):
         print("log line")
         json_end.record(job_id="job-1", outcome="passed", missing=None)
-        attention.tell({"finished_away": [{"job_id": "job-0", "project": "example-app",
+        attention.tell({"finished_away": [{"job_id": "job-0", "kind": "job", "project": "example-app",
                                            "job": "check", "outcome": "failed",
                                            "exit_code": 1}]}, __import__("sys").stderr)
         return 7
@@ -26,7 +26,9 @@ def test_output_goes_to_stderr_and_one_object_to_stdout(capsys):
     out, err = capsys.readouterr()
     end = json.loads(out)
     assert end["exit"] == 7 and end["job_id"] == "job-1" and "missing" not in end
-    assert end["notices"][0]["kind"] == "finished_away" and end["notices"][0]["job_id"] == "job-0"
+    notice = end["notices"][0]
+    assert notice["kind"] == "finished_away" and notice["data"]["job_id"] == "job-0"
+    assert "finished while you were away" in notice["text"]
     assert "log line" in err and "log line" not in out
 
 

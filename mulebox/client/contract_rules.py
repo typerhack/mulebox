@@ -89,7 +89,7 @@ RULES = (
     "show the user a feedback draft and get their approval before mulebox feedback post",
     "--json on check, run, wait, cancel, ok, fetch, hold and logs moves their output to stderr "
     "and ends with one JSON object on stdout: exit (the command's exit code), notices (each with "
-    "kind and text) and the job's result; an error is {\"error\": {code, message, fix, exit}}",
+    "kind, text and data) and the job's result; an error is {\"error\": {code, message, fix, exit}}",
 )
 
 
