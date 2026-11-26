@@ -1060,6 +1060,13 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
 - [ ] M24.2 Rerun from the failed stage: a failed job's folder and containers stay up for a while
       (a limit, then the usual cleanup), and `mulebox check --from-stage <stage>` sends the changes and
       runs again from there, with no new setup and no new `compose up`.
+      Design note 2026-11-26 (1.45.3): design.md, Rerun from the failed stage, with the user's
+      decisions: the slot is freed and the kept containers' memory counts as used room; kept
+      `keep_failed_min` (15) minutes, a node setting; only on request, never automatic; a full run
+      with a note when the skipped stages would not hold. Done when: on the real node, a compose
+      job that fails, rerun with `--from-stage command` after a code fix, skips `images`,
+      `services` and `setup` and passes; a rerun after a compose file change runs in full and
+      says why; nothing is left after `keep_failed_min`.
 - [ ] M24.3 Files back: a job names files or folders to keep (`keep:` in `.mulebox.yml`, such as a
       coverage report, Playwright's report and screenshots, a build), and `mulebox fetch <id>` brings
       them to the dev machine, through safepath on the node, kept as long as the job's log.

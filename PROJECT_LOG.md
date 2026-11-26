@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.45.3 - 2026-11-26 - patch
+- docs/design.md: Rerun from the failed stage (M24.2), with the user's decisions: a failed compose job's containers kept `keep_failed_min` (15) minutes with no slot but their memory counted as room, `mulebox check --from-stage <stage>` only on request, and a full run with a note when the skipped stages would not hold. docs/phases.md names its done-when.
+
 ## 1.45.2 - 2026-11-26 - patch
 - docs/phases.md: M24.9 done on the real node, upgraded to 1.45.1: a missing toolchain exits 5 with `[toolchain.failed]` and its fix in the summary, and a broken node.toml prints `node.config` and its fix.
 
