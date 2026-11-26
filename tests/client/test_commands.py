@@ -6,6 +6,7 @@ import tarfile
 import pytest
 
 from mulebox import cli
+from tests.client.conftest import DEV_MACHINE
 
 JOB = "job-01JC3X0000000000000000ABCD"
 
@@ -176,7 +177,7 @@ def test_queue_prints_a_plain_table(fake, capsys):
     assert cli.main(["queue"]) == 0
     out = capsys.readouterr().out
     assert JOB in out and "Queued (1)" in out
-    assert fake.requests()[0]["body"] == {"limit": 20}
+    assert fake.requests()[0]["body"] == {"limit": 20, "dev_machine": DEV_MACHINE}
 
 
 def test_queue_says_where_the_dashboard_is_on_stderr(fake, capsys):

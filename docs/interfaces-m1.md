@@ -72,6 +72,12 @@ prove its tests ran becomes `failed` with exit code 8 on the coordinator (coordi
 
 ## Wire usage (protocol.py; replies reuse `request_id`)
 
+Every request a dev machine sends other than `submit` carries `dev_machine`: `{client, version,
+skill, install}` (client/dev_machine.py; from 1.43.0). The coordinator keeps it for the dashboard
+(coordinator/clients.py) and takes it off the body before the request is handled; an older
+coordinator ignores it, and a bad one is left out, never refused. `submit` says the same in its
+own fields, `client`, `client_version`, `skill` and `client_install`.
+
 `submit_ok`, `status`, `queue_ok` and `machines_ok` also carry `dashboard`: `{"url": str | null}`,
 null when the dashboard is only reachable through a tunnel, or `null` when it is off. Older
 coordinators leave it out, and the client then prints nothing.

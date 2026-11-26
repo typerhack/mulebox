@@ -1,6 +1,7 @@
 """The client's connection to the coordinator: `mulebox rpc` over ssh (interfaces-m1.md).
 
-- `call(msg)`: one request line on stdin, one reply line on stdout.
+- `call(msg)`: one request line on stdin, one reply line on stdout. Every request but a
+  submit carries `dev_machine` (client/dev_machine.py), so the node knows this machine's mulebox.
 - `upload(job_id, path, sha256)`: `rpc-upload <job_id> <sha256>` with the tar.gz streamed
   on stdin; the reply is `status_ok`.
 - `watch(job_id, offset, lease, log)`: the request line, then a heartbeat line every 20 s on
@@ -13,11 +14,12 @@ raises ProtocolError; connection failures raise `common.ssh.SSHUnavailable`.
 from __future__ import annotations
 
 import threading
+from dataclasses import replace
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
-from mulebox.client import sshio
+from mulebox.client import dev_machine, sshio
 from mulebox.common import ssh, units
 from mulebox.common.config import ClientConfig
 from mulebox.common.errors import MuleboxError
@@ -67,6 +69,8 @@ class Remote:
         self.heartbeat_s = heartbeat_s
 
     def call(self, msg: Message) -> Message:
+        if msg.type != MessageType.SUBMIT:  # a submit says it in its own fields
+            msg = replace(msg, body={**msg.body, dev_machine.FIELD: dev_machine.said()})
         argv = [self.program, "rpc"]
         result = ssh.run_remote(
             self.target,

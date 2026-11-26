@@ -36,7 +36,7 @@ def _client(client: dict[str, Any], version: str) -> list[dict[str, str]]:
         out.append({"kind": "client", "level": WARNING, "name": name,
                     "text": f"Dev machine {name} runs mulebox {found}, the node {version}.",
                     "fix": ("Run `mulebox setup <host>` from it to bring the machine up."
-                            if newer else f"Upgrade mulebox on it: {upgrade.EITHER}.")})
+                            if newer else f"Upgrade mulebox on it: {upgrade.for_kind(client.get('install'))}.")})
     if client["skill"] == "out_of_date":
         out.append({"kind": "skill", "level": WARNING, "name": name,
                     "text": f"The mulebox skill on {name} is out of date.",

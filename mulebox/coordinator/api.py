@@ -47,6 +47,7 @@ def handle(store: Store, staging: Staging, msg: Message, now: float, *,
         handler = _HANDLERS.get(msg.type)
         if handler is None:
             raise BadRequest(f"'{msg.type}' is not a request the coordinator answers here")
+        clients.heard(store, msg.body, now)  # every request from a dev machine says its mulebox
         return handler(Request(store, staging, msg, now, cluster_slots, dashboard))
     except CoordinatorError as exc:
         return error_message(msg.request_id, exc.code, str(exc))

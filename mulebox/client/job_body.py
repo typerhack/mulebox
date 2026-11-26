@@ -3,16 +3,14 @@
 from __future__ import annotations
 
 import platform
-import socket
 from collections.abc import Sequence
 
-from mulebox.client import skill_install
+from mulebox.client import dev_machine
 from mulebox.client.snapshot import Snapshot
 from mulebox.common import compose, isolation
 from mulebox.common.config import ProjectConfig
 from mulebox.common.config_jobs import HOST_PORTS_KEY, join_ports
 from mulebox.common.ids import new_id
-from mulebox.version import get_version
 
 RUN_JOB_NAME = "run"
 WARM_JOB_NAME = "warm"
@@ -52,6 +50,7 @@ def client_os() -> str:
 def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapshot,
                 detach: bool = False, reuse: bool = False, take: tuple[str, ...] = (),
                 on: str | None = None, fewer_tests: str | None = None) -> dict:
+    me = dev_machine.said()
     return {
         "project": project.project,
         "job": job,
@@ -61,10 +60,11 @@ def submit_body(project: ProjectConfig, job: str, argv: list[str], snap: Snapsho
         "base_commit": snap.base_commit,
         "branch": snap.branch,
         **({"branches": list(snap.branches)} if snap.branches else {}),  # for the node's cleanup
-        "client": socket.gethostname() or "client",
+        "client": me["client"],
         "client_os": client_os(),
-        "client_version": get_version(),
-        "skill": skill_install.state_here(),
+        "client_version": me["version"],
+        "skill": me["skill"],
+        "client_install": me["install"],
         "setup": project.setup,
         "install": project.install,
         "toolchain": dict(project.toolchain),

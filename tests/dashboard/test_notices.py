@@ -58,3 +58,39 @@ def test_a_bad_skill_state_is_refused(store, staging):
 def test_a_dev_machine_not_seen_for_weeks_is_left_out(store, staging, data):
     submit(store, staging, NOW, client="alice-laptop", client_version="0.1.0")
     assert data.machines(NOW + 15 * 86400)["notices"] == []
+
+
+def test_any_request_records_the_dev_machine_and_names_its_upgrade(store, staging, data):
+    submit(store, staging, NOW, client="alice-laptop", client_version="0.1.0")
+    said = {"client": "alice-laptop", "version": "0.1.0", "skill": "current", "install": "uv"}
+    reply = call(store, staging, "queue", now=NOW + 1, dev_machine=said)
+    assert reply.type == "queue_ok"
+    [notice] = data.machines(NOW + 2)["notices"]
+    assert "uv tool upgrade mulebox" in notice["fix"] and "pipx" not in notice["fix"]
+    call(store, staging, "status", now=NOW + 3, job_id="job-none",
+         dev_machine={**said, "version": get_version(), "install": "checkout"})
+    assert data.machines(NOW + 4)["notices"] == []  # upgraded, no job sent since: in step
+
+
+def test_a_checkout_is_told_to_pull():
+    found = notices.notices(V, [], [{**client("0.81.0"), "install": "checkout"}], NOW)
+    assert "git pull" in found[0]["fix"]
+
+
+def test_a_bad_dev_machine_field_is_left_out_not_refused(store, staging, data):
+    reply = call(store, staging, "queue", now=NOW, dev_machine={"client": "x", "version": 5})
+    assert reply.type == "queue_ok"
+    reply = call(store, staging, "queue", now=NOW, dev_machine="nonsense")
+    assert reply.type == "queue_ok"
+    assert data.machines(NOW + 1)["notices"] == []
+
+
+def test_an_unchanged_word_is_not_written_on_every_request(store, staging):
+    said = {"client": "alice-laptop", "version": V, "skill": "current", "install": "pipx"}
+    call(store, staging, "queue", now=NOW, dev_machine=said)
+    call(store, staging, "queue", now=NOW + 60, dev_machine=said)
+    with store.read() as conn:
+        assert conn.execute("SELECT seen_at FROM clients").fetchone()[0] == NOW
+    call(store, staging, "queue", now=NOW + 700, dev_machine=said)
+    with store.read() as conn:
+        assert conn.execute("SELECT seen_at FROM clients").fetchone()[0] == NOW + 700

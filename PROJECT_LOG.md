@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.43.0 - 2026-11-26 - minor
+- The out-of-step strip no longer reads a dev machine as behind after an upgrade with no job sent since: every request a dev machine sends now says its mulebox, skill state and install (`dev_machine`, client/dev_machine.py), not only `submit`. Seen on the real dashboard: the dev machine read as 1.42.2 for a day while it ran 1.42.4, as 1.42.3 and 1.42.4 were docs only and sent no job. The coordinator takes the field off the body before handling, writes it only when it changed or every 10 minutes, and ignores a bad one rather than refusing the request; an older coordinator ignores it.
+- The strip's fix names the upgrade for how the dev machine installed mulebox: `git pull` for a checkout, pipx or uv, else both (`clients.install`, schema 34; common/upgrade.py `kind` and `for_kind`). Before, it always said pipx, wrong for a checkout.
+- Docs: interfaces-m1.md, interfaces-m2.md.
+
 ## 1.42.4 - 2026-11-25 - patch
 - docs/releasing.md: the web checks `mulebox check` does not run (`npm run lint` with its class check, types, tests), and why the `macos` job runs on GitHub's machines and what to do when GitHub gives it none.
 

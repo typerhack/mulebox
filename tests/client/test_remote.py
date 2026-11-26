@@ -7,6 +7,7 @@ from mulebox.client.remote import CoordinatorError, Remote, remote_program, requ
 from mulebox.common.config import ClientConfig
 from mulebox.common.protocol import MessageType
 from mulebox.common.ssh import SSHUnavailable
+from tests.client.conftest import DEV_MACHINE
 
 JOB = "job-01JC3X0000000000000000ABCD"
 
@@ -21,7 +22,7 @@ def test_call_sends_one_line_and_checks_the_reply(fake, client_config):
     msg = request(MessageType.STATUS, job_id=JOB)
     reply = Remote(client_config).call(msg)
     assert reply.type is MessageType.STATUS_OK and reply.request_id == msg.request_id
-    assert fake.requests()[0]["body"] == {"job_id": JOB}
+    assert fake.requests()[0]["body"] == {"job_id": JOB, "dev_machine": DEV_MACHINE}
     argv = fake.argv()
     assert argv[:2] == ["-T", "-o"] and "build-1" in argv
     assert shlex.split(argv[argv.index("--") + 1]) == [".mulebox/bin/mulebox", "rpc"]
@@ -103,3 +104,11 @@ def test_garbage_reply_is_a_protocol_error(fake, client_config, monkeypatch, tmp
     monkeypatch.setattr(ssh, "SSH_BINARY", str(script))
     with pytest.raises(CoordinatorError, match="bad reply"):
         Remote(ClientConfig(coordinator="build-1")).call(request(MessageType.QUEUE))
+
+
+def test_a_submit_says_it_in_its_own_fields_not_twice(fake, client_config):
+    fake.scenario()
+    body = {name: "x" for name in ("project", "job", "idempotency_key", "fingerprint",
+                                   "base_commit", "client")}
+    Remote(client_config).call(request(MessageType.SUBMIT, argv=["true"], **body))
+    assert "dev_machine" not in fake.requests()[0]["body"]

@@ -311,10 +311,13 @@ The panel feeds the Machines box, the lanes above and `/api/machines`.
   worst level's colour, and as a mark with the count in the header that brings the strip into
   view; both hidden while empty. A notice is an online worker on another mulebox than the coordinator,
   a dev machine seen in the last 14 days on another mulebox than the node, or a dev machine
-  whose skill differs from its mulebox's. Dev machines say their `client_version` and `skill`
-  (`current`, `out_of_date`, `none`) with every `submit`; the newest word per dev machine is kept in
-  the `clients` table (schema 19, coordinator/clients.py). Dev machines older than 0.83.0 say neither
-  and are not listed. Nothing is compared with a release: only installs that disagree.
+  whose skill differs from its mulebox's. Dev machines say their `client_version`, `skill`
+  (`current`, `out_of_date`, `none`) and `client_install` (`checkout`, `pipx`, `uv`, `other`) with
+  every `submit`, and since 1.43.0 the same as `dev_machine` on every other request
+  (interfaces-m1.md), so an upgrade shows before the next job; the newest word per dev machine is
+  kept in the `clients` table (schema 19, `install` schema 34, coordinator/clients.py), and a dev
+  machine's fix names the upgrade for its install (`git pull` for a checkout). Dev machines older
+  than 0.83.0 say neither and are not listed. Nothing is compared with a release: only installs that disagree.
 
 ## `lan` mode
 

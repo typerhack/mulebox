@@ -34,6 +34,18 @@ def write(repo: Path, files: dict[str, str]) -> None:
         path.write_text(text)
 
 
+DEV_MACHINE = {"client": "alice-laptop", "version": "1.0.0", "skill": "current", "install": "uv"}
+
+
+@pytest.fixture(autouse=True)
+def dev_machine_said(monkeypatch):
+    """What every request says about this dev machine: an example, not this host's own name
+    or its real skill copies (client/dev_machine.py)."""
+    from mulebox.client import dev_machine
+    monkeypatch.setattr(dev_machine, "said", lambda: dict(DEV_MACHINE))
+    return DEV_MACHINE
+
+
 PROJECT_YML = "project: example-app\njobs:\n  check: echo ok\n  test: exit 3\n"
 
 
