@@ -50,7 +50,7 @@ def test_an_upgrade_that_does_not_hold_goes_back_and_restarts_the_old_services(t
     assert done.returncode == 1
     assert link == f"venvs/{venvs(tmp_path)[0]}"  # the one before
     assert calls[-1].startswith("old service install --config")
-    assert "went back to mulebox old" in done.stderr
+    assert f"went back to mulebox old, in {link}" in done.stderr
     assert "the upgrade was undone; the version before runs again" in done.stderr
 
 

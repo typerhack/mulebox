@@ -92,7 +92,7 @@ roll_back() {
     ln -s "venvs/$PREVIOUS_VENV" "$link"
     "$back/bin/python" -c 'import os, sys; os.replace(sys.argv[1], sys.argv[2])' "$link" "$VENV"
     sync
-    say "mulebox install: went back to $("$BIN" --version 2>/dev/null || echo "$PREVIOUS_VENV")" >&2
+    say "mulebox install: went back to $("$BIN" --version 2>/dev/null || echo mulebox), in venvs/$PREVIOUS_VENV" >&2
     if ! "$BIN" service install --config "$NODE_TOML" >&2; then
         say "mulebox install: the earlier version's services did not start either (see above)" >&2
         return 1

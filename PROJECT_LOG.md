@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.49.1 - 2026-11-26 - patch
+- Going back names the venv as well as the version, as a broken build can carry the same version (machine/venv.sh); found in the drill on the node.
+- docs/phases.md: M23.7 done on the real node.
+
 ## 1.49.0 - 2026-11-26 - minor
 - Upgrades on trial (M23.7; design.md, Upgrades on trial): after an upgrade restarts the services, `mulebox service trial` watches them for 60 s (`MULEBOX_TRIAL_S`); each must stay the same run (systemd's invocation id, launchd's pid: `Manager.instance`), and the worker must reach its coordinator with the new version (services/trial.py).
 - The worker writes `<staging>/worker-state/contact` after its first reply that is no error (worker/contact.py).
