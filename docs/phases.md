@@ -1101,15 +1101,17 @@ machine. Its place after M23 is not settled. Each needs a design note in design.
       and `mulebox doctor`, exit 3; `status --json` and `projects --json` the same on stdout.
       Found there and fixed 1.44.1: a job id of the wrong shape read `request.invalid` with a
       `--help` fix; it is `job.not_found` now.
-- [~] M24.9 The node's errors with a code and a fix too (the user's ask, 2026-11-26: what M24.7
+- [x] M24.9 The node's errors with a code and a fix too (the user's ask, 2026-11-26: what M24.7
       left for later). Built 2026-11-26 (1.45.0): the node's own commands through
       common/error_report.py, the runner hooks and guard in GitHub's job log, and a job that
       could not start ends its log with `[<code>]` and a `fix:` line (common/start_note.py), kept
       by the summary; 57 codes in all, with tests. Done when: on the real node, a job pinning a
       toolchain that does not exist exits 5 with `[toolchain.failed]` and its fix in the summary,
       and a node command with a broken node.toml prints `node.config` and its fix.
-      Not deployed yet: the node lost power on 2026-11-26 before the upgrade, so it still runs
-      1.44.1. When it is back: `mulebox setup <node> --queued`, then the drill above.
+      Done 2026-11-26 (1.45.2) on the real node, upgraded to 1.45.1 once its power was back: a job
+      pinning node 99.99.0 exited 5, its log and summary ending `[toolchain.failed]` with the
+      versions the node has and its fix; `mulebox toolchain list` with a broken node.toml printed
+      `node.config` and its fix, exit 2. The drill's project was reset after.
 - [x] M24.8 A stuck job said as stuck (the user's ask, 2026-11-14): a running job with no output and
       next to no CPU of its own for a while (proposed: 2 minutes) is marked "looks stuck" in
       `mulebox status`, `wait` and `events` (an event of its own), with what it last printed and

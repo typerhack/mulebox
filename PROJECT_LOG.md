@@ -8,6 +8,9 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.45.2 - 2026-11-26 - patch
+- docs/phases.md: M24.9 done on the real node, upgraded to 1.45.1: a missing toolchain exits 5 with `[toolchain.failed]` and its fix in the summary, and a broken node.toml prints `node.config` and its fix.
+
 ## 1.45.1 - 2026-11-26 - patch
 - docs/phases.md: M24.9 waits for the node, which lost power before its upgrade to 1.45; it runs 1.44.1 until then.
 
