@@ -4,10 +4,13 @@
 #   bash install.sh /path/to/mulebox-<version>-py3-none-any.whl
 #
 # Safe to rerun: an upgrade installs the new wheel and restarts the services.
-# Never uses sudo and never deletes a directory: an old venv is moved into
-# ~/.mulebox/tmp, and only exact, known temp files are removed. node.toml.example must sit
-# next to this script (`mulebox setup` sends it). The services (systemd units or launchd agents)
+# Each install builds a venv of its own under ~/.mulebox/venvs and swaps it in with one rename of
+# the ~/.mulebox/venv link, so a power cut at any moment leaves a whole mulebox (docs/design.md,
+# Sudden power loss). Never uses sudo. The one directory it deletes is an old venv of its own,
+# past the one in use and the one before it; otherwise only exact, known temp files are removed. node.toml.example must sit
+# and venv.sh must sit next to this script (`mulebox setup` sends them). The services (systemd units or launchd agents)
 # are mulebox's own: `mulebox service install` writes and starts them (mulebox/services/).
+# venv.sh, beside this file, holds the venv steps.
 # Runs on the bash a Mac has (3.2), so nothing newer than that is used.
 # Environment: MULEBOX_PYTHON picks the Python to use (default python3). MULEBOX_COORDINATOR
 # (an ssh target) and MULEBOX_COORDINATOR_KEY (an absolute key path) make a new node.toml a
@@ -17,12 +20,15 @@ set -euo pipefail
 
 MB_HOME="$HOME/.mulebox"
 MB_TMP="$MB_HOME/tmp"
-VENV="$MB_HOME/venv"
 BIN="$MB_HOME/bin/mulebox"
 CONFIG_DIR="$HOME/.config/mulebox"
 NODE_TOML="$CONFIG_DIR/node.toml"
 PYTHON="${MULEBOX_PYTHON:-python3}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HERE="${BASH_SOURCE[0]}"  # this file's folder, with no outside tool (tests run with a bare PATH)
+case "$HERE" in */*) HERE="${HERE%/*}" ;; *) HERE=. ;; esac
+SCRIPT_DIR="$(cd "$HERE" && pwd)"
+# shellcheck source=SCRIPTDIR/venv.sh
+source "$SCRIPT_DIR/venv.sh"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'mulebox install: error: %s\n' "$*" >&2; exit 1; }
@@ -85,57 +91,9 @@ python_minor() {  # major.minor of $PYTHON, e.g. 3.12
     "$PYTHON" -c 'import sys; print("%d.%d" % sys.version_info[:2])'
 }
 
-venv_minor() {  # major.minor the venv was built with, from pyvenv.cfg ("" if none)
-    local cfg="$1/pyvenv.cfg"
-    [ -f "$cfg" ] || return 0
-    sed -n 's/^version[_a-z]* *= *\([0-9][0-9]*\.[0-9][0-9]*\).*/\1/p' "$cfg" | head -n 1
-}
-
-venv_hint() {
-    say "" >&2
-    say "Python cannot create virtual environments here. On Ubuntu or Debian run:" >&2
-    say "    sudo apt-get install python3-venv" >&2
-    say "then run this installer again." >&2
-    exit 1
-}
-
 check_wheel() {
     [ -f "$1" ] || die "wheel not found: $1"
     case "$1" in *.whl) ;; *) die "not a wheel file: $1" ;; esac
-}
-
-# --- venv and package ----------------------------------------------------------------
-
-venv_is_current() {
-    [ -x "$VENV/bin/python" ] && [ "$(venv_minor "$VENV")" = "$(python_minor)" ] \
-        && "$VENV/bin/python" -m pip --version >/dev/null 2>&1
-}
-
-# Build a fresh venv under ~/.mulebox/tmp (this is also the "venv works" check) and swap
-# it in with mv. An old venv is moved aside into ~/.mulebox/tmp, never deleted.
-make_venv() {
-    local new stamp
-    new="$(mktemp -d "$MB_TMP/venv-new.XXXXXX")"
-    "$PYTHON" -m venv "$new" >/dev/null 2>&1 || venv_hint
-    "$new/bin/python" -m pip --version >/dev/null 2>&1 || venv_hint
-    if [ -e "$VENV" ] || [ -L "$VENV" ]; then
-        stamp="$(date +%Y%m%d-%H%M%S)"
-        mv "$VENV" "$MB_TMP/venv-old-$stamp.$$"
-        say "Moved the previous venv to $MB_TMP/venv-old-$stamp.$$ (safe to delete)."
-    fi
-    mv "$new" "$VENV"
-    say "Created $VENV with Python $(python_minor)."
-}
-
-install_wheel() {
-    local pip=("$VENV/bin/python" -m pip --disable-pip-version-check -q)
-    # Dependencies first, then force the wheel itself so a rerun with the same version
-    # still replaces the files (and writes the entry point for this venv's location).
-    "${pip[@]}" install "$1"
-    "${pip[@]}" install --no-deps --force-reinstall "$1"
-    mkdir -p "$MB_HOME/bin"
-    ln -sfn "$VENV/bin/mulebox" "$BIN"
-    link_on_path
 }
 
 # The same `mulebox` name on a node as on the dev machine. A real file of that name is
@@ -273,12 +231,10 @@ main() {
     check_python
     [ -d "$MB_HOME" ] || mkdir -m 750 "$MB_HOME"
     mkdir -p "$MB_TMP"
-    if venv_is_current; then
-        say "Reusing $VENV (Python $(python_minor))."
-    else
-        make_venv
-    fi
+    new_venv
     install_wheel "$wheel"
+    swap_venv
+    prune_venvs
     write_node_config
     read_node_config
     make_roots

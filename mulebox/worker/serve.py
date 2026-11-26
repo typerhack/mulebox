@@ -19,6 +19,7 @@ from mulebox.worker.docker import Docker
 from mulebox.worker.executor import Executor
 from mulebox.worker.link import CoordinatorLink
 from mulebox.worker.live_config import LiveConfig
+from mulebox.worker import power_cut
 from mulebox.worker.paths import NodePaths
 
 LOG = get_logger("worker.serve")
@@ -43,6 +44,7 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
                                             ci, services,
                                             places=PlaceGroups(paths.runners, docker)),
                                         controls=steer), live=live)
+    power_cut.after_start(paths, power_cut.current_boot())  # before recovery cleans up
     agent.recover()
     agent.check_now(agent.clock())  # its own health, before it claims (agent_health.py)
     places = PlaceKeeper(node.name, link, paths)  # isolated runners: a container per CI job
@@ -56,3 +58,4 @@ def serve(node: NodeConfig, link: CoordinatorLink, executor: Executor, *,
         stop.wait(agent.wait_s())
     places.shutdown()
     agent.shutdown()
+    power_cut.stopped(paths)

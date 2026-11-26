@@ -32,6 +32,7 @@ def test_the_wheel_holds_code_installer_and_metadata(tmp_path):
     names = zipfile.ZipFile(built).namelist()
     assert "mulebox/cli.py" in names
     assert "mulebox/machine/install.sh" in names
+    assert "mulebox/machine/venv.sh" in names  # install.sh sources it
     assert "mulebox/machine/systemd/mulebox-worker.service" in names
     assert not [name for name in names if name.startswith("mulebox/dashboard/static/")]
     assert not [name for name in names if "__pycache__" in name or name.endswith(".pyc")]

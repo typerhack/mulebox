@@ -16,6 +16,7 @@ from pathlib import Path
 from mulebox.common.config import ConfigError, load_node_config, node_config_path
 from mulebox.common.errors import MuleboxError
 from mulebox.services.manager import service_path
+from mulebox.worker import node_file
 
 Check = Callable[[Sequence[str]], bool]
 _TIMEOUT_S = 30
@@ -44,7 +45,7 @@ def fill_capabilities(path: Path, found: list[str]) -> list[str]:
     text = path.read_text(encoding="utf-8")
     if not found or not _LINE.search(text):
         return []
-    path.write_text(_LINE.sub(f"capabilities = {json.dumps(found)}", text), encoding="utf-8")
+    node_file.replace(path, _LINE.sub(f"capabilities = {json.dumps(found)}", text))
     return found
 
 

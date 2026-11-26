@@ -104,6 +104,47 @@ States: `uploading -> queued -> starting -> running -> cleaning -> finished`
 - Node unreachable: the client fails fast with a clear message and never falls
   back to running locally on its own.
 
+### Sudden power loss (M23.12, 2026-11-26)
+
+Power cuts are common at some nodes' places, and a cut gives the worker no chance to report its
+job. A node comes back by itself once the power does (its BIOS's "restore on AC power loss"), and
+what it does then rests on the restart rules above, with these on top:
+
+- **The services** are user services that start at boot (systemd with linger, launchd at login).
+- **The store** is SQLite in WAL mode with `synchronous = FULL`: a commit the coordinator answered
+  is on disk, so a submitted job or a result it took is never lost to a cut (NORMAL could roll
+  the last ones back).
+- **Jobs that ran** are `interrupted` (exit 75), never replayed: the coordinator's start marks
+  every active job whose worker lease ran out, and the worker's first claim after its start
+  marks the rest of its agent jobs. A dev machine still waiting reconnects for 4 minutes and then
+  prints its result; one that gave up gets it from `mulebox wait`. Queued jobs keep their place
+  and run.
+- **What jobs left** goes before the worker claims: orphan units, job folders, containers,
+  networks and volumes found by label (also ones Docker restarted at boot by a `restart:` policy),
+  job simulators on a Mac, and the containers of failed jobs kept for a rerun (M24.2).
+- **A GitHub run's slot** is released 60 s after its runner's job process is gone (supervision);
+  GitHub fails the run itself once the runner is lost.
+- **Remembered setups.** A branch's note that its `setup` or `install` ran can reach the disk while
+  what they wrote did not. The worker writes the boot it runs in to `<staging>/worker-state/boot`
+  at its start and removes it on a clean stop; found at the next start with another boot in it,
+  the node went down under the worker, and every remembered `setup` and `install` is forgotten, so
+  each branch's next job runs them again. A worker killed within one boot loses nothing on disk
+  and forgets nothing. (Linux's `boot_id`, a Mac's `kern.boottime`.)
+- **A branch folder git cannot use** (an empty object, a torn index after a cut) is made again:
+  first that branch's worktree, then, if git still fails, the whole project folder. The job's log
+  says so, and setup runs again. A project's folder is a cache, so nothing is lost.
+- **Files mulebox writes in place** (node.toml, reservations, records) are written to a temporary
+  file, synced, renamed, and the folder synced, so a cut leaves the old file or the new one.
+- **An upgrade** builds a venv of its own under `~/.mulebox/venvs/` (a copy of the one in use, or a
+  new one when Python changed), installs into it, syncs, and swaps the `~/.mulebox/venv` link with
+  one rename. A cut before the rename leaves the old mulebox, after it the new one; never half of
+  each. The venv in use and the one before it stay (an upgrade on trial, M23.7, can go back to it);
+  older ones of the installer's own are removed. A venv from before 1.47 is moved into `venvs/`
+  once, the one moment of an upgrade a cut could leave no venv; `mulebox setup` again mends it.
+
+Not covered: a disk that itself breaks, and a store damaged beyond SQLite's journal; those need the
+backup a person keeps.
+
 ## Order of the line (M23.3, M24.4, 2026-11-13)
 
 The user asked for settings that order the line beside moving jobs by hand. One line stays: agent

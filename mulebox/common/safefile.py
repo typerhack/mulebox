@@ -37,6 +37,7 @@ def write_text(path: Path, text: str, roots: safepath.Roots, mode: int = 0o640) 
                 os.fchmod(handle.fileno(), mode)  # the umask reduced it at creation
                 os.fsync(handle.fileno())
             os.rename(temp, path.name, src_dir_fd=folder, dst_dir_fd=folder)
+            os.fsync(folder)  # the rename itself survives a power cut too
         except BaseException:
             try:
                 os.unlink(temp, dir_fd=folder)

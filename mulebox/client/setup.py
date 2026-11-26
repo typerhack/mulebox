@@ -99,7 +99,7 @@ def _pack(folder: Path) -> tuple[Path, str]:
     bundle = folder / "bundle.tar.gz"
     with tarfile.open(bundle, "w:gz") as tar:
         tar.add(built, built.name)
-        for name in ("install.sh", "node.toml.example"):
+        for name in ("install.sh", "venv.sh", "node.toml.example"):
             tar.add(str(machine / name), name)
     return bundle, built.name
 

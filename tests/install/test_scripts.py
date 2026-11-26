@@ -7,9 +7,9 @@ import subprocess
 
 import pytest
 
-from .helpers import INSTALL_SH, call_install_function
+from .helpers import INSTALL_SH, VENV_SH, call_install_function
 
-SCRIPTS = [INSTALL_SH]
+SCRIPTS = [INSTALL_SH, VENV_SH]
 # A command position: line start, or after ; & | ( ` or a shell keyword.
 COMMAND_START = r"(?:^|[;&|(`]|\bthen|\bdo|\belse)\s*"
 
@@ -41,26 +41,33 @@ def test_strict_mode_and_executable(script):
 
 def test_install_never_uses_sudo():
     pattern = re.compile(COMMAND_START + r"sudo\b")
-    bad = [n for n, line in code_lines(INSTALL_SH) if pattern.search(line)]
+    bad = [n for path in SCRIPTS for n, line in code_lines(path) if pattern.search(line)]
     assert bad == [], f"sudo used as a command on lines {bad}"
 
 
-def test_install_never_removes_directories():
+OWN_VENV_DELETE = 'rm -rf -- "$path"  # the installer\'s one recursive delete'
+
+
+def test_install_removes_no_directory_but_its_own_old_venvs():
     recursive = re.compile(r"\brm\s+(?:-\S*\s+)*-\S*[rR]|\brm\b.*--recursive|\brmdir\b")
-    bad = [n for n, line in code_lines(INSTALL_SH) if recursive.search(line)]
-    assert bad == [], f"recursive delete on lines {bad}"
+    found = [(n, line.strip()) for path in SCRIPTS for n, line in code_lines(path)
+             if recursive.search(line)]
+    assert [line for _, line in found if not line.startswith(OWN_VENV_DELETE)] == [], found
+    assert len(found) == 1  # prune_venvs, tested below
 
 
 def test_install_rm_only_on_exact_files():
     rm = re.compile(COMMAND_START + r"rm\b(.*)")
-    for number, line in code_lines(INSTALL_SH):
+    for number, line in (pair for path in SCRIPTS for pair in code_lines(path)):
         match = rm.search(line)
         if match:
+            if line.strip().startswith(OWN_VENV_DELETE):
+                continue
             assert re.fullmatch(r' -f "\$[a-z_]+"', match.group(1)), f"line {number}: {line}"
 
 
 def test_install_prints_git_and_venv_hints_for_both_systems():
-    text = INSTALL_SH.read_text(encoding="utf-8")
+    text = "".join(path.read_text(encoding="utf-8") for path in SCRIPTS)
     assert "sudo apt-get install python3-venv" in text
     assert "sudo apt-get install git" in text
     assert "xcode-select --install" in text and "brew install python" in text

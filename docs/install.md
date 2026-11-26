@@ -58,7 +58,7 @@ What the installer does (it never uses sudo and never deletes a folder):
 | Step | Result |
 | --- | --- |
 | Checks | Linux with `systemctl --user`, or macOS; git, Python >= 3.12, a working `python3 -m venv` |
-| venv | `~/.mulebox/venv`, rebuilt only when the Python minor version changed |
+| venv | `~/.mulebox/venv`, a link to the venv in use in `~/.mulebox/venvs/`; each install makes a new one beside it (a copy, or a new venv when Python changed) and swaps the link at once, so a power cut mid-upgrade leaves the old mulebox or the new one; the one before stays, older ones go |
 | Command | `~/.mulebox/bin/mulebox` (symlink into the venv), and `~/.local/bin/mulebox` so plain `mulebox` works in a login shell; a real file of that name is left alone |
 | Node config | `~/.config/mulebox/node.toml`, written once from the template, then validated |
 | Roots | `~/.mulebox/{jobs,projects,cache,staging,runners}`, mode 750 |
@@ -690,8 +690,8 @@ Update the dev machine's own client to the newest release on PyPI, with the tool
 mulebox setup build-1
 ```
 
-The installer reinstalls the wheel into the existing venv, updates the unit files and
-restarts the services. A running job is interrupted by the restart (state `interrupted`,
+The installer puts the wheel into a new venv beside the one in use, swaps it in with one rename
+(docs/design.md, Sudden power loss), updates the unit files and restarts the services. A running job is interrupted by the restart (state `interrupted`,
 never replayed), so `mulebox setup` stops if a job is running. `--when-idle` waits instead: new jobs and CI runs wait in line, the running ones finish, the upgrade runs and the line moves on, and a killed dev machine holds nothing for more than 2 minutes while waiting. `--now` upgrades at once. `node.toml`
 is kept.
 
@@ -706,8 +706,22 @@ job `setup` runs otherwise. If its waiter goes away (a reboot), the row goes aft
 machine runs jobs again.
 Upgrade the coordinator and every worker together: a worker's stage rows and toolchain
 reports, and detached jobs, need both to be new. `mulebox doctor` shows the versions.
-When the Python minor version changed, the old venv is moved to
-`~/.mulebox/tmp/venv-old-<date>.<pid>` and a new one is built.
+When the Python minor version changed, the new venv is built afresh rather than copied. Venvs
+past the one in use and the one before it are removed from `~/.mulebox/venvs/`; older
+`~/.mulebox/tmp/venv-old-*` folders from before 1.47 are safe to delete.
+
+## Power cuts
+
+A node comes back from a power cut on its own once two things are set: in its firmware (BIOS or
+UEFI), "restore on AC power loss" (or "power on after power failure") set to on, and on Linux
+`loginctl enable-linger <user>`, so the user services start at boot with nobody logged in. A Mac
+node needs "Start up automatically after a power failure" in its energy settings and its user
+logged in automatically.
+
+After the cut, the job that was running ends `interrupted` (exit 75) and is not run again; queued
+jobs run; leftovers are removed before the node takes a job; each branch runs its `setup` once
+more, as what it wrote may not have reached the disk. An upgrade cut short leaves the old version
+working. What is checked and why: docs/design.md, Sudden power loss.
 
 ## Uninstall (manual)
 

@@ -13,7 +13,7 @@ from mulebox.common.safepath import RemovalDenied, remove_tree
 from mulebox.common.log import get_logger
 from mulebox.common.status import COMMAND, ENVIRONMENT, SETUP
 from mulebox.worker import kept as kept_jobs
-from mulebox.worker import project_home, reclaim, runspec, toolchains, workspace
+from mulebox.worker import project_home, project_repair, reclaim, runspec, toolchains, workspace
 from mulebox.worker.executor import RunSpec
 from mulebox.worker.job import ActiveJob
 
@@ -45,7 +45,13 @@ class Skipping:
         return spec
 
     def _into_home(self, job: ActiveJob, snapshot: Path) -> project_home.Synced:
-        """The job's files into the project's worktree; a crash can leave root's files there."""
+        """The job's files into the project's worktree; a crash can leave root's files there,
+        and a power cut a folder git cannot use, which is made again (project_repair.py)."""
+        return project_repair.prepare(
+            self.paths, job.project, job.branch, job.job_id, snapshot, self._reclaimer(job),
+            job.tailer.note, first=lambda: self._into_home_once(job, snapshot))
+
+    def _into_home_once(self, job: ActiveJob, snapshot: Path) -> project_home.Synced:
         branch = job.branch
         try:
             return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
@@ -53,8 +59,16 @@ class Skipping:
             if self.docker is None:
                 raise
         tree = project_home.tree_for(self.paths, job.project, branch)
-        reclaim.reclaim_tree(self.docker, self.paths, tree, job.job_id, self.node.name)
+        self._reclaimer(job)(tree)
         return project_home.prepare(self.paths, job.project, branch, job.job_id, snapshot)
+
+    def _reclaimer(self, job: ActiveJob):
+        """Make root's files in a folder the worker's, so it can go (with Docker only)."""
+        def run(tree: Path) -> None:
+            if self.docker is None:
+                raise RemovalDenied(f"{tree} holds files this user cannot remove")
+            reclaim.reclaim_tree(self.docker, self.paths, tree, job.job_id, self.node.name)
+        return run
 
     def _with_setup(self, job: ActiveJob, claim: dict[str, Any], synced: project_home.Synced
                     ) -> dict[str, Any]:

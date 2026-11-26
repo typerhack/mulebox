@@ -28,6 +28,9 @@ from mulebox.coordinator.errors import Conflict, NotFound
 SCHEMA_VERSION = 35
 BASE_SCHEMA = 12  # what _SCHEMA builds, as it runs at every open; later columns are migrate steps
 BUSY_TIMEOUT_MS = 10_000
+# FULL: a commit the coordinator answered survives a power cut (design.md, Sudden power loss).
+# About 6 ms a commit on a node's disk; the test suite sets NORMAL, as it tests no disk.
+SYNCHRONOUS = "FULL"
 ACTIVE_STATES = (JobState.STARTING, JobState.RUNNING, JobState.CLEANING)
 
 _JSON_COLUMNS = frozenset({"argv", "toolchain", "needs", "capabilities", "env", "env_order",
@@ -127,7 +130,7 @@ class Store:
             self._conn = conn
             return self
         conn.execute("PRAGMA journal_mode = WAL")
-        conn.execute("PRAGMA synchronous = NORMAL")
+        conn.execute(f"PRAGMA synchronous = {SYNCHRONOUS}")
         self._conn = conn
         try:
             with self.write() as tx:

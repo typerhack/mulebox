@@ -6,6 +6,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 INSTALL_DIR = REPO_ROOT / "mulebox" / "machine"
 INSTALL_SH = INSTALL_DIR / "install.sh"
+VENV_SH = INSTALL_DIR / "venv.sh"  # sourced by install.sh
 UNIT_DIR = INSTALL_DIR / "systemd"
 
 

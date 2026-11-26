@@ -5,7 +5,15 @@ their own folders."""
 
 import pytest
 
+from mulebox.coordinator import store
 from mulebox.worker import xcode
+
+
+@pytest.fixture(autouse=True)
+def stores_without_disk_syncs(monkeypatch):
+    """A synced commit costs about 6 ms on a node's disk, which tripled the suite's time; what the
+    tests check does not rest on it (test_store_durability.py checks the real setting)."""
+    monkeypatch.setattr(store, "SYNCHRONOUS", "NORMAL")
 
 
 @pytest.fixture(autouse=True)

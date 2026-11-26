@@ -114,6 +114,16 @@ def read(path: Path) -> str:
     return text
 
 
+def replace(path: Path, text: str) -> None:
+    """node.toml's text replaced at once, kept on disk (it survives a power cut)."""
+    spelled, roots = _place(Path(path))
+    mode = os.lstat(path).st_mode & 0o777
+    try:
+        safefile.write_text(spelled, text, roots, mode=mode)
+    except (MuleboxError, OSError) as exc:
+        raise NodeFileError(f"cannot write {path}: {exc}") from exc
+
+
 def apply(path: Path, changes: dict[str, Any]) -> NodeConfig:
     """Write `changes` into the node.toml at `path`; the config it now holds."""
     path = Path(path)
@@ -124,10 +134,5 @@ def apply(path: Path, changes: dict[str, Any]) -> NodeConfig:
     except (ValueError, ConfigError) as exc:  # TOMLDecodeError is a ValueError
         raise NodeFileError(f"{path} would not read with that change: {exc}") from exc
     if new != text:
-        spelled, roots = _place(path)
-        mode = os.lstat(path).st_mode & 0o777
-        try:
-            safefile.write_text(spelled, new, roots, mode=mode)
-        except (MuleboxError, OSError) as exc:
-            raise NodeFileError(f"cannot write {path}: {exc}") from exc
+        replace(path, new)
     return config

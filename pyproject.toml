@@ -53,7 +53,7 @@ include = ["mulebox*"]
 [tool.setuptools.package-data]
 "mulebox.dashboard" = ["app/*", "app/assets/*", "app/fonts/*"]
 "mulebox.client" = ["skill/SKILL.md"]
-"mulebox.machine" = ["install.sh", "*.example", "systemd/*"]
+"mulebox.machine" = ["install.sh", "venv.sh", "*.example", "systemd/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1030,6 +1030,11 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       containers, networks and runner reservations found and removed, queued jobs run. Done when:
       the user cuts the node's power with a job running, one queued and a CI run holding a slot,
       and after the power returns all of the above holds with nothing left behind.
+      Built 2026-11-26 (1.47.0), with tests (design.md, Sudden power loss): the store with
+      `synchronous = FULL`; the worker tells a power cut from a kill by the boot it last ran in and
+      forgets remembered setups after one; a branch folder git cannot use is made again; files
+      written in place sync their folder; an upgrade builds a venv of its own and swaps it in with one
+      rename (the user's choice), keeping the one before. Open: the user's power cut on the node.
 
 ## M24: Answers an agent can trust
 Decided by the user on 2026-11-12, from similar tools read that day (macserve, gatehaul, remote-dev,

@@ -8,6 +8,15 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.47.0 - 2026-11-26 - minor
+- Sudden power loss (M23.12; design.md, Sudden power loss): what a node does when the power comes back.
+- The coordinator's store commits with `synchronous = FULL`, so a cut never takes back a job or a result it answered, about 6 ms a commit on the node; the test suite runs with NORMAL (coordinator/store.py, tests/conftest.py).
+- The worker records the boot it runs in and removes the record on a clean stop; found with another boot at its next start, it forgets every remembered `setup` and `install`, as what they wrote may not have reached the disk (worker/power_cut.py).
+- A branch folder git cannot use after a cut is made again, then the whole project folder if needed, said in the job's log (worker/project_repair.py).
+- Files written in place sync their folder after the rename (common/safefile.py); `node-offers` writes node.toml through the same writer (worker/node_file.py).
+- An upgrade builds a venv of its own under `~/.mulebox/venvs/` and swaps the `~/.mulebox/venv` link with one rename; the one before stays, older ones go (machine/venv.sh, sourced by install.sh, the user's choice).
+- docs/install.md: Power cuts (firmware setting, linger, what happens after), and the new venv layout.
+
 ## 1.46.1 - 2026-11-26 - patch
 - A waiting rerun says it waits for the node that keeps its containers, where it said "sent with --on", which the agent never typed (coordinator/views.py).
 - The rerun's log line names only the stages the job has and skips: it named `install` for a project with none (worker/rerun.py).
