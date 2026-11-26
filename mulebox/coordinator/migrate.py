@@ -67,6 +67,8 @@ older mulebox stay readable. A database from a newer mulebox is refused.
   and `workers.kept`, the failed jobs a worker keeps for a rerun (coordinator/kept.py, rerun.py).
 - 35 -> 36: `jobs.keep_files` (JSON list, default '[]'), what a job keeps for `mulebox fetch`, and
   `jobs.files` (JSON), what it kept: count, bytes and what was left out (coordinator/files.py).
+- 36 -> 37: `jobs.hold_slots`, how many of its node's slots a hold takes, 0 for the whole node
+  (coordinator/node_hold.py).
 """
 
 import sqlite3
@@ -218,6 +220,7 @@ _STEPS: dict[int, tuple[str, ...]] = {
          "ALTER TABLE workers ADD COLUMN kept TEXT"),
     35: ("ALTER TABLE jobs ADD COLUMN keep_files TEXT NOT NULL DEFAULT '[]'",
          "ALTER TABLE jobs ADD COLUMN files TEXT NOT NULL DEFAULT 'null'"),
+    36: ("ALTER TABLE jobs ADD COLUMN hold_slots INTEGER NOT NULL DEFAULT 0",),
 }
 # Indexes on columns that older schemas lack; created once the columns exist.
 _INDEXES = (

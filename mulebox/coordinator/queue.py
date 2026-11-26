@@ -37,6 +37,7 @@ _ACTIVE_SQL = "state IN ({})".format(", ".join(f"'{s.value}'" for s in ACTIVE_ST
 QUEUE_ORDER = line.ARRIVAL_ORDER  # with no order rule on (line.py)
 JOB_KIND = "job"
 RUNNER_KIND = "runner"
+HOLD_KIND = "hold"  # a person's hold on a node (node_hold.py): its slots count, not its row
 
 
 def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
@@ -67,7 +68,7 @@ def claim(store: Store, worker: str, capabilities: list[str] | tuple[str, ...],
                        now, slots=slots if slots else free_slots + held, toolchains=toolchains,
                        version=version, disk_free=disk_free, load=load)
         node_health.save(conn, worker, health or {})
-        free = free_slots - active_on(conn, worker, RUNNER_KIND)
+        free = free_slots - active_on(conn, worker, RUNNER_KIND) - held_slots(conn, worker)
         if (free < 1 or workers.is_draining(conn, worker)
                 or active_count(conn) >= workers.cluster_limit(conn, now, cluster_slots)
                 or holds.draining(conn, now) or boosted_on(conn, worker)):
@@ -117,13 +118,29 @@ def active_jobs(conn: sqlite3.Connection) -> list[dict[str, Any]]:
 
 
 def active_on(conn: sqlite3.Connection, worker: str, kind: str | None = None) -> int:
-    """Rows holding a slot on `worker` (of `kind`, or of both kinds)."""
-    sql = f"SELECT COUNT(*) FROM jobs WHERE {_ACTIVE_SQL} AND worker = ?"
-    params: tuple = (worker,)
+    """Slots held on `worker` by rows of `kind`, or by every kind: one a row, and a hold's
+    own count (`held_slots`)."""
+    if kind == HOLD_KIND:
+        return held_slots(conn, worker)
+    sql = f"SELECT COUNT(*) FROM jobs WHERE {_ACTIVE_SQL} AND worker = ? AND kind != ?"
+    params: tuple = (worker, HOLD_KIND)
     if kind is not None:
         sql += " AND kind = ?"
         params += (kind,)
-    return conn.execute(sql, params).fetchone()[0]
+    rows = conn.execute(sql, params).fetchone()[0]
+    return rows + (held_slots(conn, worker) if kind is None else 0)
+
+
+def held_slots(conn: sqlite3.Connection, worker: str) -> int:
+    """Slots that holds take on `worker`: their `hold_slots`, or all of its slots for 0."""
+    found = [row[0] for row in conn.execute(
+        f"SELECT hold_slots FROM jobs WHERE {_ACTIVE_SQL} AND worker = ? AND kind = ?",
+        (worker, HOLD_KIND))]
+    if not found:
+        return 0
+    known = workers.get(conn, worker) or {}
+    whole = known.get("slots") or 1
+    return sum(n if n > 0 else whole for n in found)
 
 
 def boosted_on(conn: sqlite3.Connection, worker: str) -> bool:
@@ -134,10 +151,11 @@ def boosted_on(conn: sqlite3.Connection, worker: str) -> bool:
 
 def oldest_reservation(conn: sqlite3.Connection, worker: str,
                        order: line.Line | None = None) -> dict[str, Any] | None:
-    """The queued reservation pinned to `worker` that is first in line, or None."""
+    """The queued reservation (a GitHub run's slot or a hold) pinned to `worker` that is first
+    in line, or None."""
     order = order or line.read(conn)
-    return next((row for row in order.rows
-                 if row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker), None)
+    return next((row for row in order.rows if row["kind"] in (RUNNER_KIND, HOLD_KIND)
+                 and row["pinned_worker"] == worker), None)
 
 
 def position(conn: sqlite3.Connection, job: dict[str, Any], now: float | None = None) -> int | None:

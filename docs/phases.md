@@ -1003,8 +1003,18 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       real node.toml files in temporary folders. Done 2026-11-13 (1.16.3): on the real node, from the
       dashboard's window (M14.14), slots 2 to 3 and back reached node.toml and counted from the next
       job with no restart; three jobs ran at once. A hand edit of node.toml was not tried on the node.
-- [ ] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
+- [~] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
       session of your own, waiting in the same line so no job starts under you.
+      Design note 2026-11-26 (design.md, Holding a node), the user's decisions: the whole node or
+      `--slots N`, a command or a session, behind waiting jobs (`--next` first), a 2-minute lease
+      and a 2 h cap (`--for`, at most 24 h). Built 2026-11-26 (1.50.0), with tests on the real
+      coordinator code: coordinator/node_hold.py (schema 37), held slots counted by the claim,
+      GitHub runs and upgrades (queue.held_slots), `mulebox hold` and `mulebox release`
+      (client/hold.py), contract schema 21 and the skill. The macOS VM is left out: mulebox runs
+      no VMs. Not built: the hold on the dashboard (from mockups). Done when: on the real node,
+      a hold waits behind a running job, takes the node when it ends, keeps a job sent meanwhile
+      waiting until the held command ends, and a held session whose dev machine is killed ends
+      within 2 minutes.
 - [x] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on
       the node fetches its npm (41 MB) and pip (10 MB) cache from GitHub's cache storage. The node
       reaches the internet through a VPN tunnel (0.6 MB/s from GitHub against 10 MB/s on the dev

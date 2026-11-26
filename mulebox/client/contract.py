@@ -40,7 +40,8 @@ from mulebox.common.status import STAGES
 # 18: every error has a code and a fix line, also as JSON with --json: `errors`
 # 19: a failed compose job is kept for a rerun: `mulebox check --from-stage <stage>`
 # 20: files back: `keep:` in .mulebox.yml or `--keep`, and `mulebox fetch <job-id>`
-SCHEMA = 20
+# 21: `mulebox hold <node> -- <cmd>` holds a node for a person; agents only when asked
+SCHEMA = 21
 FULL_GATE = "check"
 Contract = dict[str, Any]
 
@@ -57,6 +58,7 @@ COMMANDS = {
     "rerun_from_a_stage": "mulebox check --from-stage command",  # or install, setup
     "on_one_node": "mulebox check --on <node>",
     "fetch_kept_files": "mulebox fetch <job-id>",
+    "hold_a_node_when_asked": "mulebox hold <node> -- <cmd>",
     "prepare_ahead": "mulebox warm [job]",
     "follow_it": "mulebox events --job <job-id> --json",
     "its_state": "mulebox status <job-id>",

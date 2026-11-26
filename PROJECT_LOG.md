@@ -8,6 +8,11 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.50.0 - 2026-11-26 - minor
+- Holding a node (M23.10; design.md, Holding a node, the user's decisions): `mulebox hold <node> [-- <cmd>]` waits in line like a job, then holds the whole node or `--slots N` for the command, or until Ctrl-C or `mulebox release <id>`; `--next` goes first, `--for` caps it (2 h, at most 24 h), and 2 minutes without the dev machine end it (client/hold.py).
+- On the coordinator a hold is a row of kind `hold` pinned to its node (coordinator/node_hold.py, schema 37 `jobs.hold_slots`); its slots count as taken for jobs, GitHub runs and upgrades (queue.held_slots), a worker restart leaves it, and `mulebox cancel` lets go of it.
+- Contract schema 21 and the skill: agents hold a node only when their user asks. README, agents.md, interfaces-m1.md.
+
 ## 1.49.1 - 2026-11-26 - patch
 - Going back names the venv as well as the version, as a broken build can carry the same version (machine/venv.sh); found in the drill on the node.
 - docs/phases.md: M23.7 done on the real node.

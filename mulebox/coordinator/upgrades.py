@@ -90,7 +90,7 @@ def _due(conn: sqlite3.Connection, upgrade: dict[str, Any], now: float) -> bool:
             return True
         if row["kind"] == queue.JOB_KIND and not row["paused"] and set(row["needs"]) <= have:
             return False
-        if row["kind"] == queue.RUNNER_KIND and row["pinned_worker"] == worker:
+        if row["kind"] in (queue.RUNNER_KIND, queue.HOLD_KIND) and row["pinned_worker"] == worker:
             return False
     return True
 

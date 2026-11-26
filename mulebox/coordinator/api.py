@@ -14,7 +14,7 @@ from mulebox.common import take_paths
 from mulebox.common.config_jobs import MAX_STUCK_AFTER_MIN
 from mulebox.common.protocol import JobState, Message, MessageType, ProtocolError
 from mulebox.coordinator import (asks_api, attendance, branch_lists, clients, holds, job_control,
-                                 leases, line, line_rules, machine_api, needs, node_settings,
+                                 leases, line, line_rules, machine_api, needs, node_hold, node_settings,
                                  files, project_orders, project_pause, projects, queue, rerun, reuse,
                                  runner_api,
                                  setting_asks, sizes, stats_api, steps, storage, taken, test_proof,
@@ -189,7 +189,10 @@ def cancel(req: Request) -> Message:
         if before["kind"] == upgrades.UPGRADE_KIND and before["state"] in st.ACTIVE_STATES:
             raise Conflict(f"upgrade {before['job_id']} is installing; stopping it halfway would "
                            "leave the machine without mulebox. It ends by itself")
-        job = leases.cancel(conn, before, req.now)
+        if before["kind"] == node_hold.HOLD_KIND:
+            job = node_hold.release(conn, before, req.now, "cancelled")
+        else:
+            job = leases.cancel(conn, before, req.now)
     if before["state"] != JobState.FINISHED and job["state"] == JobState.FINISHED:
         req.staging.remove_upload(job["job_id"])
     return req.reply(MessageType.STATUS_OK, status_body(job, cancel_requested=job["cancel_requested"]))
@@ -283,6 +286,7 @@ _HANDLERS: dict[MessageType, Callable[[Request], Message]] = {
     MessageType.ASKS: asks_api.control,
     MessageType.JOB_CONTROL: job_control.control,
     MessageType.UPGRADE: upgrades.upgrade,
+    MessageType.HOLD: node_hold.hold,
     MessageType.PROJECT_PAUSE: project_pause.control,
     MessageType.QUEUE_RULES: line_rules.control,
     MessageType.STATS: stats_api.summary,

@@ -57,6 +57,9 @@ RULES = (
     "node's keep_files_max (200 MB; past it the smallest go first and the rest are named); the "
     "job's end gives the command, mulebox fetch <job-id>, which puts them in "
     ".mulebox/files/<job-id>/ (git-ignored) for 7 days. Do not cat them out of the log",
+    "mulebox hold <node> holds a node for a person (a benchmark, a look by hand): no job starts "
+    "there until it lets go. Use it only when your user asks; jobs go through mulebox check "
+    "and mulebox run, which need no hold",
     "run mulebox doctor before a project's first job, and after changing toolchain, needs or "
     "compose files: it finds what a job would fail on, before anything is uploaded; it exits "
     "1 if a job would not run, and warnings alone exit 0",

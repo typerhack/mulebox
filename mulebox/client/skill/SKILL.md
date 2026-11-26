@@ -27,9 +27,9 @@ Before a project's first job, or after changing its toolchain, `needs` or compos
 `mulebox doctor`.
 It uploads nothing, and finds what a job would fail on.
 
-This skill was written for contract schema 20. Keep it current, in every session, before
+This skill was written for contract schema 21. Keep it current, in every session, before
 anything else: if `mulebox contract` says on stderr that the mulebox skill is out of date, or
-its first line gives a schema higher than 20, run `mulebox skill update`, then read the
+its first line gives a schema higher than 21, run `mulebox skill update`, then read the
 SKILL.md it names again, as this session loaded the old text. Tell the user it was updated.
 
 ## What to do with it
@@ -137,6 +137,8 @@ No job has a hard time limit while someone watches it. You decide what is stuck.
   end names the command, `mulebox fetch <job-id>`, which puts them in `.mulebox/files/<job-id>/`
   (git-ignored). They are kept 7 days, up to 200 MB a job; past that the smallest go first and
   the rest are named. Read a failed browser test's screenshots there, not in the log.
+- `mulebox hold <node> -- <cmd>` holds a node for a person, so no job starts there. Use it only
+  when your user asks for it; `mulebox check` and `mulebox run` need no hold.
 
 ## Package caches and services
 

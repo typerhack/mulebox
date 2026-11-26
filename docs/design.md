@@ -170,6 +170,32 @@ working mulebox. It builds on the venv swap above: the venv before the upgrade s
   upgrade go back (its worker cannot reach it); the message says so, and the next upgrade tries
   again. A fault that shows after the first minute is not caught.
 
+### Holding a node (M23.10, the user's decisions, 2026-11-26)
+
+A person sometimes needs a node to themselves: a benchmark, a look at a flaky test by hand, a
+build of their own over ssh. A hold waits in the same line as jobs, so no job starts under it,
+and ends by itself if it is forgotten.
+
+- **Two forms.** `mulebox hold <node> -- <cmd>` waits for the node, runs `<cmd>` on the dev
+  machine (such as `ssh build-1 ./bench.sh`) and lets go when it ends, with its exit code.
+  `mulebox hold <node>` alone holds until Ctrl-C, or `mulebox release <id>` from anywhere.
+- **How much.** The whole node by default: nothing else starts there, jobs nor GitHub runs.
+  `--slots N` takes N of its slots, and the rest keep running jobs. Slots only: cores and
+  memory of sized jobs are not held.
+- **In line.** A hold arrives like a job, behind the jobs already waiting, under the order
+  rules; `--next` puts it first, as an upgrade goes. Its turn comes when enough of its node's
+  slots are free and nothing ahead of it could start there. Jobs that could run elsewhere go
+  elsewhere meanwhile.
+- **Ending.** Ctrl-C, the command's end, `mulebox release`, or `mulebox cancel`. The dev machine
+  renews it every 30 s; 2 minutes without that (a closed lid, a lost link) end it, waiting or
+  held. A held node goes back after `--for` (2 h by default, at most 24 h) whatever happens,
+  and the dev machine is told.
+- **A row like the others.** A hold is a row of kind `hold`, pinned to its node, with no
+  snapshot and nothing run by the worker: `mulebox queue` and `status` show it with its holder
+  and how much it takes, and an upgrade waits for it. A worker restart does not end it.
+- **Not built.** A macOS VM held on a Mac node, as mulebox runs no VMs. The hold on the
+  dashboard follows, from mockups.
+
 ## Order of the line (M23.3, M24.4, 2026-11-13)
 
 The user asked for settings that order the line beside moving jobs by hand. One line stays: agent

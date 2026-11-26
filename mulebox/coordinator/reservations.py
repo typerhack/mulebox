@@ -82,7 +82,8 @@ def ahead(conn: sqlite3.Connection, job: dict[str, Any], now: float,
         if order.before(row, job)
         and ((row["kind"] == JOB_KIND and set(row["needs"]) <= have and not row["paused"]
               and row["project"] not in on_hold)
-             or (row["kind"] == RUNNER_KIND and row["pinned_worker"] == worker))
+             or (row["kind"] in (RUNNER_KIND, queue.HOLD_KIND)
+                 and row["pinned_worker"] == worker))
     )
 
 

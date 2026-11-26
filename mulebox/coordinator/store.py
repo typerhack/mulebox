@@ -25,7 +25,7 @@ from mulebox.coordinator.errors import Conflict, NotFound
 # 2: reservations for GitHub runners; 3: job env; 4: worker reports; 5: detached; 6: steps;
 # 7: env order; 8: stop reason and activity; 9: told; 10: disk; 11: install;
 # 12: worker version (migrate.py)
-SCHEMA_VERSION = 36
+SCHEMA_VERSION = 37
 BASE_SCHEMA = 12  # what _SCHEMA builds, as it runs at every open; later columns are migrate steps
 BUSY_TIMEOUT_MS = 10_000
 # FULL: a commit the coordinator answered survives a power cut (design.md, Sudden power loss).
@@ -102,7 +102,7 @@ _JOB_COLUMNS = frozenset(
     "created_at queued_at started_at finished_at kind pinned_worker runner run_url env "
     "detached env_order stop_reason activity active_at check_in_ok told_at worker_version client_os ci_result take "
     "paused priority boost pin_side pin_job pin_order workflow deferred_at stuck_after_min tests usage size retries "
-    "from_stage reuses keep_files files".split()
+    "from_stage reuses keep_files files hold_slots".split()
 )
 
 

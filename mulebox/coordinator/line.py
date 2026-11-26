@@ -46,6 +46,7 @@ from mulebox.coordinator.store import ACTIVE_STATES
 ARRIVAL_ORDER = "priority DESC, queued_at, seq"
 UPGRADE_KIND = "upgrade"  # upgrades.UPGRADE_KIND; upgrades imports this module's users
 RUNNER_KIND = "runner"
+HOLD_KIND = "hold"  # node_hold.HOLD_KIND
 FRONT, BEFORE, AFTER = "front", "before", "after"
 
 Pin = tuple[str, str | None, float]  # (side, the job whose place it is pinned to, order there)

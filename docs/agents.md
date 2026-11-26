@@ -66,6 +66,7 @@ when a job can run, also with warnings, 1 when it would not, 2 without a usable
 | see how this project works with mulebox | `mulebox contract` |
 | check the project and the machine before submitting anything | `mulebox doctor` |
 | see the queue | `mulebox queue` |
+| hold a node for your user, only when they ask (a benchmark, a look by hand) | `mulebox hold <node> -- <cmd>`; no job starts there until it ends |
 | list every project that has run on this node | `mulebox projects` |
 | open the web dashboard (for a person; holds a tunnel until Ctrl-C). `check`, `queue`, `status` and `doctor` print its address when the machine has one on the LAN: pass it to the user | `mulebox dashboard open` |
 | read a job's log again | `mulebox logs <job-id>`; old logs expire on the node, and it says so when one has (`mulebox status <job-id>` still has the result) |

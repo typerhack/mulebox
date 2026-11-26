@@ -52,6 +52,9 @@ def waiting_for(conn: Any, job: dict[str, Any], now: float, order: Any = None) -
     anything else. `order`: the line (line.py) when the caller read it already."""
     from mulebox.coordinator import upgrades  # upgrades -> views
 
+    if job["state"] == JobState.QUEUED and job["kind"] == "hold":
+        return (f"it takes {job['pinned_worker']} once {'it' if not job['hold_slots'] else 'its slots'} "
+                "is free and nothing ahead in line could start there")
     if job["state"] != JobState.QUEUED or job["kind"] not in ("job", upgrades.UPGRADE_KIND):
         return None
     if job["kind"] == upgrades.UPGRADE_KIND:
