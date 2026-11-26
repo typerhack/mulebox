@@ -1003,7 +1003,7 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       real node.toml files in temporary folders. Done 2026-11-13 (1.16.3): on the real node, from the
       dashboard's window (M14.14), slots 2 to 3 and back reached node.toml and counted from the next
       job with no restart; three jobs ran at once. A hand edit of node.toml was not tried on the node.
-- [~] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
+- [x] M23.10 Reserve a slot for yourself: hold a node, or a macOS VM on a Mac node, for a command or
       session of your own, waiting in the same line so no job starts under you.
       Design note 2026-11-26 (design.md, Holding a node), the user's decisions: the whole node or
       `--slots N`, a command or a session, behind waiting jobs (`--next` first), a 2-minute lease
@@ -1015,6 +1015,12 @@ to the core; 1, 2 and 5 first. Each needs a design note in design.md before it i
       a hold waits behind a running job, takes the node when it ends, keeps a job sent meanwhile
       waiting until the held command ends, and a held session whose dev machine is killed ends
       within 2 minutes.
+      Done 2026-11-26 (1.50.2) on the real node with a throwaway project: a whole-node hold sent
+      while a 25 s job ran waited at #1 and took the node a second after that job ended; a job
+      sent meanwhile on another branch waited with a slot free, and started one second after the
+      held 20 s command ended and the hold let go. A one-slot session hold, its `mulebox` killed
+      with `kill -9`, ended `interrupted` 123 s later. Found there and fixed 1.50.1: options
+      after the node were read as the command; a job behind a hold said the machines were busy.
 - [x] M23.11 CI package caches without the slow download (the user's ask, 2026-11-12). Each CI job on
       the node fetches its npm (41 MB) and pip (10 MB) cache from GitHub's cache storage. The node
       reaches the internet through a VPN tunnel (0.6 MB/s from GitHub against 10 MB/s on the dev

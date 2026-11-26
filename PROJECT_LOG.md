@@ -8,6 +8,10 @@ Entry format:
     ## <version> - <YYYY-MM-DD> - <patch|minor|major>
     - what changed and why (one line each)
 
+## 1.50.2 - 2026-11-26 - patch
+- A waiting hold of some slots says "once its slots are free" (coordinator/views.py).
+- docs/phases.md: M23.10 done on the real node.
+
 ## 1.50.1 - 2026-11-26 - patch
 - `mulebox hold <node> --slots 1` took the options after the node as its command: only what follows `--` is the command now, and options go anywhere (client/hold.py). Found in the drill on the node, before any held command ran.
 - A job waiting behind a hold says so, naming it and when it ends, where it said the machines were busy (coordinator/node_hold.py `in_the_way`, views.py).
